@@ -191,8 +191,8 @@ class ProjectController extends Controller
                 FteRole::create([
                     'project_id' => $project->id,
                     'role_group' => $fte['role_group'] ?? '',
-                    'job_detail' => $fte['job_detail'],
                     'name' => $fte['name'],
+                    'job_detail' => $fte['job_detail'],
                     'start_date' => $fte['start_date'],
                     'end_date' => $fte['end_date'],
                     'fte_value' => $fte['fte_value'] ?? 0,

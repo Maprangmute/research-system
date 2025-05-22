@@ -16,6 +16,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 
     <!-- ✅ เพิ่ม Plugin สำหรับเลือกปี -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
@@ -47,19 +50,74 @@
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ*</span>
-                    <input name="project_type" type="text" required class="w-full border p-2 rounded">
+                    <select name="project_type" id="project_type" class="w-full border p-2 rounded" required>
+                        <option value="" disabled selected>เลือกประเภทของโครงการ</option> <!-- สำหรับ placeholder -->
+                        <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล">01 ผู้สูงอายุ
+                            ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล</option>
+                        <option
+                            value="02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล">
+                            02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ
+                            และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล</option>
+                        <option value="03 Health System research and HTA">03 Health System research and HTA</option>
+                        <option value="04 การใช้ยาอย่างสมเหตุผล (RDU)">04 การใช้ยาอย่างสมเหตุผล (RDU)</option>
+                        <option
+                            value="05 Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC">05
+                            Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC</option>
+                        <option value="06 Real-world Evidence: E-Health, Health Information system, Digital Health">06
+                            Real-world Evidence: E-Health, Health Information system, Digital Health</option>
+                        <option value="07 Fall prevention + Hip facture preject (VBHC & Registry)">07 Fall prevention + Hip
+                            facture preject (VBHC & Registry)</option>
+                        <option value="08 การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้">08
+                            การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้</option>
+                        <option value="09 SIHP Process Improvement (System Support)">09 SIHP Process Improvement (System
+                            Support)</option>
+                        <option value="10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE">10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE
+                        </option>
+                        <option value="11 SIPG">11 SIPG</option>
+                        <option value="12 RDMU">12 RDMU</option>
+                    </select>
                 </label>
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme)*</span>
-                    <input name="theme" type="text" required class="w-full border p-2 rounded">
+                    <select name="theme" required class="w-full border p-2 rounded">
+                        <option value="" disabled selected>กรุณาเลือกกลุ่มเนื้อหา</option>
+                        <option value="T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก">T101_Research_วิจัยที่ Health
+                            Policy เป็น ผู้วิจัยหลัก</option>
+                        <option value="T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย">T102_Research:
+                            โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย</option>
+                        <option
+                            value="T103_Research: โครงการวิจัยที่เป็นไปในลักษณะ Individual Expertise contribution (Skill รายบุคคล) เช่น การเข้าร่วมเขียน paper">
+                            T103_Research: โครงการวิจัยที่เป็นไปในลักษณะ Individual Expertise contribution (Skill รายบุคคล)
+                            เช่น การเข้าร่วมเขียน paper</option>
+                        <option value="T301_Model of Care development (Clinic)">T301_Model of Care development (Clinic)
+                        </option>
+                        <option value="T401_Cohort Study">T401_Cohort Study</option>
+                        <option value="T501_Curriculum Development (Education)">T501_Curriculum Development (Education)
+                        </option>
+                        <option value="T601_Consult">T601_Consult</option>
+                        <option value="T701_Process Improvement (Siriraj Health Policy)">T701_Process Improvement (Siriraj
+                            Health Policy)</option>
+                        <option value="T801_Conference Session / Knowledge Sharing">T801_Conference Session / Knowledge
+                            Sharing</option>
+                        <option value="T901_Capacity Building / Skill Development">T901_Capacity Building / Skill
+                            Development</option>
+                    </select>
                 </label>
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ลิงก์ Google Drive / Shortcut</span>
                     <input name="shortcut_link" type="text" class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L)</span>
-                    <input name="size" type="text" class="w-full border p-2 rounded">
+                    <select name="size" required class="w-full border p-2 rounded">
+                        <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
+                        <option value="S">S (ภายนอก / ภายใน / Cohort Study)</option>
+                        <option value="M">M (ภายนอก / ภายใน / Cohort Study)</option>
+                        <option value="L">L (ภายนอก / ภายใน / Cohort Study)</option>
+                        <option value="XL">XL (ภายนอก) </option>
+                    </select>
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1"> รหัสโครงการ R</span>
@@ -88,8 +146,11 @@
                 <!-- Funding Source Section -->
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
-                    <input name="funding_type" type="text" class="w-full border p-2 rounded"
-                        placeholder="เช่น แหล่งทุนภายใน, ภายนอก, ทุนแข่งขัน">
+                    <select name="funding_type" required class="w-full border p-2 rounded">
+                        <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
+                        <option value="ภายใน">ภายใน</option>
+                        <option value="ภายนอก">ภายนอก</option>
+                    </select>
                 </label>
 
                 <label class="w-full">
@@ -98,10 +159,15 @@
                         placeholder="ชื่อหน่วยงานหรือองค์กรที่ให้ทุน">
                 </label>
 
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
-                    <input name="funding_org_type" type="text" class="w-full border p-2 rounded"
-                        placeholder="ระบุประเภทองค์กร">
+                    <select name="funding_org_type" required class="w-full border p-2 rounded">
+                        <option value="" disabled selected>กรุณาเลือกประเภทองค์กร</option>
+                        <option value="รัฐบาล">รัฐบาล</option>
+                        <option value="เอกชน">เอกชน</option>
+                        <option value="มูลนิธิ">มูลนิธิ</option>
+                    </select>
                 </label>
 
                 <label class="w-full">
@@ -123,69 +189,177 @@
             <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">B: ระยะเวลาดำเนินโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1"> วันที่โครงการเริ่ม (ทีม)</span>
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันที่โครงการเริ่มทำงานของทีมวิจัย</span>
                     <input name="team_start_date" type="text"
-                        class="thai-datepicker w-full border p-2 rounded @error('start_date') border-red-500 @enderror"
-                        value="{{ old('team_start_date') }}">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดทำ (ทีม)</span>
-                    <input name="team_end_date" type="text" class="thai-datepicker w-full border p-2 rounded"
-                        value="{{ old('team_end_date') }}">
+                        class="thai-datepicker w-full border p-2 rounded pl-10 @error('start_date') border-red-500 @enderror"
+                        value="{{ old('team_start_date') }}" placeholder="กรุณาเลือกวันที่เริ่มงานของทีม">
+                    <!-- ปุ่มไอคอนปฏิทิน (absolute ซ้ายใน input) -->
+                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                 </label>
 
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BA001 - วันที่เริ่มเขียน Proposal (เดือน/ปี)</span>
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดการทำงานของทีมวิจัย</span>
+                    <input name="team_end_date" type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
+                        value="{{ old('team_end_date') }}" placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม">
+                    <!-- ปฏิทินไอคอน -->
+                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </label>
+
+
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">BA001 - วันที่เริ่มเขียน Proposal</span>
                     <input name="proposal_date" type="text"
-                        class="thai-datepicker w-full border p-2 rounded @error('proposal_date') border-red-500 @enderror"
-                        value="{{ old('proposal_date') }}">
+                        class="thai-datepicker w-full border p-2 rounded pl-10 @error('proposal_date') border-red-500 @enderror"
+                        value="{{ old('proposal_date') }}" placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal">
+                    <!-- ไอคอนปฏิทิน -->
+                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                 </label>
 
-                <label class="w-full">
+
+                <label class="w-full relative">
                     <span class="block text-sm text-gray-700 mb-1">BC101 - วันที่สัญญาอนุมัติ</span>
                     <input name="contract_date" type="text"
-                        class="thai-datepicker w-full border p-2 rounded @error('contract_date') border-red-500 @enderror"
-                        value="{{ old('contract_date') }}">
-                    {{-- @error('contract_date') <span class="text-sm text-red-500">{{ $message }}</span> @enderror --}}
+                        class="thai-datepicker w-full border p-2 rounded pl-10 @error('contract_date') border-red-500 @enderror"
+                        value="{{ old('contract_date') }}" placeholder="กรุณาเลือกวันที่อนุมัติสัญญา">
+                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    @error('contract_date')
+                        <span class="text-sm text-red-500">{{ $message }}</span>
+                    @enderror
                 </label>
-                <label class="w-full">
+
+                <label class="w-full relative">
                     <span class="block text-sm text-gray-700 mb-1">BC102 - วันที่โครงการเริ่ม (ตามสัญญา)</span>
                     <input name="start_date" type="text"
-                        class="thai-datepicker w-full border p-2 rounded @error('start_date') border-red-500 @enderror"
-                        value="{{ old('start_date') }}">
-                    {{-- @error('start_date') <span class="text-sm text-red-500">{{ $message }}</span> @enderror --}}
+                        class="thai-datepicker w-full border p-2 rounded pl-10 @error('start_date') border-red-500 @enderror"
+                        value="{{ old('start_date') }}" placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา">
+                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    @error('start_date')
+                        <span class="text-sm text-red-500">{{ $message }}</span>
+                    @enderror
                 </label>
-                <label class="w-full">
+
+                <label class="w-full relative ">
                     <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด (ตามสัญญา)</span>
-                    <input name="end_date" type="text" class="thai-datepicker w-full border p-2 rounded"
-                        value="{{ old('end_date') }}">
+                    <input name="end_date" type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
+                        value="{{ old('end_date') }}" placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
+                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                 </label>
+
 
 
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">BA000 - Project Planning (Status)</span>
-                    <input name="planning_status" value="{{ old('planning_status') }}"
-                        class="w-full border p-2 rounded">
-                    {{-- @error('planning_status') <span class="text-sm text-red-500">{{ $message }}</span> @enderror --}}
+                    <select name="planning_status" id="planning_status"
+                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
+                        required>
+                        <option value="0" data-color="#991b1b">ยกเลิก (Canceled) 0%</option>
+                        <option value="" disabled selected style="background-color: white; ">ระบุคำตอบ
+                        </option>
+                        <option value="25" data-color="#dc2626">อยู่ระหว่างการรอ (On Hold) 25%</option>
+                        <option value="50" data-color="#f59e0b">กำลังดำเนินการ (In Progress) 50%</option>
+                        <option value="75" data-color="#3b82f6">อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
+                        </option>
+                        <option value="100" data-color="#16a34a">เสร็จสิ้น (Complete) 100%</option>
+
+                    </select>
                 </label>
+
+
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">BC000 - Project Execution (Status)</span>
-                    <input name="execution_status" value="{{ old('execution_status') }}"
-                        class="w-full border p-2 rounded">
-                    {{-- @error('execution_status') <span class="text-sm text-red-500">{{ $message }}</span> @enderror --}}
+                    <select name="execution_status" id="execution_status"
+                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
+                        required>
+                        <option value="" selected hidden class="text-b">ระบุคำตอบ</option>
+                        <option value="0" data-color="#991b1b">ยกเลิก (Canceled) 0%</option>
+                        <option value="25" data-color="#dc2626">อยู่ระหว่างการรอ (On Hold) 25%</option>
+                        <option value="50" data-color="#f59e0b">กำลังดำเนินการ (In Progress) 50%</option>
+                        <option value="75" data-color="#3b82f6">อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
+                        </option>
+                        <option value="100" data-color="#16a34a">เสร็จสิ้น (Complete) 100%</option>
+
+                    </select>
+
+                    @error('execution_status')
+                        <span class="text-sm text-red-500">{{ $message }}</span>
+                    @enderror
                 </label>
+
+
+
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BD000 - Review Status</span>
-                    <input name="review_status" value="{{ old('review_status') }}" class="w-full border p-2 rounded">
-                    {{-- @error('review_status') <span class="text-sm text-red-500">{{ $message }}</span> @enderror --}}
+                    <span class="block text-sm text-gray-700 mb-1">BD000 - Review Status (Status)</span>
+                    <select name="review_status" id="review_status"
+                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)">
+                        <option value="" disabled selected>ระบุคำตอบ</option>
+                        <option value="0" data-color="#991b1b" {{ old('review_status') == '0' ? 'selected' : '' }}>
+                            ยกเลิก (Canceled) 0%</option>
+                        <option value="25" data-color="#dc2626" {{ old('review_status') == '25' ? 'selected' : '' }}>
+                            อยู่ระหว่างการรอ (On Hold) 25%</option>
+                        <option value="50" data-color="#f59e0b" {{ old('review_status') == '50' ? 'selected' : '' }}>
+                            กำลังดำเนินการ (In Progress) 50%</option>
+                        <option value="75" data-color="#3b82f6" {{ old('review_status') == '75' ? 'selected' : '' }}>
+                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%</option>
+                        <option value="100" data-color="#16a34a"
+                            {{ old('review_status') == '100' ? 'selected' : '' }}>เสร็จสิ้น (Complete) 100%</option>
+
+                    </select>
+
+                    @error('review_status')
+                        <span class="text-sm text-red-500">{{ $message }}</span>
+                    @enderror
                 </label>
+
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BE000 - Closure Status</span>
-                    <input name="closure_status" value="{{ old('closure_status') }}" class="w-full border p-2 rounded">
-                    {{-- @error('closure_status') <span class="text-sm text-red-500">{{ $message }}</span> @enderror --}}
+                    <span class="block text-sm text-gray-700 mb-1">BE000 - Closure Status (status)</span>
+                    <select name="closure_status" id="closure_status"
+                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)">
+                        <option value="" disabled {{ old('closure_status') ? '' : 'selected' }}>ระบุคำตอบ</option>
+                        <option value="25" data-color="#dc2626"
+                            {{ old('closure_status') == '25' ? 'selected' : '' }}>อยู่ระหว่างการรอ (On Hold) 25%</option>
+                        <option value="50" data-color="#f59e0b"
+                            {{ old('closure_status') == '50' ? 'selected' : '' }}>กำลังดำเนินการ (In Progress) 50%</option>
+                        <option value="75" data-color="#3b82f6"
+                            {{ old('closure_status') == '75' ? 'selected' : '' }}>อยู่ในระหว่างการตรวจสอบ/พิจารณา (In
+                            Review) 75%</option>
+                        <option value="100" data-color="#16a34a"
+                            {{ old('closure_status') == '100' ? 'selected' : '' }}>เสร็จสิ้น (Complete) 100%</option>
+                        <option value="0" data-color="#991b1b" {{ old('closure_status') == '0' ? 'selected' : '' }}>
+                            ยกเลิก (Canceled) 0%</option>
+                    </select>
+
+                    @error('closure_status')
+                        <span class="text-sm text-red-500">{{ $message }}</span>
+                    @enderror
                 </label>
+
 
             </div>
 
@@ -243,7 +417,7 @@
                 </label>
             </div>
 
-         
+
 
 
 
@@ -270,36 +444,45 @@
             </div>
             <button type="button" onclick="addCopiRow()" class="mb-6 px-3 py-1 bg-yellow-600 text-white rounded">+ เพิ่ม
                 COPI</button>
+            <h3 class="text-blue-700 font-semibold mb-2">Co-Researcher</h3>
+            <div id="coresearch-container" class="space-y-4 mb-4">
+                <div id="coresearch-0" class="coresearch-row space-y-2">
+                    <!-- บรรทัดที่ 1: ชื่อ -->
+                    <label class="block w-full">
+                        <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span
+                                class="coresearch-index">1</span></span>
+                        <input name="coresearch[0][name]" type="text" class="w-full border p-2 rounded">
+                    </label>
 
-                <h3 class="text-blue-700 font-semibold mb-2">Co-Researcher</h3>
-                <div id="coresearch-container" class="space-y-4 mb-4">
-                    <div id="coresearch-0" class="coresearch-row space-y-2">
-                        <!-- บรรทัดที่ 1: ชื่อ -->
-                        <label class="block w-full">
-                            <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span class="coresearch-index">1</span></span>
-                            <input name="coresearch[0][name]" type="text" class="w-full border p-2 rounded">
+                    <!-- บรรทัดที่ 2: สังกัด + ภายใน/ภายนอก + ลบ -->
+                    <div class="grid grid-cols-12 gap-4 items-end">
+                        <label class="col-span-5">
+                            <span class="block text-sm mb-1">สังกัด</span>
+                            <input name="coresearch[0][affiliation]" type="text" class="w-full border p-2 rounded">
                         </label>
-                
-                        <!-- บรรทัดที่ 2: สังกัด + ภายใน/ภายนอก + ลบ -->
-                        <div class="grid grid-cols-3 gap-4 items-end">
-                            <label class="w-full">
-                                <span class="block text-sm mb-1">สังกัด</span>
-                                <input name="coresearch[0][affiliation]" type="text" class="w-full border p-2 rounded">
-                            </label>
-                            <label class="w-full">
-                                <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
-                                <input name="coresearch[0][unit_status]" type="text" class="w-full border p-2 rounded">
-                            </label>
-                            <div class="flex justify-end items-end">
-                                <button type="button" onclick="removeRow('coresearch-0', 'coresearch')" class="text-red-600 mb-2">✕</button>
-                            </div>
+
+                        <label class="col-span-5">
+                            <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
+                            <select name="coresearch[0][unit_status]" required class="w-full border p-2 rounded">
+                                <option value="" disabled selected>กรุณาเลือก</option>
+                                <option value="ภายใน">ภายใน</option>
+                                <option value="ภายนอก">ภายนอก</option>
+                            </select>
+                        </label>
+
+                        <div class="col-span-2 flex items-center justify-end pt-6">
+                            <button type="button" onclick="removeRow('coresearch-0', 'coresearch')"
+                                class="text-red-600 text-xl">✕</button>
                         </div>
                     </div>
                 </div>
-                
-                <button type="button" onclick="addCoResearchRow()" class="mb-6 px-3 py-1 bg-purple-600 text-white rounded">+ เพิ่ม Co-Researcher</button>
-                
-    
+            </div>
+
+
+            <button type="button" onclick="addCoResearchRow()" class="mb-6 px-3 py-1 bg-purple-600 text-white rounded">+
+                เพิ่ม Co-Researcher</button>
+
+
 
 
             <hr class="my-6 border-t-2 border-gray-300">
@@ -309,7 +492,8 @@
                     <!-- บรรทัดที่ 1: ชื่อและกลุ่ม -->
                     <div class="grid grid-cols-2 gap-4">
                         <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1"><span class="fte-index">1</span>. ชื่อ-นามสกุล</span>
+                            <span class="block text-sm text-gray-700 mb-1"><span class="fte-index">1</span>.
+                                ชื่อ-นามสกุล</span>
                             <input name="fte_roles[0][name]" type="text" class="w-full border p-2 rounded">
                         </label>
                         <label class="w-full">
@@ -317,7 +501,7 @@
                             <input name="fte_roles[0][role_group]" type="text" class="w-full border p-2 rounded">
                         </label>
                     </div>
-            
+
                     <!-- บรรทัดที่ 2: ภาระงาน + วันที่ -->
                     <div class="grid grid-cols-3 gap-4">
                         <label class="w-full">
@@ -326,28 +510,31 @@
                         </label>
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
-                            <input name="fte_roles[0][start_date]" type="text" class="thai-datepicker w-full border p-2 rounded">
+                            <input name="fte_roles[0][start_date]" type="text"
+                                class="thai-datepicker w-full border p-2 rounded">
                         </label>
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
-                            <input name="fte_roles[0][end_date]" type="text" class="thai-datepicker w-full border p-2 rounded">
+                            <input name="fte_roles[0][end_date]" type="text"
+                                class="thai-datepicker w-full border p-2 rounded">
                         </label>
                     </div>
-            
+
                     <!-- บรรทัดที่ 3: FTE + ปุ่มลบ -->
                     <div class="flex gap-4 items-end">
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">FTE</span>
-                            <input name="fte_roles[0][fte_value]" type="number" step="0.01" class="w-full border p-2 rounded">
+                            <input name="fte_roles[0][fte_value]" type="number" step="0.01"
+                                class="w-full border p-2 rounded">
                         </label>
                         <button type="button" onclick="removeRow('fte-0', 'fte')" class="text-red-600 mb-2">✕</button>
                     </div>
                 </div>
             </div>
-            
+
             <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">+
                 เพิ่มผู้มีส่วนร่วม</button>
-            
+
 
 
             <hr class="my-6 border-t-2 border-gray-300">
@@ -475,6 +662,8 @@
         </form>
     </div>
 
+
+
     <script>
         let irbIndex = 1;
 
@@ -520,12 +709,12 @@
 
         let fteIndex = 1; // เริ่มจาก 1 เพราะมี index 0 แล้ว
 
-function addFTERow() {
-    const container = document.getElementById('fte-container');
-    const id = `fte-${fteIndex}`;
-    const indexLabel = fteIndex + 1;
+        function addFTERow() {
+            const container = document.getElementById('fte-container');
+            const id = `fte-${fteIndex}`;
+            const indexLabel = fteIndex + 1;
 
-    container.insertAdjacentHTML('beforeend', `
+            container.insertAdjacentHTML('beforeend', `
         <div id="${id}" class="fte-row space-y-2">
             <div class="grid grid-cols-2 gap-4">
                 <label class="w-full">
@@ -563,19 +752,19 @@ function addFTERow() {
         </div>
     `);
 
-    fteIndex++;
-    reindexFTE();
-    initThaiDatepickers?.();
-}
+            fteIndex++;
+            reindexFTE();
+            initThaiDatepickers?.();
+        }
 
-function reindexFTE() {
-    const rows = document.querySelectorAll('#fte-container .fte-row');
-    rows.forEach((row, index) => {
-        row.querySelectorAll('.fte-index').forEach(span => {
-            span.textContent = index + 1;
-        });
-    });
-}
+        function reindexFTE() {
+            const rows = document.querySelectorAll('#fte-container .fte-row');
+            rows.forEach((row, index) => {
+                row.querySelectorAll('.fte-index').forEach(span => {
+                    span.textContent = index + 1;
+                });
+            });
+        }
 
 
         let outputIndex = 1; // เพราะเรามี index 0 แล้ว
@@ -632,55 +821,62 @@ function reindexFTE() {
         }
 
 
-    let coResearchIndex = 1;
-    function addCoResearchRow() {
-    const container = document.getElementById('coresearch-container');
-    const id = `coresearch-${coResearchIndex}`;
+        let coResearchIndex = 1;
 
-    container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="coresearch-row space-y-2">
-            <!-- บรรทัดที่ 1: ชื่อ -->
-            <label class="block w-full">
-                <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span class="coresearch-index">${coResearchIndex + 1}</span></span>
-                <input name="coresearch[${coResearchIndex}][name]" type="text" class="w-full border p-2 rounded">
-            </label>
+        function addCoResearchRow() {
+            const container = document.getElementById('coresearch-container');
+            const id = `coresearch-${coResearchIndex}`;
 
-            <!-- บรรทัดที่ 2: สังกัด + ภายใน/ภายนอก + ลบ -->
-            <div class="grid grid-cols-3 gap-4 items-end">
-                <label class="w-full">
-                    <span class="block text-sm mb-1">สังกัด</span>
-                    <input name="coresearch[${coResearchIndex}][affiliation]" type="text" class="w-full border p-2 rounded">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
-                    <input name="coresearch[${coResearchIndex}][unit_status]" type="text" class="w-full border p-2 rounded">
-                </label>
-                <div class="flex justify-end items-end">
-                    <button type="button" onclick="removeRow('${id}', 'coresearch')" class="text-red-600 mb-2">✕</button>
-                </div>
-            </div>
+            container.insertAdjacentHTML('beforeend', `
+    <div id="${id}" class="coresearch-row space-y-2 py-4">
+      <!-- ชื่อ Co-Researcher -->
+      <label class="block w-full">
+        <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span class="coresearch-index">${coResearchIndex + 1}</span></span>
+        <input name="coresearch[${coResearchIndex}][name]" type="text" class="w-full border p-2 rounded">
+      </label>
+
+      <!-- สังกัด + สถานะ + ปุ่มลบ -->
+      <div class="grid grid-cols-12 gap-4 items-end">
+        <label class="col-span-5">
+          <span class="block text-sm mb-1">สังกัด</span>
+          <input name="coresearch[${coResearchIndex}][affiliation]" type="text" class="w-full border p-2 rounded">
+        </label>
+
+        <label class="col-span-5">
+          <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
+          <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required>
+            <option value="" disabled selected>กรุณาเลือก</option>
+            <option value="ภายใน">ภายใน</option>
+            <option value="ภายนอก">ภายนอก</option>
+          </select>
+        </label>
+
+        <div class="col-span-2 flex justify-end pt-6">
+          <button type="button" onclick="removeRow('${id}', 'coresearch')" class="text-red-600 text-xl">✕</button>
         </div>
-    `);
+      </div>
+    </div>
+  `);
 
-    coResearchIndex++;
-    reindexCoResearch();
-}
+            coResearchIndex++;
+            reindexCoResearch();
+        }
 
-    function removeRow(id, type) {
-        const el = document.getElementById(id);
-        if (el) el.remove();
 
-        if (type === 'coresearch') reindexCoResearch();
-    }
+        function removeRow(id, type) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
 
-    function reindexCoResearch() {
-        const rows = document.querySelectorAll('#coresearch-container .coresearch-row');
-        rows.forEach((row, index) => {
-            const indexLabel = row.querySelector('.coresearch-index');
-            if (indexLabel) indexLabel.textContent = index + 1;
-        });
-    }
+            if (type === 'coresearch') reindexCoResearch();
+        }
 
+        function reindexCoResearch() {
+            const rows = document.querySelectorAll('#coresearch-container .coresearch-row');
+            rows.forEach((row, index) => {
+                const indexLabel = row.querySelector('.coresearch-index');
+                if (indexLabel) indexLabel.textContent = index + 1;
+            });
+        }
     </script>
 
     <script>
@@ -915,5 +1111,23 @@ function reindexFTE() {
 
         // เรียกตอนเริ่มหน้า
         document.addEventListener('DOMContentLoaded', initThaiDatepickers);
+
+
+        function updateStatusColor(selectEl) {
+            const selected = selectEl.options[selectEl.selectedIndex];
+            const bgColor = selected.getAttribute("data-color") || "#ffffff";
+            const isPlaceholder = selected.value === "";
+
+            selectEl.style.backgroundColor = bgColor;
+
+            // ถ้าเป็น placeholder → ใช้สีดำ
+            selectEl.style.color = isPlaceholder ? "#9ca3af" : "#ffffff";
+
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const selects = document.querySelectorAll("select[id$='_status']");
+            selects.forEach(selectEl => updateStatusColor(selectEl));
+        });
     </script>
 @endsection
