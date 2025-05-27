@@ -14,8 +14,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-
-
 class ProjectController extends Controller
 {
     public function index(Request $request)
@@ -23,7 +21,14 @@ class ProjectController extends Controller
         $query = Project::query();
 
         if (Auth::user()->role !== 'admin') {
-            $query->where('user_id', Auth::id());
+            $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+
+            $query->where(function ($q) use ($fullName) {
+                $q->where('user_id', Auth::id())
+                    ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
+                        $subQ->where('name', $fullName);
+                    });
+            });
         }
 
         if ($request->filled('year')) {
@@ -46,24 +51,22 @@ class ProjectController extends Controller
     {
         return view('projects.create');
     }
+
     public function store(Request $request)
     {
         $validated = $this->validateProject($request);
 
-        // สร้างรหัส project_code แบบ SP_0001, SP_0002
         $lastProject = Project::orderByDesc('id')->first();
         $nextNumber = $lastProject && $lastProject->project_code
             ? ((int) filter_var($lastProject->project_code, FILTER_SANITIZE_NUMBER_INT)) + 1
             : 1;
+
         $validated['project_code'] = 'SP_' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
         $validated['user_id'] = Auth::id();
 
-        // สร้างและบันทึก project แค่ครั้งเดียว
         $project = new Project($validated);
         $this->fillStrategies($request, $project);
         $project->save();
-
-        // ความสัมพันธ์อื่น ๆ
 
         $this->syncFTERoles($request, $project);
         $this->syncOutputs($request, $project);
@@ -82,17 +85,35 @@ class ProjectController extends Controller
             return redirect('/rm')->with('error', 'ไม่พบข้อมูลโครงการ');
         }
 
-        if (Auth::user()->role !== 'admin' && Auth::id() !== $project->user_id) {
+        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+
+        if (!$hasPermission) {
             abort(403);
         }
 
         return view('projects.edit', compact('project'));
     }
 
+    public function show(Project $project)
+    {
+        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+
+        if (!$hasPermission) {
+            abort(403);
+        }
+
+        $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
+        return view('projects.detail', compact('project'));
+    }
 
     public function update(Request $request, Project $project)
     {
-        if (Auth::user()->role !== 'admin' && Auth::id() !== $project->user_id) {
+        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+
+        if (!$hasPermission) {
             abort(403);
         }
 
@@ -116,13 +137,47 @@ class ProjectController extends Controller
         $project->coResearches()->delete();
         $this->syncCoResearch($request, $project);
 
-
         return redirect()->route('projects.index')->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
     }
 
-    // ---------------------------
-    // 🔐 Private helper methods
-    // ---------------------------
+    public function destroy(Project $project)
+    {
+        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+
+        if (!$hasPermission) {
+            abort(403);
+        }
+
+        $project->fteRoles()->delete();
+        $project->outputs()->delete();
+        $project->copis()->delete();
+        $project->irbs()->delete();
+        $project->delete();
+
+        return redirect()->route('projects.index')->with('success', 'ลบโครงการเรียบร้อยแล้ว');
+    }
+
+    public function exportPdf(Project $project)
+    {
+        $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
+
+        $options = new Options();
+        $options->set('defaultFont', 'thsarabun');
+        $options->setChroot(base_path());
+        $options->setIsRemoteEnabled(true);
+
+        $dompdf = new Dompdf($options);
+        $html = view('projects.pdf', compact('project'))->render();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="project.pdf"',
+        ]);
+    }
 
     private function validateProject(Request $request): array
     {
@@ -139,10 +194,7 @@ class ProjectController extends Controller
             'funding_org_type' => 'nullable|string',
             'funding_name' => 'nullable|string',
             'budget' => 'nullable|numeric|min:0',
-            // 'start_month' => 'required|string',
             'start_year' => 'nullable|string',
-            // 'end_month' => 'nullable|string',
-            // 'end_year' => 'nullable|string',
             'team_start_date' => 'nullable|date',
             'team_end_date' => 'nullable|date',
             'pi_name' => 'nullable|string',
@@ -159,6 +211,7 @@ class ProjectController extends Controller
             'end_date' => 'nullable|string',
         ]);
     }
+
     private function fillStrategies(Request $request, Project $project): void
     {
         $valid_strategies = [
@@ -171,7 +224,6 @@ class ProjectController extends Controller
 
         foreach ($valid_strategies as $main => $subs) {
             $project->{"strategy_$main"} = false;
-
             foreach ($subs as $sub) {
                 $field = "strategy_{$main}_{$sub}";
                 $has = $request->has($field);
@@ -182,7 +234,6 @@ class ProjectController extends Controller
             }
         }
     }
-
 
     private function syncFTERoles(Request $request, Project $project): void
     {
@@ -228,19 +279,6 @@ class ProjectController extends Controller
             }
         }
     }
-    private function syncCoResearch(Request $request, Project $project): void
-    {
-        foreach ($request->coresearch ?? [] as $core) {
-            if (!empty($core['name'])) {
-                CoResearch::create([
-                    'project_id' => $project->id,
-                    'name' => $core['name'],
-                    'unit_status' => $core['unit_status'],
-                    'affiliation' => $core['affiliation'] ?? '',
-                ]);
-            }
-        }
-    }
 
     private function syncIrbs(Request $request, Project $project): void
     {
@@ -256,51 +294,17 @@ class ProjectController extends Controller
         }
     }
 
-    public function exportPdf(Project $project)
+    private function syncCoResearch(Request $request, Project $project): void
     {
-
-        $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
-
-        $options = new Options();
-        $options->set('defaultFont', 'thsarabun');
-        $options->setChroot(base_path()); // ให้เข้าถึงไฟล์ได้
-        $options->setIsRemoteEnabled(true); // เผื่อมีรูป
-
-        $dompdf = new Dompdf($options);
-
-        $html = view('projects.pdf', compact('project'))->render();
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        return response($dompdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="project.pdf"',
-        ]);
-    }
-
-    public function show(Project $project)
-    {
-        if (Auth::user()->role !== 'admin' && Auth::id() !== $project->user_id) {
-            abort(403);
+        foreach ($request->coresearch ?? [] as $core) {
+            if (!empty($core['name'])) {
+                CoResearch::create([
+                    'project_id' => $project->id,
+                    'name' => $core['name'],
+                    'unit_status' => $core['unit_status'],
+                    'affiliation' => $core['affiliation'] ?? '',
+                ]);
+            }
         }
-
-        $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
-        return view('projects.detail', compact('project'));
-    }
-
-    public function destroy(Project $project)
-    {
-        if (Auth::user()->role !== 'admin' && Auth::id() !== $project->user_id) {
-            abort(403);
-        }
-
-        $project->fteRoles()->delete();
-        $project->outputs()->delete();
-        $project->copis()->delete();
-        $project->irbs()->delete();
-        $project->delete();
-
-        return redirect()->route('projects.index')->with('success', 'ลบโครงการเรียบร้อยแล้ว');
     }
 }

@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
 @section('content')
-        <!-- Flatpickr -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
-        <!-- Select2 CSS -->
-        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    
-    
-        <!-- ✅ เพิ่ม Plugin สำหรับเลือกปี -->
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
-    
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+
+    <!-- ✅ เพิ่ม Plugin สำหรับเลือกปี -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+
 
     <div class="max-w-5xl mx-auto mt-6 bg-white shadow-md rounded p-6">
         <h2 class="text-xl font-bold mb-6 text-gray-800">✏️ แก้ไขข้อมูลโครงการวิจัย</h2>
@@ -52,107 +52,111 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ*</span>
                     <select name="project_type" id="project_type" class="w-full border p-2 rounded" required>
-                      <option value="" disabled {{ old('project_type', $project->project_type) ? '' : 'selected' }}>
-                        เลือกประเภทของโครงการ
-                      </option>
-                      <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล"
-                        {{ old('project_type', $project->project_type) == '01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล' ? 'selected' : '' }}>
-                        01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล
-                      </option>
-                      <option value="02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล"
-                        {{ old('project_type', $project->project_type) == '02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล' ? 'selected' : '' }}>
-                        02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์...
-                      </option>
-                      <option value="03 Health System research and HTA"
-                        {{ old('project_type', $project->project_type) == '03 Health System research and HTA' ? 'selected' : '' }}>
-                        03 Health System research and HTA
-                      </option>
-                      <option value="04 การใช้ยาอย่างสมเหตุผล (RDU)"
-                        {{ old('project_type', $project->project_type) == '04 การใช้ยาอย่างสมเหตุผล (RDU)' ? 'selected' : '' }}>
-                        04 การใช้ยาอย่างสมเหตุผล (RDU)
-                      </option>
-                      <option value="05 Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC"
-                        {{ old('project_type', $project->project_type) == '05 Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC' ? 'selected' : '' }}>
-                        05 Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC
-                      </option>
-                      <option value="06 Real-world Evidence: E-Health, Health Information system, Digital Health"
-                        {{ old('project_type', $project->project_type) == '06 Real-world Evidence: E-Health, Health Information system, Digital Health' ? 'selected' : '' }}>
-                        06 Real-world Evidence: E-Health, Health Information system, Digital Health
-                      </option>
-                      <option value="07 Fall prevention + Hip facture preject (VBHC & Registry)"
-                        {{ old('project_type', $project->project_type) == '07 Fall prevention + Hip facture preject (VBHC & Registry)' ? 'selected' : '' }}>
-                        07 Fall prevention + Hip facture preject (VBHC & Registry)
-                      </option>
-                      <option value="08 การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้"
-                        {{ old('project_type', $project->project_type) == '08 การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้' ? 'selected' : '' }}>
-                        08 การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้
-                      </option>
-                      <option value="09 SIHP Process Improvement (System Support)"
-                        {{ old('project_type', $project->project_type) == '09 SIHP Process Improvement (System Support)' ? 'selected' : '' }}>
-                        09 SIHP Process Improvement (System Support)
-                      </option>
-                      <option value="10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE"
-                        {{ old('project_type', $project->project_type) == '10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE' ? 'selected' : '' }}>
-                        10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE
-                      </option>
-                      <option value="11 SIPG"
-                        {{ old('project_type', $project->project_type) == '11 SIPG' ? 'selected' : '' }}>
-                        11 SIPG
-                      </option>
-                      <option value="12 RDMU"
-                        {{ old('project_type', $project->project_type) == '12 RDMU' ? 'selected' : '' }}>
-                        12 RDMU
-                      </option>
+                        <option value="" disabled {{ old('project_type', $project->project_type) ? '' : 'selected' }}>
+                            เลือกประเภทของโครงการ
+                        </option>
+                        <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล"
+                            {{ old('project_type', $project->project_type) == '01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล' ? 'selected' : '' }}>
+                            01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล
+                        </option>
+                        <option
+                            value="02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล"
+                            {{ old('project_type', $project->project_type) == '02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล' ? 'selected' : '' }}>
+                            02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์...
+                        </option>
+                        <option value="03 Health System research and HTA"
+                            {{ old('project_type', $project->project_type) == '03 Health System research and HTA' ? 'selected' : '' }}>
+                            03 Health System research and HTA
+                        </option>
+                        <option value="04 การใช้ยาอย่างสมเหตุผล (RDU)"
+                            {{ old('project_type', $project->project_type) == '04 การใช้ยาอย่างสมเหตุผล (RDU)' ? 'selected' : '' }}>
+                            04 การใช้ยาอย่างสมเหตุผล (RDU)
+                        </option>
+                        <option
+                            value="05 Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC"
+                            {{ old('project_type', $project->project_type) == '05 Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC' ? 'selected' : '' }}>
+                            05 Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC
+                        </option>
+                        <option value="06 Real-world Evidence: E-Health, Health Information system, Digital Health"
+                            {{ old('project_type', $project->project_type) == '06 Real-world Evidence: E-Health, Health Information system, Digital Health' ? 'selected' : '' }}>
+                            06 Real-world Evidence: E-Health, Health Information system, Digital Health
+                        </option>
+                        <option value="07 Fall prevention + Hip facture preject (VBHC & Registry)"
+                            {{ old('project_type', $project->project_type) == '07 Fall prevention + Hip facture preject (VBHC & Registry)' ? 'selected' : '' }}>
+                            07 Fall prevention + Hip facture preject (VBHC & Registry)
+                        </option>
+                        <option value="08 การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้"
+                            {{ old('project_type', $project->project_type) == '08 การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้' ? 'selected' : '' }}>
+                            08 การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้
+                        </option>
+                        <option value="09 SIHP Process Improvement (System Support)"
+                            {{ old('project_type', $project->project_type) == '09 SIHP Process Improvement (System Support)' ? 'selected' : '' }}>
+                            09 SIHP Process Improvement (System Support)
+                        </option>
+                        <option value="10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE"
+                            {{ old('project_type', $project->project_type) == '10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE' ? 'selected' : '' }}>
+                            10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE
+                        </option>
+                        <option value="11 SIPG"
+                            {{ old('project_type', $project->project_type) == '11 SIPG' ? 'selected' : '' }}>
+                            11 SIPG
+                        </option>
+                        <option value="12 RDMU"
+                            {{ old('project_type', $project->project_type) == '12 RDMU' ? 'selected' : '' }}>
+                            12 RDMU
+                        </option>
                     </select>
-                  </label>
-                  
+                </label>
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme)*</span>
                     <select name="theme" required class="w-full border p-2 rounded">
-                      <option value="" disabled {{ old('theme', $project->theme) ? '' : 'selected' }}>กรุณาเลือกกลุ่มเนื้อหา</option>
-                      <option value="T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก"
-                        {{ old('theme', $project->theme) == "T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก" ? 'selected' : '' }}>
-                        T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก
-                      </option>
-                      <option value="T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย"
-                        {{ old('theme', $project->theme) == "T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย" ? 'selected' : '' }}>
-                        T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย
-                      </option>
-                      <option value="T103_Research: โครงการวิจัยที่เป็นไปในลักษณะ Individual Expertise contribution (Skill รายบุคคล) เช่น การเข้าร่วมเขียน paper"
-                        {{ old('theme', $project->theme) == "T103_Research: โครงการวิจัยที่เป็นไปในลักษณะ Individual Expertise contribution (Skill รายบุคคล) เช่น การเข้าร่วมเขียน paper" ? 'selected' : '' }}>
-                        T103_Research: โครงการวิจัยที่เป็นไปในลักษณะ Individual Expertise contribution (Skill รายบุคคล)
-                      </option>
-                      <option value="T301_Model of Care development (Clinic)"
-                        {{ old('theme', $project->theme) == "T301_Model of Care development (Clinic)" ? 'selected' : '' }}>
-                        T301_Model of Care development (Clinic)
-                      </option>
-                      <option value="T401_Cohort Study"
-                        {{ old('theme', $project->theme) == "T401_Cohort Study" ? 'selected' : '' }}>
-                        T401_Cohort Study
-                      </option>
-                      <option value="T501_Curriculum Development (Education)"
-                        {{ old('theme', $project->theme) == "T501_Curriculum Development (Education)" ? 'selected' : '' }}>
-                        T501_Curriculum Development (Education)
-                      </option>
-                      <option value="T601_Consult"
-                        {{ old('theme', $project->theme) == "T601_Consult" ? 'selected' : '' }}>
-                        T601_Consult
-                      </option>
-                      <option value="T701_Process Improvement (Siriraj Health Policy)"
-                        {{ old('theme', $project->theme) == "T701_Process Improvement (Siriraj Health Policy)" ? 'selected' : '' }}>
-                        T701_Process Improvement (Siriraj Health Policy)
-                      </option>
-                      <option value="T801_Conference Session / Knowledge Sharing"
-                        {{ old('theme', $project->theme) == "T801_Conference Session / Knowledge Sharing" ? 'selected' : '' }}>
-                        T801_Conference Session / Knowledge Sharing
-                      </option>
-                      <option value="T901_Capacity Building / Skill Development"
-                        {{ old('theme', $project->theme) == "T901_Capacity Building / Skill Development" ? 'selected' : '' }}>
-                        T901_Capacity Building / Skill Development
-                      </option>
+                        <option value="" disabled {{ old('theme', $project->theme) ? '' : 'selected' }}>
+                            กรุณาเลือกกลุ่มเนื้อหา</option>
+                        <option value="T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก"
+                            {{ old('theme', $project->theme) == 'T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก' ? 'selected' : '' }}>
+                            T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก
+                        </option>
+                        <option value="T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย"
+                            {{ old('theme', $project->theme) == 'T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย' ? 'selected' : '' }}>
+                            T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย
+                        </option>
+                        <option
+                            value="T103_Research: โครงการวิจัยที่เป็นไปในลักษณะ Individual Expertise contribution (Skill รายบุคคล) เช่น การเข้าร่วมเขียน paper"
+                            {{ old('theme', $project->theme) == 'T103_Research: โครงการวิจัยที่เป็นไปในลักษณะ Individual Expertise contribution (Skill รายบุคคล) เช่น การเข้าร่วมเขียน paper' ? 'selected' : '' }}>
+                            T103_Research: โครงการวิจัยที่เป็นไปในลักษณะ Individual Expertise contribution (Skill รายบุคคล)
+                        </option>
+                        <option value="T301_Model of Care development (Clinic)"
+                            {{ old('theme', $project->theme) == 'T301_Model of Care development (Clinic)' ? 'selected' : '' }}>
+                            T301_Model of Care development (Clinic)
+                        </option>
+                        <option value="T401_Cohort Study"
+                            {{ old('theme', $project->theme) == 'T401_Cohort Study' ? 'selected' : '' }}>
+                            T401_Cohort Study
+                        </option>
+                        <option value="T501_Curriculum Development (Education)"
+                            {{ old('theme', $project->theme) == 'T501_Curriculum Development (Education)' ? 'selected' : '' }}>
+                            T501_Curriculum Development (Education)
+                        </option>
+                        <option value="T601_Consult"
+                            {{ old('theme', $project->theme) == 'T601_Consult' ? 'selected' : '' }}>
+                            T601_Consult
+                        </option>
+                        <option value="T701_Process Improvement (Siriraj Health Policy)"
+                            {{ old('theme', $project->theme) == 'T701_Process Improvement (Siriraj Health Policy)' ? 'selected' : '' }}>
+                            T701_Process Improvement (Siriraj Health Policy)
+                        </option>
+                        <option value="T801_Conference Session / Knowledge Sharing"
+                            {{ old('theme', $project->theme) == 'T801_Conference Session / Knowledge Sharing' ? 'selected' : '' }}>
+                            T801_Conference Session / Knowledge Sharing
+                        </option>
+                        <option value="T901_Capacity Building / Skill Development"
+                            {{ old('theme', $project->theme) == 'T901_Capacity Building / Skill Development' ? 'selected' : '' }}>
+                            T901_Capacity Building / Skill Development
+                        </option>
                     </select>
-                  </label>
-                  
+                </label>
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ลิงก์ Google Drive / Shortcut</span>
                     <input name="shortcut_link" value="{{ old('shortcut_link', $project->shortcut_link) }}"
@@ -161,24 +165,24 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L)</span>
                     <select name="size" required class="w-full border p-2 rounded">
-                      <option value="" disabled {{ old('size', $project->size) ? '' : 'selected' }}>
-                        กรุณาเลือกขนาดของโปรเจค
-                      </option>
-                      <option value="S" {{ old('size', $project->size) == 'S' ? 'selected' : '' }}>
-                        S (ภายนอก / ภายใน / Cohort Study)
-                      </option>
-                      <option value="M" {{ old('size', $project->size) == 'M' ? 'selected' : '' }}>
-                        M (ภายนอก / ภายใน / Cohort Study)
-                      </option>
-                      <option value="L" {{ old('size', $project->size) == 'L' ? 'selected' : '' }}>
-                        L (ภายนอก / ภายใน / Cohort Study)
-                      </option>
-                      <option value="XL" {{ old('size', $project->size) == 'XL' ? 'selected' : '' }}>
-                        XL (ภายนอก)
-                      </option>
+                        <option value="" disabled {{ old('size', $project->size) ? '' : 'selected' }}>
+                            กรุณาเลือกขนาดของโปรเจค
+                        </option>
+                        <option value="S" {{ old('size', $project->size) == 'S' ? 'selected' : '' }}>
+                            S (ภายนอก / ภายใน / Cohort Study)
+                        </option>
+                        <option value="M" {{ old('size', $project->size) == 'M' ? 'selected' : '' }}>
+                            M (ภายนอก / ภายใน / Cohort Study)
+                        </option>
+                        <option value="L" {{ old('size', $project->size) == 'L' ? 'selected' : '' }}>
+                            L (ภายนอก / ภายใน / Cohort Study)
+                        </option>
+                        <option value="XL" {{ old('size', $project->size) == 'XL' ? 'selected' : '' }}>
+                            XL (ภายนอก)
+                        </option>
                     </select>
-                  </label>
-                  
+                </label>
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">รหัสโครงการ R</span>
                     <input name="r_code" value="{{ old('r_code', $project->r_code) }}" class="w-full border p-2 rounded">
@@ -209,39 +213,47 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
                     <select name="funding_org_type" required class="w-full border p-2 rounded">
-                      <option value="" disabled {{ old('funding_org_type', $project->funding_org_type) ? '' : 'selected' }}>
-                        กรุณาเลือกประเภทองค์กร
-                      </option>
-                      <option value="รัฐบาล" {{ old('funding_org_type', $project->funding_org_type) == 'รัฐบาล' ? 'selected' : '' }}>
-                        รัฐบาล
-                      </option>
-                      <option value="เอกชน" {{ old('funding_org_type', $project->funding_org_type) == 'เอกชน' ? 'selected' : '' }}>
-                        เอกชน
-                      </option>
-                      <option value="มูลนิธิ" {{ old('funding_org_type', $project->funding_org_type) == 'มูลนิธิ' ? 'selected' : '' }}>
-                        มูลนิธิ
-                      </option>
+                        <option value="" disabled
+                            {{ old('funding_org_type', $project->funding_org_type) ? '' : 'selected' }}>
+                            กรุณาเลือกประเภทองค์กร
+                        </option>
+                        <option value="รัฐบาล"
+                            {{ old('funding_org_type', $project->funding_org_type) == 'รัฐบาล' ? 'selected' : '' }}>
+                            รัฐบาล
+                        </option>
+                        <option value="เอกชน"
+                            {{ old('funding_org_type', $project->funding_org_type) == 'เอกชน' ? 'selected' : '' }}>
+                            เอกชน
+                        </option>
+                        <option value="มูลนิธิ"
+                            {{ old('funding_org_type', $project->funding_org_type) == 'มูลนิธิ' ? 'selected' : '' }}>
+                            มูลนิธิ
+                        </option>
                     </select>
-                  </label>
-                  
-                  <label class="w-full">
+                </label>
+
+                <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
                     <select name="funding_org_type" required class="w-full border p-2 rounded">
-                      <option value="" disabled {{ old('funding_org_type', $project->funding_org_type) ? '' : 'selected' }}>
-                        กรุณาเลือกประเภทองค์กร
-                      </option>
-                      <option value="รัฐบาล" {{ old('funding_org_type', $project->funding_org_type) == 'รัฐบาล' ? 'selected' : '' }}>
-                        รัฐบาล
-                      </option>
-                      <option value="เอกชน" {{ old('funding_org_type', $project->funding_org_type) == 'เอกชน' ? 'selected' : '' }}>
-                        เอกชน
-                      </option>
-                      <option value="มูลนิธิ" {{ old('funding_org_type', $project->funding_org_type) == 'มูลนิธิ' ? 'selected' : '' }}>
-                        มูลนิธิ
-                      </option>
+                        <option value="" disabled
+                            {{ old('funding_org_type', $project->funding_org_type) ? '' : 'selected' }}>
+                            กรุณาเลือกประเภทองค์กร
+                        </option>
+                        <option value="รัฐบาล"
+                            {{ old('funding_org_type', $project->funding_org_type) == 'รัฐบาล' ? 'selected' : '' }}>
+                            รัฐบาล
+                        </option>
+                        <option value="เอกชน"
+                            {{ old('funding_org_type', $project->funding_org_type) == 'เอกชน' ? 'selected' : '' }}>
+                            เอกชน
+                        </option>
+                        <option value="มูลนิธิ"
+                            {{ old('funding_org_type', $project->funding_org_type) == 'มูลนิธิ' ? 'selected' : '' }}>
+                            มูลนิธิ
+                        </option>
                     </select>
-                  </label>
-                  
+                </label>
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA105 - ชื่อทุน</span>
                     <input name="funding_name" value="{{ old('funding_name', $project->funding_name) }}"
@@ -266,287 +278,279 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">วันที่โครงการเริ่ม (ทีม)</span>
-                    
+
                     <div class="relative">
-                      <!-- ไอคอนปฏิทิน -->
-                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                           stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                  
-                      <!-- Input -->
-                      <input name="team_start_date"
-                             value="{{ old('team_start_date', $project->team_start_date) }}"
-                             type="text"
-                             class="thai-datepicker w-full border p-2 rounded pl-10"
-                             placeholder="กรุณาเลือกวันที่เริ่มงานของทีม">
+                        <!-- ไอคอนปฏิทิน -->
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+
+                        <!-- Input -->
+                        <input name="team_start_date" value="{{ old('team_start_date', $project->team_start_date) }}"
+                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
+                            placeholder="กรุณาเลือกวันที่เริ่มงานของทีม">
                     </div>
-                  </label>
-                  
-                  <label class="w-full">
+                </label>
+
+                <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดทำ (ทีม)</span>
-                  
-                    <div class="relative">
-                      <!-- ไอคอนปฏิทิน -->
-                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                           stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                  
-                      <!-- ช่องกรอกวันที่ -->
-                      <input name="team_end_date"
-                             value="{{ old('team_end_date', $project->team_end_date) }}"
-                             type="text"
-                             class="thai-datepicker w-full border p-2 rounded pl-10"
-                             placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม">
-                    </div>
-                  </label>
-                  
 
-                  <label class="w-full">
+                    <div class="relative">
+                        <!-- ไอคอนปฏิทิน -->
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+
+                        <!-- ช่องกรอกวันที่ -->
+                        <input name="team_end_date" value="{{ old('team_end_date', $project->team_end_date) }}"
+                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
+                            placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม">
+                    </div>
+                </label>
+
+
+                <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">BA001 - วันที่เริ่มเขียน Proposal (เดือน/ปี)</span>
-                  
-                    <div class="relative">
-                      <!-- ไอคอนปฏิทิน -->
-                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                           stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                  
-                      <!-- ช่องกรอก -->
-                      <input name="proposal_date"
-                             value="{{ old('proposal_date', $project->proposal_date) }}"
-                             type="text"
-                             class="thai-datepicker w-full border p-2 rounded pl-10"
-                             placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal">
-                    </div>
-                  </label>
-                  
 
-                  <label class="w-full">
+                    <div class="relative">
+                        <!-- ไอคอนปฏิทิน -->
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+
+                        <!-- ช่องกรอก -->
+                        <input name="proposal_date" value="{{ old('proposal_date', $project->proposal_date) }}"
+                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
+                            placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal">
+                    </div>
+                </label>
+
+
+                <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">BC101 - วันที่สัญญาอนุมัติ</span>
-                  
-                    <div class="relative">
-                      <!-- ไอคอนปฏิทิน -->
-                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                           stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                  
-                      <!-- ช่องกรอก -->
-                      <input name="contract_date"
-                             value="{{ old('contract_date', $project->contract_date) }}"
-                             type="text"
-                             class="thai-datepicker w-full border p-2 rounded pl-10"
-                             placeholder="กรุณาเลือกวันที่อนุมัติสัญญา">
-                    </div>
-                  </label>
-                  
 
-                  <label class="w-full">
+                    <div class="relative">
+                        <!-- ไอคอนปฏิทิน -->
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+
+                        <!-- ช่องกรอก -->
+                        <input name="contract_date" value="{{ old('contract_date', $project->contract_date) }}"
+                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
+                            placeholder="กรุณาเลือกวันที่อนุมัติสัญญา">
+                    </div>
+                </label>
+
+
+                <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">BC102 - วันที่โครงการเริ่ม (ตามสัญญา)</span>
-                  
-                    <div class="relative">
-                      <!-- ไอคอนปฏิทิน -->
-                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                           stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                  
-                      <!-- ช่องกรอก -->
-                      <input name="start_date"
-                             value="{{ old('start_date', $project->start_date) }}"
-                             type="text"
-                             class="thai-datepicker w-full border p-2 rounded pl-10"
-                             placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา">
-                    </div>
-                  </label>
-                  
 
-                  <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด (ตามสัญญา)</span>
-                  
                     <div class="relative">
-                      <!-- ไอคอนปฏิทิน -->
-                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                           stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                  
-                      <!-- ช่องกรอกวันที่ -->
-                      <input name="end_date"
-                             value="{{ old('end_date', $project->end_date) }}"
-                             type="text"
-                             class="thai-datepicker w-full border p-2 rounded pl-10"
-                             placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
+                        <!-- ไอคอนปฏิทิน -->
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+
+                        <!-- ช่องกรอก -->
+                        <input name="start_date" value="{{ old('start_date', $project->start_date) }}" type="text"
+                            class="thai-datepicker w-full border p-2 rounded pl-10"
+                            placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา">
                     </div>
-                  </label>
-                  
-                  <label class="w-full">
+                </label>
+
+
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด (ตามสัญญา)</span>
+
+                    <div class="relative">
+                        <!-- ไอคอนปฏิทิน -->
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+
+                        <!-- ช่องกรอกวันที่ -->
+                        <input name="end_date" value="{{ old('end_date', $project->end_date) }}" type="text"
+                            class="thai-datepicker w-full border p-2 rounded pl-10"
+                            placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
+                    </div>
+                </label>
+
+                <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">BA000 - Project Planning (Status)</span>
                     <select name="planning_status" id="planning_status"
-                            class="w-full border p-2 rounded text-white font-semibold"
-                            onchange="updateStatusColor(this)" required>
-                      
-                      <option value="" disabled {{ old('planning_status', $project->planning_status) ? '' : 'selected' }}
-                              style="background-color: white; color: #9ca3af;">
-                        ระบุคำตอบ
-                      </option>
-                  
-                      <option value="0" data-color="#991b1b"
-                        {{ old('planning_status', $project->planning_status) == '0' ? 'selected' : '' }}>
-                        ยกเลิก (Canceled) 0%
-                      </option>
-                  
-                      <option value="25" data-color="#dc2626"
-                        {{ old('planning_status', $project->planning_status) == '25' ? 'selected' : '' }}>
-                        อยู่ระหว่างการรอ (On Hold) 25%
-                      </option>
-                  
-                      <option value="50" data-color="#f59e0b"
-                        {{ old('planning_status', $project->planning_status) == '50' ? 'selected' : '' }}>
-                        กำลังดำเนินการ (In Progress) 50%
-                      </option>
-                  
-                      <option value="75" data-color="#3b82f6"
-                        {{ old('planning_status', $project->planning_status) == '75' ? 'selected' : '' }}>
-                        อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
-                      </option>
-                  
-                      <option value="100" data-color="#16a34a"
-                        {{ old('planning_status', $project->planning_status) == '100' ? 'selected' : '' }}>
-                        เสร็จสิ้น (Complete) 100%
-                      </option>
-                  
-                    </select>
-                  </label>
-                  
+                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
+                        required>
 
-                  <label class="w-full">
+                        <option value="" disabled
+                            {{ old('planning_status', $project->planning_status) ? '' : 'selected' }}
+                            style="background-color: white; color: #9ca3af;">
+                            ระบุคำตอบ
+                        </option>
+
+                        <option value="0" data-color="#991b1b"
+                            {{ old('planning_status', $project->planning_status) == '0' ? 'selected' : '' }}>
+                            ยกเลิก (Canceled) 0%
+                        </option>
+
+                        <option value="25" data-color="#dc2626"
+                            {{ old('planning_status', $project->planning_status) == '25' ? 'selected' : '' }}>
+                            อยู่ระหว่างการรอ (On Hold) 25%
+                        </option>
+
+                        <option value="50" data-color="#f59e0b"
+                            {{ old('planning_status', $project->planning_status) == '50' ? 'selected' : '' }}>
+                            กำลังดำเนินการ (In Progress) 50%
+                        </option>
+
+                        <option value="75" data-color="#3b82f6"
+                            {{ old('planning_status', $project->planning_status) == '75' ? 'selected' : '' }}>
+                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
+                        </option>
+
+                        <option value="100" data-color="#16a34a"
+                            {{ old('planning_status', $project->planning_status) == '100' ? 'selected' : '' }}>
+                            เสร็จสิ้น (Complete) 100%
+                        </option>
+
+                    </select>
+                </label>
+
+
+                <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">BC000 - Project Execution (Status)</span>
                     <select name="execution_status" id="execution_status"
-                            class="w-full border p-2 rounded text-white font-semibold"
-                            onchange="updateStatusColor(this)" required>
-                  
-                      <option value="" disabled {{ old('execution_status', $project->execution_status) ? '' : 'selected' }}
-                              style="background-color: white; color: #9ca3af;">
-                        ระบุคำตอบ
-                      </option>
-                  
-                      <option value="0" data-color="#991b1b"
-                        {{ old('execution_status', $project->execution_status) == '0' ? 'selected' : '' }}>
-                        ยกเลิก (Canceled) 0%
-                      </option>
-                  
-                      <option value="25" data-color="#dc2626"
-                        {{ old('execution_status', $project->execution_status) == '25' ? 'selected' : '' }}>
-                        อยู่ระหว่างการรอ (On Hold) 25%
-                      </option>
-                  
-                      <option value="50" data-color="#f59e0b"
-                        {{ old('execution_status', $project->execution_status) == '50' ? 'selected' : '' }}>
-                        กำลังดำเนินการ (In Progress) 50%
-                      </option>
-                  
-                      <option value="75" data-color="#3b82f6"
-                        {{ old('execution_status', $project->execution_status) == '75' ? 'selected' : '' }}>
-                        อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
-                      </option>
-                  
-                      <option value="100" data-color="#16a34a"
-                        {{ old('execution_status', $project->execution_status) == '100' ? 'selected' : '' }}>
-                        เสร็จสิ้น (Complete) 100%
-                      </option>
-                  
-                    </select>
-                  </label>
-                  
+                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
+                        required>
 
-                  <label class="w-full">
+                        <option value="" disabled
+                            {{ old('execution_status', $project->execution_status) ? '' : 'selected' }}
+                            style="background-color: white; color: #9ca3af;">
+                            ระบุคำตอบ
+                        </option>
+
+                        <option value="0" data-color="#991b1b"
+                            {{ old('execution_status', $project->execution_status) == '0' ? 'selected' : '' }}>
+                            ยกเลิก (Canceled) 0%
+                        </option>
+
+                        <option value="25" data-color="#dc2626"
+                            {{ old('execution_status', $project->execution_status) == '25' ? 'selected' : '' }}>
+                            อยู่ระหว่างการรอ (On Hold) 25%
+                        </option>
+
+                        <option value="50" data-color="#f59e0b"
+                            {{ old('execution_status', $project->execution_status) == '50' ? 'selected' : '' }}>
+                            กำลังดำเนินการ (In Progress) 50%
+                        </option>
+
+                        <option value="75" data-color="#3b82f6"
+                            {{ old('execution_status', $project->execution_status) == '75' ? 'selected' : '' }}>
+                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
+                        </option>
+
+                        <option value="100" data-color="#16a34a"
+                            {{ old('execution_status', $project->execution_status) == '100' ? 'selected' : '' }}>
+                            เสร็จสิ้น (Complete) 100%
+                        </option>
+
+                    </select>
+                </label>
+
+
+                <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">BD000 - Review Status</span>
                     <select name="review_status" id="review_status"
-                            class="w-full border p-2 rounded text-white font-semibold"
-                            onchange="updateStatusColor(this)" required>
-                  
-                      <option value="" disabled {{ old('review_status', $project->review_status) ? '' : 'selected' }}
-                              style="background-color: white; color: #9ca3af;">
-                        ระบุคำตอบ
-                      </option>
-                  
-                      <option value="0" data-color="#991b1b"
-                        {{ old('review_status', $project->review_status) == '0' ? 'selected' : '' }}>
-                        ยกเลิก (Canceled) 0%
-                      </option>
-                  
-                      <option value="25" data-color="#dc2626"
-                        {{ old('review_status', $project->review_status) == '25' ? 'selected' : '' }}>
-                        อยู่ระหว่างการรอ (On Hold) 25%
-                      </option>
-                  
-                      <option value="50" data-color="#f59e0b"
-                        {{ old('review_status', $project->review_status) == '50' ? 'selected' : '' }}>
-                        กำลังดำเนินการ (In Progress) 50%
-                      </option>
-                  
-                      <option value="75" data-color="#3b82f6"
-                        {{ old('review_status', $project->review_status) == '75' ? 'selected' : '' }}>
-                        อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
-                      </option>
-                  
-                      <option value="100" data-color="#16a34a"
-                        {{ old('review_status', $project->review_status) == '100' ? 'selected' : '' }}>
-                        เสร็จสิ้น (Complete) 100%
-                      </option>
-                  
-                    </select>
-                  </label>
-                  
+                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
+                        required>
 
-                  <label class="w-full">
+                        <option value="" disabled
+                            {{ old('review_status', $project->review_status) ? '' : 'selected' }}
+                            style="background-color: white; color: #9ca3af;">
+                            ระบุคำตอบ
+                        </option>
+
+                        <option value="0" data-color="#991b1b"
+                            {{ old('review_status', $project->review_status) == '0' ? 'selected' : '' }}>
+                            ยกเลิก (Canceled) 0%
+                        </option>
+
+                        <option value="25" data-color="#dc2626"
+                            {{ old('review_status', $project->review_status) == '25' ? 'selected' : '' }}>
+                            อยู่ระหว่างการรอ (On Hold) 25%
+                        </option>
+
+                        <option value="50" data-color="#f59e0b"
+                            {{ old('review_status', $project->review_status) == '50' ? 'selected' : '' }}>
+                            กำลังดำเนินการ (In Progress) 50%
+                        </option>
+
+                        <option value="75" data-color="#3b82f6"
+                            {{ old('review_status', $project->review_status) == '75' ? 'selected' : '' }}>
+                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
+                        </option>
+
+                        <option value="100" data-color="#16a34a"
+                            {{ old('review_status', $project->review_status) == '100' ? 'selected' : '' }}>
+                            เสร็จสิ้น (Complete) 100%
+                        </option>
+
+                    </select>
+                </label>
+
+
+                <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">BE000 - Closure Status</span>
                     <select name="closure_status" id="closure_status"
-                            class="w-full border p-2 rounded text-white font-semibold"
-                            onchange="updateStatusColor(this)" required>
-                  
-                      <option value="" disabled {{ old('closure_status', $project->closure_status) ? '' : 'selected' }}
-                              style="background-color: white; color: #9ca3af;">
-                        ระบุคำตอบ
-                      </option>
-                  
-                      <option value="0" data-color="#991b1b"
-                        {{ old('closure_status', $project->closure_status) == '0' ? 'selected' : '' }}>
-                        ยกเลิก (Canceled) 0%
-                      </option>
-                  
-                      <option value="25" data-color="#dc2626"
-                        {{ old('closure_status', $project->closure_status) == '25' ? 'selected' : '' }}>
-                        อยู่ระหว่างการรอ (On Hold) 25%
-                      </option>
-                  
-                      <option value="50" data-color="#f59e0b"
-                        {{ old('closure_status', $project->closure_status) == '50' ? 'selected' : '' }}>
-                        กำลังดำเนินการ (In Progress) 50%
-                      </option>
-                  
-                      <option value="75" data-color="#3b82f6"
-                        {{ old('closure_status', $project->closure_status) == '75' ? 'selected' : '' }}>
-                        อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
-                      </option>
-                  
-                      <option value="100" data-color="#16a34a"
-                        {{ old('closure_status', $project->closure_status) == '100' ? 'selected' : '' }}>
-                        เสร็จสิ้น (Complete) 100%
-                      </option>
-                  
+                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
+                        required>
+
+                        <option value="" disabled
+                            {{ old('closure_status', $project->closure_status) ? '' : 'selected' }}
+                            style="background-color: white; color: #9ca3af;">
+                            ระบุคำตอบ
+                        </option>
+
+                        <option value="0" data-color="#991b1b"
+                            {{ old('closure_status', $project->closure_status) == '0' ? 'selected' : '' }}>
+                            ยกเลิก (Canceled) 0%
+                        </option>
+
+                        <option value="25" data-color="#dc2626"
+                            {{ old('closure_status', $project->closure_status) == '25' ? 'selected' : '' }}>
+                            อยู่ระหว่างการรอ (On Hold) 25%
+                        </option>
+
+                        <option value="50" data-color="#f59e0b"
+                            {{ old('closure_status', $project->closure_status) == '50' ? 'selected' : '' }}>
+                            กำลังดำเนินการ (In Progress) 50%
+                        </option>
+
+                        <option value="75" data-color="#3b82f6"
+                            {{ old('closure_status', $project->closure_status) == '75' ? 'selected' : '' }}>
+                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
+                        </option>
+
+                        <option value="100" data-color="#16a34a"
+                            {{ old('closure_status', $project->closure_status) == '100' ? 'selected' : '' }}>
+                            เสร็จสิ้น (Complete) 100%
+                        </option>
+
                     </select>
-                  </label>
-                  
+                </label>
+
 
             </div>
 
@@ -562,23 +566,32 @@
                             <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span
                                     class="irb-index">{{ $i + 1 }}</span></span>
                             <input name="irbs[{{ $i }}][code]" value="{{ $irb['code'] }}"
-                                class="w-full border p-2 rounded">
+                                class="w-full border p-2 rounded" placeholder="Eg. 2025xxx">
                         </div>
                         <div class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span
                                     class="irb-index">{{ $i + 1 }}</span></span>
                             <input name="irbs[{{ $i }}][source]" value="{{ $irb['source'] }}"
-                                class="w-full border p-2 rounded">
+                                class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงาน">
                         </div>
                         <div class="w-full flex gap-2 items-end">
-                            <div class="w-full">
+                            <div class="w-full relative">
                                 <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
                                 <input name="irbs[{{ $i }}][exp_date]" value="{{ $irb['exp_date'] ?? '' }}"
-                                    type="text" class="thai-datepicker w-full border p-2 rounded">
+                                    type="text" placeholder="เลือกวันที่"
+                                    class="thai-datepicker w-full border p-2 rounded pl-10">
+                                <!-- ไอคอนปฏิทิน -->
+                                <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                             </div>
                             <button type="button" onclick="removeRow('irb-{{ $i }}', 'irb')"
                                 class="text-red-600 mb-2">✕</button>
                         </div>
+
                     </div>
                 @endforeach
             </div>
@@ -591,13 +604,13 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI</span>
-                    <input name="pi_name" value="{{ old('pi_name', $project->pi_name) }}"
-                        class="w-full border p-2 rounded">
+                    <input name="pi_name" value="{{ old('pi_name', $project->pi_name)}}"
+                        class="w-full border p-2 rounded" placeholder="ยศ-ชื่อ PI">
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัด PI</span>
                     <input name="pi_affiliation" value="{{ old('pi_affiliation', $project->pi_affiliation) }}"
-                        class="w-full border p-2 rounded">
+                        class="w-full border p-2 rounded" placeholder="สังกัด PI">
                 </label>
             </div>
 
@@ -612,14 +625,14 @@
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ {{ $i + 1 }}</span>
                             <input name="copis[{{ $i }}][name]" value="{{ $copi['name'] }}"
-                                class="w-full border p-2 rounded">
+                                class="w-full border p-2 rounded" placeholder="ยศ ชื่อ-นามสกุล COPI">
                         </label>
                         <div class="flex gap-2 w-full">
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่
                                     {{ $i + 1 }}</span>
                                 <input name="copis[{{ $i }}][affiliation]" value="{{ $copi['affiliation'] }}"
-                                    class="w-full border p-2 rounded">
+                                    class="w-full border p-2 rounded" placeholder="สังกัด COPI">
                             </label>
                             <button type="button" onclick="removeRow('copi-{{ $i }}', 'copi')"
                                 class="text-red-600 mt-6">✕</button>
@@ -631,45 +644,68 @@
                 COPI</button>
 
 
-                <h3 class="text-balance text-blue-700 mb-2">รายชื่อผู้ร่วมวิจัย (Co-Researcher)</h3>
-                <div id="coresearch-container" class="space-y-4 mb-4">
-                    @foreach ($project->coResearches ?? [] as $i => $co)
-                        <div id="coresearch-{{ $i }}" class="coresearch-row space-y-2">
-                            <!-- ชื่อ -->
-                            <label class="block w-full">
-                                <span class="block text-sm text-gray-700 mb-1">ชื่อ Co-Researcher คนที่ <span class="coresearch-index">{{ $i + 1 }}</span></span>
-                                <input name="coresearch[{{ $i }}][name]" value="{{ $co->name }}" class="w-full border p-2 rounded">
+            <h3 class="text-balance text-blue-700 mb-2">รายชื่อผู้ร่วมวิจัย (Co-Researcher)</h3>
+            <div id="coresearch-container" class="space-y-4 mb-4">
+                @foreach ($project->coResearches ?? [] as $i => $co)
+                    <div id="coresearch-{{ $i }}" class="coresearch-row space-y-2">
+                        <!-- ชื่อ -->
+                        <label class="block w-full">
+                            <span class="block text-sm text-gray-700 mb-1">ชื่อ Co-Researcher คนที่ <span
+                                    class="coresearch-index">{{ $i + 1 }}</span></span>
+                            <input name="coresearch[{{ $i }}][name]" value="{{ $co->name }}"
+                                class="w-full border p-2 rounded"  placeholder="ยศ ชื่อ-นามสกุล">
+                        </label>
+
+                        <!-- สังกัด + สถานะ + ปุ่มลบ -->
+                        <div class="grid grid-cols-12 gap-4 items-end">
+                            <label class="col-span-5">
+                                <span class="block text-sm text-gray-700 mb-1">สังกัด</span>
+                                <input name="coresearch[{{ $i }}][affiliation]"
+                                    value="{{ $co->affiliation }}" class="w-full border p-2 rounded"  placeholder="สังกัด">
                             </label>
-                
-                            <!-- สังกัด + สถานะ + ปุ่มลบ -->
-                            <div class="grid grid-cols-12 gap-4 items-end">
-                                <label class="col-span-5">
-                                    <span class="block text-sm text-gray-700 mb-1">สังกัด</span>
-                                    <input name="coresearch[{{ $i }}][affiliation]" value="{{ $co->affiliation }}" class="w-full border p-2 rounded">
-                                </label>
-                                <label class="col-span-5">
-                                    <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน</span>
-                                    <select name="coresearch[{{ $i }}][unit_status]" class="w-full border p-2 rounded" required>
-                                        <option value="" disabled {{ $co->unit_status == '' ? 'selected' : '' }}>กรุณาเลือก</option>
-                                        <option value="ภายใน" {{ $co->unit_status == 'ภายใน' ? 'selected' : '' }}>ภายใน</option>
-                                        <option value="ภายนอก" {{ $co->unit_status == 'ภายนอก' ? 'selected' : '' }}>ภายนอก</option>
-                                    </select>
-                                </label>
-                                <div class="col-span-2 flex justify-end pt-6">
-                                    <button type="button" onclick="removeRow('coresearch-{{ $i }}', 'coresearch')" class="text-red-600 text-xl">✕</button>
-                                </div>
+                            <label class="col-span-5">
+                                <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน</span>
+                                <select name="coresearch[{{ $i }}][unit_status]"
+                                    class="w-full border p-2 rounded" required>
+                                    <option value="" disabled {{ $co->unit_status == '' ? 'selected' : '' }}>
+                                        กรุณาเลือก</option>
+                                    <option value="ภายใน" {{ $co->unit_status == 'ภายใน' ? 'selected' : '' }}>ภายใน
+                                    </option>
+                                    <option value="ภายนอก" {{ $co->unit_status == 'ภายนอก' ? 'selected' : '' }}>ภายนอก
+                                    </option>
+                                </select>
+                            </label>
+                            <div class="col-span-2 flex justify-end pt-6">
+                                <button type="button"
+                                    onclick="removeRow('coresearch-{{ $i }}', 'coresearch')"
+                                    class="text-red-600 text-xl">✕</button>
                             </div>
                         </div>
-                    @endforeach
-                </div>
-                
-                <!-- ปุ่มเพิ่ม -->
-                <button type="button" onclick="addCoResearchRow()" class="mb-6 px-3 py-1 bg-purple-600 text-white rounded">
-                    + เพิ่ม Co-Researcher
-                </button>
-                
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- ปุ่มเพิ่ม -->
+            <button type="button" onclick="addCoResearchRow()" class="mb-6 px-3 py-1 bg-purple-600 text-white rounded">
+                + เพิ่ม Co-Researcher
+            </button>
 
 
+
+
+            @php
+                $allUsers = \App\Models\User::orderBy('name')->get(); // ดึงผู้ใช้งานทั้งหมด
+                $roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
+                $jobDetails = [
+                    'Researcher',
+                    'Researcher Assistant',
+                    'Project Manager',
+                    'Research Coordinator',
+                    'นักวิชาการสารสนเทศ',
+                    'นักประชาสัมพันธ์',
+                    'เจ้าหน้าที่บริหารงานทั่วไป',
+                ];
+            @endphp
 
             <hr class="my-6 border-t-2 border-gray-300">
             <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
@@ -681,13 +717,25 @@
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1"><span
                                         class="fte-index">{{ $loop->iteration }}</span>. ชื่อ-นามสกุล</span>
-                                <input name="fte_roles[{{ $i }}][name]" type="text"
-                                    value="{{ $fte->name }}" class="w-full border p-2 rounded">
+                                <select name="fte_roles[{{ $i }}][name]" class="w-full border p-2 rounded">
+                                    <option value="" disabled>เลือกผู้รับผิดชอบ</option>
+                                    @foreach ($allUsers as $user)
+                                        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+                                        <option value="{{ $fullName }}" @selected($fte->name == $fullName)>
+                                            {{ $fullName }}</option>
+                                    @endforeach
+                                </select>
                             </label>
                             <label class="w-full">
-                                <span class="block text-sm text-gray-700 mb-1">กลุ่ม (เช่น Scientific)</span>
-                                <input name="fte_roles[{{ $i }}][role_group]" type="text"
-                                    value="{{ $fte->role_group }}" class="w-full border p-2 rounded">
+                                <span class="block text-sm text-gray-700 mb-1">กลุ่ม</span>
+                                <select name="fte_roles[{{ $i }}][role_group]"
+                                    class="w-full border p-2 rounded">
+                                    <option value="" disabled>เลือกกลุ่ม</option>
+                                    @foreach ($roleGroups as $group)
+                                        <option value="{{ $group }}" @selected($fte->role_group == $group)>
+                                            {{ $group }}</option>
+                                    @endforeach
+                                </select>
                             </label>
                         </div>
 
@@ -695,20 +743,42 @@
                         <div class="grid grid-cols-3 gap-4">
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">ภาระงาน</span>
-                                <input name="fte_roles[{{ $i }}][job_detail]" type="text"
-                                    value="{{ $fte->job_detail ?? '' }}" class="w-full border p-2 rounded">
+                                <select name="fte_roles[{{ $i }}][job_detail]"
+                                    class="w-full border p-2 rounded">
+                                    <option value="" disabled>เลือกภาระงาน</option>
+                                    @foreach ($jobDetails as $job)
+                                        <option value="{{ $job }}" @selected($fte->job_detail == $job)>
+                                            {{ $job }}</option>
+                                    @endforeach
+                                </select>
                             </label>
-                            <label class="w-full">
+                            <label class="w-full relative">
                                 <span class="block text-sm text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
                                 <input name="fte_roles[{{ $i }}][start_date]" type="text"
-                                    value="{{ $fte->start_date ?? '' }}"
-                                    class="thai-datepicker w-full border p-2 rounded">
+                                    value="{{ $fte->start_date ?? '' }}" placeholder="โปรดใส่วันที่"
+                                    class="thai-datepicker w-full border p-2 rounded pl-10">
+                                <!-- calendar icon -->
+                                <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                             </label>
-                            <label class="w-full">
+
+                            <label class="w-full relative">
                                 <span class="block text-sm text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
                                 <input name="fte_roles[{{ $i }}][end_date]" type="text"
-                                    value="{{ $fte->end_date ?? '' }}" class="thai-datepicker w-full border p-2 rounded">
+                                    placeholder="โปรดใส่วันที่" value="{{ $fte->end_date ?? '' }}"
+                                    class="thai-datepicker w-full border p-2 rounded pl-10">
+                                <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                             </label>
+
                         </div>
 
                         <!-- บรรทัด 3 -->
@@ -864,47 +934,54 @@
 
 
     <script>
-        let irbCodeIndex = {{ count($project->irbs ?? []) }};
+        // let irbCodeIndex = {{ count($project->irbs ?? []) }};
+let irbCodeIndex = document.querySelectorAll('.irb-row').length;
 
-        function addIRBCode() {
-            const container = document.getElementById('irb-code-container');
-            const id = `irb-${irbCodeIndex}`;
+function addIRBCode() {
+    const container = document.getElementById('irb-code-container');
+    const id = `irb-${irbCodeIndex}`;
 
-            container.insertAdjacentHTML('beforeend', `
+    container.insertAdjacentHTML('beforeend', `
         <div id="${id}" class="irb-row grid grid-cols-3 gap-2 items-center">
             <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index"></span></span>
+                <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span></span>
                 <input name="irbs[${irbCodeIndex}][code]" type="text" placeholder="ECxxxx" class="w-full border p-2 rounded">
             </div>
             <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span class="irb-index"></span></span>
+                <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span></span>
                 <input name="irbs[${irbCodeIndex}][source]" type="text" placeholder="ชื่อหน่วยงาน" class="w-full border p-2 rounded">
             </div>
             <div class="w-full flex gap-2 items-end">
-                <div class="w-full">
+                <div class="w-full relative">
                     <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
-                    <input name="irbs[${irbCodeIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded">
+                    <input name="irbs[${irbCodeIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่">
+                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                 </div>
                 <button type="button" onclick="removeRow('${id}', 'irb')" class="text-red-600 mb-2">✕</button>
             </div>
         </div>
     `);
 
-            irbCodeIndex++;
-            reindexIRB();
+    irbCodeIndex++;
+    reindexIRB();
 
-            // 📅 Re-initialize flatpickr สำหรับ input ใหม่
-            flatpickr(`#${id} .thai-datepicker`, {
-                locale: "th",
-                dateFormat: "d-m-Y",
-                altInput: true,
-                altFormat: "j F Y",
-                onReady: toBuddhist,
-                onChange: toBuddhist,
-                onMonthChange: toBuddhist,
-                onYearChange: toBuddhist,
-            });
-        }
+    flatpickr(`#${id} .thai-datepicker`, {
+        locale: "th",
+        dateFormat: "d-m-Y",
+        altInput: true,
+        altFormat: "j F Y",
+        onReady: toBuddhist,
+        onChange: toBuddhist,
+        onMonthChange: toBuddhist,
+        onYearChange: toBuddhist,
+    });
+}
+
 
         function reindexIRB() {
             const rows = document.querySelectorAll('#irb-code-container .irb-row');
@@ -925,12 +1002,12 @@
         <div id="${id}" class="copi-row grid grid-cols-2 gap-4 items-center">
             <label class="w-full">
                 <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${labelNum}</span></span>
-                <input name="copis[${copiIndex}][name]" type="text" class="w-full border p-2 rounded">
+                <input name="copis[${copiIndex}][name]" type="text" class="w-full border p-2 rounded" placeholder="ยศ ชื่อ-นามสกุล PI">
             </label>
             <div class="flex gap-2 w-full">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${labelNum}</span></span>
-                    <input name="copis[${copiIndex}][affiliation]" type="text" class="w-full border p-2 rounded">
+                    <input name="copis[${copiIndex}][affiliation]" type="text" class="w-full border p-2 rounded"  placeholder="สังกัด COPI">
                 </label>
                 <button type="button" onclick="removeRow('${id}', 'copi')" class="text-red-600 mt-6">✕</button>
             </div>
@@ -960,52 +1037,95 @@
             const index = container.querySelectorAll('.fte-row').length;
             const id = `fte-${index}`;
 
+            const userOptions = @json(\App\Models\User::orderBy('name')->get()->map(fn($u) => ['fullName' => trim($u->prefix . ' ' . $u->name)]));
+            const roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
+            const jobDetails = [
+                'Researcher', 'Researcher Assistant', 'Project Manager',
+                'Research Coordinator', 'นักวิชาการสารสนเทศ',
+                'นักประชาสัมพันธ์', 'เจ้าหน้าที่บริหารงานทั่วไป'
+            ];
+
+            const userDropdown = [`<option value="" disabled selected>เลือกผู้รับผิดชอบ</option>`]
+                .concat(userOptions.map(u => `<option value="${u.fullName}">${u.fullName}</option>`))
+                .join('');
+
+            const groupDropdown = [`<option value="" disabled selected>เลือกกลุ่ม</option>`]
+                .concat(roleGroups.map(g => `<option value="${g}">${g}</option>`))
+                .join('');
+
+            const jobDropdown = [`<option value="" disabled selected>เลือกภาระงาน</option>`]
+                .concat(jobDetails.map(j => `<option value="${j}">${j}</option>`))
+                .join('');
+
             container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="fte-row space-y-2">
-            <!-- บรรทัดที่ 1 -->
-            <div class="grid grid-cols-2 gap-4 py-4">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">
-                        <span class="fte-index">${index + 1}</span>. ชื่อ-นามสกุล
-                    </span>
-                    <input name="fte_roles[${index}][name]" type="text" class="w-full border p-2 rounded">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">กลุ่ม (เช่น Scientific)</span>
-                    <input name="fte_roles[${index}][role_group]" type="text" class="w-full border p-2 rounded">
-                </label>
-            </div>
+            <div id="${id}" class="fte-row space-y-2">
+                <!-- บรรทัด 1 -->
+                <div class="grid grid-cols-2 gap-4 py-4">
+                    <label class="w-full">
+                        <span class="block text-sm text-gray-700 mb-1">
+                            <span class="fte-index">${index + 1}</span>. ชื่อ-นามสกุล
+                        </span>
+                        <select name="fte_roles[${index}][name]" class="w-full border p-2 rounded">
+                            ${userDropdown}
+                        </select>
+                    </label>
+                    <label class="w-full">
+                        <span class="block text-sm text-gray-700 mb-1">กลุ่ม</span>
+                        <select name="fte_roles[${index}][role_group]" class="w-full border p-2 rounded">
+                            ${groupDropdown}
+                        </select>
+                    </label>
+                </div>
 
-            <!-- บรรทัดที่ 2 -->
-            <div class="grid grid-cols-3 gap-4">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ภาระงาน</span>
-                    <input name="fte_roles[${index}][job_detail]" type="text" class="w-full border p-2 rounded">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
-                    <input name="fte_roles[${index}][start_date]" type="text" class="thai-datepicker w-full border p-2 rounded">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
-                    <input name="fte_roles[${index}][end_date]" type="text" class="thai-datepicker w-full border p-2 rounded">
-                </label>
-            </div>
+                <!-- บรรทัด 2 -->
+                <div class="grid grid-cols-3 gap-4">
+                    <label class="w-full">
+                        <span class="block text-sm text-gray-700 mb-1">ภาระงาน</span>
+                        <select name="fte_roles[${index}][job_detail]" class="w-full border p-2 rounded">
+                            ${jobDropdown}
+                        </select>
+                    </label>
+                    <label class="w-full relative">
+                        <span class="block text-sm text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
+                        <input name="fte_roles[${index}][start_date]" type="text" placeholder="โปรดใส่วันที่"
+                            class="thai-datepicker w-full border p-2 rounded pl-10">
+                        <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </label>
+                    <label class="w-full relative">
+                        <span class="block text-sm text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
+                        <input name="fte_roles[${index}][end_date]" type="text" placeholder="โปรดใส่วันที่"
+                            class="thai-datepicker w-full border p-2 rounded pl-10">
+                        <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </label>
+                </div>
 
-            <!-- บรรทัดที่ 3 -->
-            <div class="flex gap-4 items-end">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">FTE</span>
-                    <input name="fte_roles[${index}][fte_value]" type="number" step="0.01" class="w-full border p-2 rounded">
-                </label>
-                <button type="button" onclick="removeRow('${id}', 'fte')" class="text-red-600 mb-2">✕</button>
+                <!-- บรรทัด 3 -->
+                <div class="flex gap-4 items-end">
+                    <label class="w-full">
+                        <span class="block text-sm text-gray-700 mb-1">FTE</span>
+                        <input name="fte_roles[${index}][fte_value]" type="number" step="0.01" placeholder="โปรดใส่ค่า FTE"
+                            class="w-full border p-2 rounded">
+                    </label>
+                    <button type="button" onclick="removeRow('${id}', 'fte')" class="text-red-600 mb-2">✕</button>
+                </div>
             </div>
-        </div>
-    `);
+        `);
 
             reindexFTE();
-            initThaiDatepickers(); // 🟢 อย่าลืมเรียกเพื่อ enable datepicker ใหม่
+            initThaiDatepickers(); // สำคัญ! ต้องเรียกอีกครั้งหลังแทรก HTML ใหม่
         }
+
+
 
 
 
@@ -1068,14 +1188,14 @@
       <!-- ชื่อ Co-Researcher -->
       <label class="block w-full">
         <span class="block text-sm text-gray-700 mb-1">ชื่อ Co-Researcher คนที่ <span class="coresearch-index">${labelNum}</span></span>
-        <input name="coresearch[${coResearchIndex}][name]" type="text" class="w-full border p-2 rounded">
+        <input name="coresearch[${coResearchIndex}][name]" type="text" class="w-full border p-2 rounded" placeholder="ยศ ชื่อ-นามสกุล">
       </label>
 
       <!-- สังกัด / คนภายนอก-ภายใน / ปุ่มลบ -->
       <div class="grid grid-cols-12 gap-4 items-end">
         <label class="col-span-5">
           <span class="block text-sm text-gray-700 mb-1">สังกัด</span>
-          <input name="coresearch[${coResearchIndex}][affiliation]" type="text" class="w-full border p-2 rounded">
+          <input name="coresearch[${coResearchIndex}][affiliation]" type="text" class="w-full border p-2 rounded" placeholder="สังกัด">
         </label>
         <label class="col-span-5">
           <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน</span>

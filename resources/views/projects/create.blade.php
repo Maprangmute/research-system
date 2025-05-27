@@ -383,11 +383,20 @@
                             class="w-full border p-2 rounded">
                     </div>
                     <div class="w-full flex gap-2 items-end">
-                        <div class="w-full">
+                        <div class="w-full relative">
                             <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
-                            <input name="irbs[0][exp_date]" type="text"
-                                class="thai-datepicker w-full border p-2 rounded">
+                            <input name="irbs[0][exp_date]" type="text" placeholder="เลือกวันที่"
+                                class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดเลือกวันที่">
+
+                            <!-- ไอคอนปฏิทิน -->
+                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                         </div>
+
                         <button type="button" onclick="removeRow('irb-0', 'irb')" class="text-red-600 mb-2">✕</button>
                     </div>
                 </div>
@@ -403,14 +412,16 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI (ผู้วิจัยหลัก)</span>
-                    <input name="pi_name" type="text" class="w-full border p-2 rounded" value="">
+                    <input name="pi_name" type="text" class="w-full border p-2 rounded" value=""
+                        placeholder="คำนำหน้า ชื่อ-นามสกุล">
                     @error('pi_name')
                         <span class="text-sm text-red-500">{{ $message }}</span>
                     @enderror
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัดผู้วิจัยหลัก</span>
-                    <input name="pi_affiliation" type="text" class="w-full border p-2 rounded" value="">
+                    <input name="pi_affiliation" type="text" class="w-full border p-2 rounded" value=""
+                        placeholder="สังกัดผู้วิจัยหลัก">
                     @error('pi_affiliation')
                         <span class="text-sm text-red-500">{{ $message }}</span>
                     @enderror
@@ -430,13 +441,15 @@
                     <label class="w-full">
                         <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span
                                 class="copi-index">1</span></span>
-                        <input name="copis[0][name]" type="text" class="w-full border p-2 rounded">
+                        <input name="copis[0][name]" type="text" class="w-full border p-2 rounded"
+                            placeholder="คำนำหน้า ชื่อ-นามสกุล">
                     </label>
                     <div class="flex gap-2 w-full">
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span
                                     class="copi-index">1</span></span>
-                            <input name="copis[0][affiliation]" type="text" class="w-full border p-2 rounded">
+                            <input name="copis[0][affiliation]" type="text" class="w-full border p-2 rounded"
+                                placeholder="สังกัด COPI">
                         </label>
                         <button type="button" onclick="removeRow('copi-0', 'copi')" class="text-red-600 mt-6">✕</button>
                     </div>
@@ -451,14 +464,16 @@
                     <label class="block w-full">
                         <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span
                                 class="coresearch-index">1</span></span>
-                        <input name="coresearch[0][name]" type="text" class="w-full border p-2 rounded">
+                        <input name="coresearch[0][name]" type="text" class="w-full border p-2 rounded"
+                            placeholder="ยศ ชื่อ นามสกุล">
                     </label>
 
                     <!-- บรรทัดที่ 2: สังกัด + ภายใน/ภายนอก + ลบ -->
                     <div class="grid grid-cols-12 gap-4 items-end">
                         <label class="col-span-5">
                             <span class="block text-sm mb-1">สังกัด</span>
-                            <input name="coresearch[0][affiliation]" type="text" class="w-full border p-2 rounded">
+                            <input name="coresearch[0][affiliation]" type="text" class="w-full border p-2 rounded"
+                                placeholder="สังกัด">
                         </label>
 
                         <label class="col-span-5">
@@ -485,47 +500,89 @@
 
 
 
+            @php
+                $allUsers = \App\Models\User::orderBy('name')->get();
+                $roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
+                $jobDetails = [
+                    'Researcher',
+                    'Researcher Assistant',
+                    'Project Manager',
+                    'Research Coordinator',
+                    'นักวิชาการสารสนเทศ',
+                    'นักประชาสัมพันธ์',
+                    'เจ้าหน้าที่บริหารงานทั่วไป',
+                ];
+            @endphp
+
             <hr class="my-6 border-t-2 border-gray-300">
             <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
             <div id="fte-container" class="space-y-4 mb-4">
                 <div id="fte-0" class="fte-row space-y-2">
-                    <!-- บรรทัดที่ 1: ชื่อและกลุ่ม -->
+                    <!-- บรรทัด 1 -->
                     <div class="grid grid-cols-2 gap-4">
                         <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1"><span class="fte-index">1</span>.
-                                ชื่อ-นามสกุล</span>
-                            <input name="fte_roles[0][name]" type="text" class="w-full border p-2 rounded">
+                            <span class="block text-sm text-gray-700 mb-1">1. ชื่อ-นามสกุล</span>
+                            <select name="fte_roles[0][name]" class="w-full border p-2 rounded" required>
+                                <option value="" disabled selected>เลือกผู้รับผิดชอบ</option>
+                                @foreach ($allUsers as $user)
+                                    @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+                                    <option value="{{ $fullName }}">{{ $fullName }}</option>
+                                @endforeach
+                            </select>
                         </label>
                         <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">กลุ่ม (เช่น Scientific)</span>
-                            <input name="fte_roles[0][role_group]" type="text" class="w-full border p-2 rounded">
+                            <span class="block text-sm text-gray-700 mb-1">กลุ่ม</span>
+                            <select name="fte_roles[0][role_group]" class="w-full border p-2 rounded">
+                                <option value="" disabled selected>เลือกกลุ่ม</option>
+                                @foreach ($roleGroups as $group)
+                                    <option value="{{ $group }}">{{ $group }}</option>
+                                @endforeach
+                            </select>
                         </label>
                     </div>
 
-                    <!-- บรรทัดที่ 2: ภาระงาน + วันที่ -->
+                    <!-- บรรทัด 2 -->
                     <div class="grid grid-cols-3 gap-4">
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">ภาระงาน</span>
-                            <input name="fte_roles[0][job_detail]" type="text" class="w-full border p-2 rounded">
+                            <select name="fte_roles[0][job_detail]" class="w-full border p-2 rounded">
+                                <option value="" disabled selected>เลือกภาระงาน</option>
+                                @foreach ($jobDetails as $job)
+                                    <option value="{{ $job }}">{{ $job }}</option>
+                                @endforeach
+                            </select>
                         </label>
-                        <label class="w-full">
+                        <label class="w-full relative">
                             <span class="block text-sm text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
-                            <input name="fte_roles[0][start_date]" type="text"
-                                class="thai-datepicker w-full border p-2 rounded">
+                            <input name="fte_roles[0][start_date]" type="text " placeholder="โปรดใส่วันที่"
+                                class="thai-datepicker w-full border p-2 rounded pl-10" required>
+                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                         </label>
-                        <label class="w-full">
+                        <label class="w-full relative">
                             <span class="block text-sm text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
                             <input name="fte_roles[0][end_date]" type="text"
-                                class="thai-datepicker w-full border p-2 rounded">
+                                class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่"
+                                required>
+                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                         </label>
                     </div>
 
-                    <!-- บรรทัดที่ 3: FTE + ปุ่มลบ -->
+                    <!-- บรรทัด 3 -->
                     <div class="flex gap-4 items-end">
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">FTE</span>
                             <input name="fte_roles[0][fte_value]" type="number" step="0.01"
-                                class="w-full border p-2 rounded">
+                                class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE" required>
                         </label>
                         <button type="button" onclick="removeRow('fte-0', 'fte')" class="text-red-600 mb-2">✕</button>
                     </div>
@@ -534,6 +591,7 @@
 
             <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">+
                 เพิ่มผู้มีส่วนร่วม</button>
+
 
 
 
@@ -662,422 +720,11 @@
         </form>
     </div>
 
-
-
     <script>
-        let irbIndex = 1;
-
-        function addIRBCode() {
-            const container = document.getElementById('irb-code-container');
-            const id = `irb-${irbIndex}`;
-
-            container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="irb-row grid grid-cols-3 gap-2 items-center">
-            <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbIndex + 1}</span></span>
-                <input name="irbs[${irbIndex}][code]" type="text" placeholder="ECxxxx" class="w-full border p-2 rounded">
-            </div>
-            <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน)</span>
-                <input name="irbs[${irbIndex}][source]" type="text" placeholder="ชื่อหน่วยงาน" class="w-full border p-2 rounded">
-            </div>
-            <div class="w-full flex gap-2 items-end">
-                <div class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
-                    <input name="irbs[${irbIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded">
-                </div>
-                <button type="button" onclick="removeRow('${id}', 'irb')" class="text-red-600 mb-2">✕</button>
-            </div>
-        </div>
-    `);
-
-            irbIndex++;
-            reindexIRB();
-
-            // 📅 Re-initialize flatpickr สำหรับ input ใหม่
-            initThaiDatepickers();
-        }
-
-        function reindexIRB() {
-            const rows = document.querySelectorAll('#irb-code-container .irb-row');
-            rows.forEach((row, index) => {
-                const span = row.querySelector('.irb-index');
-                if (span) span.textContent = index + 1;
-            });
-        }
-
-
-        let fteIndex = 1; // เริ่มจาก 1 เพราะมี index 0 แล้ว
-
-        function addFTERow() {
-            const container = document.getElementById('fte-container');
-            const id = `fte-${fteIndex}`;
-            const indexLabel = fteIndex + 1;
-
-            container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="fte-row space-y-2">
-            <div class="grid grid-cols-2 gap-4">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1"><span class="fte-index">${indexLabel}</span>. ชื่อ-นามสกุล</span>
-                    <input name="fte_roles[${fteIndex}][name]" type="text" class="w-full border p-2 rounded">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">กลุ่ม (เช่น Scientific)</span>
-                    <input name="fte_roles[${fteIndex}][role_group]" type="text" class="w-full border p-2 rounded">
-                </label>
-            </div>
-
-            <div class="grid grid-cols-3 gap-4">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ภาระงาน</span>
-                    <input name="fte_roles[${fteIndex}][job_detail]" type="text" class="w-full border p-2 rounded">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
-                    <input name="fte_roles[${fteIndex}][start_date]" type="text" class="thai-datepicker w-full border p-2 rounded">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
-                    <input name="fte_roles[${fteIndex}][end_date]" type="text" class="thai-datepicker w-full border p-2 rounded">
-                </label>
-            </div>
-
-            <div class="flex gap-4 items-end">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">FTE</span>
-                    <input name="fte_roles[${fteIndex}][fte_value]" type="number" step="0.01" class="w-full border p-2 rounded">
-                </label>
-                <button type="button" onclick="removeRow('${id}', 'fte')" class="text-red-600 mb-2">✕</button>
-            </div>
-        </div>
-    `);
-
-            fteIndex++;
-            reindexFTE();
-            initThaiDatepickers?.();
-        }
-
-        function reindexFTE() {
-            const rows = document.querySelectorAll('#fte-container .fte-row');
-            rows.forEach((row, index) => {
-                row.querySelectorAll('.fte-index').forEach(span => {
-                    span.textContent = index + 1;
-                });
-            });
-        }
-
-
-        let outputIndex = 1; // เพราะเรามี index 0 แล้ว
-        function addOutputRow() {
-            const container = document.getElementById('output-container');
-            const id = `output-${outputIndex}`;
-            const labelNum = outputIndex + 1;
-
-            container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="output-row space-y-2">
-            <label class="block w-full">
-                <span class="block text-sm text-gray-700 mb-1">ชื่อผลงานที่ <span class="output-index">${labelNum}</span></span>
-                <input name="outputs[${outputIndex}][title]" type="text" class="w-full border p-2 rounded" placeholder="ชื่อผลงาน">
-            </label>
-            <div class="grid grid-cols-3 gap-4 items-end">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                    <input name="outputs[${outputIndex}][type]" type="text" class="w-full border p-2 rounded" placeholder="ประเภท">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
-                    <input name="outputs[${outputIndex}][output]" type="text" class="w-full border p-2 rounded" placeholder="เพิ่มเติม">
-                </label>
-                <div class="flex gap-2 w-full">
-                    <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">ปี</span>
-                        <input name="outputs[${outputIndex}][year]" type="text" class="w-full border p-2 rounded" placeholder="2025">
-                    </label>
-                    <button type="button" onclick="removeRow('${id}', 'output')" class="text-red-600 mb-2">✕</button>
-                </div>
-            </div>
-        </div>
-    `);
-
-            outputIndex++;
-            reindexOutput();
-        }
-
-        function reindexOutput() {
-            const rows = document.querySelectorAll('#output-container .output-row');
-            rows.forEach((row, index) => {
-                const span = row.querySelector('.output-index');
-                if (span) span.textContent = index + 1;
-            });
-        }
-
-        function removeRow(id, type) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-            if (type === 'fte') reindexFTE();
-            if (type === 'copi') reindexCopi?.();
-            if (type === 'irb') reindexIRB?.();
-            if (type === 'output') reindexOutput?.();
-        }
-
-
-        let coResearchIndex = 1;
-
-        function addCoResearchRow() {
-            const container = document.getElementById('coresearch-container');
-            const id = `coresearch-${coResearchIndex}`;
-
-            container.insertAdjacentHTML('beforeend', `
-    <div id="${id}" class="coresearch-row space-y-2 py-4">
-      <!-- ชื่อ Co-Researcher -->
-      <label class="block w-full">
-        <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span class="coresearch-index">${coResearchIndex + 1}</span></span>
-        <input name="coresearch[${coResearchIndex}][name]" type="text" class="w-full border p-2 rounded">
-      </label>
-
-      <!-- สังกัด + สถานะ + ปุ่มลบ -->
-      <div class="grid grid-cols-12 gap-4 items-end">
-        <label class="col-span-5">
-          <span class="block text-sm mb-1">สังกัด</span>
-          <input name="coresearch[${coResearchIndex}][affiliation]" type="text" class="w-full border p-2 rounded">
-        </label>
-
-        <label class="col-span-5">
-          <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
-          <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required>
-            <option value="" disabled selected>กรุณาเลือก</option>
-            <option value="ภายใน">ภายใน</option>
-            <option value="ภายนอก">ภายนอก</option>
-          </select>
-        </label>
-
-        <div class="col-span-2 flex justify-end pt-6">
-          <button type="button" onclick="removeRow('${id}', 'coresearch')" class="text-red-600 text-xl">✕</button>
-        </div>
-      </div>
-    </div>
-  `);
-
-            coResearchIndex++;
-            reindexCoResearch();
-        }
-
-
-        function removeRow(id, type) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-
-            if (type === 'coresearch') reindexCoResearch();
-        }
-
-        function reindexCoResearch() {
-            const rows = document.querySelectorAll('#coresearch-container .coresearch-row');
-            rows.forEach((row, index) => {
-                const indexLabel = row.querySelector('.coresearch-index');
-                if (indexLabel) indexLabel.textContent = index + 1;
-            });
-        }
-    </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            flatpickr(".thai-datepicker", {
-                locale: "th",
-                dateFormat: "d-m-Y", // ค่าที่ส่งไป Controller (ค.ศ.)
-                altInput: true,
-                altFormat: "j F Y", // ค่าที่โชว์ (พ.ศ.)
-                prevArrow: "", // 🔒 ซ่อนปุ่มย้อนเดือน
-                nextArrow: "", // 🔒 ซ่อนปุ่มถัดไปเดือน
-                onReady: toBuddhist,
-                onChange: toBuddhist,
-                onMonthChange: toBuddhist,
-                onYearChange: toBuddhist,
-                disableMobile: true
-            });
-
-            function toBuddhist(selectedDates, dateStr, instance) {
-                const altInput = instance.altInput;
-
-                if (selectedDates.length > 0) {
-                    const date = selectedDates[0];
-                    const day = date.getDate();
-                    const month = date.toLocaleString('th-TH', {
-                        month: 'long'
-                    });
-                    const year = date.getFullYear() + 543;
-                    altInput.value = `${day} ${month} ${year}`;
-                }
-
-                // แก้ปัญหากดลูกศรเปลี่ยนปีแล้วกลายเป็น ค.ศ.
-                setTimeout(() => {
-                    const yearInputs = instance.calendarContainer.querySelectorAll(
-                        '.flatpickr-current-month input.cur-year');
-                    yearInputs.forEach(el => {
-                        let currentYear = parseInt(el.value);
-                        if (currentYear < 2500) {
-                            el.value = currentYear + 543;
-                        }
-
-                        el.addEventListener('blur', () => {
-                            let inputYear = parseInt(el.value);
-                            if (inputYear > 2400) {
-                                el.value = inputYear - 543;
-                                instance.setDate(new Date(inputYear - 543, instance
-                                    .currentMonth, 1));
-                                setTimeout(() => toBuddhist(selectedDates, dateStr,
-                                    instance), 5);
-                            }
-                        });
-                    });
-                }, 5); // ปล่อยให้ DOM render เสร็จก่อน
-            }
-        });
-
-
-
-
-
-        let copiIndex = 1;
-
-        function addCopiRow() {
-            const container = document.getElementById('copi-container');
-            const id = `copi-${copiIndex}`;
-            const labelNum = copiIndex + 1;
-
-            container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="copi-row grid grid-cols-2 gap-4 items-center">
-            <label class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${labelNum}</span></span>
-                <input name="copis[${copiIndex}][name]" type="text" class="w-full border p-2 rounded">
-            </label>
-            <div class="flex gap-2 w-full">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${labelNum}</span></span>
-                    <input name="copis[${copiIndex}][affiliation]" type="text" class="w-full border p-2 rounded">
-                </label>
-                <button type="button" onclick="removeRow('${id}', 'copi')" class="text-red-600 mt-6">✕</button>
-            </div>
-        </div>
-    `);
-
-            copiIndex++;
-            reindexCopi();
-        }
-
-        function reindexCopi() {
-            const rows = document.querySelectorAll('#copi-container .copi-row');
-            rows.forEach((row, index) => {
-                const spans = row.querySelectorAll('.copi-index');
-                spans.forEach(span => span.textContent = index + 1);
-            });
-        }
-
-
-        document.addEventListener('DOMContentLoaded', function() {
-            flatpickr(".year-th-picker", {
-                locale: "th",
-                plugins: [
-                    new monthSelectPlugin({
-                        shorthand: false,
-                        dateFormat: "Y", // ส่งค่าไปยัง backend
-                        altFormat: "Y", // แสดง พ.ศ.
-                        theme: "light"
-                    })
-                ],
-                prevArrow: "", // 🔒 ซ่อนปุ่มย้อนเดือน
-                nextArrow: "", // 🔒 ซ่อนปุ่มถัดไปเดือน
-                onReady: toBuddhistYear,
-                onChange: toBuddhistYear,
-                onYearChange: toBuddhistYear,
-                disableMobile: true
-            });
-
-            function toBuddhist(selectedDates, dateStr, instance) {
-                const altInput = instance.altInput;
-
-                if (selectedDates.length > 0) {
-                    const date = selectedDates[0];
-                    const day = date.getDate();
-                    const month = date.toLocaleString('th-TH', {
-                        month: 'long'
-                    });
-                    const year = date.getFullYear() + 543;
-                    altInput.value = `${day} ${month} ${year}`;
-                }
-
-                // แก้ปัญหากดลูกศรเปลี่ยนปีแล้วกลายเป็น ค.ศ.
-                setTimeout(() => {
-                    const yearInputs = instance.calendarContainer.querySelectorAll(
-                        '.flatpickr-current-month input.cur-year');
-                    yearInputs.forEach(el => {
-                        let currentYear = parseInt(el.value);
-                        if (currentYear < 2500) {
-                            el.value = currentYear + 543;
-                        }
-
-                        el.addEventListener('blur', () => {
-                            let inputYear = parseInt(el.value);
-                            if (inputYear > 2400) {
-                                el.value = inputYear - 543;
-                                instance.setDate(new Date(inputYear - 543, instance
-                                    .currentMonth, 1));
-                                setTimeout(() => toBuddhist(selectedDates, dateStr,
-                                    instance), 5);
-                            }
-                        });
-                    });
-                }, 5); // ปล่อยให้ DOM render เสร็จก่อน
-            }
-        });
-    </script>
-
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const input = document.getElementById('budgetInput');
-
-            input.addEventListener('input', function(e) {
-                let value = input.value.replace(/,/g, '');
-
-                // ถ้ามีมากกว่า 1 จุดทศนิยม (.) ให้ลบส่วนที่เกิน
-                const parts = value.split('.');
-                if (parts.length > 2) {
-                    value = parts[0] + '.' + parts[1];
-                }
-
-                // format ใหม่ให้มี , ทุกหลักพัน
-                let [intPart, decimalPart] = value.split('.');
-                intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                input.value = decimalPart !== undefined ? `${intPart}.${decimalPart}` : intPart;
-            });
-
-            // ก่อน submit form ให้เอา , ออก
-            input.form?.addEventListener('submit', function() {
-                input.value = input.value.replace(/,/g, '');
-            });
-        });
-
-
-        function initThaiDatepickers() {
-            flatpickr(".thai-datepicker", {
-                locale: "th",
-                dateFormat: "d-m-Y",
-                altInput: true,
-                altFormat: "j F Y",
-                prevArrow: "", // 🔒 ซ่อนปุ่มย้อนเดือน
-                nextArrow: "", // 🔒 ซ่อนปุ่มถัดไปเดือน
-                onReady: toBuddhist,
-                onClose: toBuddhist,
-                onChange: toBuddhist,
-                onMonthChange: toBuddhist,
-                onYearChange: toBuddhist,
-            });
-        }
-
+        // ✅ TO BUDDHIST
         function toBuddhist(selectedDates, dateStr, instance) {
             const altInput = instance.altInput;
 
-            // 🔸 Format พ.ศ. สำหรับช่อง alt input
             if (selectedDates.length > 0 && altInput) {
                 const date = selectedDates[0];
                 const day = date.getDate();
@@ -1088,46 +735,342 @@
                 altInput.value = `${day} ${month} ${year}`;
             }
 
-            // 🔸 ปรับปีใน dropdown ให้แสดง พ.ศ. (เฉพาะถ้ายังไม่บวก)
-            const years = instance.calendarContainer.querySelectorAll('.flatpickr-current-month input.cur-year');
-            years.forEach(el => {
-                let year = parseInt(el.value);
-                if (!isNaN(year) && year < 2500) {
-                    el.value = year + 543;
-                }
-
-                // 🔸 ปรับกลับเป็น ค.ศ. ถ้าผู้ใช้พิมพ์ พ.ศ.
-                el.addEventListener('blur', () => {
+            setTimeout(() => {
+                const yearInputs = instance?.calendarContainer?.querySelectorAll(
+                    '.flatpickr-current-month input.cur-year') || [];
+                yearInputs.forEach(el => {
                     let y = parseInt(el.value);
-                    if (y > 2400) {
-                        el.value = y - 543;
-                        instance.setDate(new Date(instance.selectedDates[0]), false);
-                        setTimeout(() => toBuddhist(selectedDates, dateStr, instance), 5); // 🌀 refresh UI
-                    }
+                    if (y < 2500) el.value = y + 543;
+
+                    el.addEventListener('blur', () => {
+                        let y2 = parseInt(el.value);
+                        if (y2 > 2400) {
+                            el.value = y2 - 543;
+                            instance.setDate(new Date(y2 - 543, instance.currentMonth, 1));
+                            setTimeout(() => toBuddhist(selectedDates, dateStr, instance), 5);
+                        }
+                    });
                 });
+            }, 5);
+        }
+
+        function initThaiDatepickers() {
+            flatpickr(".thai-datepicker", {
+                locale: "th",
+                dateFormat: "d-m-Y",
+                altInput: true,
+                altFormat: "j F Y",
+                prevArrow: "",
+                nextArrow: "",
+                onReady: toBuddhist,
+                onClose: toBuddhist,
+                onChange: toBuddhist,
+                onMonthChange: toBuddhist,
+                onYearChange: toBuddhist,
+                disableMobile: true
             });
         }
 
-
-        // เรียกตอนเริ่มหน้า
-        document.addEventListener('DOMContentLoaded', initThaiDatepickers);
-
-
+        // ✅ STATUS COLOR
         function updateStatusColor(selectEl) {
             const selected = selectEl.options[selectEl.selectedIndex];
             const bgColor = selected.getAttribute("data-color") || "#ffffff";
             const isPlaceholder = selected.value === "";
-
             selectEl.style.backgroundColor = bgColor;
-
-            // ถ้าเป็น placeholder → ใช้สีดำ
             selectEl.style.color = isPlaceholder ? "#9ca3af" : "#ffffff";
-
         }
 
+        // ✅ FORMAT BUDGET
+        function setupBudgetInput() {
+            const input = document.getElementById('budgetInput');
+            if (!input) return;
+
+            input.addEventListener('input', () => {
+                let value = input.value.replace(/,/g, '');
+                const parts = value.split('.');
+                if (parts.length > 2) value = parts[0] + '.' + parts[1];
+                let [intPart, decimalPart] = value.split('.');
+                intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                input.value = decimalPart !== undefined ? `${intPart}.${decimalPart}` : intPart;
+            });
+
+            input.form?.addEventListener('submit', () => {
+                input.value = input.value.replace(/,/g, '');
+            });
+        }
+
+        // ✅ REMOVE & REINDEX
+        function removeRow(id, type) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+
+            const map = {
+                fte: reindexFTE,
+                copi: reindexCopi,
+                irb: reindexIRB,
+                output: reindexOutput,
+                coresearch: reindexCoResearch
+            };
+            map[type]?.();
+        }
+
+        function reindexIRB() {
+            document.querySelectorAll('#irb-code-container .irb-row').forEach((row, i) => {
+                row.querySelector('.irb-index').textContent = i + 1;
+            });
+        }
+
+        function reindexFTE() {
+            document.querySelectorAll('#fte-container .fte-row').forEach((row, i) => {
+                row.querySelector('.fte-index').textContent = i + 1;
+            });
+        }
+
+        function reindexOutput() {
+            document.querySelectorAll('#output-container .output-row').forEach((row, i) => {
+                row.querySelector('.output-index').textContent = i + 1;
+            });
+        }
+
+        function reindexCopi() {
+            document.querySelectorAll('#copi-container .copi-row').forEach((row, i) => {
+                row.querySelectorAll('.copi-index').forEach(span => span.textContent = i + 1);
+            });
+        }
+
+        function reindexCoResearch() {
+            document.querySelectorAll('#coresearch-container .coresearch-row').forEach((row, i) => {
+                row.querySelector('.coresearch-index').textContent = i + 1;
+            });
+        }
+
+        // ✅ ADD ROWS
+   let irbIndex = 1;
+
+function addIRBCode() {
+    const id = `irb-${irbIndex}`;
+    document.getElementById('irb-code-container').insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="irb-row grid grid-cols-3 gap-2 items-center">
+            <div class="w-full">
+                <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbIndex + 1}</span></span>
+                <input name="irbs[${irbIndex}][code]" type="text" class="w-full border p-2 rounded" placeholder="EC2025">
+            </div>
+            <div class="w-full">
+                <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน)</span>
+                <input name="irbs[${irbIndex}][source]" type="text" class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงาน">
+            </div>
+            <div class="w-full flex gap-2 items-end">
+                <div class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
+                    <input name="irbs[${irbIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่">
+                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <button type="button" onclick="removeRow('${id}', 'irb')" class="text-red-600 mb-2">✕</button>
+            </div>
+        </div>
+    `);
+    irbIndex++;
+    reindexIRB();
+    initThaiDatepickers(); // สำหรับรีเปิด datepicker ใหม่ที่เพิ่มมา
+}
+
+        let fteIndex = 1;
+
+        const userOptions = @json(
+            \App\Models\User::orderBy('name')->get()->map(function ($u) {
+                    return [
+                        'fullName' => trim($u->prefix . ' ' . $u->name),
+                    ];
+                }));
+
+        const roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
+        const jobDetails = [
+            'Researcher',
+            'Researcher Assistant',
+            'Project Manager',
+            'Research Coordinator',
+            'นักวิชาการสารสนเทศ',
+            'นักประชาสัมพันธ์',
+            'เจ้าหน้าที่บริหารงานทั่วไป',
+        ];
+
+        function addFTERow() {
+            const id = `fte-${fteIndex}`;
+
+            const userDropdown = userOptions.map(u =>
+                `<option value="${u.fullName}">${u.fullName}</option>`
+            ).join('');
+
+            const groupDropdown = roleGroups.map(g =>
+                `<option value="${g}">${g}</option>`
+            ).join('');
+
+            const jobDropdown = jobDetails.map(j =>
+                `<option value="${j}">${j}</option>`
+            ).join('');
+
+            document.getElementById('fte-container').insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="fte-row space-y-2">
+            <div class="grid grid-cols-2 gap-4">
+                <label class="w-full">
+                    <span class="fte-index block text-sm text-gray-700 mb-1">${fteIndex + 1}. ชื่อ-นามสกุล</span>
+                    <select name="fte_roles[${fteIndex}][name]" class="w-full border p-2 rounded" required>
+                        <option value="" disabled selected>เลือกผู้รับผิดชอบ</option>
+                        ${userDropdown}
+                    </select>
+                </label>
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">กลุ่ม</span>
+                    <select name="fte_roles[${fteIndex}][role_group]" class="w-full border p-2 rounded">
+                        <option value="" disabled selected>โปรดเลือกกลุ่ม</option>
+                        ${groupDropdown}
+                    </select>
+                </label>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">ภาระงาน</span>
+                    <select name="fte_roles[${fteIndex}][job_detail]" class="w-full border p-2 rounded placeholder="โปรดเลือกภาระงาน"">
+                        <option value="" disabled selected>เลือกภาระงาน</option>
+                        ${jobDropdown}
+                    </select>
+                </label>
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันเริ่ม</span>
+                    <input name="fte_roles[${fteIndex}][start_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่" required>
+                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </label>
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันสิ้นสุด</span>
+                    <input name="fte_roles[${fteIndex}][end_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่" required>
+                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </label>
+            </div>
+            <div class="flex gap-4 items-end">
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">FTE</span>
+                    <input name="fte_roles[${fteIndex}][fte_value]" type="number" step="0.01" required class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE">
+                </label>
+                <button type="button" onclick="removeRow('${id}', 'fte')" class="text-red-600 mb-2">✕</button>
+            </div>
+        </div>
+    `);
+
+            fteIndex++;
+            reindexFTE();
+            initThaiDatepickers();
+        }
+
+        let outputIndex = 1;
+
+        function addOutputRow() {
+            const id = `output-${outputIndex}`;
+            document.getElementById('output-container').insertAdjacentHTML('beforeend', `
+            <div id="${id}" class="output-row space-y-2">
+                <label class="block w-full">
+                    <span class="block text-sm text-gray-700 mb-1">ชื่อผลงานที่ <span class="output-index">${outputIndex + 1}</span></span>
+                    <input name="outputs[${outputIndex}][title]" type="text" class="w-full border p-2 rounded">
+                </label>
+                <div class="grid grid-cols-3 gap-4 items-end">
+                    <label class="w-full">
+                        <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
+                        <input name="outputs[${outputIndex}][type]" type="text" class="w-full border p-2 rounded">
+                    </label>
+                    <label class="w-full">
+                        <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
+                        <input name="outputs[${outputIndex}][output]" type="text" class="w-full border p-2 rounded">
+                    </label>
+                    <div class="flex gap-2 w-full">
+                        <label class="w-full">
+                            <span class="block text-sm text-gray-700 mb-1">ปี</span>
+                            <input name="outputs[${outputIndex}][year]" type="text" class="w-full border p-2 rounded">
+                        </label>
+                        <button type="button" onclick="removeRow('${id}', 'output')" class="text-red-600 mb-2">✕</button>
+                    </div>
+                </div>
+            </div>
+        `);
+            outputIndex++;
+            reindexOutput();
+        }
+
+        let copiIndex = 1;
+
+        function addCopiRow() {
+            const id = `copi-${copiIndex}`;
+            document.getElementById('copi-container').insertAdjacentHTML('beforeend', `
+            <div id="${id}" class="copi-row grid grid-cols-2 gap-4 items-center">
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${copiIndex + 1}</span></span>
+                    <input name="copis[${copiIndex}][name]" type="text" class="w-full border p-2 rounded " placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                </label>
+                <div class="flex gap-2 w-full">
+                    <label class="w-full">
+                        <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${copiIndex + 1}</span></span>
+                        <input name="copis[${copiIndex}][affiliation]" type="text" class="w-full border p-2 rounded" placeholder="สังกัด COPI">
+                    </label>
+                    <button type="button" onclick="removeRow('${id}', 'copi')" class="text-red-600 mt-6">✕</button>
+                </div>
+            </div>
+        `);
+            copiIndex++;
+            reindexCopi();
+        }
+
+        let coResearchIndex = 1;
+
+        function addCoResearchRow() {
+            const id = `coresearch-${coResearchIndex}`;
+            document.getElementById('coresearch-container').insertAdjacentHTML('beforeend', `
+            <div id="${id}" class="coresearch-row space-y-2 py-4">
+                <label class="block w-full">
+                    <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span class="coresearch-index">${coResearchIndex + 1}</span></span>
+                    <input name="coresearch[${coResearchIndex}][name]" type="text" class="w-full border p-2 rounded"  placeholder="ยศ ชื่อ นามสกุล">
+                </label>
+                <div class="grid grid-cols-12 gap-4 items-end">
+                    <label class="col-span-5">
+                        <span class="block text-sm mb-1">สังกัด</span>
+                        <input name="coresearch[${coResearchIndex}][affiliation]" type="text" class="w-full border p-2 rounded" placeholder="สังกัด">
+                    </label>
+                    <label class="col-span-5">
+                        <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
+                        <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required>
+                            <option value="" disabled selected>กรุณาเลือก</option>
+                            <option value="ภายใน">ภายใน</option>
+                            <option value="ภายนอก">ภายนอก</option>
+                        </select>
+                    </label>
+                    <div class="col-span-2 flex justify-end pt-6">
+                        <button type="button" onclick="removeRow('${id}', 'coresearch')" class="text-red-600 text-xl">✕</button>
+                    </div>
+                </div>
+            </div>
+        `);
+            coResearchIndex++;
+            reindexCoResearch();
+        }
+
+        // ✅ INITIALIZE
         document.addEventListener('DOMContentLoaded', () => {
-            const selects = document.querySelectorAll("select[id$='_status']");
-            selects.forEach(selectEl => updateStatusColor(selectEl));
+            initThaiDatepickers();
+            setupBudgetInput();
+
+            document.querySelectorAll("select[id$='_status']").forEach(updateStatusColor);
         });
     </script>
 @endsection

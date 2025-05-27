@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\FteController;
 use App\Http\Controllers\OverviewController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserController;
 
 // 🌐 หน้าหลัก
 Route::get('/', function () {
@@ -16,8 +18,29 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
+    // Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
 });
+
+
+
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/user', [UserController::class, 'index'])->name('users.index');
+    Route::get('/user/manage', [UserController::class, 'manageList'])->name('users.manage');
+    Route::put('/user/{user}/role', [UserController::class, 'updateRole'])->name('users.updateRole');
+
+    Route::get('/user/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('/user', [UserController::class, 'store'])->name('users.store');
+
+    Route::get('/user/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::put('/user/{user}', [UserController::class, 'update'])->name('users.update');
+
+    Route::delete('/user/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+});
+
+
 
 // 📁 กลุ่มงานวิจัย (prefix: /rm)
 Route::middleware(['auth'])->prefix('rm')->group(function () {

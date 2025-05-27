@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.30, for macos12 (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.42, for macos15 (arm64)
 --
--- Host: 127.0.0.1    Database: research_data
+-- Host: localhost    Database: research_data
 -- ------------------------------------------------------
--- Server version	8.0.22
+-- Server version	9.3.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -36,7 +36,7 @@ CREATE TABLE `cache` (
 
 LOCK TABLES `cache` WRITE;
 /*!40000 ALTER TABLE `cache` DISABLE KEYS */;
-INSERT INTO `cache` VALUES ('laravel_cache_7b9f38324820246551f685bebb56e043','i:2;',1747881170),('laravel_cache_7b9f38324820246551f685bebb56e043:timer','i:1747881170;',1747881170);
+INSERT INTO `cache` VALUES ('laravel_cache_7b9f38324820246551f685bebb56e043','i:1;',1748333335),('laravel_cache_7b9f38324820246551f685bebb56e043:timer','i:1748333335;',1748333335),('laravel_cache_bf0bc50d63fe9ff44dbceef8de9d2fc1','i:1;',1748333810),('laravel_cache_bf0bc50d63fe9ff44dbceef8de9d2fc1:timer','i:1748333810;',1748333810);
 /*!40000 ALTER TABLE `cache` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -82,7 +82,7 @@ CREATE TABLE `co_research` (
   PRIMARY KEY (`id`),
   KEY `co_research_project_id_foreign` (`project_id`),
   CONSTRAINT `co_research_project_id_foreign` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -91,7 +91,7 @@ CREATE TABLE `co_research` (
 
 LOCK TABLES `co_research` WRITE;
 /*!40000 ALTER TABLE `co_research` DISABLE KEYS */;
-INSERT INTO `co_research` VALUES (5,1,'co1','co1','ภายนอก','2025-05-22 01:48:29','2025-05-22 01:48:29');
+INSERT INTO `co_research` VALUES (7,1,'a','a','ภายนอก','2025-05-27 01:21:03','2025-05-27 01:21:03'),(8,1,'b','b','ภายนอก','2025-05-27 01:21:03','2025-05-27 01:21:03');
 /*!40000 ALTER TABLE `co_research` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -112,7 +112,7 @@ CREATE TABLE `copis` (
   PRIMARY KEY (`id`),
   KEY `copis_project_id_foreign` (`project_id`),
   CONSTRAINT `copis_project_id_foreign` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -121,7 +121,7 @@ CREATE TABLE `copis` (
 
 LOCK TABLES `copis` WRITE;
 /*!40000 ALTER TABLE `copis` DISABLE KEYS */;
-INSERT INTO `copis` VALUES (5,1,'asdasd','asdasd','2025-05-22 01:48:29','2025-05-22 01:48:29');
+INSERT INTO `copis` VALUES (7,1,'a','a','2025-05-27 01:21:03','2025-05-27 01:21:03'),(8,1,'b','b','2025-05-27 01:21:03','2025-05-27 01:21:03');
 /*!40000 ALTER TABLE `copis` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -175,7 +175,7 @@ CREATE TABLE `fte_roles` (
   PRIMARY KEY (`id`),
   KEY `fte_roles_project_id_foreign` (`project_id`),
   CONSTRAINT `fte_roles_project_id_foreign` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -184,7 +184,7 @@ CREATE TABLE `fte_roles` (
 
 LOCK TABLES `fte_roles` WRITE;
 /*!40000 ALTER TABLE `fte_roles` DISABLE KEYS */;
-INSERT INTO `fte_roles` VALUES (5,1,'IT','วัฒนชัย สันติไพบูลย์','นั่ง',1.00,'30-05-2025','27-05-2025','2025-05-22 01:48:29','2025-05-22 01:48:29');
+INSERT INTO `fte_roles` VALUES (5,1,'IT + Communication','นาย วัฒนชัย สันติไพบูลย์','นักวิชาการสารสนเทศ',1.00,'09-05-2025','31-05-2025','2025-05-27 01:21:03','2025-05-27 01:21:03'),(6,1,'Management','ผู้ช่วยศาสตราจารย์ วัฒนชัย สันติไพบูลย์','Researcher',0.20,'01-05-2025','31-05-2025','2025-05-27 01:21:03','2025-05-27 01:21:03');
 /*!40000 ALTER TABLE `fte_roles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -230,7 +230,7 @@ CREATE TABLE `irbs` (
   PRIMARY KEY (`id`),
   KEY `irbs_project_id_foreign` (`project_id`),
   CONSTRAINT `irbs_project_id_foreign` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -239,7 +239,7 @@ CREATE TABLE `irbs` (
 
 LOCK TABLES `irbs` WRITE;
 /*!40000 ALTER TABLE `irbs` DISABLE KEYS */;
-INSERT INTO `irbs` VALUES (5,1,'asdasd','asdasd','24-05-2025','2025-05-22 01:48:29','2025-05-22 01:48:29');
+INSERT INTO `irbs` VALUES (4,1,'a','a','23-05-2025','2025-05-27 01:21:03','2025-05-27 01:21:03');
 /*!40000 ALTER TABLE `irbs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -315,7 +315,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -324,7 +324,7 @@ CREATE TABLE `migrations` (
 
 LOCK TABLES `migrations` WRITE;
 /*!40000 ALTER TABLE `migrations` DISABLE KEYS */;
-INSERT INTO `migrations` VALUES (1,'0001_01_01_000000_create_users_table',1),(2,'0001_01_01_000001_create_cache_table',1),(3,'0001_01_01_000002_create_jobs_table',1),(4,'2025_05_17_023151_add_two_factor_columns_to_users_table',1),(5,'2025_05_17_023204_create_personal_access_tokens_table',1),(6,'2025_05_17_023814_create_projects_table',1),(7,'2025_05_17_023815_create_fte_roles_table',1),(8,'2025_05_17_023816_create_fundings_table',1),(9,'2025_05_17_023816_create_outputs_table',1),(10,'2025_05_17_025900_add_role_to_users_table',1),(11,'2025_05_19_033645_create_irbs_table',1),(12,'2025_05_19_072017_create_copis_table',1),(13,'2025_05_21_021028_create_co_research_table',1);
+INSERT INTO `migrations` VALUES (1,'0001_01_01_000000_create_users_table',1),(2,'0001_01_01_000001_create_cache_table',1),(3,'0001_01_01_000002_create_jobs_table',1),(4,'2025_05_17_023151_add_two_factor_columns_to_users_table',1),(5,'2025_05_17_023204_create_personal_access_tokens_table',1),(6,'2025_05_17_023814_create_projects_table',1),(7,'2025_05_17_023815_create_fte_roles_table',1),(8,'2025_05_17_023816_create_fundings_table',1),(9,'2025_05_17_023816_create_outputs_table',1),(10,'2025_05_17_025900_add_role_to_users_table',1),(11,'2025_05_19_033645_create_irbs_table',1),(12,'2025_05_19_072017_create_copis_table',1),(13,'2025_05_21_021028_create_co_research_table',1),(14,'2025_05_26_082702_add_fields_to_users_table',1);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -347,7 +347,7 @@ CREATE TABLE `outputs` (
   PRIMARY KEY (`id`),
   KEY `outputs_project_id_foreign` (`project_id`),
   CONSTRAINT `outputs_project_id_foreign` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -356,7 +356,7 @@ CREATE TABLE `outputs` (
 
 LOCK TABLES `outputs` WRITE;
 /*!40000 ALTER TABLE `outputs` DISABLE KEYS */;
-INSERT INTO `outputs` VALUES (5,1,'วรรณกรรม','ไทน','2568','2222','2025-05-22 01:48:29','2025-05-22 01:48:29');
+INSERT INTO `outputs` VALUES (4,1,'a','a','a','a','2025-05-27 01:21:03','2025-05-27 01:21:03');
 /*!40000 ALTER TABLE `outputs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -490,7 +490,7 @@ CREATE TABLE `projects` (
 
 LOCK TABLES `projects` WRITE;
 /*!40000 ALTER TABLE `projects` DISABLE KEYS */;
-INSERT INTO `projects` VALUES (1,'SP_0001','a','a','01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล','T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย','http://127.0.0.1:8000/rm/projects/999/edit','S','R001','s','s','รัฐบาล','s',5000000.00,'25','31-05-2025','0','31-05-2025','31-05-2025','31-05-2025','2568','0','0','01-05-2025','01-05-2025','วัฒนชัย สันติไพบูลย์','siriraj heal policy',1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,'2025-05-21 19:33:34','2025-05-22 01:48:29');
+INSERT INTO `projects` VALUES (1,'SP_0001','a','a','01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล','T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก','http://127.0.0.1:8000/rm/create','S','a','ภายนอก','a','เอกชน','a',999999999.00,'50','02-05-2025','50','25-05-2025','03-05-2025','25-05-2025','2568','100','50','03-05-2025','04-05-2025','a','a',1,1,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,1,0,1,1,'2025-05-26 19:35:36','2025-05-27 01:21:03');
 /*!40000 ALTER TABLE `projects` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -520,7 +520,7 @@ CREATE TABLE `sessions` (
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES ('ACCjRYy0sIWbuZ36fqMYblNavf6CuNdmjpOhhTTW',1,'127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36','YTo1OntzOjY6Il90b2tlbiI7czo0MDoiNVF6dXhKQjg0RjhNcnJtZ0FUSG5iV0NmeUpJSjI5aU9hVVF1QU5mdSI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjMxOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvcm0vZWRpdC8xIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9',1747903712);
+INSERT INTO `sessions` VALUES ('dDzTndaqSFS4KfXjfUqoP3keD32gW9PruVcyFktP',NULL,'127.0.0.1','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36','YTozOntzOjY6Il90b2tlbiI7czo0MDoib0NnaWpTbzNGb01OTzhHaGYzbjRHTTlkRUxMVmJRZGNLeUVqamE5TCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7fX0=',1748334110);
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -533,7 +533,9 @@ DROP TABLE IF EXISTS `users`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `prefix` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `position` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -543,12 +545,13 @@ CREATE TABLE `users` (
   `remember_token` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `current_team_id` bigint unsigned DEFAULT NULL,
   `profile_photo_path` varchar(2048) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `profile_picture` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `role` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'user',
   PRIMARY KEY (`id`),
   UNIQUE KEY `users_email_unique` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -557,7 +560,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'Wattanachai','wattanachai@sihp.com',NULL,'$2y$12$3k.6RiZYYMuc80XJpevZCOjRoc4EurxxOHfbYBwaBfDrfaVwxTLHO',NULL,NULL,NULL,NULL,NULL,NULL,'2025-05-21 19:32:00','2025-05-21 19:32:00','admin');
+INSERT INTO `users` VALUES (1,'นาย','วัฒนชัย สันติไพบูลย์','Information communication','Wattanachai@sihp.com',NULL,'$2y$12$OegEHqQgiw7E7imMx3lnm.6L66nRyQwUImR5CxIQFI3GK/pi8uRyW',NULL,NULL,NULL,NULL,NULL,'avatars/2ps4to8mrOWGhIvaGp4PFWtNySrU0p4nSeUjRwdW.jpg','profile.jpg','2025-05-26 19:33:52','2025-05-26 20:30:56','admin'),(2,'ผู้ช่วยศาสตราจารย์','วัฒนชัย สันติไพบูลย์','พยาบาล','wattanachai_user@sihp.com',NULL,'$2y$12$strvGOB2o3KtqoR75M2/POYe4PWFvhsDYR99rcNDepUE0wyFrPirK',NULL,NULL,NULL,NULL,NULL,'profiles/zJovVj6GgNWzTZaaA3Qh3G4wORX0sriqp6en9nm3.jpg',NULL,'2025-05-26 21:31:56','2025-05-26 21:31:56','user');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -570,4 +573,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-05-22 15:52:52
+-- Dump completed on 2025-05-27 15:25:54
