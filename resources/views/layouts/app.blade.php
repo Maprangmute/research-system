@@ -20,7 +20,7 @@
                 <a href="/dashboard" class="text-blue-600 hover:underline">📊 Dashboard</a>
                 <a href="/rm" class="text-blue-600 hover:underline">📋 รายการโปรเจค</a>
                 <a href="/rm/create" class="text-green-600 hover:underline">➕ เพิ่มโครงการ</a>
-                <a href="{{ route('fte.index') }}" class="text-gray-700 hover:text-blue-600">🔥 FTE รายบุคคล</a>
+                <a href="{{ route('fte.index') }}" class="text-gray-700 hover:text-blue-600">🔥 FTE</a>
 
                 <!-- Profile Dropdown -->
                 <div class="relative" x-data="{ open: false }">

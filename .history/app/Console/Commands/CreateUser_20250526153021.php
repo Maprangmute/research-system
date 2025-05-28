@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 
 class CreateUser extends Command
 {
+    protected $signature = 'make:user';
     protected $description = 'Create a new user manually';
 
     public function handle()
