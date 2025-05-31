@@ -6,6 +6,7 @@ use App\Http\Controllers\FteController;
 use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TaskLinkController;
 
 
 // 🌐 หน้าหลัก
@@ -21,12 +22,12 @@ Route::middleware([
 ])->group(function () {
     // Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
 });
 
 
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\GanttController;
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/projects/{project}/gantt', [GanttController::class, 'index'])->name('projects.gantt');
 
@@ -38,8 +39,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/tasks/bulk-save', [TaskController::class, 'bulkSave']); // ✅ เพิ่มตรงนี้
 
     // Gantt Links
-    Route::post('/task-links', [TaskController::class, 'storeLink']);
-    Route::delete('/task-links/{id}', [TaskController::class, 'destroyLink']);
+
+    // Route::post('/task-links', [TaskController::class, 'storeLink']);
+    // Route::delete('/task-links/{id}', [TaskController::class, 'destroyLink']);
+    // Route::resource('/task-links', TaskLinkController::class)->only([
+    //     'store',
+    //     'update',
+    //     'destroy'
+
+    // ]);
+    Route::resource('/task-links', TaskLinkController::class)->only([
+    'index', 'store', 'update', 'destroy'
+]);
+Route::get('/projects/{project}/task-links', [TaskLinkController::class, 'projectLinks']);
+
+
 });
 
 
@@ -89,5 +103,4 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
 
     // delete data 
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
-
 });

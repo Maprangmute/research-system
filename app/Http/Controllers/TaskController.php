@@ -7,6 +7,8 @@ use App\Models\TaskLink;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+
 
 
 class TaskController extends Controller
@@ -96,20 +98,23 @@ class TaskController extends Controller
 public function bulkSave(Request $request)
 {
     $tasks = json_decode($request->get('tasks'), true);
+    $links = json_decode($request->get('links'), true);
     $projectId = $request->project_id;
 
     if (!$tasks || !$projectId) {
         return response()->json(['status' => 'error', 'message' => 'Invalid data'], 400);
     }
 
-    foreach ($tasks as $taskData) {
-        try {
+    DB::beginTransaction();
+
+    try {
+        foreach ($tasks as $taskData) {
             if (empty($taskData['start_date']) || empty($taskData['end_date'])) {
                 continue;
             }
 
-            $start = Carbon::parse($taskData['start_date'])->format('Y-m-d');
-            $end = Carbon::parse($taskData['end_date'])->format('Y-m-d');
+            $start = \Carbon\Carbon::parse($taskData['start_date'])->format('Y-m-d');
+            $end = \Carbon\Carbon::parse($taskData['end_date'])->format('Y-m-d');
 
             $data = [
                 'project_id' => $projectId,
@@ -124,22 +129,34 @@ public function bulkSave(Request $request)
                 'order' => $taskData['order'] ?? 0,
             ];
 
-            // ✅ แก้ตรงนี้ให้บันทึก task ใหม่ที่ยังไม่เคยมี ID
-            if (!empty($taskData['id']) && Task::where('id', $taskData['id'])->exists()) {
-                Task::where('id', $taskData['id'])->update($data);
+            if (!empty($taskData['id']) && \App\Models\Task::where('id', $taskData['id'])->exists()) {
+                \App\Models\Task::where('id', $taskData['id'])->update($data);
             } else {
-                Task::create($data);
+                \App\Models\Task::create($data);
             }
-
-        } catch (\Exception $e) {
-            \Log::error('[GANTT Bulk Save] Task error: ' . $e->getMessage(), ['task' => $taskData]);
-            return response()->json(['status' => 'error', 'message' => 'Save error'], 500);
         }
+
+        // ✅ ลบ link เดิมทั้งหมดของโปรเจกต์ แล้วเพิ่มใหม่
+        TaskLink::where('project_id', $projectId)->delete();
+
+        foreach ($links as $linkData) {
+            TaskLink::create([
+                'project_id' => $projectId,
+                'source' => $linkData['source'],
+                'target' => $linkData['target'],
+                'type' => $linkData['type']
+            ]);
+        }
+
+        DB::commit();
+        return response()->json(['status' => 'success']);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('[GANTT Bulk Save] Error: ' . $e->getMessage());
+        return response()->json(['status' => 'error', 'message' => 'Save failed'], 500);
     }
-
-    return response()->json(['status' => 'success']);
 }
-
 
 
 
