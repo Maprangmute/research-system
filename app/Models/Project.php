@@ -92,4 +92,8 @@ class Project extends Model
     {
         return $this->hasMany(CoResearch::class);
     }
+    public function tasks()
+{
+    return $this->hasMany(Task::class);
+}
 }

@@ -9,23 +9,23 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::create('irbs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('project_id')->constrained()->onDelete('cascade');
-            $table->string('code');
-            $table->string('source')->nullable();
-            $table->string('exp_date');
-            $table->timestamps();
-        });
-    }
+    // public function up(): void
+    // {
+    //     Schema::create('irbs', function (Blueprint $table) {
+    //         $table->id();
+    //         $table->foreignId('project_id')->constrained()->onDelete('cascade');
+    //         $table->string('code');
+    //         $table->string('source')->nullable();
+    //         $table->string('exp_date');
+    //         $table->timestamps();
+    //     });
+    // }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('irbs');
-    }
+    // /**
+    //  * Reverse the migrations.
+    //  */
+    // public function down(): void
+    // {
+    //     Schema::dropIfExists('irbs');
+    // }
 };

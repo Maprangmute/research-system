@@ -7,6 +7,7 @@ use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 
+
 // 🌐 หน้าหลัก
 Route::get('/', function () {
     return view('welcome');
@@ -22,6 +23,25 @@ Route::middleware([
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 });
+
+
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\GanttController;
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/projects/{project}/gantt', [GanttController::class, 'index'])->name('projects.gantt');
+
+    // Gantt Tasks
+    Route::get('/projects/{project}/tasks', [TaskController::class, 'index']);
+    Route::post('/tasks', [TaskController::class, 'store']);
+    Route::put('/tasks/{task}', [TaskController::class, 'update']);
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+    Route::post('/tasks/bulk-save', [TaskController::class, 'bulkSave']); // ✅ เพิ่มตรงนี้
+
+    // Gantt Links
+    Route::post('/task-links', [TaskController::class, 'storeLink']);
+    Route::delete('/task-links/{id}', [TaskController::class, 'destroyLink']);
+});
+
 
 
 
