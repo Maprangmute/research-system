@@ -121,15 +121,56 @@
 </div>
 
 <script>
-function formatThaiBuddhistYear(instance) {
-    const input = instance.altInput;
-    if (input && instance.selectedDates.length > 0) {
-        const date = instance.selectedDates[0];
+
+
+function toBuddhist(selectedDates, dateStr, instance) {
+    const altInput = instance.altInput;
+
+    if (selectedDates.length > 0 && altInput) {
+        const date = selectedDates[0];
         const day = date.getDate();
-        const month = instance.l10n.months.longhand[date.getMonth()];
+        const month = date.toLocaleString('th-TH', { month: 'long' });
         const year = date.getFullYear() + 543;
-        input.value = `${day} ${month} ${year}`;
+        altInput.value = `${day} ${month} ${year}`;
     }
+
+    setTimeout(() => {
+        const yearInputs = instance?.calendarContainer?.querySelectorAll('.flatpickr-current-month input.cur-year') || [];
+        yearInputs.forEach(el => {
+            let y = parseInt(el.value);
+            if (y < 2500) el.value = y + 543;
+
+            // ถ้าผู้ใช้พิมพ์ 2569 → แปลงกลับเป็น ค.ศ.
+            el.addEventListener('blur', () => {
+                let y2 = parseInt(el.value);
+                if (y2 > 2400) {
+                    el.value = y2 - 543;
+                    instance.setDate(new Date(y2 - 543, instance.currentMonth, 1));
+                    setTimeout(() => toBuddhist(selectedDates, dateStr, instance), 5);
+                }
+            });
+        });
+    }, 5);
+}
+
+function initThaiDatepickers() {
+    flatpickr(".flatpickr-th", {
+        locale: "th",
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "j F Y",
+        disableMobile: true,
+        appendTo: document.body,
+        position: "auto center",
+        prevArrow: "",
+        nextArrow: "",
+        onReady: toBuddhist,
+        onOpen: toBuddhist,
+        onChange: toBuddhist,
+        onMonthChange: toBuddhist,
+        onYearChange: toBuddhist,
+        onClose: toBuddhist
+    });
 }
 
 function showPanel(task = {}) {
@@ -137,54 +178,37 @@ function showPanel(task = {}) {
     panel.classList.remove("hidden");
     setTimeout(() => panel.classList.remove("translate-y-full"), 10);
 
-    document.getElementById("task-id").value = task.id || "";
-    document.getElementById("task-id").dataset.parent = task.parent || "";
+    // ID & parent
+    const taskIdEl = document.getElementById("task-id");
+    taskIdEl.value = task.id || "";
+    taskIdEl.dataset.parent = task.parent || "";
+
+    // Show parent
     const parentLabel = document.getElementById("task-parent-label");
-const parentNameSpan = document.getElementById("parent-task-name");
+    const parentNameSpan = document.getElementById("parent-task-name");
+    if (task.parent && task.parent !== gantt.config.root_id && gantt.isTaskExists(task.parent)) {
+        parentNameSpan.textContent = gantt.getTask(task.parent).text;
+        parentLabel.classList.remove("hidden");
+    } else {
+        parentLabel.classList.add("hidden");
+        parentNameSpan.textContent = "";
+    }
 
-if (
-    task.parent &&
-    task.parent !== gantt.config.root_id &&
-    gantt.isTaskExists(task.parent) &&
-    gantt.getTask(task.parent).text
-) {
-    const parentTask = gantt.getTask(task.parent);
-    parentNameSpan.textContent = parentTask.text;
-    parentLabel.classList.remove("hidden");
-} else {
-    parentLabel.classList.add("hidden");
-    parentNameSpan.textContent = "";
-}
-
-
+    // Other fields
     document.getElementById("task-title").value = task.text || "";
     document.getElementById("task-status").value = task.status || "ongoing";
     document.getElementById("task-owner").value = task.owner || "";
     document.getElementById("task-progress").value = task.progress != null ? task.progress * 100 : 0;
 
+    // Setup Flatpickr
     setTimeout(() => {
         flatpickr.localize(flatpickr.l10ns.th);
+
         document.querySelectorAll(".flatpickr-th").forEach(input => {
             if (input._flatpickr) input._flatpickr.destroy();
-
-            flatpickr(input, {
-                dateFormat: "Y-m-d",
-                altInput: true,
-                altFormat: "j F Y",
-                locale: "th",
-                appendTo: document.body,
-                disableMobile: true,
-                position: "auto center",
-                onReady: (_, __, instance) => {
-                    formatThaiBuddhistYear(instance);
-                    if (instance.altInput) {
-                        instance.altInput.addEventListener("click", () => instance.open());
-                        instance.altInput.classList.add('w-full', 'border', 'p-2', 'rounded', 'mt-1');
-                    }
-                },
-                onChange: (_, __, instance) => formatThaiBuddhistYear(instance),
-            });
         });
+
+        initThaiDatepickers();
 
         if (task.start_date) document.getElementById("task-start")._flatpickr.setDate(task.start_date, true);
         if (task.end_date) document.getElementById("task-end")._flatpickr.setDate(task.end_date, true);
