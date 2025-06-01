@@ -2,6 +2,13 @@
 
 @section('content')
 <div class="max-w-6xl mx-auto mt-6">
+
+    <div class="mb-4">
+    <a href="javascript:history.back()" class="text-blue-600 hover:underline text-base font-semibold">
+        <<< ย้อนกลับ
+    </a>
+</div>
+
     <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 สรุป FTE รายบุคคล</h2>
 
     <!-- 🎚 Filter ปี -->

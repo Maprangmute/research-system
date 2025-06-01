@@ -1,7 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
+
 <div class="max-w-4xl mx-auto mt-10 bg-white shadow p-8 rounded-lg">
+    
     <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold text-gray-800">➕ เพิ่มผู้ใช้งานใหม่</h2>
         <a href="{{ route('users.index') }}" class="text-sm text-purple-600 hover:underline">⬅️ กลับไปยังรายชื่อ</a>

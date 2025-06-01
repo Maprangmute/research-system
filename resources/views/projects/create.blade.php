@@ -821,10 +821,14 @@
         }
 
         function reindexFTE() {
-            document.querySelectorAll('#fte-container .fte-row').forEach((row, i) => {
-                row.querySelector('.fte-index').textContent = i + 1;
-            });
+    const rows = document.querySelectorAll('.fte-row');
+    rows.forEach((row, index) => {
+        const label = row.querySelector('.fte-index');
+        if (label !== null) {
+            label.textContent = `${index + 1}. ชื่อ-นามสกุล`;
         }
+    });
+}
 
         function reindexOutput() {
             document.querySelectorAll('#output-container .output-row').forEach((row, i) => {

@@ -29,7 +29,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\GanttController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/projects/{project}/gantt', [GanttController::class, 'index'])->name('projects.gantt');
+    Route::get('/rm/projects/{project}/gantt', [GanttController::class, 'index'])->name('projects.gantt');
 
     // Gantt Tasks
     Route::get('/projects/{project}/tasks', [TaskController::class, 'index']);

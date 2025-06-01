@@ -74,7 +74,10 @@ class ProjectController extends Controller
         $this->syncIrbs($request, $project);
         $this->syncCoResearch($request, $project);
 
-        return redirect()->route('projects.create')->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+        return redirect()->route('projects.show', $project->id)
+    ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+
+
     }
 
     public function edit($id)

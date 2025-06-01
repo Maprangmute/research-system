@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
 {
+    
     public function index($projectId)
     {
         $tasks = Task::where('project_id', $projectId)->get();
@@ -70,93 +71,116 @@ class TaskController extends Controller
     return response()->json(['action' => 'updated']);
 }
 
+
 // public function bulkSave(Request $request)
 // {
+//     $tasks = json_decode($request->get('tasks'), true);
+//     $links = json_decode($request->get('links'), true);
 //     $projectId = $request->project_id;
-//     $tasks = $request->tasks;
 
-//     foreach ($tasks as $taskData) {
-//         Task::updateOrCreate(
-//             ['id' => $taskData['id']],
-//             [
-//                 'project_id' => $projectId,
-//                 'title' => $taskData['text'],
-//                 'start' => $taskData['start_date'],
-//                 'end' => $taskData['end_date'],
-//                 'parent_id' => $taskData['parent'] != 0 ? $taskData['parent'] : null,
-//                 'status' => $taskData['status'] ?? 'ongoing',
-//                 'progress' => $taskData['progress'] ?? 0,
-//                 'owner' => $taskData['owner'] ?? null,
-//                 'user_id' => auth()->id(), // หรือปรับตาม logic ของคุณ
-//             ]
-//         );
+//     if (!$tasks || !$projectId) {
+//         return response()->json(['status' => 'error', 'message' => 'Invalid data'], 400);
 //     }
 
-//     return response()->json(['status' => 'success']);
+//     DB::beginTransaction();
+
+//     try {
+//         foreach ($tasks as $taskData) {
+//             if (empty($taskData['start_date']) || empty($taskData['end_date'])) {
+//                 continue;
+//             }
+
+//             $start = \Carbon\Carbon::parse($taskData['start_date'])->format('Y-m-d');
+//             $end = \Carbon\Carbon::parse($taskData['end_date'])->format('Y-m-d');
+
+//             $data = [
+//                 'project_id' => $projectId,
+//                 'title' => $taskData['text'] ?? 'ไม่มีชื่อ',
+//                 'start' => $start,
+//                 'end' => $end,
+//                 'parent_id' => is_numeric($taskData['parent']) ? $taskData['parent'] : null,
+//                 'status' => $taskData['status'] ?? 'ongoing',
+//                 'progress' => intval($taskData['progress'] ?? 0),
+//                 'owner' => $taskData['owner'] ?? null,
+//                 'user_id' => auth()->id(),
+//                 'order' => $taskData['order'] ?? 0,
+//             ];
+
+//             if (!empty($taskData['id']) && \App\Models\Task::where('id', $taskData['id'])->exists()) {
+//                 \App\Models\Task::where('id', $taskData['id'])->update($data);
+//             } else {
+//                 \App\Models\Task::create($data);
+//             }
+//         }
+
+//         // ✅ ลบ link เดิมทั้งหมดของโปรเจกต์ แล้วเพิ่มใหม่
+//         TaskLink::where('project_id', $projectId)->delete();
+
+//         foreach ($links as $linkData) {
+//             TaskLink::create([
+//                 'project_id' => $projectId,
+//                 'source' => $linkData['source'],
+//                 'target' => $linkData['target'],
+//                 'type' => $linkData['type']
+//             ]);
+//         }
+
+//         DB::commit();
+//         return response()->json(['status' => 'success']);
+
+//     } catch (\Exception $e) {
+//         DB::rollBack();
+//         \Log::error('[GANTT Bulk Save] Error: ' . $e->getMessage());
+//         return response()->json(['status' => 'error', 'message' => 'Save failed'], 500);
+//     }
 // }
+
+
 
 public function bulkSave(Request $request)
 {
-    $tasks = json_decode($request->get('tasks'), true);
-    $links = json_decode($request->get('links'), true);
-    $projectId = $request->project_id;
+    $projectId = $request->input('project_id');
+    $tasks = json_decode($request->input('tasks'), true);
+    $links = json_decode($request->input('links'), true);
+    $deletedIds = json_decode($request->input('deleted_ids'), true);
 
-    if (!$tasks || !$projectId) {
-        return response()->json(['status' => 'error', 'message' => 'Invalid data'], 400);
+    // ✅ ลบ tasks ที่ไม่มีอยู่ใน Gantt แล้ว
+    if (!empty($deletedIds)) {
+        \App\Models\Task::whereIn('id', $deletedIds)->where('project_id', $projectId)->delete();
     }
 
-    DB::beginTransaction();
-
-    try {
-        foreach ($tasks as $taskData) {
-            if (empty($taskData['start_date']) || empty($taskData['end_date'])) {
-                continue;
-            }
-
-            $start = \Carbon\Carbon::parse($taskData['start_date'])->format('Y-m-d');
-            $end = \Carbon\Carbon::parse($taskData['end_date'])->format('Y-m-d');
-
-            $data = [
+    // ✅ อัปเดตหรือลงข้อมูลใหม่
+    foreach ($tasks as $taskData) {
+        \App\Models\Task::updateOrCreate(
+            ['id' => $taskData['id']],
+            [
                 'project_id' => $projectId,
-                'title' => $taskData['text'] ?? 'ไม่มีชื่อ',
-                'start' => $start,
-                'end' => $end,
-                'parent_id' => is_numeric($taskData['parent']) ? $taskData['parent'] : null,
+                'title' => $taskData['text'],
+                'start' => $taskData['start_date'],
+                'end' => $taskData['end_date'],
+                'parent_id' => $taskData['parent'] ?: null,
                 'status' => $taskData['status'] ?? 'ongoing',
-                'progress' => intval($taskData['progress'] ?? 0),
+                'progress' => $taskData['progress'] ?? 0,
                 'owner' => $taskData['owner'] ?? null,
                 'user_id' => auth()->id(),
-                'order' => $taskData['order'] ?? 0,
-            ];
-
-            if (!empty($taskData['id']) && \App\Models\Task::where('id', $taskData['id'])->exists()) {
-                \App\Models\Task::where('id', $taskData['id'])->update($data);
-            } else {
-                \App\Models\Task::create($data);
-            }
-        }
-
-        // ✅ ลบ link เดิมทั้งหมดของโปรเจกต์ แล้วเพิ่มใหม่
-        TaskLink::where('project_id', $projectId)->delete();
-
-        foreach ($links as $linkData) {
-            TaskLink::create([
-                'project_id' => $projectId,
-                'source' => $linkData['source'],
-                'target' => $linkData['target'],
-                'type' => $linkData['type']
-            ]);
-        }
-
-        DB::commit();
-        return response()->json(['status' => 'success']);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error('[GANTT Bulk Save] Error: ' . $e->getMessage());
-        return response()->json(['status' => 'error', 'message' => 'Save failed'], 500);
+            ]
+        );
     }
+
+    // ✅ ล้างและบันทึก links ใหม่
+    \App\Models\TaskLink::where('project_id', $projectId)->delete();
+    foreach ($links as $link) {
+        \App\Models\TaskLink::create([
+            'project_id' => $projectId,
+            'source' => $link['source'],
+            'target' => $link['target'],
+            'type' => $link['type'],
+        ]);
+    }
+
+    return response()->json(['status' => 'success']);
 }
+
 
 
 

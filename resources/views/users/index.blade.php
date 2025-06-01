@@ -4,6 +4,11 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="max-w-6xl mx-auto mt-10 px-4 sm:px-6 lg:px-8">
+     <div class="mb-4">
+    <a href="javascript:history.back()" class="text-blue-600 hover:underline text-base font-semibold">
+        <<< ย้อนกลับ
+    </a>
+</div>
     <div class="flex items-center justify-between mb-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">รายชื่อผู้เข้าใช้ระบบ</h2>
