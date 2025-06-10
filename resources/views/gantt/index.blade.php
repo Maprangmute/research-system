@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+
+
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- ✅ Flatpickr -->
@@ -511,8 +513,15 @@
             ];
 
             setScale("month"); // default view
+            gantt.config.scroll_size = 20;
+gantt.config.autosize = false;
+gantt.config.autoscroll = true;
+
             gantt.init("gantt_here");
             reloadGanttData();
         });
+
+
+        
     </script>
 @endsection

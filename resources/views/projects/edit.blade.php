@@ -604,7 +604,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI</span>
-                    <input name="pi_name" value="{{ old('pi_name', $project->pi_name)}}"
+                    <input name="pi_name" value="{{ old('pi_name', $project->pi_name) }}"
                         class="w-full border p-2 rounded" placeholder="ยศ-ชื่อ PI">
                 </label>
                 <label class="w-full">
@@ -653,7 +653,7 @@
                             <span class="block text-sm text-gray-700 mb-1">ชื่อ Co-Researcher คนที่ <span
                                     class="coresearch-index">{{ $i + 1 }}</span></span>
                             <input name="coresearch[{{ $i }}][name]" value="{{ $co->name }}"
-                                class="w-full border p-2 rounded"  placeholder="ยศ ชื่อ-นามสกุล">
+                                class="w-full border p-2 rounded" placeholder="ยศ ชื่อ-นามสกุล">
                         </label>
 
                         <!-- สังกัด + สถานะ + ปุ่มลบ -->
@@ -661,7 +661,8 @@
                             <label class="col-span-5">
                                 <span class="block text-sm text-gray-700 mb-1">สังกัด</span>
                                 <input name="coresearch[{{ $i }}][affiliation]"
-                                    value="{{ $co->affiliation }}" class="w-full border p-2 rounded"  placeholder="สังกัด">
+                                    value="{{ $co->affiliation }}" class="w-full border p-2 rounded"
+                                    placeholder="สังกัด">
                             </label>
                             <label class="col-span-5">
                                 <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน</span>
@@ -826,11 +827,19 @@
                                     placeholder="เช่น ตีพิมพ์แล้ว">
                             </label>
                             <div class="flex gap-2 w-full">
-                                <label class="w-full">
-                                    <span class="block text-sm text-gray-700 mb-1">ปี</span>
-                                    <input name="outputs[{{ $i }}][year]" value="{{ $out['year'] }}"
-                                        class="w-full border p-2 rounded" placeholder="2025">
+                                <label class="w-full relative">
+                                    <span class="block text-sm text-gray-700 mb-1">วันที่เผยแพร่ผลงาน</span>
+                                    <input name="outputs[{{ $i }}][year]" type="text"
+                                        value="{{ $out['year'] }}" placeholder="โปรดใส่วันที่"
+                                        class="thai-datepicker w-full border p-2 rounded pl-10">
+                                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
                                 </label>
+
                                 <button type="button" onclick="removeRow('output-{{ $i }}', 'output')"
                                     class="text-red-600 mb-2">✕</button>
                             </div>
@@ -935,13 +944,13 @@
 
     <script>
         // let irbCodeIndex = {{ count($project->irbs ?? []) }};
-let irbCodeIndex = document.querySelectorAll('.irb-row').length;
+        let irbCodeIndex = document.querySelectorAll('.irb-row').length;
 
-function addIRBCode() {
-    const container = document.getElementById('irb-code-container');
-    const id = `irb-${irbCodeIndex}`;
+        function addIRBCode() {
+            const container = document.getElementById('irb-code-container');
+            const id = `irb-${irbCodeIndex}`;
 
-    container.insertAdjacentHTML('beforeend', `
+            container.insertAdjacentHTML('beforeend', `
         <div id="${id}" class="irb-row grid grid-cols-3 gap-2 items-center">
             <div class="w-full">
                 <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span></span>
@@ -967,20 +976,20 @@ function addIRBCode() {
         </div>
     `);
 
-    irbCodeIndex++;
-    reindexIRB();
+            irbCodeIndex++;
+            reindexIRB();
 
-    flatpickr(`#${id} .thai-datepicker`, {
-        locale: "th",
-        dateFormat: "d-m-Y",
-        altInput: true,
-        altFormat: "j F Y",
-        onReady: toBuddhist,
-        onChange: toBuddhist,
-        onMonthChange: toBuddhist,
-        onYearChange: toBuddhist,
-    });
-}
+            flatpickr(`#${id} .thai-datepicker`, {
+                locale: "th",
+                dateFormat: "d-m-Y",
+                altInput: true,
+                altFormat: "j F Y",
+                onReady: toBuddhist,
+                onChange: toBuddhist,
+                onMonthChange: toBuddhist,
+                onYearChange: toBuddhist,
+            });
+        }
 
 
         function reindexIRB() {
@@ -1162,10 +1171,19 @@ function addIRBCode() {
                     <input name="outputs[${outputIndex}][project_output]" type="text" class="w-full border p-2 rounded" placeholder="เพิ่มเติม">
                 </label>
                 <div class="flex gap-2 w-full">
-                    <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">ปี</span>
-                        <input name="outputs[${outputIndex}][year]" type="text" class="w-full border p-2 rounded" placeholder="2025">
-                    </label>
+                    <label class="w-full relative">
+    <span class="block text-sm text-gray-700 mb-1">วันที่เผยแพร่ผลงาน</span>
+    <input name="outputs[${outputIndex}][year]" type="text"
+        class="thai-datepicker w-full border p-2 rounded pl-10"
+        placeholder="โปรดใส่วันที่">
+    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+</label>
+
                     <button type="button" onclick="removeRow('${id}', 'output')" class="text-red-600 mb-2">✕</button>
                 </div>
             </div>
@@ -1174,6 +1192,7 @@ function addIRBCode() {
 
             outputIndex++;
             reindexOutput();
+            initThaiDatepickers(); // สำคัญ! ต้องเรียกอีกครั้งหลังแทรก HTML ใหม่
         }
 
         let coResearchIndex = {{ count($project->coResearches ?? []) }};
