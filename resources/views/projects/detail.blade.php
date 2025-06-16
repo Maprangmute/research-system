@@ -206,39 +206,44 @@
         </table>
 
 
-        <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
-        <table class="w-full table-auto border mb-6 text-sm">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="border px-2 py-1 text-center">#</th>
-                    <th class="border px-2 py-1">ชื่อ</th>
-                    <th class="border px-2 py-1">กลุ่ม</th>
-                    <th class="border px-2 py-1">ภาระงาน</th>
-                    <th class="border px-2 py-1">วันเริ่ม</th>
-                    <th class="border px-2 py-1">วันสิ้นสุด</th>
-                    <th class="border px-2 py-1 text-center">FTE</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($project->fteRoles as $i => $fte)
-                    <tr>
-                        <td class="border px-2 py-1 text-center">{{ $i + 1 }}</td>
-                        <td class="border px-2 py-1">{{ $fte->name }}</td>
-                        <td class="border px-2 py-1">{{ $fte->role_group }}</td>
-                        <td class="border px-2 py-1">{{ $fte->job_detail }}</td>
-                        <td class="border px-2 py-1">
-                            {{ $fte->start_date ? \Carbon\Carbon::parse($fte->start_date)->format('d/m/Y') : '-' }}</td>
-                        <td class="border px-2 py-1">
-                            {{ $fte->end_date ? \Carbon\Carbon::parse($fte->end_date)->format('d/m/Y') : '-' }}</td>
-                        <td class="border px-2 py-1 text-center">{{ $fte->fte_value }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="text-center py-2">ไม่มีข้อมูล</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+       <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
+<table class="w-full table-auto border mb-6 text-sm">
+    <thead class="bg-gray-100">
+        <tr>
+            <th class="border px-2 py-1 text-center">#</th>
+            <th class="border px-2 py-1">ชื่อ</th>
+            <th class="border px-2 py-1">กลุ่ม</th>
+            <th class="border px-2 py-1">ภาระงาน</th>
+            <th class="border px-2 py-1">รายละเอียดภารกิจ</th> {{-- ✅ ใหม่ --}}
+            <th class="border px-2 py-1">วันเริ่ม</th>
+            <th class="border px-2 py-1">วันสิ้นสุด</th>
+            <th class="border px-2 py-1 text-center">FTE</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse ($project->fteRoles as $i => $fte)
+            <tr>
+                <td class="border px-2 py-1 text-center">{{ $i + 1 }}</td>
+                <td class="border px-2 py-1">{{ $fte->name }}</td>
+                <td class="border px-2 py-1">{{ $fte->role_group }}</td>
+                <td class="border px-2 py-1">{{ $fte->job_detail }}</td>
+                <td class="border px-2 py-1">{{ $fte->task_detail ?? '-' }}</td> {{-- ✅ ใหม่ --}}
+                <td class="border px-2 py-1">
+                    {{ $fte->start_date ? \Carbon\Carbon::parse($fte->start_date)->format('d/m/Y') : '-' }}
+                </td>
+                <td class="border px-2 py-1">
+                    {{ $fte->end_date ? \Carbon\Carbon::parse($fte->end_date)->format('d/m/Y') : '-' }}
+                </td>
+                <td class="border px-2 py-1 text-center">{{ $fte->fte_value }}</td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="8" class="text-center py-2">ไม่มีข้อมูล</td> {{-- เปลี่ยนจาก 7 → 8 --}}
+            </tr>
+        @endforelse
+    </tbody>
+</table>
+
 
 
         <h3 class="font-semibold text-lg text-blue-700 mb-2">F: ผลงานวิจัย (Outputs)</h3>

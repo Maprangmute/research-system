@@ -9,10 +9,13 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $projects = Project::with('outputs') // <-- เพิ่ม outputs ด้วย
-            ->select('id', 'project_name_th', 'funding_name', 'budget', 'start_year')
+        $projects = Project::with('outputs')
+            ->select('id', 'project_name_th', 'funding_name', 'budget', 'start_year', 'theme')
             ->get();
 
-        return view('dashboard', compact('projects'));
+        // ดึง Theme ทั้งหมดที่ไม่ซ้ำ
+        $themes = Project::distinct()->pluck('theme');
+
+        return view('dashboard', compact('projects', 'themes'));
     }
 }

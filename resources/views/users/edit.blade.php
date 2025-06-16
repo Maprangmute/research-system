@@ -39,7 +39,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm text-gray-700 font-medium">คำนำหน้า</label>
-                <select name="prefix" class="w-full border p-2 rounded" required>
+                <input type="text" name="prefix" value="{{ old('prefix', $user->prefix) }}" class="w-full border p-2 rounded" required>
+                {{-- <select name="prefix" class="w-full border p-2 rounded" required>
                     @php
                         $prefixes = [
                             'นาย','นางสาว','นาง','คุณ','ดร.','ศ.','รศ.','ผศ.','ศ.ดร.','รศ.ดร.','ผศ.ดร.',
@@ -51,7 +52,7 @@
                     @foreach ($prefixes as $prefix)
                         <option value="{{ $prefix }}" {{ old('prefix', $user->prefix) == $prefix ? 'selected' : '' }}>{{ $prefix }}</option>
                     @endforeach
-                </select>
+                </select> --}}
             </div>
 
             <div>

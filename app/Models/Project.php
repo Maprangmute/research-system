@@ -43,6 +43,7 @@ class Project extends Model
         'team_end_date',
         'pi_name',
         'pi_affiliation',
+        'task_detail',
 
         // Strategy flags
         'strategy_1',

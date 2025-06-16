@@ -40,7 +40,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm text-gray-700 font-medium">คำนำหน้า</label>
-                <select name="prefix" class="w-full border p-2 rounded" required>
+                  <input type="text" name="prefix" class="w-full border p-2 rounded" required>
+                {{-- <select name="prefix" class="w-full border p-2 rounded" required>
                     <option value="">เลือกคำนำหน้า</option>
                     <option value="นาย">นาย</option>
                     <option value="นางสาว">นางสาว</option>
@@ -64,7 +65,7 @@
                     <option value="รองศาสตราจารย์">รองศาสตราจารย์</option>
                     <option value="ศาสตราจารย์">ศาสตราจารย์</option>
                     <option value="อื่นๆ">อื่นๆ</option>
-                </select>
+                </select> --}}
             </div>
 
              <div>

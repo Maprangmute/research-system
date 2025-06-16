@@ -10,9 +10,14 @@ use App\Models\Irb;
 use App\Models\CoResearch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Barryvdh\DomPDF\Facade\Pdf;
+// use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\Snappy\Facades\SnappyPdf;
+use PDF;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+
+// use Barryvdh\Snappy\Facades\SnappyPdf as PDF; 
+
 
 class ProjectController extends Controller
 {
@@ -161,26 +166,36 @@ class ProjectController extends Controller
         return redirect()->route('projects.index')->with('success', 'ลบโครงการเรียบร้อยแล้ว');
     }
 
-    public function exportPdf(Project $project)
-    {
-        $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
+// public function exportPdf(Project $project)
+// {
+//     $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
+//     $options = new \Dompdf\Options();
+//     $options->set('defaultFont', 'thsarabun');
+//     $options->set('isHtml5ParserEnabled', true);
+//     $options->set('isRemoteEnabled', true);
+//     $dompdf = new \Dompdf\Dompdf($options);
 
-        $options = new Options();
-        $options->set('defaultFont', 'thsarabun');
-        $options->setChroot(base_path());
-        $options->setIsRemoteEnabled(true);
+//     $html = view('projects.pdf', compact('project'))->render();
+//     $dompdf->loadHtml($html, 'UTF-8');
+//     $dompdf->setPaper('A4', 'portrait');
+//     $dompdf->render();
 
-        $dompdf = new Dompdf($options);
-        $html = view('projects.pdf', compact('project'))->render();
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+//     return response($dompdf->output(), 200, [
+//         'Content-Type' => 'application/pdf',
+//         'Content-Disposition' => 'inline; filename="project.pdf"',
+//     ]);
+// }
 
-        return response($dompdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="project.pdf"',
-        ]);
-    }
+
+public function exportPdf(Project $project)
+{
+    $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
+
+    $user = Auth::user(); // <<--- สำคัญ
+
+    $pdf = PDF::loadView('projects.pdf', compact('project', 'user'));
+    return $pdf->stream('project.pdf');
+}
 
     private function validateProject(Request $request): array
     {
@@ -250,6 +265,7 @@ class ProjectController extends Controller
                     'start_date' => $fte['start_date'],
                     'end_date' => $fte['end_date'],
                     'fte_value' => $fte['fte_value'] ?? 0,
+                      'task_detail'  => $fte['task_detail'] ?? null, // ✅ เพิ่มตรงนี้
                 ]);
             }
         }

@@ -578,14 +578,41 @@
                     </div>
 
                     <!-- บรรทัด 3 -->
-                    <div class="flex gap-4 items-end">
-                        <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">FTE</span>
-                            <input name="fte_roles[0][fte_value]" type="number" step="0.01"
-                                class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE" required>
+                    <div class="grid grid-cols-12 gap-4 items-end">
+                        <label class="col-span-8">
+                            <span class="block text-sm text-gray-700 mb-1">รายละเอียดภารกิจ</span>
+                            <select name="fte_roles[0][task_detail]" class="w-full border p-2 rounded" required>
+                                <option value="" disabled selected>เลือกภารกิจ</option>
+                                <option>ติดต่อประสานงาน</option>
+                                <option>review literature</option>
+                                <option>เขียนproposal</option>
+                                <option>ดำเนินการเอกสารขอirb/submit irb</option>
+                                <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
+                                <option>เก็บข้อมูล</option>
+                                <option>วิเคราะห์ข้อมูล</option>
+                                <option>เขียนเล่มรายงาน</option>
+                                <option>เขียนmanuscript</option>
+                                <option>submit journal</option>
+                                <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
+                                <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
+                                <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
+                            </select>
                         </label>
-                        <button type="button" onclick="removeRow('fte-0', 'fte')" class="text-red-600 mb-2">✕</button>
+
+                        <label class="col-span-3">
+                            <span class="block text-sm text-gray-700 mb-1">FTE</span>
+                            <input name="fte_roles[0][fte_value]" type="number" step="0.01" min="0.01"
+                                max="1" class="w-full border p-2 rounded"
+                                placeholder="โปรดใส่ค่า FTE" required>
+                        </label>
+
+
+                        <div class="col-span-1 flex items-end justify-end">
+                            <button type="button" onclick="removeRow('fte-0', 'fte')"
+                                class="text-red-600 text-xl mb-2">✕</button>
+                        </div>
                     </div>
+
                 </div>
             </div>
 
@@ -623,17 +650,17 @@
                         <div class="flex gap-2 w-full">
 
                             <label class="w-full relative">
-                            <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
-                            <input name="outputs[0][year]" type="text"
-                                class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่"
-                                required>
-                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </label>
+                                <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+                                <input name="outputs[0][year]" type="text"
+                                    class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่"
+                                    required>
+                                <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </label>
                             {{-- <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">ปี</span>
                                 <input name="outputs[0][year]" type="text" class="w-full border p-2 rounded"
@@ -834,14 +861,14 @@
         }
 
         function reindexFTE() {
-    const rows = document.querySelectorAll('.fte-row');
-    rows.forEach((row, index) => {
-        const label = row.querySelector('.fte-index');
-        if (label !== null) {
-            label.textContent = `${index + 1}. ชื่อ-นามสกุล`;
+            const rows = document.querySelectorAll('.fte-row');
+            rows.forEach((row, index) => {
+                const label = row.querySelector('.fte-index');
+                if (label !== null) {
+                    label.textContent = `${index + 1}. ชื่อ-นามสกุล`;
+                }
+            });
         }
-    });
-}
 
         function reindexOutput() {
             document.querySelectorAll('#output-container .output-row').forEach((row, i) => {
@@ -862,11 +889,11 @@
         }
 
         // ✅ ADD ROWS
-   let irbIndex = 1;
+        let irbIndex = 1;
 
-function addIRBCode() {
-    const id = `irb-${irbIndex}`;
-    document.getElementById('irb-code-container').insertAdjacentHTML('beforeend', `
+        function addIRBCode() {
+            const id = `irb-${irbIndex}`;
+            document.getElementById('irb-code-container').insertAdjacentHTML('beforeend', `
         <div id="${id}" class="irb-row grid grid-cols-3 gap-2 items-center">
             <div class="w-full">
                 <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbIndex + 1}</span></span>
@@ -891,10 +918,10 @@ function addIRBCode() {
             </div>
         </div>
     `);
-    irbIndex++;
-    reindexIRB();
-    initThaiDatepickers(); // สำหรับรีเปิด datepicker ใหม่ที่เพิ่มมา
-}
+            irbIndex++;
+            reindexIRB();
+            initThaiDatepickers(); // สำหรับรีเปิด datepicker ใหม่ที่เพิ่มมา
+        }
 
         let fteIndex = 1;
 
@@ -978,13 +1005,37 @@ function addIRBCode() {
                     </svg>
                 </label>
             </div>
-            <div class="flex gap-4 items-end">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">FTE</span>
-                    <input name="fte_roles[${fteIndex}][fte_value]" type="number" step="0.01" required class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE">
-                </label>
-                <button type="button" onclick="removeRow('${id}', 'fte')" class="text-red-600 mb-2">✕</button>
-            </div>
+          <div class="grid grid-cols-12 gap-4 items-end">
+    <label class="col-span-8">
+        <span class="block text-sm text-gray-700 mb-1">รายละเอียดภารกิจ</span>
+        <select name="fte_roles[${fteIndex}][task_detail]" class="w-full border p-2 rounded" required>
+            <option value="" disabled selected>เลือกภารกิจ</option>
+            <option>ติดต่อประสานงาน</option>
+            <option>review literature</option>
+            <option>เขียนproposal</option>
+            <option>ดำเนินการเอกสารขอirb/submit irb</option>
+            <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
+            <option>เก็บข้อมูล</option>
+            <option>วิเคราะห์ข้อมูล</option>
+            <option>เขียนเล่มรายงาน</option>
+            <option>เขียนmanuscript</option>
+            <option>submit journal</option>
+            <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
+            <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
+            <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
+        </select>
+    </label>
+
+    <label class="col-span-3">
+        <span class="block text-sm text-gray-700 mb-1">FTE</span>
+        <input name="fte_roles[${fteIndex}][fte_value]" type="number" step="0.01" min="0.01" max="1"
+            class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE" required>
+    </label>
+
+    <div class="col-span-1 flex items-end justify-end">
+        <button type="button" onclick="removeRow('${id}', 'fte')" class="text-red-600 text-xl mb-2">✕</button>
+    </div>
+</div>
         </div>
     `);
 
@@ -1104,15 +1155,15 @@ function addIRBCode() {
     </script>
 
     <script>
-    flatpickr(".flatpickr-year", {
-        plugins: [
-            new flatpickr.plugins.monthSelectPlugin({
-                shorthand: true,
-                dateFormat: "Y", // หรือ "F Y" หากต้องการเดือนด้วย
-                altFormat: "Y"
-            })
-        ],
-        locale: "th"
-    });
-</script>
+        flatpickr(".flatpickr-year", {
+            plugins: [
+                new flatpickr.plugins.monthSelectPlugin({
+                    shorthand: true,
+                    dateFormat: "Y", // หรือ "F Y" หากต้องการเดือนด้วย
+                    altFormat: "Y"
+                })
+            ],
+            locale: "th"
+        });
+    </script>
 @endsection

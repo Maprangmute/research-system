@@ -783,15 +783,52 @@
                         </div>
 
                         <!-- บรรทัด 3 -->
-                        <div class="flex gap-4 items-end">
-                            <label class="w-full">
+                        <div class="grid grid-cols-12 gap-4 items-end">
+                            <label class="col-span-8">
+                                <span class="block text-sm text-gray-700 mb-1">รายละเอียดภารกิจ</span>
+                                <select name="fte_roles[{{ $i }}][task_detail]"
+                                    class="w-full border p-2 rounded" required>
+                                    <option value="" disabled {{ empty($fte->task_detail) ? 'selected' : '' }}>
+                                        เลือกภารกิจ</option>
+                                    @php
+                                        $taskOptions = [
+                                            'ติดต่อประสานงาน',
+                                            'review literature',
+                                            'เขียนproposal',
+                                            'ดำเนินการเอกสารขอirb/submit irb',
+                                            'ดำเนินการเอกสารขอทุน/submit ทุน',
+                                            'เก็บข้อมูล',
+                                            'วิเคราะห์ข้อมูล',
+                                            'เขียนเล่มรายงาน',
+                                            'เขียนmanuscript',
+                                            'submit journal',
+                                            'เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์',
+                                            'นำเสนอผลงานวิจัย Oral/Poster presentation',
+                                            'ประชาสัมพันธ์-เบิกงบประมาณทุน',
+                                        ];
+                                    @endphp
+                                    @foreach ($taskOptions as $task)
+                                        <option value="{{ $task }}"
+                                            {{ $fte->task_detail === $task ? 'selected' : '' }}>
+                                            {{ $task }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </label>
+
+                            <label class="col-span-3">
                                 <span class="block text-sm text-gray-700 mb-1">FTE</span>
                                 <input name="fte_roles[{{ $i }}][fte_value]" type="number" step="0.01"
-                                    value="{{ $fte->fte_value }}" class="w-full border p-2 rounded">
+                                    min="0.01" max="1" value="{{ $fte->fte_value }}"
+                                    class="w-full border p-2 rounded" placeholder="0.01 - 1.00" required>
                             </label>
-                            <button type="button" onclick="removeRow('fte-{{ $i }}', 'fte')"
-                                class="text-red-600 mb-2">✕</button>
+
+                            <div class="col-span-1 flex items-end justify-end">
+                                <button type="button" onclick="removeRow('fte-{{ $i }}', 'fte')"
+                                    class="text-red-600 text-xl mb-2">✕</button>
+                            </div>
                         </div>
+
                     </div>
                 @endforeach
             </div>
@@ -1118,16 +1155,38 @@
                     </label>
                 </div>
 
-                <!-- บรรทัด 3 -->
-                <div class="flex gap-4 items-end">
-                    <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">FTE</span>
-                        <input name="fte_roles[${index}][fte_value]" type="number" step="0.01" placeholder="โปรดใส่ค่า FTE"
-                            class="w-full border p-2 rounded">
+             <div class="grid grid-cols-12 gap-4 items-end">
+                    <label class="col-span-8">
+                        <span class="block text-sm text-gray-700 mb-1">รายละเอียดภารกิจ</span>
+                        <select name="fte_roles[${index}][task_detail]" class="w-full border p-2 rounded" required>
+                            <option value="" disabled selected>เลือกภารกิจ</option>
+                            <option>ติดต่อประสานงาน</option>
+                            <option>review literature</option>
+                            <option>เขียนproposal</option>
+                            <option>ดำเนินการเอกสารขอirb/submit irb</option>
+                            <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
+                            <option>เก็บข้อมูล</option>
+                            <option>วิเคราะห์ข้อมูล</option>
+                            <option>เขียนเล่มรายงาน</option>
+                            <option>เขียนmanuscript</option>
+                            <option>submit journal</option>
+                            <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
+                            <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
+                            <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
+                        </select>
                     </label>
-                    <button type="button" onclick="removeRow('${id}', 'fte')" class="text-red-600 mb-2">✕</button>
+
+                    <label class="col-span-3">
+                        <span class="block text-sm text-gray-700 mb-1">FTE</span>
+                        <input name="fte_roles[${index}][fte_value]" type="number" step="0.01" min="0.01" max="1"
+                            placeholder="0.01 - 1.00" class="w-full border p-2 rounded" required>
+                    </label>
+
+                    <div class="col-span-1 flex items-end justify-end">
+                        <button type="button" onclick="removeRow('${id}', 'fte')" class="text-red-600 text-xl mb-2">✕</button>
+                    </div>
                 </div>
-            </div>
+             </div>
         `);
 
             reindexFTE();
