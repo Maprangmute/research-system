@@ -10,14 +10,7 @@ use App\Models\Irb;
 use App\Models\CoResearch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-// use Barryvdh\DomPDF\Facade\Pdf;
-use Barryvdh\Snappy\Facades\SnappyPdf;
 use PDF;
-use Dompdf\Dompdf;
-use Dompdf\Options;
-
-// use Barryvdh\Snappy\Facades\SnappyPdf as PDF; 
-
 
 class ProjectController extends Controller
 {
@@ -68,6 +61,7 @@ class ProjectController extends Controller
 
         $validated['project_code'] = 'SP_' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
         $validated['user_id'] = Auth::id();
+        $validated['updated_by'] = Auth::id(); // <--- สำคัญ!
 
         $project = new Project($validated);
         $this->fillStrategies($request, $project);
@@ -80,9 +74,7 @@ class ProjectController extends Controller
         $this->syncCoResearch($request, $project);
 
         return redirect()->route('projects.show', $project->id)
-    ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
-
-
+            ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
     }
 
     public function edit($id)
@@ -112,42 +104,45 @@ class ProjectController extends Controller
             abort(403);
         }
 
-        $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
+        $project->load(['copis', 'irbs', 'fteRoles', 'outputs', 'updatedBy']);
         return view('projects.detail', compact('project'));
     }
 
     public function update(Request $request, Project $project)
-    {
-        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+{
+    $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+    $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
 
-        if (!$hasPermission) {
-            abort(403);
-        }
-
-        $validated = $this->validateProject($request);
-        $project->fill($validated);
-        $this->fillStrategies($request, $project);
-        $project->save();
-
-        $project->fteRoles()->delete();
-        $this->syncFTERoles($request, $project);
-
-        $project->outputs()->delete();
-        $this->syncOutputs($request, $project);
-
-        $project->copis()->delete();
-        $this->syncCopis($request, $project);
-
-        $project->irbs()->delete();
-        $this->syncIrbs($request, $project);
-
-        $project->coResearches()->delete();
-        $this->syncCoResearch($request, $project);
-
-        return redirect()->route('projects.index')->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
+    if (!$hasPermission) {
+        abort(403);
     }
 
+    $validated = $this->validateProject($request);
+
+    // ตั้งค่า updated_by เป็น user ที่กำลังล็อกอิน
+    $validated['updated_by'] = Auth::id();
+
+    $project->fill($validated);
+    $this->fillStrategies($request, $project);
+    $project->save();
+
+    $project->fteRoles()->delete();
+    $this->syncFTERoles($request, $project);
+
+    $project->outputs()->delete();
+    $this->syncOutputs($request, $project);
+
+    $project->copis()->delete();
+    $this->syncCopis($request, $project);
+
+    $project->irbs()->delete();
+    $this->syncIrbs($request, $project);
+
+    $project->coResearches()->delete();
+    $this->syncCoResearch($request, $project);
+
+    return redirect()->route('projects.index')->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
+}
     public function destroy(Project $project)
     {
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
@@ -166,37 +161,16 @@ class ProjectController extends Controller
         return redirect()->route('projects.index')->with('success', 'ลบโครงการเรียบร้อยแล้ว');
     }
 
-// public function exportPdf(Project $project)
-// {
-//     $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
-//     $options = new \Dompdf\Options();
-//     $options->set('defaultFont', 'thsarabun');
-//     $options->set('isHtml5ParserEnabled', true);
-//     $options->set('isRemoteEnabled', true);
-//     $dompdf = new \Dompdf\Dompdf($options);
+    public function exportPdf(Project $project)
+    {
+        $project->load(['copis', 'irbs', 'fteRoles', 'outputs', 'updatedBy']);
 
-//     $html = view('projects.pdf', compact('project'))->render();
-//     $dompdf->loadHtml($html, 'UTF-8');
-//     $dompdf->setPaper('A4', 'portrait');
-//     $dompdf->render();
+        $user = Auth::user();
+        $pdf = PDF::loadView('projects.pdf', compact('project', 'user'));
+        return $pdf->stream('project.pdf');
+    }
 
-//     return response($dompdf->output(), 200, [
-//         'Content-Type' => 'application/pdf',
-//         'Content-Disposition' => 'inline; filename="project.pdf"',
-//     ]);
-// }
-
-
-public function exportPdf(Project $project)
-{
-    $project->load(['copis', 'irbs', 'fteRoles', 'outputs']);
-
-    $user = Auth::user(); // <<--- สำคัญ
-
-    $pdf = PDF::loadView('projects.pdf', compact('project', 'user'));
-    return $pdf->stream('project.pdf');
-}
-
+    // ====== SUB-FUNCTIONS ======
     private function validateProject(Request $request): array
     {
         return $request->validate([
@@ -227,6 +201,7 @@ public function exportPdf(Project $project)
             'io_code' => 'nullable|string',
             'course_code' => 'nullable|string',
             'end_date' => 'nullable|string',
+            'updated_by' => 'nullable|integer',
         ]);
     }
 
@@ -241,89 +216,164 @@ public function exportPdf(Project $project)
         ];
 
         foreach ($valid_strategies as $main => $subs) {
-            $project->{"strategy_$main"} = false;
+            $mainChecked = false;
             foreach ($subs as $sub) {
                 $field = "strategy_{$main}_{$sub}";
                 $has = $request->has($field);
-                $project->$field = $has;
-                if ($has) {
-                    $project->{"strategy_$main"} = true;
+                if ($project->$field != $has) {
+                    $project->$field = $has;
                 }
+                if ($has) {
+                    $mainChecked = true;
+                }
+            }
+            $mainField = "strategy_$main";
+            if ($project->$mainField != $mainChecked) {
+                $project->$mainField = $mainChecked;
             }
         }
     }
 
     private function syncFTERoles(Request $request, Project $project): void
     {
+        $ids = [];
         foreach ($request->fte_roles ?? [] as $fte) {
-            if (!empty($fte['name'])) {
-                FteRole::create([
-                    'project_id' => $project->id,
-                    'role_group' => $fte['role_group'] ?? '',
-                    'name' => $fte['name'],
-                    'job_detail' => $fte['job_detail'],
-                    'start_date' => $fte['start_date'],
-                    'end_date' => $fte['end_date'],
-                    'fte_value' => $fte['fte_value'] ?? 0,
-                      'task_detail'  => $fte['task_detail'] ?? null, // ✅ เพิ่มตรงนี้
+            if (!empty($fte['id'])) {
+                $fteRole = \App\Models\FteRole::find($fte['id']);
+                if ($fteRole) {
+                    $fteRole->update([
+                        'role_group'  => $fte['role_group'] ?? '',
+                        'name'        => $fte['name'],
+                        'job_detail'  => $fte['job_detail'],
+                        'start_date'  => $fte['start_date'],
+                        'end_date'    => $fte['end_date'],
+                        'fte_value'   => $fte['fte_value'] ?? 0,
+                        'task_detail' => $fte['task_detail'] ?? null,
+                    ]);
+                    $ids[] = $fteRole->id;
+                }
+            } else if (!empty($fte['name'])) {
+                $new = \App\Models\FteRole::create([
+                    'project_id'  => $project->id,
+                    'role_group'  => $fte['role_group'] ?? '',
+                    'name'        => $fte['name'],
+                    'job_detail'  => $fte['job_detail'],
+                    'start_date'  => $fte['start_date'],
+                    'end_date'    => $fte['end_date'],
+                    'fte_value'   => $fte['fte_value'] ?? 0,
+                    'task_detail' => $fte['task_detail'] ?? null,
                 ]);
+                $ids[] = $new->id;
             }
         }
+        $project->fteRoles()->whereNotIn('id', $ids)->delete();
     }
 
     private function syncOutputs(Request $request, Project $project): void
     {
+        $ids = [];
         foreach ($request->outputs ?? [] as $output) {
-            if (!empty($output['title'])) {
-                Output::create([
-                    'project_id' => $project->id,
-                    'type' => $output['type'] ?? '',
-                    'title' => $output['title'],
-                    'project_output' => $output['project_output'],
-                    'year' => $output['year'] ?? '',
+            if (!empty($output['id'])) {
+                $outputModel = \App\Models\Output::find($output['id']);
+                if ($outputModel) {
+                    $outputModel->update([
+                        'type'           => $output['type'] ?? '',
+                        'title'          => $output['title'],
+                        'project_output' => $output['project_output'],
+                        'year'           => $output['year'] ?? '',
+                    ]);
+                    $ids[] = $outputModel->id;
+                }
+            } else if (!empty($output['title'])) {
+                $new = \App\Models\Output::create([
+                    'project_id'      => $project->id,
+                    'type'            => $output['type'] ?? '',
+                    'title'           => $output['title'],
+                    'project_output'  => $output['project_output'],
+                    'year'            => $output['year'] ?? '',
                 ]);
+                $ids[] = $new->id;
             }
         }
+        $project->outputs()->whereNotIn('id', $ids)->delete();
     }
 
     private function syncCopis(Request $request, Project $project): void
     {
+        $ids = [];
         foreach ($request->copis ?? [] as $copi) {
-            if (!empty($copi['name'])) {
-                Copi::create([
-                    'project_id' => $project->id,
-                    'name' => $copi['name'],
+            if (!empty($copi['id'])) {
+                $copiModel = \App\Models\Copi::find($copi['id']);
+                if ($copiModel) {
+                    $copiModel->update([
+                        'name'        => $copi['name'],
+                        'affiliation' => $copi['affiliation'] ?? '',
+                    ]);
+                    $ids[] = $copiModel->id;
+                }
+            } else if (!empty($copi['name'])) {
+                $new = \App\Models\Copi::create([
+                    'project_id'  => $project->id,
+                    'name'        => $copi['name'],
                     'affiliation' => $copi['affiliation'] ?? '',
                 ]);
+                $ids[] = $new->id;
             }
         }
+        $project->copis()->whereNotIn('id', $ids)->delete();
     }
 
     private function syncIrbs(Request $request, Project $project): void
     {
+        $ids = [];
         foreach ($request->irbs ?? [] as $irb) {
-            if (!empty($irb['code'])) {
-                Irb::create([
+            if (!empty($irb['id'])) {
+                $irbModel = \App\Models\Irb::find($irb['id']);
+                if ($irbModel) {
+                    $irbModel->update([
+                        'code'    => $irb['code'],
+                        'exp_date'=> $irb['exp_date'],
+                        'source'  => $irb['source'] ?? '',
+                    ]);
+                    $ids[] = $irbModel->id;
+                }
+            } else if (!empty($irb['code'])) {
+                $new = \App\Models\Irb::create([
                     'project_id' => $project->id,
-                    'code' => $irb['code'],
-                    'exp_date' => $irb['exp_date'],
-                    'source' => $irb['source'] ?? '',
+                    'code'       => $irb['code'],
+                    'exp_date'   => $irb['exp_date'],
+                    'source'     => $irb['source'] ?? '',
                 ]);
+                $ids[] = $new->id;
             }
         }
+        $project->irbs()->whereNotIn('id', $ids)->delete();
     }
 
     private function syncCoResearch(Request $request, Project $project): void
     {
+        $ids = [];
         foreach ($request->coresearch ?? [] as $core) {
-            if (!empty($core['name'])) {
-                CoResearch::create([
-                    'project_id' => $project->id,
-                    'name' => $core['name'],
+            if (!empty($core['id'])) {
+                $coreModel = \App\Models\CoResearch::find($core['id']);
+                if ($coreModel) {
+                    $coreModel->update([
+                        'name'        => $core['name'],
+                        'unit_status' => $core['unit_status'],
+                        'affiliation' => $core['affiliation'] ?? '',
+                    ]);
+                    $ids[] = $coreModel->id;
+                }
+            } else if (!empty($core['name'])) {
+                $new = \App\Models\CoResearch::create([
+                    'project_id'  => $project->id,
+                    'name'        => $core['name'],
                     'unit_status' => $core['unit_status'],
                     'affiliation' => $core['affiliation'] ?? '',
                 ]);
+                $ids[] = $new->id;
             }
         }
+        $project->coResearches()->whereNotIn('id', $ids)->delete();
     }
 }

@@ -206,43 +206,53 @@
         </table>
 
 
-       <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
-<table class="w-full table-auto border mb-6 text-sm">
-    <thead class="bg-gray-100">
-        <tr>
-            <th class="border px-2 py-1 text-center">#</th>
-            <th class="border px-2 py-1">ชื่อ</th>
-            <th class="border px-2 py-1">กลุ่ม</th>
-            <th class="border px-2 py-1">ภาระงาน</th>
-            <th class="border px-2 py-1">รายละเอียดภารกิจ</th> {{-- ✅ ใหม่ --}}
-            <th class="border px-2 py-1">วันเริ่ม</th>
-            <th class="border px-2 py-1">วันสิ้นสุด</th>
-            <th class="border px-2 py-1 text-center">FTE</th>
-        </tr>
-    </thead>
-    <tbody>
-        @forelse ($project->fteRoles as $i => $fte)
-            <tr>
-                <td class="border px-2 py-1 text-center">{{ $i + 1 }}</td>
-                <td class="border px-2 py-1">{{ $fte->name }}</td>
-                <td class="border px-2 py-1">{{ $fte->role_group }}</td>
-                <td class="border px-2 py-1">{{ $fte->job_detail }}</td>
-                <td class="border px-2 py-1">{{ $fte->task_detail ?? '-' }}</td> {{-- ✅ ใหม่ --}}
-                <td class="border px-2 py-1">
-                    {{ $fte->start_date ? \Carbon\Carbon::parse($fte->start_date)->format('d/m/Y') : '-' }}
-                </td>
-                <td class="border px-2 py-1">
-                    {{ $fte->end_date ? \Carbon\Carbon::parse($fte->end_date)->format('d/m/Y') : '-' }}
-                </td>
-                <td class="border px-2 py-1 text-center">{{ $fte->fte_value }}</td>
-            </tr>
-        @empty
-            <tr>
-                <td colspan="8" class="text-center py-2">ไม่มีข้อมูล</td> {{-- เปลี่ยนจาก 7 → 8 --}}
-            </tr>
-        @endforelse
-    </tbody>
-</table>
+        <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
+        <table class="w-full table-auto border mb-6 text-sm">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="border px-2 py-1 text-center">#</th>
+                    <th class="border px-2 py-1">ชื่อ</th>
+                    <th class="border px-2 py-1">กลุ่ม</th>
+                    <th class="border px-2 py-1">ภาระงาน</th>
+                    <th class="border px-2 py-1">รายละเอียดภารกิจ</th> {{-- ✅ ใหม่ --}}
+                    <th class="border px-2 py-1">วันเริ่ม</th>
+                    <th class="border px-2 py-1">วันสิ้นสุด</th>
+                    <th class="border px-2 py-1 text-center">FTE</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($project->fteRoles as $i => $fte)
+                    <tr>
+                        <td class="border px-2 py-1 text-center">{{ $i + 1 }}</td>
+                        <td class="border px-2 py-1">{{ $fte->name }}</td>
+                        <td class="border px-2 py-1">{{ $fte->role_group }}</td>
+                        <td class="border px-2 py-1">{{ $fte->job_detail }}</td>
+                        <td class="border px-2 py-1">{{ $fte->task_detail ?? '-' }}</td> {{-- ✅ ใหม่ --}}
+                        <td class="border px-2 py-1 text-center">
+                            @php
+                                \Carbon\Carbon::setLocale('th');
+                                $date = $fte->start_date ? \Carbon\Carbon::parse($fte->start_date) : null;
+                                $thaiDate = $date ? $date->translatedFormat('j F') . ' ' . ($date->year + 543) : '-';
+                            @endphp
+                            {{ $thaiDate }}
+                        </td>
+                        <td class="border px-2 py-1 text-center">
+                            @php
+                                \Carbon\Carbon::setLocale('th');
+                                $date = $fte->end_date ? \Carbon\Carbon::parse($fte->end_date) : null;
+                                $thaiDate = $date ? $date->translatedFormat('j F') . ' ' . ($date->year + 543) : '-';
+                            @endphp
+                            {{ $thaiDate }}
+                        </td>
+                        <td class="border px-2 py-1 text-center">{{ $fte->fte_value }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="8" class="text-center py-2">ไม่มีข้อมูล</td> {{-- เปลี่ยนจาก 7 → 8 --}}
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
 
 
 
@@ -265,7 +275,20 @@
                         <td class="border px-2 py-1">{{ $output->type }}</td>
                         <td class="border px-2 py-1">{{ $output->output ?? '-' }}</td>
                         <td class="border px-2 py-1 text-center">
-                            {{ is_numeric($output->year) ? $output->year : $output->year }}
+                            @php
+                                \Carbon\Carbon::setLocale('th');
+                                $dateValue = $output->year;
+                                $formatted = '-';
+                                try {
+                                    if (!empty($dateValue)) {
+                                        $date = \Carbon\Carbon::parse($dateValue);
+                                        $formatted = $date->translatedFormat('j F') . ' ' . ($date->year + 543);
+                                    }
+                                } catch (\Exception $e) {
+                                    $formatted = $dateValue; // ถ้า parse ไม่ได้ แสดงค่าดิบ
+                                }
+                            @endphp
+                            {{ $formatted }}
                         </td>
                     </tr>
                 @empty
@@ -353,6 +376,58 @@
                 @endforeach
             </tbody>
         </table>
+@php
+    // ข้อมูลผู้แก้ไขล่าสุด
+    $user = $project->updatedBy;
+    $updatedBy = $user ? trim(($user->prefix ?? '') . ' ' . $user->name) : '-';
 
+    if ($project->updated_at) {
+        $carbonDate = \Carbon\Carbon::parse($project->updated_at)
+            ->setTimezone('Asia/Bangkok')
+            ->locale('th');
+        $dayMonth = $carbonDate->translatedFormat('j F');
+        $yearBuddhist = $carbonDate->year + 543;
+        $time = $carbonDate->format('H:i');
+        $updatedAt = "{$dayMonth} {$yearBuddhist} {$time} น.";
+    } else {
+        $updatedAt = '';
+    }
+
+    // ข้อมูลผู้สร้าง (createdBy)
+    $creator = $project->createdBy ?? null;
+    $createdBy = $creator ? trim(($creator->prefix ?? '') . ' ' . $creator->name) : '-';
+
+    if ($project->created_at) {
+        $createdAtDate = \Carbon\Carbon::parse($project->created_at)
+            ->setTimezone('Asia/Bangkok')
+            ->locale('th');
+        $createdDayMonth = $createdAtDate->translatedFormat('j F');
+        $createdYearBuddhist = $createdAtDate->year + 543;
+        $createdTime = $createdAtDate->format('H:i');
+        $createdAt = "{$createdDayMonth} {$createdYearBuddhist} {$createdTime} น.";
+    } else {
+        $createdAt = '';
+    }
+@endphp
+
+<div class="mt-8 flex flex-col space-y-1">
+    <div class="text-xs text-gray-500 italic">
+        ข้อมูลล่าสุดโดย {{ $updatedBy }}
+        @if($updatedAt)
+            | อัปเดทเมื่อ {{ $updatedAt }}
+        @endif
+    </div>
+    <div class="text-xs text-gray-400 italic">
+        สร้างโดย {{ $createdBy }}
+        @if($createdAt)
+            | สร้างเมื่อ {{ $createdAt }}
+        @endif
+    </div>
+</div>
+        <div class="mt-4">
+            <a href="{{ route('projects.index') }}" class="text-blue-600 hover:underline">
+                ← กลับไปยังรายการโครงการ
+            </a>
+        </div>
     </div>
 @endsection

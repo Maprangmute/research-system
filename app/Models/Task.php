@@ -3,19 +3,63 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use App\Models\ProjectLog;
 
 class Task extends Model
 {
     protected $fillable = [
-    'title', 'start', 'end', 'project_id', 'user_id',
-    'parent_id', 'status', 'progress', 'owner'
-];
+        'title', 'start', 'end', 'project_id', 'user_id',
+        'parent_id', 'status', 'progress', 'owner'
+    ];
 
     protected $casts = [
         'start' => 'date',
         'end' => 'date',
     ];
 
+    // ==== Log ทุก action ที่เกี่ยวกับ Task ====
+    protected static function booted()
+    {
+        // Log create
+        static::created(function ($task) {
+            ProjectLog::create([
+                'project_id'      => $task->project_id,
+                'user_id'         => Auth::id() ?? null,
+                'project_name_th' => $task->project->project_name_th ?? '',
+                'action'          => 'task_create',
+                'changes'         => $task->toArray(),
+            ]);
+        });
+
+        // Log update
+        static::updating(function ($task) {
+            $diff = $task->getDirty();
+            unset($diff['updated_at']);
+            if (!empty($diff)) {
+                ProjectLog::create([
+                    'project_id'      => $task->project_id,
+                    'user_id'         => Auth::id() ?? null,
+                    'project_name_th' => $task->project->project_name_th ?? '',
+                    'action'          => 'task_update',
+                    'changes'         => $diff,
+                ]);
+            }
+        });
+
+        // Log delete
+        static::deleting(function ($task) {
+            ProjectLog::create([
+                'project_id'      => $task->project_id,
+                'user_id'         => Auth::id() ?? null,
+                'project_name_th' => $task->project->project_name_th ?? '',
+                'action'          => 'task_delete',
+                'changes'         => $task->toArray(),
+            ]);
+        });
+    }
+
+    // ===== Relation =====
     public function project()
     {
         return $this->belongsTo(Project::class);

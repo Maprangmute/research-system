@@ -4,11 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\ProjectLog;
+use Illuminate\Support\Facades\Auth;
 
 class Project extends Model
 {
+    use SoftDeletes; // ถ้าต้องการ soft delete
+
     protected $fillable = [
-        'project_code', // in fillable 
+        'project_code',
         'project_name_th',
         'project_name_en',
         'project_type',
@@ -21,10 +26,7 @@ class Project extends Model
         'funding_org_type',
         'funding_name',
         'budget',
-        // 'start_month',
         'start_year',
-        // 'end_month',
-        // 'end_year',
         'planning_status',
         'proposal_date',
         'execution_status',
@@ -33,18 +35,12 @@ class Project extends Model
         'end_date',
         'review_status',
         'closure_status',
-        // 'io_code',
-        // 'course_code',
-        // 'r_codes',
-        // 'irb_codes',
-        // 'irb_sources',
         'user_id',
         'team_start_date',
         'team_end_date',
         'pi_name',
         'pi_affiliation',
         'task_detail',
-
         // Strategy flags
         'strategy_1',
         'strategy_1_1',
@@ -70,6 +66,59 @@ class Project extends Model
         'strategy_5_2',
     ];
 
+    // ====== Log events: create, update, delete, restore ======
+    protected static function booted()
+    {
+        // Log create
+        static::created(function ($project) {
+            ProjectLog::create([
+                'project_id'      => $project->id,
+                'user_id'         => Auth::id() ?? null,
+                'project_name_th' => $project->project_name_th,
+                'action'          => 'create',
+                'changes'         => $project->toArray(),
+            ]);
+        });
+
+        // Log update (เฉพาะ field ที่เปลี่ยน ไม่รวม updated_at)
+        static::updating(function ($project) {
+            $diff = $project->getDirty();
+            unset($diff['updated_at']);
+            if (!empty($diff)) {
+                ProjectLog::create([
+                    'project_id'      => $project->id,
+                    'user_id'         => Auth::id() ?? null,
+                    'project_name_th' => $project->project_name_th,
+                    'action'          => 'update',
+                    'changes'         => $diff,
+                ]);
+            }
+        });
+
+        // Log delete (Soft Delete หรือ Hard Delete)
+        static::deleting(function ($project) {
+            ProjectLog::create([
+                'project_id'      => $project->id,
+                'user_id'         => Auth::id() ?? null,
+                'project_name_th' => $project->project_name_th,
+                'action'          => 'delete',
+                'changes'         => $project->toArray(),
+            ]);
+        });
+
+        // Log restore (Soft Delete)
+        static::restored(function ($project) {
+            ProjectLog::create([
+                'project_id'      => $project->id,
+                'user_id'         => Auth::id() ?? null,
+                'project_name_th' => $project->project_name_th,
+                'action'          => 'restore',
+                'changes'         => [],
+            ]);
+        });
+    }
+
+    // ========== Relation ==========
     public function copis(): HasMany
     {
         return $this->hasMany(Copi::class);
@@ -84,17 +133,38 @@ class Project extends Model
     {
         return $this->hasMany(Output::class);
     }
+
     public function irbs(): HasMany
     {
         return $this->hasMany(Irb::class);
     }
 
-    public function coResearches()
+    public function coResearches(): HasMany
     {
         return $this->hasMany(CoResearch::class);
     }
-    public function tasks()
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(ProjectLog::class, 'project_id');
+    }
+
+    public function updatedBy()
 {
-    return $this->hasMany(Task::class);
+    return $this->belongsTo(User::class, 'updated_by');
 }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

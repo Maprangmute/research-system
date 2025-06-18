@@ -24,6 +24,16 @@ Route::middleware([
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
+use App\Http\Controllers\ProjectLogController;
+
+Route::middleware(['auth'])->group(function() {
+    Route::get('/project-logs', [ProjectLogController::class, 'index'])->name('project_logs.index');
+    Route::get('/project-logs/{id}', [ProjectLogController::class, 'show'])->name('project_logs.show');
+    Route::delete('/project-logs/{id}', [ProjectLogController::class, 'destroy'])->name('project_logs.destroy');
+    // ดู log เฉพาะโปรเจค
+    Route::get('/projects/{project}/logs', [ProjectLogController::class, 'projectLogs'])->name('project_logs.project');
+});
+
 
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\GanttController;
@@ -104,3 +114,5 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     // delete data 
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
 });
+
+
