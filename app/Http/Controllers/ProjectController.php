@@ -161,14 +161,22 @@ class ProjectController extends Controller
         return redirect()->route('projects.index')->with('success', 'ลบโครงการเรียบร้อยแล้ว');
     }
 
-    public function exportPdf(Project $project)
-    {
-        $project->load(['copis', 'irbs', 'fteRoles', 'outputs', 'updatedBy']);
+public function exportPdf(Project $project)
+{
+    $project->load(['copis', 'irbs', 'fteRoles', 'outputs', 'updatedBy', 'createdBy']);
 
-        $user = Auth::user();
-        $pdf = PDF::loadView('projects.pdf', compact('project', 'user'));
-        return $pdf->stream('project.pdf');
-    }
+    $user = Auth::user();
+
+    // $author = $project->createdBy ? ($project->createdBy->prefix . $project->createdBy->name) : '';
+    $author = $project->createdBy ? ($project->createdBy->prefix . $project->createdBy->name) : '';
+    $creater = $user ? ($user->prefix . $user->name) : '';
+    $dateStr = \Carbon\Carbon::now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
+    $filename = "{$dateStr}_{$creater}_{$project->project_name_th}.pdf";
+
+    $pdf = PDF::loadView('projects.pdf', compact('project', 'user'));
+    return $pdf->stream($filename);
+}
+
 
     // ====== SUB-FUNCTIONS ======
     private function validateProject(Request $request): array

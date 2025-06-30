@@ -26,12 +26,18 @@ Route::middleware([
 
 use App\Http\Controllers\ProjectLogController;
 
-Route::middleware(['auth'])->group(function() {
+Route::middleware(['auth'])->group(function () {
     Route::get('/project-logs', [ProjectLogController::class, 'index'])->name('project_logs.index');
     Route::get('/project-logs/{id}', [ProjectLogController::class, 'show'])->name('project_logs.show');
     Route::delete('/project-logs/{id}', [ProjectLogController::class, 'destroy'])->name('project_logs.destroy');
     // ดู log เฉพาะโปรเจค
     Route::get('/projects/{project}/logs', [ProjectLogController::class, 'projectLogs'])->name('project_logs.project');
+});
+
+
+use App\Http\Controllers\ProgressReportController;
+Route::middleware(['auth'])->group(function () {
+   Route::resource('projects.progress_reports', ProgressReportController::class);
 });
 
 
@@ -59,11 +65,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ]);
     Route::resource('/task-links', TaskLinkController::class)->only([
-    'index', 'store', 'update', 'destroy'
-]);
-Route::get('/projects/{project}/task-links', [TaskLinkController::class, 'projectLinks']);
-
-
+        'index',
+        'store',
+        'update',
+        'destroy'
+    ]);
+    Route::get('/projects/{project}/task-links', [TaskLinkController::class, 'projectLinks']);
 });
 
 
@@ -114,5 +121,3 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     // delete data 
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
 });
-
-

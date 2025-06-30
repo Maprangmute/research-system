@@ -270,95 +270,29 @@
                     </svg>
                 </label>
 
-
-
-
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BA000 - Project Planning (Status)</span>
-                    <select name="planning_status" id="planning_status"
-                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
-                        required>
-                        <option value="0" data-color="#991b1b">ยกเลิก (Canceled) 0%</option>
-                        <option value="" disabled selected style="background-color: white; ">ระบุคำตอบ
-                        </option>
-                        <option value="25" data-color="#dc2626">อยู่ระหว่างการรอ (On Hold) 25%</option>
-                        <option value="50" data-color="#f59e0b">กำลังดำเนินการ (In Progress) 50%</option>
-                        <option value="75" data-color="#3b82f6">อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
-                        </option>
-                        <option value="100" data-color="#16a34a">เสร็จสิ้น (Complete) 100%</option>
-
+                    {{-- BA000 - Project Planning (Status) --}}
+                    <span class="block text-sm text-gray-700 mb-1">Project Status</span>   
+                    <select name="planning_status" id="planning_status" class="w-full border p-2 rounded font-semibold"
+                        onchange="updateStatusColor(this)" required>
+                        <option value="" disabled selected style="background-color: #fff; color: #222;">
+                            ระบุสถานะของโปรเจค</option>
+                        <option value="Project Planing (เริ่มต้น - submit IRB)" data-color="#FFE599"
+                            style="background-color:#FFE599; color:#222;">Project Planing (เริ่มต้น - submit IRB)</option>
+                        <option value="เก็บข้อมูล" data-color="#B6E2D3" style="background-color:#B6E2D3; color:#222;">
+                            เก็บข้อมูล</option>
+                        <option value="วิเคราะห์ข้อมูล" data-color="#B3D8F7"
+                            style="background-color:#B3D8F7; color:#222;">วิเคราะห์ข้อมูล</option>
+                        <option value="เขียนรายงานและpublication" data-color="#D6C1E6"
+                            style="background-color:#D6C1E6; color:#222;">เขียนรายงาน และ publication</option>
+                        <option value="ปิดโปรเจค" data-color="#C6F1E7" style="background-color:#C6F1E7; color:#222;">
+                            ปิดโปรเจค</option>
+                        <option value="ยกเลิกโปรเจค" data-color="#F7A9A8" style="background-color:#F7A9A8; color:#222;">
+                            ยกเลิกโปรเจค</option>
                     </select>
                 </label>
 
 
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BC000 - Project Execution (Status)</span>
-                    <select name="execution_status" id="execution_status"
-                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
-                        required>
-                        <option value="" selected hidden class="text-b">ระบุคำตอบ</option>
-                        <option value="0" data-color="#991b1b">ยกเลิก (Canceled) 0%</option>
-                        <option value="25" data-color="#dc2626">อยู่ระหว่างการรอ (On Hold) 25%</option>
-                        <option value="50" data-color="#f59e0b">กำลังดำเนินการ (In Progress) 50%</option>
-                        <option value="75" data-color="#3b82f6">อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
-                        </option>
-                        <option value="100" data-color="#16a34a">เสร็จสิ้น (Complete) 100%</option>
-
-                    </select>
-
-                    @error('execution_status')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </label>
-
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BD000 - Review Status (Status)</span>
-                    <select name="review_status" id="review_status"
-                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)">
-                        <option value="" disabled selected>ระบุคำตอบ</option>
-                        <option value="0" data-color="#991b1b" {{ old('review_status') == '0' ? 'selected' : '' }}>
-                            ยกเลิก (Canceled) 0%</option>
-                        <option value="25" data-color="#dc2626" {{ old('review_status') == '25' ? 'selected' : '' }}>
-                            อยู่ระหว่างการรอ (On Hold) 25%</option>
-                        <option value="50" data-color="#f59e0b" {{ old('review_status') == '50' ? 'selected' : '' }}>
-                            กำลังดำเนินการ (In Progress) 50%</option>
-                        <option value="75" data-color="#3b82f6" {{ old('review_status') == '75' ? 'selected' : '' }}>
-                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%</option>
-                        <option value="100" data-color="#16a34a"
-                            {{ old('review_status') == '100' ? 'selected' : '' }}>เสร็จสิ้น (Complete) 100%</option>
-
-                    </select>
-
-                    @error('review_status')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </label>
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BE000 - Closure Status (status)</span>
-                    <select name="closure_status" id="closure_status"
-                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)">
-                        <option value="" disabled {{ old('closure_status') ? '' : 'selected' }}>ระบุคำตอบ</option>
-                        <option value="25" data-color="#dc2626"
-                            {{ old('closure_status') == '25' ? 'selected' : '' }}>อยู่ระหว่างการรอ (On Hold) 25%</option>
-                        <option value="50" data-color="#f59e0b"
-                            {{ old('closure_status') == '50' ? 'selected' : '' }}>กำลังดำเนินการ (In Progress) 50%</option>
-                        <option value="75" data-color="#3b82f6"
-                            {{ old('closure_status') == '75' ? 'selected' : '' }}>อยู่ในระหว่างการตรวจสอบ/พิจารณา (In
-                            Review) 75%</option>
-                        <option value="100" data-color="#16a34a"
-                            {{ old('closure_status') == '100' ? 'selected' : '' }}>เสร็จสิ้น (Complete) 100%</option>
-                        <option value="0" data-color="#991b1b" {{ old('closure_status') == '0' ? 'selected' : '' }}>
-                            ยกเลิก (Canceled) 0%</option>
-                    </select>
-
-                    @error('closure_status')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </label>
 
 
             </div>
@@ -602,8 +536,7 @@
                         <label class="col-span-3">
                             <span class="block text-sm text-gray-700 mb-1">FTE</span>
                             <input name="fte_roles[0][fte_value]" type="number" step="0.01" min="0.01"
-                                max="1" class="w-full border p-2 rounded"
-                                placeholder="โปรดใส่ค่า FTE" required>
+                                max="1" class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE" required>
                         </label>
 
 
@@ -817,7 +750,7 @@
             const bgColor = selected.getAttribute("data-color") || "#ffffff";
             const isPlaceholder = selected.value === "";
             selectEl.style.backgroundColor = bgColor;
-            selectEl.style.color = isPlaceholder ? "#9ca3af" : "#ffffff";
+            selectEl.style.color = isPlaceholder ? "#9ca3af" : "#222";
         }
 
         // ✅ FORMAT BUDGET

@@ -155,9 +155,9 @@ class Project extends Model
     }
 
     public function updatedBy()
-{
-    return $this->belongsTo(User::class, 'updated_by');
-}
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 
     public function createdBy()
     {
@@ -166,5 +166,10 @@ class Project extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+    // app/Models/Project.php
+    public function progressReports()
+    {
+        return $this->hasMany(ProgressReport::class);
     }
 }

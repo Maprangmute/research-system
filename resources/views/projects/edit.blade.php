@@ -14,8 +14,20 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
 
 
+
+
     <div class="max-w-5xl mx-auto mt-6 bg-white shadow-md rounded p-6">
+
+        <div class="mb-4">
+            {{-- <a href="javascript:history.back()" class="text-blue-600 hover:underline text-base font-semibold">
+                <<< ย้อนกลับ </a> --}}
+            <a href="{{ route('projects.index') }}" class="text-blue-600 hover:underline">
+                ← กลับไปยังรายการโครงการ
+            </a>
+        </div>
         <h2 class="text-xl font-bold mb-6 text-gray-800">✏️ แก้ไขข้อมูลโครงการวิจัย</h2>
+
+
 
         @if (session('success'))
             <div class="mb-4 p-3 bg-green-100 text-green-700 rounded">
@@ -389,165 +401,41 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BA000 - Project Planning (Status)</span>
-                    <select name="planning_status" id="planning_status"
-                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
-                        required>
-
+                    <span class="block text-sm text-gray-700 mb-1">Project Status</span>
+                    <select name="planning_status" id="planning_status" class="w-full border p-2 rounded font-semibold"
+                        onchange="updateStatusColor(this)" required>
                         <option value="" disabled
                             {{ old('planning_status', $project->planning_status) ? '' : 'selected' }}
-                            style="background-color: white; color: #9ca3af;">
-                            ระบุคำตอบ
+                            style="background-color: #fff; color: #222;">
+                            ระบุสถานะของโปรเจค
                         </option>
-
-                        <option value="0" data-color="#991b1b"
-                            {{ old('planning_status', $project->planning_status) == '0' ? 'selected' : '' }}>
-                            ยกเลิก (Canceled) 0%
+                        <option value="Project Planing (เริ่มต้น - submit IRB)" data-color="#FFE599"
+                            style="background-color:#FFE599; color:#222;"
+                            {{ old('planning_status', $project->planning_status) == 'Project Planing (เริ่มต้น - submit IRB)' ? 'selected' : '' }}>
+                            Project Planing (เริ่มต้น - submit IRB)
                         </option>
-
-                        <option value="25" data-color="#dc2626"
-                            {{ old('planning_status', $project->planning_status) == '25' ? 'selected' : '' }}>
-                            อยู่ระหว่างการรอ (On Hold) 25%
+                        <option value="เก็บข้อมูล" data-color="#B6E2D3" style="background-color:#B6E2D3; color:#222;"
+                            {{ old('planning_status', $project->planning_status) == 'เก็บข้อมูล' ? 'selected' : '' }}>
+                            เก็บข้อมูล
                         </option>
-
-                        <option value="50" data-color="#f59e0b"
-                            {{ old('planning_status', $project->planning_status) == '50' ? 'selected' : '' }}>
-                            กำลังดำเนินการ (In Progress) 50%
+                        <option value="วิเคราะห์ข้อมูล" data-color="#B3D8F7"
+                            style="background-color:#B3D8F7; color:#222;"
+                            {{ old('planning_status', $project->planning_status) == 'วิเคราะห์ข้อมูล' ? 'selected' : '' }}>
+                            วิเคราะห์ข้อมูล
                         </option>
-
-                        <option value="75" data-color="#3b82f6"
-                            {{ old('planning_status', $project->planning_status) == '75' ? 'selected' : '' }}>
-                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
+                        <option value="เขียนรายงานและpublication" data-color="#D6C1E6"
+                            style="background-color:#D6C1E6; color:#222;"
+                            {{ old('planning_status', $project->planning_status) == 'เขียนรายงานและpublication' ? 'selected' : '' }}>
+                            เขียนรายงาน และ publication
                         </option>
-
-                        <option value="100" data-color="#16a34a"
-                            {{ old('planning_status', $project->planning_status) == '100' ? 'selected' : '' }}>
-                            เสร็จสิ้น (Complete) 100%
+                        <option value="ปิดโปรเจค" data-color="#C6F1E7" style="background-color:#C6F1E7; color:#222;"
+                            {{ old('planning_status', $project->planning_status) == 'ปิดโปรเจค' ? 'selected' : '' }}>
+                            ปิดโปรเจค
                         </option>
-
-                    </select>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BC000 - Project Execution (Status)</span>
-                    <select name="execution_status" id="execution_status"
-                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
-                        required>
-
-                        <option value="" disabled
-                            {{ old('execution_status', $project->execution_status) ? '' : 'selected' }}
-                            style="background-color: white; color: #9ca3af;">
-                            ระบุคำตอบ
+                        <option value="ยกเลิกโปรเจค" data-color="#F7A9A8" style="background-color:#F7A9A8; color:#222;"
+                            {{ old('planning_status', $project->planning_status) == 'ยกเลิกโปรเจค' ? 'selected' : '' }}>
+                            ยกเลิกโปรเจค
                         </option>
-
-                        <option value="0" data-color="#991b1b"
-                            {{ old('execution_status', $project->execution_status) == '0' ? 'selected' : '' }}>
-                            ยกเลิก (Canceled) 0%
-                        </option>
-
-                        <option value="25" data-color="#dc2626"
-                            {{ old('execution_status', $project->execution_status) == '25' ? 'selected' : '' }}>
-                            อยู่ระหว่างการรอ (On Hold) 25%
-                        </option>
-
-                        <option value="50" data-color="#f59e0b"
-                            {{ old('execution_status', $project->execution_status) == '50' ? 'selected' : '' }}>
-                            กำลังดำเนินการ (In Progress) 50%
-                        </option>
-
-                        <option value="75" data-color="#3b82f6"
-                            {{ old('execution_status', $project->execution_status) == '75' ? 'selected' : '' }}>
-                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
-                        </option>
-
-                        <option value="100" data-color="#16a34a"
-                            {{ old('execution_status', $project->execution_status) == '100' ? 'selected' : '' }}>
-                            เสร็จสิ้น (Complete) 100%
-                        </option>
-
-                    </select>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BD000 - Review Status</span>
-                    <select name="review_status" id="review_status"
-                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
-                        required>
-
-                        <option value="" disabled
-                            {{ old('review_status', $project->review_status) ? '' : 'selected' }}
-                            style="background-color: white; color: #9ca3af;">
-                            ระบุคำตอบ
-                        </option>
-
-                        <option value="0" data-color="#991b1b"
-                            {{ old('review_status', $project->review_status) == '0' ? 'selected' : '' }}>
-                            ยกเลิก (Canceled) 0%
-                        </option>
-
-                        <option value="25" data-color="#dc2626"
-                            {{ old('review_status', $project->review_status) == '25' ? 'selected' : '' }}>
-                            อยู่ระหว่างการรอ (On Hold) 25%
-                        </option>
-
-                        <option value="50" data-color="#f59e0b"
-                            {{ old('review_status', $project->review_status) == '50' ? 'selected' : '' }}>
-                            กำลังดำเนินการ (In Progress) 50%
-                        </option>
-
-                        <option value="75" data-color="#3b82f6"
-                            {{ old('review_status', $project->review_status) == '75' ? 'selected' : '' }}>
-                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
-                        </option>
-
-                        <option value="100" data-color="#16a34a"
-                            {{ old('review_status', $project->review_status) == '100' ? 'selected' : '' }}>
-                            เสร็จสิ้น (Complete) 100%
-                        </option>
-
-                    </select>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BE000 - Closure Status</span>
-                    <select name="closure_status" id="closure_status"
-                        class="w-full border p-2 rounded text-white font-semibold" onchange="updateStatusColor(this)"
-                        required>
-
-                        <option value="" disabled
-                            {{ old('closure_status', $project->closure_status) ? '' : 'selected' }}
-                            style="background-color: white; color: #9ca3af;">
-                            ระบุคำตอบ
-                        </option>
-
-                        <option value="0" data-color="#991b1b"
-                            {{ old('closure_status', $project->closure_status) == '0' ? 'selected' : '' }}>
-                            ยกเลิก (Canceled) 0%
-                        </option>
-
-                        <option value="25" data-color="#dc2626"
-                            {{ old('closure_status', $project->closure_status) == '25' ? 'selected' : '' }}>
-                            อยู่ระหว่างการรอ (On Hold) 25%
-                        </option>
-
-                        <option value="50" data-color="#f59e0b"
-                            {{ old('closure_status', $project->closure_status) == '50' ? 'selected' : '' }}>
-                            กำลังดำเนินการ (In Progress) 50%
-                        </option>
-
-                        <option value="75" data-color="#3b82f6"
-                            {{ old('closure_status', $project->closure_status) == '75' ? 'selected' : '' }}>
-                            อยู่ในระหว่างการตรวจสอบ/พิจารณา (In Review) 75%
-                        </option>
-
-                        <option value="100" data-color="#16a34a"
-                            {{ old('closure_status', $project->closure_status) == '100' ? 'selected' : '' }}>
-                            เสร็จสิ้น (Complete) 100%
-                        </option>
-
                     </select>
                 </label>
 
@@ -970,11 +858,28 @@
 
 
 
-            <div class="mt-6">
-                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">💾
-                    บันทึกการเปลี่ยนแปลง</button>
+            <div class="mt-8 flex flex-col sm:flex-row sm:justify-between items-center gap-4">
+                <a href="{{ route('projects.index') }}"
+                    class="inline-flex items-center text-blue-700 font-semibold hover:underline hover:text-blue-900 transition-colors">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    กลับไปยังรายการโครงการ
+                </a>
+
+                <button type="submit"
+                    class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded shadow transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    บันทึกการเปลี่ยนแปลง
+                </button>
             </div>
-        </form>
+
+    </div>
+    </form>
     </div>
 
 
@@ -1445,7 +1350,7 @@
             selectEl.style.backgroundColor = bgColor;
 
             // ถ้าเป็น placeholder → ใช้สีดำ
-            selectEl.style.color = isPlaceholder ? "#9ca3af" : "#ffffff";
+            selectEl.style.color = isPlaceholder ? "#9ca3af" : "#222";
 
         }
 

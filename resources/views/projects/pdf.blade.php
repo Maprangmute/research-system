@@ -2,6 +2,11 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+   {{-- คนที่ดาวน์โหลด (user ปัจจุบัน) --}}
+<meta name="author" content="{{ $user ? trim(($user->prefix ?? '') . ' ' . $user->name) : '' }}">
+{{-- ผู้สร้างโครงการ --}}
+<meta name="subject" content="{{ $project->createdBy ? trim(($project->createdBy->prefix ?? '') . ' ' . $project->createdBy->name) : '' }}">
+
     <title>{{ $project->project_name_th }}</title>
     <style>
         @page {
@@ -44,7 +49,7 @@
 <body>
 {{-- HEADER --}}
 <htmlpageheader name="Header">
-    <div style="font-size: 14pt; color: #337ab7; padding-left: 10px;">
+    <div style="font-size: 16pt; color: black; padding-left: 10px;">
         {{ $project->project_name_th }}
     </div>
 </htmlpageheader>
@@ -82,6 +87,7 @@
         <li><strong>ขนาด:</strong> {{ $project->size }}</li>
         <li><strong>รหัสโครงการ R:</strong> {{ $project->r_code }}</li>
         <li><strong>ปีโปรเจค:</strong> {{ $project->start_year }}</li>
+        <li><strong>สถานะ</strong> {{ $project->planning_status }}</li>
     </ul>
 
     {{-- SECTION B --}}
