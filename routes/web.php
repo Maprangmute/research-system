@@ -109,8 +109,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
 
     // ✅ เส้นทางอื่น ๆ
     Route::get('/fte', [FteController::class, 'index'])->name('fte.index');
-    Route::get('/fte/detail', [FteController::class, 'detail'])->name('fte.detail');
-    Route::get('/overview', [OverviewController::class, 'index'])->name('overview');
+    Route::get('/fte/{person}/detail', [FteController::class, 'detail'])->name('fte.detail');
 
     // 🆕 เพิ่มรายละเอียดโครงการ
     Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');

@@ -535,7 +535,7 @@
 
                         <label class="col-span-3">
                             <span class="block text-sm text-gray-700 mb-1">FTE</span>
-                            <input name="fte_roles[0][fte_value]" type="number" step="0.01" min="0.01"
+                            <input name="fte_roles[0][fte_value]" type="number" step="0.01" min="0"
                                 max="1" class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE" required>
                         </label>
 
@@ -961,7 +961,7 @@
 
     <label class="col-span-3">
         <span class="block text-sm text-gray-700 mb-1">FTE</span>
-        <input name="fte_roles[${fteIndex}][fte_value]" type="number" step="0.01" min="0.01" max="1"
+        <input name="fte_roles[${fteIndex}][fte_value]" type="number" step="0.01" min="0" max="1"
             class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE" required>
     </label>
 
