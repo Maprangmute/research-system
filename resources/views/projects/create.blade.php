@@ -19,6 +19,10 @@
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+    <!-- 1. Include Tom Select -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
 
     <!-- ✅ เพิ่ม Plugin สำหรับเลือกปี -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
@@ -32,6 +36,10 @@
                 {{ session('success') }}
             </div>
         @endif
+        
+            @php
+                $allUsers = \App\Models\User::orderBy('name')->get();
+            @endphp
 
         <form action="{{ route('projects.store') }}" method="POST">
             @csrf
@@ -272,7 +280,7 @@
 
                 <label class="w-full">
                     {{-- BA000 - Project Planning (Status) --}}
-                    <span class="block text-sm text-gray-700 mb-1">Project Status</span>   
+                    <span class="block text-sm text-gray-700 mb-1">Project Status</span>
                     <select name="planning_status" id="planning_status" class="w-full border p-2 rounded font-semibold"
                         onchange="updateStatusColor(this)" required>
                         <option value="" disabled selected style="background-color: #fff; color: #222;">
@@ -338,20 +346,36 @@
             <button type="button" onclick="addIRBCode()" class="mb-6 px-3 py-1 bg-red-600 text-white rounded">+
                 เพิ่มรหัส IRB</button>
 
+            @php
+                $allUsers = \App\Models\User::orderBy('name')->get();
+            @endphp
 
 
             <hr class="my-6 border-t-2 border-gray-300">
             <!-- C: Roles and Responsibilities -->
             <h3 class="font-semibold text-lg text-blue-700 mb-2">C: Roles and Responsibilities</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI (ผู้วิจัยหลัก)</span>
-                    <input name="pi_name" type="text" class="w-full border p-2 rounded" value=""
-                        placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                <label class="block w-full">
+                    <span class="block text-sm font-medium text-gray-700 mb-1">
+                        CA101 - ชื่อ PI (ผู้วิจัยหลัก)
+                    </span>
+                    <div class="relative">
+                        <input name="pi_name" list="userNames" type="text"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required>
+                        <datalist id="userNames">
+                            @foreach ($allUsers as $user)
+                                @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+                                <option value="{{ $fullName }}"></option>
+                            @endforeach
+                        </datalist>
+                    </div>
                     @error('pi_name')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
+                        <span class="text-sm text-red-500 mt-1">{{ $message }}</span>
                     @enderror
                 </label>
+
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัดผู้วิจัยหลัก</span>
                     <input name="pi_affiliation" type="text" class="w-full border p-2 rounded" value=""
@@ -373,11 +397,22 @@
             <div id="copi-container" class="space-y-2 mb-4">
                 <div id="copi-0" class="copi-row grid grid-cols-2 gap-4 items-center">
                     <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span
-                                class="copi-index">1</span></span>
-                        <input name="copis[0][name]" type="text" class="w-full border p-2 rounded"
-                            placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                        <span class="block text-sm text-gray-700 mb-1">
+                            ชื่อ COPI คนที่ <span class="copi-index">1</span>
+                        </span>
+                        <div class="relative">
+                            <input name="copis[0][name]" list="userNames" type="text"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                                placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                            <datalist id="userNames">
+                                @foreach ($allUsers as $user)
+                                    @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+                                    <option value="{{ $fullName }}"></option>
+                                @endforeach
+                            </datalist>
+                        </div>
                     </label>
+
                     <div class="flex gap-2 w-full">
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span
@@ -396,11 +431,20 @@
                 <div id="coresearch-0" class="coresearch-row space-y-2">
                     <!-- บรรทัดที่ 1: ชื่อ -->
                     <label class="block w-full">
-                        <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span
-                                class="coresearch-index">1</span></span>
-                        <input name="coresearch[0][name]" type="text" class="w-full border p-2 rounded"
-                            placeholder="ยศ ชื่อ นามสกุล">
+                        <span class="block text-sm mb-1">
+                            ชื่อ Co-Researcher ที่ <span class="coresearch-index">1</span>
+                        </span>
+                        <input name="coresearch[0][name]" list="coresearchList0" type="text"
+                            class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล">
+
+                        <datalist id="coresearchList0">
+                            @foreach ($allUsers as $user)
+                                @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+                                <option value="{{ $fullName }}"></option>
+                            @endforeach
+                        </datalist>
                     </label>
+
 
                     <!-- บรรทัดที่ 2: สังกัด + ภายใน/ภายนอก + ลบ -->
                     <div class="grid grid-cols-12 gap-4 items-end">
@@ -572,8 +616,26 @@
                     <div class="grid grid-cols-3 gap-4 items-end">
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                            <input name="outputs[0][type]" type="text" class="w-full border p-2 rounded"
-                                placeholder="เช่น รายงาน">
+                            <select name="outputs[0][type]" class="w-full border p-2 rounded" required>
+                                <option value="" disabled selected>เลือกประเภทของผลงาน</option>
+                                <option>EA101 Research Paper or Journal Article</option>
+                                <option>EA102 Reports and White papers</option>
+                                <option>EA103 Presentations and Conferences</option>
+                                <option>EA104 Data Sets and Databases</option>
+                                <option>EA105 Inventions or Innovations (Application /Website)</option>
+                                <option>EA106 Policy Recommendations</option>
+                                <option>EA107 Educational Materials</option>
+                                <option>EA108 Communication Materials (Creations)</option>
+                                <option>EA109 Change in Practices ,Procedures, Policy</option>
+                                <option>EA110 Number of participants (persons)</option>
+                                <option>EA111 Satisfaction Rating (1-5)</option>
+                                <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
+                                <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
+                                <option>EA114 คะแนนการศึกษาต่อเนื่อง CPE CME CNEU</option>
+                                <option>EA115 Capcity Building</option>
+                                <option>EA116 Research Project</option>
+                                <option>EA117 MOU</option>
+                            </select>
                         </label>
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
@@ -990,7 +1052,26 @@
                 <div class="grid grid-cols-3 gap-4 items-end">
                     <label class="w-full">
                         <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                        <input name="outputs[${outputIndex}][type]" type="text" class="w-full border p-2 rounded">
+                            <select name="outputs[${outputIndex}][type]" class="w-full border p-2 rounded" required>
+                                <option value="" disabled selected>เลือกประเภทของผลงาน</option>
+                                <option>EA101 Research Paper or Journal Article</option>
+                                <option>EA102 Reports and White papers</option>
+                                <option>EA103 Presentations and Conferences</option>
+                                <option>EA104 Data Sets and Databases</option>
+                                <option>EA105 Inventions or Innovations (Application /Website)</option>
+                                <option>EA106 Policy Recommendations</option>
+                                <option>EA107 Educational Materials</option>
+                                <option>EA108 Communication Materials (Creations)</option>
+                                <option>EA109 Change in Practices ,Procedures, Policy</option>
+                                <option>EA110 Number of participants (persons)</option>
+                                <option>EA111 Satisfaction Rating (1-5)</option>
+                                <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
+                                <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
+                                <option>EA114 คะแนนการศึกษาต่อเนื่อง CPE CME CNEU</option>
+                                <option>EA115 Capcity Building</option>
+                                <option>EA116 Research Project</option>
+                                <option>EA117 MOU</option>
+                            </select>
                     </label>
                     <label class="w-full">
                         <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
@@ -1026,21 +1107,34 @@
 
         function addCopiRow() {
             const id = `copi-${copiIndex}`;
+            const listId = `copiList-${copiIndex}`;
+
+            // Blade จะ render datalistOptions เป็น <option> ทั้งหมด
+            const datalistOptions = `@foreach ($allUsers as $user)
+        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+        <option value="{{ $fullName }}"></option>
+    @endforeach`.replace(/\n\s*/g, ''); // clean newlines for JS string
+
             document.getElementById('copi-container').insertAdjacentHTML('beforeend', `
-            <div id="${id}" class="copi-row grid grid-cols-2 gap-4 items-center">
+        <div id="${id}" class="copi-row grid grid-cols-2 gap-4 items-center">
+            <label class="w-full">
+                <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${copiIndex + 1}</span></span>
+                <input name="copis[${copiIndex}][name]" list="${listId}" type="text" 
+                    class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                <datalist id="${listId}">
+                    ${datalistOptions}
+                </datalist>
+            </label>
+            <div class="flex gap-2 w-full">
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${copiIndex + 1}</span></span>
-                    <input name="copis[${copiIndex}][name]" type="text" class="w-full border p-2 rounded " placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                    <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${copiIndex + 1}</span></span>
+                    <input name="copis[${copiIndex}][affiliation]" type="text" class="w-full border p-2 rounded" placeholder="สังกัด COPI">
                 </label>
-                <div class="flex gap-2 w-full">
-                    <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${copiIndex + 1}</span></span>
-                        <input name="copis[${copiIndex}][affiliation]" type="text" class="w-full border p-2 rounded" placeholder="สังกัด COPI">
-                    </label>
-                    <button type="button" onclick="removeRow('${id}', 'copi')" class="text-red-600 mt-6">✕</button>
-                </div>
+                <button type="button" onclick="removeRow('${id}', 'copi')" class="text-red-600 mt-6">✕</button>
             </div>
-        `);
+        </div>
+    `);
+
             copiIndex++;
             reindexCopi();
         }
@@ -1049,34 +1143,46 @@
 
         function addCoResearchRow() {
             const id = `coresearch-${coResearchIndex}`;
+            const listId = `coresearchList-${coResearchIndex}`;
+
+            const datalistOptions = `@foreach ($allUsers as $user)
+        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+        <option value="{{ $fullName }}"></option>
+    @endforeach`.replace(/\n\s*/g, '');
+
             document.getElementById('coresearch-container').insertAdjacentHTML('beforeend', `
-            <div id="${id}" class="coresearch-row space-y-2 py-4">
-                <label class="block w-full">
-                    <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span class="coresearch-index">${coResearchIndex + 1}</span></span>
-                    <input name="coresearch[${coResearchIndex}][name]" type="text" class="w-full border p-2 rounded"  placeholder="ยศ ชื่อ นามสกุล">
+        <div id="${id}" class="coresearch-row space-y-2 py-4">
+            <label class="block w-full">
+                <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span class="coresearch-index">${coResearchIndex + 1}</span></span>
+                <input name="coresearch[${coResearchIndex}][name]" list="${listId}" type="text" class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล">
+                <datalist id="${listId}">
+                    ${datalistOptions}
+                </datalist>
+            </label>
+            <div class="grid grid-cols-12 gap-4 items-end">
+                <label class="col-span-5">
+                    <span class="block text-sm mb-1">สังกัด</span>
+                    <input name="coresearch[${coResearchIndex}][affiliation]" type="text" class="w-full border p-2 rounded" placeholder="สังกัด">
                 </label>
-                <div class="grid grid-cols-12 gap-4 items-end">
-                    <label class="col-span-5">
-                        <span class="block text-sm mb-1">สังกัด</span>
-                        <input name="coresearch[${coResearchIndex}][affiliation]" type="text" class="w-full border p-2 rounded" placeholder="สังกัด">
-                    </label>
-                    <label class="col-span-5">
-                        <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
-                        <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required>
-                            <option value="" disabled selected>กรุณาเลือก</option>
-                            <option value="ภายใน">ภายใน</option>
-                            <option value="ภายนอก">ภายนอก</option>
-                        </select>
-                    </label>
-                    <div class="col-span-2 flex justify-end pt-6">
-                        <button type="button" onclick="removeRow('${id}', 'coresearch')" class="text-red-600 text-xl">✕</button>
-                    </div>
+                <label class="col-span-5">
+                    <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
+                    <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required>
+                        <option value="" disabled selected>กรุณาเลือก</option>
+                        <option value="ภายใน">ภายใน</option>
+                        <option value="ภายนอก">ภายนอก</option>
+                    </select>
+                </label>
+                <div class="col-span-2 flex justify-end pt-6">
+                    <button type="button" onclick="removeRow('${id}', 'coresearch')" class="text-red-600 text-xl">✕</button>
                 </div>
             </div>
-        `);
+        </div>
+    `);
+
             coResearchIndex++;
             reindexCoResearch();
         }
+
 
         // ✅ INITIALIZE
         document.addEventListener('DOMContentLoaded', () => {
@@ -1097,6 +1203,14 @@
                 })
             ],
             locale: "th"
+        });
+    </script>
+    <script>
+        new TomSelect('#pi_name', {
+            create: true,
+            maxItems: 1,
+            persist: false,
+            plugins: ['remove_button']
         });
     </script>
 @endsection
