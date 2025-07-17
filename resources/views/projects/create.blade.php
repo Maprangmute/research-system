@@ -36,10 +36,10 @@
                 {{ session('success') }}
             </div>
         @endif
-        
-            @php
-                $allUsers = \App\Models\User::orderBy('name')->get();
-            @endphp
+
+        @php
+            $allUsers = \App\Models\User::orderBy('name')->get();
+        @endphp
 
         <form action="{{ route('projects.store') }}" method="POST">
             @csrf
@@ -753,6 +753,20 @@
                     บันทึกข้อมูล</button>
             </div>
         </form>
+
+        <div id="project-name-modal"
+            class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg">
+                <h3 class="text-xl font-bold text-red-600 mb-2">⚠️ พบชื่อโครงการใกล้เคียง</h3>
+                <p class="mb-4 text-gray-700">มีโครงการที่ชื่อใกล้เคียงกันในระบบ:</p>
+                <ul id="similar-projects-list" class="mb-4 space-y-2 text-sm text-gray-800"></ul>
+                <div class="flex justify-end gap-2">
+                    <button onclick="continueAnyway()"
+                        class="bg-blue-600 text-white px-4 py-2 rounded">เพิ่มต่อไป</button>
+                    <button onclick="resetForm()" class="bg-red-600 text-white px-4 py-2 rounded">กรอกใหม่</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1191,6 +1205,68 @@
 
             document.querySelectorAll("select[id$='_status']").forEach(updateStatusColor);
         });
+
+        document.querySelector('[name="project_name_th"]').addEventListener('blur', function() {
+            const name = this.value.trim();
+            if (name.length < 5) return;
+
+            fetch('{{ route('projects.checkName') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        project_name_th: name
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+    if (data.exact) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'ชื่อโครงการซ้ำ',
+            text: '⚠️ มีชื่อโครงการนี้อยู่ในระบบแล้ว กรุณาตรวจสอบ!',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '🔁 กรอกใหม่',
+            cancelButtonText: '📋 กลับไปยังรายการ'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                location.reload(); // กรอกใหม่
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                window.location.href = '{{ route('projects.index') }}'; // กลับไปยังรายการ
+            }
+        });
+    } else if (data.similar.length > 0) {
+        showSimilarModal(data.similar);
+    }
+});
+
+        });
+
+        function showSimilarModal(similarProjects) {
+            const modal = document.getElementById('project-name-modal');
+            const list = document.getElementById('similar-projects-list');
+            list.innerHTML = '';
+            similarProjects.forEach(p => {
+                const li = document.createElement('li');
+                li.innerHTML =
+                    `<strong>ชื่อ:</strong> ${p.project_name_th}<br><strong>PI:</strong> ${p.pi_name}<br><strong>ปี:</strong> ${p.start_year}`;
+                list.appendChild(li);
+            });
+            modal.classList.remove('hidden');
+        }
+
+        function continueAnyway() {
+            document.getElementById('project-name-modal').classList.add('hidden');
+        }
+
+        function resetForm() {
+            document.getElementById('project-name-modal').classList.add('hidden');
+            location.reload(); // 🔄 รีโหลดหน้าเว็บใหม่
+        }
     </script>
 
     <script>

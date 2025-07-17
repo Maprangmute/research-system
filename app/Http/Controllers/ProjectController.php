@@ -109,40 +109,40 @@ class ProjectController extends Controller
     }
 
     public function update(Request $request, Project $project)
-{
-    $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
-    $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+    {
+        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
 
-    if (!$hasPermission) {
-        abort(403);
+        if (!$hasPermission) {
+            abort(403);
+        }
+
+        $validated = $this->validateProject($request);
+
+        // ตั้งค่า updated_by เป็น user ที่กำลังล็อกอิน
+        $validated['updated_by'] = Auth::id();
+
+        $project->fill($validated);
+        $this->fillStrategies($request, $project);
+        $project->save();
+
+        $project->fteRoles()->delete();
+        $this->syncFTERoles($request, $project);
+
+        $project->outputs()->delete();
+        $this->syncOutputs($request, $project);
+
+        $project->copis()->delete();
+        $this->syncCopis($request, $project);
+
+        $project->irbs()->delete();
+        $this->syncIrbs($request, $project);
+
+        $project->coResearches()->delete();
+        $this->syncCoResearch($request, $project);
+
+        return redirect()->route('projects.index')->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
     }
-
-    $validated = $this->validateProject($request);
-
-    // ตั้งค่า updated_by เป็น user ที่กำลังล็อกอิน
-    $validated['updated_by'] = Auth::id();
-
-    $project->fill($validated);
-    $this->fillStrategies($request, $project);
-    $project->save();
-
-    $project->fteRoles()->delete();
-    $this->syncFTERoles($request, $project);
-
-    $project->outputs()->delete();
-    $this->syncOutputs($request, $project);
-
-    $project->copis()->delete();
-    $this->syncCopis($request, $project);
-
-    $project->irbs()->delete();
-    $this->syncIrbs($request, $project);
-
-    $project->coResearches()->delete();
-    $this->syncCoResearch($request, $project);
-
-    return redirect()->route('projects.index')->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
-}
     public function destroy(Project $project)
     {
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
@@ -161,21 +161,21 @@ class ProjectController extends Controller
         return redirect()->route('projects.index')->with('success', 'ลบโครงการเรียบร้อยแล้ว');
     }
 
-public function exportPdf(Project $project)
-{
-    $project->load(['copis', 'irbs', 'fteRoles', 'outputs', 'updatedBy', 'createdBy']);
+    public function exportPdf(Project $project)
+    {
+        $project->load(['copis', 'irbs', 'fteRoles', 'outputs', 'updatedBy', 'createdBy']);
 
-    $user = Auth::user();
+        $user = Auth::user();
 
-    // $author = $project->createdBy ? ($project->createdBy->prefix . $project->createdBy->name) : '';
-    $author = $project->createdBy ? ($project->createdBy->prefix . $project->createdBy->name) : '';
-    $creater = $user ? ($user->prefix . $user->name) : '';
-    $dateStr = \Carbon\Carbon::now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
-    $filename = "{$dateStr}_{$creater}_{$project->project_name_th}.pdf";
+        // $author = $project->createdBy ? ($project->createdBy->prefix . $project->createdBy->name) : '';
+        $author = $project->createdBy ? ($project->createdBy->prefix . $project->createdBy->name) : '';
+        $creater = $user ? ($user->prefix . $user->name) : '';
+        $dateStr = \Carbon\Carbon::now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
+        $filename = "{$dateStr}_{$creater}_{$project->project_name_th}.pdf";
 
-    $pdf = PDF::loadView('projects.pdf', compact('project', 'user'));
-    return $pdf->stream($filename);
-}
+        $pdf = PDF::loadView('projects.pdf', compact('project', 'user'));
+        return $pdf->stream($filename);
+    }
 
 
     // ====== SUB-FUNCTIONS ======
@@ -340,7 +340,7 @@ public function exportPdf(Project $project)
                 if ($irbModel) {
                     $irbModel->update([
                         'code'    => $irb['code'],
-                        'exp_date'=> $irb['exp_date'],
+                        'exp_date' => $irb['exp_date'],
                         'source'  => $irb['source'] ?? '',
                     ]);
                     $ids[] = $irbModel->id;
@@ -384,4 +384,30 @@ public function exportPdf(Project $project)
         }
         $project->coResearches()->whereNotIn('id', $ids)->delete();
     }
+
+   public function checkProjectName(Request $request)
+{
+    $name = $request->input('project_name_th');
+
+    // Exact match
+    $exact = Project::where('project_name_th', $name)->first();
+
+    // Similar matches
+    $similar = Project::where('project_name_th', 'LIKE', '%' . $name . '%')
+        ->take(5)
+        ->get(['project_name_th', 'pi_name', 'start_year'])
+        ->map(function ($project) {
+            return [
+                'project_name_th' => $project->project_name_th,
+                'pi_name' => $project->pi_name ?? 'ไม่ได้ลงข้อมูล',
+                'start_year' => $project->start_year ?? 'ไม่ได้ลงข้อมูล',
+            ];
+        });
+
+    return response()->json([
+        'exact' => $exact ? true : false,
+        'similar' => $similar,
+    ]);
+}
+
 }

@@ -119,4 +119,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
 
     // delete data 
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+    // check project name
+    Route::post('/projects/check-name', [ProjectController::class, 'checkProjectName'])->name('projects.checkName');
+
 });
