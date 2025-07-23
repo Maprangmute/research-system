@@ -625,7 +625,91 @@
             @endphp
 
             <hr class="my-6 border-t-2 border-gray-300">
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
+              <!-- Modal Wrapper -->
+            <div x-data="{ showFTE: false, currentTab: 'external', setTab(tab) { this.currentTab = tab } }" x-effect="document.body.classList.toggle('overflow-hidden', showFTE)">
+
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
+                    <a href="#" @click.prevent="showFTE = true"
+                        class="text-sm text-blue-600 hover:underline">รายละเอียดค่า FTE</a>
+                </div>
+
+                <!-- Modal -->
+                <!-- Overlay + Modal Wrapper -->
+                <div x-show="showFTE" x-transition.opacity
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
+                    @click.self="showFTE = false" x-trap.noscroll="showFTE" x-init="$watch('showFTE', value => {
+                        if (value) { setTimeout(() => $refs.fteModal?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }
+                    })">
+
+                    <!-- Modal Container -->
+                    <div x-ref="fteModal"
+                        class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl ring-1 ring-gray-200"
+                        @click.stop>
+
+                        <!-- Header -->
+                        <div
+                            class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-white to-blue-50 sticky top-0 z-10">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h6m6-6v12m6-6h-6" />
+                                </svg>
+                                <h2 class="text-lg md:text-xl font-bold text-gray-800">ข้อมูลผู้มีส่วนร่วม (FTE)</h2>
+                            </div>
+                            <button @click="showFTE = false"
+                                class="text-gray-500 hover:text-red-500 hover:bg-red-100 rounded-full p-2 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Tabs -->
+                        <div
+                            class="flex justify-start px-6 pt-3 space-x-4 border-b text-sm font-medium bg-white sticky top-[60px] z-10">
+                            <button @click.prevent="setTab('external')"
+                                :class="currentTab === 'external' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
+                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
+                                ทุนภายนอก
+                            </button>
+                            <button @click.prevent="setTab('internal')"
+                                :class="currentTab === 'internal' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
+                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
+                                ทุนภายใน
+                            </button>
+                            <button @click.prevent="setTab('cohort')"
+                                :class="currentTab === 'cohort' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
+                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
+                                COHORT
+                            </button>
+                        </div>
+
+                        <!-- Content Area -->
+                        <div class="p-6 space-y-4 text-sm bg-white">
+                            <div x-show="currentTab === 'external'" x-transition>
+                                @include('projects.table.external')
+                            </div>
+                            <div x-show="currentTab === 'internal'" x-transition>
+                                @include('projects.table.internal')
+                            </div>
+                            <div x-show="currentTab === 'cohort'" x-transition>
+                                @include('projects.table.cohort')
+                            </div>
+                        </div>
+
+                        <!-- Footer (optional) -->
+                        <div class="px-6 py-4 bg-gray-50 text-right border-t">
+                            <button @click="showFTE = false"
+                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                                ปิดหน้าต่าง
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
             <div id="fte-container" class="space-y-4 mb-4">
                 @foreach ($project->fteRoles ?? [] as $i => $fte)
                     <div id="fte-{{ $i }}" class="fte-row space-y-2">

@@ -493,160 +493,141 @@
             @endphp
 
             <hr class="my-6 border-t-2 border-gray-300">
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
-            <div id="fte-container" class="space-y-4 mb-4">
-                <div id="fte-0" class="fte-row space-y-2">
-                    <!-- บรรทัด 1 -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">1. ชื่อ-นามสกุล</span>
-                            <select name="fte_roles[0][name]" class="w-full border p-2 rounded" required>
-                                <option value="" disabled selected>เลือกผู้รับผิดชอบ</option>
-                                @foreach ($allUsers as $user)
-                                    @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-                                    <option value="{{ $fullName }}">{{ $fullName }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">กลุ่ม</span>
-                            <select name="fte_roles[0][role_group]" class="w-full border p-2 rounded">
-                                <option value="" disabled selected>เลือกกลุ่ม</option>
-                                @foreach ($roleGroups as $group)
-                                    <option value="{{ $group }}">{{ $group }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                    </div>
+            <!-- Modal Wrapper -->
+            <div x-data="{ showFTE: false, currentTab: 'external', setTab(tab) { this.currentTab = tab } }" x-effect="document.body.classList.toggle('overflow-hidden', showFTE)">
 
-                    <!-- บรรทัด 2 -->
-                    <div class="grid grid-cols-3 gap-4">
-                        <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">ภาระงาน</span>
-                            <select name="fte_roles[0][job_detail]" class="w-full border p-2 rounded">
-                                <option value="" disabled selected>เลือกภาระงาน</option>
-                                @foreach ($jobDetails as $job)
-                                    <option value="{{ $job }}">{{ $job }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label class="w-full relative">
-                            <span class="block text-sm text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
-                            <input name="fte_roles[0][start_date]" type="text " placeholder="โปรดใส่วันที่"
-                                class="thai-datepicker w-full border p-2 rounded pl-10" required>
-                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </label>
-                        <label class="w-full relative">
-                            <span class="block text-sm text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
-                            <input name="fte_roles[0][end_date]" type="text"
-                                class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่"
-                                required>
-                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </label>
-                    </div>
-
-                    <!-- บรรทัด 3 -->
-                    <div class="grid grid-cols-12 gap-4 items-end">
-                        <label class="col-span-8">
-                            <span class="block text-sm text-gray-700 mb-1">รายละเอียดภารกิจ</span>
-                            <select name="fte_roles[0][task_detail]" class="w-full border p-2 rounded" required>
-                                <option value="" disabled selected>เลือกภารกิจ</option>
-                                <option>ติดต่อประสานงาน</option>
-                                <option>review literature</option>
-                                <option>เขียนproposal</option>
-                                <option>ดำเนินการเอกสารขอirb/submit irb</option>
-                                <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
-                                <option>เก็บข้อมูล</option>
-                                <option>วิเคราะห์ข้อมูล</option>
-                                <option>เขียนเล่มรายงาน</option>
-                                <option>เขียนmanuscript</option>
-                                <option>submit journal</option>
-                                <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
-                                <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
-                                <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
-                            </select>
-                        </label>
-
-                        <label class="col-span-3">
-                            <span class="block text-sm text-gray-700 mb-1">FTE</span>
-                            <input name="fte_roles[0][fte_value]" type="number" step="0.01" min="0"
-                                max="1" class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE" required>
-                        </label>
-
-
-                        <div class="col-span-1 flex items-end justify-end">
-                            <button type="button" onclick="removeRow('fte-0', 'fte')"
-                                class="text-red-600 text-xl mb-2">✕</button>
-                        </div>
-                    </div>
-
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
+                    <a href="#" @click.prevent="showFTE = true"
+                        class="text-sm text-blue-600 hover:underline">รายละเอียดค่า FTE</a>
                 </div>
-            </div>
 
-            <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">+
-                เพิ่มผู้มีส่วนร่วม</button>
+                <!-- Modal -->
+                <!-- Overlay + Modal Wrapper -->
+                <div x-show="showFTE" x-transition.opacity
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
+                    @click.self="showFTE = false" x-trap.noscroll="showFTE" x-init="$watch('showFTE', value => {
+                        if (value) { setTimeout(() => $refs.fteModal?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }
+                    })">
 
+                    <!-- Modal Container -->
+                    <div x-ref="fteModal"
+                        class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl ring-1 ring-gray-200"
+                        @click.stop>
 
+                        <!-- Header -->
+                        <div
+                            class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-white to-blue-50 sticky top-0 z-10">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h6m6-6v12m6-6h-6" />
+                                </svg>
+                                <h2 class="text-lg md:text-xl font-bold text-gray-800">ข้อมูลผู้มีส่วนร่วม (FTE)</h2>
+                            </div>
+                            <button @click="showFTE = false"
+                                class="text-gray-500 hover:text-red-500 hover:bg-red-100 rounded-full p-2 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
 
+                        <!-- Tabs -->
+                        <div
+                            class="flex justify-start px-6 pt-3 space-x-4 border-b text-sm font-medium bg-white sticky top-[60px] z-10">
+                            <button @click.prevent="setTab('external')"
+                                :class="currentTab === 'external' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
+                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
+                                ทุนภายนอก
+                            </button>
+                            <button @click.prevent="setTab('internal')"
+                                :class="currentTab === 'internal' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
+                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
+                                ทุนภายใน
+                            </button>
+                            <button @click.prevent="setTab('cohort')"
+                                :class="currentTab === 'cohort' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
+                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
+                                COHORT
+                            </button>
+                        </div>
 
-            <hr class="my-6 border-t-2 border-gray-300">
-            <!-- E: ผลงานวิจัย (Output) -->
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
-            <div id="output-container" class="space-y-4 mb-4">
-                <div id="output-0" class="output-row space-y-2">
-                    <!-- บรรทัดแรก: ชื่อผลงาน -->
-                    <label class="block w-full">
-                        <span class="block text-sm text-gray-700 mb-1">ชื่อผลงานที่ <span
-                                class="output-index">1</span></span>
-                        <input name="outputs[0][title]" type="text" class="w-full border p-2 rounded"
-                            placeholder="ชื่อผลงาน">
-                    </label>
+                        <!-- Content Area -->
+                        <div class="p-6 space-y-4 text-sm bg-white">
+                            <div x-show="currentTab === 'external'" x-transition>
+                                @include('projects.table.external')
+                            </div>
+                            <div x-show="currentTab === 'internal'" x-transition>
+                                @include('projects.table.internal')
+                            </div>
+                            <div x-show="currentTab === 'cohort'" x-transition>
+                                @include('projects.table.cohort')
+                            </div>
+                        </div>
 
-                    <!-- บรรทัดที่สอง: ประเภท, หมายเหตุ, ปี -->
-                    <div class="grid grid-cols-3 gap-4 items-end">
-                        <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                            <select name="outputs[0][type]" class="w-full border p-2 rounded" required>
-                                <option value="" disabled selected>เลือกประเภทของผลงาน</option>
-                                <option>EA101 Research Paper or Journal Article</option>
-                                <option>EA102 Reports and White papers</option>
-                                <option>EA103 Presentations and Conferences</option>
-                                <option>EA104 Data Sets and Databases</option>
-                                <option>EA105 Inventions or Innovations (Application /Website)</option>
-                                <option>EA106 Policy Recommendations</option>
-                                <option>EA107 Educational Materials</option>
-                                <option>EA108 Communication Materials (Creations)</option>
-                                <option>EA109 Change in Practices ,Procedures, Policy</option>
-                                <option>EA110 Number of participants (persons)</option>
-                                <option>EA111 Satisfaction Rating (1-5)</option>
-                                <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
-                                <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
-                                <option>EA114 คะแนนการศึกษาต่อเนื่อง CPE CME CNEU</option>
-                                <option>EA115 Capcity Building</option>
-                                <option>EA116 Research Project</option>
-                                <option>EA117 MOU</option>
-                            </select>
-                        </label>
-                        <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
-                            <input name="outputs[0][project_output]" type="text" class="w-full border p-2 rounded"
-                                placeholder="เพิ่มเติม">
-                        </label>
-                        <div class="flex gap-2 w-full">
+                        <!-- Footer (optional) -->
+                        <div class="px-6 py-4 bg-gray-50 text-right border-t">
+                            <button @click="showFTE = false"
+                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                                ปิดหน้าต่าง
+                            </button>
+                        </div>
 
+                    </div>
+                </div>
+                <div id="fte-container" class="space-y-4 mb-4">
+                    <div id="fte-0" class="fte-row space-y-2">
+                        <!-- บรรทัด 1 -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="w-full">
+                                <span class="block text-sm text-gray-700 mb-1">1. ชื่อ-นามสกุล</span>
+                                <select name="fte_roles[0][name]" class="w-full border p-2 rounded" required>
+                                    <option value="" disabled selected>เลือกผู้รับผิดชอบ</option>
+                                    @foreach ($allUsers as $user)
+                                        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+                                        <option value="{{ $fullName }}">{{ $fullName }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label class="w-full">
+                                <span class="block text-sm text-gray-700 mb-1">กลุ่ม</span>
+                                <select name="fte_roles[0][role_group]" class="w-full border p-2 rounded">
+                                    <option value="" disabled selected>เลือกกลุ่ม</option>
+                                    @foreach ($roleGroups as $group)
+                                        <option value="{{ $group }}">{{ $group }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                        </div>
+
+                        <!-- บรรทัด 2 -->
+                        <div class="grid grid-cols-3 gap-4">
+                            <label class="w-full">
+                                <span class="block text-sm text-gray-700 mb-1">ภาระงาน</span>
+                                <select name="fte_roles[0][job_detail]" class="w-full border p-2 rounded">
+                                    <option value="" disabled selected>เลือกภาระงาน</option>
+                                    @foreach ($jobDetails as $job)
+                                        <option value="{{ $job }}">{{ $job }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
                             <label class="w-full relative">
-                                <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
-                                <input name="outputs[0][year]" type="text"
+                                <span class="block text-sm text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
+                                <input name="fte_roles[0][start_date]" type="text " placeholder="โปรดใส่วันที่"
+                                    class="thai-datepicker w-full border p-2 rounded pl-10" required>
+                                <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </label>
+                            <label class="w-full relative">
+                                <span class="block text-sm text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
+                                <input name="fte_roles[0][end_date]" type="text"
                                     class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่"
                                     required>
                                 <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
@@ -656,102 +637,206 @@
                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                             </label>
-                            {{-- <label class="w-full">
+                        </div>
+
+                        <!-- บรรทัด 3 -->
+                        <div class="grid grid-cols-12 gap-4 items-end">
+                            <label class="col-span-8">
+                                <span class="block text-sm text-gray-700 mb-1">รายละเอียดภารกิจ</span>
+                                <select name="fte_roles[0][task_detail]" class="w-full border p-2 rounded" required>
+                                    <option value="" disabled selected>เลือกภารกิจ</option>
+                                    <option>ติดต่อประสานงาน</option>
+                                    <option>review literature</option>
+                                    <option>เขียนproposal</option>
+                                    <option>ดำเนินการเอกสารขอirb/submit irb</option>
+                                    <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
+                                    <option>เก็บข้อมูล</option>
+                                    <option>วิเคราะห์ข้อมูล</option>
+                                    <option>เขียนเล่มรายงาน</option>
+                                    <option>เขียนmanuscript</option>
+                                    <option>submit journal</option>
+                                    <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
+                                    <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
+                                    <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
+                                </select>
+                            </label>
+
+                            <label class="col-span-3">
+                                <span class="block text-sm text-gray-700 mb-1">FTE</span>
+                                <input name="fte_roles[0][fte_value]" type="number" step="0.01" min="0"
+                                    max="1" class="w-full border p-2 rounded" placeholder="โปรดใส่ค่า FTE"
+                                    required>
+                            </label>
+
+
+                            <div class="col-span-1 flex items-end justify-end">
+                                <button type="button" onclick="removeRow('fte-0', 'fte')"
+                                    class="text-red-600 text-xl mb-2">✕</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">+
+                    เพิ่มผู้มีส่วนร่วม</button>
+
+
+
+
+                <hr class="my-6 border-t-2 border-gray-300">
+                <!-- E: ผลงานวิจัย (Output) -->
+                <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
+                <div id="output-container" class="space-y-4 mb-4">
+                    <div id="output-0" class="output-row space-y-2">
+                        <!-- บรรทัดแรก: ชื่อผลงาน -->
+                        <label class="block w-full">
+                            <span class="block text-sm text-gray-700 mb-1">ชื่อผลงานที่ <span
+                                    class="output-index">1</span></span>
+                            <input name="outputs[0][title]" type="text" class="w-full border p-2 rounded"
+                                placeholder="ชื่อผลงาน">
+                        </label>
+
+                        <!-- บรรทัดที่สอง: ประเภท, หมายเหตุ, ปี -->
+                        <div class="grid grid-cols-3 gap-4 items-end">
+                            <label class="w-full">
+                                <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
+                                <select name="outputs[0][type]" class="w-full border p-2 rounded" required>
+                                    <option value="" disabled selected>เลือกประเภทของผลงาน</option>
+                                    <option>EA101 Research Paper or Journal Article</option>
+                                    <option>EA102 Reports and White papers</option>
+                                    <option>EA103 Presentations and Conferences</option>
+                                    <option>EA104 Data Sets and Databases</option>
+                                    <option>EA105 Inventions or Innovations (Application /Website)</option>
+                                    <option>EA106 Policy Recommendations</option>
+                                    <option>EA107 Educational Materials</option>
+                                    <option>EA108 Communication Materials (Creations)</option>
+                                    <option>EA109 Change in Practices ,Procedures, Policy</option>
+                                    <option>EA110 Number of participants (persons)</option>
+                                    <option>EA111 Satisfaction Rating (1-5)</option>
+                                    <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
+                                    <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
+                                    <option>EA114 คะแนนการศึกษาต่อเนื่อง CPE CME CNEU</option>
+                                    <option>EA115 Capcity Building</option>
+                                    <option>EA116 Research Project</option>
+                                    <option>EA117 MOU</option>
+                                </select>
+                            </label>
+                            <label class="w-full">
+                                <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
+                                <input name="outputs[0][project_output]" type="text" class="w-full border p-2 rounded"
+                                    placeholder="เพิ่มเติม">
+                            </label>
+                            <div class="flex gap-2 w-full">
+
+                                <label class="w-full relative">
+                                    <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+                                    <input name="outputs[0][year]" type="text"
+                                        class="thai-datepicker w-full border p-2 rounded pl-10"
+                                        placeholder="โปรดใส่วันที่" required>
+                                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </label>
+                                {{-- <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">ปี</span>
                                 <input name="outputs[0][year]" type="text" class="w-full border p-2 rounded"
                                     placeholder="2025">
                             </label> --}}
-                            <button type="button" onclick="removeRow('output-0', 'output')"
-                                class="text-red-600 mb-2">✕</button>
+                                <button type="button" onclick="removeRow('output-0', 'output')"
+                                    class="text-red-600 mb-2">✕</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <button type="button" onclick="addOutputRow()" class="mb-6 px-3 py-1 bg-green-600 text-white rounded">+
-                เพิ่ม Output</button>
+                <button type="button" onclick="addOutputRow()" class="mb-6 px-3 py-1 bg-green-600 text-white rounded">+
+                    เพิ่ม Output</button>
 
-            <hr class="my-6 border-t-2 border-gray-300">
-            <!-- ยุทธศาสตร์ -->
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">ยุทธศาสตร์ Siriraj Health Policy</h3>
-            <table class="w-full table-auto text-sm mb-6">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="px-3 py-2 text-left">หมวด</th>
-                        <th class="px-3 py-2 text-left">รายการ</th>
-                        <th class="px-3 py-2">มี</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php
-                        $strategies = [
-                            '1' => [
-                                'label' => 'AA501: Capacity Building',
-                                'items' => [
-                                    '1' => '1.1 การสรรหานักวิจัยด้านนโยบายสุขภาพที่มีความสามารถ',
-                                    '2' => '1.2 การพัฒนาศักยภาพฯ ผ่านการเรียนรู้จากการปฏิบัติงานจริง',
-                                    '3' => '1.3 การพัฒนาศักยภาพฯ ผ่านการศึกษาต่อเนื่อง',
-                                    '4' => '1.4 การบูรณาการกับการเรียนการสอนนักศึกษาแพทย์',
-                                    '5' => '1.5 การพัฒนาศักยภาพฯ ให้แก่บุคลากรศิริราช',
-                                ],
-                            ],
-                            '2' => [
-                                'label' => 'AA502: Excellence Research',
-                                'items' => [
-                                    '1' => '2.1 การเพิ่มบทบาทของหน่วยวิจัยฯ',
-                                    '2' => '2.2 การสร้างความสัมพันธ์กับผู้กำหนดนโยบาย',
-                                    '3' => '2.3 การสรรหาและกำหนดหัวข้อวิจัย',
-                                ],
-                            ],
-                            '3' => [
-                                'label' => 'AA503: Health Policy Linkage',
-                                'items' => [
-                                    '1' => '3.1 การสังเคราะห์องค์ความรู้ฯ จากงานวิจัยต้นแบบ',
-                                    '2' => '3.2 การดำเนินงานวิจัยที่มีคุณภาพ',
-                                    '3' => '3.3 ผลักดันให้งานวิจัยใช้ตัดสินใจนโยบาย',
-                                    '4' => '3.4 เชื่อมโยงนวัตกรรมกับการพัฒนานโยบาย',
-                                    '5' => '3.5 การสื่อสารงานวิจัยต่อสาธารณะ',
-                                ],
-                            ],
-                            '4' => [
-                                'label' => 'AA504: Partnership Engagement',
-                                'items' => [
-                                    '1' => '4.1 การสร้างเครือข่ายงานวิจัย',
-                                    '2' => '4.2 การสร้างความร่วมมือฯ',
-                                ],
-                            ],
-                            '5' => [
-                                'label' => 'AA505: System Support',
-                                'items' => [
-                                    '1' => '5.1 การพัฒนาระบบสนับสนุนการดำเนินงานวิจัย',
-                                    '2' => '5.2 การพัฒนาระบบสนับสนุนเส้นทางอาชีพในหน่วยวิจัย',
-                                ],
-                            ],
-                        ];
-                    @endphp
-
-                    @foreach ($strategies as $sKey => $strategy)
-                        <tr class="border-t">
-                            <td class="px-3 py-2 font-bold" rowspan="{{ count($strategy['items']) + 1 }}">
-                                {{ $strategy['label'] }}</td>
+                <hr class="my-6 border-t-2 border-gray-300">
+                <!-- ยุทธศาสตร์ -->
+                <h3 class="font-semibold text-lg text-blue-700 mb-2">ยุทธศาสตร์ Siriraj Health Policy</h3>
+                <table class="w-full table-auto text-sm mb-6">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="px-3 py-2 text-left">หมวด</th>
+                            <th class="px-3 py-2 text-left">รายการ</th>
+                            <th class="px-3 py-2">มี</th>
                         </tr>
-                        @foreach ($strategy['items'] as $iKey => $desc)
-                            <tr class="border-t">
-                                <td class="px-3 py-2">{{ $desc }}</td>
-                                <td class="px-3 py-2 text-center">
-                                    <input type="checkbox" name="strategy_{{ $sKey }}_{{ $iKey }}"
-                                        class="mr-1">
-                                </td>
-                            </tr>
-                        @endforeach
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @php
+                            $strategies = [
+                                '1' => [
+                                    'label' => 'AA501: Capacity Building',
+                                    'items' => [
+                                        '1' => '1.1 การสรรหานักวิจัยด้านนโยบายสุขภาพที่มีความสามารถ',
+                                        '2' => '1.2 การพัฒนาศักยภาพฯ ผ่านการเรียนรู้จากการปฏิบัติงานจริง',
+                                        '3' => '1.3 การพัฒนาศักยภาพฯ ผ่านการศึกษาต่อเนื่อง',
+                                        '4' => '1.4 การบูรณาการกับการเรียนการสอนนักศึกษาแพทย์',
+                                        '5' => '1.5 การพัฒนาศักยภาพฯ ให้แก่บุคลากรศิริราช',
+                                    ],
+                                ],
+                                '2' => [
+                                    'label' => 'AA502: Excellence Research',
+                                    'items' => [
+                                        '1' => '2.1 การเพิ่มบทบาทของหน่วยวิจัยฯ',
+                                        '2' => '2.2 การสร้างความสัมพันธ์กับผู้กำหนดนโยบาย',
+                                        '3' => '2.3 การสรรหาและกำหนดหัวข้อวิจัย',
+                                    ],
+                                ],
+                                '3' => [
+                                    'label' => 'AA503: Health Policy Linkage',
+                                    'items' => [
+                                        '1' => '3.1 การสังเคราะห์องค์ความรู้ฯ จากงานวิจัยต้นแบบ',
+                                        '2' => '3.2 การดำเนินงานวิจัยที่มีคุณภาพ',
+                                        '3' => '3.3 ผลักดันให้งานวิจัยใช้ตัดสินใจนโยบาย',
+                                        '4' => '3.4 เชื่อมโยงนวัตกรรมกับการพัฒนานโยบาย',
+                                        '5' => '3.5 การสื่อสารงานวิจัยต่อสาธารณะ',
+                                    ],
+                                ],
+                                '4' => [
+                                    'label' => 'AA504: Partnership Engagement',
+                                    'items' => [
+                                        '1' => '4.1 การสร้างเครือข่ายงานวิจัย',
+                                        '2' => '4.2 การสร้างความร่วมมือฯ',
+                                    ],
+                                ],
+                                '5' => [
+                                    'label' => 'AA505: System Support',
+                                    'items' => [
+                                        '1' => '5.1 การพัฒนาระบบสนับสนุนการดำเนินงานวิจัย',
+                                        '2' => '5.2 การพัฒนาระบบสนับสนุนเส้นทางอาชีพในหน่วยวิจัย',
+                                    ],
+                                ],
+                            ];
+                        @endphp
 
-            <!-- Submit -->
-            <div class="mt-6">
-                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">💾
-                    บันทึกข้อมูล</button>
-            </div>
+                        @foreach ($strategies as $sKey => $strategy)
+                            <tr class="border-t">
+                                <td class="px-3 py-2 font-bold" rowspan="{{ count($strategy['items']) + 1 }}">
+                                    {{ $strategy['label'] }}</td>
+                            </tr>
+                            @foreach ($strategy['items'] as $iKey => $desc)
+                                <tr class="border-t">
+                                    <td class="px-3 py-2">{{ $desc }}</td>
+                                    <td class="px-3 py-2 text-center">
+                                        <input type="checkbox" name="strategy_{{ $sKey }}_{{ $iKey }}"
+                                            class="mr-1">
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @endforeach
+                    </tbody>
+                </table>
+
+                <!-- Submit -->
+                <div class="mt-6">
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">💾
+                        บันทึกข้อมูล</button>
+                </div>
         </form>
 
         <div id="project-name-modal"
@@ -1222,27 +1307,28 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-    if (data.exact) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'ชื่อโครงการซ้ำ',
-            text: '⚠️ มีชื่อโครงการนี้อยู่ในระบบแล้ว กรุณาตรวจสอบ!',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: '🔁 กรอกใหม่',
-            cancelButtonText: '📋 กลับไปยังรายการ'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                location.reload(); // กรอกใหม่
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                window.location.href = '{{ route('projects.index') }}'; // กลับไปยังรายการ
-            }
-        });
-    } else if (data.similar.length > 0) {
-        showSimilarModal(data.similar);
-    }
-});
+                    if (data.exact) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'ชื่อโครงการซ้ำ',
+                            text: '⚠️ มีชื่อโครงการนี้อยู่ในระบบแล้ว กรุณาตรวจสอบ!',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: '🔁 กรอกใหม่',
+                            cancelButtonText: '📋 กลับไปยังรายการ'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                location.reload(); // กรอกใหม่
+                            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                                window.location.href =
+                                    '{{ route('projects.index') }}'; // กลับไปยังรายการ
+                            }
+                        });
+                    } else if (data.similar.length > 0) {
+                        showSimilarModal(data.similar);
+                    }
+                });
 
         });
 
