@@ -1,406 +1,523 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-7xl mx-auto p-3 md:p-6">
-    <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 ภาพรวมโครงการวิจัย (Dashboard)</h2>
+<div class="max-w-7xl mx-auto p-4 space-y-6">
 
-<!-- 1. Filter Panel (Redesigned) -->
-<div class="dashboard-filter bg-white rounded-xl shadow-sm p-4 mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
-        <!-- ปีเริ่มต้น -->
-        <div>
-            <label class="flex items-center text-xs font-semibold text-gray-700 mb-1">
-                <svg class="w-4 h-4 mr-1 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3M16 7V3M4 11H20M5 19H19M3 11V19A2 2 0 0 0 5 21H19A2 2 0 0 0 21 19V11"></path></svg>
-                ปีเริ่มต้น
-            </label>
-            <select id="filterStartYear" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                <option value="">ทั้งหมด</option>
-                @for ($year = now()->year + 543; $year >= 2557; $year--)
-                    <option value="{{ $year }}">{{ $year }}</option>
-                @endfor
-            </select>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">📊 ภาพรวมโครงการวิจัย (Research Dashboard)</h2>
+
+
+<!-- 2. Summary Cards -->
+<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+    @php
+        $summaryItems = [
+            ['count' => $projects->count(), 'label' => '📁 โครงการ'],
+            ['count' => $projects->pluck('pi_name')->unique()->count(), 'label' => '👨‍🔬 PI'],
+            ['count' => $copis->count(), 'label' => '👥 Co-PI'],
+            ['count' => $coResearches->count(), 'label' => '🤝 Co-Research'],
+            ['count' => number_format($fteRoles->sum('fte_value'), 2), 'label' => '📈 FTE รวม'],
+            ['count' => $outputs->count(), 'label' => '📝 Outputs'],
+        ];
+    @endphp
+
+    @foreach ($summaryItems as $item)
+        <div class="bg-white shadow-sm border rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-emerald-600">{{ $item['count'] }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ $item['label'] }}</div>
         </div>
-        <!-- Theme -->
-        <div>
-            <label class="flex items-center text-xs font-semibold text-gray-700 mb-1">
-                <svg class="w-4 h-4 mr-1 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"></path></svg>
-                Theme
-            </label>
-            <select id="filterTheme" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                <option value="">ทั้งหมด</option>
-                @foreach ($themes as $theme)
-                    <option value="{{ $theme }}">{{ $theme }}</option>
-                @endforeach
-            </select>
-        </div>
-        <!-- ทุน -->
-        <div>
-            <label class="flex items-center text-xs font-semibold text-gray-700 mb-1">
-                <svg class="w-4 h-4 mr-1 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8V4m0 4c-4.418 0-8 2.686-8 6s3.582 6 8 6 8-2.686 8-6-3.582-6-8-6z"/></svg>
-                ประเภททุน
-            </label>
-            <select id="filterFundingType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                <option value="">ทั้งหมด</option>
-                <option value="ภายใน">ภายใน</option>
-                <option value="ภายนอก">ภายนอก</option>
-            </select>
-        </div>
-        <!-- ค้นหาชื่อโครงการ -->
-        <div>
-            <label class="flex items-center text-xs font-semibold text-gray-700 mb-1">
-                <svg class="w-4 h-4 mr-1 text-pink-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                ค้นหาชื่อโครงการ
-            </label>
-            <input type="text" id="filterName" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="ชื่อโครงการ">
-        </div>
-        <!-- ค้นหา PI -->
-        <div>
-            <label class="flex items-center text-xs font-semibold text-gray-700 mb-1">
-                <svg class="w-4 h-4 mr-1 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2"></path></svg>
-                ค้นหา PI
-            </label>
-            <input type="text" id="filterPI" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-emerald-500 focus:border-emerald-500" placeholder="ชื่อ PI">
-        </div>
-        <!-- Export -->
-        <div class="flex items-end">
-            <button id="exportCSV" class="w-full bg-emerald-600 hover:bg-emerald-700 transition text-white px-3 py-2 rounded-lg shadow">
-                <svg class="w-4 h-4 inline-block mr-1 -mt-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 16v-8m0 8l-4-4m4 4l4-4M4 20h16"/></svg>
-                Export CSV
-            </button>
-        </div>
+    @endforeach
+</div>
+
+<!-- 3. Visualization Charts -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+    <div class="bg-white shadow-sm border rounded-xl p-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">📊 โครงการแยกตาม PI และปี</h3>
+        <canvas id="chartPiYear" height="250"></canvas>
+    </div>
+
+    <div class="bg-white shadow-sm border rounded-xl p-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">📋 สถานะโครงการในแต่ละปี</h3>
+        <canvas id="chartStatusYear" height="250"></canvas>
+    </div>
+
+    <div class="bg-white shadow-sm border rounded-xl p-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">📝 Timeline ของ Output (แยกปี)</h3>
+        <canvas id="chartOutputTimeline" height="250"></canvas>
+    </div>
+
+    <div class="bg-white shadow-sm border rounded-xl p-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">📅 IRB ที่จะหมดอายุ (6 เดือนถัดไป)</h3>
+        <canvas id="chartIRBExpiry" height="250"></canvas>
+    </div>
+
+    <div class="bg-white shadow-sm border rounded-xl p-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 การกระจาย FTE</h3>
+        <canvas id="chartFteSummary" height="300"></canvas>
     </div>
 </div>
 
+<!-- 4.1: Co-Research Summary -->
+<div class="bg-white shadow-sm border rounded-xl p-4 mb-6">
+    <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 รายชื่อ Co-Research ทั้งหมด</h3>
+    <table class="w-full text-sm border">
+        <thead class="bg-gray-50 text-xs text-gray-700">
+            <tr>
+                <th class="p-2 text-left">ชื่อ</th>
+                <th class="p-2 text-left">หน่วยงาน</th>
+                <th class="p-2 text-center">จำนวนโครงการ</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($coResearches->groupBy('name') as $name => $group)
+                <tr class="border-t">
+                    <td class="p-2">{{ $name }}</td>
+                    <td class="p-2">{{ $group->first()->affiliation }}</td>
+                    <td class="p-2 text-center">{{ $group->count() }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
 
-    <!-- 2. Summary Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div class="bg-white p-4 rounded shadow text-center">
-            <div class="text-lg font-bold" id="totalProjects">-</div>
-            <div class="text-xs text-gray-600">จำนวนโครงการ</div>
-        </div>
-        <div class="bg-white p-4 rounded shadow text-center">
-            <div class="text-lg font-bold" id="totalBudget">-</div>
-            <div class="text-xs text-gray-600">งบประมาณรวม (บาท)</div>
-        </div>
-        <div class="bg-white p-4 rounded shadow text-center">
-            <div class="text-lg font-bold" id="totalPIs">-</div>
-            <div class="text-xs text-gray-600">จำนวน PI</div>
-        </div>
-        <div class="bg-white p-4 rounded shadow text-center">
-            <div class="text-lg font-bold" id="totalOutputs">-</div>
-            <div class="text-xs text-gray-600">จำนวน Outputs</div>
-        </div>
-    </div>
-
-    <!-- 3. Chart Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <!-- 3.1 Projects by Year & Status (Stacked Bar) -->
-        <div class="bg-white rounded shadow p-3">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-bold">จำนวนโครงการแต่ละปี (แยกตามสถานะ)</h3>
-                <select id="limitStatus" class="border rounded p-1 text-xs">
-                    <option value="25">แสดง 25 ปีล่าสุด</option>
-                    <option value="50">แสดง 50 ปีล่าสุด</option>
-                    <option value="75">แสดง 75 ปีล่าสุด</option>
-                    <option value="100">แสดง 100 ปีล่าสุด</option>
-                    <option value="all" selected>ทั้งหมด</option>
-                </select>
-            </div>
-            <div style="min-height:260px;">
-                <canvas id="projectByYearChart"></canvas>
-            </div>
-        </div>
-        <!-- 3.2 Pie/Donut: Theme -->
-        <div class="bg-white rounded shadow p-3">
-            <h3 class="text-sm font-bold mb-2">สัดส่วน Theme โครงการ</h3>
-            <canvas id="themePieChart" height="220"></canvas>
-        </div>
-        <!-- 3.3 Funding Type/Size (Bar) -->
-        <div class="bg-white rounded shadow p-3 md:col-span-2">
-            <h3 class="text-sm font-bold mb-2">จำนวนโครงการตามประเภททุน/ขนาด</h3>
-            <canvas id="fundingBarChart" height="200"></canvas>
-        </div>
-        <!-- 3.4 Outputs by Type (Pie) -->
-        <div class="bg-white rounded shadow p-3">
-            <h3 class="text-sm font-bold mb-2">Outputs แยกตามประเภท</h3>
-            <canvas id="outputPieChart" height="220"></canvas>
-        </div>
-        <!-- 3.5 Budget by Year (Line) -->
-        <div class="bg-white rounded shadow p-3">
-            <h3 class="text-sm font-bold mb-2">งบประมาณรวมแต่ละปี</h3>
-            <canvas id="budgetLineChart" height="220"></canvas>
-        </div>
-    </div>
-
-    <!-- 4. Table Section -->
-    <div class="bg-white rounded shadow p-3 mb-10 overflow-x-auto">
-        <h3 class="text-sm font-bold mb-2">📋 รายชื่อโครงการ</h3>
-        <table class="w-full text-sm border">
-            <thead>
-                <tr class="bg-gray-100 text-xs">
-                    <th class="p-2">ชื่อโครงการ</th>
-                    <th class="p-2">Theme</th>
+<!-- 4.2: Project Table -->
+<div class="bg-white shadow-sm border rounded-xl p-4">
+    <h3 class="text-sm font-semibold text-gray-700 mb-3">📋 รายการโครงการทั้งหมด</h3>
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm border" id="projectTable">
+            <thead class="bg-gray-100 text-xs text-gray-700">
+                <tr>
+                    <th class="p-2 text-left">ชื่อโครงการ</th>
                     <th class="p-2">ปี</th>
-                    <th class="p-2">ทุน</th>
                     <th class="p-2">PI</th>
-                    <th class="p-2">ขนาด</th>
-                    <th class="p-2">สถานะ</th>
-                    <th class="p-2">งบประมาณ</th>
+                    <th class="p-2">Co-PI</th>
+                    <th class="p-2">CoResearch</th>
+                    <th class="p-2">FTE รวม</th>
                     <th class="p-2">Output</th>
+                    <th class="p-2">IRB ล่าสุด</th>
                 </tr>
             </thead>
-            <tbody id="projectTableBody">
-                <!-- JS FILL -->
+            <tbody>
+                @foreach ($projects as $p)
+                    <tr class="border-t">
+                        <td class="p-2 text-blue-700 hover:underline"><a href="/projects/{{ $p->id }}">{{ $p->project_name_th }}</a></td>
+                        <td class="p-2 text-center">{{ $p->start_year }}</td>
+                        <td class="p-2 text-center">{{ $p->pi_name }}</td>
+                        <td class="p-2 text-center">{{ $p->copis->count() }}</td>
+                        <td class="p-2 text-center">{{ $p->coResearches->count() }}</td>
+                        <td class="p-2 text-center">{{ number_format($p->fteRoles->sum('fte_value'), 2) }}</td>
+                        <td class="p-2 text-center">{{ $p->outputs->count() }}</td>
+                        <td class="p-2 text-center">
+                            @if ($p->irbs->isNotEmpty())
+                                {{ \Carbon\Carbon::parse($p->irbs->sortByDesc('exp_date')->first()->exp_date)->format('d/m/Y') }}
+                            @else
+                                ❌
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Chart.js -->
+
+    <!-- 1. Filter Panel -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <div>
+                <label class="text-xs font-semibold text-gray-700 block">ปีเริ่มต้น</label>
+                <select id="filterYear" class="w-full border rounded px-2 py-1 text-sm">
+                    <option value="">ทั้งหมด</option>
+                    @for ($y = now()->year + 543; $y >= 2557; $y--)
+                        <option value="{{ $y }}">{{ $y }}</option>
+                    @endfor
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-gray-700 block">Theme</label>
+                <select id="filterTheme" class="w-full border rounded px-2 py-1 text-sm">
+                    <option value="">ทั้งหมด</option>
+                    @foreach ($themes as $theme)
+                        <option value="{{ $theme }}">{{ $theme }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-gray-700 block">ประเภททุน</label>
+                <select id="filterFunding" class="w-full border rounded px-2 py-1 text-sm">
+                    <option value="">ทั้งหมด</option>
+                    <option value="ภายใน">ภายใน</option>
+                    <option value="ภายนอก">ภายนอก</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-gray-700 block">ค้นหาโครงการ</label>
+                <input type="text" id="filterName" class="w-full border rounded px-2 py-1 text-sm" placeholder="ชื่อโครงการ">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-gray-700 block">ค้นหา PI</label>
+                <input type="text" id="filterPI" class="w-full border rounded px-2 py-1 text-sm" placeholder="ชื่อ PI">
+            </div>
+            <div class="flex items-end">
+                <button id="exportCSV" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-sm rounded shadow">
+                    ⬇ Export CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+</div> <!-- end container -->
+
+<!-- Scripts -->
+
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const projects = @json($projects);
+const outputs = @json($outputs);
+const ftes = @json($fteRoles);
+const irbs = @json($irbs);
 
-// สถานะ (ภาษาไทย/รหัส/สี)
-const statusDefs = [
-    {key: 'planning_status',   label: 'วางแผน',     color: '#3B82F6', code: 1},
-    {key: 'execution_status',  label: 'ดำเนินการ',   color: '#22C55E', code: 2},
-    {key: 'review_status',     label: 'ตรวจสอบ',    color: '#F59E42', code: 3},
-    {key: 'closure_status',    label: 'ปิดโครงการ',  color: '#EF4444', code: 4},
-];
-
-// Filter state
-let filter = { year: "", theme: "", funding: "", name: "", pi: "" };
-let statusLimit = 'all';
-
-// Utils
-function numFormat(x) {
-    if (x === null || x === undefined) return "-";
-    return x.toLocaleString('th-TH');
-}
-function filterProjects() {
-    return projects.filter(p => {
-        let pass = true;
-        if (filter.year && String(p.start_year) !== filter.year) pass = false;
-        if (filter.theme && p.theme !== filter.theme) pass = false;
-        if (filter.funding && p.funding_type !== filter.funding) pass = false;
-        if (filter.name && !(p.project_name_th || '').toLowerCase().includes(filter.name)) pass = false;
-        if (filter.pi && !(p.pi_name || '').toLowerCase().includes(filter.pi)) pass = false;
-        return pass;
+// Chart 1: Project by PI / Year
+(function() {
+    const ctx = document.getElementById('chartPiYear').getContext('2d');
+    const group = {};
+    projects.forEach(p => {
+        const pi = p.pi_name || 'ไม่ระบุ';
+        const y = p.start_year || 'ไม่ระบุ';
+        group[pi] ??= {};
+        group[pi][y] = (group[pi][y] || 0) + 1;
     });
-}
+    const years = [...new Set(projects.map(p => p.start_year))].sort();
+    const datasets = Object.entries(group).map(([pi, counts]) => ({
+        label: pi,
+        data: years.map(y => counts[y] || 0),
+        backgroundColor: `hsl(${Math.random()*360}, 70%, 60%)`
+    }));
+    new Chart(ctx, {
+        type: 'bar',
+        data: { labels: years, datasets },
+        options: { plugins: { legend: { position: 'bottom' } }, responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
+    });
+})();
 
-// Summary Card
-function updateSummary(filtered) {
-    document.getElementById('totalProjects').textContent = filtered.length;
-    document.getElementById('totalBudget').textContent = numFormat(filtered.reduce((sum, p) => sum + (Number(p.budget) || 0), 0));
-    document.getElementById('totalPIs').textContent = new Set(filtered.map(p => p.pi_name)).size;
-    let outputCount = 0;
-    filtered.forEach(p => { if(p.outputs) outputCount += p.outputs.length; });
-    document.getElementById('totalOutputs').textContent = outputCount;
-}
+// Chart 2: Project Status by Year
+// Chart: Project Status per Year
+(function() {
+    const ctx = document.getElementById('chartStatusYear').getContext('2d');
 
-// Chart.js holders
-let charts = {};
+    const statuses = [
+        'Project Planing (เริ่มต้น - submit IRB)',
+        'เก็บข้อมูล',
+        'วิเคราะห์ข้อมูล',
+        'เขียนรายงาน และ publication',
+        'ปิดโปรเจค',
+        'ยกเลิกโปรเจค'
+    ];
 
-// Chart 1: Stacked bar - โครงการแต่ละปี/สถานะ
-document.getElementById('limitStatus').addEventListener('change', (e) => {
-    statusLimit = e.target.value;
-    renderProjectByYear(filterProjects());
-});
-function renderProjectByYear(filtered) {
-    const ctx = document.getElementById('projectByYearChart').getContext('2d');
-    if (charts.projectByYear) charts.projectByYear.destroy();
+    const colors = ['#60a5fa', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#f87171'];
 
-    let allYears = [...new Set(filtered.map(p => p.start_year))].sort((a,b) => b-a);
-    let years = statusLimit === 'all' ? allYears : allYears.slice(0, +statusLimit);
-    years = years.sort();
+    const statusData = {}; // year → status → count
+    projects.forEach(p => {
+        const year = p.start_year || 'ไม่ระบุ';
+        const status = p.planning_status || 'ไม่ระบุ';
+        if (!statusData[year]) {
+            statusData[year] = {};
+            statuses.forEach(s => statusData[year][s] = 0);
+        }
+        if (statuses.includes(status)) {
+            statusData[year][status]++;
+        }
+    });
 
-    // แต่ละสถานะ: วางแผน, ดำเนินการ, ตรวจสอบ, ปิดโครงการ
-    let datasets = statusDefs.map(def => ({
-        label: def.label,
-        backgroundColor: def.color,
-        data: years.map(y =>
-            filtered.filter(p =>
-                String(p.start_year) === String(y)
-                && p[def.key] && Number(p[def.key]) === def.code
-            ).length
-        ),
-        maxBarThickness: 36,
-        borderWidth: 1,
-        borderRadius: 4
+    const years = Object.keys(statusData).sort();
+    const datasets = statuses.map((status, i) => ({
+        label: status,
+        backgroundColor: colors[i],
+        data: years.map(y => statusData[y][status])
     }));
 
-    charts.projectByYear = new Chart(ctx, {
+    new Chart(ctx, {
         type: 'bar',
-        data: { labels: years, datasets: datasets },
+        data: {
+            labels: years,
+            datasets: datasets
+        },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
-            aspectRatio: 2.5,
             plugins: {
-                legend: { position: 'bottom', labels: { font: { size: 14 } } },
-                tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}` } }
+                legend: { position: 'bottom' },
+                tooltip: { mode: 'index', intersect: false }
             },
             scales: {
-                x: {
-                    stacked: true,
-                    title: { display: true, text: "ปี" },
-                    ticks: { font: { size: 13 } }
-                },
+                x: { stacked: true },
                 y: {
                     stacked: true,
                     beginAtZero: true,
-                    precision: 0,
-                    ticks: {
-                        precision: 0,
-                        callback: v => Number(v).toLocaleString('th-TH')
-                    },
-                    title: { display: true, text: "จำนวนโครงการ" }
+                    title: { display: true, text: 'จำนวนโครงการ' }
                 }
-            },
-            elements: { bar: { maxBarThickness: 36 } }
+            }
         }
     });
-}
+})();
 
-// Chart 2: Pie - Theme
-function renderThemePie(filtered) {
-    const ctx = document.getElementById('themePieChart').getContext('2d');
-    if (charts.themePie) charts.themePie.destroy();
-    let group = {};
-    filtered.forEach(p => {
-        group[p.theme || 'ไม่ระบุ'] = (group[p.theme || 'ไม่ระบุ'] || 0) + 1;
+// Chart 3: Output Timeline
+(function() {
+    const ctx = document.getElementById('chartOutputTimeline').getContext('2d');
+    const yearGroup = {};
+    outputs.forEach(o => {
+        const y = o.year || 'ไม่ระบุ';
+        yearGroup[y] = (yearGroup[y] || 0) + 1;
     });
-    charts.themePie = new Chart(ctx, {
-        type: 'pie',
-        data: { labels: Object.keys(group), datasets: [{ data: Object.values(group) }] },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-    });
-}
-
-// Chart 3: Funding Bar
-function renderFundingBar(filtered) {
-    const ctx = document.getElementById('fundingBarChart').getContext('2d');
-    if (charts.fundingBar) charts.fundingBar.destroy();
-    let groups = {};
-    filtered.forEach(p => {
-        const key = `${p.funding_type || 'ไม่ระบุ'} | ${p.size || 'ไม่ระบุ'}`;
-        groups[key] = (groups[key] || 0) + 1;
-    });
-    charts.fundingBar = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: Object.keys(groups), datasets: [{ label: 'จำนวนโครงการ', data: Object.values(groups) }] },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            indexAxis: 'y'
-        }
-    });
-}
-
-// Chart 4: Output Pie
-function renderOutputPie(filtered) {
-    const ctx = document.getElementById('outputPieChart').getContext('2d');
-    if (charts.outputPie) charts.outputPie.destroy();
-    let typeGroup = {};
-    filtered.forEach(p => {
-        (p.outputs || []).forEach(o => {
-            const type = o.type || 'ไม่ระบุ';
-            typeGroup[type] = (typeGroup[type] || 0) + 1;
-        });
-    });
-    charts.outputPie = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: Object.keys(typeGroup), datasets: [{ data: Object.values(typeGroup) }] },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-    });
-}
-
-// Chart 5: Line - Budget per year
-function renderBudgetLine(filtered) {
-    const ctx = document.getElementById('budgetLineChart').getContext('2d');
-    if (charts.budgetLine) charts.budgetLine.destroy();
-    let yearGroup = {};
-    filtered.forEach(p => {
-        let y = p.start_year;
-        yearGroup[y] = (yearGroup[y] || 0) + (Number(p.budget) || 0);
-    });
-    let labels = Object.keys(yearGroup).sort();
-    let values = labels.map(y => yearGroup[y]);
-    charts.budgetLine = new Chart(ctx, {
+    const years = Object.keys(yearGroup).sort();
+    new Chart(ctx, {
         type: 'line',
-        data: { labels: labels, datasets: [{ label: 'งบประมาณ (บาท)', data: values, fill: true }] },
-        options: {
-            responsive: true,
-            plugins: { legend: { position: 'top' } },
-            scales: { y: { beginAtZero: true } }
+        data: {
+            labels: years,
+            datasets: [{
+                label: 'Output',
+                data: years.map(y => yearGroup[y]),
+                fill: true,
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59, 130, 246, 0.2)'
+            }]
+        },
+        options: { responsive: true }
+    });
+})();
+
+// Chart 4: IRB Expiry
+(function() {
+    const ctx = document.getElementById('chartIRBExpiry').getContext('2d');
+    const now = new Date();
+    const expGroup = {};
+    irbs.forEach(irb => {
+        const exp = new Date(irb.exp_date);
+        const key = `${exp.getMonth()+1}/${exp.getFullYear()}`;
+        const diff = (exp - now) / (1000 * 60 * 60 * 24 * 30);
+        if (diff >= 0 && diff <= 6) {
+            expGroup[key] = (expGroup[key] || 0) + 1;
         }
     });
-}
+    const labels = Object.keys(expGroup).sort((a, b) => new Date(a) - new Date(b));
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'IRB ใกล้หมดอายุ',
+                data: labels.map(l => expGroup[l]),
+                backgroundColor: '#EF4444'
+            }]
+        },
+        options: { responsive: true }
+    });
+})();
 
-// Table Renderer
-function renderTable(filtered) {
-    const tb = document.getElementById('projectTableBody');
-    tb.innerHTML = filtered.map(p => {
-        // หาสถานะล่าสุด (ตามลำดับ priority)
-        let status = statusDefs.map(def => Number(p[def.key]) === def.code ? def : null).filter(Boolean)[0];
-        return `<tr>
-            <td class="p-2">${p.project_name_th || "-"}</td>
-            <td class="p-2">${p.theme || "-"}</td>
-            <td class="p-2">${p.start_year || "-"}</td>
-            <td class="p-2">${p.funding_type || "-"}</td>
-            <td class="p-2">${p.pi_name || "-"}</td>
-            <td class="p-2">${p.size || "-"}</td>
-            <td class="p-2">
-                ${status
-                    ? `<span class="inline-block rounded px-2 py-1 text-white text-xs" style="background:${status.color}">${status.label}</span>`
-                    : '-'}
-            </td>
-            <td class="p-2 text-right">${numFormat(Number(p.budget) || 0)}</td>
-            <td class="p-2">${(p.outputs||[]).length}</td>
-        </tr>`;
-    }).join('');
-}
+// Chart 5: FTE Summary as Bubble
+(function() {
+    const ctx = document.getElementById('chartFteSummary').getContext('2d');
+    const fteData = {};
 
-// Master render
-function renderAll() {
-    const filtered = filterProjects();
-    updateSummary(filtered);
-    renderProjectByYear(filtered);
-    renderThemePie(filtered);
-    renderFundingBar(filtered);
-    renderOutputPie(filtered);
-    renderBudgetLine(filtered);
-    renderTable(filtered);
-}
+    ftes.forEach(f => {
+        const name = f.name || 'ไม่ระบุ';
+        if (!fteData[name]) {
+            fteData[name] = { fte: 0, projectSet: new Set() };
+        }
+        fteData[name].fte += parseFloat(f.fte_value || 0);
+        fteData[name].projectSet.add(f.project_id);
+    });
 
-// Event Bindings (filter usability: Enter/change ทุกช่อง)
-document.querySelectorAll('.dashboard-filter input, .dashboard-filter select').forEach(el => {
-    el.addEventListener('keyup', e => { if(e.key==='Enter') renderAll(); });
-    el.addEventListener('change', renderAll);
-});
+    const datasets = Object.entries(fteData).map(([name, data]) => {
+        return {
+            label: name,
+            data: [{
+                x: data.projectSet.size,
+                y: data.fte,
+                r: Math.max(5, data.fte * 10)
+            }]
+        };
+    });
+
+    new Chart(ctx, {
+        type: 'bubble',
+        data: {
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            const d = ctx.raw;
+                            return `${ctx.dataset.label}: โครงการ ${d.x} / FTE ${d.y.toFixed(2)}`;
+                        }
+                    }
+                },
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'จำนวนโครงการ' }
+                },
+                y: {
+                    title: { display: true, text: 'FTE รวม' },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+})();
 
 // Export CSV
 document.getElementById('exportCSV').addEventListener('click', () => {
-    const filtered = filterProjects();
-    let csv = "ชื่อโครงการ,Theme,ปี,ประเภททุน,PI,ขนาด,สถานะ,งบประมาณ,Outputs\n" +
-        filtered.map(p =>
-            `"${p.project_name_th}","${p.theme}","${p.start_year}","${p.funding_type}","${p.pi_name}","${p.size}","${
-                statusDefs.map(def => Number(p[def.key]) === def.code ? def.label : '').filter(Boolean)[0] || ''
-            }","${p.budget || ''}","${(p.outputs||[]).length}"`
-        ).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+    const csv = [["ชื่อโครงการ", "PI", "ปี", "Co-PI", "CoResearch", "FTE", "Output", "IRB ล่าสุด"]];
+    projects.forEach(p => {
+        const latestIRB = (p.irbs?.length ?? 0) > 0
+            ? new Date(p.irbs.sort((a, b) => new Date(b.exp_date) - new Date(a.exp_date))[0].exp_date).toLocaleDateString("th-TH")
+            : "ไม่มี";
+        csv.push([
+            p.project_name_th,
+            p.pi_name,
+            p.start_year,
+            p.copis?.length ?? 0,
+            p.co_researches?.length ?? 0,
+            (p.fte_roles ?? []).reduce((sum, r) => sum + parseFloat(r.fte_value || 0), 0).toFixed(2),
+            p.outputs?.length ?? 0,
+            latestIRB
+        ]);
+    });
+    const content = "\uFEFF" + csv.map(r => r.join(",")).join("\n");
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "projects_export.csv";
+    link.href = url;
+    link.setAttribute("download", "dashboard_export.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 });
-
-// Init
-renderAll();
-window.addEventListener('resize', () => renderAll());
 </script>
+
+
+<script>
+const projects = @json($projects);
+const outputs = @json($outputs);
+const ftes = @json($fteRoles);
+const irbs = @json($irbs);
+const progressReports = @json($progressReports);
+
+// 📌 Helper: แสดง Modal
+function showModal(title, htmlBody) {
+    document.getElementById('chartModalTitle').innerText = title;
+    document.getElementById('chartModalBody').innerHTML = htmlBody;
+    document.getElementById('chartModal').classList.remove('hidden');
+}
+function closeModal() {
+    document.getElementById('chartModal').classList.add('hidden');
+}
+
+// ✅ 1. FTE Drill-down (Pie)
+document.getElementById('chartFteSummary').onclick = function (evt) {
+    const chart = Chart.getChart('chartFteSummary');
+    const point = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true)[0];
+    if (!point) return;
+
+    const label = chart.data.labels[point.index];
+    const fteFiltered = ftes.filter(f => f.job_detail === label);
+
+    let html = `<table class="table-auto w-full border text-sm">
+        <thead><tr><th class="p-2">ชื่อ</th><th class="p-2">ตำแหน่ง</th><th class="p-2">โครงการ</th><th class="p-2">FTE</th></tr></thead><tbody>`;
+    fteFiltered.forEach(f => {
+        html += `<tr class="border-t">
+            <td class="p-2">${f.name}</td>
+            <td class="p-2">${f.role_group}</td>
+            <td class="p-2 text-blue-600"><a href="/projects/${f.project_id}" target="_blank">${f.project_name}</a></td>
+            <td class="p-2 text-center">${f.fte}</td>
+        </tr>`;
+    });
+    html += `</tbody></table>`;
+    showModal(`📈 รายชื่อผู้ร่วมในตำแหน่ง "${label}"`, html);
+};
+
+// ✅ 2. Output Timeline Drill-down
+document.getElementById('chartOutputTimeline').onclick = function (evt) {
+    const chart = Chart.getChart('chartOutputTimeline');
+    const point = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true)[0];
+    if (!point) return;
+
+    const label = chart.data.labels[point.index];
+    const year = label.split('/').pop();
+    const outputFiltered = outputs.filter(o => o.export_year == year);
+
+    let html = `<table class="table-auto w-full border text-sm">
+        <thead><tr><th class="p-2">ชื่อผลงาน</th><th class="p-2">ประเภท</th><th class="p-2">โครงการ</th></tr></thead><tbody>`;
+    outputFiltered.forEach(o => {
+        html += `<tr class="border-t">
+            <td class="p-2">${o.title}</td>
+            <td class="p-2">${o.type}</td>
+            <td class="p-2 text-blue-600"><a href="/projects/${o.project_id}" target="_blank">${o.project_name}</a></td>
+        </tr>`;
+    });
+    html += `</tbody></table>`;
+    showModal(`📝 Output ในปี พ.ศ. ${year}`, html);
+};
+
+// ✅ 3. IRB Expiry Drill-down (ทำแล้ว)
+document.getElementById('chartIRBExpiry').onclick = function(evt) {
+    const chart = Chart.getChart('chartIRBExpiry');
+    const point = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true)[0];
+    if (!point) return;
+
+    const label = chart.data.labels[point.index];
+    const filteredProjects = projects.filter(p =>
+        p.irbs?.some(irb => {
+            const exp = new Date(irb.exp_date);
+            return `${exp.getMonth()+1}/${exp.getFullYear()}` === label;
+        })
+    );
+
+    let html = `<table class="table-auto w-full text-sm border"><thead><tr>
+        <th class="p-2">ชื่อโครงการ</th>
+        <th class="p-2">PI</th>
+        <th class="p-2">วันหมดอายุ IRB</th></tr></thead><tbody>`;
+
+    filteredProjects.forEach(p => {
+        const latestIRB = p.irbs?.sort((a,b) => new Date(b.exp_date) - new Date(a.exp_date))[0];
+        const exp = latestIRB ? new Date(latestIRB.exp_date).toLocaleDateString('th-TH') : '❌';
+        html += `<tr class="border-t"><td class="p-2 text-blue-600">
+                    <a href="/projects/${p.id}" target="_blank">${p.project_name_th}</a></td>
+                    <td class="p-2">${p.pi_name}</td>
+                    <td class="p-2">${exp}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    showModal('📅 โครงการที่ IRB ใกล้หมดอายุ', html);
+};
+
+// ✅ 4. Project Status per Year Drill-down
+document.getElementById('chartStatusPerYear').onclick = function (evt) {
+    const chart = Chart.getChart('chartStatusPerYear');
+    const point = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true)[0];
+    if (!point) return;
+
+    const year = chart.data.labels[point.index];
+    const status = chart.data.datasets[point.datasetIndex].label;
+    const filtered = projects.filter(p => p.start_year == year && p.planning_status == status);
+
+    let html = `<table class="table-auto w-full border text-sm">
+        <thead><tr><th class="p-2">ชื่อโครงการ</th><th class="p-2">PI</th><th class="p-2">สถานะ</th></tr></thead><tbody>`;
+    filtered.forEach(p => {
+        html += `<tr class="border-t">
+            <td class="p-2 text-blue-600"><a href="/projects/${p.id}" target="_blank">${p.project_name_th}</a></td>
+            <td class="p-2">${p.pi_name}</td>
+            <td class="p-2">${p.planning_status}</td>
+        </tr>`;
+    });
+    html += `</tbody></table>`;
+    showModal(`📋 โครงการปี ${year} ที่มีสถานะ "${status}"`, html);
+};
+</script>
+
 @endsection

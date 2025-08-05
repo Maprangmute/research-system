@@ -9,13 +9,35 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $projects = Project::with('outputs')
-            ->select('id', 'project_name_th', 'funding_name', 'budget', 'start_year', 'theme')
-            ->get();
+        $projects = Project::with([
+            'copis',
+            'coResearches',
+            'fteRoles',
+            'outputs',
+            'irbs',
+            'progressReports'
+        ])
+        ->select('id', 'project_name_th', 'start_year', 'planning_status', 'theme', 'pi_name', 'budget')
+        ->get();
 
-        // ดึง Theme ทั้งหมดที่ไม่ซ้ำ
-        $themes = Project::distinct()->pluck('theme');
+        $copis = $projects->flatMap->copis;
+        $coResearches = $projects->flatMap->coResearches;
+        $fteRoles = $projects->flatMap->fteRoles;
+        $outputs = $projects->flatMap->outputs;
+        $irbs = $projects->flatMap->irbs;
+        $progressReports = $projects->flatMap->progressReports;
 
-        return view('dashboard', compact('projects', 'themes'));
+        $themes = Project::select('theme')->distinct()->pluck('theme');
+
+        return view('dashboard', compact(
+            'projects',
+            'copis',
+            'coResearches',
+            'fteRoles',
+            'outputs',
+            'irbs',
+            'progressReports',
+            'themes'
+        ));
     }
 }
