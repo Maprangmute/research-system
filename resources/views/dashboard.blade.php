@@ -211,7 +211,7 @@ const irbs = @json($irbs);
         'Project Planing (เริ่มต้น - submit IRB)',
         'เก็บข้อมูล',
         'วิเคราะห์ข้อมูล',
-        'เขียนรายงาน และ publication',
+        'เขียนรายงานและpublication',
         'ปิดโปรเจค',
         'ยกเลิกโปรเจค'
     ];
