@@ -458,8 +458,10 @@
                             <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
                             <select name="coresearch[0][unit_status]" required class="w-full border p-2 rounded">
                                 <option value="" disabled selected>กรุณาเลือก</option>
-                                <option value="ภายใน">ภายใน</option>
-                                <option value="ภายนอก">ภายนอก</option>
+                                <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
+                                <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>
+                                <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">
+                                    ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ</option>
                             </select>
                         </label>
 
@@ -705,7 +707,7 @@
                                     <option value="" disabled selected>เลือกประเภทของผลงาน</option>
                                     <option>EA101 Research Paper or Journal Article</option>
                                     <option>EA102 Reports and White papers</option>
-                                    <option>EA103 Presentations and Conferences</option>
+                                    <option>EA103 Presentations in Academic Conferences</option>
                                     <option>EA104 Data Sets and Databases</option>
                                     <option>EA105 Inventions or Innovations (Application /Website)</option>
                                     <option>EA106 Policy Recommendations</option>
@@ -716,8 +718,8 @@
                                     <option>EA111 Satisfaction Rating (1-5)</option>
                                     <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
                                     <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
-                                    <option>EA114 คะแนนการศึกษาต่อเนื่อง CPE CME CNEU</option>
-                                    <option>EA115 Capcity Building</option>
+                                    <option>EA114 Events / Forum</option>
+                                    <option>EA115 Capacity Building</option>
                                     <option>EA116 Research Project</option>
                                     <option>EA117 MOU</option>
                                 </select>
@@ -1155,7 +1157,7 @@
                                 <option value="" disabled selected>เลือกประเภทของผลงาน</option>
                                 <option>EA101 Research Paper or Journal Article</option>
                                 <option>EA102 Reports and White papers</option>
-                                <option>EA103 Presentations and Conferences</option>
+                                <option>EA103 Presentations in Academic Conferences</option>
                                 <option>EA104 Data Sets and Databases</option>
                                 <option>EA105 Inventions or Innovations (Application /Website)</option>
                                 <option>EA106 Policy Recommendations</option>
@@ -1166,8 +1168,8 @@
                                 <option>EA111 Satisfaction Rating (1-5)</option>
                                 <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
                                 <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
-                                <option>EA114 คะแนนการศึกษาต่อเนื่อง CPE CME CNEU</option>
-                                <option>EA115 Capcity Building</option>
+                                <option>EA114 Events / Forum</option>
+                                <option>EA115 Capacity Building</option>
                                 <option>EA116 Research Project</option>
                                 <option>EA117 MOU</option>
                             </select>
@@ -1267,8 +1269,9 @@
                     <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
                     <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required>
                         <option value="" disabled selected>กรุณาเลือก</option>
-                        <option value="ภายใน">ภายใน</option>
-                        <option value="ภายนอก">ภายนอก</option>
+                        <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
+                        <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>
+                        <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ</option>
                     </select>
                 </label>
                 <div class="col-span-2 flex justify-end pt-6">
