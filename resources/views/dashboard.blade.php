@@ -103,10 +103,7 @@
             <canvas id="chartStatusYear" height="250"></canvas>
         </div>
 
-        <div class="bg-white shadow-sm border rounded-xl p-4">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">📅 IRB ที่จะหมดอายุ (6 เดือนถัดไป)</h3>
-            <canvas id="chartIRBExpiry" height="250"></canvas>
-        </div>
+     
 
         <div class="bg-white shadow-sm border rounded-xl p-4">
             <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 ความร่วมมือ (นอกคณะ/ข้ามหน่วย/นอกมหาวิทยาลัย)</h3>
@@ -235,6 +232,7 @@ const getUnit = (p) => p.unit_name || p.department || 'ไม่ระบุ';
 const outputYear = (o) => o.year ?? o.export_year ?? 'ไม่ระบุ';
 const outputType = (o) => (o.type || 'อื่นๆ').trim();
 
+
 function categorizeCollab(p){
   // ถ้ามี p.collab_type ให้ใช้เลย เช่น: 'outside_faculty' | 'cross_dept_in_med' | 'outside_university'
   if (p.collab_type) {
@@ -256,22 +254,85 @@ function showModal(title, htmlBody) {
 }
 function closeModal(){ document.getElementById('chartModal').classList.add('hidden'); }
 
-/* ---------- 1) จำนวนโครงการรายปี ---------- */
-(function(){
-  const byYear = {};
+/* ---------- 1) จำนวนโครงการรายปี (Bar + ตัวเลขบนแท่ง) ---------- */
+(function () {
+  // รวมจำนวนโครงการต่อปี
+  const counts = new Map();
   projects.forEach(p => {
-    const y = getYear(p);
-    byYear[y] = (byYear[y] || 0) + 1;
+    const y = (getYear(p) ?? '').toString().trim() || 'ไม่ระบุ';
+    counts.set(y, (counts.get(y) || 0) + 1);
   });
-  const years = Object.keys(byYear).sort();
-  new Chart(document.getElementById('chartProjectsPerYear'), {
-    type: 'line',
-    data: { labels: years, datasets: [{ label: 'โครงการ', data: years.map(y=>byYear[y]), fill:true }]},
-    options: { responsive:true, plugins:{ legend:{position:'bottom'} } }
+
+  // ปีตัวเลขก่อน แล้วค่อยหมวดอื่น
+  const isNumeric = (s) => /^\d+$/.test(s);
+  const numericYears = [...counts.keys()].filter(isNumeric).map(Number).sort((a,b)=>a-b).map(String);
+  const otherYears   = [...counts.keys()].filter(k => !isNumeric(k)).sort();
+  const labels = numericYears.concat(otherYears);
+
+  const data   = labels.map(y => counts.get(y) ?? 0);
+  const colors = labels.map((_, i) => `hsl(${(i * 37) % 360} 70% 60%)`);
+
+  // ทำลายกราฟเดิมถ้ามี
+  const el = document.getElementById('chartProjectsPerYear');
+  const prev = Chart.getChart(el);
+  if (prev) prev.destroy();
+
+  // ปลั๊กอินวาดตัวเลขบนแท่ง (ไม่ง้อ chartjs-plugin-datalabels)
+  const barValuePlugin = {
+    id: 'barValuePlugin',
+    afterDatasetsDraw(chart, args, pluginOptions) {
+      const { ctx } = chart;
+      ctx.save();
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = '#374151'; // เทาเข้มอ่านง่าย
+
+      const meta = chart.getDatasetMeta(0);
+      const ds   = chart.data.datasets[0];
+
+      meta.data.forEach((bar, i) => {
+        const v = ds.data[i];
+        if (v == null) return;
+        const x = bar.x;
+        const y = bar.y - 6;  // ระยะห่างเหนือแท่ง
+        ctx.fillText(String(v), x, y);
+      });
+
+      ctx.restore();
+    }
+  };
+
+  new Chart(el, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'จำนวนโครงการ',
+        data,
+        backgroundColor: colors,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      layout: { padding: { top: 18 } }, // เผื่อพื้นที่ให้ตัวเลขด้านบน
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: (ctx) => ` ${ctx.raw} โครงการ` }
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'จำนวนโครงการ' } },
+        x: { title: { display: true, text: 'ปี' } }
+      }
+    },
+    plugins: [barValuePlugin]
   });
 })();
 
-/* ---------- 2) ทุน ภายใน/ภายนอก (รายปี) ---------- */
+
 (function(){
   const years = [...new Set(projects.map(getYear))].sort();
   const types = ['ภายใน','ภายนอก'];
@@ -288,14 +349,45 @@ function closeModal(){ document.getElementById('chartModal').classList.add('hidd
     backgroundColor: t==='ภายใน' ? '#60a5fa' : '#34d399',
     stack: 'fund'
   }));
+
+  // ปลั๊กอินโชว์ตัวเลขบนแท่ง
+  const barValuePlugin = {
+    id: 'barValue',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      ctx.save();
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = '#111827';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        chart.getDatasetMeta(datasetIndex).data.forEach((bar, index) => {
+          const value = dataset.data[index];
+          if (value > 0) {
+            ctx.fillText(value, bar.x, bar.y - 4);
+          }
+        });
+      });
+
+      ctx.restore();
+    }
+  };
+
   new Chart(document.getElementById('chartFundingSplit'), {
     type:'bar',
     data:{ labels: years, datasets },
-    options:{ responsive:true, plugins:{legend:{position:'bottom'}}, scales:{ x:{stacked:true}, y:{stacked:true, beginAtZero:true}} }
+    options:{
+      responsive:true,
+      plugins:{ legend:{ position:'bottom' } },
+      scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }
+    },
+    plugins: [barValuePlugin] // เรียกใช้ปลั๊กอิน
   });
 })();
 
-/* ---------- 3) งบประมาณรวมรายปี ---------- */
+
+/* ---------- 3) งบประมาณรวมรายปี (Bar + Data Label หน่วย พันบาท/ล้านบาท) ---------- */
 (function(){
   const byYear = {};
   projects.forEach(p=>{
@@ -303,34 +395,159 @@ function closeModal(){ document.getElementById('chartModal').classList.add('hidd
     byYear[y] = (byYear[y]||0) + getBudget(p);
   });
   const years = Object.keys(byYear).sort();
-  new Chart(document.getElementById('chartBudgetPerYear'),{
+
+  // ฟอร์แมตหน่วยเงินไทย
+  function formatMoneyTHB(v){
+    if (v >= 1_000_000) return (v/1_000_000).toFixed(2) + ' ล้านบาท';
+    if (v >= 1_000)     return (v/1_000).toFixed(2)     + ' พันบาท';
+    return v.toLocaleString('th-TH') + ' บาท';
+  }
+
+  // ปลั๊กอินวาดเลขบนแท่ง (ไม่พึ่ง chartjs-plugin-datalabels)
+  const budgetValueLabelPlugin = {
+    id: 'budgetValueLabel',
+    afterDatasetsDraw(chart){
+      const { ctx, chartArea: { top } } = chart;
+      const meta = chart.getDatasetMeta(0);
+      const ds   = chart.data.datasets[0];
+      if (!meta || !ds) return;
+
+      ctx.save();
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = '#111827';
+
+      meta.data.forEach((bar, i) => {
+        const v = Number(ds.data[i] ?? 0);
+        if (!isFinite(v) || v <= 0) return;
+
+        const label = formatMoneyTHB(v);
+        let y = bar.y - 6;              // วางเหนือแท่งเล็กน้อย
+        if (y < top + 6) y = top + 6;   // กันเลขตกขอบบน
+        ctx.fillText(label, bar.x, y);
+      });
+
+      ctx.restore();
+    }
+  };
+
+  const el = document.getElementById('chartBudgetPerYear');
+  const prev = Chart.getChart(el); if (prev) prev.destroy();
+
+  new Chart(el, {
     type:'bar',
-    data:{ labels: years, datasets:[{ label:'งบประมาณ (รวม)', data: years.map(y=>byYear[y]) }]},
-    options:{ responsive:true, plugins:{ legend:{position:'bottom'}, tooltip:{ callbacks:{ label:(ctx)=> new Intl.NumberFormat('th-TH').format(ctx.raw) + ' บาท' }}} }
+    data:{
+      labels: years,
+      datasets:[{
+        label:'งบประมาณ (รวม)',
+        data: years.map(y=>byYear[y]),
+        backgroundColor: '#fbbf24',
+        borderRadius: 6
+      }]
+    },
+    options:{
+      responsive:true,
+      layout:{ padding:{ top: 22 } }, // เผื่อที่ให้ label ด้านบน
+      plugins:{
+        legend:{ position:'bottom' },
+        tooltip:{
+          callbacks:{
+            label: (ctx)=> formatMoneyTHB(ctx.raw)
+          }
+        }
+      },
+      scales:{
+        y:{
+          beginAtZero:true,
+          ticks:{
+            callback: (value)=> formatMoneyTHB(value)
+          },
+          title:{ display:true, text:'งบประมาณ' }
+        },
+        x:{ title:{ display:true, text:'ปี' } }
+      }
+    },
+    plugins: [budgetValueLabelPlugin]
   });
 })();
 
+
 /* ---------- 4) Output Stacked by Type / Year ---------- */
 (function(){
-  const years = [...new Set(outputs.map(outputYear))].sort();
+  function safeYear(val) {
+    if (!val) return 'ไม่ระบุ';
+    const str = String(val).trim();
+    if (/^\d{4}$/.test(str)) return str;
+    const match = str.match(/(25\d{2}|20\d{2}|19\d{2})/);
+    if (match) return match[1];
+    const d = new Date(str);
+    if (!isNaN(d)) return String(d.getFullYear());
+    return 'ไม่ระบุ';
+  }
+
+  const years = [...new Set(outputs.map(o => safeYear(o.year ?? o.date ?? o.created_at)))];
+  const isNum = s => /^\d+$/.test(s);
+  const sortedYears = years.filter(isNum).map(Number).sort((a,b)=>a-b).map(String)
+                     .concat(years.filter(y => !isNum(y)));
+
   const types = [...new Set(outputs.map(outputType))].sort();
   const grid = {};
-  years.forEach(y=> grid[y] = Object.fromEntries(types.map(t => [t,0])));
-  outputs.forEach(o=>{
-    grid[outputYear(o)][outputType(o)] += 1;
+  sortedYears.forEach(y => grid[y] = Object.fromEntries(types.map(t => [t, 0])));
+
+  outputs.forEach(o => {
+    const y = safeYear(o.year ?? o.date ?? o.created_at);
+    const t = outputType(o);
+    if (!grid[y]) grid[y] = Object.fromEntries(types.map(tt => [tt, 0]));
+    grid[y][t] += 1;
   });
+
   const datasets = types.map((t,i) => ({
     label: t,
-    data: years.map(y => grid[y][t]),
+    data: sortedYears.map(y => grid[y][t]),
     backgroundColor: `hsl(${(i*53)%360} 70% 60%)`,
     stack:'out'
   }));
-  new Chart(document.getElementById('chartOutputStacked'),{
+
+  // ปลั๊กอินแสดงตัวเลขบนแท่ง
+  const dataLabelPlugin = {
+    id: 'dataLabelPlugin',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        meta.data.forEach((bar, index) => {
+          const value = dataset.data[index];
+          if (value > 0) {
+            ctx.fillStyle = '#111';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(value, bar.x, bar.y - 3);
+          }
+        });
+      });
+    }
+  };
+
+  const el = document.getElementById('chartOutputStacked');
+  const prev = Chart.getChart(el); if (prev) prev.destroy();
+
+  new Chart(el,{
     type:'bar',
-    data:{ labels: years, datasets },
-    options:{ responsive:true, plugins:{legend:{position:'bottom'}}, scales:{ x:{stacked:true}, y:{stacked:true, beginAtZero:true} } }
+    data:{ labels: sortedYears, datasets },
+    options:{
+      responsive:true,
+      plugins:{ legend:{position:'bottom'} },
+      scales:{ 
+        x:{ stacked:true, title:{display:true, text:'ปี'} }, 
+        y:{ stacked:true, beginAtZero:true, title:{display:true, text:'จำนวนผลงาน'} } 
+      }
+    },
+    plugins: [dataLabelPlugin]
   });
 })();
+
 
 /* ---------- 5) Publication per Year ---------- */
 (function(){
@@ -359,26 +576,60 @@ function closeModal(){ document.getElementById('chartModal').classList.add('hidd
     'ปิดโปรเจค',
     'ยกเลิกโปรเจค'
   ];
+
   const statusData = {}; // year → status → count
   projects.forEach(p => {
     const year = getYear(p);
     const status = p.planning_status || 'ไม่ระบุ';
-    if (!statusData[year]) { statusData[year] = Object.fromEntries(statuses.map(s=>[s,0])); }
+    if (!statusData[year]) {
+      statusData[year] = Object.fromEntries(statuses.map(s => [s, 0]));
+    }
     if (statuses.includes(status)) statusData[year][status]++;
   });
+
   const years = Object.keys(statusData).sort();
   const datasets = statuses.map((s,i)=>({
-    label:s, data: years.map(y=>statusData[y][s]),
-    backgroundColor:`hsl(${(i*46)%360} 70% 60%)`, stack:'st'
+    label: s,
+    data: years.map(y => statusData[y][s]),
+    backgroundColor: `hsl(${(i*46)%360} 70% 60%)`,
+    stack: 'st'
   }));
-  new Chart(ctx,{
-    type:'bar',
-    data:{ labels: years, datasets },
-    options:{
-      responsive:true,
-      plugins:{ legend:{position:'bottom'}, tooltip:{mode:'index', intersect:false}},
-      scales:{ x:{stacked:true}, y:{stacked:true, beginAtZero:true, title:{display:true, text:'จำนวนโครงการ'}} }
+
+  // ปลั๊กอินแสดงตัวเลขบนแท่ง
+  const dataLabelPlugin = {
+    id: 'dataLabelPlugin',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      ctx.save();
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        meta.data.forEach((bar, index) => {
+          const value = dataset.data[index];
+          if (value > 0) {
+            ctx.fillStyle = '#111';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(value, bar.x, bar.y - 3);
+          }
+        });
+      });
+      ctx.restore();
     }
+  };
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: { labels: years, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' }, tooltip: { mode: 'index', intersect: false } },
+      scales: { 
+        x: { stacked: true, title: { display: true, text: 'ปี' } }, 
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'จำนวนโครงการ' } } 
+      }
+    },
+    plugins: [dataLabelPlugin] // ใส่เฉพาะกราฟนี้
   });
 })();
 
@@ -404,7 +655,7 @@ function closeModal(){ document.getElementById('chartModal').classList.add('hidd
 
 /* ---------- 8) ความร่วมมือ ---------- */
 (function(){
-  const cats = ['นอกคณะ','ข้ามหน่วย (ในคณะแพทย์)','นอกมหาวิทยาลัย','ไม่ระบุ'];
+  const cats = ['ภายในคณะแพทยศาสตร์ศิริราชพยาบาล','ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล','ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ','ไม่ระบุ'];
   const byYearCat = {};
   const years = [...new Set(projects.map(getYear))].sort();
   years.forEach(y => byYearCat[y] = Object.fromEntries(cats.map(c=>[c,0])));

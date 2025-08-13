@@ -17,7 +17,17 @@ class DashboardController extends Controller
             'irbs',
             'progressReports'
         ])
-        ->select('id', 'project_name_th', 'start_year', 'planning_status', 'theme', 'pi_name', 'budget')
+        ->select(
+            'id',
+            'project_name_th',
+            'start_year',
+            'planning_status',
+            'theme',
+            'pi_name',
+            'budget',
+            'funding_type',   // << ต้องมี
+            'funding_source'  // << เผื่อใช้กราฟอื่น
+        )
         ->get();
 
         $copis = $projects->flatMap->copis;
@@ -41,3 +51,4 @@ class DashboardController extends Controller
         ));
     }
 }
+

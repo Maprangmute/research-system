@@ -11,8 +11,10 @@ use App\Http\Controllers\TaskLinkController;
 
 // 🌐 หน้าหลัก
 Route::get('/', function () {
-    return view('welcome');
+    // return view('welcome');
+    
 });
+Route::redirect('/', '/login');           // 302 ชั่วคราว (แนะนำ)
 
 // 🔐 Auth + Dashboard
 Route::middleware([
@@ -123,3 +125,17 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::post('/projects/check-name', [ProjectController::class, 'checkProjectName'])->name('projects.checkName');
 
 });
+
+
+use App\Http\Controllers\FteRoleController;
+
+Route::middleware(['auth'])->group(function () {
+    // หน้าแสดงฟอร์ม FTE ซ้าย/ขวา
+    Route::get('/projects/{project}/fte', [FteRoleController::class, 'index'])
+        ->name('projects.fte.index');
+
+    // (มีแล้วจากก่อนหน้า) เซฟแบบ bulk
+    Route::put('/projects/{project}/fte', [FteRoleController::class, 'bulkUpdate'])
+        ->name('projects.fte.update');
+});
+
