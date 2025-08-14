@@ -5,17 +5,21 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Project;
 
+// app/Http/Controllers/DashboardController.php
 class DashboardController extends Controller
 {
     public function index()
     {
         $projects = Project::with([
+            // ดึงเฉพาะฟิลด์ที่ต้องใช้จาก coResearches
+            'coResearches:id,project_id,unit_status',
+
+            // อื่น ๆ ตามเดิม (จะกรองฟิลด์หรือไม่ก็ได้)
             'copis',
-            'coResearches',
             'fteRoles',
             'outputs',
             'irbs',
-            'progressReports'
+            'progressReports',
         ])
         ->select(
             'id',
@@ -25,8 +29,8 @@ class DashboardController extends Controller
             'theme',
             'pi_name',
             'budget',
-            'funding_type',   // << ต้องมี
-            'funding_source'  // << เผื่อใช้กราฟอื่น
+            'funding_type',
+            'funding_source'
         )
         ->get();
 
