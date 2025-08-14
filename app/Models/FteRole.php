@@ -9,17 +9,22 @@ use App\Models\ProjectLog;
 
 class FteRole extends Model
 {
-    protected $fillable = [
+        protected $fillable = [
         'project_id',
-        'role_group',
+        'role_group',           // ถ้ามีไว้ใช้ก็ปล่อยไว้ได้
         'name',
         'fte_value',
+        'fte_value_research',   // ⬅️ เพิ่ม
         'job_detail',
         'start_date',
         'end_date',
         'task_detail'
     ];
 
+    protected $casts = [
+        'fte_value' => 'float',
+        'fte_value_research' => 'float', // ⬅️ เพิ่ม
+    ];
     // ==== Log ทุก action ที่เกี่ยวกับ FTE ====
     protected static function booted()
     {

@@ -241,39 +241,35 @@ class ProjectController extends Controller
             }
         }
     }
-
     private function syncFTERoles(Request $request, Project $project): void
     {
         $ids = [];
+
         foreach ($request->fte_roles ?? [] as $fte) {
+            $payload = [
+                'role_group'          => $fte['role_group'] ?? '',
+                'name'                => $fte['name'] ?? null,
+                'job_detail'          => $fte['job_detail'] ?? null,
+                'start_date'          => $fte['start_date'] ?? null,
+                'end_date'            => $fte['end_date'] ?? null,
+                'fte_value'           => $fte['fte_value'] ?? 0,
+                'fte_value_research'  => $fte['fte_value_research'] ?? 0, // ⬅️ เพิ่มบรรทัดนี้
+                'task_detail'         => $fte['task_detail'] ?? null,
+            ];
+
             if (!empty($fte['id'])) {
-                $fteRole = \App\Models\FteRole::find($fte['id']);
+                // อัปเดตเฉพาะของโปรเจกต์นี้
+                $fteRole = $project->fteRoles()->whereKey($fte['id'])->first();
                 if ($fteRole) {
-                    $fteRole->update([
-                        'role_group'  => $fte['role_group'] ?? '',
-                        'name'        => $fte['name'],
-                        'job_detail'  => $fte['job_detail'],
-                        'start_date'  => $fte['start_date'],
-                        'end_date'    => $fte['end_date'],
-                        'fte_value'   => $fte['fte_value'] ?? 0,
-                        'task_detail' => $fte['task_detail'] ?? null,
-                    ]);
+                    $fteRole->update($payload);
                     $ids[] = $fteRole->id;
                 }
             } else if (!empty($fte['name'])) {
-                $new = \App\Models\FteRole::create([
-                    'project_id'  => $project->id,
-                    'role_group'  => $fte['role_group'] ?? '',
-                    'name'        => $fte['name'],
-                    'job_detail'  => $fte['job_detail'],
-                    'start_date'  => $fte['start_date'],
-                    'end_date'    => $fte['end_date'],
-                    'fte_value'   => $fte['fte_value'] ?? 0,
-                    'task_detail' => $fte['task_detail'] ?? null,
-                ]);
+                $new = $project->fteRoles()->create($payload);
                 $ids[] = $new->id;
             }
         }
+
         $project->fteRoles()->whereNotIn('id', $ids)->delete();
     }
 
@@ -385,29 +381,28 @@ class ProjectController extends Controller
         $project->coResearches()->whereNotIn('id', $ids)->delete();
     }
 
-   public function checkProjectName(Request $request)
-{
-    $name = $request->input('project_name_th');
+    public function checkProjectName(Request $request)
+    {
+        $name = $request->input('project_name_th');
 
-    // Exact match
-    $exact = Project::where('project_name_th', $name)->first();
+        // Exact match
+        $exact = Project::where('project_name_th', $name)->first();
 
-    // Similar matches
-    $similar = Project::where('project_name_th', 'LIKE', '%' . $name . '%')
-        ->take(5)
-        ->get(['project_name_th', 'pi_name', 'start_year'])
-        ->map(function ($project) {
-            return [
-                'project_name_th' => $project->project_name_th,
-                'pi_name' => $project->pi_name ?? 'ไม่ได้ลงข้อมูล',
-                'start_year' => $project->start_year ?? 'ไม่ได้ลงข้อมูล',
-            ];
-        });
+        // Similar matches
+        $similar = Project::where('project_name_th', 'LIKE', '%' . $name . '%')
+            ->take(5)
+            ->get(['project_name_th', 'pi_name', 'start_year'])
+            ->map(function ($project) {
+                return [
+                    'project_name_th' => $project->project_name_th,
+                    'pi_name' => $project->pi_name ?? 'ไม่ได้ลงข้อมูล',
+                    'start_year' => $project->start_year ?? 'ไม่ได้ลงข้อมูล',
+                ];
+            });
 
-    return response()->json([
-        'exact' => $exact ? true : false,
-        'similar' => $similar,
-    ]);
-}
-
+        return response()->json([
+            'exact' => $exact ? true : false,
+            'similar' => $similar,
+        ]);
+    }
 }

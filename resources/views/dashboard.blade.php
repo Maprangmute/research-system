@@ -1506,7 +1506,7 @@
                             backgroundColor: '#34d399'
                         },
                         {
-                            label: 'ค้างจากปีก่อน',
+                            label: 'กำลังทำ',
                             data: years.map(y => carryoverPerYear[y]),
                             backgroundColor: '#fbbf24'
                         }
