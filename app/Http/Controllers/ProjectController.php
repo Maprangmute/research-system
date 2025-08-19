@@ -141,7 +141,8 @@ class ProjectController extends Controller
         $project->coResearches()->delete();
         $this->syncCoResearch($request, $project);
 
-        return redirect()->route('projects.index')->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
+        return redirect() ->route('projects.show', $project) // <— ต้องส่งพารามิเตอร์
+        ->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
     }
     public function destroy(Project $project)
     {
@@ -210,6 +211,7 @@ class ProjectController extends Controller
             'course_code' => 'nullable|string',
             'end_date' => 'nullable|string',
             'updated_by' => 'nullable|integer',
+            'project_list' => 'nullable|string|max:255',
         ]);
     }
 

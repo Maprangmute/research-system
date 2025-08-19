@@ -91,7 +91,9 @@
                 <div><span class="font-semibold">ชื่อโครงการ (TH):</span> {{ $project->project_name_th }}</div>
                 <div><span class="font-semibold">ชื่อโครงการ (EN):</span> {{ $project->project_name_en }}</div>
                 <div><span class="font-semibold">ประเภท:</span> {{ $project->project_type }}</div>
+                <div><span class="font-semibold">ลักษณะ</span> {{ $project->project_list }}</div>
                 <div><span class="font-semibold">Theme:</span> {{ $project->theme }}</div>
+                
                 <div class="md:col-span-2">
                     <span class="font-semibold">Shortcut:</span>
                     @if ($project->shortcut_link)

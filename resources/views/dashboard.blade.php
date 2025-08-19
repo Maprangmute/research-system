@@ -1001,50 +1001,49 @@
         
         // 8) การร่วมมือ (Collaboration) แบ่งตามหน่วยงาน — robust + data labels + เช็ค toggle legend
 (function() {
+  // --- หมวดหมู่ ---
   const CATS = [
-    'ภายในคณะแพทยศาสตร์ศิริราชพยาบาล',
-    'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล',
-    'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ'
+    'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ',
+    'โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ',
+    'โครงการวิจัยนอกคณะ'
   ];
 
-  // normalize unit_status ให้เข้าหมวดมาตรฐาน
+  // --- helper: ปีจาก project ---
+  function getYear(p) {
+    return p?.start_year ? String(p.start_year) : 'ไม่ระบุ';
+  }
+
+  // --- normalize project_list -> category ---
   function normalizeUnitStatus(raw) {
-    const s = (raw ?? '').toString().trim().replace(/\s+/g, '');
+    const s = (raw ?? '').toString().trim();
     if (!s) return null;
-    if (s.includes('ภายในคณะแพทยศาสตร์ศิริราชพยาบาล')) return CATS[0];
-    if (s.includes('ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล')) return CATS[1];
-    // รองรับทั้ง "นโยบายสุขภาพ" และ "นโยบาลสุขภาพ"
-    if (s.includes('ภายในหน่วยวิจัย') && (s.includes('นโยบายสุขภาพ') || s.includes('นโยบาลสุขภาพ'))) {
-      return CATS[2];
-    }
+    if (s.includes('ภายในหน่วยวิจัย') && s.includes('สุขภา')) return CATS[0];
+    if (s.includes('นอกหน่วย') && s.includes('คณะ')) return CATS[1];
+    if (s.includes('วิจัยนอกคณะ')) return CATS[2];
     return null;
   }
 
-  // ปี: ตัวเลขก่อน คำทีหลัง
-  const rawYears = [...new Set(projects.map(getYear))].map(y => (y ?? '').toString().trim() || 'ไม่ระบุ');
+  // --- list ปี ---
+  const rawYears = [...new Set(projects.map(getYear))];
   const isNum = v => /^\d+$/.test(v);
-  const years = rawYears.filter(isNum).map(Number).sort((a,b)=>a-b).map(String)
-                 .concat(rawYears.filter(y => !isNum(y)).sort());
+  const years = rawYears
+    .filter(isNum).map(Number).sort((a,b)=>a-b).map(String)
+    .concat(rawYears.filter(y => !isNum(y)).sort());
 
+  // --- เตรียม object เก็บนับ ---
   const byYearCat = {};
   years.forEach(y => byYearCat[y] = Object.fromEntries(CATS.map(c => [c, 0])));
 
-  // นับแบบ "โปรเจกต์×หมวด×ปี" (unique ต่อหมวด)
+  // --- loop projects ---
   projects.forEach(p => {
-    const y = (getYear(p) ?? '').toString().trim() || 'ไม่ระบุ';
-    const list = p.co_researches || p.coResearches || [];
+    const y = getYear(p);
+    const cat = normalizeUnitStatus(p.project_list);
+    if (!cat) return;
     if (!byYearCat[y]) byYearCat[y] = Object.fromEntries(CATS.map(c => [c, 0]));
-    if (!Array.isArray(list) || list.length === 0) return;
-
-    const catsInProject = new Set();
-    list.forEach(cr => {
-      const cat = normalizeUnitStatus(cr?.unit_status);
-      if (cat) catsInProject.add(cat);
-    });
-
-    catsInProject.forEach(cat => byYearCat[y][cat] += 1);
+    byYearCat[y][cat] += 1;
   });
 
+  // --- datasets ---
   const datasets = CATS.map((c, i) => ({
     label: c,
     data: years.map(y => byYearCat[y]?.[c] ?? 0),
@@ -1052,7 +1051,7 @@
     stack: 'collab'
   }));
 
-  // ปลั๊กอิน data label + กันตกขอบ + เช็คซ่อนชุดข้อมูล
+  // --- plugin แสดง data label ---
   const dataLabelPlugin = {
     id: 'dataLabelPluginCollab',
     afterDatasetsDraw(chart) {
@@ -1064,24 +1063,17 @@
       ctx.fillStyle = '#111827';
 
       chart.data.datasets.forEach((ds, dsIndex) => {
-        // ถ้าชุดนี้ถูกซ่อนจาก legend -> ข้าม
+        // ข้ามถ้า legend toggle ปิดอยู่
         if (!chart.isDatasetVisible(dsIndex)) return;
-
         const meta = chart.getDatasetMeta(dsIndex);
         meta.data.forEach((bar, i) => {
           if (!bar || bar.hidden) return;
-
           const v = Number(ds.data[i] || 0);
           if (!isFinite(v) || v <= 0) return;
-
           let x = bar.x;
-          let y = bar.y - 3;           // วางเหนือแท่งเล็กน้อย
-
-          // clamp กันตกขอบบน/ขวา
-          const minY = top + 8;
-          if (y < minY) y = minY;
+          let y = bar.y - 3;
+          if (y < chart.chartArea.top + 8) y = chart.chartArea.top + 8;
           if (x > right - 2) x = right - 2;
-
           ctx.fillText(String(v), x, y);
         });
       });
@@ -1090,6 +1082,7 @@
     }
   };
 
+  // --- render chart ---
   const el = document.getElementById('chartCollabBreakdown');
   const prev = Chart.getChart(el); if (prev) prev.destroy();
 
@@ -1098,7 +1091,7 @@
     data: { labels: years, datasets },
     options: {
       responsive: true,
-      layout: { padding: { top: 16 } }, // เผื่อพื้นที่ด้านบน
+      layout: { padding: { top: 16 } },
       plugins: {
         legend: { position: 'bottom' },
         tooltip: {
@@ -1120,9 +1113,9 @@
         y: {
           stacked: true,
           beginAtZero: true,
-          grace: '12%',               // headroom กันเลขชนขอบ
+          grace: '12%',
           ticks: { precision: 0 },
-          title: { display: true, text: 'จำนวนโครงการ (นับโปรเจกต์ต่อหมวด)' }
+          title: { display: true, text: 'จำนวนโครงการ' }
         }
       }
     },
@@ -1131,108 +1124,97 @@
 })();
 
 
-        /* ---------- 9) จำนวน PI ต่อหน่วยงาน ---------- */
-        (function() {
-            // นับจำนวนโครงการต่อ PI (ตัดชื่อว่าง/ไม่ระบุทิ้ง)
-            const countByPI = {};
-            projects.forEach(p => {
-                const name = (p.pi_name || '').toString().trim();
-                if (!name || name === 'ไม่ระบุ') return;
-                countByPI[name] = (countByPI[name] || 0) + 1;
+        /* ---------- 9) จำนวน PI ต่อหน่วยงาน (เฉพาะ theme = T101_Research...) ---------- */
+(function() {
+    // กรองเฉพาะโครงการ theme = T101_Research...
+    const filtered = projects.filter(p => 
+        (p.theme || '').trim() === 'T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก'
+    );
+
+    // นับจำนวนโครงการต่อ PI
+    const countByPI = {};
+    filtered.forEach(p => {
+        const name = (p.pi_name || '').toString().trim();
+        if (!name || name === 'ไม่ระบุ') return;
+        countByPI[name] = (countByPI[name] || 0) + 1;
+    });
+
+    // เรียงมาก→น้อย และเลือก Top N
+    const TOP_N = 20;
+    const sorted = Object.entries(countByPI).sort((a, b) => b[1] - a[1]);
+    const top = sorted.slice(0, TOP_N);
+
+    const labels = top.map(([pi]) => pi);
+    const data = top.map(([, count]) => count);
+
+    const el = document.getElementById('chartPIsPerUnit');
+    if (!el) return;
+
+    el.height = Math.max(250, labels.length * 28);
+
+    // plugin แสดงตัวเลขขวาสุด
+    const valueLabelRight = {
+        id: 'valueLabelRight',
+        afterDatasetsDraw(chart) {
+            const { ctx, chartArea:{ right } } = chart;
+            const meta = chart.getDatasetMeta(0);
+            const scaleX = chart.scales.x;
+            ctx.save();
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillStyle = '#111827';
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'right';
+            chart.data.datasets[0].data.forEach((v, i) => {
+                if (!isFinite(v) || v <= 0) return;
+                const y = meta.data[i].y;
+                let x = scaleX.getPixelForValue(v) + 8;
+                if (x > right - 2) x = right - 2;
+                ctx.fillText(String(v), x, y);
             });
+            ctx.restore();
+        }
+    };
 
-            // เรียงมาก→น้อย และเลือก Top N (ตั้ง Infinity ถ้าอยากเอาทั้งหมด)
-            const TOP_N = 20;
-            const sorted = Object.entries(countByPI).sort((a, b) => b[1] - a[1]);
-            const top = sorted.slice(0, TOP_N);
+    const prev = Chart.getChart(el);
+    if (prev) prev.destroy();
 
-            const labels = top.map(([pi]) => pi);
-            const data = top.map(([, count]) => count);
-
-            // 👇 เปลี่ยนให้ตรงกับ canvas ที่มีอยู่
-            const el = document.getElementById('chartPIsPerUnit');
-            if (!el) return;
-
-            // ปรับความสูงกันชื่อทับกัน
-            el.height = Math.max(250, labels.length * 28);
-
-            // ปลั๊กอินโชว์ตัวเลขท้ายแท่ง (ไม่ใช้ปลั๊กอินภายนอก)
-            const valueLabelRight = {
-                id: 'valueLabelRight',
-                afterDatasetsDraw(chart) {
-                    const {
-                        ctx,
-                        chartArea: {
-                            right
-                        }
-                    } = chart;
-                    const meta = chart.getDatasetMeta(0);
-                    const scaleX = chart.scales.x;
-                    ctx.save();
-                    ctx.font = 'bold 11px sans-serif';
-                    ctx.fillStyle = '#111827';
-                    ctx.textBaseline = 'middle';
-                    ctx.textAlign = 'right';
-                    chart.data.datasets[0].data.forEach((v, i) => {
-                        if (!isFinite(v) || v <= 0) return;
-                        const y = meta.data[i].y;
-                        let x = scaleX.getPixelForValue(v) + 8; // วางขวาของแท่ง
-                        if (x > right - 2) x = right - 2; // กันตกขอบ
-                        ctx.fillText(String(v), x, y);
-                    });
-                    ctx.restore();
-                }
-            };
-
-            const prev = Chart.getChart(el);
-            if (prev) prev.destroy();
-
-            new Chart(el, {
-                type: 'bar',
-                data: {
-                    labels, // แกน Y = รายชื่อ PI
-                    datasets: [{
-                        label: 'จำนวนโครงการ',
-                        data,
-                        backgroundColor: labels.map((_, i) => `hsl(${(i*33)%360} 70% 60%)`),
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => ` ${ctx.raw} โครงการ`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            ticks: {
-                                precision: 0
-                            },
-                            title: {
-                                display: true,
-                                text: 'จำนวนโครงการ'
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'PI'
-                            }
-                        }
+    new Chart(el, {
+        type: 'bar',
+        data: {
+            labels, 
+            datasets: [{
+                label: 'จำนวนโครงการ',
+                data,
+                backgroundColor: labels.map((_, i) => `hsl(${(i*33)%360} 70% 60%)`),
+                borderRadius: 6
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ` ${ctx.raw} โครงการ`
                     }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    title: { display: true, text: 'จำนวนโครงการ' }
                 },
-                plugins: [valueLabelRight]
-            });
-        })();
+                y: {
+                    title: { display: true, text: 'PI' }
+                }
+            }
+        },
+        plugins: [valueLabelRight]
+    });
+})();
+
 
         /* ---------- 10) ทุนภายนอกตามแหล่งทุน (จำนวน + ยอดเงินย่อ) ---------- */
         (function() {

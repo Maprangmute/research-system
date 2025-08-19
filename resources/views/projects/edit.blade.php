@@ -48,7 +48,7 @@
             </div>
         @endif
 
-        <form   id="projectForm" class="pb-10 md:pb-0"  action="{{ route('projects.update', $project->id) }}" method="POST">
+        <form id="projectForm" class="pb-10 md:pb-0" action="{{ route('projects.update', $project->id) }}" method="POST">
             @csrf
             @method('PUT')
 
@@ -177,6 +177,28 @@
                     <input name="shortcut_link" value="{{ old('shortcut_link', $project->shortcut_link) }}"
                         class="w-full border p-2 rounded">
                 </label>
+
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">ลักษณะโครงการ</span>
+                    <select name="project_list" class="w-full border p-2 rounded">
+                        <option value="">-- เลือกประเภทลักษณะ --</option>
+                        <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ"
+                            {{ old('project_list', $project->project_list) == 'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ' ? 'selected' : '' }}>
+                            โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
+                        </option>
+                        <option value="โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ"
+                            {{ old('project_list', $project->project_list) == 'โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ' ? 'selected' : '' }}>
+                            โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ
+                        </option>
+                        <option value="โครงการวิจัยนอกคณะ"
+                            {{ old('project_list', $project->project_list) == 'โครงการวิจัยนอกคณะ' ? 'selected' : '' }}>
+                            โครงการวิจัยนอกคณะ
+                        </option>
+                    </select>
+                </label>
+
+
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L)</span>
                     <select name="size" required class="w-full border p-2 rounded">
@@ -1048,69 +1070,64 @@
 
 
         {{-- Floating Save Bar (อยู่นอกฟอร์ม) --}}
-<div
-  x-data="{
-    dirty:false,
-    scrolled:false,
-    nearBottom:false,
-    get show(){ return (this.dirty || this.scrolled) && !this.nearBottom }
-  }"
-  x-init="
-    const THRESHOLD = 160; // ระยะห่างจากขอบล่างที่ต้องการให้ซ่อน (px)
+        <div x-data="{
+            dirty: false,
+            scrolled: false,
+            nearBottom: false,
+            get show() { return (this.dirty || this.scrolled) && !this.nearBottom }
+        }" x-init="const THRESHOLD = 160; // ระยะห่างจากขอบล่างที่ต้องการให้ซ่อน (px)
+        
+        const onScrollOrResize = () => {
+            scrolled = window.scrollY > 200;
+            const doc = document.documentElement;
+            const viewportBottom = window.scrollY + window.innerHeight;
+            const docHeight = Math.max(doc.scrollHeight, doc.offsetHeight, doc.clientHeight);
+            nearBottom = (docHeight - viewportBottom) <= THRESHOLD;
+        };
+        
+        window.addEventListener('scroll', onScrollOrResize, { passive: true });
+        window.addEventListener('resize', onScrollOrResize);
+        onScrollOrResize();
+        
+        const form = document.getElementById('projectForm');
+        if (form) {
+            form.addEventListener('input', () => { dirty = true }, { passive: true });
+            form.addEventListener('change', () => { dirty = true }, { passive: true });
+        }" x-show="show" x-transition.opacity
+            class="fixed inset-x-0 bottom-0 md:inset-auto md:right-6 md:bottom-6 md:left-auto z-50" style="display:none"
+            role="region" aria-live="polite">
+            <div class="mx-3 mb-3 md:mx-0 md:mb-0">
+                <div
+                    class="max-w-[520px] md:min-w-[420px] bg-white/90 backdrop-blur border shadow-xl rounded-2xl px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('projects.index') }}"
+                            class="hidden md:inline-flex items-center text-blue-700 font-semibold hover:text-blue-900 hover:underline">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            กลับไปยังรายการโครงการ
+                        </a>
 
-    const onScrollOrResize = () => {
-      scrolled = window.scrollY > 200;
-      const doc = document.documentElement;
-      const viewportBottom = window.scrollY + window.innerHeight;
-      const docHeight = Math.max(doc.scrollHeight, doc.offsetHeight, doc.clientHeight);
-      nearBottom = (docHeight - viewportBottom) <= THRESHOLD;
-    };
+                        <div class="ml-auto flex items-center gap-2">
+                            <span x-show="dirty" x-transition.opacity
+                                class="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                                มีการแก้ไขที่ยังไม่บันทึก
+                            </span>
 
-    window.addEventListener('scroll', onScrollOrResize, { passive:true });
-    window.addEventListener('resize', onScrollOrResize);
-    onScrollOrResize();
-
-    const form = document.getElementById('projectForm');
-    if (form) {
-      form.addEventListener('input',  () => { dirty = true }, { passive:true });
-      form.addEventListener('change', () => { dirty = true }, { passive:true });
-    }
-  "
-  x-show="show"
-  x-transition.opacity
-  class="fixed inset-x-0 bottom-0 md:inset-auto md:right-6 md:bottom-6 md:left-auto z-50"
-  style="display:none"
-  role="region" aria-live="polite"
->
-  <div class="mx-3 mb-3 md:mx-0 md:mb-0">
-    <div class="max-w-[520px] md:min-w-[420px] bg-white/90 backdrop-blur border shadow-xl rounded-2xl px-4 py-3">
-      <div class="flex items-center gap-3">
-        <a href="{{ route('projects.index') }}"
-           class="hidden md:inline-flex items-center text-blue-700 font-semibold hover:text-blue-900 hover:underline">
-          <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          กลับไปยังรายการโครงการ
-        </a>
-
-        <div class="ml-auto flex items-center gap-2">
-          <span x-show="dirty" x-transition.opacity class="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
-            มีการแก้ไขที่ยังไม่บันทึก
-          </span>
-
-          <button type="button"
-                  @click="document.getElementById('projectForm')?.requestSubmit()"
-                  class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-full shadow">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            บันทึกการเปลี่ยนแปลง
-          </button>
+                            <button type="button" @click="document.getElementById('projectForm')?.requestSubmit()"
+                                class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-full shadow">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                บันทึกการเปลี่ยนแปลง
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 
 

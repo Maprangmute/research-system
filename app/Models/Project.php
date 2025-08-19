@@ -64,6 +64,7 @@ class Project extends Model
         'strategy_5',
         'strategy_5_1',
         'strategy_5_2',
+        'project_list'
     ];
 
     // ====== Log events: create, update, delete, restore ======

@@ -24,6 +24,7 @@ class DashboardController extends Controller
         ->select(
             'id',
             'project_name_th',
+            'project_list',
             'start_year',
             'planning_status',
             'theme',
