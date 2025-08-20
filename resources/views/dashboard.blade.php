@@ -122,8 +122,7 @@
             </div>
 
             <div class="bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 จำนวนความร่วมมือ (ภายนอก/ในคณะ และ
-                    หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ)</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 สัดส่วนโครงการ (นอกคณะ ในคณะ เเละ ในหน่วย)</h3>
                 <canvas id="chartCollabBreakdown" height="250"></canvas>
             </div>
 
@@ -1128,7 +1127,7 @@
 (function() {
     // กรองเฉพาะโครงการ theme = T101_Research...
     const filtered = projects.filter(p => 
-        (p.theme || '').trim() === 'T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก'
+        (p.pi_affiliation || '').trim() === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ'
     );
 
     // นับจำนวนโครงการต่อ PI

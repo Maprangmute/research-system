@@ -25,6 +25,7 @@ class DashboardController extends Controller
             'id',
             'project_name_th',
             'project_list',
+            'pi_affiliation',
             'start_year',
             'planning_status',
             'theme',
