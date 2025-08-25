@@ -201,7 +201,8 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L)</span>
-                    <select name="size" required class="w-full border p-2 rounded">
+                    {{-- <select name="size" required class="w-full border p-2 rounded"> --}}
+                    <select name="size" class="w-full border p-2 rounded">
                         <option value="" disabled {{ old('size', $project->size) ? '' : 'selected' }}>
                             กรุณาเลือกขนาดของโปรเจค
                         </option>
@@ -217,6 +218,7 @@
                         <option value="XL" {{ old('size', $project->size) == 'XL' ? 'selected' : '' }}>
                             XL (ภายนอก)
                         </option>
+                        <option value="FTE Hours" {{ old('size', $project->size) == 'FTE Hours' ? 'selected' : '' }}>FTE คิดแบบรายชั่วโมง</option>
                     </select>
                 </label>
 

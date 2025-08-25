@@ -119,7 +119,7 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ลักษณะโึครงการ</span>
+                    <span class="block text-sm text-gray-700 mb-1">ลักษณะโครงการ</span>
                     <select name="project_list" class="w-full border p-2 rounded">
                         <option value="">-- เลือกประเภทลักษณะ --</option>
                         <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภา">โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
@@ -130,12 +130,14 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L)</span>
-                    <select name="size" required class="w-full border p-2 rounded">
+                    {{-- <select name="size" required class="w-full border p-2 rounded"> --}}
+                    <select name="size"  class="w-full border p-2 rounded">    
                         <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
                         <option value="S">S (ภายนอก / ภายใน / Cohort Study)</option>
                         <option value="M">M (ภายนอก / ภายใน / Cohort Study)</option>
                         <option value="L">L (ภายนอก / ภายใน / Cohort Study)</option>
                         <option value="XL">XL (ภายนอก) </option>
+                        <option value="FTE Hours">FTE คิดแบบรายชั่วโมง </option>
                     </select>
                 </label>
                 <label class="w-full">
