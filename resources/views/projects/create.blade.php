@@ -58,7 +58,7 @@
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ*</span>
-                    <select name="project_type" id="project_type" class="w-full border p-2 rounded" required>
+                    <select name="project_type" id="project_type" class="w-full border p-2 rounded" >
                         <option value="" disabled selected>เลือกประเภทของโครงการ</option> <!-- สำหรับ placeholder -->
                         <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล">01 ผู้สูงอายุ
                             ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล</option>
@@ -122,7 +122,8 @@
                     <span class="block text-sm text-gray-700 mb-1">ลักษณะโครงการ</span>
                     <select name="project_list" class="w-full border p-2 rounded">
                         <option value="">-- เลือกประเภทลักษณะ --</option>
-                        <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภา">โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภา">
+                            โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
                         <option value="โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ">โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ</option>
                         <option value="โครงการวิจัยนอกคณะ">โครงการวิจัยนอกคณะ</option>
                     </select>
@@ -131,7 +132,7 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L)</span>
                     {{-- <select name="size" required class="w-full border p-2 rounded"> --}}
-                    <select name="size"  class="w-full border p-2 rounded">    
+                    <select name="size" class="w-full border p-2 rounded">
                         <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
                         <option value="S">S (ภายนอก / ภายใน / Cohort Study)</option>
                         <option value="M">M (ภายนอก / ภายใน / Cohort Study)</option>
@@ -167,7 +168,7 @@
                 <!-- Funding Source Section -->
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
-                    <select name="funding_type" required class="w-full border p-2 rounded">
+                    <select name="funding_type"  class="w-full border p-2 rounded">
                         <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
                         <option value="ภายใน">ภายใน</option>
                         <option value="ภายนอก">ภายนอก</option>
@@ -183,7 +184,7 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
-                    <select name="funding_org_type" required class="w-full border p-2 rounded">
+                    <select name="funding_org_type"  class="w-full border p-2 rounded">
                         <option value="" disabled selected>กรุณาเลือกประเภทองค์กร</option>
                         <option value="รัฐบาล">รัฐบาล</option>
                         <option value="เอกชน">เอกชน</option>
@@ -295,7 +296,7 @@
                     {{-- BA000 - Project Planning (Status) --}}
                     <span class="block text-sm text-gray-700 mb-1">Project Status</span>
                     <select name="planning_status" id="planning_status" class="w-full border p-2 rounded font-semibold"
-                        onchange="updateStatusColor(this)" required>
+                        onchange="updateStatusColor(this)" >
                         <option value="" disabled selected style="background-color: #fff; color: #222;">
                             ระบุสถานะของโปรเจค</option>
                         <option value="Project Planing (เริ่มต้น - submit IRB)" data-color="#FFE599"
@@ -732,53 +733,70 @@
                 <hr class="my-6 border-t-2 border-gray-300">
                 <!-- E: ผลงานวิจัย (Output) -->
                 <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
+
                 <div id="output-container" class="space-y-4 mb-4">
-                    <div id="output-0" class="output-row space-y-2">
+                    <!-- แถวเริ่มต้น -->
+                    <div id="output-0" class="output-row space-y-2 border p-4 rounded-lg bg-gray-50" data-index="0">
+                        {{-- output id (create ยังไม่มี) --}}
+                        <input type="hidden" name="outputs[0][id]" value="">
+
                         <!-- บรรทัดแรก: ชื่อผลงาน -->
                         <label class="block w-full">
-                            <span class="block text-sm text-gray-700 mb-1">ชื่อผลงานที่ <span
-                                    class="output-index">1</span></span>
+                            <span class="block text-sm text-gray-700 mb-1">
+                                ชื่อผลงานที่ <span class="output-index">1</span>
+                            </span>
                             <input name="outputs[0][title]" type="text" class="w-full border p-2 rounded"
                                 placeholder="ชื่อผลงาน">
                         </label>
 
-                        <!-- บรรทัดที่สอง: ประเภท, หมายเหตุ, ปี -->
+                        <!-- บรรทัดที่สอง: ประเภท, หมายเหตุ, วันที่ -->
                         <div class="grid grid-cols-3 gap-4 items-end">
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                                <select name="outputs[0][type]" class="w-full border p-2 rounded" required>
+                                <select name="outputs[0][type]" class="w-full border p-2 rounded output-type" required
+                                    onchange="handleTypeChange(this)">
                                     <option value="" disabled selected>เลือกประเภทของผลงาน</option>
-                                    <option>EA101 Research Paper or Journal Article</option>
-                                    <option>EA102 Reports and White papers</option>
-                                    <option>EA103 Presentations in Academic Conferences</option>
-                                    <option>EA104 Data Sets and Databases</option>
-                                    <option>EA105 Inventions or Innovations (Application /Website)</option>
-                                    <option>EA106 Policy Recommendations</option>
-                                    <option>EA107 Educational Materials</option>
-                                    <option>EA108 Communication Materials (Creations)</option>
-                                    <option>EA109 Change in Practices ,Procedures, Policy</option>
-                                    <option>EA110 Number of participants (persons)</option>
-                                    <option>EA111 Satisfaction Rating (1-5)</option>
-                                    <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
-                                    <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
-                                    <option>EA114 Events / Forum</option>
-                                    <option>EA115 Capacity Building</option>
-                                    <option>EA116 Research Project</option>
-                                    <option>EA117 MOU</option>
+                                    <option value="EA101 Research Paper or Journal Article">EA101 Research Paper or Journal
+                                        Article</option>
+                                    <option value="EA102 Reports and White papers">EA102 Reports and White papers</option>
+                                    <option value="EA103 Presentations in Academic Conferences">EA103 Presentations in
+                                        Academic Conferences</option>
+                                    <option value="EA104 Data Sets and Databases">EA104 Data Sets and Databases</option>
+                                    <option value="EA105 Inventions or Innovations (Application /Website)">EA105 Inventions
+                                        or Innovations (Application /Website)</option>
+                                    <option value="EA106 Policy Recommendations">EA106 Policy Recommendations</option>
+                                    <option value="EA107 Educational Materials">EA107 Educational Materials</option>
+                                    <option value="EA108 Communication Materials (Creations)">EA108 Communication Materials
+                                        (Creations)</option>
+                                    <option value="EA109 Change in Practices ,Procedures, Policy">EA109 Change in Practices
+                                        ,Procedures, Policy</option>
+                                    <option value="EA110 Number of participants (persons)">EA110 Number of participants
+                                        (persons)</option>
+                                    <option value="EA111 Satisfaction Rating (1-5)">EA111 Satisfaction Rating (1-5)
+                                    </option>
+                                    <option value="EA112 Present to Committee Meeting / Policy Maker / Board">EA112 Present
+                                        to Committee Meeting / Policy Maker / Board</option>
+                                    <option value="EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา">
+                                        EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
+                                    <option value="EA114 Events / Forum">EA114 Events / Forum</option>
+                                    <option value="EA115 Capacity Building">EA115 Capacity Building</option>
+                                    <option value="EA116 Research Project">EA116 Research Project</option>
+                                    <option value="EA117 MOU">EA117 MOU</option>
                                 </select>
                             </label>
+
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
                                 <input name="outputs[0][project_output]" type="text" class="w-full border p-2 rounded"
                                     placeholder="เพิ่มเติม">
                             </label>
-                            <div class="flex gap-2 w-full">
 
+                            <div class="flex gap-2 w-full">
                                 <label class="w-full relative">
                                     <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
                                     <input name="outputs[0][year]" type="text"
                                         class="thai-datepicker w-full border p-2 rounded pl-10"
-                                        placeholder="โปรดใส่วันที่" required>
+                                        placeholder="โปรดใส่วันที่">
                                     <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor">
@@ -786,19 +804,22 @@
                                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                 </label>
-                                {{-- <label class="w-full">
-                                <span class="block text-sm text-gray-700 mb-1">ปี</span>
-                                <input name="outputs[0][year]" type="text" class="w-full border p-2 rounded"
-                                    placeholder="2025">
-                            </label> --}}
-                                <button type="button" onclick="removeRow('output-0', 'output')"
+                                <button type="button" onclick="removeRow('output-0','output')"
                                     class="text-red-600 mb-2">✕</button>
                             </div>
                         </div>
+
+                        <!-- จุด mount บล็อกพิเศษของ EA101 -->
+                        <div class="ea101-mount"></div>
                     </div>
                 </div>
-                <button type="button" onclick="addOutputRow()" class="mb-6 px-3 py-1 bg-green-600 text-white rounded">+
-                    เพิ่ม Output</button>
+
+                <button type="button" onclick="addOutputRow()" class="mb-6 px-3 py-1 bg-green-600 text-white rounded">
+                    + เพิ่ม Output
+                </button>
+
+
+
 
                 <hr class="my-6 border-t-2 border-gray-300">
                 <!-- ยุทธศาสตร์ -->
@@ -1210,69 +1231,221 @@
             initThaiDatepickers();
         }
 
-        let outputIndex = 1;
+       // ============== Output (Create) ==============
+let outputIndex = document.querySelectorAll('#output-container .output-row').length || 0;
+// แยกตัวนับ author ต่อ output index
+const authorIndex = { 0: 0 };
 
-        function addOutputRow() {
-            const id = `output-${outputIndex}`;
-            document.getElementById('output-container').insertAdjacentHTML('beforeend', `
-            <div id="${id}" class="output-row space-y-2">
-                <label class="block w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ชื่อผลงานที่ <span class="output-index">${outputIndex + 1}</span></span>
-                    <input name="outputs[${outputIndex}][title]" type="text" class="w-full border p-2 rounded">
-                </label>
-                <div class="grid grid-cols-3 gap-4 items-end">
-                    <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                            <select name="outputs[${outputIndex}][type]" class="w-full border p-2 rounded" required>
-                                <option value="" disabled selected>เลือกประเภทของผลงาน</option>
-                                <option>EA101 Research Paper or Journal Article</option>
-                                <option>EA102 Reports and White papers</option>
-                                <option>EA103 Presentations in Academic Conferences</option>
-                                <option>EA104 Data Sets and Databases</option>
-                                <option>EA105 Inventions or Innovations (Application /Website)</option>
-                                <option>EA106 Policy Recommendations</option>
-                                <option>EA107 Educational Materials</option>
-                                <option>EA108 Communication Materials (Creations)</option>
-                                <option>EA109 Change in Practices ,Procedures, Policy</option>
-                                <option>EA110 Number of participants (persons)</option>
-                                <option>EA111 Satisfaction Rating (1-5)</option>
-                                <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
-                                <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
-                                <option>EA114 Events / Forum</option>
-                                <option>EA115 Capacity Building</option>
-                                <option>EA116 Research Project</option>
-                                <option>EA117 MOU</option>
-                            </select>
-                    </label>
-                    <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
-                        <input name="outputs[${outputIndex}][output]" type="text" class="w-full border p-2 rounded">
-                    </label>
-                    <div class="flex gap-2 w-full">
-                               <div class="flex gap-2 w-full">
+// กดเพิ่ม Output
+function addOutputRow() {
+  const idx = outputIndex;
+  const id = `output-${idx}`;
 
-                            <label class="w-full relative">
-                            <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
-                            <input name="outputs[${outputIndex}][year]" type="text"
-                                class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่"
-                                required>
-                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </label>
-                        
-                        <button type="button" onclick="removeRow('${id}', 'output')" class="text-red-600 mb-2">✕</button>
-                    </div>
-                </div>
-            </div>
-        `);
-            outputIndex++;
-            reindexOutput();
-            initThaiDatepickers(); // ✅ Apply flatpickr to new row
-        }
+  document.getElementById('output-container').insertAdjacentHTML('beforeend', `
+    <div id="${id}" class="output-row space-y-2 border p-4 rounded-lg bg-gray-50" data-index="${idx}">
+      <input type="hidden" name="outputs[${idx}][id]" value="">
+      <label class="block w-full">
+        <span class="block text-sm text-gray-700 mb-1">ชื่อผลงานที่ <span class="output-index">${idx + 1}</span></span>
+        <input name="outputs[${idx}][title]" type="text" class="w-full border p-2 rounded" placeholder="ชื่อผลงาน">
+      </label>
+
+      <div class="grid grid-cols-3 gap-4 items-end">
+        <label class="w-full">
+          <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
+          <select name="outputs[${idx}][type]" class="w-full border p-2 rounded output-type" required onchange="handleTypeChange(this)">
+            <option value="" disabled selected>เลือกประเภทของผลงาน</option>
+            <option value="EA101 Research Paper or Journal Article">EA101 Research Paper or Journal Article</option>
+            <option value="EA102 Reports and White papers">EA102 Reports and White papers</option>
+            <option value="EA103 Presentations in Academic Conferences">EA103 Presentations in Academic Conferences</option>
+            <option value="EA104 Data Sets and Databases">EA104 Data Sets and Databases</option>
+            <option value="EA105 Inventions or Innovations (Application /Website)">EA105 Inventions or Innovations (Application /Website)</option>
+            <option value="EA106 Policy Recommendations">EA106 Policy Recommendations</option>
+            <option value="EA107 Educational Materials">EA107 Educational Materials</option>
+            <option value="EA108 Communication Materials (Creations)">EA108 Communication Materials (Creations)</option>
+            <option value="EA109 Change in Practices ,Procedures, Policy">EA109 Change in Practices ,Procedures, Policy</option>
+            <option value="EA110 Number of participants (persons)">EA110 Number of participants (persons)</option>
+            <option value="EA111 Satisfaction Rating (1-5)">EA111 Satisfaction Rating (1-5)</option>
+            <option value="EA112 Present to Committee Meeting / Policy Maker / Board">EA112 Present to Committee Meeting / Policy Maker / Board</option>
+            <option value="EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา">EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
+            <option value="EA114 Events / Forum">EA114 Events / Forum</option>
+            <option value="EA115 Capacity Building">EA115 Capacity Building</option>
+            <option value="EA116 Research Project">EA116 Research Project</option>
+            <option value="EA117 MOU">EA117 MOU</option>
+          </select>
+        </label>
+
+        <label class="w-full">
+          <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
+          <input name="outputs[${idx}][project_output]" type="text" class="w-full border p-2 rounded" placeholder="เพิ่มเติม">
+        </label>
+
+        <div class="flex gap-2 w-full">
+          <label class="w-full relative">
+            <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+            <input name="outputs[${idx}][year]" type="text"
+                   class="thai-datepicker w-full border p-2 rounded pl-10"
+                   placeholder="โปรดใส่วันที่">
+            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </label>
+          <button type="button" onclick="removeRow('${id}','output')" class="text-red-600 mb-2">✕</button>
+        </div>
+      </div>
+
+      <div class="ea101-mount"></div>
+    </div>
+  `);
+
+  authorIndex[idx] = 0;   // เริ่มนับ author ของแถวนี้ที่ 0
+  outputIndex++;
+  reindexOutput();
+  if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
+}
+
+// เปลี่ยนประเภท: mount/unmount EA101 section
+function handleTypeChange(selectEl) {
+  const row = selectEl.closest('.output-row');
+  if (!row) return;
+  const idx = parseInt(row.getAttribute('data-index') || '0', 10);
+  const mount = row.querySelector('.ea101-mount');
+  if (!mount) return;
+
+  if (selectEl.value && selectEl.value.includes('EA101')) {
+    if (!row.querySelector('.ea101-section')) {
+      mount.appendChild(renderEA101Section(idx));
+    }
+  } else {
+    const sec = row.querySelector('.ea101-section');
+    if (sec) sec.remove();
+  }
+}
+
+// สร้างบล็อก EA101 + authors
+function renderEA101Section(idx) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50';
+  wrap.innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">Journal</span>
+        <input name="outputs[${idx}][journal]" class="w-full border p-2 rounded" placeholder="ชื่อ Journal">
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
+        <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded">
+          <option value="" disabled selected>เลือก Quartile</option>
+          <option value="Q1">Q1</option>
+          <option value="Q2">Q2</option>
+          <option value="Q3">Q3</option>
+          <option value="Q4">Q4</option>
+        </select>
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">Impact Factor</span>
+        <input name="outputs[${idx}][impact_factor]" type="number" step="0.001" class="w-full border p-2 rounded" placeholder="เช่น 3.215">
+      </label>
+    </div>
+
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
+        <button type="button" class="px-3 py-1 rounded bg-blue-600 text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+      </div>
+      <div class="authors-container space-y-2" id="authors-${idx}"></div>
+    </div>
+  `;
+
+  // author แรก
+  wrap.querySelector(`#authors-${idx}`).appendChild(buildAuthorRow(idx, 0));
+  authorIndex[idx] = 1;
+
+  return wrap;
+}
+
+// สร้าง 1 แถวผู้เขียน
+function buildAuthorRow(outputIdx, aIdx) {
+  const row = document.createElement('div');
+  row.className = 'author-row grid grid-cols-1 md:grid-cols-3 gap-3';
+  row.innerHTML = `
+    <label>
+      <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน</span>
+      <select name="outputs[${outputIdx}][authors][${aIdx}][role]" class="w-full border p-2 rounded">
+        <option value="">เลือกบทบาท</option>
+        <option value="first">First-author</option>
+        <option value="co">Co-author</option>
+        <option value="corresponding">Corresponding</option>
+      </select>
+    </label>
+    <label>
+      <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
+      <!-- ไม่มี hidden id = ให้ controller create ใหม่ -->
+      <input type="text" name="outputs[${outputIdx}][authors][${aIdx}][name]"
+             class="w-full border p-2 rounded" placeholder="ชื่อ-สกุล">
+    </label>
+    <div class="flex items-end">
+      <button type="button" onclick="removeAuthorRow(this)"
+              class="px-3 py-2 rounded border text-red-600 border-red-300">ลบ</button>
+    </div>
+  `;
+  return row;
+}
+
+// กดปุ่ม “+ เพิ่มผู้เขียน”
+function addAuthorRow(btnEl) {
+  const outputRow = btnEl.closest('.output-row');
+  const idx = outputRow.getAttribute('data-index');
+  const authorsWrap = outputRow.querySelector(`#authors-${idx}`);
+  if (!authorsWrap) return;
+
+  const aIdx = authorIndex[idx] || 0;
+  authorsWrap.appendChild(buildAuthorRow(idx, aIdx));
+  authorIndex[idx] = aIdx + 1;
+}
+
+// ลบผู้เขียน
+function removeAuthorRow(btnEl) {
+  const row = btnEl.closest('.author-row');
+  if (row) row.remove();
+}
+
+// รี-index output: อัปเดตทั้ง display และ name="outputs[i]..." (รวม nested)
+function reindexOutput() {
+  const rows = document.querySelectorAll('#output-container .output-row');
+  rows.forEach((row, i) => {
+    row.id = `output-${i}`;
+    row.setAttribute('data-index', i);
+
+    const idxEl = row.querySelector('.output-index');
+    if (idxEl) idxEl.textContent = i + 1;
+
+    // อัปเดต name prefix outputs[i] ครอบคลุม nested ทั้งหมด
+    row.querySelectorAll('input[name^="outputs["], select[name^="outputs["], textarea[name^="outputs["]').forEach(el => {
+      const old = el.getAttribute('name');
+      if (!old) return;
+      const updated = old.replace(/^outputs\[\d+\]/, `outputs[${i}]`);
+      el.setAttribute('name', updated);
+    });
+
+    // sync id authors-<i> และนับคน
+    const authorsWrap = row.querySelector('.authors-container');
+    if (authorsWrap) authorsWrap.id = `authors-${i}`;
+    const count = row.querySelectorAll('.authors-container .author-row').length;
+    authorIndex[i] = count;
+  });
+
+  outputIndex = rows.length;
+}
+
+// init เมื่อหน้าโหลด: เผื่อมี select.output-type อยู่แล้ว
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.output-row select.output-type').forEach(selectEl => {
+    handleTypeChange(selectEl); // จะ mount EA101 ถ้าค่าเป็น EA101
+  });
+});
 
         let copiIndex = 1;
 
@@ -1337,7 +1510,7 @@
                 </label>
                 <label class="col-span-5">
                     <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
-                    <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required>
+                    <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" >
                         <option value="" disabled selected>กรุณาเลือก</option>
                         <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
                         <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>

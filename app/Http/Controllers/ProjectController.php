@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\FteRole;
 use App\Models\Output;
+use App\Models\OutputAuthor; // ⬅️ เพิ่ม
 use App\Models\Copi;
 use App\Models\Irb;
 use App\Models\CoResearch;
@@ -61,14 +62,16 @@ class ProjectController extends Controller
 
         $validated['project_code'] = 'SP_' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
         $validated['user_id'] = Auth::id();
-        $validated['updated_by'] = Auth::id(); // <--- สำคัญ!
+        $validated['updated_by'] = Auth::id();
 
         $project = new Project($validated);
         $this->fillStrategies($request, $project);
         $project->save();
 
+        $this->validateOutputs($request);
+
         $this->syncFTERoles($request, $project);
-        $this->syncOutputs($request, $project);
+        $this->syncOutputs($request, $project);     // ⬅️ สร้าง/อัปเดต outputs + authors
         $this->syncCopis($request, $project);
         $this->syncIrbs($request, $project);
         $this->syncCoResearch($request, $project);
@@ -79,14 +82,31 @@ class ProjectController extends Controller
 
     public function edit($id)
     {
-        $project = Project::with('fteRoles', 'outputs', 'copis', 'irbs', 'coResearches')->find($id);
+        $project = Project::with('outputs.authors')->find($id);
+
+        // dd(
+        //     $project->outputs->map(function ($o) {
+        //         return [
+        //             'output_id' => $o->id,
+        //             'title'     => $o->title,
+        //             'authors'   => $o->authors->map(fn($a) => [
+        //                 'role' => $a->role,
+        //                 'name' => $a->name,
+        //             ])->toArray(),
+        //         ];
+        //     })
+        // );
+
+
 
         if (!$project) {
             return redirect('/rm')->with('error', 'ไม่พบข้อมูลโครงการ');
         }
 
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+        $hasPermission = Auth::user()->role === 'admin'
+            || Auth::id() === $project->user_id
+            || $project->fteRoles->contains('name', $fullName);
 
         if (!$hasPermission) {
             abort(403);
@@ -98,65 +118,65 @@ class ProjectController extends Controller
     public function show(Project $project)
     {
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+        $hasPermission = Auth::user()->role === 'admin'
+            || Auth::id() === $project->user_id
+            || $project->fteRoles->contains('name', $fullName);
 
         if (!$hasPermission) {
             abort(403);
         }
 
-        $project->load(['copis', 'irbs', 'fteRoles', 'outputs', 'updatedBy']);
+        $project->load(['copis', 'irbs', 'fteRoles', 'outputs.authors', 'updatedBy']); // ⬅️ authors
         return view('projects.detail', compact('project'));
     }
 
     public function update(Request $request, Project $project)
     {
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+        $hasPermission = Auth::user()->role === 'admin'
+            || Auth::id() === $project->user_id
+            || $project->fteRoles->contains('name', $fullName);
 
         if (!$hasPermission) {
             abort(403);
         }
 
         $validated = $this->validateProject($request);
+        $this->validateOutputs($request);
 
-        // ตั้งค่า updated_by เป็น user ที่กำลังล็อกอิน
         $validated['updated_by'] = Auth::id();
 
         $project->fill($validated);
         $this->fillStrategies($request, $project);
         $project->save();
 
-        $project->fteRoles()->delete();
+        // ไม่ลบก่อน! ให้ sync* เป็นคนจัดการความต่าง
         $this->syncFTERoles($request, $project);
-
-        $project->outputs()->delete();
-        $this->syncOutputs($request, $project);
-
-        $project->copis()->delete();
+        $this->syncOutputs($request, $project);   // ⬅️ จะอัปเดต/เพิ่ม/ลบ authors ให้ด้วย
         $this->syncCopis($request, $project);
-
-        $project->irbs()->delete();
         $this->syncIrbs($request, $project);
-
-        $project->coResearches()->delete();
         $this->syncCoResearch($request, $project);
 
-        return redirect() ->route('projects.show', $project) // <— ต้องส่งพารามิเตอร์
-        ->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
     }
+
     public function destroy(Project $project)
     {
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin' || Auth::id() === $project->user_id || $project->fteRoles->contains('name', $fullName);
+        $hasPermission = Auth::user()->role === 'admin'
+            || Auth::id() === $project->user_id
+            || $project->fteRoles->contains('name', $fullName);
 
         if (!$hasPermission) {
             abort(403);
         }
 
+        // ลบโปรเจกต์เดียวพอ; FK cascade จะจัดการ outputs + output_authors
         $project->fteRoles()->delete();
-        $project->outputs()->delete();
         $project->copis()->delete();
         $project->irbs()->delete();
+        $project->coResearches()->delete();
         $project->delete();
 
         return redirect()->route('projects.index')->with('success', 'ลบโครงการเรียบร้อยแล้ว');
@@ -164,11 +184,9 @@ class ProjectController extends Controller
 
     public function exportPdf(Project $project)
     {
-        $project->load(['copis', 'irbs', 'fteRoles', 'outputs', 'updatedBy', 'createdBy']);
+        $project->load(['copis', 'irbs', 'fteRoles', 'outputs.authors', 'updatedBy', 'createdBy']); // ⬅️ authors
 
         $user = Auth::user();
-
-        // $author = $project->createdBy ? ($project->createdBy->prefix . $project->createdBy->name) : '';
         $author = $project->createdBy ? ($project->createdBy->prefix . $project->createdBy->name) : '';
         $creater = $user ? ($user->prefix . $user->name) : '';
         $dateStr = \Carbon\Carbon::now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
@@ -178,8 +196,8 @@ class ProjectController extends Controller
         return $pdf->stream($filename);
     }
 
-
     // ====== SUB-FUNCTIONS ======
+
     private function validateProject(Request $request): array
     {
         return $request->validate([
@@ -215,6 +233,28 @@ class ProjectController extends Controller
         ]);
     }
 
+    private function validateOutputs(Request $request): void
+    {
+        $request->validate([
+            'outputs'                      => ['nullable', 'array'],
+            'outputs.*.id'                 => ['nullable', 'integer', 'exists:outputs,id'],
+            'outputs.*.type'               => ['nullable', 'string'],
+            'outputs.*.title'              => ['nullable', 'string'],
+            'outputs.*.project_output'     => ['nullable', 'string'],
+            'outputs.*.year'               => ['nullable', 'string'],
+
+            'outputs.*.journal'            => ['nullable', 'string'],
+            'outputs.*.quartile'           => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'outputs.*.impact_factor'      => ['nullable', 'numeric'],
+
+            'outputs.*.authors'            => ['nullable', 'array'],
+            'outputs.*.authors.*.id'       => ['nullable', 'integer', 'exists:output_authors,id'],
+            'outputs.*.authors.*.role'     => ['nullable', 'string'],
+            'outputs.*.authors.*.name'     => ['nullable', 'string'],
+        ]);
+    }
+
+
     private function fillStrategies(Request $request, Project $project): void
     {
         $valid_strategies = [
@@ -243,6 +283,7 @@ class ProjectController extends Controller
             }
         }
     }
+
     private function syncFTERoles(Request $request, Project $project): void
     {
         $ids = [];
@@ -255,12 +296,11 @@ class ProjectController extends Controller
                 'start_date'          => $fte['start_date'] ?? null,
                 'end_date'            => $fte['end_date'] ?? null,
                 'fte_value'           => $fte['fte_value'] ?? 0,
-                'fte_value_research'  => $fte['fte_value_research'] ?? 0, // ⬅️ เพิ่มบรรทัดนี้
+                'fte_value_research'  => $fte['fte_value_research'] ?? 0,
                 'task_detail'         => $fte['task_detail'] ?? null,
             ];
 
             if (!empty($fte['id'])) {
-                // อัปเดตเฉพาะของโปรเจกต์นี้
                 $fteRole = $project->fteRoles()->whereKey($fte['id'])->first();
                 if ($fteRole) {
                     $fteRole->update($payload);
@@ -277,31 +317,108 @@ class ProjectController extends Controller
 
     private function syncOutputs(Request $request, Project $project): void
     {
-        $ids = [];
-        foreach ($request->outputs ?? [] as $output) {
-            if (!empty($output['id'])) {
-                $outputModel = \App\Models\Output::find($output['id']);
-                if ($outputModel) {
-                    $outputModel->update([
-                        'type'           => $output['type'] ?? '',
-                        'title'          => $output['title'],
-                        'project_output' => $output['project_output'],
-                        'year'           => $output['year'] ?? '',
-                    ]);
-                    $ids[] = $outputModel->id;
+        $rows = $request->input('outputs', []);
+        $keepIds = [];
+
+        foreach ($rows as $row) {
+            if (!$this->hasAnyOutputData($row)) continue;
+
+            $payload = [
+                'project_id'     => $project->id,
+                'type'           => $row['type'] ?? null,
+                'title'          => $row['title'] ?? null,
+                'project_output' => $row['project_output'] ?? ($row['output'] ?? null),
+                'year'           => $row['year'] ?? null,
+                'journal'        => null,
+                'quartile'       => null,
+                'impact_factor'  => null,
+            ];
+
+            $isEA101 = is_string($payload['type']) && str_contains($payload['type'], 'EA101');
+
+            if ($isEA101) {
+                $payload['journal']       = $row['journal'] ?? null;
+                $payload['quartile']      = $this->normalizeQuartile($row['quartile'] ?? null);
+                $payload['impact_factor'] = $row['impact_factor'] ?? null;
+            }
+
+            if (!empty($row['id'])) {
+                $model = $project->outputs()->whereKey($row['id'])->first();
+                if ($model) {
+                    $model->update($payload);
+                    $this->syncOutputAuthors($model, $row['authors'] ?? [], $isEA101);
+                    $keepIds[] = $model->id;
                 }
-            } else if (!empty($output['title'])) {
-                $new = \App\Models\Output::create([
-                    'project_id'      => $project->id,
-                    'type'            => $output['type'] ?? '',
-                    'title'           => $output['title'],
-                    'project_output'  => $output['project_output'],
-                    'year'            => $output['year'] ?? '',
-                ]);
-                $ids[] = $new->id;
+            } else {
+                $new = $project->outputs()->create($payload);
+                $this->syncOutputAuthors($new, $row['authors'] ?? [], $isEA101);
+                $keepIds[] = $new->id;
             }
         }
-        $project->outputs()->whereNotIn('id', $ids)->delete();
+
+        $project->outputs()->when($keepIds, fn($q) => $q->whereNotIn('id', $keepIds))->delete();
+    }
+private function syncOutputAuthors(Output $output, array $authors, bool $isEA101): void
+{
+    if (!$isEA101) {
+        $output->authors()->delete();
+        return;
+    }
+
+    $ids = [];
+    foreach ($authors as $author) {
+        if (empty($author['name']) || empty($author['role'])) {
+            continue;
+        }
+
+        $payload = [
+            'role' => strtolower(trim($author['role'])),
+            'name' => trim($author['name']),
+        ];
+
+        if (!empty($author['id'])) {
+            $model = $output->authors()->find($author['id']);
+            if ($model) {
+                $model->update($payload);
+                $ids[] = $model->id;
+            }
+        } else {
+            $new = $output->authors()->create($payload);
+            $ids[] = $new->id;
+        }
+    }
+
+    // ลบเฉพาะ record ที่ไม่ส่ง id มาจริง ๆ
+    if ($ids) {
+        $output->authors()->whereNotIn('id', $ids)->delete();
+    }
+}
+
+
+
+
+
+    private function hasAnyOutputData(array $row): bool
+    {
+        return (bool)(
+            ($row['type'] ?? null) ||
+            ($row['title'] ?? null) ||
+            ($row['project_output'] ?? ($row['output'] ?? null)) ||
+            ($row['year'] ?? null) ||
+            ($row['journal'] ?? null) ||
+            ($row['quartile'] ?? null) ||
+            ($row['impact_factor'] ?? null) ||
+            (!empty($row['authors']))
+        );
+    }
+
+    private function normalizeQuartile(?string $q): ?string
+    {
+        if (!$q) return null;
+        $q = strtoupper(trim($q));
+        if (in_array($q, ['Q1', 'Q2', 'Q3', 'Q4'], true)) return $q;
+        if (in_array($q, ['1', '2', '3', '4'], true)) return 'Q' . $q;
+        return null;
     }
 
     private function syncCopis(Request $request, Project $project): void
@@ -387,10 +504,8 @@ class ProjectController extends Controller
     {
         $name = $request->input('project_name_th');
 
-        // Exact match
         $exact = Project::where('project_name_th', $name)->first();
 
-        // Similar matches
         $similar = Project::where('project_name_th', 'LIKE', '%' . $name . '%')
             ->take(5)
             ->get(['project_name_th', 'pi_name', 'start_year'])

@@ -66,7 +66,7 @@
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ*</span>
-                    <select name="project_type" id="project_type" class="w-full border p-2 rounded" required>
+                    <select name="project_type" id="project_type" class="w-full border p-2 rounded" >
                         <option value="" disabled {{ old('project_type', $project->project_type) ? '' : 'selected' }}>
                             เลือกประเภทของโครงการ
                         </option>
@@ -125,7 +125,7 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme)*</span>
-                    <select name="theme" required class="w-full border p-2 rounded">
+                    <select name="theme"  class="w-full border p-2 rounded">
                         <option value="" disabled {{ old('theme', $project->theme) ? '' : 'selected' }}>
                             กรุณาเลือกกลุ่มเนื้อหา</option>
                         <option value="T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก"
@@ -218,7 +218,8 @@
                         <option value="XL" {{ old('size', $project->size) == 'XL' ? 'selected' : '' }}>
                             XL (ภายนอก)
                         </option>
-                        <option value="FTE Hours" {{ old('size', $project->size) == 'FTE Hours' ? 'selected' : '' }}>FTE คิดแบบรายชั่วโมง</option>
+                        <option value="FTE Hours" {{ old('size', $project->size) == 'FTE Hours' ? 'selected' : '' }}>FTE
+                            คิดแบบรายชั่วโมง</option>
                     </select>
                 </label>
 
@@ -251,7 +252,7 @@
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
-                    <select name="funding_org_type" required class="w-full border p-2 rounded">
+                    <select name="funding_org_type"  class="w-full border p-2 rounded">
                         <option value="" disabled
                             {{ old('funding_org_type', $project->funding_org_type) ? '' : 'selected' }}>
                             กรุณาเลือกประเภทองค์กร
@@ -271,27 +272,7 @@
                     </select>
                 </label>
 
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
-                    <select name="funding_org_type" required class="w-full border p-2 rounded">
-                        <option value="" disabled
-                            {{ old('funding_org_type', $project->funding_org_type) ? '' : 'selected' }}>
-                            กรุณาเลือกประเภทองค์กร
-                        </option>
-                        <option value="รัฐบาล"
-                            {{ old('funding_org_type', $project->funding_org_type) == 'รัฐบาล' ? 'selected' : '' }}>
-                            รัฐบาล
-                        </option>
-                        <option value="เอกชน"
-                            {{ old('funding_org_type', $project->funding_org_type) == 'เอกชน' ? 'selected' : '' }}>
-                            เอกชน
-                        </option>
-                        <option value="มูลนิธิ"
-                            {{ old('funding_org_type', $project->funding_org_type) == 'มูลนิธิ' ? 'selected' : '' }}>
-                            มูลนิธิ
-                        </option>
-                    </select>
-                </label>
+              
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA105 - ชื่อทุน</span>
@@ -430,7 +411,7 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">Project Status</span>
                     <select name="planning_status" id="planning_status" class="w-full border p-2 rounded font-semibold"
-                        onchange="updateStatusColor(this)" required>
+                        onchange="updateStatusColor(this)" >
                         <option value="" disabled
                             {{ old('planning_status', $project->planning_status) ? '' : 'selected' }}
                             style="background-color: #fff; color: #222;">
@@ -891,61 +872,117 @@
                 <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
                     + เพิ่มผู้มีส่วนร่วม
                 </button>
-
-
-
+                {{-- E: ผลงานวิจัย (Output) ========================= --}}
                 <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
+
                 <div id="output-container" class="space-y-4 mb-6">
                     @foreach ($project->outputs ?? [] as $i => $out)
-                        <div id="output-{{ $i }}" class="output-row space-y-2">
-                            <!-- บรรทัดที่ 1: ชื่อผลงาน -->
+                        <div id="output-{{ $i }}"
+                            class="output-row space-y-2 border p-4 rounded-lg bg-gray-50"
+                            data-index="{{ $i }}">
+
+                            {{-- Output ID --}}
+                            <input type="hidden" name="outputs[{{ $i }}][id]"
+                                value="{{ $out->id }}">
+
+                            {{-- Title --}}
                             <label class="block w-full">
-                                <span class="block text-sm text-gray-700 mb-1">ชื่อผลงานที่ <span
-                                        class="output-index">{{ $loop->iteration }}</span></span>
-                                <input name="outputs[{{ $i }}][title]" value="{{ $out['title'] }}"
+                                <span class="block text-sm text-gray-700 mb-1">
+                                    ชื่อผลงานที่ <span class="output-index">{{ $loop->iteration }}</span>
+                                </span>
+                                <input name="outputs[{{ $i }}][title]" value="{{ $out->title }}"
                                     class="w-full border p-2 rounded" placeholder="ชื่อผลงาน">
                             </label>
 
-
-                            <!-- บรรทัดที่ 2: ประเภท + หมายเหตุ + ปี -->
+                            {{-- Type + Remark + Year --}}
                             <div class="grid grid-cols-3 gap-4 items-end">
                                 <label class="w-full">
                                     <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                                    <select name="outputs[{{ $i }}][type]" value="{{ $out['type'] }}"
-                                        class="w-full border p-2 rounded" required>
-                                        <option value="" disabled selected>เลือกประเภทของผลงาน</option>
-                                        <option>EA101 Research Paper or Journal Article</option>
-                                        <option>EA102 Reports and White papers</option>
-                                        <option>EA103 Presentations in Academic Conferences</option>
-                                        <option>EA104 Data Sets and Databases</option>
-                                        <option>EA105 Inventions or Innovations (Application /Website)</option>
-                                        <option>EA106 Policy Recommendations</option>
-                                        <option>EA107 Educational Materials</option>
-                                        <option>EA108 Communication Materials (Creations)</option>
-                                        <option>EA109 Change in Practices ,Procedures, Policy</option>
-                                        <option>EA110 Number of participants (persons)</option>
-                                        <option>EA111 Satisfaction Rating (1-5)</option>
-                                        <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
-                                        <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
-                                        <option>EA114 Events / Forum</option>
-                                        <option>EA115 Capacity Building</option>
-                                        <option>EA116 Research Project</option>
-                                        <option>EA117 MOU</option>
+                                    <select name="outputs[{{ $i }}][type]"
+                                        class="w-full border p-2 rounded output-type" onchange="handleTypeChange(this)"
+                                        >
+                                        <option value="" disabled {{ empty($out->type) ? 'selected' : '' }}>
+                                            เลือกประเภทของผลงาน</option>
+                                        {{-- เก็บ “ชื่อเต็ม” เป็นค่า --}}
+                                        @php
+                                            $typeFull = $out->type; // สมมติใน DB เก็บชื่อเต็ม (เช่น "EA101 Research Paper or Journal Article")
+                                        @endphp
+                                        <option value="EA101 Research Paper or Journal Article"
+                                            @selected(str_contains($typeFull, 'EA101'))>
+                                            EA101 Research Paper or Journal Article
+                                        </option>
+                                        <option value="EA102 Reports and White papers" @selected($typeFull === 'EA102 Reports and White papers')>
+                                            EA102 Reports and White papers
+                                        </option>
+                                        <option value="EA103 Presentations in Academic Conferences"
+                                            @selected($typeFull === 'EA103 Presentations in Academic Conferences')>
+                                            EA103 Presentations in Academic Conferences
+                                        </option>
+                                        <option value="EA104 Data Sets and Databases" @selected($typeFull === 'EA104 Data Sets and Databases')>
+                                            EA104 Data Sets and Databases
+                                        </option>
+                                        <option value="EA105 Inventions or Innovations (Application /Website)"
+                                            @selected($typeFull === 'EA105 Inventions or Innovations (Application /Website)')>
+                                            EA105 Inventions or Innovations (Application /Website)
+                                        </option>
+                                        <option value="EA106 Policy Recommendations" @selected($typeFull === 'EA106 Policy Recommendations')>
+                                            EA106 Policy Recommendations
+                                        </option>
+                                        <option value="EA107 Educational Materials" @selected($typeFull === 'EA107 Educational Materials')>
+                                            EA107 Educational Materials
+                                        </option>
+                                        <option value="EA108 Communication Materials (Creations)"
+                                            @selected($typeFull === 'EA108 Communication Materials (Creations)')>
+                                            EA108 Communication Materials (Creations)
+                                        </option>
+                                        <option value="EA109 Change in Practices ,Procedures, Policy"
+                                            @selected($typeFull === 'EA109 Change in Practices ,Procedures, Policy')>
+                                            EA109 Change in Practices ,Procedures, Policy
+                                        </option>
+                                        <option value="EA110 Number of participants (persons)"
+                                            @selected($typeFull === 'EA110 Number of participants (persons)')>
+                                            EA110 Number of participants (persons)
+                                        </option>
+                                        <option value="EA111 Satisfaction Rating (1-5)" @selected($typeFull === 'EA111 Satisfaction Rating (1-5)')>
+                                            EA111 Satisfaction Rating (1-5)
+                                        </option>
+                                        <option value="EA112 Present to Committee Meeting / Policy Maker / Board"
+                                            @selected($typeFull === 'EA112 Present to Committee Meeting / Policy Maker / Board')>
+                                            EA112 Present to Committee Meeting / Policy Maker / Board
+                                        </option>
+                                        <option value="EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา"
+                                            @selected($typeFull === 'EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา')>
+                                            EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา
+                                        </option>
+                                        <option value="EA114 Events / Forum" @selected($typeFull === 'EA114 Events / Forum')>
+                                            EA114 Events / Forum
+                                        </option>
+                                        <option value="EA115 Capacity Building" @selected($typeFull === 'EA115 Capacity Building')>
+                                            EA115 Capacity Building
+                                        </option>
+                                        <option value="EA116 Research Project" @selected($typeFull === 'EA116 Research Project')>
+                                            EA116 Research Project
+                                        </option>
+                                        <option value="EA117 MOU" @selected($typeFull === 'EA117 MOU')>
+                                            EA117 MOU
+                                        </option>
                                     </select>
                                 </label>
 
                                 <label class="w-full">
                                     <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / link</span>
                                     <input name="outputs[{{ $i }}][project_output]"
-                                        value="{{ $out['project_output'] ?? '' }}" class="w-full border p-2 rounded"
-                                        placeholder="เช่น ตีพิมพ์แล้ว">
+                                        value="{{ $out->project_output }}" class="w-full border p-2 rounded"
+                                        placeholder="เช่น ตีพิมพ์แล้ว / ลิงก์">
                                 </label>
+
                                 <div class="flex gap-2 w-full">
                                     <label class="w-full relative">
                                         <span class="block text-sm text-gray-700 mb-1">วันที่เผยแพร่ผลงาน</span>
                                         <input name="outputs[{{ $i }}][year]" type="text"
-                                            value="{{ $out['year'] }}" placeholder="โปรดใส่วันที่"
-                                            class="thai-datepicker w-full border p-2 rounded pl-10">
+                                            value="{{ $out->year }}"
+                                            class="thai-datepicker w-full border p-2 rounded pl-10"
+                                            placeholder="โปรดใส่วันที่">
                                         <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                             stroke="currentColor">
@@ -953,17 +990,99 @@
                                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                     </label>
-
-                                    <button type="button" onclick="removeRow('output-{{ $i }}', 'output')"
+                                    <button type="button" onclick="removeRow('output-{{ $i }}','output')"
                                         class="text-red-600 mb-2">✕</button>
                                 </div>
+                            </div>
+
+                            {{-- EA101 extra fields mount --}}
+                            <div class="ea101-mount">
+                                @if (str_contains($typeFull, 'EA101'))
+                                    <div class="ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50">
+                                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            <label>
+                                                <span class="block text-sm text-gray-700 mb-1">Journal</span>
+                                                <input name="outputs[{{ $i }}][journal]"
+                                                    value="{{ $out->journal }}" class="w-full border p-2 rounded"
+                                                    placeholder="ชื่อ Journal">
+                                            </label>
+                                            <label>
+                                                <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
+                                                <select name="outputs[{{ $i }}][quartile]"
+                                                    class="w-full border p-2 rounded">
+                                                    <option value="" disabled>เลือก Quartile</option>
+                                                    <option value="Q1" @selected($out->quartile == 'Q1')>Q1</option>
+                                                    <option value="Q2" @selected($out->quartile == 'Q2')>Q2</option>
+                                                    <option value="Q3" @selected($out->quartile == 'Q3')>Q3</option>
+                                                    <option value="Q4" @selected($out->quartile == 'Q4')>Q4</option>
+                                                </select>
+                                            </label>
+                                            <label>
+                                                <span class="block text-sm text-gray-700 mb-1">Impact Factor</span>
+                                                <input name="outputs[{{ $i }}][impact_factor]" type="number"
+                                                    step="0.001" value="{{ $out->impact_factor }}"
+                                                    class="w-full border p-2 rounded" placeholder="เช่น 3.215">
+                                            </label>
+                                        </div>
+
+                                        {{-- Authors --}}
+                                        <div class="space-y-2">
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
+                                                <button type="button" class="px-3 py-1 rounded bg-blue-600 text-white"
+                                                    onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+                                            </div>
+
+                                            {{-- ใช้ id ไม่ซ้ำต่อ output index --}}
+                                            <div class="authors-container space-y-2" id="authors-{{ $i }}">
+                                                @foreach ($out->authors as $j => $auth)
+                                                    <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                        <label>
+                                                            <span
+                                                                class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน</span>
+                                                            <select
+                                                                name="outputs[{{ $i }}][authors][{{ $j }}][role]"
+                                                                class="w-full border p-2 rounded">
+                                                                <option value="">เลือกบทบาท</option>
+                                                                <option value="first" @selected($auth->role === 'first')>
+                                                                    First-author</option>
+                                                                <option value="co" @selected($auth->role === 'co')>
+                                                                    Co-author</option>
+                                                                <option value="corresponding"
+                                                                    @selected($auth->role === 'corresponding')>Corresponding</option>
+                                                            </select>
+                                                        </label>
+                                                        <label>
+                                                            <span
+                                                                class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
+                                                            {{-- สำคัญ: hidden id เพื่อไม่ให้ overwrite กัน --}}
+                                                            <input type="hidden"
+                                                                name="outputs[{{ $i }}][authors][{{ $j }}][id]"
+                                                                value="{{ $auth->id }}">
+                                                            <input type="text"
+                                                                name="outputs[{{ $i }}][authors][{{ $j }}][name]"
+                                                                value="{{ $auth->name }}"
+                                                                class="w-full border p-2 rounded" placeholder="ชื่อ-สกุล">
+                                                        </label>
+                                                        <div class="flex items-end">
+                                                            <button type="button" onclick="removeAuthorRow(this)"
+                                                                class="px-3 py-2 rounded border text-red-600 border-red-300">ลบ</button>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endforeach
                 </div>
 
-                <button type="button" onclick="addOutputRow()" class="mb-6 px-3 py-1 bg-green-600 text-white rounded">+
-                    เพิ่ม Output</button>
+                <button type="button" onclick="addOutputRow()" class="mb-6 px-3 py-1 bg-green-600 text-white rounded">
+                    + เพิ่ม Output
+                </button>
+
 
 
 
@@ -1326,7 +1445,7 @@
         <!-- รายละเอียดภารกิจ -->
         <label class="w-full">
           <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ</span>
-          <select name="fte_roles[${index}][task_detail]" class="w-full border p-2 rounded" required>
+          <select name="fte_roles[${index}][task_detail]" class="w-full border p-2 rounded" >
             <option value="" disabled selected>เลือกภารกิจ</option>
             <option>ติดต่อประสานงาน</option>
             <option>review literature</option>
@@ -1386,72 +1505,240 @@
         }
 
 
-        let outputIndex = {{ count($project->outputs ?? []) }};
+        /* =========================================================
+       JS: Output + EA101 + Authors (index-safe, non-overwrite)
+       ========================================================= */
 
+        let outputIndex = document.querySelectorAll('#output-container .output-row').length || 0;
+
+        // เก็บจำนวน author ต่อ output index
+        const authorIndex = {};
+
+        // init authorIndex จากของที่ render มาแล้ว
+        document.querySelectorAll('#output-container .output-row').forEach(row => {
+            const idx = row.getAttribute('data-index');
+            const count = row.querySelectorAll('.authors-container .author-row').length;
+            authorIndex[idx] = count; // เริ่มจากจำนวนแถวที่มีอยู่
+        });
+
+        // ===== Add Output =====
         function addOutputRow() {
-            const container = document.getElementById('output-container');
-            const id = `output-${outputIndex}`;
-            const labelNum = outputIndex + 1;
+            const idx = outputIndex;
+            const id = `output-${idx}`;
 
-            container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="output-row space-y-2">
-            <label class="block w-full">
-                <span class="block text-sm text-gray-700 mb-1">ชื่อผลงานที่ <span class="output-index">${labelNum}</span></span>
-                <input name="outputs[${outputIndex}][title]" type="text" class="w-full border p-2 rounded" placeholder="ชื่อผลงาน">
-            </label>
-            <div class="grid grid-cols-3 gap-4 items-end">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                     <select  name="outputs[${outputIndex}][type]" class="w-full border p-2 rounded" required>
-                                <option value="" disabled selected>เลือกประเภทของผลงาน</option>
-                                <option>EA101 Research Paper or Journal Article</option>
-                                <option>EA102 Reports and White papers</option>
-                                <option>EA103 Presentations in Academic Conferences</option>
-                                <option>EA104 Data Sets and Databases</option>
-                                <option>EA105 Inventions or Innovations (Application /Website)</option>
-                                <option>EA106 Policy Recommendations</option>
-                                <option>EA107 Educational Materials</option>
-                                <option>EA108 Communication Materials (Creations)</option>
-                                <option>EA109 Change in Practices ,Procedures, Policy</option>
-                                <option>EA110 Number of participants (persons)</option>
-                                <option>EA111 Satisfaction Rating (1-5)</option>
-                                <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
-                                <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
-                                <option>EA114 Events / Forum</option>
-                                <option>EA115 Capacity Building</option>
-                                <option>EA116 Research Project</option>
-                                <option>EA117 MOU</option>
-                            </select>
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / link </span>
-                    <input name="outputs[${outputIndex}][project_output]" type="text" class="w-full border p-2 rounded" placeholder="เพิ่มเติม">
-                </label>
-                
-                <div class="flex gap-2 w-full">
-                    <label class="w-full relative">
-    <span class="block text-sm text-gray-700 mb-1">วันที่เผยแพร่ผลงาน</span>
-    <input name="outputs[${outputIndex}][year]" type="text"
-        class="thai-datepicker w-full border p-2 rounded pl-10"
-        placeholder="โปรดใส่วันที่">
-    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-        stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-</label>
+            document.getElementById('output-container').insertAdjacentHTML('beforeend', `
+    <div id="${id}" class="output-row space-y-2 border p-4 rounded-lg bg-gray-50" data-index="${idx}">
+      <input type="hidden" name="outputs[${idx}][id]" value="">
+      <label class="block w-full">
+        <span class="block text-sm text-gray-700 mb-1">
+          ชื่อผลงานที่ <span class="output-index">${idx + 1}</span>
+        </span>
+        <input name="outputs[${idx}][title]" type="text" class="w-full border p-2 rounded" placeholder="ชื่อผลงาน">
+      </label>
 
-                    <button type="button" onclick="removeRow('${id}', 'output')" class="text-red-600 mb-2">✕</button>
-                </div>
-            </div>
+      <div class="grid grid-cols-3 gap-4 items-end">
+        <label class="w-full">
+          <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
+          <select name="outputs[${idx}][type]" class="w-full border p-2 rounded output-type" required onchange="handleTypeChange(this)">
+            <option value="" disabled selected>เลือกประเภทของผลงาน</option>
+            <option value="EA101 Research Paper or Journal Article">EA101 Research Paper or Journal Article</option>
+            <option value="EA102 Reports and White papers">EA102 Reports and White papers</option>
+            <option value="EA103 Presentations in Academic Conferences">EA103 Presentations in Academic Conferences</option>
+            <option value="EA104 Data Sets and Databases">EA104 Data Sets and Databases</option>
+            <option value="EA105 Inventions or Innovations (Application /Website)">EA105 Inventions or Innovations (Application /Website)</option>
+            <option value="EA106 Policy Recommendations">EA106 Policy Recommendations</option>
+            <option value="EA107 Educational Materials">EA107 Educational Materials</option>
+            <option value="EA108 Communication Materials (Creations)">EA108 Communication Materials (Creations)</option>
+            <option value="EA109 Change in Practices ,Procedures, Policy">EA109 Change in Practices ,Procedures, Policy</option>
+            <option value="EA110 Number of participants (persons)">EA110 Number of participants (persons)</option>
+            <option value="EA111 Satisfaction Rating (1-5)">EA111 Satisfaction Rating (1-5)</option>
+            <option value="EA112 Present to Committee Meeting / Policy Maker / Board">EA112 Present to Committee Meeting / Policy Maker / Board</option>
+            <option value="EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา">EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
+            <option value="EA114 Events / Forum">EA114 Events / Forum</option>
+            <option value="EA115 Capacity Building">EA115 Capacity Building</option>
+            <option value="EA116 Research Project">EA116 Research Project</option>
+            <option value="EA117 MOU">EA117 MOU</option>
+          </select>
+        </label>
+
+        <label class="w-full">
+          <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
+          <input name="outputs[${idx}][project_output]" type="text" class="w-full border p-2 rounded" placeholder="เช่น ตีพิมพ์แล้ว / ลิงก์">
+        </label>
+
+        <div class="flex gap-2 w-full">
+          <label class="w-full relative">
+            <span class="block text-sm text-gray-700 mb-1">วันที่เผยแพร่ผลงาน</span>
+            <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่">
+            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </label>
+          <button type="button" onclick="removeRow('${id}','output')" class="text-red-600 mb-2">✕</button>
         </div>
-    `);
+      </div>
+
+      <!-- จุด mount สำหรับ EA101 -->
+      <div class="ea101-mount"></div>
+    </div>
+  `);
+
+            // เริ่มนับ authors ของ output แถวใหม่ = 0
+            authorIndex[idx] = 0;
 
             outputIndex++;
             reindexOutput();
-            initThaiDatepickers(); // สำคัญ! ต้องเรียกอีกครั้งหลังแทรก HTML ใหม่
+
+            if (typeof initThaiDatepickers === 'function') {
+                initThaiDatepickers();
+            }
         }
+
+        // ===== เมื่อเปลี่ยนประเภทผลงาน =====
+        function handleTypeChange(selectEl) {
+            const row = selectEl.closest('.output-row');
+            if (!row) return;
+            const idx = parseInt(row.getAttribute('data-index') || '0', 10);
+            const mount = row.querySelector('.ea101-mount');
+            if (!mount) return;
+
+            if (selectEl.value && selectEl.value.includes('EA101')) {
+                if (!row.querySelector('.ea101-section')) {
+                    mount.appendChild(renderEA101Section(idx));
+                    // init authorIndex สำหรับแถวที่ไม่มี authors มาก่อน
+                    if (authorIndex[idx] == null) authorIndex[idx] = 0;
+                }
+            } else {
+                const sec = row.querySelector('.ea101-section');
+                if (sec) sec.remove();
+            }
+        }
+
+        // ===== Template EA101 =====
+        function renderEA101Section(idx) {
+            const wrap = document.createElement('div');
+            wrap.className = 'ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50';
+            wrap.innerHTML = `
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">Journal</span>
+        <input name="outputs[${idx}][journal]" class="w-full border p-2 rounded" placeholder="เช่น IEEE Access">
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
+        <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded">
+          <option value="" disabled selected>เลือก Quartile</option>
+          <option value="Q1">Q1</option>
+          <option value="Q2">Q2</option>
+          <option value="Q3">Q3</option>
+          <option value="Q4">Q4</option>
+        </select>
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">Impact Factor</span>
+        <input name="outputs[${idx}][impact_factor]" type="number" step="0.001" class="w-full border p-2 rounded" placeholder="เช่น 3.215">
+      </label>
+    </div>
+
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
+        <button type="button" class="px-3 py-1 rounded bg-blue-600 text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+      </div>
+      <div class="authors-container space-y-2" id="authors-${idx}"></div>
+    </div>
+  `;
+            return wrap;
+        }
+
+        // ===== เพิ่มผู้เขียน (append แถวใหม่เสมอ) =====
+        function addAuthorRow(btnEl) {
+            const outputRow = btnEl.closest('.output-row');
+            const idx = outputRow.getAttribute('data-index');
+
+            const authorsWrap = outputRow.querySelector(`#authors-${idx}`);
+            if (!authorsWrap) return;
+
+            const aIdx = authorIndex[idx] || 0;
+
+            authorsWrap.insertAdjacentHTML('beforeend', `
+    <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน</span>
+        <select name="outputs[${idx}][authors][${aIdx}][role]" class="w-full border p-2 rounded">
+          <option value="">เลือกบทบาท</option>
+          <option value="first">First-author</option>
+          <option value="co">Co-author</option>
+          <option value="corresponding">Corresponding</option>
+        </select>
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
+        <!-- ไม่มี hidden id = บันทึกเป็น record ใหม่ -->
+        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" class="w-full border p-2 rounded" placeholder="ชื่อ-สกุล">
+      </label>
+      <div class="flex items-end">
+        <button type="button" onclick="removeAuthorRow(this)" class="px-3 py-2 rounded border text-red-600 border-red-300">ลบ</button>
+      </div>
+    </div>
+  `);
+
+            // อัปเดตตัวชี้วัด index ต่อ output
+            authorIndex[idx] = aIdx + 1;
+        }
+
+        // ===== ลบผู้เขียน (แค่เอาแถวออกจาก DOM; controller จะจัดการตาม ids ที่ส่งมา) =====
+        function removeAuthorRow(btnEl) {
+            const row = btnEl.closest('.author-row');
+            if (row) row.remove();
+        }
+
+        // ===== Reindex ทั้ง output หลังลบแถว =====
+        function reindexOutput() {
+            const rows = document.querySelectorAll('#output-container .output-row');
+            rows.forEach((row, i) => {
+                row.id = `output-${i}`;
+                row.setAttribute('data-index', i);
+
+                const idxEl = row.querySelector('.output-index');
+                if (idxEl) idxEl.textContent = i + 1;
+
+                // อัปเดต name="outputs[oldIndex]..." → outputs[i]...
+                row.querySelectorAll('input[name^="outputs["], select[name^="outputs["]')
+                    .forEach(el => {
+                        const old = el.getAttribute('name');
+                        if (old) el.setAttribute('name', old.replace(/^outputs\[\d+\]/, `outputs[${i}]`));
+                    });
+
+                // อัปเดต id ของ authors-container ให้ตรง index ใหม่ และ sync authorIndex key
+                const authorsWrap = row.querySelector('.authors-container');
+                if (authorsWrap) {
+                    authorsWrap.id = `authors-${i}`;
+                }
+
+                // นับจำนวน author-row ใหม่ให้ authorIndex[i] = current count
+                const count = row.querySelectorAll('.authors-container .author-row').length;
+                authorIndex[i] = count;
+            });
+
+            outputIndex = rows.length;
+        }
+
+        // ===== init ตอนหน้าโหลด: hook EA101 ที่มีอยู่ให้ mount ถูกต้อง =====
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.output-row select.output-type').forEach(selectEl => {
+                handleTypeChange(selectEl);
+            });
+        });
+
+
+
+
+
+
+
 
         let coResearchIndex = {{ count($project->coResearches ?? []) }};
 

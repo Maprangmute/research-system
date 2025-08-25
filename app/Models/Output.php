@@ -6,17 +6,121 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ProjectLog;
 
+
 class Output extends Model
 {
+    /**
+     * ฟิลด์ที่กรอกผ่าน mass assignment
+     */
     protected $fillable = [
         'project_id',
-        'type',
-        'title',
-        'year',
-        'project_output'
+        'type',            // EA101..EA117
+        'title',           // ชื่อผลงาน
+        'year',            // วันที่ publish (string/date-string)
+        'project_output',  // รายละเอียด/หมายเหตุ/ลิงก์
+        // EA101 only
+        'journal',
+        'quartile',        // Q1..Q4
+        'impact_factor',   // decimal(5,3)
     ];
 
-    // ==== Log ทุก action ที่เกี่ยวกับ Output ====
+
+  // ความสัมพันธ์กับ OutputAuthor (ใหม่)
+public function authors()
+{
+    return $this->hasMany(\App\Models\OutputAuthor::class, 'output_id', 'id');
+}
+
+
+    /**
+     * ค่า default
+     */
+    protected $attributes = [
+        'journal'       => null,
+        'quartile'      => null,
+        'impact_factor' => null,
+    ];
+
+    // ==== ความสัมพันธ์ ====
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    // ==== Scopes / Helpers ====
+    public function scopeEA101($query)
+    {
+        return $query->where('type', 'like', 'EA101%');
+    }
+
+    
+
+    
+
+    public function isEA101(): bool
+    {
+        return is_string($this->type) && str_starts_with($this->type, 'EA101');
+    }
+
+    /**
+     * ดึงรายชื่อผู้เขียนตามบทบาท (first|co|corresponding)
+     * @return string[] รายชื่อ
+     */
+    public function authorsByRole(string $role): array
+    {
+        $role = strtolower(trim($role));
+        return $this->authors()
+            ->where('role', $role)
+            ->pluck('name')
+            ->all();
+    }
+
+    /**
+     * แทนที่รายชื่อผู้เขียนทั้งหมดของ output นี้
+     * @param array $authors [{role: 'first|co|corresponding', name: '...'}, ...]
+     */
+    public function syncAuthors(array $authors): void
+    {
+        // ทำความสะอาด
+        $clean = array_values(array_filter(array_map(function ($a) {
+            $role = isset($a['role']) ? strtolower(trim((string) $a['role'])) : null;
+            $name = isset($a['name']) ? trim((string) $a['name']) : null;
+            if (!$role || !$name) return null;
+            if (!in_array($role, ['first','co','corresponding'], true)) return null;
+            return ['role' => $role, 'name' => $name];
+        }, $authors)));
+
+        // ลบของเดิมแล้วเพิ่มใหม่ (มี unique(output_id,role,name) กันซ้ำใน DB)
+        $this->authors()->delete();
+        if (!empty($clean)) {
+            $this->authors()->createMany($clean);
+        }
+    }
+
+    // ==== Mutators ====
+
+    /**
+     * บังคับ quartile ให้เป็น Q1..Q4, รองรับกรอก "1","2"
+     */
+    public function setQuartileAttribute($value): void
+    {
+        if ($value === null || $value === '') {
+            $this->attributes['quartile'] = null;
+            return;
+        }
+        $v = strtoupper(trim((string)$value));
+        if (in_array($v, ['Q1','Q2','Q3','Q4'], true)) {
+            $this->attributes['quartile'] = $v;
+            return;
+        }
+        if (in_array($v, ['1','2','3','4'], true)) {
+            $this->attributes['quartile'] = 'Q' . $v;
+            return;
+        }
+        $this->attributes['quartile'] = null;
+    }
+
+    // ==== Project Logs ====
     protected static function booted()
     {
         // Log create
@@ -30,7 +134,7 @@ class Output extends Model
             ]);
         });
 
-        // Log update
+        // Log update (เฉพาะฟิลด์ที่เปลี่ยน)
         static::updating(function ($output) {
             $diff = $output->getDirty();
             unset($diff['updated_at']);
@@ -47,6 +151,7 @@ class Output extends Model
 
         // Log delete
         static::deleting(function ($output) {
+            // FK onDelete('cascade') จะลบ authors ให้อัตโนมัติ
             ProjectLog::create([
                 'project_id'      => $output->project_id,
                 'user_id'         => Auth::id() ?? null,
@@ -55,10 +160,5 @@ class Output extends Model
                 'changes'         => $output->toArray(),
             ]);
         });
-    }
-
-    public function project()
-    {
-        return $this->belongsTo(Project::class);
     }
 }

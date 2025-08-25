@@ -1,0 +1,67 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use App\Models\ProjectLog;
+
+class OutputAuthor extends Model
+{
+    protected $table = 'output_authors';
+
+    protected $fillable = [
+        'output_id',
+        'role', // first|co|corresponding
+        'name',
+    ];
+
+    public function output()
+    {
+        return $this->belongsTo(\App\Models\Output::class, 'output_id', 'id');
+    }
+
+    // สะดวกเรียก filter ตาม role
+    public function scopeRole($q, string $role)
+    {
+        return $q->where('role', strtolower(trim($role)));
+    }
+
+    protected static function booted()
+    {
+        // บันทึก log พอประมาณ (เลือกทำ/ไม่ทำก็ได้ หาก log เยอะเกินไปให้ตัดออก)
+        static::created(function ($author) {
+            ProjectLog::create([
+                'project_id'      => $author->output->project_id ?? null,
+                'user_id'         => Auth::id() ?? null,
+                'project_name_th' => optional($author->output->project)->project_name_th ?? '',
+                'action'          => 'output_author_create',
+                'changes'         => $author->toArray(),
+            ]);
+        });
+
+        static::updating(function ($author) {
+            $diff = $author->getDirty();
+            unset($diff['updated_at']);
+            if (!empty($diff)) {
+                ProjectLog::create([
+                    'project_id'      => $author->output->project_id ?? null,
+                    'user_id'         => Auth::id() ?? null,
+                    'project_name_th' => optional($author->output->project)->project_name_th ?? '',
+                    'action'          => 'output_author_update',
+                    'changes'         => $diff,
+                ]);
+            }
+        });
+
+        static::deleting(function ($author) {
+            ProjectLog::create([
+                'project_id'      => $author->output->project_id ?? null,
+                'user_id'         => Auth::id() ?? null,
+                'project_name_th' => optional($author->output->project)->project_name_th ?? '',
+                'action'          => 'output_author_delete',
+                'changes'         => $author->toArray(),
+            ]);
+        });
+    }
+}
