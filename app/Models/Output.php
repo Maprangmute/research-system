@@ -25,6 +25,12 @@ class Output extends Model
     ];
 
 
+public function conferences()
+{
+    return $this->hasMany(OutputConference::class);
+}
+
+
   // ความสัมพันธ์กับ OutputAuthor (ใหม่)
 public function authors()
 {

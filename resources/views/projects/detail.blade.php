@@ -41,7 +41,7 @@
             </a>
             <span
                 class="px-4 py-1 rounded-lg font-semibold {{ $bgClass }} text-black shadow border border-gray-300 text-sm">
-                  <span> สถานะ : </span>{{ $statusText }}
+                <span> สถานะ : </span>{{ $statusText }}
             </span>
         </div>
 
@@ -56,17 +56,17 @@
                     📑 Progress Report
                 </a>
 
-               @php
-    $isOwner = $project->user_id === auth()->id();
-    $isAdmin = auth()->user() && auth()->user()->role === 'admin';
-@endphp
+                @php
+                    $isOwner = $project->user_id === auth()->id();
+                    $isAdmin = auth()->user() && auth()->user()->role === 'admin';
+                @endphp
 
-@if($isOwner || $isAdmin)
-    <a href="{{ route('projects.pdf', $project->id) }}" target="_blank"
-        class="bg-green-200 hover:bg-green-300 text-green-800 px-4 py-2 rounded shadow-sm">
-        🖨️ พิมพ์ PDF
-    </a>
-@endif
+                @if ($isOwner || $isAdmin)
+                    <a href="{{ route('projects.pdf', $project->id) }}" target="_blank"
+                        class="bg-green-200 hover:bg-green-300 text-green-800 px-4 py-2 rounded shadow-sm">
+                        🖨️ พิมพ์ PDF
+                    </a>
+                @endif
                 <a href="{{ route('projects.gantt', $project->id) }}"
                     class="bg-blue-200 hover:bg-blue-300 text-blue-800 px-4 py-2 rounded shadow-sm">
                     📊 Gantt Chart
@@ -93,7 +93,7 @@
                 <div><span class="font-semibold">ประเภท:</span> {{ $project->project_type }}</div>
                 <div><span class="font-semibold">ลักษณะ</span> {{ $project->project_list }}</div>
                 <div><span class="font-semibold">Theme:</span> {{ $project->theme }}</div>
-                
+
                 <div class="md:col-span-2">
                     <span class="font-semibold">Shortcut:</span>
                     @if ($project->shortcut_link)
@@ -352,57 +352,236 @@
 
 
 
+        @php
+            use Illuminate\Support\Str;
+
+            $outputs = $project->outputs ?? collect();
+
+            // กรองเฉพาะรายการที่มีข้อมูลจริง
+            $outputsReal = $outputs->filter(function ($output) {
+                return !empty(trim($output->title ?? '')) || !empty(trim($output->type ?? ''));
+            });
+
+            // ฟังก์ชันช่วย: ฟอร์แมตวันที่ (พ.ศ.)
+            function th_date_or_raw($value)
+            {
+                try {
+                    if (!$value) {
+                        return '-';
+                    }
+                    \Carbon\Carbon::setLocale('th');
+                    $d = \Carbon\Carbon::parse($value);
+                    return $d->translatedFormat('j F') . ' ' . ($d->year + 543);
+                } catch (\Exception $e) {
+                    return $value ?: '-';
+                }
+            }
+
+            // ฟังก์ชันช่วย: ถ้าเป็น URL ให้ลิงก์, ไม่ใช่ก็แสดงข้อความ
+            function linkify_if_url($text)
+            {
+                $txt = trim($text ?? '');
+                if (!$txt) {
+                    return '-';
+                }
+                return filter_var($txt, FILTER_VALIDATE_URL)
+                    ? '<a href="' .
+                            e($txt) .
+                            '" target="_blank" class="text-blue-600 underline break-words">' .
+                            e($txt) .
+                            '</a>'
+                    : e($txt);
+            }
+        @endphp
+
         <h3 class="font-semibold text-lg text-blue-700 mb-2">F: ผลงานวิจัย (Outputs)</h3>
-        <table
-            class="min-w-full bg-white rounded-2xl shadow-md ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 table-fixed">
-            <thead class="bg-blue-50">
-                <tr>
-                    <th class="border px-2 py-2 text-center font-semibold rounded-tl-2xl w-[5%]">ลำดับ</th>
-                    <th class="border px-2 py-2 font-semibold w-[35%]">ชื่อผลงาน</th>
-                    <th class="border px-2 py-2 font-semibold w-[20%]">ประเภท</th>
-                    <th class="border px-2 py-2 font-semibold w-[20%]">รายละเอียด</th>
-                    <th class="border px-2 py-2 text-center font-semibold rounded-tr-2xl w-[20%]">ปี</th>
-                </tr>
-            </thead>
-            <tbody class="text-[15px]">
-                @php
-                    $outputs = $project->outputs ?? collect();
-                    $outputsReal = $outputs->filter(function ($output) {
-                        return !empty(trim($output->title)) || !empty(trim($output->type));
-                    });
-                @endphp
-                @if ($outputsReal->count())
-                    @foreach ($outputsReal as $i => $output)
-                        <tr>
-                            <td class="border px-2 py-2 text-center w-[5%]">{{ $i + 1 }}</td>
-                            <td class="border px-2 py-2 w-[35%] break-words">{{ $output->title ?: '-' }}</td>
-                            <td class="border px-2 py-2 w-[20%] break-words">{{ $output->type ?: '-' }}</td>
-                            <td class="border px-2 py-2 w-[20%] break-words">{{ $output->output ?? '-' }}</td>
-                            <td class="border px-2 py-2 text-center w-[20%] break-words">
-                                @php
-                                    \Carbon\Carbon::setLocale('th');
-                                    $dateValue = $output->year;
-                                    $formatted = '-';
-                                    try {
-                                        if (!empty($dateValue)) {
-                                            $date = \Carbon\Carbon::parse($dateValue);
-                                            $formatted = $date->translatedFormat('j F') . ' ' . ($date->year + 543);
-                                        }
-                                    } catch (\Exception $e) {
-                                        $formatted = $dateValue;
-                                    }
-                                @endphp
-                                {{ $formatted }}
-                            </td>
-                        </tr>
-                    @endforeach
-                @else
-                    <tr>
-                        <td colspan="5" class="py-6 text-center text-gray-500">ไม่มีข้อมูล</td>
-                    </tr>
-                @endif
-            </tbody>
-        </table>
+
+        @if ($outputsReal->isEmpty())
+            <div class="w-full bg-white rounded-2xl shadow-md ring-1 ring-slate-100 p-6 text-center text-gray-500">
+                ไม่มีข้อมูล
+            </div>
+        @else
+            <div class="space-y-4">
+                @foreach ($outputsReal as $i => $output)
+                    @php
+                        $isEA101 = Str::startsWith((string) ($output->type ?? ''), 'EA101');
+                        $isEA103 = Str::startsWith((string) ($output->type ?? ''), 'EA103');
+                    @endphp
+
+                    <div class="bg-white rounded-2xl shadow-md ring-1 ring-slate-100 p-4">
+                        <div class="flex items-start gap-3">
+                            <div class="shrink-0 text-sm font-semibold text-gray-600 mt-1">
+                                {{ $i + 1 }}.
+                            </div>
+
+                            <div class="grow space-y-2">
+                                {{-- ชื่อผลงาน + badge ประเภท --}}
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <div class="text-base font-semibold text-gray-800 break-words">
+                                        {{ $output->title ?: '-' }}
+                                    </div>
+
+                                    @if (!empty($output->type))
+                                        <span
+                                            class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                                    {{ $isEA101 ? 'bg-blue-100 text-blue-800' : ($isEA103 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800') }}">
+                                            {{ $output->type }}
+                                        </span>
+                                    @endif>
+                                </div>
+
+                                {{-- รายละเอียด / ลิงก์ + วันที่ --}}
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                    <div>
+                                        <div class="text-gray-500">รายละเอียด / ลิงก์</div>
+                                        <div class="text-gray-800 break-words">{!! linkify_if_url($output->project_output ?? null) !!}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-gray-500">วันที่เผยแพร่</div>
+                                        <div class="text-gray-800">{{ th_date_or_raw($output->year) }}</div>
+                                    </div>
+                                    <div></div>
+                                </div>
+
+                                {{-- ===== ส่วนพิเศษ: EA101 ===== --}}
+                                @if ($isEA101)
+                                    <div class="mt-3 border rounded-xl p-4 bg-blue-50/50">
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                            <div>
+                                                <div class="text-gray-500">Journal</div>
+                                                <div class="text-gray-800">{{ $output->journal ?: '-' }}</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-gray-500">Quartile (Q)</div>
+                                                <div class="text-gray-800">
+                                                    @if ($output->quartile)
+                                                        <span
+                                                            class="inline-flex items-center rounded-md bg-blue-100 text-blue-800 px-2 py-0.5 text-xs font-semibold">
+                                                            {{ $output->quartile }}
+                                                        </span>
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="text-gray-500">Impact Factor (IF)</div>
+                                                <div class="text-gray-800">
+                                                    {{ $output->impact_factor !== null && $output->impact_factor !== '' ? $output->impact_factor : '-' }}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Authors --}}
+                                        @php
+                                            $authors = $output->authors ?? collect();
+                                            $authorsReal = $authors->filter(function ($a) {
+                                                return !empty(trim($a->name ?? '')) || !empty(trim($a->role ?? ''));
+                                            });
+                                        @endphp
+
+                                        <div class="mt-3">
+                                            <div class="font-semibold text-blue-800 mb-2">รายชื่อผู้เขียน (Authors)</div>
+
+                                            @if ($authorsReal->isEmpty())
+                                                <div class="text-sm text-gray-500">- ไม่มีรายชื่อผู้เขียน -</div>
+                                            @else
+                                                <div class="overflow-x-auto">
+                                                    <table class="min-w-full text-sm border bg-white">
+                                                        <thead class="bg-blue-100">
+                                                            <tr>
+                                                                <th class="px-2 py-2 text-left">#</th>
+                                                                <th class="px-2 py-2 text-left">ชื่อ-นามสกุล</th>
+                                                                <th class="px-2 py-2 text-left">บทบาท</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach ($authorsReal as $ai => $a)
+                                                                <tr class="border-t">
+                                                                    <td class="px-2 py-2">{{ $ai + 1 }}</td>
+                                                                    <td class="px-2 py-2 break-words">
+                                                                        {{ $a->name ?: '-' }}</td>
+                                                                    <td class="px-2 py-2 capitalize">
+                                                                        @php
+                                                                            $role = strtolower(trim($a->role ?? ''));
+                                                                            $roleLabel =
+                                                                                $role === 'first'
+                                                                                    ? 'First-author'
+                                                                                    : ($role === 'co'
+                                                                                        ? 'Co-author'
+                                                                                        : ($role === 'corresponding'
+                                                                                            ? 'Corresponding author'
+                                                                                            : ($a->role ?:
+                                                                                            '-')));
+                                                                        @endphp
+                                                                        {{ $roleLabel }}
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+
+                                {{-- ===== ส่วนพิเศษ: EA103 ===== --}}
+                                @if ($isEA103)
+                                    @php
+                                        $confs = $output->conferences ?? collect();
+                                        $confsReal = $confs->filter(function ($c) {
+                                            return !empty(trim($c->name ?? '')) ||
+                                                !empty(trim($c->presentation_type ?? '')) ||
+                                                !empty(trim($c->location ?? '')) ||
+                                                !empty(trim($c->note ?? ''));
+                                        });
+                                    @endphp
+
+                                    <div class="mt-3 border rounded-xl p-4 bg-amber-50/60">
+                                        <div class="font-semibold text-amber-800 mb-2">Conferences</div>
+
+                                        @if ($confsReal->isEmpty())
+                                            <div class="text-sm text-gray-500">- ไม่มีรายการ Conference -</div>
+                                        @else
+                                            <div class="overflow-x-auto">
+                                                <table class="min-w-full text-sm border bg-white">
+                                                    <thead class="bg-amber-100">
+                                                        <tr>
+                                                            <th class="px-2 py-2 text-left">#</th>
+                                                            <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
+                                                            <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
+                                                            <th class="px-2 py-2 text-left">สถานที่</th>
+                                                            <th class="px-2 py-2 text-left">หมายเหตุ</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach ($confsReal as $ci => $c)
+                                                            <tr class="border-t">
+                                                                <td class="px-2 py-2">{{ $ci + 1 }}</td>
+                                                                <td class="px-2 py-2 break-words">{{ $c->name ?: '-' }}
+                                                                </td>
+                                                                <td class="px-2 py-2">{{ $c->presentation_type ?: '-' }}
+                                                                </td>
+                                                                <td class="px-2 py-2 break-words">
+                                                                    {{ $c->location ?: '-' }}</td>
+                                                                <td class="px-2 py-2 break-words">{{ $c->note ?: '-' }}
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
 
         <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">G: ยุทธศาสตร์ Siriraj Health Policy</h3>
         <table
@@ -483,10 +662,11 @@
         </table>
 
         @php
-            // ข้อมูลผู้แก้ไขล่าสุด
-            $user = $project->updatedBy;
-            $updatedBy = $user ? trim(($user->prefix ?? '') . ' ' . $user->name) : '-';
+            // ---------- ชื่อ "ข้อมูลล่าสุดโดย" ----------
+            $updatedUser = $project->updated_by ? $project->updatedBy : $project->createdBy;
+            $updatedBy = $updatedUser ? trim(($updatedUser->prefix ?? '') . ' ' . $updatedUser->name) : '-';
 
+            // ---------- เวลา "อัปเดทเมื่อ" ----------
             if ($project->updated_at) {
                 $carbonDate = \Carbon\Carbon::parse($project->updated_at)->setTimezone('Asia/Bangkok')->locale('th');
                 $dayMonth = $carbonDate->translatedFormat('j F');
@@ -497,16 +677,13 @@
                 $updatedAt = '';
             }
 
-            // ข้อมูลผู้สร้าง (createdBy)
-            $creator = $project->createdBy ?? null;
+            // ---------- ผู้สร้าง ----------
+            $creator = $project->createdBy;
             $createdBy = $creator ? trim(($creator->prefix ?? '') . ' ' . $creator->name) : '-';
 
             if ($project->created_at) {
-                $createdAtDate = \Carbon\Carbon::parse($project->created_at)->setTimezone('Asia/Bangkok')->locale('th');
-                $createdDayMonth = $createdAtDate->translatedFormat('j F');
-                $createdYearBuddhist = $createdAtDate->year + 543;
-                $createdTime = $createdAtDate->format('H:i');
-                $createdAt = "{$createdDayMonth} {$createdYearBuddhist} {$createdTime} น.";
+                $d = \Carbon\Carbon::parse($project->created_at)->setTimezone('Asia/Bangkok')->locale('th');
+                $createdAt = $d->translatedFormat('j F') . ' ' . ($d->year + 543) . ' ' . $d->format('H:i') . ' น.';
             } else {
                 $createdAt = '';
             }
@@ -526,10 +703,6 @@
                 @endif
             </div>
         </div>
-        <div class="mt-4">
-            <a href="{{ route('projects.index') }}" class="text-blue-600 hover:underline">
-                ← กลับไปยังรายการโครงการ
-            </a>
-        </div>
+
     </div>
 @endsection

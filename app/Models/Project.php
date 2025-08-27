@@ -155,15 +155,18 @@ class Project extends Model
         return $this->hasMany(ProjectLog::class, 'project_id');
     }
 
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
-    }
+    // public function updatedBy()
+    // {
+    //     return $this->belongsTo(User::class, 'updated_by');
+    // }
 
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+    // public function createdBy()
+    // {
+    //     return $this->belongsTo(User::class, 'user_id');
+    // }
+    public function createdBy() { return $this->belongsTo(User::class, 'user_id'); }
+public function updatedBy() { return $this->belongsTo(User::class, 'updated_by'); }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -173,4 +176,6 @@ class Project extends Model
     {
         return $this->hasMany(ProgressReport::class);
     }
+
+    
 }
