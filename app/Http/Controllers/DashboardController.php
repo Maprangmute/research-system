@@ -1,11 +1,11 @@
 <?php
 
+// app/Http/Controllers/DashboardController.php
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Project;
 
-// app/Http/Controllers/DashboardController.php
 class DashboardController extends Controller
 {
     public function index()
@@ -14,12 +14,15 @@ class DashboardController extends Controller
             // ดึงเฉพาะฟิลด์ที่ต้องใช้จาก coResearches
             'coResearches:id,project_id,unit_status',
 
-            // อื่น ๆ ตามเดิม (จะกรองฟิลด์หรือไม่ก็ได้)
+            // Eager load อื่น ๆ
             'copis',
             'fteRoles',
-            'outputs',
             'irbs',
             'progressReports',
+
+            // สำคัญ: outputs + authors + project สำหรับฝั่ง JS
+            'outputs.authors:id,output_id,name,role',
+            'outputs.project:id,project_name_th', // ถ้าจะใช้ชื่อโครงการตอน drill-down
         ])
         ->select(
             'id',
@@ -36,12 +39,29 @@ class DashboardController extends Controller
         )
         ->get();
 
-        $copis = $projects->flatMap->copis;
-        $coResearches = $projects->flatMap->coResearches;
-        $fteRoles = $projects->flatMap->fteRoles;
-        $outputs = $projects->flatMap->outputs;
-        $irbs = $projects->flatMap->irbs;
+        // collections เดิม (ยังเก็บไว้ใช้กับ Blade ส่วนอื่น ๆ ได้)
+        $copis           = $projects->flatMap->copis;
+        $coResearches    = $projects->flatMap->coResearches;
+        $fteRoles        = $projects->flatMap->fteRoles;
+        $outputs         = $projects->flatMap->outputs;
+        $irbs            = $projects->flatMap->irbs;
         $progressReports = $projects->flatMap->progressReports;
+
+        // จัดรูป outputs สำหรับฝั่ง JS (แนวทาง A)
+        $outputsForJs = $outputs->map(function ($o) {
+            return [
+                'id'           => $o->id,
+                'project_id'   => $o->project_id,
+                'project_name' => optional($o->project)->project_name_th,
+                'type'         => $o->type,
+                'title'        => $o->title,
+                'year'         => $o->year,
+                'authors'      => $o->authors->map(fn($a) => [
+                    'name' => $a->name,
+                    'role' => $a->role, // 'first' | 'co' | 'corresponding'
+                ])->values(),
+            ];
+        })->values();
 
         $themes = Project::select('theme')->distinct()->pluck('theme');
 
@@ -50,11 +70,11 @@ class DashboardController extends Controller
             'copis',
             'coResearches',
             'fteRoles',
-            'outputs',
+            'outputs',          // ยังส่งตัวเดิมไปได้ (เช่นไว้ใช้ count())
+            'outputsForJs',     // << เพิ่มตัวนี้สำหรับฝั่ง JS
             'irbs',
             'progressReports',
             'themes'
         ));
     }
 }
-
