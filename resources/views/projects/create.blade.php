@@ -49,8 +49,8 @@
             <h3 class="font-semibold text-lg text-blue-700 mb-2">A: ข้อมูลโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาไทย)*</span>
-                    <input name="project_name_th" type="text" required class="w-full border p-2 rounded">
+                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาไทย)</span>
+                    <input name="project_name_th" type="text"  class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (English)</span>
@@ -134,10 +134,10 @@
                     {{-- <select name="size" required class="w-full border p-2 rounded"> --}}
                     <select name="size" class="w-full border p-2 rounded">
                         <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
-                        <option value="S">S (ภายนอก / ภายใน / Cohort Study)</option>
-                        <option value="M">M (ภายนอก / ภายใน / Cohort Study)</option>
-                        <option value="L">L (ภายนอก / ภายใน / Cohort Study)</option>
-                        <option value="XL">XL (ภายนอก) </option>
+                        <option value="S">S  (ภายนอก ต่ำกว่า 1 ล้าน / ภายใน)</option>
+                        <option value="M">M (ภายนอก 1-3 ล้าน  / ภายใน / Cohort Study (Perioperative, SEAPOD))</option>
+                        <option value="L">L (ภายนอก 3-5 ล้าน / ภายใน / Cohort Study (GSC, PCU, DM))</option>
+                        <option value="XL">XL (ภายนอก มากกว่า 5 ล้าน) </option>
                         <option value="FTE Hours">FTE คิดแบบรายชั่วโมง </option>
                     </select>
                 </label>

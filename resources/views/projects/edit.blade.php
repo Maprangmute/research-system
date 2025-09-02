@@ -55,8 +55,8 @@
             <h3 class="font-semibold text-lg text-blue-700 mb-2">A: ข้อมูลโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาไทย)*</span>
-                    <input name="project_name_th" value="{{ old('project_name_th', $project->project_name_th) }}" required
+                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาไทย)</span>
+                    <input name="project_name_th" value="{{ old('project_name_th', $project->project_name_th) }}" 
                         class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
@@ -207,19 +207,19 @@
                             กรุณาเลือกขนาดของโปรเจค
                         </option>
                         <option value="S" {{ old('size', $project->size) == 'S' ? 'selected' : '' }}>
-                            S (ภายนอก / ภายใน / Cohort Study)
+                            S  (ภายนอก ต่ำกว่า 1 ล้าน / ภายใน)
                         </option>
                         <option value="M" {{ old('size', $project->size) == 'M' ? 'selected' : '' }}>
-                            M (ภายนอก / ภายใน / Cohort Study)
+                            M (ภายนอก 1-3 ล้าน  / ภายใน / Cohort Study (Perioperative, SEAPOD))
                         </option>
                         <option value="L" {{ old('size', $project->size) == 'L' ? 'selected' : '' }}>
-                            L (ภายนอก / ภายใน / Cohort Study)
+                            L (ภายนอก 3-5 ล้าน / ภายใน / Cohort Study (GSC, PCU, DM))
                         </option>
                         <option value="XL" {{ old('size', $project->size) == 'XL' ? 'selected' : '' }}>
-                            XL (ภายนอก)
+                            XL (ภายนอก มากกว่า 5 ล้าน)
                         </option>
                         <option value="FTE Hours" {{ old('size', $project->size) == 'FTE Hours' ? 'selected' : '' }}>FTE
-                            คิดแบบรายชั่วโมง</option>
+                            คิดแบบรายชั่วโมง (0.00745/h)</option>
                     </select>
                 </label>
 

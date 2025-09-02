@@ -107,37 +107,56 @@
             </div>
 
             <div class="bg-white shadow-sm border rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (ต่อปี)</h3>
+                <div class="relative h-250">
+                    <canvas id="chartExternalBySourceYear" height="250" class="!w-full !h-full"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white shadow-sm border rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏛️ ทุนภายใน แยกตามแหล่งทุน (ต่อปี)</h3>
+                <div class="relative h-250">
+                    <canvas id="chartInternalBySourceYear"  height="250" class="!w-full !h-full"></canvas>
+                </div>
+            </div>
+
+
+            <div class="bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">📝 Output (รายปี)</h3>
                 <canvas id="chartOutputStacked" height="250"></canvas>
             </div>
 
             <div class="bg-white shadow-sm border rounded-xl p-4">
-  <h3 class="text-sm font-semibold text-gray-700 mb-3">📚 Publication รายปี (แท่งแนวตั้ง)</h3>
-  <canvas id="chartPublicationPerYear" height="280"></canvas>
-</div>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">📚 Publication รายปี (แท่งแนวตั้ง)</h3>
+                <canvas id="chartPublicationPerYear" height="280"></canvas>
+            </div>
 
-<div class="bg-white shadow-sm border rounded-xl p-4 mt-6">
-  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-3">
-    <div class="flex items-center gap-2">
-      <label class="text-xs text-gray-500">ปี (พ.ศ.):
-        <select id="yearFilter" class="ml-1 border rounded px-2 py-1 text-sm"></select>
-      </label>
-      <button id="btnPrevYear" class="border rounded px-2 py-1 text-xs">◀</button>
-      <button id="btnNextYear" class="border rounded px-2 py-1 text-xs">▶</button>
-    </div>
-    <div class="flex items-center gap-2">
-      <label class="text-xs text-gray-500">ค้นหาชื่อ:
-        <input id="authorSearch" type="text" class="ml-1 border rounded px-2 py-1 text-sm" placeholder="พิมพ์บางส่วนของชื่อ">
-      </label>
-      <label class="text-xs text-gray-500">Top N:
-        <select id="topN" class="ml-1 border rounded px-2 py-1 text-sm">
-          <option>5</option><option selected>12</option><option>20</option><option>30</option>
-        </select>
-      </label>
-    </div>
-  </div>
-  <canvas id="chartAuthorRolePerYear" height="320"></canvas>
-</div>
+            <div class="bg-white shadow-sm border rounded-xl p-4 mt-6">
+                <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-gray-500">ปี (พ.ศ.):
+                            <select id="yearFilter" class="ml-1 border rounded px-2 py-1 text-sm"></select>
+                        </label>
+                        <button id="btnPrevYear" class="border rounded px-2 py-1 text-xs">◀</button>
+                        <button id="btnNextYear" class="border rounded px-2 py-1 text-xs">▶</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-gray-500">ค้นหาชื่อ:
+                            <input id="authorSearch" type="text" class="ml-1 border rounded px-2 py-1 text-sm"
+                                placeholder="พิมพ์บางส่วนของชื่อ">
+                        </label>
+                        <label class="text-xs text-gray-500">Top N:
+                            <select id="topN" class="ml-1 border rounded px-2 py-1 text-sm">
+                                <option>5</option>
+                                <option selected>12</option>
+                                <option>20</option>
+                                <option>30</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <canvas id="chartAuthorRolePerYear" height="320"></canvas>
+            </div>
 
 
             <div class="bg-white shadow-sm border rounded-xl p-4">
@@ -223,7 +242,7 @@
                         @foreach ($projects as $p)
                             <tr class="border-t">
                                 <td class="p-2 text-blue-700 hover:underline"><a
-                                        href="/projects/{{ $p->id }}">{{ $p->project_name_th }}</a></td>
+                                        href="/rm/projects/{{ $p->id }}">{{ $p->project_name_th }}</a></td>
                                 <td class="p-2 text-center">{{ $p->start_year }}</td>
                                 <td class="p-2 text-center">{{ $p->pi_name }}</td>
                                 <td class="p-2 text-center">{{ $p->copis->count() }}</td>
@@ -262,9 +281,9 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-  // ให้สคริปต์ด้านล่างใช้ window.outputs ได้เลย
-  window.outputs = @json($outputsForJs);
-</script>
+        // ให้สคริปต์ด้านล่างใช้ window.outputs ได้เลย
+        window.outputs = @json($outputsForJs);
+    </script>
     <script>
         /* ---------- Data from backend ---------- */
 
@@ -276,20 +295,26 @@
 
 
         @php
-  // ดึง outputs ที่ติด authors (จากความสัมพันธ์ outputs->authors)
-  $outputsForJs = $projects->flatMap->outputs->map(function ($o) {
-    return [
-      'id'      => $o->id,
-      'type'    => $o->type,
-      'title'   => $o->title,
-      'year'    => $o->year,
-      'authors' => $o->authors->map(fn($a) => [
-        'name' => $a->name,
-        'role' => $a->role, // 'first' | 'co' | 'corresponding'
-      ])->values(),
-    ];
-  })->values();
-@endphp
+            // ดึง outputs ที่ติด authors (จากความสัมพันธ์ outputs->authors)
+            $outputsForJs = $projects->flatMap->outputs
+                ->map(function ($o) {
+                    return [
+                        'id' => $o->id,
+                        'type' => $o->type,
+                        'title' => $o->title,
+                        'year' => $o->year,
+                        'authors' => $o->authors
+                            ->map(
+                                fn($a) => [
+                                    'name' => $a->name,
+                                    'role' => $a->role, // 'first' | 'co' | 'corresponding'
+                                ],
+                            )
+                            ->values(),
+                    ];
+                })
+                ->values();
+        @endphp
 
 
 
@@ -1487,6 +1512,136 @@
             });
         })();
 
+        // special graphs below here
+        /* ---- Helper: ปี ค.ศ. / พ.ศ. ---- */
+        function yearCE(raw) {
+            const m = String(raw ?? '').match(/\d{4}/);
+            if (!m) return null;
+            let y = parseInt(m[0], 10);
+            if (y > 2400) y -= 543; // พ.ศ. -> ค.ศ.
+            return y;
+        }
+        const yearLabelTH = ce => ce ? String(ce + 543) : '-';
+
+        /* ---- Helper: คุมสีตามแหล่งทุน ---- */
+        const colorCache = new Map();
+
+        function colorForKey(key) {
+            if (colorCache.has(key)) return colorCache.get(key);
+            let h = 0;
+            for (const ch of String(key)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+            const hue = h % 360;
+            const c = `hsl(${hue} 70% 60%)`;
+            colorCache.set(key, c);
+            return c;
+        }
+
+        /* ---- กราฟแท่งรายปี (ทุนภายนอก/ภายใน) ---- */
+        (function() {
+            const agg = {
+                external: {},
+                internal: {}
+            };
+
+            projects.forEach(p => {
+                const type = (getFundingType(p) || '').trim();
+                const src = (getFundingSource(p) || 'ไม่ระบุ').trim();
+                const amt = Number(p.budget) || 0;
+                const y = yearCE(p.start_year ?? p.year ?? p.funding_year);
+                if (!y) return;
+
+                const bucket = type === 'ภายนอก' ? agg.external : (type === 'ภายใน' ? agg.internal : null);
+                if (!bucket) return;
+                bucket[y] ??= {};
+                bucket[y][src] ??= {
+                    budget: 0
+                };
+                bucket[y][src].budget += amt;
+            });
+
+            function buildStacked(canvasId, dataByYear) {
+                const el = document.getElementById(canvasId);
+                if (!el) return;
+
+                const years = Object.keys(dataByYear).map(Number).sort((a, b) => a - b);
+                if (!years.length) {
+                    const c = el.getContext('2d');
+                    c.font = '14px sans-serif';
+                    c.fillStyle = '#6b7280';
+                    c.textAlign = 'center';
+                    c.textBaseline = 'middle';
+                    c.fillText('ไม่มีข้อมูล', el.width / 2, el.height / 2);
+                    return;
+                }
+
+                const allSources = Array.from(new Set(years.flatMap(y => Object.keys(dataByYear[y]))));
+
+                const datasets = allSources.map(src => ({
+                    label: src,
+                    data: years.map(y => dataByYear[y][src]?.budget || 0),
+                    backgroundColor: colorForKey(src),
+                    stack: 'budget',
+                }));
+
+                const prev = Chart.getChart(el);
+                if (prev) prev.destroy();
+                new Chart(el, {
+                    type: 'bar',
+                    data: {
+                        labels: years.map(yearLabelTH),
+                        datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false, // ป้องกันยืดเวลาเลื่อน
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const yCE = years[ctx.dataIndex];
+                                        const money = ctx.parsed.y || 0;
+                                        const total = Object.values(dataByYear[yCE]).reduce((s, v) => s + (v
+                                            ?.budget || 0), 0);
+                                        const pct = total ? ((money / total) * 100).toFixed(1) : '0.0';
+                                        return ` ${ctx.dataset.label}: ${formatThaiMoney(money)} (${pct}%)`;
+                                    },
+                                    footer: (items) => {
+                                        if (!items?.length) return '';
+                                        const yCE = years[items[0].dataIndex];
+                                        const sum = Object.values(dataByYear[yCE]).reduce((s, v) => s + (v
+                                            ?.budget || 0), 0);
+                                        return `รวมปี ${yearLabelTH(yCE)}: ${formatThaiMoney(sum)}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: v => formatThaiMoney(v)
+                                }
+                            }
+                            
+                        }
+                    }
+                });
+            }
+
+            buildStacked('chartExternalBySourceYear', agg.external);
+            buildStacked('chartInternalBySourceYear', agg.internal);
+        })();
+
+
+        // emd special graphs
+
         /* ---------- 11) โครงการทั้งหมด vs ใหม่ vs ค้างจากปีก่อน (ต่อปี) + Data Label + กันเลขตกขอบ ---------- */
         (function() {
             const uniqYears = [...new Set(projects.map(getYear))]
@@ -1742,275 +1897,358 @@
     </script>
 
 
-<script>
-/* ========= Helpers ========= */
-const ROLES = ['first','co','corresponding'];
+    <script>
+        /* ========= Helpers ========= */
+        const ROLES = ['first', 'co', 'corresponding'];
 
-function isPublicationType(t=''){
-  const s = String(t ?? '').toLowerCase();
-  return s.startsWith('ea101') || s.includes('research paper') ||
-         s.includes('journal article') || s.includes('publication') || s.includes('pub');
-}
-function normalizeYear(raw){
-  if(!raw) return null;
-  const m = String(raw).match(/(\d{4})/);
-  if(!m) return null;
-  let y = parseInt(m[1],10);
-  if(y > 2400) y -= 543;        // พ.ศ. -> ค.ศ.
-  return String(y);
-}
-const toBE = ce => (ce && /^\d{4}$/.test(String(ce))) ? String(Number(ce)+543) : ce;
-
-/* ========= Plugins: data label นอกแท่ง ========= */
-// 1) แนวตั้ง: label เหนือหัวแท่ง (อยู่นอกแท่ง) + กันตกขอบบน
-const labelOutsideTop = {
-  id: 'labelOutsideTop',
-  afterDatasetsDraw(chart) {
-    const {ctx, chartArea:{top, right}} = chart;
-    const meta = chart.getDatasetMeta(0);
-    const ds = chart.data.datasets[0];
-    if(!meta || !ds) return;
-
-    ctx.save();
-    // วาดได้ทั้ง canvas
-    ctx.beginPath(); ctx.rect(0,0,chart.width,chart.height); ctx.clip();
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillStyle = '#111827';
-
-    const OFFSET = 12; // ระยะ “1 ช่อง”
-    meta.data.forEach((bar, i)=>{
-      const v = Number(ds.data[i] ?? 0);
-      if(!isFinite(v) || v <= 0) return;
-      let x = bar.x;
-      let y = bar.y - OFFSET;                // วางนอกหัวแท่ง
-      if (y < top + 8) y = top + 8;          // กันชนขอบบน
-      if (x > right - 2) x = right - 2;      // กันหลุดขวา
-      ctx.fillText(String(v), x, y);
-    });
-    ctx.restore();
-  }
-};
-
-// 2) แนวนอน stacked: วาด “ผลรวมต่อแถว” นอกปลายแท่งรวมด้านขวา
-const stackedTotalRight = {
-  id: 'stackedTotalRight',
-  afterDatasetsDraw(chart) {
-    const {ctx, chartArea:{right}, scales:{x}} = chart;
-    const labels  = chart.data.labels || [];
-    const datasets= chart.data.datasets || [];
-    const totals  = labels.map((_, idx)=>
-      datasets.reduce((s, ds)=> s + (Number(ds.data[idx]||0) || 0), 0)
-    );
-
-    const meta0 = chart.getDatasetMeta(0);
-    if(!meta0) return;
-
-    ctx.save();
-    ctx.beginPath(); ctx.rect(0,0,chart.width,chart.height); ctx.clip();
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#111827';
-
-    const OFFSET = 12;
-    totals.forEach((tot, i)=>{
-      if(!isFinite(tot) || tot <= 0) return;
-      const yPix = meta0.data?.[i]?.y;
-      if(typeof yPix !== 'number') return;
-      let tx = x.getPixelForValue(tot) + OFFSET;  // นอกปลายแท่ง
-      if (tx > right - 2) tx = right - 2;         // กันหลุดขวา
-      ctx.fillText(String(tot), tx, yPix);
-    });
-    ctx.restore();
-  }
-};
-
-/* ========= 1) Publication รายปี (แท่งแนวตั้ง + label นอกแท่ง) ========= */
-(function(){
-  const outputs = Array.isArray(window.outputs) ? window.outputs : [];
-  const pubs = outputs.filter(o => isPublicationType(o.type));
-
-  const byYearCE = {};
-  pubs.forEach(o=>{
-    const y = normalizeYear(o.year) || 'ไม่ทราบปี';
-    byYearCE[y] = (byYearCE[y]||0)+1;
-  });
-
-  const knownCE = Object.keys(byYearCE).filter(y=>y!=='ไม่ทราบปี')
-                    .map(Number).sort((a,b)=>a-b).map(String);
-  const labelsCE = byYearCE['ไม่ทราบปี'] ? [...knownCE, 'ไม่ทราบปี'] : knownCE;
-  const labelsBE = labelsCE.map(ce => ce==='ไม่ทราบปี' ? ce : toBE(ce));
-  const data = labelsCE.map(ce => byYearCE[ce] || 0);
-
-  const el = document.getElementById('chartPublicationPerYear');
-  if(!el) return;
-  const prev = Chart.getChart(el); if (prev) prev.destroy();
-
-  // เพิ่ม headroom ให้ label นอกแท่งไม่ชนขอบ
-  const maxV = Math.max(0, ...data);
-  const suggestedMax = maxV > 0 ? Math.ceil(maxV * 1.2) : undefined;
-
-  new Chart(el, {
-    type: 'bar',
-    data: {
-      labels: labelsBE,
-      datasets: [{
-        label: 'Publications',
-        data,
-        backgroundColor: labelsBE.map((_, i) => `hsl(${(i*33)%360} 70% 60%)`),
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      layout: { padding: { top: 36 } },   // เว้นบนให้เห็นเลขชัด
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: (c)=>` ${c.raw} เรื่อง` } }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          grace: '20%',          // เผื่อหัวกราฟเพิ่ม
-          suggestedMax,          // บีบ headroom เพิ่มจากข้อมูลจริง
-          ticks: { precision: 0 },
-          title: { display: true, text: 'จำนวนเรื่อง' }
-        },
-        x: {
-          title: { display: true, text: 'ปี (พ.ศ.)' }
+        function isPublicationType(t = '') {
+            const s = String(t ?? '').toLowerCase();
+            return s.startsWith('ea101') || s.includes('research paper') ||
+                s.includes('journal article') || s.includes('publication') || s.includes('pub');
         }
-      }
-    },
-    plugins: [labelOutsideTop]
-  });
-})();
 
-/* ========= 2) Publications × Role ต่อบุคคล (แนวนอน stacked + label นอกแท่ง) ========= */
-(function(){
-  const outputs = Array.isArray(window.outputs) ? window.outputs : [];
+        function normalizeYear(raw) {
+            if (!raw) return null;
+            const m = String(raw).match(/(\d{4})/);
+            if (!m) return null;
+            let y = parseInt(m[1], 10);
+            if (y > 2400) y -= 543; // พ.ศ. -> ค.ศ.
+            return String(y);
+        }
+        const toBE = ce => (ce && /^\d{4}$/.test(String(ce))) ? String(Number(ce) + 543) : ce;
 
-  const authorRoleByYear = {};
-  const yearSetCE = new Set();
+        /* ========= Plugins: data label นอกแท่ง ========= */
+        // 1) แนวตั้ง: label เหนือหัวแท่ง (อยู่นอกแท่ง) + กันตกขอบบน
+        const labelOutsideTop = {
+            id: 'labelOutsideTop',
+            afterDatasetsDraw(chart) {
+                const {
+                    ctx,
+                    chartArea: {
+                        top,
+                        right
+                    }
+                } = chart;
+                const meta = chart.getDatasetMeta(0);
+                const ds = chart.data.datasets[0];
+                if (!meta || !ds) return;
 
-  outputs.filter(o => isPublicationType(o.type)).forEach(o=>{
-    const y = normalizeYear(o.year);
-    if(!y) return;
-    yearSetCE.add(y);
-    const authors = Array.isArray(o.authors) ? o.authors : [];
-    authorRoleByYear[y] = authorRoleByYear[y] || {};
-    authors.forEach(a=>{
-      const name = (a.name||'').trim();
-      const role = (a.role||'').toLowerCase().trim();
-      if(!name || !ROLES.includes(role)) return;
-      authorRoleByYear[y][name] = authorRoleByYear[y][name] || {first:0,co:0,corresponding:0};
-      authorRoleByYear[y][name][role] += 1;
-    });
-  });
+                ctx.save();
+                // วาดได้ทั้ง canvas
+                ctx.beginPath();
+                ctx.rect(0, 0, chart.width, chart.height);
+                ctx.clip();
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillStyle = '#111827';
 
-  const yearsCE = Array.from(yearSetCE).map(Number).sort((a,b)=>a-b).map(String);
-  const yearsBE = yearsCE.map(toBE);
-
-  // Controls
-  const selYear   = document.getElementById('yearFilter');
-  const btnPrev   = document.getElementById('btnPrevYear');
-  const btnNext   = document.getElementById('btnNextYear');
-  const inpSearch = document.getElementById('authorSearch');
-  const selTopN   = document.getElementById('topN');
-  let authorChart = null;
-
-  // เติมปี (value = CE, text = BE)
-  if(selYear){
-    yearsCE.forEach((yCE, idx)=>{
-      const opt = document.createElement('option');
-      opt.value = yCE;
-      opt.textContent = yearsBE[idx];
-      selYear.appendChild(opt);
-    });
-    if(yearsCE.length) selYear.value = yearsCE[yearsCE.length-1];
-  }
-
-  function render(yCE){
-    const target = authorRoleByYear[yCE] || {};
-    const term = String(inpSearch?.value || '').trim().toLowerCase();
-    const TOP_N = parseInt(selTopN?.value || '12', 10);
-
-    let rows = Object.entries(target).map(([name,roles])=>{
-      const total = (roles.first||0)+(roles.co||0)+(roles.corresponding||0);
-      return { name, ...roles, total };
-    });
-
-    if(term){ rows = rows.filter(r => r.name.toLowerCase().includes(term)); }
-    rows.sort((a,b)=>b.total - a.total);
-    const top = rows.slice(0, TOP_N);
-
-    const labels = top.map(r => r.name);
-    const datasets = [
-      { key:'first',        label:'First-author' },
-      { key:'co',           label:'Co-author' },
-      { key:'corresponding',label:'Corresponding' }
-    ].map((cfg,i)=>({
-      label: cfg.label,
-      data: top.map(r => r[cfg.key] || 0),
-      backgroundColor: `hsl(${(i*48)%360} 70% 60%)`,
-      stack:'roles',
-      borderWidth:1
-    }));
-
-    const el = document.getElementById('chartAuthorRolePerYear');
-    if(!el) return;
-    el.height = Math.max(320, labels.length * 30);
-
-    if(authorChart) authorChart.destroy();
-    authorChart = new Chart(el,{
-      type:'bar',
-      data:{ labels, datasets },
-      options:{
-        indexAxis:'y',
-        responsive:true,
-        layout: { padding: { right: 36 } },  // เผื่อขวาให้ label รวม
-        plugins:{
-          legend:{ position:'bottom' },
-          title:{ display:true, text:`ปี ${toBE(yCE)} (พ.ศ.)` },
-          tooltip:{
-            mode:'index', intersect:false,
-            callbacks:{
-              footer:(items)=>{
-                const sum = items.reduce((s,it)=>s+(it.parsed.x||0),0);
-                return 'รวมต่อคน: '+sum;
-              }
+                const OFFSET = 12; // ระยะ “1 ช่อง”
+                meta.data.forEach((bar, i) => {
+                    const v = Number(ds.data[i] ?? 0);
+                    if (!isFinite(v) || v <= 0) return;
+                    let x = bar.x;
+                    let y = bar.y - OFFSET; // วางนอกหัวแท่ง
+                    if (y < top + 8) y = top + 8; // กันชนขอบบน
+                    if (x > right - 2) x = right - 2; // กันหลุดขวา
+                    ctx.fillText(String(v), x, y);
+                });
+                ctx.restore();
             }
-          }
-        },
-        scales:{
-          x:{
-            beginAtZero:true,
-            grace: '15%',        // headroom ปลายแท่ง
-            ticks:{ precision:0 },
-            title:{ display:true, text:'จำนวนผลงาน (authorship entries)' }
-          },
-          y:{ stacked:true }
-        }
-      },
-      plugins:[stackedTotalRight]
-    });
-  }
+        };
 
-  // First draw + events
-  if(selYear && yearsCE.length){ render(selYear.value); }
-  selYear?.addEventListener('change', ()=> render(selYear.value));
-  selTopN?.addEventListener('change',  ()=> render(selYear.value));
-  inpSearch?.addEventListener('input', ()=> render(selYear.value));
-  btnPrev?.addEventListener('click', ()=>{
-    const i = yearsCE.indexOf(selYear.value);
-    if(i>0){ selYear.value = yearsCE[i-1]; render(selYear.value); }
-  });
-  btnNext?.addEventListener('click', ()=>{
-    const i = yearsCE.indexOf(selYear.value);
-    if(i<yearsCE.length-1){ selYear.value = yearsCE[i+1]; render(selYear.value); }
-  });
-})();
-</script>
+        // 2) แนวนอน stacked: วาด “ผลรวมต่อแถว” นอกปลายแท่งรวมด้านขวา
+        const stackedTotalRight = {
+            id: 'stackedTotalRight',
+            afterDatasetsDraw(chart) {
+                const {
+                    ctx,
+                    chartArea: {
+                        right
+                    },
+                    scales: {
+                        x
+                    }
+                } = chart;
+                const labels = chart.data.labels || [];
+                const datasets = chart.data.datasets || [];
+                const totals = labels.map((_, idx) =>
+                    datasets.reduce((s, ds) => s + (Number(ds.data[idx] || 0) || 0), 0)
+                );
 
+                const meta0 = chart.getDatasetMeta(0);
+                if (!meta0) return;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(0, 0, chart.width, chart.height);
+                ctx.clip();
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#111827';
+
+                const OFFSET = 12;
+                totals.forEach((tot, i) => {
+                    if (!isFinite(tot) || tot <= 0) return;
+                    const yPix = meta0.data?.[i]?.y;
+                    if (typeof yPix !== 'number') return;
+                    let tx = x.getPixelForValue(tot) + OFFSET; // นอกปลายแท่ง
+                    if (tx > right - 2) tx = right - 2; // กันหลุดขวา
+                    ctx.fillText(String(tot), tx, yPix);
+                });
+                ctx.restore();
+            }
+        };
+
+        /* ========= 1) Publication รายปี (แท่งแนวตั้ง + label นอกแท่ง) ========= */
+        (function() {
+            const outputs = Array.isArray(window.outputs) ? window.outputs : [];
+            const pubs = outputs.filter(o => isPublicationType(o.type));
+
+            const byYearCE = {};
+            pubs.forEach(o => {
+                const y = normalizeYear(o.year) || 'ไม่ทราบปี';
+                byYearCE[y] = (byYearCE[y] || 0) + 1;
+            });
+
+            const knownCE = Object.keys(byYearCE).filter(y => y !== 'ไม่ทราบปี')
+                .map(Number).sort((a, b) => a - b).map(String);
+            const labelsCE = byYearCE['ไม่ทราบปี'] ? [...knownCE, 'ไม่ทราบปี'] : knownCE;
+            const labelsBE = labelsCE.map(ce => ce === 'ไม่ทราบปี' ? ce : toBE(ce));
+            const data = labelsCE.map(ce => byYearCE[ce] || 0);
+
+            const el = document.getElementById('chartPublicationPerYear');
+            if (!el) return;
+            const prev = Chart.getChart(el);
+            if (prev) prev.destroy();
+
+            // เพิ่ม headroom ให้ label นอกแท่งไม่ชนขอบ
+            const maxV = Math.max(0, ...data);
+            const suggestedMax = maxV > 0 ? Math.ceil(maxV * 1.2) : undefined;
+
+            new Chart(el, {
+                type: 'bar',
+                data: {
+                    labels: labelsBE,
+                    datasets: [{
+                        label: 'Publications',
+                        data,
+                        backgroundColor: labelsBE.map((_, i) => `hsl(${(i*33)%360} 70% 60%)`),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    layout: {
+                        padding: {
+                            top: 36
+                        }
+                    }, // เว้นบนให้เห็นเลขชัด
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (c) => ` ${c.raw} เรื่อง`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grace: '20%', // เผื่อหัวกราฟเพิ่ม
+                            suggestedMax, // บีบ headroom เพิ่มจากข้อมูลจริง
+                            ticks: {
+                                precision: 0
+                            },
+                            title: {
+                                display: true,
+                                text: 'จำนวนเรื่อง'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'ปี (พ.ศ.)'
+                            }
+                        }
+                    }
+                },
+                plugins: [labelOutsideTop]
+            });
+        })();
+
+        /* ========= 2) Publications × Role ต่อบุคคล (แนวนอน stacked + label นอกแท่ง) ========= */
+        (function() {
+            const outputs = Array.isArray(window.outputs) ? window.outputs : [];
+
+            const authorRoleByYear = {};
+            const yearSetCE = new Set();
+
+            outputs.filter(o => isPublicationType(o.type)).forEach(o => {
+                const y = normalizeYear(o.year);
+                if (!y) return;
+                yearSetCE.add(y);
+                const authors = Array.isArray(o.authors) ? o.authors : [];
+                authorRoleByYear[y] = authorRoleByYear[y] || {};
+                authors.forEach(a => {
+                    const name = (a.name || '').trim();
+                    const role = (a.role || '').toLowerCase().trim();
+                    if (!name || !ROLES.includes(role)) return;
+                    authorRoleByYear[y][name] = authorRoleByYear[y][name] || {
+                        first: 0,
+                        co: 0,
+                        corresponding: 0
+                    };
+                    authorRoleByYear[y][name][role] += 1;
+                });
+            });
+
+            const yearsCE = Array.from(yearSetCE).map(Number).sort((a, b) => a - b).map(String);
+            const yearsBE = yearsCE.map(toBE);
+
+            // Controls
+            const selYear = document.getElementById('yearFilter');
+            const btnPrev = document.getElementById('btnPrevYear');
+            const btnNext = document.getElementById('btnNextYear');
+            const inpSearch = document.getElementById('authorSearch');
+            const selTopN = document.getElementById('topN');
+            let authorChart = null;
+
+            // เติมปี (value = CE, text = BE)
+            if (selYear) {
+                yearsCE.forEach((yCE, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = yCE;
+                    opt.textContent = yearsBE[idx];
+                    selYear.appendChild(opt);
+                });
+                if (yearsCE.length) selYear.value = yearsCE[yearsCE.length - 1];
+            }
+
+            function render(yCE) {
+                const target = authorRoleByYear[yCE] || {};
+                const term = String(inpSearch?.value || '').trim().toLowerCase();
+                const TOP_N = parseInt(selTopN?.value || '12', 10);
+
+                let rows = Object.entries(target).map(([name, roles]) => {
+                    const total = (roles.first || 0) + (roles.co || 0) + (roles.corresponding || 0);
+                    return {
+                        name,
+                        ...roles,
+                        total
+                    };
+                });
+
+                if (term) {
+                    rows = rows.filter(r => r.name.toLowerCase().includes(term));
+                }
+                rows.sort((a, b) => b.total - a.total);
+                const top = rows.slice(0, TOP_N);
+
+                const labels = top.map(r => r.name);
+                const datasets = [{
+                        key: 'first',
+                        label: 'First-author'
+                    },
+                    {
+                        key: 'co',
+                        label: 'Co-author'
+                    },
+                    {
+                        key: 'corresponding',
+                        label: 'Corresponding'
+                    }
+                ].map((cfg, i) => ({
+                    label: cfg.label,
+                    data: top.map(r => r[cfg.key] || 0),
+                    backgroundColor: `hsl(${(i*48)%360} 70% 60%)`,
+                    stack: 'roles',
+                    borderWidth: 1
+                }));
+
+                const el = document.getElementById('chartAuthorRolePerYear');
+                if (!el) return;
+                el.height = Math.max(320, labels.length * 30);
+
+                if (authorChart) authorChart.destroy();
+                authorChart = new Chart(el, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        layout: {
+                            padding: {
+                                right: 36
+                            }
+                        }, // เผื่อขวาให้ label รวม
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            title: {
+                                display: true,
+                                text: `ปี ${toBE(yCE)} (พ.ศ.)`
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    footer: (items) => {
+                                        const sum = items.reduce((s, it) => s + (it.parsed.x || 0), 0);
+                                        return 'รวมต่อคน: ' + sum;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grace: '15%', // headroom ปลายแท่ง
+                                ticks: {
+                                    precision: 0
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'จำนวนผลงาน (authorship entries)'
+                                }
+                            },
+                            y: {
+                                stacked: true
+                            }
+                        }
+                    },
+                    plugins: [stackedTotalRight]
+                });
+            }
+
+            // First draw + events
+            if (selYear && yearsCE.length) {
+                render(selYear.value);
+            }
+            selYear?.addEventListener('change', () => render(selYear.value));
+            selTopN?.addEventListener('change', () => render(selYear.value));
+            inpSearch?.addEventListener('input', () => render(selYear.value));
+            btnPrev?.addEventListener('click', () => {
+                const i = yearsCE.indexOf(selYear.value);
+                if (i > 0) {
+                    selYear.value = yearsCE[i - 1];
+                    render(selYear.value);
+                }
+            });
+            btnNext?.addEventListener('click', () => {
+                const i = yearsCE.indexOf(selYear.value);
+                if (i < yearsCE.length - 1) {
+                    selYear.value = yearsCE[i + 1];
+                    render(selYear.value);
+                }
+            });
+        })();
+    </script>
 @endsection

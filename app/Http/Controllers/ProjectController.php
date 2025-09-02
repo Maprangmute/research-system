@@ -198,8 +198,8 @@ public function index(Request $request)
     private function validateProject(Request $request): array
     {
         return $request->validate([
-            'project_name_th' => 'required|string|max:255',
-            'project_name_en' => 'nullable|string|max:255',
+            'project_name_th' => 'required|string',
+            'project_name_en' => 'nullable|string',
             'project_type' => 'required|string|max:255',
             'theme' => 'required|string|max:255',
             'shortcut_link' => 'nullable|string',

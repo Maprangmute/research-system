@@ -24,7 +24,6 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-gray-900">📊 รายการโครงการวิจัย</h2>
-                <p class="text-sm text-gray-500 mt-1">คลิกขวา (หรือกดค้างบนมือถือ) เพื่อเปิดเมนูด่วน</p>
             </div>
             <a href="{{ route('projects.create') }}"
                class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 shadow-sm hover:shadow transition">
