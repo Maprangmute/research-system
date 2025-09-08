@@ -8,14 +8,11 @@ use App\Models\FteRole;
 class FteRolePolicy
 {
     /**
-     * ทีมวิจัยแก้ได้: ถ้าเป็นเจ้าของระเบียน หรือเป็นแอดมิน
-     * - ปรับตามโครงจริงของคุณ:
-     *   - ถ้ามีคอลัมน์ user_id ใช้เทียบกับ $user->id
-     *   - ถ้าไม่มี ให้เทียบชื่อเต็มแทน (prefix + name)
+     * ทีมวิจัยแก้ได้: ถ้าเป็นเจ้าของระเบียน หรือเป็น admin/user_all
      */
     public function updateResearch(User $user, FteRole $fteRole): bool
     {
-        if ($this->isAdmin($user)) return true;
+        if ($this->isAdminLike($user)) return true;
 
         if (isset($fteRole->user_id)) {
             return (int)$fteRole->user_id === (int)$user->id;
@@ -26,24 +23,18 @@ class FteRolePolicy
     }
 
     /**
-     * ผู้บริหาร = admin เท่านั้น
+     * ผู้บริหาร = admin หรือ user_all
      */
     public function updateManagement(User $user, FteRole $fteRole): bool
     {
-        return $this->isAdmin($user);
+        return $this->isAdminLike($user);
     }
 
-    private function isAdmin(User $user): bool
+    /**
+     * ✅ helper เช็กสิทธิ์แบบ admin
+     */
+    private function isAdminLike(User $user): bool
     {
-        // ปรับตามระบบของคุณ:
-        // - ถ้ามี is_admin (boolean)
-        if (property_exists($user, 'is_admin') || isset($user->is_admin)) {
-            return (bool)$user->is_admin;
-        }
-        // - หรือถ้ามี role = 'admin'
-        if (property_exists($user, 'role') || isset($user->role)) {
-            return $user->role === 'admin';
-        }
-        return false;
+        return $user->role === 'admin' || $user->role === 'user_all';
     }
 }

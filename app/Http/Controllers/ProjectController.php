@@ -17,39 +17,47 @@ class ProjectController extends Controller
 {
 
 
-public function index(Request $request)
-{
-    $query = Project::query();
+    public function index(Request $request)
+    {
+        $query = Project::query();
+        $user = auth()->user();
 
-    if (Auth::user()->role !== 'admin') {
-        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
-        $query->where(function ($q) use ($fullName) {
-            $q->where('user_id', Auth::id())
-              ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
-                  $subQ->where('name', $fullName);
-              });
-        });
+        if ($user->role === 'admin' || $user->role === 'user_all') {
+            // ✅ admin และ user_all เห็นทุกโปรเจค
+        } else {
+            // ✅ user ปกติ เห็นเฉพาะที่เกี่ยวข้อง
+            $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
+            $query->where(function ($q) use ($fullName, $user) {
+                $q->where('user_id', $user->id)
+                    ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
+                        $subQ->where('name', $fullName);
+                    });
+            });
+        }
+
+        // filter
+        if ($request->filled('year')) {
+            $query->where('start_year', $request->year);
+        }
+        if ($request->filled('type')) {
+            $query->where('project_type', 'like', '%' . $request->type . '%');
+        }
+        if ($request->filled('search')) {
+            $query->where('project_name_th', 'like', '%' . $request->search . '%');
+        }
+
+        // sort
+        $sortable = ['id', 'project_code', 'project_name_th', 'project_type', 'funding_type', 'theme', 'start_year', 'updated_at', 'created_at'];
+        $sort = in_array($request->get('sort'), $sortable, true) ? $request->get('sort') : 'id';
+        $dir  = $request->get('dir') === 'asc' ? 'asc' : 'desc';
+
+        $projects = $query->orderBy($sort, $dir)
+            ->paginate(10)
+            ->appends($request->query());
+
+        return view('projects.index', compact('projects'));
     }
 
-    if ($request->filled('year')) {
-        $query->where('start_year', $request->year);
-    }
-    if ($request->filled('type')) {
-        $query->where('project_type', 'like', '%' . $request->type . '%');
-    }
-    if ($request->filled('search')) {
-        $query->where('project_name_th', 'like', '%' . $request->search . '%');
-    }
-
-    // ✅ เพิ่ม funding_type เข้า sortable
-    $sortable = ['id','project_code','project_name_th','project_type','funding_type','theme','start_year','updated_at','created_at'];
-    $sort = in_array($request->get('sort'), $sortable, true) ? $request->get('sort') : 'id';
-    $dir  = $request->get('dir') === 'asc' ? 'asc' : 'desc';
-
-    $projects = $query->orderBy($sort, $dir)->paginate(10)->appends($request->query());
-
-    return view('projects.index', compact('projects'));
-}
 
 
     public function create()
@@ -58,35 +66,35 @@ public function index(Request $request)
     }
 
     public function store(Request $request)
-{
-    $validated = $this->validateProject($request);
+    {
+        $validated = $this->validateProject($request);
 
-    $lastProject = Project::orderByDesc('id')->first();
-    $nextNumber = $lastProject && $lastProject->project_code
-        ? ((int) filter_var($lastProject->project_code, FILTER_SANITIZE_NUMBER_INT)) + 1
-        : 1;
+        $lastProject = Project::orderByDesc('id')->first();
+        $nextNumber = $lastProject && $lastProject->project_code
+            ? ((int) filter_var($lastProject->project_code, FILTER_SANITIZE_NUMBER_INT)) + 1
+            : 1;
 
-    $validated['project_code'] = 'SP_' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-    $validated['user_id']      = Auth::id();
+        $validated['project_code'] = 'SP_' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        $validated['user_id']      = Auth::id();
 
-    $project = new Project($validated);
-    $this->fillStrategies($request, $project);
+        $project = new Project($validated);
+        $this->fillStrategies($request, $project);
 
-    // ✅ กำกับตรง: ครั้งแรกให้ updated_by = ผู้สร้าง
-    $project->updated_by = Auth::id();
-    $project->save();
+        // ✅ กำกับตรง: ครั้งแรกให้ updated_by = ผู้สร้าง
+        $project->updated_by = Auth::id();
+        $project->save();
 
-    $this->validateOutputs($request);
+        $this->validateOutputs($request);
 
-    $this->syncFTERoles($request, $project);
-    $this->syncOutputs($request, $project);
-    $this->syncCopis($request, $project);
-    $this->syncIrbs($request, $project);
-    $this->syncCoResearch($request, $project);
+        $this->syncFTERoles($request, $project);
+        $this->syncOutputs($request, $project);
+        $this->syncCopis($request, $project);
+        $this->syncIrbs($request, $project);
+        $this->syncCoResearch($request, $project);
 
-    return redirect()->route('projects.show', $project->id)
-        ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
-}
+        return redirect()->route('projects.show', $project->id)
+            ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+    }
 
 
     public function edit($id)
@@ -125,8 +133,63 @@ public function index(Request $request)
     }
 
     public function show(Project $project)
+    {
+        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $hasPermission = Auth::user()->role === 'admin'
+            || Auth::id() === $project->user_id
+            || $project->fteRoles->contains('name', $fullName);
+
+        if (!$hasPermission) {
+            abort(403);
+        }
+
+        $project->load([
+            'copis',
+            'irbs',
+            'fteRoles',
+            'outputs.authors',
+            'outputs.conferences',
+            'updatedBy',
+            'createdBy',   // ✅ เพิ่มตรงนี้
+        ]);
+
+        return view('projects.detail', compact('project'));
+    }
+
+
+    public function update(Request $request, Project $project)
+    {
+        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $hasPermission = Auth::user()->role === 'admin'
+            || Auth::id() === $project->user_id
+            || $project->fteRoles->contains('name', $fullName);
+
+        if (!$hasPermission) abort(403);
+
+        $validated = $this->validateProject($request);
+        $this->validateOutputs($request);
+
+        $project->fill($validated);
+        $this->fillStrategies($request, $project);
+
+        // ✅ กำกับตรงทุกครั้งที่มีการแก้ไข
+        $project->updated_by = Auth::id();
+        $project->save();
+
+        $this->syncFTERoles($request, $project);
+        $this->syncOutputs($request, $project);
+        $this->syncCopis($request, $project);
+        $this->syncIrbs($request, $project);
+        $this->syncCoResearch($request, $project);
+
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
+    }
+
+    public function destroy(Project $project)
 {
     $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+
     $hasPermission = Auth::user()->role === 'admin'
         || Auth::id() === $project->user_id
         || $project->fteRoles->contains('name', $fullName);
@@ -135,48 +198,19 @@ public function index(Request $request)
         abort(403);
     }
 
-    $project->load([
-        'copis',
-        'irbs',
-        'fteRoles',
-        'outputs.authors',
-        'outputs.conferences',
-        'updatedBy',
-        'createdBy',   // ✅ เพิ่มตรงนี้
-    ]);
+    // ลบความสัมพันธ์ที่เกี่ยวข้องก่อน (ถ้ามี foreign key)
+    $project->fteRoles()->delete();
+    $project->outputs()->delete();
+    $project->copis()->delete();
+    $project->irbs()->delete();
+    $project->coResearches()->delete();
 
-    return view('projects.detail', compact('project'));
+    // แล้วค่อยลบตัวโปรเจค
+    $project->delete();
+
+    return redirect()->route('projects.index')->with('success', 'ลบโครงการเรียบร้อยแล้ว');
 }
 
-
-   public function update(Request $request, Project $project)
-{
-    $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
-    $hasPermission = Auth::user()->role === 'admin'
-        || Auth::id() === $project->user_id
-        || $project->fteRoles->contains('name', $fullName);
-
-    if (!$hasPermission) abort(403);
-
-    $validated = $this->validateProject($request);
-    $this->validateOutputs($request);
-
-    $project->fill($validated);
-    $this->fillStrategies($request, $project);
-
-    // ✅ กำกับตรงทุกครั้งที่มีการแก้ไข
-    $project->updated_by = Auth::id();
-    $project->save();
-
-    $this->syncFTERoles($request, $project);
-    $this->syncOutputs($request, $project);
-    $this->syncCopis($request, $project);
-    $this->syncIrbs($request, $project);
-    $this->syncCoResearch($request, $project);
-
-    return redirect()->route('projects.show', $project)
-        ->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
-}
 
 
     public function exportPdf(Project $project)
@@ -377,92 +411,92 @@ public function index(Request $request)
     }
 
     private function syncOutputAuthors(Output $output, ?array $authors, bool $isEA101): void
-{
-    if (!$isEA101) {
-        $output->authors()->delete();
-        return;
-    }
-
-    $authors = $authors ?? []; // ป้องกัน null
-
-    if (!$authors) {
-        $output->authors()->delete();
-        return;
-    }
-
-    $ids = [];
-    foreach ($authors as $author) {
-        if (empty($author['name']) || empty($author['role'])) {
-            continue;
+    {
+        if (!$isEA101) {
+            $output->authors()->delete();
+            return;
         }
 
-        $payload = [
-            'role' => strtolower(trim($author['role'])),
-            'name' => trim($author['name']),
-        ];
+        $authors = $authors ?? []; // ป้องกัน null
 
-        if (!empty($author['id'])) {
-            $model = $output->authors()->find($author['id']);
-            if ($model) {
-                $model->update($payload);
-                $ids[] = $model->id;
+        if (!$authors) {
+            $output->authors()->delete();
+            return;
+        }
+
+        $ids = [];
+        foreach ($authors as $author) {
+            if (empty($author['name']) || empty($author['role'])) {
+                continue;
             }
-        } else {
-            $new = $output->authors()->create($payload);
-            $ids[] = $new->id;
+
+            $payload = [
+                'role' => strtolower(trim($author['role'])),
+                'name' => trim($author['name']),
+            ];
+
+            if (!empty($author['id'])) {
+                $model = $output->authors()->find($author['id']);
+                if ($model) {
+                    $model->update($payload);
+                    $ids[] = $model->id;
+                }
+            } else {
+                $new = $output->authors()->create($payload);
+                $ids[] = $new->id;
+            }
+        }
+
+        if ($ids) {
+            $output->authors()->whereNotIn('id', $ids)->delete();
         }
     }
-
-    if ($ids) {
-        $output->authors()->whereNotIn('id', $ids)->delete();
-    }
-}
     private function syncOutputConferences(Output $output, ?array $confs, bool $isEA103): void
-{
-    if (!$isEA103) {
-        $output->conferences()->delete();
-        return;
-    }
-    if ($confs === null) {
-        // ไม่ได้แตะ conferences -> ไม่ทำอะไร
-        return;
-    }
-
-    $ids = [];
-    foreach ($confs as $conf) {
-        $payload = [
-            'name'              => $conf['name'] ?? null,
-            'presentation_type' => $conf['presentation_type'] ?? null,
-            'location'          => $conf['location'] ?? null,
-            'note'              => $conf['note'] ?? null,
-        ];
-
-        // ว่างหมดก็ข้าม
-        if (
-            empty($payload['name']) &&
-            empty($payload['presentation_type']) &&
-            empty($payload['location']) &&
-            empty($payload['note'])
-        ) {
-            continue;
+    {
+        if (!$isEA103) {
+            $output->conferences()->delete();
+            return;
+        }
+        if ($confs === null) {
+            // ไม่ได้แตะ conferences -> ไม่ทำอะไร
+            return;
         }
 
-        if (!empty($conf['id'])) {
-            $m = $output->conferences()->whereKey($conf['id'])->first();
-            if ($m) {
-                $m->update($payload);
-                $ids[] = $m->id;
+        $ids = [];
+        foreach ($confs as $conf) {
+            $payload = [
+                'name'              => $conf['name'] ?? null,
+                'presentation_type' => $conf['presentation_type'] ?? null,
+                'location'          => $conf['location'] ?? null,
+                'note'              => $conf['note'] ?? null,
+            ];
+
+            // ว่างหมดก็ข้าม
+            if (
+                empty($payload['name']) &&
+                empty($payload['presentation_type']) &&
+                empty($payload['location']) &&
+                empty($payload['note'])
+            ) {
+                continue;
             }
-        } else {
-            $new = $output->conferences()->create($payload);
-            $ids[] = $new->id;
+
+            if (!empty($conf['id'])) {
+                $m = $output->conferences()->whereKey($conf['id'])->first();
+                if ($m) {
+                    $m->update($payload);
+                    $ids[] = $m->id;
+                }
+            } else {
+                $new = $output->conferences()->create($payload);
+                $ids[] = $new->id;
+            }
+        }
+
+        if (!empty($ids)) {
+            $output->conferences()->whereNotIn('id', $ids)->delete();
         }
     }
-
-    if (!empty($ids)) {
-        $output->conferences()->whereNotIn('id', $ids)->delete();
-    }
-}
 
 
 

@@ -22,7 +22,10 @@ class UserController extends Controller
 
     public function updateRole(Request $request, User $user)
     {
-        $request->validate(['role' => 'required|in:user,admin']);
+        $request->validate([
+            'role' => 'required|in:user,admin,user_all', // ✅ เพิ่ม user_all
+        ]);
+
         $user->role = $request->role;
         $user->save();
 
@@ -37,11 +40,11 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'prefix' => 'nullable|string|max:50',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
+            'prefix'   => 'nullable|string|max:50',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users',
             'position' => 'nullable|string|max:255',
-            'role' => 'required|in:user,admin',
+            'role'     => 'required|in:user,admin,user_all', // ✅ เพิ่ม user_all
             'password' => 'required|string|min:4|confirmed',
             'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
@@ -67,12 +70,12 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         $validated = $request->validate([
-            'prefix' => 'required|string|max:50',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'prefix'   => 'required|string|max:50',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email,' . $user->id,
             'position' => 'nullable|string|max:255',
-            'role' => 'required|in:user,admin',
-            'avatar' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'role'     => 'required|in:user,admin,user_all', // ✅ เพิ่ม user_all
+            'avatar'   => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         if ($request->hasFile('avatar')) {

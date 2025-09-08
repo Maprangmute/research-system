@@ -50,7 +50,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาไทย)</span>
-                    <input name="project_name_th" type="text"  class="w-full border p-2 rounded">
+                    <input name="project_name_th" type="text" class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (English)</span>
@@ -134,8 +134,8 @@
                     {{-- <select name="size" required class="w-full border p-2 rounded"> --}}
                     <select name="size" class="w-full border p-2 rounded">
                         <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
-                        <option value="S">S  (ภายนอก ต่ำกว่า 1 ล้าน / ภายใน)</option>
-                        <option value="M">M (ภายนอก 1-3 ล้าน  / ภายใน / Cohort Study (Perioperative, SEAPOD))</option>
+                        <option value="S">S (ภายนอก ต่ำกว่า 1 ล้าน / ภายใน)</option>
+                        <option value="M">M (ภายนอก 1-3 ล้าน / ภายใน / Cohort Study (Perioperative, SEAPOD))</option>
                         <option value="L">L (ภายนอก 3-5 ล้าน / ภายใน / Cohort Study (GSC, PCU, DM))</option>
                         <option value="XL">XL (ภายนอก มากกว่า 5 ล้าน) </option>
                         <option value="FTE Hours">FTE คิดแบบรายชั่วโมง </option>
@@ -605,15 +605,17 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <label class="w-full">
                                         <span class="block text-sm font-semibold text-gray-700 mb-1">1. ชื่อ-นามสกุล</span>
-                                        <select name="fte_roles[0][name]"
-                                            class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
-                                            <option value="" disabled selected>เลือกผู้รับผิดชอบ</option>
+                                        <input list="fteUsers" name="fte_roles[0][name]"
+                                            class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
+                                            placeholder="พิมพ์หรือเลือกชื่อ" required>
+                                        <datalist id="fteUsers">
                                             @foreach ($allUsers as $user)
-                                                @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-                                                <option value="{{ $fullName }}">{{ $fullName }}</option>
+                                                @php $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')); @endphp
+                                                <option value="{{ $fullName }}"></option>
                                             @endforeach
-                                        </select>
+                                        </datalist>
                                     </label>
+
                                     <label class="w-full">
                                         <span class="block text-sm font-semibold text-gray-700 mb-1">กลุ่ม</span>
                                         <select name="fte_roles[0][role_group]"
@@ -1072,10 +1074,11 @@
 
         let fteIndex = 1;
 
+        // จาก PHP: list รายชื่อผู้ใช้
         const userOptions = @json(
             \App\Models\User::orderBy('name')->get()->map(function ($u) {
                     return [
-                        'fullName' => trim($u->prefix . ' ' . $u->name),
+                        'fullName' => trim(($u->prefix ?? '') . ' ' . ($u->name ?? '')),
                     ];
                 }));
 
@@ -1090,19 +1093,44 @@
             'เจ้าหน้าที่บริหารงานทั่วไป',
         ];
 
+        // ---------- สร้าง datalist กลางครั้งเดียว ----------
+        const FTE_DATALIST_ID = 'fteUsers';
+
+        function ensureFteDatalist() {
+            if (document.getElementById(FTE_DATALIST_ID)) return;
+
+            const dl = document.createElement('datalist');
+            dl.id = FTE_DATALIST_ID;
+
+            // <option value="ชื่อเต็ม">  (ไม่ต้องมี innerText)
+            dl.innerHTML = userOptions
+                .map(u => `<option value="${escapeHtml(u.fullName)}">`)
+                .join('');
+
+            // ใส่ไว้ท้าย body ก็ได้ หรือในฟอร์มที่เกี่ยวข้อง
+            document.body.appendChild(dl);
+        }
+
+        // utility กัน XSS เวลา build HTML จาก data
+        function escapeHtml(s = '') {
+            return String(s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // ---------- เพิ่มแถว FTE ----------
         function addFTERow() {
+            ensureFteDatalist(); // ให้แน่ใจว่ามี datalist ให้ใช้
+
             const id = `fte-${fteIndex}`;
 
-            const userDropdown = userOptions.map(u =>
-                `<option value="${u.fullName}">${u.fullName}</option>`
-            ).join('');
-
             const groupDropdown = roleGroups.map(g =>
-                `<option value="${g}">${g}</option>`
+                `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`
             ).join('');
 
             const jobDropdown = jobDetails.map(j =>
-                `<option value="${j}">${j}</option>`
+                `<option value="${escapeHtml(j)}">${escapeHtml(j)}</option>`
             ).join('');
 
             document.getElementById('fte-container').insertAdjacentHTML('beforeend', `
@@ -1115,10 +1143,12 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label class="w-full">
             <span class="fte-index block text-sm font-semibold text-gray-700 mb-1">${fteIndex + 1}. ชื่อ-นามสกุล</span>
-            <select name="fte_roles[${fteIndex}][name]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
-              <option value="" disabled selected>เลือกผู้รับผิดชอบ</option>
-              ${userDropdown}
-            </select>
+            <!-- เปลี่ยนเป็น input + datalist -->
+            <input list="${FTE_DATALIST_ID}"
+                   name="fte_roles[${fteIndex}][name]"
+                   class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
+                   placeholder="พิมพ์หรือเลือกชื่อ"
+                   required>
           </label>
           <label class="w-full">
             <span class="block text-sm font-semibold text-gray-700 mb-1">กลุ่ม</span>
@@ -1184,7 +1214,6 @@
 
       <!-- ขวา: FTE ทั้งสอง -->
       <div class="md:col-span-3 space-y-4">
-        <!-- FTE ผู้วิจัย -->
         <label class="block p-4 border rounded-xl bg-blue-50">
           <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
           <input name="fte_roles[${fteIndex}][fte_value]" type="number" step="0.01" min="0" max="1"
@@ -1192,7 +1221,6 @@
             placeholder="0.00" required>
         </label>
 
-        <!-- FTE ผู้บริหาร -->
         <label class="block p-4 border rounded-xl bg-emerald-50">
           <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
           <input name="fte_roles[${fteIndex}][fte_value_research]" type="number" step="0.01" min="0" max="1"
@@ -1200,7 +1228,6 @@
             placeholder="0.00">
         </label>
 
-        <!-- ปุ่มลบ -->
         <button type="button" onclick="removeRow('${id}', 'fte')"
           class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
           ✕ ลบผู้มีส่วนร่วมนี้
@@ -1208,8 +1235,7 @@
       </div>
     </div>
   </div>
-`);
-
+  `);
 
             fteIndex++;
             reindexFTE();
@@ -1217,28 +1243,28 @@
         }
 
         // ============== Output (Create) ==============
-    /** ======= Output dynamic ======= */
-let outputIndex = 1;
+        /** ======= Output dynamic ======= */
+        let outputIndex = 1;
 
-document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('output-container');
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('output-container');
 
-  // delegate change
-  container.addEventListener('change', (e) => {
-    if (e.target && e.target.classList.contains('output-type')) {
-      handleTypeChange(e.target);
-    }
-  });
+            // delegate change
+            container.addEventListener('change', (e) => {
+                if (e.target && e.target.classList.contains('output-type')) {
+                    handleTypeChange(e.target);
+                }
+            });
 
-  // init datepicker ถ้ามี
-  if (typeof initThaiDatepickers === 'function') {
-    initThaiDatepickers();
-  }
-});
+            // init datepicker ถ้ามี
+            if (typeof initThaiDatepickers === 'function') {
+                initThaiDatepickers();
+            }
+        });
 
-function addOutputRow() {
-  const id = `output-${outputIndex}`;
-  document.getElementById('output-container').insertAdjacentHTML('beforeend', `
+        function addOutputRow() {
+            const id = `output-${outputIndex}`;
+            document.getElementById('output-container').insertAdjacentHTML('beforeend', `
     <div id="${id}" class="output-row space-y-2" data-index="${outputIndex}">
       <label class="block w-full">
         <span class="block text-sm text-gray-700 mb-1">
@@ -1294,34 +1320,34 @@ function addOutputRow() {
     </div>
   `);
 
-  outputIndex++;
-  reindexOutput();
-  if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
-}
+            outputIndex++;
+            reindexOutput();
+            if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
+        }
 
-function handleTypeChange(selectEl) {
-  const row = selectEl.closest('.output-row');
-  const mount = row.querySelector('.special-mount');
-  if (!row || !mount) return;
+        function handleTypeChange(selectEl) {
+            const row = selectEl.closest('.output-row');
+            const mount = row.querySelector('.special-mount');
+            if (!row || !mount) return;
 
-  // เคลียร์ของเดิม (EA101/EA103)
-  mount.innerHTML = '';
+            // เคลียร์ของเดิม (EA101/EA103)
+            mount.innerHTML = '';
 
-  const idx = parseInt(row.getAttribute('data-index') || '0', 10);
-  const val = selectEl.value || '';
+            const idx = parseInt(row.getAttribute('data-index') || '0', 10);
+            const val = selectEl.value || '';
 
-  if (val.startsWith('EA101')) {
-    mount.appendChild(renderEA101Section(idx));
-  } else if (val.startsWith('EA103')) {
-    mount.appendChild(renderEA103Section(idx));
-  }
-}
+            if (val.startsWith('EA101')) {
+                mount.appendChild(renderEA101Section(idx));
+            } else if (val.startsWith('EA103')) {
+                mount.appendChild(renderEA103Section(idx));
+            }
+        }
 
-/** ===== EA101 Section (Authors) ===== */
-function renderEA101Section(idx) {
-  const wrap = document.createElement('div');
-  wrap.className = 'ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50';
-  wrap.innerHTML = `
+        /** ===== EA101 Section (Authors) ===== */
+        function renderEA101Section(idx) {
+            const wrap = document.createElement('div');
+            wrap.className = 'ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50';
+            wrap.innerHTML = `
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <label class="w-full">
         <span class="block text-sm text-gray-700 mb-1">Journal</span>
@@ -1352,29 +1378,29 @@ function renderEA101Section(idx) {
     </div>
   `;
 
-  const authorsWrap = wrap.querySelector('.authors-container');
-  authorsWrap.appendChild(buildAuthorRow(idx, 0));
+            const authorsWrap = wrap.querySelector('.authors-container');
+            authorsWrap.appendChild(buildAuthorRow(idx, 0));
 
-  return wrap;
-}
+            return wrap;
+        }
 
-function addAuthorRow(btnEl) {
-  const section = btnEl.closest('.ea101-section');
-  const outputRow = btnEl.closest('.output-row');
-  const idx = parseInt(outputRow.getAttribute('data-index') || '0', 10);
+        function addAuthorRow(btnEl) {
+            const section = btnEl.closest('.ea101-section');
+            const outputRow = btnEl.closest('.output-row');
+            const idx = parseInt(outputRow.getAttribute('data-index') || '0', 10);
 
-  const authorsWrap = section.querySelector('.authors-container');
-  let aIdx = parseInt(authorsWrap.getAttribute('data-auth-index') || '0', 10);
-  aIdx += 1;
-  authorsWrap.setAttribute('data-auth-index', aIdx);
+            const authorsWrap = section.querySelector('.authors-container');
+            let aIdx = parseInt(authorsWrap.getAttribute('data-auth-index') || '0', 10);
+            aIdx += 1;
+            authorsWrap.setAttribute('data-auth-index', aIdx);
 
-  authorsWrap.appendChild(buildAuthorRow(idx, aIdx));
-}
+            authorsWrap.appendChild(buildAuthorRow(idx, aIdx));
+        }
 
-function buildAuthorRow(outputIdx, authorIdx) {
-  const row = document.createElement('div');
-  row.className = 'author-row grid grid-cols-1 md:grid-cols-3 gap-3';
-  row.innerHTML = `
+        function buildAuthorRow(outputIdx, authorIdx) {
+            const row = document.createElement('div');
+            row.className = 'author-row grid grid-cols-1 md:grid-cols-3 gap-3';
+            row.innerHTML = `
     <label class="w-full">
       <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน (Role)</span>
       <select name="outputs[${outputIdx}][authors][${authorIdx}][role]" class="w-full border p-2 rounded" required>
@@ -1396,19 +1422,19 @@ function buildAuthorRow(outputIdx, authorIdx) {
       <button type="button" class="px-3 py-2 rounded border text-red-600 border-red-300" onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
     </div>
   `;
-  return row;
-}
+            return row;
+        }
 
-function removeAuthorRow(btnEl) {
-  const row = btnEl.closest('.author-row');
-  if (row) row.remove();
-}
+        function removeAuthorRow(btnEl) {
+            const row = btnEl.closest('.author-row');
+            if (row) row.remove();
+        }
 
-/** ===== EA103 Section (Conferences) ===== */
-function renderEA103Section(idx) {
-  const wrap = document.createElement('div');
-  wrap.className = 'ea103-section space-y-3 border rounded-xl p-4 bg-amber-50/60';
-  wrap.innerHTML = `
+        /** ===== EA103 Section (Conferences) ===== */
+        function renderEA103Section(idx) {
+            const wrap = document.createElement('div');
+            wrap.className = 'ea103-section space-y-3 border rounded-xl p-4 bg-amber-50/60';
+            wrap.innerHTML = `
     <div class="flex items-center justify-between">
       <span class="font-semibold text-amber-800">Conferences</span>
       <button type="button" class="px-3 py-1 rounded bg-amber-600 text-white" onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
@@ -1430,29 +1456,29 @@ function renderEA103Section(idx) {
     </div>
   `;
 
-  const tbody = wrap.querySelector('.conference-tbody');
-  tbody.appendChild(buildConferenceRow(idx, 0));
+            const tbody = wrap.querySelector('.conference-tbody');
+            tbody.appendChild(buildConferenceRow(idx, 0));
 
-  return wrap;
-}
+            return wrap;
+        }
 
-function addConferenceRow(btnEl) {
-  const section = btnEl.closest('.ea103-section');
-  const outputRow = btnEl.closest('.output-row');
-  const idx = parseInt(outputRow.getAttribute('data-index') || '0', 10);
+        function addConferenceRow(btnEl) {
+            const section = btnEl.closest('.ea103-section');
+            const outputRow = btnEl.closest('.output-row');
+            const idx = parseInt(outputRow.getAttribute('data-index') || '0', 10);
 
-  const tbody = section.querySelector('.conference-tbody');
-  let cIdx = parseInt(tbody.getAttribute('data-conf-index') || '0', 10);
-  cIdx += 1;
-  tbody.setAttribute('data-conf-index', cIdx);
+            const tbody = section.querySelector('.conference-tbody');
+            let cIdx = parseInt(tbody.getAttribute('data-conf-index') || '0', 10);
+            cIdx += 1;
+            tbody.setAttribute('data-conf-index', cIdx);
 
-  tbody.appendChild(buildConferenceRow(idx, cIdx));
-}
+            tbody.appendChild(buildConferenceRow(idx, cIdx));
+        }
 
-function buildConferenceRow(outputIdx, cIdx) {
-  const tr = document.createElement('tr');
-  tr.className = 'border-t conference-row';
-  tr.innerHTML = `
+        function buildConferenceRow(outputIdx, cIdx) {
+            const tr = document.createElement('tr');
+            tr.className = 'border-t conference-row';
+            tr.innerHTML = `
     <td class="px-2 py-2">
       <input name="outputs[${outputIdx}][conferences][${cIdx}][name]" class="w-56 border p-2 rounded" placeholder="เช่น PMAC 2025">
     </td>
@@ -1475,31 +1501,32 @@ function buildConferenceRow(outputIdx, cIdx) {
       <button type="button" class="px-2 py-1 text-red-600 border border-red-300 rounded" onclick="removeConferenceRow(this)">ลบ</button>
     </td>
   `;
-  return tr;
-}
+            return tr;
+        }
 
-function removeConferenceRow(btn) {
-  const tr = btn.closest('tr.conference-row');
-  if (tr) tr.remove();
-}
+        function removeConferenceRow(btn) {
+            const tr = btn.closest('tr.conference-row');
+            if (tr) tr.remove();
+        }
 
-/** ===== util reindex ===== */
-function reindexOutput() {
-  const rows = document.querySelectorAll('#output-container .output-row');
-  rows.forEach((row, i) => {
-    row.id = `output-${i}`;
-    row.setAttribute('data-index', i);
-    const idxEl = row.querySelector('.output-index');
-    if (idxEl) idxEl.textContent = i + 1;
+        /** ===== util reindex ===== */
+        function reindexOutput() {
+            const rows = document.querySelectorAll('#output-container .output-row');
+            rows.forEach((row, i) => {
+                row.id = `output-${i}`;
+                row.setAttribute('data-index', i);
+                const idxEl = row.querySelector('.output-index');
+                if (idxEl) idxEl.textContent = i + 1;
 
-    row.querySelectorAll('input[name^="outputs["], select[name^="outputs["], textarea[name^="outputs["]')
-      .forEach(el => {
-        const old = el.getAttribute('name');
-        if (!old) return;
-        el.setAttribute('name', old.replace(/^outputs\[\d+\]/, `outputs[${i}]`));
-      });
-  });
-}
+                row.querySelectorAll(
+                        'input[name^="outputs["], select[name^="outputs["], textarea[name^="outputs["]')
+                    .forEach(el => {
+                        const old = el.getAttribute('name');
+                        if (!old) return;
+                        el.setAttribute('name', old.replace(/^outputs\[\d+\]/, `outputs[${i}]`));
+                    });
+            });
+        }
 
         let copiIndex = 1;
 

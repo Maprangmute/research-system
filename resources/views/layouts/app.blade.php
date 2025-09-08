@@ -31,7 +31,7 @@
     <!-- ✅ เปลี่ยนจาก max-w-7xl เป็น container -->
     <nav class="bg-white shadow">
         <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="font-bold">🧠 Research Dashboard</div>
+            <div class="font-bold">Research Dashboard</div>
 
             <div class="flex items-center gap-4">
                 <a href="/dashboard" class="text-blue-600 hover:underline">📊 Dashboard</a>

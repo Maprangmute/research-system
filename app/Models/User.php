@@ -69,4 +69,21 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+        /**
+     * ตรวจสอบว่า user มี role ตามที่กำหนดหรือไม่
+     */
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    /**
+     * ตรวจสอบว่า user มีสิทธิ์แบบ admin หรือไม่
+     * (รวมทั้ง role = 'admin' และ 'user_all')
+     */
+    public function isAdminLike(): bool
+    {
+        return $this->role === 'admin' || $this->role === 'user_all';
+    }
 }
