@@ -179,7 +179,7 @@
 
         <!-- 4) Co-Research (จาก COPIs) Summary -->
         <div class="bg-white shadow-sm border rounded-xl p-4 mb-6">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 รายชื่อผู้ร่วมวิจัย</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 รายชื่อผู้วิจัยร่วม CO-PI</h3>
 
             @php
                 // รวมตาม "ชื่อ|หน่วยงาน" เพื่อกันกรณีชื่อซ้ำคนละสังกัด
