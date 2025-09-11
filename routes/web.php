@@ -93,6 +93,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/user/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 });
 
+    // เปรียบเทียบข้อมูล FTE API AJAX
+    Route::get('/fte/compare-data', [FteController::class, 'compareData'])->name('fte.compareData');
 
 
 // 📁 กลุ่มงานวิจัย (prefix: /rm)
@@ -112,6 +114,8 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     // ✅ เส้นทางอื่น ๆ
     Route::get('/fte', [FteController::class, 'index'])->name('fte.index');
     Route::get('/fte/{person}/detail', [FteController::class, 'detail'])->name('fte.detail');
+
+
 
     // 🆕 เพิ่มรายละเอียดโครงการ
     Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');

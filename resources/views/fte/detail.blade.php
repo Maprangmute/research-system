@@ -1,41 +1,104 @@
 @extends('layouts.app')
 @section('content')
 
-<!-- TailwindCSS + Alpine.js Calendar Component -->
-<div class="max-w-4xl mx-auto p-4">
-    <!-- Profile -->
-    <div class="flex items-center gap-4 mb-6">
+{{-- FullCalendar (ต้องใช้ index.global.min.js ไม่ใช่ main.min.js) --}}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<div class="max-w-7xl mx-auto p-6 space-y-8">
+
+    {{-- Profile Card --}}
+    <div class="bg-white shadow rounded-2xl p-6 flex items-center gap-6">
         @if($profile && $profile->profile_photo_path)
-            <img src="{{ asset('storage/'.$profile->profile_photo_path) }}" class="w-16 h-16 rounded-full border object-cover">
+            <img src="{{ asset('storage/'.$profile->profile_photo_path) }}"
+                 class="w-32 h-32 rounded-full border-4 border-blue-200 shadow-lg object-cover">
         @else
-            <img src="https://ui-avatars.com/api/?name={{ urlencode($person) }}&background=random&size=96" class="w-16 h-16 rounded-full border object-cover">
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($person) }}&background=random&size=128"
+                 class="w-32 h-32 rounded-full border-4 border-blue-200 shadow-lg object-cover">
         @endif
         <div>
-            <div class="text-xl font-bold">{{ $person }}</div>
-            <div class="text-gray-500">FTE ทั้งหมด: {{ number_format($fteRows->sum('fte_value'), 2) }}</div>
+            <h1 class="text-3xl font-bold text-gray-800">{{ $person }}</h1>
+            <p class="text-gray-500 mt-2">
+                FTE รวม (ตาม filter):
+                <span class="font-semibold text-green-600">{{ number_format($fteRows->sum('fte_value'), 2) }}</span>
+            </p>
         </div>
     </div>
 
-    <!-- Tabs -->
+    {{-- Filter Bar --}}
+    <div class="bg-gradient-to-r from-blue-50 to-white border border-blue-100 rounded-xl shadow px-4 py-5">
+        <form method="GET" id="filter-form" class="flex flex-wrap gap-4 items-end w-full">
+            <input type="hidden" name="person" value="{{ $person }}">
+
+            {{-- Mode --}}
+            <div class="flex flex-col min-w-[140px]">
+                <label class="text-gray-800 font-semibold mb-1">ดูข้อมูล</label>
+                <select name="mode" id="mode"
+                        class="rounded-lg border-gray-300 p-2 focus:ring-2 focus:ring-blue-300"
+                        onchange="resetOtherFilters(); this.form.submit();">
+                    <option value="year" {{ $mode == 'year' ? 'selected' : '' }}>รายปี</option>
+                    <option value="month" {{ $mode == 'month' ? 'selected' : '' }}>เดือนนี้</option>
+                    <option value="custom" {{ $mode == 'custom' ? 'selected' : '' }}>เลือกช่วงวันที่</option>
+                </select>
+            </div>
+
+            {{-- Year --}}
+            <div id="filter-year" class="flex flex-col min-w-[120px] {{ $mode === 'year' ? '' : 'hidden' }}">
+                <label class="text-gray-800 mb-1">ปี</label>
+                <select name="year" id="yearSelect" class="rounded-lg border-gray-300 p-2 w-full"
+                        onchange="this.form.submit();">
+                    @foreach ($allYears as $y)
+                        <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Custom Range --}}
+            <div id="filter-custom" class="flex flex-col min-w-[250px] {{ $mode === 'custom' ? '' : 'hidden' }}">
+                <label class="text-gray-800 mb-1">ช่วงวันที่</label>
+                <div class="flex gap-2 items-center">
+                    <input name="start" id="dateStart"
+                           class="rounded-lg border-gray-300 p-2 w-[140px] focus:ring-2 focus:ring-blue-200"
+                           placeholder="วันเริ่มต้น" value="{{ $start ?? '' }}">
+                    <span>-</span>
+                    <input name="end" id="dateEnd"
+                           class="rounded-lg border-gray-300 p-2 w-[140px] focus:ring-2 focus:ring-blue-200"
+                           placeholder="วันสิ้นสุด" value="{{ $end ?? '' }}">
+                </div>
+            </div>
+
+            {{-- Reset --}}
+            @if (request()->has('year') || request()->has('mode') || request()->has('start'))
+                <div class="flex flex-col">
+                    <label class="invisible mb-1">ล้าง</label>
+                    <a href="{{ route('fte.detail', ['person' => $person, 'mode' => 'year', 'year' => now()->year + 543]) }}"
+                       class="px-4 py-2 rounded-lg bg-gray-100 text-blue-700 font-bold shadow hover:bg-blue-200 text-center">
+                        ล้างตัวกรอง
+                    </a>
+                </div>
+            @endif
+        </form>
+    </div>
+
+    {{-- Tabs --}}
     <div>
-        <div class="flex border-b mb-4">
+        <div class="flex border-b mb-4 text-gray-600">
             <button class="tab-btn px-6 py-2 font-bold border-b-2 transition" data-tab="tab1">📋 ตาราง</button>
-            <button class="tab-btn px-6 py-2 font-bold border-b-2 transition" data-tab="tab2">📆 ปฏิทิน</button>
-            <button class="tab-btn px-6 py-2 font-bold border-b-2 transition" data-tab="tab3">📈 กราฟ</button>
+            <button class="tab-btn px-6 py-2 font-bold border-b-2 transition" data-tab="tab2">📈 กราฟ</button>
+            <button class="tab-btn px-6 py-2 font-bold border-b-2 transition" data-tab="tab3">📆 ปฏิทิน</button>
         </div>
-        <div>
-            <!-- Tab 1: ตาราง -->
-            <div id="tab1" class="tab-pane">
+
+        {{-- ตาราง --}}
+        <div id="tab1" class="tab-pane">
+            <div class="space-y-6">
                 @foreach($fteMonthly as $monthKey => $rows)
-                    @php
-                        $c = \Carbon\Carbon::createFromFormat('Y-m', $monthKey);
-                    @endphp
-                    <div>
-                        <div class="text-blue-700 font-bold text-base mb-2">
+                    @php $c = \Carbon\Carbon::createFromFormat('Y-m', $monthKey); @endphp
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <h3 class="font-semibold text-blue-700 mb-3">
                             {{ $c->locale('th')->isoFormat('MMMM YYYY') }}
-                        </div>
-                        <div class="bg-white border rounded-xl p-3 shadow-sm overflow-x-auto">
-                            <table class="min-w-full text-xs table-auto">
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
                                 <thead class="bg-gray-100">
                                     <tr>
                                         <th class="p-2 text-left">ชื่อโปรเจค</th>
@@ -48,13 +111,17 @@
                                 </thead>
                                 <tbody>
                                     @foreach($rows as $item)
-                                    <tr>
-                                        <td class="p-2 break-words max-w-[180px]">{{ $item->project->project_name_th ?? '-' }}</td>
+                                    <tr class="border-b">
+                                        <td class="p-2 text-blue-700 underline">
+                                            <a href="{{ route('projects.show', $item->project->id) }}">
+                                                {{ $item->project->project_name_th ?? '-' }}
+                                            </a>
+                                        </td>
                                         <td class="p-2">{{ $item->role_group ?? '-' }}</td>
                                         <td class="p-2">{{ $item->job_detail ?? '-' }}</td>
                                         <td class="p-2 text-center">{{ $item->start_date }}</td>
                                         <td class="p-2 text-center">{{ $item->end_date }}</td>
-                                        <td class="p-2 text-right">{{ number_format($item->fte_value, 2) }}</td>
+                                        <td class="p-2 text-right font-semibold">{{ number_format($item->fte_value, 2) }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -63,224 +130,136 @@
                     </div>
                 @endforeach
             </div>
+        </div>
 
-            <!-- Tab 2: Modern Tailwind Calendar -->
-            <div id="tab2" class="tab-pane hidden">
-                <div 
-                  x-data="calendarApp({{
-                        json_encode(
-                            $fteRows->map(function($item){
-                                return [
-                                    'title' => $item->project->project_name_th ?? '-',
-                                    'start' => $item->start_date,
-                                    'end' => $item->end_date,
-                                ];
-                            })->values()
-                        )
-                  }})"
-                  x-init="init()"
-                  class="w-full bg-white rounded-xl border shadow-sm p-4"
-                  >
-                  <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
-                    <!-- Year and Month -->
-                    <div class="flex items-center gap-2">
-                        <button @click="prevMonth()" class="p-1 rounded hover:bg-blue-50 text-gray-600">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <select x-model="month" @change="updateCalendar()" class="rounded border-gray-300 py-1 px-2">
-                            <template x-for="(m, idx) in monthNames" :key="idx">
-                              <option :value="idx+1" x-text="m"></option>
-                            </template>
-                        </select>
-                        <select x-model="year" @change="updateCalendar()" class="rounded border-gray-300 py-1 px-2 ml-2">
-                            <template x-for="y in years" :key="y">
-                              <option :value="y" x-text="y"></option>
-                            </template>
-                        </select>
-                        <button @click="nextMonth()" class="p-1 rounded hover:bg-blue-50 text-gray-600">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <button @click="today()" class="ml-4 px-2 py-1 rounded bg-blue-50 hover:bg-blue-200 text-blue-700 font-bold text-sm">วันนี้</button>
-                    </div>
-                  </div>
-
-                  <!-- Calendar Grid -->
-                  <div class="grid grid-cols-7 bg-gray-50 rounded-t-xl text-center text-xs text-gray-600 font-bold mb-2">
-                      <template x-for="day in dayNames" :key="day">
-                        <div class="py-2" x-text="day"></div>
-                      </template>
-                  </div>
-                  <div class="grid grid-cols-7 gap-px">
-                    <template x-for="(date, idx) in calendarCells" :key="idx">
-                      <div 
-                        :class="[
-                            'bg-white min-h-[72px] p-2 text-xs relative transition-all group flex flex-col',
-                            date.isOtherMonth ? 'bg-gray-50 text-gray-300' : '',
-                            date.isToday ? 'ring-2 ring-blue-400 bg-blue-50 text-blue-700 font-bold' : '',
-                        ]"
-                        :title="date.events.length ? date.events.map(ev => ev.title).join('\n') : ''"
-                      >
-                        <div class="flex justify-between items-center mb-1">
-                            <span x-text="date.day"></span>
-                            <template x-if="date.isToday">
-                              <span class="ml-1 inline-block bg-blue-100 text-blue-700 px-1 rounded text-[10px]">วันนี้</span>
-                            </template>
-                        </div>
-                        <template x-for="ev in date.events.slice(0,2)" :key="ev.title">
-                          <div class="truncate bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900 px-1 rounded mb-1 text-xs cursor-pointer"
-                            x-tooltip="ev.title"
-                          >
-                            <span x-text="ev.title"></span>
-                          </div>
-                        </template>
-                        <template x-if="date.events.length > 2">
-                            <div class="text-[10px] text-blue-600 mt-1">+ อีก <span x-text="date.events.length-2"></span> งาน</div>
-                        </template>
-                      </div>
-                    </template>
-                  </div>
+        {{-- กราฟ --}}
+        <div id="tab2" class="tab-pane hidden">
+            <div class="bg-white rounded-xl shadow p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-semibold text-blue-700">แนวโน้มค่า FTE</h3>
+                    <select id="compareSelect" class="rounded-lg border-gray-300 text-sm px-3 py-2">
+                        <option value="">-- เปรียบเทียบ --</option>
+                        @foreach($allPeople as $p)
+                            <option value="{{ $p }}">{{ $p }}</option>
+                        @endforeach
+                    </select>
                 </div>
+                <canvas id="fteChart" height="120"></canvas>
             </div>
+        </div>
 
-            <!-- Tab 3: กราฟ -->
-            <div id="tab3" class="tab-pane hidden">
-                <canvas id="fteChart" height="110"></canvas>
-            </div>
+        {{-- ปฏิทิน --}}
+        <div id="tab3" class="tab-pane hidden">
+            <div id="calendar" class="bg-white rounded-xl shadow p-6"></div>
         </div>
     </div>
 </div>
 
-<!-- Alpine.js (v3+) -->
-<script src="//unpkg.com/alpinejs" defer></script>
-
-<script>
-// modern calendar
-function calendarApp(events) {
-    return {
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear() + 543, // แสดง พ.ศ.
-        todayY: new Date().getFullYear() + 543,
-        todayM: new Date().getMonth() + 1,
-        todayD: new Date().getDate(),
-        years: [],
-        calendarCells: [],
-        dayNames: ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'],
-        monthNames: ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],
-        allEvents: events.map(ev => ({
-            ...ev,
-            start: toYMD(ev.start),
-            end: toYMD(ev.end)
-        })),
-        init() {
-            // ปี: -5 ถึง +3 ปี
-            let base = (new Date()).getFullYear() + 543;
-            this.years = [];
-            for(let y=base-5; y<=base+3; y++) this.years.push(y);
-            this.updateCalendar();
-        },
-        today() {
-            this.month = this.todayM;
-            this.year = this.todayY;
-            this.updateCalendar();
-        },
-        prevMonth() {
-            this.month--;
-            if (this.month < 1) { this.month = 12; this.year--; }
-            this.updateCalendar();
-        },
-        nextMonth() {
-            this.month++;
-            if (this.month > 12) { this.month = 1; this.year++; }
-            this.updateCalendar();
-        },
-        updateCalendar() {
-            let firstOfMonth = new Date(this.year-543, this.month-1, 1);
-            let start = new Date(firstOfMonth);
-            start.setDate(1 - start.getDay()); // Sunday
-            let cells = [];
-            for(let i=0;i<42;i++) { // 6 weeks
-                let d = new Date(start);
-                d.setDate(start.getDate()+i);
-                let y = d.getFullYear() + 543;
-                let m = d.getMonth()+1;
-                let day = d.getDate();
-                let isOtherMonth = m !== this.month || y !== this.year;
-                let isToday = (day === this.todayD && m === this.todayM && y === this.todayY);
-                let ymd = toYMD_BS(day, m, y);
-                let events = this.allEvents.filter(ev =>
-                    (ymd >= ev.start && ymd <= ev.end)
-                );
-                cells.push({
-                    day, isOtherMonth, isToday, events,
-                });
-            }
-            this.calendarCells = cells;
-        }
-    };
-}
-
-// Convert dd-mm-yyyy -> yyyy-mm-dd
-function toYMD(str) {
-    if(!str) return '';
-    let [d,m,y] = str.split('-');
-    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-}
-// Convert (day, month, buddhistYear) -> yyyy-mm-dd
-function toYMD_BS(d, m, y) {
-    return `${y-543}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-}
-
-// Tooltip (Tailwind/Alpine)
-document.addEventListener('alpine:init', () => {
-    Alpine.directive('tooltip', (el, {expression}) => {
-        el.setAttribute('title', expression)
-    })
-});
-</script>
-
 {{-- Chart.js --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Tab
+    // Tabs
     const tabs = document.querySelectorAll('.tab-btn');
     const panes = document.querySelectorAll('.tab-pane');
     function activateTab(tab) {
         panes.forEach(x => x.classList.add('hidden'));
-        tabs.forEach(x => x.classList.remove('border-blue-700', 'text-blue-700'));
+        tabs.forEach(x => x.classList.remove('border-blue-700','text-blue-700'));
         document.getElementById(tab).classList.remove('hidden');
-        document.querySelector('.tab-btn[data-tab="'+tab+'"]').classList.add('border-blue-700', 'text-blue-700');
+        document.querySelector('.tab-btn[data-tab="'+tab+'"]').classList.add('border-blue-700','text-blue-700');
+
+        if(tab === 'tab3' && !window.calendarRendered) {
+            renderCalendar();
+            window.calendarRendered = true;
+        }
     }
-    tabs.forEach(btn => {
-        btn.onclick = () => activateTab(btn.dataset.tab);
-    });
+    tabs.forEach(btn => btn.onclick = () => activateTab(btn.dataset.tab));
     activateTab('tab1');
 
-    // Chart.js
+    // Chart
     let ctx = document.getElementById('fteChart');
-    if (ctx) {
-        let chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {!! $chartLabels->toJson() !!},
-                datasets: [{
-                    label: 'FTE',
-                    data: {!! $chartData->toJson() !!},
-                    borderWidth: 1,
-                    backgroundColor: 'rgba(37,99,235,0.5)'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false }},
-                scales: { y: { beginAtZero: true } }
-            }
-        });
-    }
+    let chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {!! $chartLabels->toJson() !!},
+            datasets: [{
+                label: '{{ $person }}',
+                data: {!! $chartData->toJson() !!},
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37,99,235,0.2)',
+                fill: false,
+                tension: 0.3
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' }} }
+    });
+
+    // Compare AJAX
+    document.getElementById('compareSelect').addEventListener('change', function() {
+        const name = this.value;
+        if (!name) {
+            chart.data.datasets = chart.data.datasets.slice(0,1);
+            chart.update();
+            return;
+        }
+        fetch(`/fte/compare-data?name=${encodeURIComponent(name)}&mode={{ $mode }}&year={{ $year }}&start={{ $start }}&end={{ $end }}`)
+            .then(res => res.json())
+            .then(res => {
+                chart.data.datasets = chart.data.datasets.slice(0,1);
+                chart.data.datasets.push({
+                    label: res.name,
+                    data: res.data,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,0.2)',
+                    fill: false,
+                    tension: 0.3
+                });
+                chart.update();
+            });
+    });
 });
+
+// Calendar
+function renderCalendar() {
+    let events = {!! $calendarEvents->toJson() !!};
+    let colors = {};
+    let palette = ['#2563eb','#16a34a','#dc2626','#d97706','#9333ea','#0891b2','#db2777','#65a30d'];
+    let idx = 0;
+    events = events.map(ev => {
+        if(!colors[ev.title]) colors[ev.title] = palette[idx++ % palette.length];
+        return { ...ev, color: colors[ev.title] };
+    });
+
+    let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView: 'dayGridMonth',
+        locale: 'th',
+        height: 650,
+        events: events,
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+        dayMaxEventRows: 3
+    });
+    calendar.render();
+}
+</script>
+
+{{-- Flatpickr --}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+<script>
+flatpickr("#dateStart", { dateFormat: "d/m/Y", locale: "th" });
+flatpickr("#dateEnd",   { dateFormat: "d/m/Y", locale: "th" });
+
+function resetOtherFilters() {
+    let mode = document.getElementById('mode').value;
+    if (mode !== 'year' && document.getElementById('yearSelect')) {
+        document.getElementById('yearSelect').value = '';
+    }
+    if (mode !== 'custom') {
+        document.getElementById('dateStart').value = '';
+        document.getElementById('dateEnd').value = '';
+    }
+}
 </script>
 @endsection

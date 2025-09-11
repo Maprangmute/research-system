@@ -675,6 +675,7 @@
                                         class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
                                         <option value="" disabled selected>เลือกภารกิจ</option>
                                         <option>ติดต่อประสานงาน</option>
+                                        <option>ที่ปรึกษาโครงการ</option>
                                         <option>review literature</option>
                                         <option>เขียนproposal</option>
                                         <option>ดำเนินการเอกสารขอirb/submit irb</option>
@@ -1196,6 +1197,7 @@
           <select name="fte_roles[${fteIndex}][task_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
             <option value="" disabled selected>เลือกภารกิจ</option>
             <option>ติดต่อประสานงาน</option>
+            <option>ที่ปรึกษาโครงการ</option>
             <option>review literature</option>
             <option>เขียนproposal</option>
             <option>ดำเนินการเอกสารขอirb/submit irb</option>

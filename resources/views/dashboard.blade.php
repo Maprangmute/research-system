@@ -106,15 +106,15 @@
                 <canvas id="chartInternalBySource" height="250"></canvas>
             </div>
 
-<div class="bg-white shadow-sm border rounded-xl p-4">
-  <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (ต่อปี)</h3>
-  <canvas id="chartExternalBySourceYear" height="250"></canvas>
-</div>
+            <div class="bg-white shadow-sm border rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (ต่อปี)</h3>
+                <canvas id="chartExternalBySourceYear" height="250"></canvas>
+            </div>
 
-<div class="bg-white shadow-sm border rounded-xl p-4">
-  <h3 class="text-sm font-semibold text-gray-700 mb-3">🏛️ ทุนภายใน แยกตามแหล่งทุน (ต่อปี)</h3>
-  <canvas id="chartInternalBySourceYear" height="250"></canvas>
-</div>
+            <div class="bg-white shadow-sm border rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏛️ ทุนภายใน แยกตามแหล่งทุน (ต่อปี)</h3>
+                <canvas id="chartInternalBySourceYear" height="250"></canvas>
+            </div>
 
 
 
@@ -345,11 +345,8 @@
 
         /* ---------- ฟังก์ชันย่อเงินแบบไทย (พัน/หมื่น/แสน/ล้าน) ---------- */
         function formatThaiMoney(num) {
-            if (num >= 1000000) return (num / 1000000).toFixed(2).replace(/\.00$/, '') + ' ล้านบ.';
-            if (num >= 100000) return (num / 100000).toFixed(2).replace(/\.00$/, '') + ' แสนบ.';
-            if (num >= 10000) return (num / 10000).toFixed(2).replace(/\.00$/, '') + ' หมื่นบ.';
-            if (num >= 1000) return (num / 1000).toFixed(2).replace(/\.00$/, '') + ' พันบ.';
-            return num.toLocaleString('th-TH') + ' บ.';
+            const n = Number(num) || 0;
+            return (n / 1_000_000).toFixed(2).replace(/\.00$/, '') + ' ล้านบ.';
         }
 
 
@@ -623,15 +620,20 @@
             const data = years.map(y => sumByYear.get(y) || 0);
 
             // ฟอร์แมตหน่วยเงินไทย (พัน/หมื่น/แสน/ล้าน) + ตัด .00
+            // function formatMoneyTHB(v) {
+            //     const n = Number(v) || 0;
+            //     const trim = (x) => Number(x).toFixed(2).replace(/\.00$/, '');
+            //     if (n >= 1_000_000) return `${trim(n / 1_000_000)} ล้านบาท`;
+            //     if (n >= 100_000) return `${trim(n /   100_000)} แสนบาท`;
+            //     if (n >= 10_000) return `${trim(n /    10_000)} หมื่นบาท`;
+            //     if (n >= 1_000) return `${trim(n /     1_000)} พันบาท`;
+            //     return `${n.toLocaleString('th-TH')} บาท`;
+            // }
             function formatMoneyTHB(v) {
                 const n = Number(v) || 0;
-                const trim = (x) => Number(x).toFixed(2).replace(/\.00$/, '');
-                if (n >= 1_000_000) return `${trim(n / 1_000_000)} ล้านบาท`;
-                if (n >= 100_000) return `${trim(n /   100_000)} แสนบาท`;
-                if (n >= 10_000) return `${trim(n /    10_000)} หมื่นบาท`;
-                if (n >= 1_000) return `${trim(n /     1_000)} พันบาท`;
-                return `${n.toLocaleString('th-TH')} บาท`;
+                return `${(n / 1_000_000).toFixed(2)} ล้าน`;
             }
+
 
             // ปลั๊กอินวาดเลขบนแท่ง + เช็คซ่อน + กันตกขอบบน/ขวา
             const budgetValueLabelPlugin = {
@@ -1334,11 +1336,8 @@
         (function() {
             // ย่อเงินไทย: พัน/หมื่น/แสน/ล้าน บาท
             function formatThaiMoney(num) {
-                if (num >= 1_000_000) return (num / 1_000_000).toFixed(2).replace(/\.00$/, '') + ' ล้านบ.';
-                if (num >= 100_000) return (num / 100_000).toFixed(2).replace(/\.00$/, '') + ' แสนบ.';
-                if (num >= 10_000) return (num / 10_000).toFixed(2).replace(/\.00$/, '') + ' หมื่นบ.';
-                if (num >= 1_000) return (num / 1_000).toFixed(2).replace(/\.00$/, '') + ' พันบ.';
-                return (Number(num) || 0).toLocaleString('th-TH') + ' บ.';
+                const n = Number(num) || 0;
+                return (n / 1_000_000).toFixed(2).replace(/\.00$/, '') + ' ล้านบ.';
             }
 
             // สะสม "จำนวนโครงการ" และ "ยอดเงินรวม" ต่อแหล่งทุน (เฉพาะทุนภายนอก)
@@ -1533,178 +1532,209 @@
             return c;
         }
 
-// ✅ ปลั๊กอิน: แสดงยอดรวมบนสุดของแต่ละปี (stack bar)
-const stackTotalLabelPlugin = {
-  id: 'stackTotalLabelPlugin',
-  afterDatasetsDraw(chart) {
-    const { ctx, chartArea: { top, right } } = chart;
-    ctx.save();
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillStyle = '#111';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
+        // ✅ ปลั๊กอิน: แสดงยอดรวมบนสุดของแต่ละปี (stack bar)
+        const stackTotalLabelPlugin = {
+            id: 'stackTotalLabelPlugin',
+            afterDatasetsDraw(chart) {
+                const {
+                    ctx,
+                    chartArea: {
+                        top,
+                        right
+                    }
+                } = chart;
+                ctx.save();
+                ctx.font = 'bold 11px sans-serif';
+                ctx.fillStyle = '#111';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
 
-    chart.data.labels.forEach((label, i) => {
-      // 1) รวมค่าของทุก dataset ใน stack ที่ตำแหน่ง i
-      let sum = 0;
-      chart.data.datasets.forEach((ds, dsIndex) => {
-        if (!chart.isDatasetVisible(dsIndex)) return;
-        sum += Number(ds.data[i] || 0);
-      });
-      if (sum <= 0) return;
+                chart.data.labels.forEach((label, i) => {
+                    // 1) รวมค่าของทุก dataset ใน stack ที่ตำแหน่ง i
+                    let sum = 0;
+                    chart.data.datasets.forEach((ds, dsIndex) => {
+                        if (!chart.isDatasetVisible(dsIndex)) return;
+                        sum += Number(ds.data[i] || 0);
+                    });
+                    if (sum <= 0) return;
 
-      // 2) หาแท่งบนสุดของ stack
-      let topBar = null;
-      chart.data.datasets.forEach((ds, dsIndex) => {
-        if (!chart.isDatasetVisible(dsIndex)) return;
-        const el = chart.getDatasetMeta(dsIndex).data[i];
-        if (el && (!topBar || el.y < topBar.y)) {
-          topBar = el;
-        }
-      });
+                    // 2) หาแท่งบนสุดของ stack
+                    let topBar = null;
+                    chart.data.datasets.forEach((ds, dsIndex) => {
+                        if (!chart.isDatasetVisible(dsIndex)) return;
+                        const el = chart.getDatasetMeta(dsIndex).data[i];
+                        if (el && (!topBar || el.y < topBar.y)) {
+                            topBar = el;
+                        }
+                    });
 
-      // 3) วาดผลรวมเหนือแท่งบนสุด
-      if (topBar) {
-        let { x, y } = topBar.tooltipPosition();
-        y -= 4;
-        if (y < top + 8) y = top + 8;
-        if (x > right - 2) x = right - 2;
-        ctx.fillText(formatThaiMoney(sum), x, y);
-      }
-    });
+                    // 3) วาดผลรวมเหนือแท่งบนสุด
+                    if (topBar) {
+                        let {
+                            x,
+                            y
+                        } = topBar.tooltipPosition();
+                        y -= 4;
+                        if (y < top + 8) y = top + 8;
+                        if (x > right - 2) x = right - 2;
+                        ctx.fillText(formatThaiMoney(sum), x, y);
+                    }
+                });
 
-    ctx.restore();
-  }
-};
-
-
-/* ---- กราฟแท่งรายปี (ทุนภายนอก/ภายใน) ---- */
-(function () {
-  const agg = { external: {}, internal: {} };
-
-  projects.forEach(p => {
-    const type = (getFundingType(p) || '').trim();
-    const src  = (getFundingSource(p) || 'ไม่ระบุ').trim();
-    const amt  = Number(p.budget) || 0;
-    const y    = yearCE(p.start_year ?? p.year ?? p.funding_year);
-    if (!y) return;
-
-    const bucket = type === 'ภายนอก' ? agg.external : (type === 'ภายใน' ? agg.internal : null);
-    if (!bucket) return;
-    bucket[y] ??= {};
-    bucket[y][src] ??= { budget: 0 };
-    bucket[y][src].budget += amt;
-  });
-
-  // ✅ ปลั๊กอินวาด data label บนแท่ง (ใช้ formatThaiMoney)
-  const dataLabelPluginBudget = {
-    id: 'dataLabelPluginBudget',
-    afterDatasetsDraw(chart) {
-      const { ctx, chartArea: { top, right } } = chart;
-      ctx.save();
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillStyle = '#111827';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-
-      chart.data.datasets.forEach((dataset, dsIndex) => {
-        // เคารพ legend toggle: ถ้าชุดนี้ถูกซ่อน ให้ข้าม
-        if (!chart.isDatasetVisible(dsIndex)) return;
-
-        const meta = chart.getDatasetMeta(dsIndex);
-        meta.data.forEach((bar, i) => {
-          if (!bar || bar.hidden) return;
-          const val = Number(dataset.data?.[i] || 0);
-          if (!(isFinite(val) && val > 0)) return;
-
-          // ตำแหน่งเหนือปลายแท่งเล็กน้อย
-          let { x, y } = bar.tooltipPosition();
-          y -= 4;
-
-          // กันตกขอบบน/ขวา (เหมือนกราฟอื่น ๆ)
-          const minY = top + 8;
-          if (y < minY) y = minY;
-          if (x > right - 2) x = right - 2;
-
-          ctx.fillText(formatThaiMoney(val), x, y);
-        });
-      });
-
-      ctx.restore();
-    }
-  };
-
-  function buildStacked(canvasId, dataByYear) {
-    const el = document.getElementById(canvasId);
-    if (!el) return;
-
-    const years = Object.keys(dataByYear).map(Number).sort((a, b) => a - b);
-    if (!years.length) {
-      const c = el.getContext('2d');
-      c.font = '14px sans-serif';
-      c.fillStyle = '#6b7280';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.fillText('ไม่มีข้อมูล', el.width / 2, el.height / 2);
-      return;
-    }
-
-    const allSources = Array.from(new Set(years.flatMap(y => Object.keys(dataByYear[y]))));
-
-    const datasets = allSources.map(src => ({
-      label: src,
-      data: years.map(y => dataByYear[y][src]?.budget || 0),
-      backgroundColor: colorForKey(src),
-      stack: 'budget',
-    }));
-
-    const prev = Chart.getChart(el);
-    if (prev) prev.destroy();
-
-    new Chart(el, {
-      type: 'bar',
-      data: {
-        labels: years.map(yearLabelTH),
-        datasets
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom' },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => {
-                const yCE = years[ctx.dataIndex];
-                const money = ctx.parsed.y || 0;
-                const total = Object.values(dataByYear[yCE]).reduce((s, v) => s + (v?.budget || 0), 0);
-                const pct = total ? ((money / total) * 100).toFixed(1) : '0.0';
-                return ` ${ctx.dataset.label}: ${formatThaiMoney(money)} (${pct}%)`;
-              },
-              footer: (items) => {
-                if (!items?.length) return '';
-                const yCE = years[items[0].dataIndex];
-                const sum = Object.values(dataByYear[yCE]).reduce((s, v) => s + (v?.budget || 0), 0);
-                return `รวมปี ${yearLabelTH(yCE)}: ${formatThaiMoney(sum)}`;
-              }
+                ctx.restore();
             }
-          }
-        },
-        scales: {
-          x: { stacked: true },
-          y: {
-            stacked: true,
-            beginAtZero: true,
-            ticks: { callback: v => formatThaiMoney(v) }
-          }
-        }
-      },
-      plugins: [stackTotalLabelPlugin] // ✅ ใส่ปลั๊กอินตรงนี้
-    });
-  }
+        };
 
-  buildStacked('chartExternalBySourceYear', agg.external);
-  buildStacked('chartInternalBySourceYear', agg.internal);
-})();
+
+        /* ---- กราฟแท่งรายปี (ทุนภายนอก/ภายใน) ---- */
+        (function() {
+            const agg = {
+                external: {},
+                internal: {}
+            };
+
+            projects.forEach(p => {
+                const type = (getFundingType(p) || '').trim();
+                const src = (getFundingSource(p) || 'ไม่ระบุ').trim();
+                const amt = Number(p.budget) || 0;
+                const y = yearCE(p.start_year ?? p.year ?? p.funding_year);
+                if (!y) return;
+
+                const bucket = type === 'ภายนอก' ? agg.external : (type === 'ภายใน' ? agg.internal : null);
+                if (!bucket) return;
+                bucket[y] ??= {};
+                bucket[y][src] ??= {
+                    budget: 0
+                };
+                bucket[y][src].budget += amt;
+            });
+
+            // ✅ ปลั๊กอินวาด data label บนแท่ง (ใช้ formatThaiMoney)
+            const dataLabelPluginBudget = {
+                id: 'dataLabelPluginBudget',
+                afterDatasetsDraw(chart) {
+                    const {
+                        ctx,
+                        chartArea: {
+                            top,
+                            right
+                        }
+                    } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.fillStyle = '#111827';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+
+                    chart.data.datasets.forEach((dataset, dsIndex) => {
+                        // เคารพ legend toggle: ถ้าชุดนี้ถูกซ่อน ให้ข้าม
+                        if (!chart.isDatasetVisible(dsIndex)) return;
+
+                        const meta = chart.getDatasetMeta(dsIndex);
+                        meta.data.forEach((bar, i) => {
+                            if (!bar || bar.hidden) return;
+                            const val = Number(dataset.data?.[i] || 0);
+                            if (!(isFinite(val) && val > 0)) return;
+
+                            // ตำแหน่งเหนือปลายแท่งเล็กน้อย
+                            let {
+                                x,
+                                y
+                            } = bar.tooltipPosition();
+                            y -= 4;
+
+                            // กันตกขอบบน/ขวา (เหมือนกราฟอื่น ๆ)
+                            const minY = top + 8;
+                            if (y < minY) y = minY;
+                            if (x > right - 2) x = right - 2;
+
+                            ctx.fillText(formatThaiMoney(val), x, y);
+                        });
+                    });
+
+                    ctx.restore();
+                }
+            };
+
+            function buildStacked(canvasId, dataByYear) {
+                const el = document.getElementById(canvasId);
+                if (!el) return;
+
+                const years = Object.keys(dataByYear).map(Number).sort((a, b) => a - b);
+                if (!years.length) {
+                    const c = el.getContext('2d');
+                    c.font = '14px sans-serif';
+                    c.fillStyle = '#6b7280';
+                    c.textAlign = 'center';
+                    c.textBaseline = 'middle';
+                    c.fillText('ไม่มีข้อมูล', el.width / 2, el.height / 2);
+                    return;
+                }
+
+                const allSources = Array.from(new Set(years.flatMap(y => Object.keys(dataByYear[y]))));
+
+                const datasets = allSources.map(src => ({
+                    label: src,
+                    data: years.map(y => dataByYear[y][src]?.budget || 0),
+                    backgroundColor: colorForKey(src),
+                    stack: 'budget',
+                }));
+
+                const prev = Chart.getChart(el);
+                if (prev) prev.destroy();
+
+                new Chart(el, {
+                    type: 'bar',
+                    data: {
+                        labels: years.map(yearLabelTH),
+                        datasets
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const yCE = years[ctx.dataIndex];
+                                        const money = ctx.parsed.y || 0;
+                                        const total = Object.values(dataByYear[yCE]).reduce((s, v) => s + (v
+                                            ?.budget || 0), 0);
+                                        const pct = total ? ((money / total) * 100).toFixed(1) : '0.0';
+                                        return ` ${ctx.dataset.label}: ${formatThaiMoney(money)} (${pct}%)`;
+                                    },
+                                    footer: (items) => {
+                                        if (!items?.length) return '';
+                                        const yCE = years[items[0].dataIndex];
+                                        const sum = Object.values(dataByYear[yCE]).reduce((s, v) => s + (v
+                                            ?.budget || 0), 0);
+                                        return `รวมปี ${yearLabelTH(yCE)}: ${formatThaiMoney(sum)}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: v => formatThaiMoney(v)
+                                }
+                            }
+                        }
+                    },
+                    plugins: [stackTotalLabelPlugin] // ✅ ใส่ปลั๊กอินตรงนี้
+                });
+            }
+
+            buildStacked('chartExternalBySourceYear', agg.external);
+            buildStacked('chartInternalBySourceYear', agg.internal);
+        })();
 
 
 

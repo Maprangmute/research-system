@@ -818,6 +818,7 @@
                                             @php
                                                 $taskOptions = [
                                                     'ติดต่อประสานงาน',
+                                                    'ที่ปรึกษาโครงการ'
                                                     'review literature',
                                                     'เขียนproposal',
                                                     'ดำเนินการเอกสารขอirb/submit irb',
@@ -1733,6 +1734,7 @@
           <select name="fte_roles[${index}][task_detail]" class="w-full border p-2 rounded">
             <option value="" disabled selected>เลือกภารกิจ</option>
             <option>ติดต่อประสานงาน</option>
+            <option>ที่ปรึกษาโครงการ</option>
             <option>review literature</option>
             <option>เขียนproposal</option>
             <option>ดำเนินการเอกสารขอirb/submit irb</option>
