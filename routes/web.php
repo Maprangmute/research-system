@@ -9,6 +9,14 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\TaskLinkController;
 
 
+use App\Http\Controllers\DocumentController;
+
+Route::get('/falldocs', [DocumentController::class, 'index'])->name('docs.index');
+Route::post('/falldocs/login', [DocumentController::class, 'login'])->name('docs.login');
+Route::post('/docs/logout', [DocumentController::class, 'logout'])->name('docs.logout');
+
+
+
 // 🌐 หน้าหลัก
 Route::get('/', function () {
     // return view('welcome');
