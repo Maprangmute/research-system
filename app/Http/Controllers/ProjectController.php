@@ -137,7 +137,8 @@ class ProjectController extends Controller
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
-            || $project->fteRoles->contains('name', $fullName);
+            || $project->fteRoles->contains('name', $fullName)
+            || Auth::user()->role === 'user_all';
 
         if (!$hasPermission) {
             abort(403);

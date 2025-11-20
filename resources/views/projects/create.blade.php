@@ -194,9 +194,27 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA105 - ชื่อทุน</span>
-                    <input name="funding_name" type="text" class="w-full border p-2 rounded"
-                        placeholder="ชื่อทุนที่ได้รับ">
+
+                    <input name="funding_name" list="funding_list" class="w-full border p-2 rounded"
+                        placeholder="พิมพ์ชื่อทุนหรือเลือกจากรายการ">
+
+                    <datalist id="funding_list">
+                        <option value="National University Hospital (Singapore) PTE LTD"></option>
+                        <option value="Roland Berger"></option>
+                        <option value="ทุนพัฒนาการวิจัย"></option>
+                        <option value="บัญชียาหลักแห่งชาติ"></option>
+                        <option value="มูลนิธิโรคมะเร็ง โรงพยาบาลศิริราช"></option>
+                        <option value="ศูนย์ความเป็นเลิศด้านชีววิทยาศาสตร์ (องค์การมหาชน)"></option>
+                        <option value="ศูนย์บริการวิชาการแห่งจุฬาลงกรณ์มหาวิทยาลัย"></option>
+                        <option value="สถาบันวิจัยระบบสาธารณสุข (สวรส.)"></option>
+                        <option
+                            value="สมาคมพฤฒาวิทยาและเวชศาสตร์ผู้สูงอายุไทย (ทุนจากบริษัท เอไซ (ประเทศไทย) มาร์เก็ตติ้ง จำกัด)">
+                        </option>
+                        <option value="สำนักงานกองทุนสนับสนุนการสร้างเสริมสุขภาพ (สสส.)"></option>
+                        <option value="สำนักงานคณะกรรมการอาหารและยา (อย.)"></option>
+                    </datalist>
                 </label>
+
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท)</span>
@@ -1350,7 +1368,7 @@
             const wrap = document.createElement('div');
             wrap.className = 'ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50';
             wrap.innerHTML = `
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
       <label class="w-full">
         <span class="block text-sm text-gray-700 mb-1">Journal</span>
         <input name="outputs[${idx}][journal]" type="text" class="w-full border p-2 rounded" placeholder="เช่น IEEE Access">

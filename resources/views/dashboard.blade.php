@@ -25,6 +25,8 @@
             @endforeach
         </div>
 
+
+
         <!-- 2) กรอง + Export -->
         <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border">
             <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
@@ -72,6 +74,67 @@
                 </div>
             </div>
         </div>
+
+        <!-- 🗨️ Floating Chat Agent (ADD-ON) -->
+        <button id="aiChatFab"
+            class="fixed bottom-6 right-6 z-50 rounded-full shadow-lg w-12 h-12 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center">
+            💬
+        </button>
+
+        <div id="aiChatPanel"
+            class="fixed bottom-24 right-6 z-50 w-[90vw] max-w-md bg-white border rounded-2xl shadow-2xl hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b">
+                <div class="font-semibold text-gray-800">AI Research Assistant</div>
+                <button class="text-gray-400 hover:text-red-500" onclick="toggleAiChat(false)">✕</button>
+            </div>
+
+         <!-- suggested prompts -->
+<div class="px-3 pt-3 pb-0 text-xs text-gray-500">ตัวอย่างที่ถามได้</div>
+<div class="px-3 pb-2 flex flex-wrap gap-2">
+
+  <!-- งบประมาณ -->
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">งบประมาณรวมต่อปี 2568</button>
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">งบประมาณ 5 ปี ล่าสุด</button>
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">แหล่งทุนที่เด่นที่สุดปีนี้คืออะไร</button>
+
+  <!-- FTE -->
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">สรุป FTE ต่อคน ปี 2568</button>
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">FTE ปี 2567 เกิน 1</button>
+
+  <!-- สถานะ / โครงการ -->
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">สถานะโครงการในปี 2566</button>
+
+  <!-- Outputs -->
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">จำนวน Outputs ปี 2567 แยกประเภท</button>
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">Outputs ปีนี้ แยกประเภท</button>
+
+  <!-- IRB -->
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">IRB ใกล้หมดอายุ 30 วัน</button>
+
+  <!-- แหล่งทุน/ประเภท -->
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">แหล่งทุนที่เด่น ปี 2568</button>
+  <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">งบภายใน-ภายนอก ปี 2566 เทียบกัน</button>
+
+
+</div>
+
+
+            <!-- messages -->
+            <div id="aiChatBody" class="max-h-[50vh] overflow-y-auto p-3 space-y-3">
+                <div class="text-xs text-gray-500">เริ่มพิมพ์คำถามเกี่ยวกับโครงการ/FTE/Outputs ได้เลยครับ</div>
+            </div>
+
+            <!-- input -->
+            <form id="aiChatForm" class="border-t p-2 flex items-end gap-2">
+                @csrf
+                <textarea id="aiChatInput" rows="1"
+                    class="flex-1 border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none"
+                    placeholder="พิมพ์คำถาม เช่น 'FTE ต่อคน ปี 2568' ..."></textarea>
+                <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-2 rounded-lg">ส่ง</button>
+            </form>
+        </div>
+
+
 
         <!-- 3) Charts -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -2348,5 +2411,128 @@
                 }
             });
         })();
+
+  const aiFab = document.getElementById('aiChatFab');
+  const aiPanel = document.getElementById('aiChatPanel');
+  const aiForm = document.getElementById('aiChatForm');
+  const aiInput = document.getElementById('aiChatInput');
+  const aiBody  = document.getElementById('aiChatBody');
+
+  function toggleAiChat(show = null){
+    if(show === null) show = aiPanel.classList.contains('hidden');
+    aiPanel.classList.toggle('hidden', !show);
+    if(show) setTimeout(()=> aiInput?.focus(), 50);
+  }
+  aiFab?.addEventListener('click', ()=> toggleAiChat());
+  document.querySelectorAll('.ai-suggest').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      aiInput.value = b.textContent.trim();
+      aiInput.dispatchEvent(new Event('input'));
+      aiForm.requestSubmit();
+    });
+  });
+
+  // autosize
+  aiInput?.addEventListener('input', function(){
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+
+  function bubble(role, html){
+    const wrap = document.createElement('div');
+    const base = role === 'user'
+      ? 'bg-emerald-50 border-emerald-200 ml-12'
+      : 'bg-white border-gray-200 mr-12';
+    wrap.className = `border rounded-xl p-3 text-sm ${base}`;
+    wrap.innerHTML = html;
+    aiBody.appendChild(wrap);
+    aiBody.scrollTop = aiBody.scrollHeight;
+    return wrap;
+  }
+
+  // สร้าง canvas chart ภายในบับเบิลคำตอบ
+  function renderInlineChart(container, spec){
+    const canvas = document.createElement('canvas');
+    canvas.height = 220;
+    container.appendChild(canvas);
+    try {
+      const cfg = { type: spec.type || 'bar', data: { labels: spec.labels||[], datasets: spec.datasets||[] }, options: spec.options||{} };
+      new Chart(canvas, cfg);
+    } catch(e) {
+      const err = document.createElement('div'); err.className='text-xs text-red-500';
+      err.textContent = 'แสดงกราฟไม่สำเร็จ';
+      container.appendChild(err);
+    }
+  }
+
+  aiForm?.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const q = (aiInput.value||'').trim();
+    if(!q) return;
+    bubble('user', q);
+    aiInput.value=''; aiInput.dispatchEvent(new Event('input'));
+
+    const thinking = bubble('bot', '<div class="text-gray-500 text-sm">กำลังวิเคราะห์…</div>');
+
+    try{
+      const resp = await fetch("{{ url('/rm/agent/ask') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type':'application/json',
+          'X-CSRF-TOKEN': document.querySelector('input[name=_token]')?.value || '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ prompt: q })
+      });
+      const data = await resp.json();
+
+      // แทนที่บับเบิลกำลังคิด
+      thinking.innerHTML = '';
+      if(data.reply){
+        thinking.innerHTML = `<div class="prose prose-sm max-w-none">${data.reply}</div>`;
+      }else{
+        thinking.innerHTML = '<div class="text-gray-500">ไม่มีข้อความตอบกลับ</div>';
+      }
+
+      // ถ้ามีตาราง
+      if(data.table && Array.isArray(data.table.rows)){
+        const tbl = document.createElement('table');
+        tbl.className = 'w-full text-xs border mt-2';
+        const thead = document.createElement('thead');
+        thead.className = 'bg-gray-50';
+        thead.innerHTML = `<tr>${(data.table.headers||[]).map(h=>`<th class="p-2 text-left">${h}</th>`).join('')}</tr>`;
+        tbl.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        (data.table.rows||[]).forEach(r=>{
+          const tr = document.createElement('tr'); tr.className='border-t';
+          tr.innerHTML = (data.table.fields||[]).map(f=>`<td class="p-2">${r[f] ?? '-'}</td>`).join('');
+          tbody.appendChild(tr);
+        });
+        tbl.appendChild(tbody);
+        thinking.appendChild(tbl);
+      }
+
+      // ถ้ามีกราฟ
+      if(data.chart){
+        const box = document.createElement('div');
+        box.className = 'mt-3';
+        thinking.appendChild(box);
+        renderInlineChart(box, data.chart);
+      }
+
+// ถ้ามีกราฟที่สอง (เช่น donut แหล่งทุน)
+if (data.chart2){
+  const box2 = document.createElement('div');
+  box2.className = 'mt-3';
+  thinking.appendChild(box2);
+  renderInlineChart(box2, data.chart2);
+}
+
+
+    }catch(err){
+      thinking.innerHTML = `<div class="text-red-600">เกิดข้อผิดพลาดในการเรียกผู้ช่วย</div>`;
+    }
+  });
+
+
     </script>
 @endsection

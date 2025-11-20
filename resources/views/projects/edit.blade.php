@@ -276,9 +276,31 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA105 - ชื่อทุน</span>
-                    <input name="funding_name" value="{{ old('funding_name', $project->funding_name) }}"
-                        class="w-full border p-2 rounded">
+
+                    <input name="funding_name" list="funding_list"
+                        value="{{ old('funding_name', $project->funding_name) }}" class="w-full border p-2 rounded"
+                        placeholder="พิมพ์ชื่อทุนหรือเลือกจากรายการ">
                 </label>
+
+                <datalist id="funding_list">
+                    <option value="National University Hospital (Singapore) PTE LTD"></option>
+                    <option value="Roland Berger"></option>
+                    <option value="ทุนพัฒนาการวิจัย"></option>
+                    <option value="บัญชียาหลักแห่งชาติ"></option>
+                    <option
+                        value="บางกอกน้อยโมเดล / สำนักงานกองทุนสนับสนุนการสร้างเสริมสุขภาพ (สสส.) โครงการพัฒนาระบบดูแลและสร้างเสริมสุขภาพชุมชนผ่านระบบฐานข้อมูลสุขภาพ (ศิริราชสานสองวัย : บางกอกน้อยโมเดล)">
+                    </option>
+                    <option value="มูลนิธิโรคมะเร็ง โรงพยาบาลศิริราช"></option>
+                    <option value="ศูนย์ความเป็นเลิศด้านชีววิทยาศาสตร์ (องค์การมหาชน)"></option>
+                    <option value="ศูนย์บริการวิชาการแห่งจุฬาลงกรณ์มหาวิทยาลัย"></option>
+                    <option value="สถาบันวิจัยระบบสาธารณสุข (สวรส.)"></option>
+                    <option
+                        value="สมาคมพฤฒาวิทยาและเวชศาสตร์ผู้สูงอายุไทย (ทุนจากบริษัท เอไซ (ประเทศไทย) มาร์เก็ตติ้ง จำกัด)">
+                    </option>
+                    <option value="สำนักงานกองทุนสนับสนุนการสร้างเสริมสุขภาพ (สสส.)"></option>
+                    <option value="สำนักงานคณะกรรมการอาหารและยา (อย.)"></option>
+                </datalist>
+
                 <label class="w-full">
                     <label class="w-full">
                         <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท)</span>
@@ -818,7 +840,7 @@
                                             @php
                                                 $taskOptions = [
                                                     'ติดต่อประสานงาน',
-                                                    'ที่ปรึกษาโครงการ'
+                                                    'ที่ปรึกษาโครงการ',
                                                     'review literature',
                                                     'เขียนproposal',
                                                     'ดำเนินการเอกสารขอirb/submit irb',
@@ -874,7 +896,7 @@
                 <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
                     + เพิ่มผู้มีส่วนร่วม
                 </button>
-                {{-- E: ผลงานวิจัย (Output) ========================= --}}
+
                 {{-- E: ผลงานวิจัย (Output) ========================= --}}
 
                 <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
@@ -1018,14 +1040,14 @@
                                 @if (str_starts_with($t, 'EA101'))
                                     <div class="ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50">
                                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            <label class="w-full">
+                                            <label>
                                                 <span class="block text-sm text-gray-700 mb-1">Journal</span>
                                                 <input name="outputs[{{ $i }}][journal]" type="text"
                                                     class="w-full border p-2 rounded"
                                                     value="{{ old("outputs.$i.journal", $out->journal) }}"
                                                     placeholder="เช่น IEEE Access">
                                             </label>
-                                            <label class="w-full">
+                                            <label >
                                                 <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
                                                 @php $q = old("outputs.$i.quartile", $out->quartile); @endphp
                                                 <select name="outputs[{{ $i }}][quartile]"
@@ -1042,7 +1064,7 @@
                                                     </option>
                                                 </select>
                                             </label>
-                                            <label class="w-full">
+                                            <label>
                                                 <span class="block text-sm text-gray-700 mb-1">Impact Factor (IF)</span>
                                                 <input name="outputs[{{ $i }}][impact_factor]" type="number"
                                                     step="0.001" class="w-full border p-2 rounded"
@@ -1333,8 +1355,9 @@
                                         class="text-red-600 mb-2">✕</button>
                                 </div>
 
-                                <div class="special-mount"></div>
+                                
                             </div>
+                            <div class="special-mount"></div>
                         </div>
                     @endforelse
                 </div>

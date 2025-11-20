@@ -3,20 +3,44 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Session;
 
 class DocumentController extends Controller
 {
-    private $password = 'sihp2025'; // 🔑 รหัสก่อนเข้า
+    private string $password = 'sihp2025';
 
+    // 🔹 หน้าใส่รหัสผ่าน
+    public function gate()
+    {
+        return view('docs.login');
+    }
+
+    // 🔹 ตรวจรหัสแล้วสร้างลิงก์แบบ signed
+public function login(Request $request)
+{
+    $password = $request->query('password');
+
+    if (!$password) {
+        return view('docs.login', ['error' => 'กรุณาใส่รหัสผ่าน']);
+    }
+
+    if ($password !== $this->password) {
+        // ❌ อย่าใช้ back() เพราะมันใช้กับ POST เท่านั้น
+        return view('docs.login', ['error' => 'รหัสผ่านไม่ถูกต้อง']);
+    }
+
+    // ✅ ผ่านรหัส → สร้างลิงก์ signed
+    $signed = URL::temporarySignedRoute('docs.secure', now()->addMinutes(5));
+
+    return redirect($signed);
+}
+
+
+    // 🔹 หน้าเอกสาร (เข้าถึงได้เฉพาะ signed link)
     public function index(Request $request)
     {
-        if (!Session::get('authorized')) {
-            return view('docs.login');
-        }
-
-        // 🔽 รายการเอกสาร (เก็บใน public/docs)
-        $files = [
+          $files = [
             ['name' => 'A001 คู่มือการดำเนินงานของ รพ.สต. สำหรับ กลุ่มมาตรการ (Intervention group)', 'url' => asset('docs/A001.pdf')],
             ['name' => 'A002 คู่มือการดำเนินงานของ รพ.สต. สำหรับ กลุ่มควบคุม (Control group)', 'url' => asset('docs/A002.pdf')],
             ['name' => 'A003 LINK APPLICATION : หน่วยบริการ', 'url' => asset('docs/A003.pdf')],
@@ -70,18 +94,10 @@ class DocumentController extends Controller
         return view('docs.index', compact('files'));
     }
 
-   public function login(Request $request)
-    {
-        if ($request->password === $this->password) {
-            Session::put('authorized', true);
-            return redirect()->route('docs.index');
-        }
-        return back()->with('error', 'รหัสผ่านไม่ถูกต้อง');
-    }
-
+    // 🔹 ออกจากระบบ (ล้าง session)
     public function logout()
     {
-        Session::forget('authorized'); // ❌ เคลียร์ session ออกจากระบบ
-        return redirect()->route('docs.index'); // กลับไปหน้า login
+        // Session::flush();
+        return redirect()->route('docs.index');
     }
 }

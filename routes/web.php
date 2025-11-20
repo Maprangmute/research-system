@@ -11,10 +11,11 @@ use App\Http\Controllers\TaskLinkController;
 
 use App\Http\Controllers\DocumentController;
 
-Route::get('/falldocs', [DocumentController::class, 'index'])->name('docs.index');
-Route::post('/falldocs/login', [DocumentController::class, 'login'])->name('docs.login');
-Route::post('/docs/logout', [DocumentController::class, 'logout'])->name('docs.logout');
-
+Route::get('/falldocs', [DocumentController::class, 'gate'])->name('docs.index');
+Route::get('/falldocs/login', [DocumentController::class, 'login'])->name('docs.login'); // <= GET
+Route::get('/falldocs/secure', [DocumentController::class, 'index'])
+     ->name('docs.secure')->middleware('signed');
+Route::get('/docs/logout', [DocumentController::class, 'logout'])->name('docs.logout');   // แนะนำให้เป็น GET
 
 
 // 🌐 หน้าหลัก
@@ -23,6 +24,30 @@ Route::get('/', function () {
     
 });
 Route::redirect('/', '/login');           // 302 ชั่วคราว (แนะนำ)
+
+
+use App\Http\Controllers\AgentController;
+
+Route::middleware(['auth'])->group(function () {
+
+    // สำหรับ Blade เดิม
+    Route::prefix('rm/agent')->name('rm.agent.')->group(function () {
+        Route::post('/ask',  [AgentController::class, 'ask'])->name('ask');   // POST /rm/agent/ask
+        Route::get('/diag',  [AgentController::class, 'diagGemini'])->name('diag'); // GET /rm/agent/diag
+    });
+
+    // API ภายใน (เรียกจากหน้าเดิมได้ด้วย)
+    Route::prefix('agent')->name('agent.')->group(function () {
+        Route::post('/rag/reindex', [AgentController::class, 'ragReindex'])->name('rag.reindex');
+        Route::post('/rag/ask',     [AgentController::class, 'ragAsk'])->name('rag.ask');
+        Route::post('/fc/fte',      [AgentController::class, 'fcFteOverrun'])->name('fc.fte');
+        Route::post('/fc/irb',      [AgentController::class, 'fcIrbExpiry'])->name('fc.irb');
+        Route::post('/fc/delay',    [AgentController::class, 'fcDelayRisk'])->name('fc.delay');
+        Route::post('/fc/output',   [AgentController::class, 'fcOutputProb'])->name('fc.output');
+    });
+
+});
+
 
 // 🔐 Auth + Dashboard
 Route::middleware([

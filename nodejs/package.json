@@ -1,0 +1,14 @@
+{
+  "name": "sihp-node-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node app.js",
+    "start:local": "PORT=3000 node app.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}
