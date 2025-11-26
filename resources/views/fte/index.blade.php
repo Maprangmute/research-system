@@ -157,7 +157,8 @@
                             <td class="px-4 py-2 text-center">
                                 <button type="button"
                                     class="px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 font-bold"
-                                    onclick="toggleDetail('{{ $loop->index }}')">ดูรายละเอียด</button>
+                                    onclick="toggleDetail('{{ $loop->index }}')"
+                                    data-detail="{{ $loop->index }}">ดูรายละเอียด</button>
                             </td>
                         </tr>
 
@@ -174,7 +175,7 @@
                                                 $thaiYear = $carbon->year + 543;
                                                 $thaiMonth = $carbon->locale('th')->translatedFormat('F');
                                             }
-                                            $sum = collect($items)->sum('fte_value');
+                                            $sum = collect($items)->sum('fte_month');
                                         @endphp
 
                                         <div class="mb-4 rounded-xl border border-blue-100 bg-blue-50">
@@ -186,46 +187,82 @@
                                             </div>
                                             <div class="p-2">
                                                 <table class="w-full table-fixed text-xs border border-gray-200 rounded-lg overflow-hidden">
-                                                    <thead class="bg-gray-100">
-                                                        <tr>
-                                                            <th class="p-2 text-left w-2/6">ชื่อโปรเจค</th>
-                                                            <th class="p-2 text-left w-1/6">กลุ่ม</th>
-                                                            <th class="p-2 text-left w-1/6">ภาระงาน</th>
-                                                            <th class="p-2 text-center w-1/12">วันที่เริ่ม</th>
-                                                            <th class="p-2 text-center w-1/12">วันที่สิ้นสุด</th>
-                                                            <th class="p-2 text-right w-1/12">FTE</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach ($items as $item)
-                                                            <tr class="{{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
-                                                                <td class="p-2 text-blue-700 underline break-words whitespace-normal">
-                                                                    <a href="{{ route('projects.show', $item->project->id) }}">
-                                                                        {{ $item->project->project_name_th ?? '-' }}
-                                                                    </a>
-                                                                </td>
-                                                                <td class="p-2 break-words whitespace-normal">
-                                                                    {{ $item->role_group ?? '-' }}
-                                                                </td>
-                                                                <td class="p-2 break-words whitespace-normal">
-                                                                    {{ $item->job_detail ?? '-' }}
-                                                                </td>
-                                                                <td class="p-2 text-center whitespace-nowrap">
-                                                                    {{ $item->start_date && \Carbon\Carbon::hasFormat($item->start_date, 'd-m-Y')
-                                                                        ? \Carbon\Carbon::createFromFormat('d-m-Y', $item->start_date)->locale('th')->isoFormat('D MMM YYYY')
-                                                                        : '-' }}
-                                                                </td>
-                                                                <td class="p-2 text-center whitespace-nowrap">
-                                                                    {{ $item->end_date && \Carbon\Carbon::hasFormat($item->end_date, 'd-m-Y')
-                                                                        ? \Carbon\Carbon::createFromFormat('d-m-Y', $item->end_date)->locale('th')->isoFormat('D MMM YYYY')
-                                                                        : '-' }}
-                                                                </td>
-                                                                <td class="p-2 text-right font-semibold">
-                                                                    {{ number_format($item->fte_value, 2) }}
-                                                                </td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
+<thead class="bg-gray-100">
+    <tr>
+        <th class="p-2 text-left w-2/6">ชื่อโปรเจค</th>
+        <th class="p-2 text-left w-1/6">กลุ่ม</th>
+        <th class="p-2 text-left w-1/6">ภาระงาน</th>
+        <th class="p-2 text-center w-1/12">วันที่เริ่ม</th>
+        <th class="p-2 text-center w-1/12">วันที่สิ้นสุด</th>
+        <th class="p-2 text-center w-1/12">จำนวนวันทำงาน</th>   {{-- ⭐ เพิ่มใหม่ --}}
+        <th class="p-2 text-right w-1/12">FTE</th>
+    </tr>
+</thead>
+<tbody>
+    @foreach ($items as $item)
+        <tr class="{{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
+            <td class="p-2 text-blue-700 underline break-words whitespace-normal">
+                <a href="{{ route('projects.show', $item->project->id) }}">
+                    {{ $item->project->project_name_th ?? '-' }}
+                </a>
+            </td>
+
+            <td class="p-2 break-words whitespace-normal">
+                {{ $item->role_group ?? '-' }}
+            </td>
+
+            <td class="p-2 break-words whitespace-normal">
+                {{ $item->job_detail ?? '-' }}
+            </td>
+
+            <td class="p-2 text-center whitespace-nowrap">
+                {{ $item->start_date && \Carbon\Carbon::hasFormat($item->start_date, 'd-m-Y')
+                    ? \Carbon\Carbon::createFromFormat('d-m-Y', $item->start_date)->locale('th')->isoFormat('D MMM YYYY')
+                    : $item->start_date }}
+            </td>
+
+            <td class="p-2 text-center whitespace-nowrap">
+                {{ $item->end_date && \Carbon\Carbon::hasFormat($item->end_date, 'd-m-Y')
+                    ? \Carbon\Carbon::createFromFormat('d-m-Y', $item->end_date)->locale('th')->isoFormat('D MMM YYYY')
+                    : $item->end_date }}
+            </td>
+
+            {{-- ⭐ จำนวนวันทำงาน (days_in_month) --}}
+            <td class="p-2 text-center font-semibold text-gray-700">
+                {{ $item->days_in_month }} วัน
+            </td>
+
+            {{-- ⭐ FTE + bar + tooltip --}}
+            <td class="p-2 text-right font-semibold relative group">
+                {{ number_format($item->fte_month, 3) }}
+
+                @php
+                    $percent = min(100, ($item->fte_month / 1) * 100);
+                @endphp
+
+                <div class="mt-1 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-500" style="width: {{ $percent }}%"></div>
+                </div>
+
+                <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block
+                    bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-20 shadow">
+
+                    <div><b>{{ $item->project->project_name_th ?? '-' }}</b></div>
+                    <div>ทำงาน: {{ $item->days_in_month }} วัน</div>
+                    <div>FTE/วัน: {{ number_format($item->fte_per_day, 4) }}</div>
+                    <div>FTE เดือนนี้: {{ number_format($item->fte_month, 4) }}</div>
+                    <div>
+                        ช่วงซ้อน:
+                        {{ $item->overlap_start->locale('th')->isoFormat('D MMM YYYY') }}
+                        -
+                        {{ $item->overlap_end->locale('th')->isoFormat('D MMM YYYY') }}
+                    </div>
+                </div>
+            </td>
+        </tr>
+    @endforeach
+</tbody>
+
                                                 </table>
                                             </div>
                                         </div>
@@ -253,8 +290,10 @@
         function resetOtherFilters() {
             let mode = document.getElementById('mode').value;
             if (mode === 'year' || mode === 'month') {
-                document.getElementById('dateStart').value = '';
-                document.getElementById('dateEnd').value = '';
+                const s = document.getElementById('dateStart');
+                const e = document.getElementById('dateEnd');
+                if (s) s.value = '';
+                if (e) e.value = '';
             }
             if (mode === 'month' || mode === 'custom') {
                 if (document.getElementById('yearSelect')) document.getElementById('yearSelect').value = '';
@@ -262,11 +301,26 @@
         }
 
         function toggleDetail(idx) {
-            document.querySelectorAll('[id^="detail-row-"]').forEach(el => el.classList.add('hidden'));
-            let el = document.getElementById('detail-row-' + idx);
-            if (el.classList.contains('hidden')) el.classList.remove('hidden');
-            else el.classList.add('hidden');
+            const all = document.querySelectorAll('[id^="detail-row-"]');
+            const row = document.getElementById('detail-row-' + idx);
+            const willShow = row.classList.contains('hidden');
+
+            all.forEach(el => el.classList.add('hidden'));
+            if (willShow) row.classList.remove('hidden');
         }
+
+        // ปิดลิ้นชักเมื่อคลิกนอกกรอบ
+        document.addEventListener('click', function (e) {
+            const rows = document.querySelectorAll('[id^="detail-row-"]');
+            rows.forEach(row => {
+                if (row.classList.contains('hidden')) return;
+                const idx = row.id.replace('detail-row-', '');
+                const btn = document.querySelector('button[data-detail="' + idx + '"]');
+                if (!row.contains(e.target) && (!btn || !btn.contains(e.target))) {
+                    row.classList.add('hidden');
+                }
+            });
+        });
 
         document.addEventListener('DOMContentLoaded', function() {
             function updateFilter() {
