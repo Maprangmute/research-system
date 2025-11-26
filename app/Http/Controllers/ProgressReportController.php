@@ -15,6 +15,7 @@ class ProgressReportController extends Controller
         $progressReports = $project->progressReports()->orderByDesc('submit_date')->get();
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
+        || Auth::user()->role === 'user_all' // All user check
             || Auth::id() === $project->user_id
             || $project->fteRoles->contains('name', $fullName);
 

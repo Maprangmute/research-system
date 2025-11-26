@@ -101,21 +101,6 @@ class ProjectController extends Controller
     {
         $project = Project::with('outputs.authors')->find($id);
 
-        // dd(
-        //     $project->outputs->map(function ($o) {
-        //         return [
-        //             'output_id' => $o->id,
-        //             'title'     => $o->title,
-        //             'authors'   => $o->authors->map(fn($a) => [
-        //                 'role' => $a->role,
-        //                 'name' => $a->name,
-        //             ])->toArray(),
-        //         ];
-        //     })
-        // );
-
-
-
         if (!$project) {
             return redirect('/rm')->with('error', 'ไม่พบข้อมูลโครงการ');
         }
@@ -123,6 +108,7 @@ class ProjectController extends Controller
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
+            || Auth::user()->role === 'user_all'
             || $project->fteRoles->contains('name', $fullName);
 
         if (!$hasPermission) {
@@ -138,7 +124,7 @@ class ProjectController extends Controller
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
             || $project->fteRoles->contains('name', $fullName)
-            || Auth::user()->role === 'user_all';
+            || Auth::user()->role === 'user_all';   // all user check
 
         if (!$hasPermission) {
             abort(403);
@@ -163,6 +149,7 @@ class ProjectController extends Controller
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
+            || Auth::user()->role === 'user_all' // all user check
             || $project->fteRoles->contains('name', $fullName);
 
         if (!$hasPermission) abort(403);
@@ -334,6 +321,7 @@ class ProjectController extends Controller
                 'name'                => $fte['name'] ?? null,
                 'job_detail'          => $fte['job_detail'] ?? null,
                 'start_date'          => $fte['start_date'] ?? null,
+                'hours'               => $fte['hours'] ?? null,
                 'end_date'            => $fte['end_date'] ?? null,
                 'fte_value'           => $fte['fte_value'] ?? 0,
                 'fte_value_research'  => $fte['fte_value_research'] ?? 0,

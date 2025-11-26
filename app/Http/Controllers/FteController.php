@@ -276,6 +276,7 @@ class FteController extends Controller
             'chartLabels',
             'chartData',
             'profile',
+            'hours',
             'mode',
             'year',
             'start',

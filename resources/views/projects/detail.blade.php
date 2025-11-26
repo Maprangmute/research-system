@@ -171,121 +171,140 @@
             </tbody>
         </table>
 
-      {{-- ===== Co-Researchers: จัดกลุ่มเป็น 3 หมวด ===== --}}
-@php
-    $coAll = ($project->coResearches ?? collect())->filter(function ($co) {
-        return !empty(trim($co->name)) || !empty(trim($co->affiliation));
-    });
+        {{-- ===== Co-Researchers: จัดกลุ่มเป็น 3 หมวด ===== --}}
+        @php
+            $coAll = ($project->coResearches ?? collect())->filter(function ($co) {
+                return !empty(trim($co->name)) || !empty(trim($co->affiliation));
+            });
 
-    // ตัดช่องว่างทุกชนิด + แปลงเป็นตัวพิมพ์เล็ก
-    $norm = function ($s) {
-        $t = preg_replace('/\s+/u', '', (string)($s ?? ''));
-        return mb_strtolower($t);
-    };
+            // ตัดช่องว่างทุกชนิด + แปลงเป็นตัวพิมพ์เล็ก
+            $norm = function ($s) {
+                $t = preg_replace('/\s+/u', '', (string) ($s ?? ''));
+                return mb_strtolower($t);
+            };
 
-    // จัดหมวดจาก unit_status (รองรับ "นโยบาย" และสะกดผิด "นโยบาล")
-    $classify = function ($s) use ($norm) {
-        $u = $norm($s);
+            // จัดหมวดจาก unit_status (รองรับ "นโยบาย" และสะกดผิด "นโยบาล")
+            $classify = function ($s) use ($norm) {
+                $u = $norm($s);
 
-        // 1) ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ (priority สูงสุด)
-        if (str_contains($u, 'ภายในหน่วยวิจัย') &&
-            (str_contains($u, 'นโยบายสุขภาพ') || str_contains($u, 'นโยบาลสุขภาพ'))) {
-            return 'policy';
-        }
+                // 1) ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ (priority สูงสุด)
+                if (
+                    str_contains($u, 'ภายในหน่วยวิจัย') &&
+                    (str_contains($u, 'นโยบายสุขภาพ') || str_contains($u, 'นโยบาลสุขภาพ'))
+                ) {
+                    return 'policy';
+                }
 
-        // 2) ภายในคณะแพทยศาสตร์ศิริราชพยาบาล (หรือมีคำว่า "ภายใน")
-        if (str_contains($u, 'ภายในคณะแพทยศาสตร์ศิริราชพยาบาล') || str_contains($u, 'ภายใน') || str_contains($u, 'internal')) {
-            return 'internal';
-        }
+                // 2) ภายในคณะแพทยศาสตร์ศิริราชพยาบาล (หรือมีคำว่า "ภายใน")
+                if (
+                    str_contains($u, 'ภายในคณะแพทยศาสตร์ศิริราชพยาบาล') ||
+                    str_contains($u, 'ภายใน') ||
+                    str_contains($u, 'internal')
+                ) {
+                    return 'internal';
+                }
 
-        // 3) ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล (หรือมีคำว่า "ภายนอก")
-        if (str_contains($u, 'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล') || str_contains($u, 'ภายนอก') || str_contains($u, 'external')) {
-            return 'external';
-        }
+                // 3) ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล (หรือมีคำว่า "ภายนอก")
+                if (
+                    str_contains($u, 'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล') ||
+                    str_contains($u, 'ภายนอก') ||
+                    str_contains($u, 'external')
+                ) {
+                    return 'external';
+                }
 
-        return 'unknown';
-    };
+                return 'unknown';
+            };
 
-    $groups = $coAll->groupBy(fn($co) => $classify($co->unit_status));
-    $coPolicy   = $groups->get('policy', collect())->values();
-    $coInternal = $groups->get('internal', collect())->values();
-    $coExternal = $groups->get('external', collect())->values();
-@endphp
+            $groups = $coAll->groupBy(fn($co) => $classify($co->unit_status));
+            $coPolicy = $groups->get('policy', collect())->values();
+            $coInternal = $groups->get('internal', collect())->values();
+            $coExternal = $groups->get('external', collect())->values();
+        @endphp
 
-{{-- ===== 1) ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ ===== --}}
-<h3 class="font-semibold text-lg text-blue-700 mb-2">Co-Researcher (ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ)</h3>
-<table class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
-    <thead class="bg-blue-50">
-        <tr>
-            <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
-            <th class="border px-3 py-2 font-semibold">ชื่อ</th>
-            <th class="border px-3 py-2 font-semibold rounded-tr-2xl">สังกัด</th>
-        </tr>
-    </thead>
-    <tbody class="text-[15px]">
-        @if ($coPolicy->count())
-            @foreach ($coPolicy as $i => $co)
+        {{-- ===== 1) ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ ===== --}}
+        <h3 class="font-semibold text-lg text-blue-700 mb-2">Co-Researcher (ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ)</h3>
+        <table
+            class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
+            <thead class="bg-blue-50">
                 <tr>
-                    <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
-                    <td class="border px-3 py-2">{{ $co->name ?: '-' }}</td>
-                    <td class="border px-3 py-2">{{ $co->affiliation ?: '-' }}</td>
+                    <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
+                    <th class="border px-3 py-2 font-semibold">ชื่อ</th>
+                    <th class="border px-3 py-2 font-semibold rounded-tr-2xl">สังกัด</th>
                 </tr>
-            @endforeach
-        @else
-            <tr><td colspan="3" class="py-6 text-center text-gray-500">ไม่มีนักวิจัยในหมวดนี้</td></tr>
-        @endif
-    </tbody>
-</table>
+            </thead>
+            <tbody class="text-[15px]">
+                @if ($coPolicy->count())
+                    @foreach ($coPolicy as $i => $co)
+                        <tr>
+                            <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
+                            <td class="border px-3 py-2">{{ $co->name ?: '-' }}</td>
+                            <td class="border px-3 py-2">{{ $co->affiliation ?: '-' }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td colspan="3" class="py-6 text-center text-gray-500">ไม่มีนักวิจัยในหมวดนี้</td>
+                    </tr>
+                @endif
+            </tbody>
+        </table>
 
-{{-- ===== 2) ภายในคณะแพทยศาสตร์ศิริราชพยาบาล ===== --}}
-<h3 class="font-semibold text-lg text-blue-700 mb-2">Co-Researcher (ภายในคณะแพทยศาสตร์ศิริราชพยาบาล)</h3>
-<table class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
-    <thead class="bg-blue-50">
-        <tr>
-            <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
-            <th class="border px-3 py-2 font-semibold">ชื่อ</th>
-            <th class="border px-3 py-2 font-semibold rounded-tr-2xl">สังกัด</th>
-        </tr>
-    </thead>
-    <tbody class="text-[15px]">
-        @if ($coInternal->count())
-            @foreach ($coInternal as $i => $co)
+        {{-- ===== 2) ภายในคณะแพทยศาสตร์ศิริราชพยาบาล ===== --}}
+        <h3 class="font-semibold text-lg text-blue-700 mb-2">Co-Researcher (ภายในคณะแพทยศาสตร์ศิริราชพยาบาล)</h3>
+        <table
+            class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
+            <thead class="bg-blue-50">
                 <tr>
-                    <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
-                    <td class="border px-3 py-2">{{ $co->name ?: '-' }}</td>
-                    <td class="border px-3 py-2">{{ $co->affiliation ?: '-' }}</td>
+                    <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
+                    <th class="border px-3 py-2 font-semibold">ชื่อ</th>
+                    <th class="border px-3 py-2 font-semibold rounded-tr-2xl">สังกัด</th>
                 </tr>
-            @endforeach
-        @else
-            <tr><td colspan="3" class="py-6 text-center text-gray-500">ไม่มีนักวิจัยภายในคณะ</td></tr>
-        @endif
-    </tbody>
-</table>
+            </thead>
+            <tbody class="text-[15px]">
+                @if ($coInternal->count())
+                    @foreach ($coInternal as $i => $co)
+                        <tr>
+                            <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
+                            <td class="border px-3 py-2">{{ $co->name ?: '-' }}</td>
+                            <td class="border px-3 py-2">{{ $co->affiliation ?: '-' }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td colspan="3" class="py-6 text-center text-gray-500">ไม่มีนักวิจัยภายในคณะ</td>
+                    </tr>
+                @endif
+            </tbody>
+        </table>
 
-{{-- ===== 3) ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล ===== --}}
-<h3 class="font-semibold text-lg text-blue-700 mb-2">Co-Researcher (ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล)</h3>
-<table class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
-    <thead class="bg-blue-50">
-        <tr>
-            <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
-            <th class="border px-3 py-2 font-semibold">ชื่อ</th>
-            <th class="border px-3 py-2 font-semibold rounded-tr-2xl">สังกัด</th>
-        </tr>
-    </thead>
-    <tbody class="text-[15px]">
-        @if ($coExternal->count())
-            @foreach ($coExternal as $i => $co)
+        {{-- ===== 3) ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล ===== --}}
+        <h3 class="font-semibold text-lg text-blue-700 mb-2">Co-Researcher (ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล)</h3>
+        <table
+            class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
+            <thead class="bg-blue-50">
                 <tr>
-                    <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
-                    <td class="border px-3 py-2">{{ $co->name ?: '-' }}</td>
-                    <td class="border px-3 py-2">{{ $co->affiliation ?: '-' }}</td>
+                    <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
+                    <th class="border px-3 py-2 font-semibold">ชื่อ</th>
+                    <th class="border px-3 py-2 font-semibold rounded-tr-2xl">สังกัด</th>
                 </tr>
-            @endforeach
-        @else
-            <tr><td colspan="3" class="py-6 text-center text-gray-500">ไม่มีนักวิจัยภายนอก</td></tr>
-        @endif
-    </tbody>
-</table>
+            </thead>
+            <tbody class="text-[15px]">
+                @if ($coExternal->count())
+                    @foreach ($coExternal as $i => $co)
+                        <tr>
+                            <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
+                            <td class="border px-3 py-2">{{ $co->name ?: '-' }}</td>
+                            <td class="border px-3 py-2">{{ $co->affiliation ?: '-' }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td colspan="3" class="py-6 text-center text-gray-500">ไม่มีนักวิจัยภายนอก</td>
+                    </tr>
+                @endif
+            </tbody>
+        </table>
 
         <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รหัส IRB</h3>
         <table
@@ -333,67 +352,94 @@
 
 
 
-        <h3 class="font-semibold text-lg text-blue-700 mb-2">E: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
-        <table
-            class="min-w-full bg-white rounded-2xl shadow-md ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
-            <thead class="bg-blue-50">
-                <tr>
-                    <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
-                    <th class="border px-3 py-2 font-semibold">ชื่อ</th>
-                    <th class="border px-3 py-2 font-semibold">กลุ่ม</th>
-                    <th class="border px-3 py-2 font-semibold">ภาระงาน</th>
-                    <th class="border px-3 py-2 font-semibold">รายละเอียดภารกิจ</th>
-                    <th class="border px-3 py-2 font-semibold">วันเริ่ม</th>
-                    <th class="border px-3 py-2 font-semibold">วันสิ้นสุด</th>
-                    <th class="border px-3 py-2 text-center font-semibold rounded-tr-2xl">FTE</th>
-                </tr>
-            </thead>
-            <tbody class="text-[15px]">
-                @php
-                    $fteList = $project->fteRoles ?? collect();
-                    // กรองเฉพาะแถวที่มีข้อมูลจริง
-                    $fteReal = $fteList->filter(function ($fte) {
-                        return !empty(trim($fte->name)) || !empty(trim($fte->role_group));
-                    });
-                @endphp
-                @if ($fteReal->count())
-                    @foreach ($fteReal as $i => $fte)
-                        <tr>
-                            <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
-                            <td class="border px-3 py-2">{{ $fte->name ?: '-' }}</td>
-                            <td class="border px-3 py-2">{{ $fte->role_group ?: '-' }}</td>
-                            <td class="border px-3 py-2">{{ $fte->job_detail ?: '-' }}</td>
-                            <td class="border px-3 py-2">{{ $fte->task_detail ?? '-' }}</td>
-                            <td class="border px-3 py-2 text-center">
-                                @php
-                                    \Carbon\Carbon::setLocale('th');
-                                    $date = $fte->start_date ? \Carbon\Carbon::parse($fte->start_date) : null;
-                                    $thaiDate = $date
-                                        ? $date->translatedFormat('j F') . ' ' . ($date->year + 543)
-                                        : '-';
-                                @endphp
-                                {{ $thaiDate }}
-                            </td>
-                            <td class="border px-3 py-2 text-center">
-                                @php
-                                    \Carbon\Carbon::setLocale('th');
-                                    $date = $fte->end_date ? \Carbon\Carbon::parse($fte->end_date) : null;
-                                    $thaiDate = $date
-                                        ? $date->translatedFormat('j F') . ' ' . ($date->year + 543)
-                                        : '-';
-                                @endphp
-                                {{ $thaiDate }}
-                            </td>
-                            <td class="border px-3 py-2 text-center">{{ $fte->fte_value }}</td>
-                        </tr>
-                    @endforeach
-                @else
+        <h3 class="font-semibold text-lg text-blue-700 mb-3">E: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
+
+        <div class="overflow-x-auto rounded-xl shadow-sm ring-1 ring-slate-200 mb-6 bg-white">
+            <table class="min-w-full text-sm border-separate border-spacing-0">
+                <thead class="bg-blue-50">
                     <tr>
-                        <td colspan="8" class="py-6 text-center text-gray-500">ไม่มีข้อมูล</td>
+                        <th class="border px-3 py-2 text-center font-semibold rounded-tl-xl">#</th>
+                        <th class="border px-3 py-2 font-semibold">ชื่อ • กลุ่ม • ภาระงาน</th>
+                        <th class="border px-3 py-2 font-semibold">รายละเอียดภารกิจ</th>
+                        <th class="border px-3 py-2 text-center font-semibold">ชั่วโมง</th>
+                        <th class="border px-3 py-2 text-center font-semibold">FTE</th>
+                        <th class="border px-3 py-2 text-center font-semibold rounded-tr-xl">วันที่เริ่ม – วันที่สิ้นสุด
+                        </th>
                     </tr>
-                @endif
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody class="text-[15px]">
+                    @php
+                        $fteReal = ($project->fteRoles ?? collect())->filter(fn($f) => !empty(trim($f->name)));
+                    @endphp
+
+                    @if ($fteReal->count())
+                        @foreach ($fteReal as $i => $fte)
+                            @php
+                                \Carbon\Carbon::setLocale('th');
+                                $start = $fte->start_date ? \Carbon\Carbon::parse($fte->start_date) : null;
+                                $end = $fte->end_date ? \Carbon\Carbon::parse($fte->end_date) : null;
+
+                                $startTxt = $start ? $start->translatedFormat('j F') . ' ' . ($start->year + 543) : '-';
+                                $endTxt = $end ? $end->translatedFormat('j F') . ' ' . ($end->year + 543) : '-';
+                            @endphp
+
+                            <tr class="bg-white hover:bg-blue-50 transition">
+
+                                <!-- ลำดับ -->
+                                <td class="border px-3 py-3 text-center font-medium">
+                                    {{ $i + 1 }}
+                                </td>
+
+                                <!-- ชื่อ + กลุ่ม + ภาระงาน -->
+                                <td class="border px-3 py-3 leading-tight">
+                                    <span class="font-semibold text-slate-900">{{ $fte->name }}</span><br>
+
+                                    <span class="text-slate-600 text-sm">
+                                        ({{ $fte->role_group ?: '-' }})
+                                        — {{ $fte->job_detail ?: '-' }}
+                                    </span>
+                                </td>
+
+                                <!-- รายละเอียดภารกิจ -->
+                                <td class="border px-3 py-3 text-slate-700">
+                                    {{ $fte->task_detail ?: '-' }}
+                                </td>
+
+                                <!-- ชั่วโมง -->
+                                <td class="border px-3 py-3 text-center font-semibold text-slate-700">
+                                    {{ $fte->hours ?? '0' }}
+                                </td>
+
+                                <!-- FTE -->
+                                <td class="border px-3 py-3 text-center font-bold text-blue-700">
+                                    {{ number_format($fte->fte_value, 5) }}
+                                </td>
+
+                                <td class="border px-3 py-3 text-center text-slate-700">
+                                    <div class="leading-snug text text-left">
+                                        <div class="mb-0.5">
+                                            <span class="font-semibold">เริ่ม:</span> {{ $startTxt }}
+                                        </div>
+                                        <div>
+                                            <span class="font-semibold">สิ้นสุด:</span> {{ $endTxt }}
+                                        </div>
+                                    </div>
+                                </td>
+
+
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td colspan="6" class="py-6 text-center text-gray-500">
+                                ไม่มีข้อมูลผู้มีส่วนร่วม
+                            </td>
+                        </tr>
+                    @endif
+                </tbody>
+            </table>
+        </div>
 
 
 

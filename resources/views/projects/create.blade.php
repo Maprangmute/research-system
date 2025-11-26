@@ -617,15 +617,19 @@
                         <!-- โครงร่างหลัก: ซ้ายรายละเอียด / ขวา FTE -->
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
+                            <!-- ============================= -->
                             <!-- ซ้าย: รายละเอียด -->
+                            <!-- ============================= -->
                             <div class="md:col-span-9 space-y-4">
-                                <!-- ชื่อ-นามสกุล + กลุ่ม -->
+
+                                <!-- 1. Name + Group -->
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <label class="w-full">
                                         <span class="block text-sm font-semibold text-gray-700 mb-1">1. ชื่อ-นามสกุล</span>
                                         <input list="fteUsers" name="fte_roles[0][name]"
                                             class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
                                             placeholder="พิมพ์หรือเลือกชื่อ" required>
+
                                         <datalist id="fteUsers">
                                             @foreach ($allUsers as $user)
                                                 @php $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')); @endphp
@@ -646,8 +650,9 @@
                                     </label>
                                 </div>
 
-                                <!-- ภาระงาน + วันที่ -->
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <!-- 2. Job + Date + Hours -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+
                                     <label class="w-full">
                                         <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน</span>
                                         <select name="fte_roles[0][job_detail]"
@@ -658,36 +663,51 @@
                                             @endforeach
                                         </select>
                                     </label>
+
                                     <label class="w-full relative">
                                         <span
                                             class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
-                                        <input name="fte_roles[0][start_date]" type="text" placeholder="โปรดใส่วันที่"
+                                        <input name="fte_roles[0][start_date]" type="text"
                                             class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                                            required>
+                                            placeholder="โปรดใส่วันที่" required>
+
                                         <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                     </label>
+
                                     <label class="w-full relative">
                                         <span
                                             class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
-                                        <input name="fte_roles[0][end_date]" type="text" placeholder="โปรดใส่วันที่"
+                                        <input name="fte_roles[0][end_date]" type="text"
                                             class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                                            required>
+                                            placeholder="โปรดใส่วันที่" required>
+
                                         <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                     </label>
+
+
+
                                 </div>
 
                                 <!-- รายละเอียดภารกิจ -->
+
                                 <label class="w-full">
+                                    <!-- NEW — HOURS -->
+                                    <label class="w-full">
+                                        <span class="block text-sm font-semibold text-gray-700 mb-1">ชั่วโมงการทำงาน
+                                            (Hour)</span>
+                                        <input name="fte_roles[0][hours]" type="number" step="0.1" min="0"
+                                            class="fte-hours w-full border p-2 rounded text-right focus:ring-2 focus:ring-blue-500"
+                                            placeholder="0.0">
+                                    </label>
+
                                     <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ</span>
                                     <select name="fte_roles[0][task_detail]"
                                         class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
@@ -710,33 +730,34 @@
                                 </label>
                             </div>
 
-                            <!-- ขวา: FTE (สองกล่องซ้อน) -->
-                            <div class="md:col-span-3">
-                                <div class="space-y-4">
-                                    <!-- FTE ผู้วิจัย -->
-                                    <label class="block p-4 border rounded-xl bg-blue-50">
-                                        <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
-                                        <input name="fte_roles[0][fte_value]" type="number" step="0.01"
-                                            min="0" max="1"
-                                            class="w-full border p-3 rounded font-semibold text-right focus:ring-2 focus:ring-blue-500"
-                                            placeholder="0.00" required>
-                                    </label>
+                            <!-- ============================= -->
+                            <!-- ขวา: FTE -->
+                            <!-- ============================= -->
+                            <div class="md:col-span-3 space-y-4">
 
-                                    <!-- FTE ผู้บริหาร -->
-                                    <label class="block p-4 border rounded-xl bg-emerald-50">
-                                        <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
-                                        <input name="fte_roles[0][fte_value_research]" type="number" step="0.01"
-                                            min="0" max="1"
-                                            class="w-full border p-3 rounded font-semibold text-right focus:ring-2 focus:ring-emerald-500"
-                                            placeholder="0.00">
-                                    </label>
+                                <!-- FTE ผู้วิจัย (AUTO) -->
+                                <label class="block p-4 border rounded-xl bg-blue-50">
+                                    <span class="block text-sm font-bold text-blue-800 mb-2">FTE จากการคำนวนชั่วโมง </span>
+                                    <input name="fte_roles[0][fte_value]" type="number" step="0.00001" min="0"
+                                        max="1" class="fte-value w-full border p-3 rounded text-right bg-gray-100"
+                                        placeholder="0.00000" readonly>
+                                </label>
 
-                                    <!-- ปุ่มลบแถว -->
-                                    <button type="button" onclick="removeRow('fte-0','fte')"
-                                        class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
-                                        ✕ ลบผู้มีส่วนร่วมนี้
-                                    </button>
-                                </div>
+                                <!-- FTE ผู้บริหาร -->
+                                <label class="block p-4 border rounded-xl bg-emerald-50">
+                                    <span class="block text-sm font-bold text-emerald-800 mb-2">FTE
+                                        (ให้โดยหัวหน้าโครงการ)</span>
+                                    <input name="fte_roles[0][fte_value_research]" type="number" step="0.01"
+                                        min="0" max="1"
+                                        class="w-full border p-3 rounded text-right focus:ring-2 focus:ring-emerald-500"
+                                        placeholder="0.00">
+                                </label>
+
+                                <button type="button" onclick="removeRow('fte-0')"
+                                    class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
+                                    ✕ ลบผู้มีส่วนร่วมนี้
+                                </button>
+
                             </div>
                         </div>
                     </div>
@@ -1090,10 +1111,9 @@
             reindexIRB();
             initThaiDatepickers(); // สำหรับรีเปิด datepicker ใหม่ที่เพิ่มมา
         }
-
         let fteIndex = 1;
 
-        // จาก PHP: list รายชื่อผู้ใช้
+        // list รายชื่อผู้ใช้จาก PHP
         const userOptions = @json(
             \App\Models\User::orderBy('name')->get()->map(function ($u) {
                     return [
@@ -1112,7 +1132,7 @@
             'เจ้าหน้าที่บริหารงานทั่วไป',
         ];
 
-        // ---------- สร้าง datalist กลางครั้งเดียว ----------
+        // ---------- Datalist กลาง ----------
         const FTE_DATALIST_ID = 'fteUsers';
 
         function ensureFteDatalist() {
@@ -1121,16 +1141,13 @@
             const dl = document.createElement('datalist');
             dl.id = FTE_DATALIST_ID;
 
-            // <option value="ชื่อเต็ม">  (ไม่ต้องมี innerText)
             dl.innerHTML = userOptions
                 .map(u => `<option value="${escapeHtml(u.fullName)}">`)
                 .join('');
 
-            // ใส่ไว้ท้าย body ก็ได้ หรือในฟอร์มที่เกี่ยวข้อง
             document.body.appendChild(dl);
         }
 
-        // utility กัน XSS เวลา build HTML จาก data
         function escapeHtml(s = '') {
             return String(s)
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -1138,9 +1155,10 @@
                 .replace(/'/g, '&#39;');
         }
 
-        // ---------- เพิ่มแถว FTE ----------
+        // =============== เพิ่มแถว FTE ===============
         function addFTERow() {
-            ensureFteDatalist(); // ให้แน่ใจว่ามี datalist ให้ใช้
+
+            ensureFteDatalist();
 
             const id = `fte-${fteIndex}`;
 
@@ -1153,114 +1171,162 @@
             ).join('');
 
             document.getElementById('fte-container').insertAdjacentHTML('beforeend', `
-  <div id="${id}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-      
-      <!-- ซ้าย: รายละเอียด -->
-      <div class="md:col-span-9 space-y-4">
-        <!-- ชื่อ-นามสกุล + กลุ่ม -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <label class="w-full">
-            <span class="fte-index block text-sm font-semibold text-gray-700 mb-1">${fteIndex + 1}. ชื่อ-นามสกุล</span>
-            <!-- เปลี่ยนเป็น input + datalist -->
-            <input list="${FTE_DATALIST_ID}"
-                   name="fte_roles[${fteIndex}][name]"
-                   class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
-                   placeholder="พิมพ์หรือเลือกชื่อ"
-                   required>
-          </label>
-          <label class="w-full">
-            <span class="block text-sm font-semibold text-gray-700 mb-1">กลุ่ม</span>
-            <select name="fte_roles[${fteIndex}][role_group]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
-              <option value="" disabled selected>โปรดเลือกกลุ่ม</option>
-              ${groupDropdown}
-            </select>
-          </label>
-        </div>
+<div id="${id}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
-        <!-- ภาระงาน + วันที่ -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <label class="w-full">
-            <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน</span>
-            <select name="fte_roles[${fteIndex}][job_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
-              <option value="" disabled selected>เลือกภาระงาน</option>
-              ${jobDropdown}
-            </select>
-          </label>
-          <label class="w-full relative">
-            <span class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่ม</span>
-            <input name="fte_roles[${fteIndex}][start_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500" placeholder="โปรดใส่วันที่" required>
-            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </label>
-          <label class="w-full relative">
-            <span class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุด</span>
-            <input name="fte_roles[${fteIndex}][end_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500" placeholder="โปรดใส่วันที่" required>
-            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </label>
-        </div>
+    <!-- LEFT -->
+    <div class="md:col-span-9 space-y-4">
 
-        <!-- รายละเอียดภารกิจ -->
+      <!-- Name + Group -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <label class="w-full">
-          <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ</span>
-          <select name="fte_roles[${fteIndex}][task_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
-            <option value="" disabled selected>เลือกภารกิจ</option>
-            <option>ติดต่อประสานงาน</option>
-            <option>ที่ปรึกษาโครงการ</option>
-            <option>review literature</option>
-            <option>เขียนproposal</option>
-            <option>ดำเนินการเอกสารขอirb/submit irb</option>
-            <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
-            <option>เก็บข้อมูล</option>
-            <option>วิเคราะห์ข้อมูล</option>
-            <option>เขียนเล่มรายงาน</option>
-            <option>เขียนmanuscript</option>
-            <option>submit journal</option>
-            <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
-            <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
-            <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
+          <span class="fte-index block text-sm font-semibold text-gray-700 mb-1">${fteIndex + 1}. ชื่อ-นามสกุล</span>
+          <input list="${FTE_DATALIST_ID}"
+                 name="fte_roles[${fteIndex}][name]"
+                 class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
+                 placeholder="พิมพ์หรือเลือกชื่อ"
+                 required>
+        </label>
+
+        <label class="w-full">
+          <span class="block text-sm font-semibold text-gray-700 mb-1">กลุ่ม</span>
+          <select name="fte_roles[${fteIndex}][role_group]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
+            <option value="" disabled selected>โปรดเลือกกลุ่ม</option>
+            ${groupDropdown}
           </select>
         </label>
       </div>
 
-      <!-- ขวา: FTE ทั้งสอง -->
-      <div class="md:col-span-3 space-y-4">
-        <label class="block p-4 border rounded-xl bg-blue-50">
-          <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
-          <input name="fte_roles[${fteIndex}][fte_value]" type="number" step="0.01" min="0" max="1"
-            class="w-full border p-3 rounded font-semibold text-right focus:ring-2 focus:ring-blue-500"
-            placeholder="0.00" required>
+      <!-- Job + Date + Date + HOURS (NEW) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        <label class="w-full">
+          <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน</span>
+          <select name="fte_roles[${fteIndex}][job_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
+            <option value="" disabled selected>เลือกภาระงาน</option>
+            ${jobDropdown}
+          </select>
         </label>
 
-        <label class="block p-4 border rounded-xl bg-emerald-50">
-          <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
-          <input name="fte_roles[${fteIndex}][fte_value_research]" type="number" step="0.01" min="0" max="1"
-            class="w-full border p-3 rounded font-semibold text-right focus:ring-2 focus:ring-emerald-500"
-            placeholder="0.00">
-        </label>
+        <label class="w-full relative">
+          <span class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
+          <input name="fte_roles[${fteIndex}][start_date]"
+                 type="text"
+                 class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
+                 placeholder="โปรดใส่วันที่"
+                 required>
 
-        <button type="button" onclick="removeRow('${id}', 'fte')"
-          class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
-          ✕ ลบผู้มีส่วนร่วมนี้
-        </button>
+          <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </label>
+        <label class="w-full relative">
+          <span class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
+          <input name="fte_roles[${fteIndex}][end_date]"
+                 type="text"
+                 class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
+                 placeholder="โปรดใส่วันที่"
+                 required>
+
+          <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </label>
+        
       </div>
+        <!-- NEW HOURS -->
+        <label class="w-full">
+          <span class="block text-sm font-semibold text-gray-700 mb-1">ชั่วโมง (Hour)</span>
+          <input type="number" step="0.1" min="0"
+                 name="fte_roles[${fteIndex}][hours]"
+                 class="fte-hours w-full border p-2 rounded text-right focus:ring-2 focus:ring-blue-500"
+                 placeholder="0.0">
+        </label>
+
+      <!-- Tasks -->
+      <label class="w-full">
+        <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ</span>
+        <select name="fte_roles[${fteIndex}][task_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
+          <option value="" disabled selected>เลือกภารกิจ</option>
+          <option>ติดต่อประสานงาน</option>
+          <option>ที่ปรึกษาโครงการ</option>
+          <option>review literature</option>
+          <option>เขียนproposal</option>
+          <option>ดำเนินการเอกสารขอirb/submit irb</option>
+          <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
+          <option>เก็บข้อมูล</option>
+          <option>วิเคราะห์ข้อมูล</option>
+          <option>เขียนเล่มรายงาน</option>
+          <option>เขียนmanuscript</option>
+          <option>submit journal</option>
+          <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
+          <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
+          <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
+        </select>
+      </label>
+
     </div>
+
+    <!-- RIGHT -->
+    <div class="md:col-span-3 space-y-4">
+      <label class="block p-4 border rounded-xl bg-blue-50">
+        <span class="block text-sm font-bold text-blue-800 mb-2">FTE จากการคำนวนชั่วโมง</span>
+        <input type="number"
+            step="0.00001"
+            min="0" max="1"
+            name="fte_roles[${fteIndex}][fte_value]"
+            class="fte-value w-full border p-3 rounded text-right bg-gray-100"
+            placeholder="0.00000"
+            readonly>
+      </label>
+
+      <label class="block p-4 border rounded-xl bg-emerald-50">
+        <span class="block text-sm font-bold text-emerald-800 mb-2">FTE(ให้โดยหัวหน้าโครงการ)</span>
+        <input type="number" step="0.01" min="0" max="1"
+            name="fte_roles[${fteIndex}][fte_value_research]"
+            class="w-full border p-3 rounded text-right focus:ring-2 focus:ring-emerald-500"
+            placeholder="0.00">
+      </label>
+
+      <button type="button"
+              onclick="removeRow('${id}', 'fte')"
+              class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
+        ✕ ลบผู้มีส่วนร่วมนี้
+      </button>
+    </div>
+
   </div>
-  `);
+</div>
+`);
 
             fteIndex++;
             reindexFTE();
             initThaiDatepickers();
+            attachFTEAuto(); // ← NEW
         }
+
+        // =============== Auto FTE ===============
+        function attachFTEAuto() {
+
+            document.querySelectorAll('.fte-row').forEach(row => {
+
+                const hourInput = row.querySelector('.fte-hours');
+                const fteInput = row.querySelector('.fte-value');
+
+                if (!hourInput || !fteInput) return;
+
+                hourInput.addEventListener('input', () => {
+                    const hr = parseFloat(hourInput.value) || 0;
+                    fteInput.value = (hr * 0.00745).toFixed(5);
+                });
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", attachFTEAuto);
 
         // ============== Output (Create) ==============
         /** ======= Output dynamic ======= */

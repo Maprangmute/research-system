@@ -15,6 +15,7 @@ class FteRole extends Model
         'name',
         'fte_value',
         'fte_value_research',   // ⬅️ เพิ่ม
+         'hours',
         'job_detail',
         'start_date',
         'end_date',
@@ -24,6 +25,8 @@ class FteRole extends Model
     protected $casts = [
         'fte_value' => 'float',
         'fte_value_research' => 'float', // ⬅️ เพิ่ม
+         'hours' => 'float',   // ⬅️ เพิ่มตรงนี้
+
     ];
     // ==== Log ทุก action ที่เกี่ยวกับ FTE ====
     protected static function booted()
