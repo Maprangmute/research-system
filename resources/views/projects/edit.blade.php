@@ -659,296 +659,263 @@
                 ];
             @endphp
 
-            <hr class="my-6 border-t-2 border-gray-300">
-            <!-- Modal Wrapper -->
-            <div x-data="{ showFTE: false, currentTab: 'external', setTab(tab) { this.currentTab = tab } }" x-effect="document.body.classList.toggle('overflow-hidden', showFTE)">
+         <!-- ========== SECTION D : รายชื่อผู้มีส่วนร่วม (FTE) ========== -->
+<hr class="my-6 border-t-2 border-gray-300">
 
-                <!-- Header -->
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
-                    <a href="#" @click.prevent="showFTE = true"
-                        class="text-sm text-blue-600 hover:underline">รายละเอียดค่า FTE</a>
+<div x-data="{ showFTE: false, currentTab: 'external', setTab(tab) { this.currentTab = tab } }"
+     x-effect="document.body.classList.toggle('overflow-hidden', showFTE)">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-2">
+        <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
+        <a href="#" @click.prevent="showFTE = true" class="text-sm text-blue-600 hover:underline">
+            รายละเอียดค่า FTE
+        </a>
+    </div>
+
+    <!-- Modal -->
+    <div x-show="showFTE" x-transition.opacity
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
+         @click.self="showFTE = false" x-trap.noscroll="showFTE"
+         x-init="$watch('showFTE', value => {
+                if (value) { setTimeout(() => $refs.fteModal?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }
+         })">
+
+        <!-- Modal box -->
+        <div x-ref="fteModal"
+             class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl ring-1 ring-gray-200"
+             @click.stop>
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-white to-blue-50 sticky top-0 z-10">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h6m6-6v12m6-6h-6"/>
+                    </svg>
+                    <h2 class="text-lg md:text-xl font-bold text-gray-800">ข้อมูลผู้มีส่วนร่วม (FTE)</h2>
                 </div>
+                <button @click="showFTE = false"
+                        class="text-gray-500 hover:text-red-500 hover:bg-red-100 rounded-full p-2 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
 
-                <!-- Modal -->
-                <!-- Overlay + Modal Wrapper -->
-                <div x-show="showFTE" x-transition.opacity
-                    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
-                    @click.self="showFTE = false" x-trap.noscroll="showFTE" x-init="$watch('showFTE', value => {
-                        if (value) { setTimeout(() => $refs.fteModal?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }
-                    })">
+            <!-- Tabs -->
+            <div class="flex justify-start px-6 pt-3 space-x-4 border-b text-sm font-medium bg-white sticky top-[60px] z-10">
+                <button @click.prevent="setTab('external')"
+                    :class="currentTab === 'external'
+                        ? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
+                        : 'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
+                    ทุนภายนอก
+                </button>
+                <button @click.prevent="setTab('internal')"
+                    :class="currentTab === 'internal'
+                        ? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
+                        : 'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
+                    ทุนภายใน
+                </button>
+                <button @click.prevent="setTab('cohort')"
+                    :class="currentTab === 'cohort'
+                        ? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
+                        : 'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
+                    COHORT
+                </button>
+            </div>
 
-                    <!-- Modal Container -->
-                    <div x-ref="fteModal"
-                        class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl ring-1 ring-gray-200"
-                        @click.stop>
+            <!-- Tab Content -->
+            <div class="p-6 space-y-4 text-sm bg-white">
+                <div x-show="currentTab === 'external'" x-transition>
+                    @include('projects.table.external')
+                </div>
+                <div x-show="currentTab === 'internal'" x-transition>
+                    @include('projects.table.internal')
+                </div>
+                <div x-show="currentTab === 'cohort'" x-transition>
+                    @include('projects.table.cohort')
+                </div>
+            </div>
 
-                        <!-- Header -->
-                        <div
-                            class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-white to-blue-50 sticky top-0 z-10">
-                            <div class="flex items-center space-x-2">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h6m6-6v12m6-6h-6" />
-                                </svg>
-                                <h2 class="text-lg md:text-xl font-bold text-gray-800">ข้อมูลผู้มีส่วนร่วม (FTE)</h2>
-                            </div>
-                            <button @click="showFTE = false"
-                                class="text-gray-500 hover:text-red-500 hover:bg-red-100 rounded-full p-2 transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
+            <div class="px-6 py-4 bg-gray-50 text-right border-t">
+                <button @click="showFTE = false"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                    ปิดหน้าต่าง
+                </button>
+            </div>
 
-                        <!-- Tabs -->
-                        <div
-                            class="flex justify-start px-6 pt-3 space-x-4 border-b text-sm font-medium bg-white sticky top-[60px] z-10">
-                            <button @click.prevent="setTab('external')"
-                                :class="currentTab === 'external' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
-                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
-                                ทุนภายนอก
-                            </button>
-                            <button @click.prevent="setTab('internal')"
-                                :class="currentTab === 'internal' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
-                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
-                                ทุนภายใน
-                            </button>
-                            <button @click.prevent="setTab('cohort')"
-                                :class="currentTab === 'cohort' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
-                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
-                                COHORT
-                            </button>
-                        </div>
+        </div>
+    </div>
 
-                        <!-- Content Area -->
-                        <div class="p-6 space-y-4 text-sm bg-white">
-                            <div x-show="currentTab === 'external'" x-transition>
-                                @include('projects.table.external')
-                            </div>
-                            <div x-show="currentTab === 'internal'" x-transition>
-                                @include('projects.table.internal')
-                            </div>
-                            <div x-show="currentTab === 'cohort'" x-transition>
-                                @include('projects.table.cohort')
-                            </div>
-                        </div>
+    <!-- datalist ชื่อคน -->
+    <datalist id="fteUsers">
+        @foreach ($allUsers as $user)
+            @php $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')); @endphp
+            <option value="{{ $fullName }}"></option>
+        @endforeach
+    </datalist>
 
-                        <!-- Footer (optional) -->
-                        <div class="px-6 py-4 bg-gray-50 text-right border-t">
-                            <button @click="showFTE = false"
-                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
-                                ปิดหน้าต่าง
-                            </button>
-                        </div>
+    <!-- ========== LIST OF FTE ROWS ========== -->
+    <div id="fte-container" class="space-y-4 mb-4">
+
+        @foreach ($project->fteRoles ?? [] as $i => $fte)
+
+        <div id="fte-{{ $i }}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+
+                <!-- ===== Left Column ===== -->
+                <div class="md:col-span-9 space-y-4">
+
+                    <!-- ชื่อ + กลุ่ม -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                        <label class="w-full">
+                            <span class="block text-sm font-semibold">ชื่อ-นามสกุล</span>
+                            <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
+                                value="{{ $fte->name }}"
+                                class="w-full border p-2 rounded">
+                        </label>
+
+                        <label class="w-full">
+                            <span class="block text-sm font-semibold">กลุ่ม</span>
+                            <select name="fte_roles[{{ $i }}][role_group]"
+                                class="w-full border p-2 rounded">
+                                <option value="" disabled>เลือกกลุ่ม</option>
+
+                                @foreach ($roleGroups as $group)
+                                    <option value="{{ $group }}" @selected($fte->role_group == $group)>
+                                        {{ $group }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </label>
 
                     </div>
-                </div>
-                {{-- วางไว้บนๆ ของฟอร์ม (นอก @foreach) เพียงครั้งเดียว --}}
-                <datalist id="fteUsers">
-                    @foreach ($allUsers as $user)
-                        @php $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')); @endphp
-                        <option value="{{ $fullName }}"></option>
-                    @endforeach
-                </datalist>
 
-                <div id="fte-container" class="space-y-4 mb-4">
-                    @foreach ($project->fteRoles ?? [] as $i => $fte)
-                        <div id="fte-{{ $i }}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
-                            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    <!-- ภาระงาน + วันที่ -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
-                                {{-- ========== ซ้าย ========== --}}
-                                <div class="md:col-span-9 space-y-4">
+                        <label class="w-full">
+                            <span class="block text-sm font-semibold">ภาระงาน</span>
+                            <select name="fte_roles[{{ $i }}][job_detail]"
+                                class="w-full border p-2 rounded">
+                                <option value="" disabled>เลือกภาระงาน</option>
 
-                                    {{-- บรรทัด 1: ชื่อ-นามสกุล + กลุ่ม --}}
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                @foreach ($jobDetails as $job)
+                                    <option value="{{ $job }}" @selected($fte->job_detail == $job)>
+                                        {{ $job }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </label>
 
-                                        <label class="w-full">
-                                            <span class="block text-sm font-semibold text-gray-700 mb-1">
-                                                <span class="fte-index">{{ $loop->iteration }}</span>. ชื่อ-นามสกุล
-                                            </span>
+                        <label class="w-full relative">
+                            <span class="block text-sm font-semibold">วันเริ่มต้น</span>
+                            <input name="fte_roles[{{ $i }}][start_date]" type="text"
+                                value="{{ $fte->start_date }}"
+                                class="thai-datepicker w-full border p-2 rounded pl-10">
+                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </label>
 
-                                            <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
-                                                class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
-                                                value="{{ old("fte_roles.$i.name", $fte->name) }}"
-                                                placeholder="พิมพ์หรือเลือกชื่อ" required>
-                                        </label>
+                        <label class="w-full relative">
+                            <span class="block text-sm font-semibold">วันสิ้นสุด</span>
+                            <input name="fte_roles[{{ $i }}][end_date]" type="text"
+                                value="{{ $fte->end_date }}"
+                                class="thai-datepicker w-full border p-2 rounded pl-10">
+                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </label>
 
-                                        <label class="w-full">
-                                            <span class="block text-sm font-semibold text-gray-700 mb-1">กลุ่ม</span>
-                                            <select name="fte_roles[{{ $i }}][role_group]"
-                                                class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
-                                                <option value="" disabled
-                                                    {{ empty($fte->role_group) ? 'selected' : '' }}>เลือกกลุ่ม</option>
-                                                @foreach ($roleGroups as $group)
-                                                    <option value="{{ $group }}" @selected($fte->role_group == $group)>
-                                                        {{ $group }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </label>
+                    </div>
 
-                                    </div>
+                    <!-- ชั่วโมง -->
+                    <label class="w-full">
+                        <span class="block text-sm font-semibold">ชั่วโมงการทำงาน (Hour)</span>
+                        <input type="number" step="0.1" min="0"
+                            name="fte_roles[{{ $i }}][hours]"
+                            value="{{ $fte->hours }}"
+                            class="fte-hours w-full border p-2 rounded text-right"
+                            placeholder="0.0">
+                    </label>
 
-                                    {{-- บรรทัด 2: ภาระงาน + วันเริ่ม + วันสิ้นสุด + ชั่วโมง --}}
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- รายละเอียดภารกิจ -->
+                    <label class="w-full">
+                        <span class="block text-sm font-semibold">รายละเอียดภารกิจ</span>
+                        <select name="fte_roles[{{ $i }}][task_detail]"
+                            class="w-full border p-2 rounded">
 
-                                        <label class="w-full">
-                                            <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน</span>
-                                            <select name="fte_roles[{{ $i }}][job_detail]"
-                                                class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
-                                                <option value="" disabled
-                                                    {{ empty($fte->job_detail) ? 'selected' : '' }}>เลือกภาระงาน</option>
-                                                @foreach ($jobDetails as $job)
-                                                    <option value="{{ $job }}" @selected($fte->job_detail == $job)>
-                                                        {{ $job }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </label>
+                            <option value="" disabled>เลือกภารกิจ</option>
 
-                                        <label class="w-full relative">
-                                            <span
-                                                class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
-                                            <input name="fte_roles[{{ $i }}][start_date]" type="text"
-                                                value="{{ $fte->start_date ?? '' }}"
-                                                class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500">
-                                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        </label>
+                            <!-- ⬇ Dropdown ไม่ย่อ รายการอยู่ครบ -->
+                            <option value="ติดต่อประสานงาน">ติดต่อประสานงาน</option>
+                            <option value="ที่ปรึกษาโครงการ">ที่ปรึกษาโครงการ</option>
+                            <option value="review literature">review literature</option>
+                            <option value="เขียนproposal">เขียนproposal</option>
+                            <option value="ดำเนินการเอกสารขอirb/submit irb">ดำเนินการเอกสารขอirb/submit irb</option>
+                            <option value="ดำเนินการเอกสารขอทุน/submit ทุน">ดำเนินการเอกสารขอทุน/submit ทุน</option>
+                            <option value="เก็บข้อมูล">เก็บข้อมูล</option>
+                            <option value="วิเคราะห์ข้อมูล">วิเคราะห์ข้อมูล</option>
+                            <option value="เขียนเล่มรายงาน">เขียนเล่มรายงาน</option>
+                            <option value="เขียนmanuscript">เขียนmanuscript</option>
+                            <option value="submit journal">submit journal</option>
+                            <option value="เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์">เบิกเงินรางวัลตีพิมพ์ / ค่าตอบแทนตีพิมพ์</option>
+                            <option value="นำเสนอผลงานวิจัย Oral/Poster presentation">นำเสนอผลงานวิจัย Oral/Poster presentation</option>
+                            <option value="ประชาสัมพันธ์-เบิกงบประมาณทุน">ประชาสัมพันธ์ – เบิกงบประมาณทุน</option>
 
-                                        <label class="w-full relative">
-                                            <span
-                                                class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
-                                            <input name="fte_roles[{{ $i }}][end_date]" type="text"
-                                                value="{{ $fte->end_date ?? '' }}"
-                                                class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500">
-                                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                                stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        </label>
+                        </select>
+                    </label>
 
-                                     
-
-                                    </div>
-
-                                       {{-- ชั่วโมงใหม่ --}}
-                                        <label class="w-full">
-                                            <span class="block text-sm font-semibold text-gray-700 mb-1">ชั่วโมงการทำงาน
-                                                (Hour)</span>
-                                            <input type="number" step="0.1" min="0"
-                                                name="fte_roles[{{ $i }}][hours]"
-                                                value="{{ $fte->hours ?? '' }}"
-                                                class="fte-hours w-full border p-2 rounded text-right focus:ring-2 focus:ring-blue-500"
-                                                placeholder="0.0">
-                                        </label>
-
-                                    {{-- รายละเอียดภารกิจ (FULL option ไม่ย่อ) --}}
-                                    <label class="w-full">
-                                        <span
-                                            class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ</span>
-                                        <select name="fte_roles[{{ $i }}][task_detail]"
-                                            class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
-
-                                            <option value="" disabled
-                                                {{ empty($fte->task_detail) ? 'selected' : '' }}>
-                                                เลือกภารกิจ
-                                            </option>
-
-                                            <option value="ติดต่อประสานงาน" @selected($fte->task_detail == 'ติดต่อประสานงาน')>
-                                                ติดต่อประสานงาน
-                                            </option>
-                                            <option value="ที่ปรึกษาโครงการ" @selected($fte->task_detail == 'ที่ปรึกษาโครงการ')>
-                                                ที่ปรึกษาโครงการ
-                                            </option>
-                                            <option value="review literature" @selected($fte->task_detail == 'review literature')>
-                                                review literature
-                                            </option>
-                                            <option value="เขียนproposal" @selected($fte->task_detail == 'เขียนproposal')>
-                                                เขียนproposal
-                                            </option>
-                                            <option value="ดำเนินการเอกสารขอirb/submit irb" @selected($fte->task_detail == 'ดำเนินการเอกสารขอirb/submit irb')>
-                                                ดำเนินการเอกสารขอirb/submit irb
-                                            </option>
-                                            <option value="ดำเนินการเอกสารขอทุน/submit ทุน" @selected($fte->task_detail == 'ดำเนินการเอกสารขอทุน/submit ทุน')>
-                                                ดำเนินการเอกสารขอทุน/submit ทุน
-                                            </option>
-                                            <option value="เก็บข้อมูล" @selected($fte->task_detail == 'เก็บข้อมูล')>
-                                                เก็บข้อมูล
-                                            </option>
-                                            <option value="วิเคราะห์ข้อมูล" @selected($fte->task_detail == 'วิเคราะห์ข้อมูล')>
-                                                วิเคราะห์ข้อมูล
-                                            </option>
-                                            <option value="เขียนเล่มรายงาน" @selected($fte->task_detail == 'เขียนเล่มรายงาน')>
-                                                เขียนเล่มรายงาน
-                                            </option>
-                                            <option value="เขียนmanuscript" @selected($fte->task_detail == 'เขียนmanuscript')>
-                                                เขียนmanuscript
-                                            </option>
-                                            <option value="submit journal" @selected($fte->task_detail == 'submit journal')>
-                                                submit journal
-                                            </option>
-                                            <option value="เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์"
-                                                @selected($fte->task_detail == 'เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์')>
-                                                เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์
-                                            </option>
-                                            <option value="นำเสนอผลงานวิจัย Oral/Poster presentation"
-                                                @selected($fte->task_detail == 'นำเสนอผลงานวิจัย Oral/Poster presentation')>
-                                                นำเสนอผลงานวิจัย Oral/Poster presentation
-                                            </option>
-                                            <option value="ประชาสัมพันธ์-เบิกงบประมาณทุน" @selected($fte->task_detail == 'ประชาสัมพันธ์-เบิกงบประมาณทุน')>
-                                                ประชาสัมพันธ์-เบิกงบประมาณทุน
-                                            </option>
-
-                                        </select>
-                                    </label>
-
-                                </div>
-
-                                {{-- ========== ขวา ========== --}}
-                                <div class="md:col-span-3 space-y-4">
-
-                                    {{-- FTE ผู้วิจัย (auto + readonly) --}}
-                                    <label class="block p-4 border rounded-xl bg-blue-50">
-                                        <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
-                                        <input type="number" step="0.00001" min="0" max="1"
-                                            name="fte_roles[{{ $i }}][fte_value]"
-                                            value="{{ $fte->fte_value }}"
-                                            class="fte-value w-full border p-3 rounded text-right bg-gray-100" readonly>
-                                    </label>
-
-                                    {{-- FTE ผู้บริหาร --}}
-                                    <label class="block p-4 border rounded-xl bg-emerald-50">
-                                        <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
-                                        <input type="number" step="0.01" min="0" max="1"
-                                            name="fte_roles[{{ $i }}][fte_value_research]"
-                                            value="{{ $fte->fte_value_research }}"
-                                            class="w-full border p-3 rounded text-right">
-                                    </label>
-
-                                    <button type="button" onclick="removeRow('fte-{{ $i }}','fte')"
-                                        class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
-                                        ✕ ลบผู้มีส่วนร่วมนี้
-                                    </button>
-
-                                </div>
-
-                            </div>
-                        </div>
-                    @endforeach
                 </div>
 
-                <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
-                    + เพิ่มผู้มีส่วนร่วม
-                </button>
+                <!-- ===== Right Column ===== -->
+                <div class="md:col-span-3 space-y-4">
+
+                    <!-- FTE (ผู้วิจัย) -->
+                    <label class="block p-4 border rounded-xl bg-blue-50">
+                        <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
+                        <input type="number" step="0.00001" min="0" max="1"
+                            name="fte_roles[{{ $i }}][fte_value]"
+                            value="{{ $fte->fte_value }}"
+                            class="fte-value w-full border p-3 rounded bg-gray-100 text-right"
+                            readonly>
+                    </label>
+
+                    <!-- FTE (ผู้บริหาร) -->
+                    <label class="block p-4 border rounded-xl bg-emerald-50">
+                        <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
+                        <input type="number" step="0.01" min="0" max="1"
+                            name="fte_roles[{{ $i }}][fte_value_research]"
+                            value="{{ $fte->fte_value_research }}"
+                            class="w-full border p-3 rounded text-right">
+                    </label>
+
+                    <button type="button"
+                        onclick="removeRow('fte-{{ $i }}','fte')"
+                        class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
+                        ✕ ลบผู้มีส่วนร่วมนี้
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+        @endforeach
+
+    </div>
+
+    <button type="button" onclick="addFTERow()"
+            class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
+        + เพิ่มผู้มีส่วนร่วม
+    </button>
+
+</div>
 
 
                 {{-- E: ผลงานวิจัย (Output) ========================= --}}
@@ -1893,19 +1860,45 @@
     initThaiDatepickers();
     attachFTEAuto(); // สำคัญ!
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    attachFTEAuto();   // ให้แถวเดิมทำงาน auto
+});
+
+
 function attachFTEAuto() {
     document.querySelectorAll('.fte-hours').forEach(input => {
         input.oninput = function () {
-            const hours = parseFloat(this.value) || 0;
-            const fte = (hours * 0.00745).toFixed(5);
+
             const row = this.closest('.fte-row');
-            row.querySelector('.fte-value').value = fte;
+            const fteField = row.querySelector('.fte-value');
+
+            const hours = parseFloat(this.value);
+
+            const oldFTE = fteField.value; // ค่าเดิมในช่อง FTE
+
+            // ========== RULE 1 ==========
+            // ชั่วโมง = 0 และ fte เดิม > 0 → ห้ามแก้ไข
+            if ((!hours || hours === 0) && oldFTE !== "" && parseFloat(oldFTE) > 0) {
+                return; // ไม่แตะต้องค่าเดิม
+            }
+
+            // ========== RULE 2 ==========
+            // ชั่วโมง = 0 และ FTE เดิมว่างหรือ 0 → set = 0.00000
+            if (!hours || hours === 0) {
+                if (oldFTE === "" || parseFloat(oldFTE) === 0) {
+                    fteField.value = "0.00000";
+                }
+                return;
+            }
+
+            // ========== RULE 3 ==========
+            // ชั่วโมงมากกว่า 0 → คำนวณปกติ
+            const fte = (hours * 0.00745).toFixed(5);
+            fteField.value = fte;
         };
     });
 }
-
-
-
 
 
         function reindexFTE() {
