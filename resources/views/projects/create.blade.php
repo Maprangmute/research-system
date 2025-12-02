@@ -87,8 +87,10 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme)*</span>
-                    <select name="theme" required class="w-full border p-2 rounded">
+                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme) *</span>
+                    <select name="theme" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')"
+                                    oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
                         <option value="" disabled selected>กรุณาเลือกกลุ่มเนื้อหา</option>
                         <option value="T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก">T101_Research_วิจัยที่ Health
                             Policy เป็น ผู้วิจัยหลัก</option>
@@ -131,7 +133,6 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L)</span>
-                    {{-- <select name="size" required class="w-full border p-2 rounded"> --}}
                     <select name="size" class="w-full border p-2 rounded">
                         <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
                         <option value="S">S (ภายนอก ต่ำกว่า 1 ล้าน / ภายใน)</option>
@@ -147,8 +148,10 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค</span>
-                    <select name="start_year" class="w-full border p-2 rounded" required>
+                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค *</span>
+                    <select name="start_year" class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')"
+                                    oninput="this.setCustomValidity('')">
                         <option value="" disabled
                             {{ old('start_year', $project->start_year ?? '') == '' ? 'selected' : '' }}>เลือกปีโปรเจค
                         </option>
@@ -389,12 +392,14 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="block w-full">
                     <span class="block text-sm font-medium text-gray-700 mb-1">
-                        CA101 - ชื่อ PI (ผู้วิจัยหลัก)
+                        CA101 - ชื่อ PI (ผู้วิจัยหลัก) *
                     </span>
                     <div class="relative">
                         <input name="pi_name" list="userNames" type="text"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required>
+                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้วิจัยหลัก')"
+                                    oninput="this.setCustomValidity('')">
                         <datalist id="userNames">
                             @foreach ($allUsers as $user)
                                 @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
@@ -487,8 +492,10 @@
                         </label>
 
                         <label class="col-span-5">
-                            <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
-                            <select name="coresearch[0][unit_status]" required class="w-full border p-2 rounded">
+                            <span class="block text-sm mb-1">คนภายนอก/ภายใน *</span>
+                            <select name="coresearch[0][unit_status]" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกคนภายนอก/ภายใน')"
+                                    oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
                                 <option value="" disabled selected>กรุณาเลือก</option>
                                 <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
                                 <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>
@@ -628,7 +635,9 @@
                                         <span class="block text-sm font-semibold text-gray-700 mb-1">1. ชื่อ-นามสกุล</span>
                                         <input list="fteUsers" name="fte_roles[0][name]"
                                             class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
-                                            placeholder="พิมพ์หรือเลือกชื่อ" required>
+                                            placeholder="พิมพ์หรือเลือกชื่อ" required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้มีส่วนร่วม')"
+                                    oninput="this.setCustomValidity('')">
 
                                         <datalist id="fteUsers">
                                             @foreach ($allUsers as $user)
@@ -666,10 +675,12 @@
 
                                     <label class="w-full relative">
                                         <span
-                                            class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
+                                            class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน * </span>
                                         <input name="fte_roles[0][start_date]" type="text"
                                             class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                                            placeholder="โปรดใส่วันที่" required>
+                                            placeholder="โปรดใส่วันที่" required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุวันเริ่มต้นภาระงาน')"
+                                    oninput="this.setCustomValidity('')">
 
                                         <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -680,10 +691,12 @@
 
                                     <label class="w-full relative">
                                         <span
-                                            class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
+                                            class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน * </span>
                                         <input name="fte_roles[0][end_date]" type="text"
                                             class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                                            placeholder="โปรดใส่วันที่" required>
+                                            placeholder="โปรดใส่วันที่" required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุวันสิ้นสุดภาระงาน')"
+                                    oninput="this.setCustomValidity('')">
 
                                         <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -708,9 +721,11 @@
                                             placeholder="0.0">
                                     </label>
 
-                                    <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ</span>
+                                    <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ *</span>
                                     <select name="fte_roles[0][task_detail]"
-                                        class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
+                                        class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกภารกิจ')"
+                                    oninput="this.setCustomValidity('')">
                                         <option value="" disabled selected>เลือกภารกิจ</option>
                                         <option>ติดต่อประสานงาน</option>
                                         <option>ที่ปรึกษาโครงการ</option>
@@ -783,14 +798,18 @@
                             <span class="block text-sm text-gray-700 mb-1">
                                 ชื่อผลงานที่ <span class="output-index">1</span>
                             </span>
-                            <input name="outputs[0][title]" type="text" class="w-full border p-2 rounded"
+                            <input name="outputs[0][title]" type="text" class="w-full border p-2 rounded" required
+                             oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
+                             oninput="this.setCustomValidity('')"
                                 placeholder="ชื่อผลงาน">
                         </label>
 
                         <div class="grid grid-cols-3 gap-4 items-end">
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                                <select name="outputs[0][type]" class="w-full border p-2 rounded output-type" required>
+                                <select name="outputs[0][type]" class="w-full border p-2 rounded output-type" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
+                                    oninput="this.setCustomValidity('')">
                                     <option value="" disabled selected>เลือกประเภทของผลงาน</option>
                                     <option>EA101 Research Paper or Journal Article</option>
                                     <option>EA102 Reports and White papers</option>
@@ -1185,7 +1204,9 @@
                  name="fte_roles[${fteIndex}][name]"
                  class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
                  placeholder="พิมพ์หรือเลือกชื่อ"
-                 required>
+                 required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้มีส่วนร่วม')"
+                                    oninput="this.setCustomValidity('')">
         </label>
 
         <label class="w-full">
@@ -1214,7 +1235,9 @@
                  type="text"
                  class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
                  placeholder="โปรดใส่วันที่"
-                 required>
+                 required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุวันเริ่มต้นภาระงาน')"
+                                    oninput="this.setCustomValidity('')">
 
           <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1228,7 +1251,9 @@
                  type="text"
                  class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
                  placeholder="โปรดใส่วันที่"
-                 required>
+                 required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุวันสิ้นสุดภาระงาน')"
+                                    oninput="this.setCustomValidity('')">
 
           <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1250,7 +1275,9 @@
       <!-- Tasks -->
       <label class="w-full">
         <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ</span>
-        <select name="fte_roles[${fteIndex}][task_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required>
+        <select name="fte_roles[${fteIndex}][task_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกภารกิจ')"
+                                    oninput="this.setCustomValidity('')">
           <option value="" disabled selected>เลือกภารกิจ</option>
           <option>ติดต่อประสานงาน</option>
           <option>ที่ปรึกษาโครงการ</option>
@@ -1356,13 +1383,20 @@
         <span class="block text-sm text-gray-700 mb-1">
           ชื่อผลงานที่ <span class="output-index">${outputIndex + 1}</span>
         </span>
-        <input name="outputs[${outputIndex}][title]" type="text" class="w-full border p-2 rounded" placeholder="ชื่อผลงาน">
+        <input name="outputs[${outputIndex}][title]" type="text" class="w-full border p-2 rounded"
+    required
+    oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
+    oninput="this.setCustomValidity('')"
+    placeholder="ชื่อผลงาน">
+
       </label>
 
       <div class="grid grid-cols-3 gap-4 items-end">
         <label class="w-full">
           <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-          <select name="outputs[${outputIndex}][type]" class="w-full border p-2 rounded output-type" required>
+          <select name="outputs[${outputIndex}][type]" class="w-full border p-2 rounded output-type" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
+                                    oninput="this.setCustomValidity('')">
             <option value="" disabled selected>เลือกประเภทของผลงาน</option>
             <option>EA101 Research Paper or Journal Article</option>
             <option>EA102 Reports and White papers</option>
@@ -1441,7 +1475,9 @@
       </label>
       <label class="w-full">
         <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
-        <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded" required>
+        <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือก Quartile')"
+                                    oninput="this.setCustomValidity('')">
           <option value="" disabled selected>เลือก Quartile</option>
           <option value="Q1">Q1</option>
           <option value="Q2">Q2</option>
@@ -1489,7 +1525,9 @@
             row.innerHTML = `
     <label class="w-full">
       <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน (Role)</span>
-      <select name="outputs[${outputIdx}][authors][${authorIdx}][role]" class="w-full border p-2 rounded" required>
+      <select name="outputs[${outputIdx}][authors][${authorIdx}][role]" class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
+                                    oninput="this.setCustomValidity('')">
         <option value="" disabled selected>เลือกบทบาท</option>
         <option value="first">First-author</option>
         <option value="co">Co-author</option>
@@ -1501,7 +1539,9 @@
       <span class="block text-sm text-gray-700 mb-1">ชื่อ-สกุล ผู้เขียน</span>
       <input name="outputs[${outputIdx}][authors][${authorIdx}][name]" list="userNames" type="text"
              class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-             placeholder="คำนำหน้า ชื่อ-นามสกุล" required>
+             placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้เขียน')"
+                                    oninput="this.setCustomValidity('')">
     </label>
 
     <div class="flex items-end">

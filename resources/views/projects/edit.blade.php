@@ -200,8 +200,7 @@
 
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L)</span>
-                    {{-- <select name="size" required class="w-full border p-2 rounded"> --}}
+                    <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L) </span>
                     <select name="size" class="w-full border p-2 rounded">
                         <option value="" disabled {{ old('size', $project->size) ? '' : 'selected' }}>
                             กรุณาเลือกขนาดของโปรเจค
@@ -229,8 +228,10 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค</span>
-                    <select name="start_year" class="w-full border p-2 rounded" required>
+                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค *</span>
+                    <select name="start_year" class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')"
+                                    oninput="this.setCustomValidity('')">
                         <option value="" disabled
                             {{ old('start_year', $project->start_year ?? '') == '' ? 'selected' : '' }}>เลือกปีโปรเจค
                         </option>
@@ -608,9 +609,11 @@
                                     placeholder="สังกัด">
                             </label>
                             <label class="col-span-5">
-                                <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน</span>
+                                <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน *</span>
                                 <select name="coresearch[{{ $i }}][unit_status]"
-                                    class="w-full border p-2 rounded" required>
+                                    class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณเลือกสถานะของ Co-Researcher')"
+                                    oninput="this.setCustomValidity('')">
                                     <option value="" disabled {{ $co->unit_status == '' ? 'selected' : '' }}>
                                         กรุณาเลือก</option>
                                     <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล"
@@ -942,6 +945,9 @@
                                 </span>
                                 <input name="outputs[{{ $i }}][title]" type="text"
                                     class="w-full border p-2 rounded" value="{{ old("outputs.$i.title", $out->title) }}"
+                                    required
+                                    oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
+                                    oninput="this.setCustomValidity('')"
                                     placeholder="ชื่อผลงาน">
                             </label>
 
@@ -951,6 +957,8 @@
                                     <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
                                     <select name="outputs[{{ $i }}][type]"
                                         class="w-full border p-2 rounded output-type" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
+                                    oninput="this.setCustomValidity('')"
                                         onchange="handleTypeChange(this)">
                                         <option value="" disabled {{ !$out->type ? 'selected' : '' }}>
                                             เลือกประเภทของผลงาน</option>
@@ -1117,7 +1125,9 @@
                                                             </span>
                                                             <select
                                                                 name="outputs[{{ $i }}][authors][{{ $j }}][role]"
-                                                                class="w-full border p-2 rounded" required>
+                                                                class="w-full border p-2 rounded" required
+                                                                oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
+                                                                oninput="this.setCustomValidity('')">
                                                                 <option value="" disabled
                                                                     {{ !$auth->role ? 'selected' : '' }}>เลือกบทบาท
                                                                 </option>
@@ -1134,13 +1144,15 @@
                                                         </label>
 
                                                         <label class="w-full">
-                                                            <span class="block text-sm text-gray-700 mb-1">ชื่อ-สกุล
-                                                                ผู้เขียน</span>
+                                                            <span class="block text-sm text-gray-700 mb-1">ชื่อ-นามสกุล
+                                                                ผู้เขียน * </span>
                                                             <input
                                                                 name="outputs[{{ $i }}][authors][{{ $j }}][name]"
                                                                 type="text" class="w-full border p-2 rounded"
                                                                 value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}"
-                                                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required>
+                                                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                                                oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
+                                                                oninput="this.setCustomValidity('')">
                                                         </label>
 
                                                         <div class="flex items-end">
@@ -1153,9 +1165,11 @@
                                                     <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
                                                         <label class="w-full">
                                                             <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
-                                                                (Role)</span>
+                                                                (Role) * </span>
                                                             <select name="outputs[{{ $i }}][authors][0][role]"
-                                                                class="w-full border p-2 rounded" required>
+                                                                class="w-full border p-2 rounded" required
+                                                                oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
+                                                                oninput="this.setCustomValidity('')">
                                                                 <option value="" disabled selected>เลือกบทบาท
                                                                 </option>
                                                                 <option value="first">First-author</option>
@@ -1164,11 +1178,13 @@
                                                             </select>
                                                         </label>
                                                         <label class="w-full">
-                                                            <span class="block text-sm text-gray-700 mb-1">ชื่อ-สกุล
+                                                            <span class="block text-sm text-gray-700 mb-1">คำนำหน้า ชื่อ-สกุล
                                                                 ผู้เขียน</span>
                                                             <input name="outputs[{{ $i }}][authors][0][name]"
                                                                 type="text" class="w-full border p-2 rounded"
-                                                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required>
+                                                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                                            oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
+                                                            oninput="this.setCustomValidity('')">
                                                         </label>
                                                         <div class="flex items-end">
                                                             <button type="button"
@@ -1733,7 +1749,9 @@
                         name="fte_roles[${index}][name]"
                         class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
                         placeholder="พิมพ์หรือเลือกชื่อ"
-                        required>
+                        required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
+                                    oninput="this.setCustomValidity('')">
                 </label>
 
                 <label class="w-full">
@@ -1946,13 +1964,19 @@ function attachFTEAuto() {
         <span class="block text-sm text-gray-700 mb-1">
           ชื่อผลงานที่ <span class="output-index">${idx + 1}</span>
         </span>
-        <input name="outputs[${idx}][title]" type="text" class="w-full border p-2 rounded" placeholder="ชื่อผลงาน">
+        <input name="outputs[${idx}][title]" type="text" class="w-full border p-2 rounded" 
+        required
+        oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
+        oninput="this.setCustomValidity('')"
+         placeholder="ชื่อผลงาน">
       </label>
 
       <div class="grid grid-cols-3 gap-4 items-end">
         <label class="w-full">
           <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-          <select name="outputs[${idx}][type]" class="w-full border p-2 rounded output-type" required onchange="handleTypeChange(this)">
+          <select name="outputs[${idx}][type]" class="w-full border p-2 rounded output-type" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
+                                    oninput="this.setCustomValidity('')" onchange="handleTypeChange(this)">
             <option value="" disabled selected>เลือกประเภทของผลงาน</option>
             <option value="EA101 Research Paper or Journal Article">EA101 Research Paper or Journal Article</option>
             <option value="EA102 Reports and White papers">EA102 Reports and White papers</option>
@@ -2098,7 +2122,9 @@ function attachFTEAuto() {
     <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
       <label>
         <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน</span>
-        <select name="outputs[${idx}][authors][${aIdx}][role]" class="w-full border p-2 rounded" required>
+        <select name="outputs[${idx}][authors][${aIdx}][role]" class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
+                                    oninput="this.setCustomValidity('')">
           <option value="" selected>เลือกบทบาท</option>
           <option value="first">First-author</option>
           <option value="co">Co-author</option>
@@ -2107,7 +2133,9 @@ function attachFTEAuto() {
       </label>
       <label>
         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
-        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-สกุล" required>
+        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-สกุล" required
+                                    oninvalid="this.setCustomValidity('กรุณากรอกชื่อผู้เขียน')"
+                                    oninput="this.setCustomValidity('')">
       </label>
       <div class="flex items-end">
         <button type="button" onclick="removeAuthorRow(this)" class="px-3 py-2 rounded border text-red-600 border-red-300">ลบ</button>
@@ -2286,7 +2314,9 @@ function attachFTEAuto() {
                 </label>
                 <label class="col-span-5">
                     <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน</span>
-                    <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required>
+                    <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกสถานะหน่วยงาน')"
+                                    oninput="this.setCustomValidity('')">
                         <option value="" disabled selected>กรุณาเลือก</option>
                         <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
                         <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>

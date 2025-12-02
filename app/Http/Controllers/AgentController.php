@@ -279,10 +279,10 @@ class AgentController extends Controller
             : collect();
 
         // IRB
-        $irb = Schema::hasTable('irb')
-            ? DB::table('irb')->select('project_id',
+        $irb = Schema::hasTable('irbs')
+            ? DB::table('irbs')->select('project_id',
                 DB::raw("MAX(exp_date) AS latest_exp"),
-                DB::raw("GROUP_CONCAT(CONCAT(COALESCE(irb_code,'-'),':',COALESCE(exp_date,'-')) SEPARATOR '; ') AS irb_txt")
+                DB::raw("GROUP_CONCAT(CONCAT(COALESCE(code,'-'),':',COALESCE(exp_date,'-')) SEPARATOR '; ') AS irb_txt")
               )->whereIn('project_id',$ids)->groupBy('project_id')->get()->keyBy('project_id')
             : collect();
 
@@ -308,7 +308,7 @@ class AgentController extends Controller
                 'outputs_brief'  => (string)($out[$pid]->out_txt ?? '-'),
                 'irb_latest'     => isset($irb[$pid]) ? (string)($irb[$pid]->latest_exp ?? '-') : '-',
                 'irb_brief'      => isset($irb[$pid]) ? (string)($irb[$pid]->irb_txt ?? '-') : '-',
-                'href'           => url('/projects/'.$pid),
+                'href'           => url('/rm/projects/'.$pid),
             ];
         }
         return $result;
@@ -436,7 +436,7 @@ class AgentController extends Controller
                 'budget'=>$amt,
                 'pi'=>$p->pi_name ?? '',
                 'id'=>$p->id,
-                'href'=>url('/projects/'.$p->id),
+                'href'=>url('/rm/projects/'.$p->id),
             ];
             if ($t === 'ภายใน')       $listInternal[] = $item;
             elseif ($t === 'ภายนอก') $listExternal[] = $item;
@@ -482,10 +482,10 @@ class AgentController extends Controller
 
                 if ($type === 'ภายใน') {
                     $sumI += $amt;
-                    $accumI[] = ['id'=>$p->id,'name'=>$p->project_name_th ?? ('#'.$p->id),'budget'=>$amt,'pi'=>$p->pi_name ?? '','href'=>url('/projects/'.$p->id)];
+                    $accumI[] = ['id'=>$p->id,'name'=>$p->project_name_th ?? ('#'.$p->id),'budget'=>$amt,'pi'=>$p->pi_name ?? '','href'=>url('/rm/projects/'.$p->id)];
                 } elseif ($type === 'ภายนอก') {
                     $sumE += $amt;
-                    $accumE[] = ['id'=>$p->id,'name'=>$p->project_name_th ?? ('#'.$p->id),'budget'=>$amt,'pi'=>$p->pi_name ?? '','href'=>url('/projects/'.$p->id)];
+                    $accumE[] = ['id'=>$p->id,'name'=>$p->project_name_th ?? ('#'.$p->id),'budget'=>$amt,'pi'=>$p->pi_name ?? '','href'=>url('/rm/projects/'.$p->id)];
                 } else {
                     $sumU += $amt;
                 }
@@ -553,6 +553,7 @@ class AgentController extends Controller
             }
 
             /* ===================== DB-FIRST QUICK ANSWERS ===================== */
+            // โค้ดส่วนนี้ไม่ได้เปลี่ยนแปลง (Quick Answers)
 
             /** 0) โปรเจคทั้งหมด/โครงการทั้งหมด */
             if (Str::contains($t,'โปรเจคทั้งหมด') || Str::contains($t,'โครงการทั้งหมด') || $t==='all projects') {
@@ -566,7 +567,7 @@ class AgentController extends Controller
                         'year_be' => $this->beIntFromText($p->start_year),
                         'pi'      => $p->pi_name ?? '-',
                         'funding' => ($p->funding_type ?? 'ไม่ระบุ').' / '.($p->funding_source ?? 'ไม่ระบุ'),
-                        'href'    => url('/projects/'.$p->id),
+                        'href'    => url('/rm/projects/'.$p->id),
                     ];
                 })->values();
 
@@ -707,7 +708,7 @@ class AgentController extends Controller
 
                 $grouped = $active->groupBy(function($p){
                     $s = trim((string)($p->execution_status ?? 'ไม่ระบุ'));
-                    return $s === '' ? 'ไม่ระบุ' : $s;
+                    return $s === '' ? 'ไม่ระระบุ' : $s;
                 })->map->count();
 
                 $rows = $grouped->map(function($cnt,$k){ return ['status'=>$k, 'count'=>$cnt]; })->values();
@@ -736,17 +737,22 @@ class AgentController extends Controller
                 }
                 $targetBE = $yearHintBE ?? $this->nowBE();
 
-                $outs = DB::table('outputs')->select(['id','type','year','created_at'])->get();
+                // ดึงข้อมูล Outputs ทั้งหมดเพื่อนำมาแปลงปีและกรองใน PHP (เนื่องจากปีเป็น VARCHAR และมีการแปลง พ.ศ.)
+                $outs = DB::table('outputs')->select(['id','type','year'])->get(); 
 
-                // แปลงปี → BE (จาก year หรือคอลัมน์อื่นถ้าจะเสริมในอนาคต)
-                $rows = $outs->map(function($o){
-                    $yBE = $this->beIntFromText($o->year ?? null)
-                        ?? $this->beIntFromText($o->journal_year ?? null)
-                        ?? null;
-                    return ['type'=>$o->type ?? 'ไม่ระบุ', 'y'=>$yBE];
-                })->filter(fn($r)=> $r['y'] === $targetBE);
+                // แปลงปี → BE และกรองใน PHP
+                $rows = $outs->map(function($o) use ($targetBE){
+                    $yBE = $this->beIntFromText($o->year ?? null); 
+                    
+                    // กรองเฉพาะที่ตรงกับปีที่ต้องการ
+                    if ($yBE === $targetBE) {
+                        return ['type'=>$o->type ?? 'ไม่ระบุ', 'y'=>$yBE];
+                    }
+                    return null;
+                })->filter(); 
 
-                $byType = collect($rows)->groupBy('type')->map->count();
+                $byType = $rows->groupBy('type')->map->count();
+                
                 if ($byType->isEmpty()) {
                     return response()->json(['reply'=>"ไม่พบ Outputs ปี {$targetBE}"]);
                 }
@@ -803,28 +809,34 @@ class AgentController extends Controller
                 $days = 90;
                 if (preg_match('/(\d+)\s*วัน/u', $t, $m)) $days = max(1, (int)$m[1]);
 
-                if (!Schema::hasTable('irb')) {
-                    return response()->json(['reply'=>'ยังไม่มีตาราง IRB ในระบบ']);
+                if (!Schema::hasTable('irbs')) {
+                    return response()->json(['reply'=>'❌ ไม่พบตาราง IRB ในระบบ (irbs)']);
                 }
 
                 $today = date('Y-m-d');
-                $limit = date('Y-m-d', strtotime("+{$days} days", strtotime($today)));
 
-                $irb = DB::table('irb')
-                    ->join('projects','projects.id','=','irb.project_id')
-                    ->select(['projects.id as project_id','projects.project_name_th as project','projects.pi_name','irb.irb_code','irb.exp_date'])
-                    ->whereNotNull('irb.exp_date')
-                    ->whereBetween('irb.exp_date', [$today, $limit])
-                    ->orderBy('irb.exp_date')
+                $irb = DB::table('irbs')
+                    ->join('projects','projects.id','=','irbs.project_id')
+                    ->select([
+                        'projects.id as project_id',
+                        'projects.project_name_th as project',
+                        'projects.pi_name',
+                        DB::raw("irbs.code AS irb_code"),
+                        'irbs.exp_date'
+                    ])
+                    ->whereNotNull('irbs.exp_date')
+                    // ใช้ STR_TO_DATE เพื่อให้การเปรียบเทียบวันที่ถูกต้อง
+                    ->whereRaw("STR_TO_DATE(irbs.exp_date, '%d-%m-%Y') BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)", [$days])
+                    ->orderByRaw("STR_TO_DATE(irbs.exp_date, '%d-%m-%Y')")
                     ->get();
 
                 $rows = $irb->map(function($r){
                     return [
-                        'project'  => $r->project ?? ('#'.$r->project_id),
+                        'project'  => $r->project ?? ('#'.$r->project_code),
                         'pi'       => $r->pi_name ?? '-',
                         'irb_code' => $r->irb_code ?? '-',
                         'exp_date' => $r->exp_date ?? '-',
-                        'href'     => url('/projects/'.$r->project_id),
+                        'href'     => url('/rm/projects/'.$r->project_id),
                     ];
                 });
 
@@ -848,7 +860,7 @@ class AgentController extends Controller
                 // คืนลิสต์สั้นๆ เพื่อให้ผู้ใช้ “คลิกเลือก”
                 $list = collect($rows)->map(function($r){
                     return [
-                        'id'          => $r['project_id'],
+                        'id'          => $r['project_code'],
                         'project'     => $r['project_name'],
                         'year_be'     => $r['start_year'],
                         'pi'          => $r['pi_name'],
@@ -865,8 +877,39 @@ class AgentController extends Controller
 
             /* ===== Hybrid Pack (LLM) — เผื่อคำถามอื่น ๆ ===== */
             $pids = $this->robustProjectCandidates($prompt, $yearHintBE);
+
+            // FIX 4: หากการค้นหาแบบ Fuzzy Search (Robust Search) ล้มเหลว 
+            // แต่มีการระบุปีในคำถาม ให้ดึง Project ID ทั้งหมดในปีนั้นแทน
+            if (empty($pids) && $yearHintBE !== null) {
+                // ดึง Project IDs ทั้งหมดที่ตรงกับปีที่ระบุโดยตรง
+                $pids = Project::where('start_year', (string)$yearHintBE)->pluck('id')->all();
+            }
+
+            // ************************************************
+            // ✅ FIX 5: CHECK FOR GENERAL KNOWLEDGE QUESTION
+            // ************************************************
+            $hasRelevantPIDs = !empty($pids);
+            
+            // ถ้าไม่พบโครงการที่เกี่ยวข้อง (และไม่มีปีระบุที่ใช้เป็นตัวกรองได้) 
+            // ให้ถือว่าเป็นคำถามความรู้ทั่วไป และข้ามการส่ง Data Pack ไป
+            if (!$hasRelevantPIDs && $yearHintBE === null) {
+                // Treat as General Knowledge Question
+                $generalPrompt = "คุณคือผู้ช่วย AI ที่มีความรู้กว้างขวาง โปรดตอบคำถามนี้ตามหลักการและความรู้ทั่วไปที่ทันสมัย ตอบเป็นภาษาไทย กระชับ 8-12 บรรทัด คำถาม: {$prompt}";
+                $g = $this->askGeminiRobust($generalPrompt);
+                
+                if ($g['ok']) {
+                    return response()->json(['reply' => $g['text'], 'mode_hint' => 'GENERAL_AI']);
+                }
+                // Fallback for General AI failure
+                return response()->json([
+                    'reply' => 'ขออภัย ระบบตอบคำถามทั่วไปไม่พร้อมใช้งานในขณะนี้: '.$g['reason'],
+                ], 503);
+            }
+            // ************************************************
+            // สิ้นสุดส่วน FIX 5: ถ้าถึงจุดนี้ แสดงว่าต้องใช้ข้อมูลในการวิเคราะห์ต่อ
+
             $rows = $this->hydrateProjectsWithJoins($pids);
-            $rows = $this->makeSkeletonIfEmpty($rows, $prompt);
+            $rows = $this->makeSkeletonIfEmpty($rows, $prompt); 
             $pack = $this->packForLLM($rows, 24);
 
             if ($mode === self::MODE_GEMINI) {
