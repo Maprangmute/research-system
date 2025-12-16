@@ -1,5 +1,12 @@
 @extends('layouts.app')
 
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
+
+
 @section('content')
     <!-- Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -15,6 +22,11 @@
 
     @php
         $allUsers = \App\Models\User::orderBy('name')->get();
+        $affe = \App\Models\Project::whereNotNull('pi_affiliation')
+            ->pluck('pi_affiliation')
+            ->unique()
+            ->sort()
+            ->values();
     @endphp
 
 
@@ -65,9 +77,10 @@
                         class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ*</span>
-                    <select name="project_type" id="project_type" class="w-full border p-2 rounded">
-                        <option value="" disabled {{ old('project_type', $project->project_type) ? '' : 'selected' }}>
+                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ * </span>
+                    <select name="project_type" id="project_type" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทโครงการ')" oninput="this.setCustomValidity('')">
+                        <option value="" {{ old('project_type', $project->project_type) ? '' : 'selected' }}>
                             เลือกประเภทของโครงการ
                         </option>
                         <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล"
@@ -124,9 +137,10 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme)*</span>
-                    <select name="theme" class="w-full border p-2 rounded">
-                        <option value="" disabled {{ old('theme', $project->theme) ? '' : 'selected' }}>
+                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme) *</span>
+                    <select name="theme" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')" oninput="this.setCustomValidity('')">
+                        <option value="" {{ old('theme', $project->theme) ? '' : 'selected' }}>
                             กรุณาเลือกกลุ่มเนื้อหา</option>
                         <option value="T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก"
                             {{ old('theme', $project->theme) == 'T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก' ? 'selected' : '' }}>
@@ -230,8 +244,7 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค *</span>
                     <select name="start_year" class="w-full border p-2 rounded" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')"
-                                    oninput="this.setCustomValidity('')">
+                        oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')" oninput="this.setCustomValidity('')">
                         <option value="" disabled
                             {{ old('start_year', $project->start_year ?? '') == '' ? 'selected' : '' }}>เลือกปีโปรเจค
                         </option>
@@ -522,9 +535,10 @@
             <h3 class="font-semibold text-lg text-blue-700 mb-2">C: Roles and Responsibilities</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI</span>
+                    <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI *</span>
                     <input name="pi_name" list="piNameList" value="{{ old('pi_name', $project->pi_name) }}"
-                        class="w-full border p-2 rounded" placeholder="ยศ-ชื่อ PI">
+                        class="w-full border p-2 rounded" placeholder="ยศ-ชื่อ PI" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')" oninput="this.setCustomValidity('')">
 
                     <datalist id="piNameList">
                         @foreach ($allUsers as $user)
@@ -536,8 +550,15 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัด PI</span>
-                    <input name="pi_affiliation" value="{{ old('pi_affiliation', $project->pi_affiliation) }}"
-                        class="w-full border p-2 rounded" placeholder="สังกัด PI">
+
+                    <input name="pi_affiliation" value="{{ old('pi_affiliation', $project->pi_affiliation ?? '') }}"
+                        class="w-full border p-2 rounded" placeholder="สังกัด PI" list="pi_affiliation_list">
+
+                    <datalist id="pi_affiliation_list">
+                        @foreach ($affe as $aff)
+                            <option value="{{ $aff }}"></option>
+                        @endforeach
+                    </datalist>
                 </label>
             </div>
 
@@ -662,832 +683,806 @@
                 ];
             @endphp
 
-         <!-- ========== SECTION D : รายชื่อผู้มีส่วนร่วม (FTE) ========== -->
-<hr class="my-6 border-t-2 border-gray-300">
+            <!-- ========== SECTION D : รายชื่อผู้มีส่วนร่วม (FTE) ========== -->
+            <hr class="my-6 border-t-2 border-gray-300">
 
-<div x-data="{ showFTE: false, currentTab: 'external', setTab(tab) { this.currentTab = tab } }"
-     x-effect="document.body.classList.toggle('overflow-hidden', showFTE)">
+            <div x-data="{ showFTE: false, currentTab: 'external', setTab(tab) { this.currentTab = tab } }" x-effect="document.body.classList.toggle('overflow-hidden', showFTE)">
 
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-2">
-        <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
-        <a href="#" @click.prevent="showFTE = true" class="text-sm text-blue-600 hover:underline">
-            รายละเอียดค่า FTE
-        </a>
-    </div>
-
-    <!-- Modal -->
-    <div x-show="showFTE" x-transition.opacity
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
-         @click.self="showFTE = false" x-trap.noscroll="showFTE"
-         x-init="$watch('showFTE', value => {
-                if (value) { setTimeout(() => $refs.fteModal?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }
-         })">
-
-        <!-- Modal box -->
-        <div x-ref="fteModal"
-             class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl ring-1 ring-gray-200"
-             @click.stop>
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-white to-blue-50 sticky top-0 z-10">
-                <div class="flex items-center space-x-2">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
-                         viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h6m6-6v12m6-6h-6"/>
-                    </svg>
-                    <h2 class="text-lg md:text-xl font-bold text-gray-800">ข้อมูลผู้มีส่วนร่วม (FTE)</h2>
-                </div>
-                <button @click="showFTE = false"
-                        class="text-gray-500 hover:text-red-500 hover:bg-red-100 rounded-full p-2 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                         viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Tabs -->
-            <div class="flex justify-start px-6 pt-3 space-x-4 border-b text-sm font-medium bg-white sticky top-[60px] z-10">
-                <button @click.prevent="setTab('external')"
-                    :class="currentTab === 'external'
-                        ? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
-                        : 'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
-                    ทุนภายนอก
-                </button>
-                <button @click.prevent="setTab('internal')"
-                    :class="currentTab === 'internal'
-                        ? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
-                        : 'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
-                    ทุนภายใน
-                </button>
-                <button @click.prevent="setTab('cohort')"
-                    :class="currentTab === 'cohort'
-                        ? 'text-blue-600 border-b-2 border-blue-600 font-semibold'
-                        : 'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
-                    COHORT
-                </button>
-            </div>
-
-            <!-- Tab Content -->
-            <div class="p-6 space-y-4 text-sm bg-white">
-                <div x-show="currentTab === 'external'" x-transition>
-                    @include('projects.table.external')
-                </div>
-                <div x-show="currentTab === 'internal'" x-transition>
-                    @include('projects.table.internal')
-                </div>
-                <div x-show="currentTab === 'cohort'" x-transition>
-                    @include('projects.table.cohort')
-                </div>
-            </div>
-
-            <div class="px-6 py-4 bg-gray-50 text-right border-t">
-                <button @click="showFTE = false"
-                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                    ปิดหน้าต่าง
-                </button>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- datalist ชื่อคน -->
-    <datalist id="fteUsers">
-        @foreach ($allUsers as $user)
-            @php $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')); @endphp
-            <option value="{{ $fullName }}"></option>
-        @endforeach
-    </datalist>
-
-    <!-- ========== LIST OF FTE ROWS ========== -->
-    <div id="fte-container" class="space-y-4 mb-4">
-
-        @foreach ($project->fteRoles ?? [] as $i => $fte)
-
-        <div id="fte-{{ $i }}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
-
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-
-                <!-- ===== Left Column ===== -->
-                <div class="md:col-span-9 space-y-4">
-
-                    <!-- ชื่อ + กลุ่ม -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                        <label class="w-full">
-                            <span class="block text-sm font-semibold">ชื่อ-นามสกุล</span>
-                            <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
-                                value="{{ $fte->name }}"
-                                class="w-full border p-2 rounded">
-                        </label>
-
-                        <label class="w-full">
-                            <span class="block text-sm font-semibold">กลุ่ม</span>
-                            <select name="fte_roles[{{ $i }}][role_group]"
-                                class="w-full border p-2 rounded">
-                                <option value="" disabled>เลือกกลุ่ม</option>
-
-                                @foreach ($roleGroups as $group)
-                                    <option value="{{ $group }}" @selected($fte->role_group == $group)>
-                                        {{ $group }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </label>
-
-                    </div>
-
-                    <!-- ภาระงาน + วันที่ -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-                        <label class="w-full">
-                            <span class="block text-sm font-semibold">ภาระงาน</span>
-                            <select name="fte_roles[{{ $i }}][job_detail]"
-                                class="w-full border p-2 rounded">
-                                <option value="" disabled>เลือกภาระงาน</option>
-
-                                @foreach ($jobDetails as $job)
-                                    <option value="{{ $job }}" @selected($fte->job_detail == $job)>
-                                        {{ $job }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </label>
-
-                        <label class="w-full relative">
-                            <span class="block text-sm font-semibold">วันเริ่มต้น</span>
-                            <input name="fte_roles[{{ $i }}][start_date]" type="text"
-                                value="{{ $fte->start_date }}"
-                                class="thai-datepicker w-full border p-2 rounded pl-10">
-                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                        </label>
-
-                        <label class="w-full relative">
-                            <span class="block text-sm font-semibold">วันสิ้นสุด</span>
-                            <input name="fte_roles[{{ $i }}][end_date]" type="text"
-                                value="{{ $fte->end_date }}"
-                                class="thai-datepicker w-full border p-2 rounded pl-10">
-                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                        </label>
-
-                    </div>
-
-                    <!-- ชั่วโมง -->
-                    <label class="w-full">
-                        <span class="block text-sm font-semibold">ชั่วโมงการทำงาน (Hour)</span>
-                        <input type="number" step="0.1" min="0"
-                            name="fte_roles[{{ $i }}][hours]"
-                            value="{{ $fte->hours }}"
-                            class="fte-hours w-full border p-2 rounded text-right"
-                            placeholder="0.0">
-                    </label>
-
-                    <!-- รายละเอียดภารกิจ -->
-                    <label class="w-full">
-                        <span class="block text-sm font-semibold">รายละเอียดภารกิจ</span>
-                        <select name="fte_roles[{{ $i }}][task_detail]"
-                            class="w-full border p-2 rounded">
-
-                            <option value="" disabled>เลือกภารกิจ</option>
-
-                            <!-- ⬇ Dropdown ไม่ย่อ รายการอยู่ครบ -->
-                            <option value="ติดต่อประสานงาน">ติดต่อประสานงาน</option>
-                            <option value="ที่ปรึกษาโครงการ">ที่ปรึกษาโครงการ</option>
-                            <option value="review literature">review literature</option>
-                            <option value="เขียนproposal">เขียนproposal</option>
-                            <option value="ดำเนินการเอกสารขอirb/submit irb">ดำเนินการเอกสารขอirb/submit irb</option>
-                            <option value="ดำเนินการเอกสารขอทุน/submit ทุน">ดำเนินการเอกสารขอทุน/submit ทุน</option>
-                            <option value="เก็บข้อมูล">เก็บข้อมูล</option>
-                            <option value="วิเคราะห์ข้อมูล">วิเคราะห์ข้อมูล</option>
-                            <option value="เขียนเล่มรายงาน">เขียนเล่มรายงาน</option>
-                            <option value="เขียนmanuscript">เขียนmanuscript</option>
-                            <option value="submit journal">submit journal</option>
-                            <option value="เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์">เบิกเงินรางวัลตีพิมพ์ / ค่าตอบแทนตีพิมพ์</option>
-                            <option value="นำเสนอผลงานวิจัย Oral/Poster presentation">นำเสนอผลงานวิจัย Oral/Poster presentation</option>
-                            <option value="ประชาสัมพันธ์-เบิกงบประมาณทุน">ประชาสัมพันธ์ – เบิกงบประมาณทุน</option>
-
-                        </select>
-                    </label>
-
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
+                    <a href="#" @click.prevent="showFTE = true" class="text-sm text-blue-600 hover:underline">
+                        รายละเอียดค่า FTE
+                    </a>
                 </div>
 
-                <!-- ===== Right Column ===== -->
-                <div class="md:col-span-3 space-y-4">
-
-                    <!-- FTE (ผู้วิจัย) -->
-                    <label class="block p-4 border rounded-xl bg-blue-50">
-                        <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
-                        <input type="number" step="0.00001" min="0" max="1"
-                            name="fte_roles[{{ $i }}][fte_value]"
-                            value="{{ $fte->fte_value }}"
-                            class="fte-value w-full border p-3 rounded bg-gray-100 text-right"
-                            readonly>
-                    </label>
-
-                    <!-- FTE (ผู้บริหาร) -->
-                    <label class="block p-4 border rounded-xl bg-emerald-50">
-                        <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
-                        <input type="number" step="0.01" min="0" max="1"
-                            name="fte_roles[{{ $i }}][fte_value_research]"
-                            value="{{ $fte->fte_value_research }}"
-                            class="w-full border p-3 rounded text-right">
-                    </label>
-
-                    <button type="button"
-                        onclick="removeRow('fte-{{ $i }}','fte')"
-                        class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
-                        ✕ ลบผู้มีส่วนร่วมนี้
-                    </button>
-
-                </div>
-            </div>
-        </div>
-
-        @endforeach
-
-    </div>
-
-    <button type="button" onclick="addFTERow()"
-            class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
-        + เพิ่มผู้มีส่วนร่วม
-    </button>
-
-</div>
+                <!-- Modal -->
+                <div x-show="showFTE" x-cloak x-transition.opacity
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
+                    @click.self="showFTE = false" x-trap.noscroll="showFTE" x-init="...">
 
 
-                {{-- E: ผลงานวิจัย (Output) ========================= --}}
-
-                <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
-
-                <div id="output-container" class="space-y-4 mb-4">
-                    @php
-                        $outs = $project->outputs ?? collect();
-                    @endphp
-
-                    @forelse($outs as $i => $out)
-                        <div id="output-{{ $i }}"
-                            class="output-row space-y-2 border p-4 rounded-lg bg-gray-50"
-                            data-index="{{ $i }}">
-                            {{-- hidden id ของ output เดิม --}}
-                            <input type="hidden" name="outputs[{{ $i }}][id]"
-                                value="{{ $out->id }}">
-
-                            {{-- ชื่อผลงาน --}}
-                            <label class="block w-full">
-                                <span class="block text-sm text-gray-700 mb-1">
-                                    ชื่อผลงานที่ <span class="output-index">{{ $i + 1 }}</span>
-                                </span>
-                                <input name="outputs[{{ $i }}][title]" type="text"
-                                    class="w-full border p-2 rounded" value="{{ old("outputs.$i.title", $out->title) }}"
-                                    required
-                                    oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
-                                    oninput="this.setCustomValidity('')"
-                                    placeholder="ชื่อผลงาน">
-                            </label>
-
-                            {{-- บรรทัด: ประเภท, หมายเหตุ, วันที่ --}}
-                            <div class="grid grid-cols-3 gap-4 items-end">
-                                <label class="w-full">
-                                    <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                                    <select name="outputs[{{ $i }}][type]"
-                                        class="w-full border p-2 rounded output-type" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
-                                    oninput="this.setCustomValidity('')"
-                                        onchange="handleTypeChange(this)">
-                                        <option value="" disabled {{ !$out->type ? 'selected' : '' }}>
-                                            เลือกประเภทของผลงาน</option>
-
-                                        @php $t = $out->type ?? ''; @endphp
-                                        <option value="EA101 Research Paper or Journal Article"
-                                            {{ str_starts_with($t, 'EA101') ? 'selected' : '' }}>
-                                            EA101 Research Paper or Journal Article
-                                        </option>
-                                        <option value="EA102 Reports and White papers"
-                                            {{ $t === 'EA102 Reports and White papers' ? 'selected' : '' }}>
-                                            EA102 Reports and White papers
-                                        </option>
-                                        <option value="EA103 Presentations in Academic Conferences"
-                                            {{ str_starts_with($t, 'EA103') ? 'selected' : '' }}>
-                                            EA103 Presentations in Academic Conferences
-                                        </option>
-                                        <option value="EA104 Data Sets and Databases"
-                                            {{ $t === 'EA104 Data Sets and Databases' ? 'selected' : '' }}>
-                                            EA104 Data Sets and Databases
-                                        </option>
-                                        <option value="EA105 Inventions or Innovations (Application /Website)"
-                                            {{ $t === 'EA105 Inventions or Innovations (Application /Website)' ? 'selected' : '' }}>
-                                            EA105 Inventions or Innovations (Application /Website)
-                                        </option>
-                                        <option value="EA106 Policy Recommendations"
-                                            {{ $t === 'EA106 Policy Recommendations' ? 'selected' : '' }}>
-                                            EA106 Policy Recommendations
-                                        </option>
-                                        <option value="EA107 Educational Materials"
-                                            {{ $t === 'EA107 Educational Materials' ? 'selected' : '' }}>
-                                            EA107 Educational Materials
-                                        </option>
-                                        <option value="EA108 Communication Materials (Creations)"
-                                            {{ $t === 'EA108 Communication Materials (Creations)' ? 'selected' : '' }}>
-                                            EA108 Communication Materials (Creations)
-                                        </option>
-                                        <option value="EA109 Change in Practices ,Procedures, Policy"
-                                            {{ $t === 'EA109 Change in Practices ,Procedures, Policy' ? 'selected' : '' }}>
-                                            EA109 Change in Practices ,Procedures, Policy
-                                        </option>
-                                        <option value="EA110 Number of participants (persons)"
-                                            {{ $t === 'EA110 Number of participants (persons)' ? 'selected' : '' }}>
-                                            EA110 Number of participants (persons)
-                                        </option>
-                                        <option value="EA111 Satisfaction Rating (1-5)"
-                                            {{ $t === 'EA111 Satisfaction Rating (1-5)' ? 'selected' : '' }}>
-                                            EA111 Satisfaction Rating (1-5)
-                                        </option>
-                                        <option value="EA112 Present to Committee Meeting / Policy Maker / Board"
-                                            {{ $t === 'EA112 Present to Committee Meeting / Policy Maker / Board' ? 'selected' : '' }}>
-                                            EA112 Present to Committee Meeting / Policy Maker / Board
-                                        </option>
-                                        <option value="EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา"
-                                            {{ $t === 'EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา' ? 'selected' : '' }}>
-                                            EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา
-                                        </option>
-                                        <option value="EA114 Events / Forum"
-                                            {{ $t === 'EA114 Events / Forum' ? 'selected' : '' }}>
-                                            EA114 Events / Forum
-                                        </option>
-                                        <option value="EA115 Capacity Building"
-                                            {{ $t === 'EA115 Capacity Building' ? 'selected' : '' }}>
-                                            EA115 Capacity Building
-                                        </option>
-                                        <option value="EA116 Research Project"
-                                            {{ $t === 'EA116 Research Project' ? 'selected' : '' }}>
-                                            EA116 Research Project
-                                        </option>
-                                        <option value="EA117 MOU" {{ $t === 'EA117 MOU' ? 'selected' : '' }}>
-                                            EA117 MOU
-                                        </option>
-                                    </select>
-                                </label>
-
-                                <label class="w-full">
-                                    <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
-                                    <input name="outputs[{{ $i }}][project_output]" type="text"
-                                        class="w-full border p-2 rounded"
-                                        value="{{ old("outputs.$i.project_output", $out->project_output) }}"
-                                        placeholder="เพิ่มเติม">
-                                </label>
-
-                                <div class="flex gap-2 w-full">
-                                    <label class="w-full relative">
-                                        <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
-                                        <input name="outputs[{{ $i }}][year]" type="text"
-                                            class="thai-datepicker w-full border p-2 rounded pl-10"
-                                            value="{{ old("outputs.$i.year", $out->year) }}"
-                                            placeholder="โปรดใส่วันที่">
-                                        <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </label>
-                                    <button type="button" onclick="removeRow('output-{{ $i }}','output')"
-                                        class="text-red-600 mb-2">✕</button>
-                                </div>
+                    <!-- Modal box -->
+                    <div x-ref="fteModal"
+                        class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl ring-1 ring-gray-200"
+                        @click.stop>
+                        <!-- Modal Header -->
+                        <div
+                            class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-white to-blue-50 sticky top-0 z-10">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h6m6-6v12m6-6h-6" />
+                                </svg>
+                                <h2 class="text-lg md:text-xl font-bold text-gray-800">ข้อมูลผู้มีส่วนร่วม (FTE)</h2>
                             </div>
+                            <button @click="showFTE = false"
+                                class="text-gray-500 hover:text-red-500 hover:bg-red-100 rounded-full p-2 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
 
-                            {{-- จุดติดตั้งส่วนพิเศษ (EA101/EA103) --}}
-                            <div class="special-mount">
-                                @php $t = $out->type ?? ''; @endphp
+                        <!-- Tabs -->
+                        <div
+                            class="flex justify-start px-6 pt-3 space-x-4 border-b text-sm font-medium bg-white sticky top-[60px] z-10">
+                            <button @click.prevent="setTab('external')"
+                                :class="currentTab === 'external'
+                                    ?
+                                    'text-blue-600 border-b-2 border-blue-600 font-semibold' :
+                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
+                                ทุนภายนอก
+                            </button>
+                            <button @click.prevent="setTab('internal')"
+                                :class="currentTab === 'internal'
+                                    ?
+                                    'text-blue-600 border-b-2 border-blue-600 font-semibold' :
+                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
+                                ทุนภายใน
+                            </button>
+                            <button @click.prevent="setTab('cohort')"
+                                :class="currentTab === 'cohort'
+                                    ?
+                                    'text-blue-600 border-b-2 border-blue-600 font-semibold' :
+                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
+                                COHORT
+                            </button>
+                        </div>
 
-                                {{-- EA101 --}}
-                                @if (str_starts_with($t, 'EA101'))
-                                    <div class="ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50">
-                                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            <label>
-                                                <span class="block text-sm text-gray-700 mb-1">Journal</span>
-                                                <input name="outputs[{{ $i }}][journal]" type="text"
-                                                    class="w-full border p-2 rounded"
-                                                    value="{{ old("outputs.$i.journal", $out->journal) }}"
-                                                    placeholder="เช่น IEEE Access">
-                                            </label>
-                                            <label>
-                                                <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
-                                                @php $q = old("outputs.$i.quartile", $out->quartile); @endphp
-                                                <select name="outputs[{{ $i }}][quartile]"
-                                                    class="w-full border p-2 rounded">
-                                                    <option value="" {{ !$q ? 'selected' : '' }} disabled>เลือก
-                                                        Quartile</option>
-                                                    <option value="Q1" {{ $q === 'Q1' ? 'selected' : '' }}>Q1
-                                                    </option>
-                                                    <option value="Q2" {{ $q === 'Q2' ? 'selected' : '' }}>Q2
-                                                    </option>
-                                                    <option value="Q3" {{ $q === 'Q3' ? 'selected' : '' }}>Q3
-                                                    </option>
-                                                    <option value="Q4" {{ $q === 'Q4' ? 'selected' : '' }}>Q4
-                                                    </option>
-                                                </select>
-                                            </label>
-                                            <label>
-                                                <span class="block text-sm text-gray-700 mb-1">Impact Factor (IF)</span>
-                                                <input name="outputs[{{ $i }}][impact_factor]" type="number"
-                                                    step="0.001" class="w-full border p-2 rounded"
-                                                    value="{{ old("outputs.$i.impact_factor", $out->impact_factor) }}"
-                                                    placeholder="เช่น 3.215">
-                                            </label>
-                                        </div>
-
-                                        {{-- Authors --}}
-                                        @php $authors = $out->authors ?? collect(); @endphp
-                                        <div class="space-y-2">
-                                            <div class="flex items-center justify-between">
-                                                <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
-                                                <button type="button"
-                                                    class="add-author-btn px-3 py-1 rounded bg-blue-600 text-white"
-                                                    onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
-                                            </div>
-
-                                            <div class="authors-container space-y-2" id="authors-{{ $i }}">
-                                                @forelse($authors as $j => $auth)
-                                                    <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                        <input type="hidden"
-                                                            name="outputs[{{ $i }}][authors][{{ $j }}][id]"
-                                                            value="{{ $auth->id }}">
-
-                                                        <label class="w-full">
-                                                            <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
-                                                                (Role)
-                                                            </span>
-                                                            <select
-                                                                name="outputs[{{ $i }}][authors][{{ $j }}][role]"
-                                                                class="w-full border p-2 rounded" required
-                                                                oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
-                                                                oninput="this.setCustomValidity('')">
-                                                                <option value="" disabled
-                                                                    {{ !$auth->role ? 'selected' : '' }}>เลือกบทบาท
-                                                                </option>
-                                                                <option value="first"
-                                                                    {{ $auth->role === 'first' ? 'selected' : '' }}>
-                                                                    First-author</option>
-                                                                <option value="co"
-                                                                    {{ $auth->role === 'co' ? 'selected' : '' }}>Co-author
-                                                                </option>
-                                                                <option
-                                                                    value="corresponding"{{ $auth->role === 'corresponding' ? 'selected' : '' }}>
-                                                                    Corresponding author</option>
-                                                            </select>
-                                                        </label>
-
-                                                        <label class="w-full">
-                                                            <span class="block text-sm text-gray-700 mb-1">ชื่อ-นามสกุล
-                                                                ผู้เขียน * </span>
-                                                            <input
-                                                                name="outputs[{{ $i }}][authors][{{ $j }}][name]"
-                                                                type="text" class="w-full border p-2 rounded"
-                                                                value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}"
-                                                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required
-                                                                oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
-                                                                oninput="this.setCustomValidity('')">
-                                                        </label>
-
-                                                        <div class="flex items-end">
-                                                            <button type="button"
-                                                                class="px-3 py-2 rounded border text-red-600 border-red-300"
-                                                                onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
-                                                        </div>
-                                                    </div>
-                                                @empty
-                                                    <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                        <label class="w-full">
-                                                            <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
-                                                                (Role) * </span>
-                                                            <select name="outputs[{{ $i }}][authors][0][role]"
-                                                                class="w-full border p-2 rounded" required
-                                                                oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
-                                                                oninput="this.setCustomValidity('')">
-                                                                <option value="" disabled selected>เลือกบทบาท
-                                                                </option>
-                                                                <option value="first">First-author</option>
-                                                                <option value="co">Co-author</option>
-                                                                <option value="corresponding">Corresponding author</option>
-                                                            </select>
-                                                        </label>
-                                                        <label class="w-full">
-                                                            <span class="block text-sm text-gray-700 mb-1">คำนำหน้า ชื่อ-สกุล
-                                                                ผู้เขียน</span>
-                                                            <input name="outputs[{{ $i }}][authors][0][name]"
-                                                                type="text" class="w-full border p-2 rounded"
-                                                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required
-                                                            oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
-                                                            oninput="this.setCustomValidity('')">
-                                                        </label>
-                                                        <div class="flex items-end">
-                                                            <button type="button"
-                                                                class="px-3 py-2 rounded border text-red-600 border-red-300"
-                                                                onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
-                                                        </div>
-                                                    </div>
-                                                @endforelse
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endif
-
-                                {{-- EA103 --}}
-                                @if (str_starts_with($t, 'EA103'))
-                                    <div class="ea103-section space-y-3 border rounded-xl p-4 bg-amber-50/60">
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-semibold text-amber-800">Conferences</span>
-                                            <button type="button"
-                                                class="add-conf-btn px-3 py-1 rounded bg-amber-600 text-white"
-                                                onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
-                                        </div>
-
-                                        @php $confs = $out->conferences ?? collect(); @endphp
-                                        <div class="overflow-x-auto">
-                                            <table class="min-w-full text-sm border">
-                                                <thead class="bg-amber-100">
-                                                    <tr>
-                                                        <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
-                                                        <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
-                                                        <th class="px-2 py-2 text-left">สถานที่</th>
-                                                        <th class="px-2 py-2 text-left">หมายเหตุ</th>
-                                                        <th class="px-2 py-2 text-center">ลบ</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody class="conference-tbody" id="confs-{{ $i }}"
-                                                    data-conf-index="{{ max($confs->count() - 1, 0) }}">
-                                                    @forelse($confs as $k => $c)
-                                                        <tr class="border-t conference-row">
-                                                            <input type="hidden"
-                                                                name="outputs[{{ $i }}][conferences][{{ $k }}][id]"
-                                                                value="{{ $c->id }}">
-                                                            <td class="px-2 py-2">
-                                                                <input
-                                                                    name="outputs[{{ $i }}][conferences][{{ $k }}][name]"
-                                                                    class="w-56 border p-2 rounded"
-                                                                    value="{{ old("outputs.$i.conferences.$k.name", $c->name) }}"
-                                                                    placeholder="เช่น PMAC 2025">
-                                                            </td>
-                                                            <td class="px-2 py-2">
-                                                                @php $pt = old("outputs.$i.conferences.$k.presentation_type", $c->presentation_type); @endphp
-                                                                <select
-                                                                    name="outputs[{{ $i }}][conferences][{{ $k }}][presentation_type]"
-                                                                    class="w-44 border p-2 rounded">
-                                                                    <option value="">เลือก</option>
-                                                                    <option value="Oral"
-                                                                        {{ $pt === 'Oral' ? 'selected' : '' }}>Oral
-                                                                    </option>
-                                                                    <option
-                                                                        value="Poster"{{ $pt === 'Poster' ? 'selected' : '' }}>
-                                                                        Poster</option>
-                                                                    <option value="Panel"
-                                                                        {{ $pt === 'Panel' ? 'selected' : '' }}>Panel
-                                                                    </option>
-                                                                    <option value="Invited Talk"
-                                                                        {{ $pt === 'Invited Talk' ? 'selected' : '' }}>
-                                                                        Invited Talk</option>
-                                                                </select>
-                                                            </td>
-                                                            <td class="px-2 py-2">
-                                                                <input
-                                                                    name="outputs[{{ $i }}][conferences][{{ $k }}][location]"
-                                                                    class="w-44 border p-2 rounded"
-                                                                    value="{{ old("outputs.$i.conferences.$k.location", $c->location) }}"
-                                                                    placeholder="เมือง/ประเทศ">
-                                                            </td>
-                                                            <td class="px-2 py-2">
-                                                                <input
-                                                                    name="outputs[{{ $i }}][conferences][{{ $k }}][note]"
-                                                                    class="w-56 border p-2 rounded"
-                                                                    value="{{ old("outputs.$i.conferences.$k.note", $c->note) }}"
-                                                                    placeholder="หมายเหตุ">
-                                                            </td>
-                                                            <td class="px-2 py-2 text-center">
-                                                                <button type="button"
-                                                                    class="px-2 py-1 text-red-600 border border-red-300 rounded"
-                                                                    onclick="removeConferenceRow(this)">ลบ</button>
-                                                            </td>
-                                                        </tr>
-                                                    @empty
-                                                        <tr class="border-t conference-row">
-                                                            <td class="px-2 py-2">
-                                                                <input
-                                                                    name="outputs[{{ $i }}][conferences][0][name]"
-                                                                    class="w-56 border p-2 rounded"
-                                                                    placeholder="เช่น PMAC 2025">
-                                                            </td>
-                                                            <td class="px-2 py-2">
-                                                                <select
-                                                                    name="outputs[{{ $i }}][conferences][0][presentation_type]"
-                                                                    class="w-44 border p-2 rounded">
-                                                                    <option value="">เลือก</option>
-                                                                    <option value="Oral">Oral</option>
-                                                                    <option value="Poster">Poster</option>
-                                                                    <option value="Panel">Panel</option>
-                                                                    <option value="Invited Talk">Invited Talk</option>
-                                                                </select>
-                                                            </td>
-                                                            <td class="px-2 py-2">
-                                                                <input
-                                                                    name="outputs[{{ $i }}][conferences][0][location]"
-                                                                    class="w-44 border p-2 rounded"
-                                                                    placeholder="เมือง/ประเทศ">
-                                                            </td>
-                                                            <td class="px-2 py-2">
-                                                                <input
-                                                                    name="outputs[{{ $i }}][conferences][0][note]"
-                                                                    class="w-56 border p-2 rounded"
-                                                                    placeholder="หมายเหตุ">
-                                                            </td>
-                                                            <td class="px-2 py-2 text-center">
-                                                                <button type="button"
-                                                                    class="px-2 py-1 text-red-600 border border-red-300 rounded"
-                                                                    onclick="removeConferenceRow(this)">ลบ</button>
-                                                            </td>
-                                                        </tr>
-                                                    @endforelse
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                @endif
+                        <!-- Tab Content -->
+                        <div class="p-6 space-y-4 text-sm bg-white">
+                            <div x-show="currentTab === 'external'" x-transition>
+                                @include('projects.table.external')
+                            </div>
+                            <div x-show="currentTab === 'internal'" x-transition>
+                                @include('projects.table.internal')
+                            </div>
+                            <div x-show="currentTab === 'cohort'" x-transition>
+                                @include('projects.table.cohort')
                             </div>
                         </div>
-                    @empty
-                        {{-- ถ้าไม่มี Output เลย ให้ขึ้นแถวใหม่ว่าง ๆ 1 แถว
-                        <div id="output-0" class="output-row space-y-2 border p-4 rounded-lg bg-gray-50" data-index="0">
-                            <input type="hidden" name="outputs[0][id]" value="">
-                            <label class="block w-full">
-                                <span class="block text-sm text-gray-700 mb-1">
-                                    ชื่อผลงานที่ <span class="output-index">1</span>
-                                </span>
-                                <input name="outputs[0][title]" type="text" class="w-full border p-2 rounded"
-                                    placeholder="ชื่อผลงาน">
-                            </label>
 
-                            <div class="grid grid-cols-3 gap-4 items-end">
-                                <label class="w-full">
-                                    <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
-                                    <select name="outputs[0][type]" class="w-full border p-2 rounded output-type" required
-                                        onchange="handleTypeChange(this)">
-                                        <option value="" disabled selected>เลือกประเภทของผลงาน</option>
-                                        <option value="EA101 Research Paper or Journal Article">EA101 Research Paper or
-                                            Journal Article</option>
-                                        <option value="EA102 Reports and White papers">EA102 Reports and White papers
-                                        </option>
-                                        <option value="EA103 Presentations in Academic Conferences">EA103 Presentations in
-                                            Academic Conferences</option>
-                                        <option value="EA104 Data Sets and Databases">EA104 Data Sets and Databases
-                                        </option>
-                                        <option value="EA105 Inventions or Innovations (Application /Website)">EA105
-                                            Inventions or Innovations (Application /Website)</option>
-                                        <option value="EA106 Policy Recommendations">EA106 Policy Recommendations</option>
-                                        <option value="EA107 Educational Materials">EA107 Educational Materials</option>
-                                        <option value="EA108 Communication Materials (Creations)">EA108 Communication
-                                            Materials (Creations)</option>
-                                        <option value="EA109 Change in Practices ,Procedures, Policy">EA109 Change in
-                                            Practices ,Procedures, Policy</option>
-                                        <option value="EA110 Number of participants (persons)">EA110 Number of participants
-                                            (persons)</option>
-                                        <option value="EA111 Satisfaction Rating (1-5)">EA111 Satisfaction Rating (1-5)
-                                        </option>
-                                        <option value="EA112 Present to Committee Meeting / Policy Maker / Board">EA112
-                                            Present to Committee Meeting / Policy Maker / Board</option>
-                                        <option
-                                            value="EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา">
-                                            EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
-                                        <option value="EA114 Events / Forum">EA114 Events / Forum</option>
-                                        <option value="EA115 Capacity Building">EA115 Capacity Building</option>
-                                        <option value="EA116 Research Project">EA116 Research Project</option>
-                                        <option value="EA117 MOU">EA117 MOU</option>
-                                    </select>
-                                </label>
+                        <div class="px-6 py-4 bg-gray-50 text-right border-t">
+                            <button @click="showFTE = false"
+                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                                ปิดหน้าต่าง
+                            </button>
+                        </div>
 
-                                <label class="w-full">
-                                    <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
-                                    <input name="outputs[0][project_output]" type="text"
-                                        class="w-full border p-2 rounded" placeholder="เพิ่มเติม">
-                                </label>
-
-                                <div class="flex gap-2 w-full">
-                                    <label class="w-full relative">
-                                        <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
-                                        <input name="outputs[0][year]" type="text"
-                                            class="thai-datepicker w-full border p-2 rounded pl-10"
-                                            placeholder="โปรดใส่วันที่">
-                                        <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </label>
-                                    <button type="button" onclick="removeRow('output-0','output')"
-                                        class="text-red-600 mb-2">✕</button>
-                                </div>
-
-
-                            </div>
-                            <div class="special-mount"></div>
-                        </div> --}}
-                    @endforelse
+                    </div>
                 </div>
 
-                <button type="button" onclick="addOutputRow()" class="mb-6 px-3 py-1 bg-green-600 text-white rounded">
-                    + เพิ่ม Output
+                <!-- datalist ชื่อคน -->
+                <datalist id="fteUsers">
+                    @foreach ($allUsers as $user)
+                        @php $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')); @endphp
+                        <option value="{{ $fullName }}"></option>
+                    @endforeach
+                </datalist>
+
+                <!-- ========== LIST OF FTE ROWS ========== -->
+                <div id="fte-container" class="space-y-4 mb-4">
+
+                    @foreach ($project->fteRoles ?? [] as $i => $fte)
+                        <div id="fte-{{ $i }}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
+
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+
+                                <!-- ===== Left Column ===== -->
+                                <div class="md:col-span-9 space-y-4">
+
+                                    <!-- ชื่อ + กลุ่ม -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                                        <label class="w-full">
+                                            <span class="block text-sm font-semibold">ชื่อ-นามสกุล</span>
+                                            <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
+                                                value="{{ $fte->name }}" class="w-full border p-2 rounded">
+                                        </label>
+
+                                        <label class="w-full">
+                                            <span class="block text-sm font-semibold">กลุ่ม</span>
+                                            <select name="fte_roles[{{ $i }}][role_group]"
+                                                class="w-full border p-2 rounded">
+                                                <option value="" disabled>เลือกกลุ่ม</option>
+
+                                                @foreach ($roleGroups as $group)
+                                                    <option value="{{ $group }}" @selected($fte->role_group == $group)>
+                                                        {{ $group }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+
+                                    </div>
+
+                                    <!-- ภาระงาน + วันที่ -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+                                        <label class="w-full">
+                                            <span class="block text-sm font-semibold">ภาระงาน</span>
+                                            <select name="fte_roles[{{ $i }}][job_detail]"
+                                                class="w-full border p-2 rounded">
+                                                <option value="" disabled>เลือกภาระงาน</option>
+
+                                                @foreach ($jobDetails as $job)
+                                                    <option value="{{ $job }}" @selected($fte->job_detail == $job)>
+                                                        {{ $job }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+
+                                        <label class="w-full relative">
+                                            <span class="block text-sm font-semibold">วันเริ่มต้น</span>
+                                            <input name="fte_roles[{{ $i }}][start_date]" type="text"
+                                                value="{{ $fte->start_date }}"
+                                                class="thai-datepicker w-full border p-2 rounded pl-10">
+                                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                viewBox="0 0 24 24">
+                                                <path
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </label>
+
+                                        <label class="w-full relative">
+                                            <span class="block text-sm font-semibold">วันสิ้นสุด</span>
+                                            <input name="fte_roles[{{ $i }}][end_date]" type="text"
+                                                value="{{ $fte->end_date }}"
+                                                class="thai-datepicker w-full border p-2 rounded pl-10">
+                                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                viewBox="0 0 24 24">
+                                                <path
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </label>
+
+                                    </div>
+
+                                    <!-- ชั่วโมง -->
+                                    <label class="w-full">
+                                        <span class="block text-sm font-semibold">ชั่วโมงการทำงาน (Hour)</span>
+                                        <input type="number" step="0.1" min="0"
+                                            name="fte_roles[{{ $i }}][hours]" value="{{ $fte->hours }}"
+                                            class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0">
+                                    </label>
+
+                                    <!-- รายละเอียดภารกิจ -->
+                                    <label class="w-full">
+                                        <span class="block text-sm font-semibold">รายละเอียดภารกิจ</span>
+                                        <select name="fte_roles[{{ $i }}][task_detail]"
+                                            class="w-full border p-2 rounded">
+
+                                            <option value="" disabled>เลือกภารกิจ</option>
+
+                                            <!-- ⬇ Dropdown ไม่ย่อ รายการอยู่ครบ -->
+                                            <option value="ติดต่อประสานงาน">ติดต่อประสานงาน</option>
+                                            <option value="ที่ปรึกษาโครงการ">ที่ปรึกษาโครงการ</option>
+                                            <option value="review literature">review literature</option>
+                                            <option value="เขียนproposal">เขียนproposal</option>
+                                            <option value="ดำเนินการเอกสารขอirb/submit irb">ดำเนินการเอกสารขอirb/submit irb
+                                            </option>
+                                            <option value="ดำเนินการเอกสารขอทุน/submit ทุน">ดำเนินการเอกสารขอทุน/submit ทุน
+                                            </option>
+                                            <option value="เก็บข้อมูล">เก็บข้อมูล</option>
+                                            <option value="วิเคราะห์ข้อมูล">วิเคราะห์ข้อมูล</option>
+                                            <option value="เขียนเล่มรายงาน">เขียนเล่มรายงาน</option>
+                                            <option value="เขียนmanuscript">เขียนmanuscript</option>
+                                            <option value="submit journal">submit journal</option>
+                                            <option value="เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์">เบิกเงินรางวัลตีพิมพ์ /
+                                                ค่าตอบแทนตีพิมพ์</option>
+                                            <option value="นำเสนอผลงานวิจัย Oral/Poster presentation">นำเสนอผลงานวิจัย
+                                                Oral/Poster presentation</option>
+                                            <option value="ประชาสัมพันธ์-เบิกงบประมาณทุน">ประชาสัมพันธ์ – เบิกงบประมาณทุน
+                                            </option>
+
+                                        </select>
+                                    </label>
+
+                                </div>
+
+                                <!-- ===== Right Column ===== -->
+                                <div class="md:col-span-3 space-y-4">
+
+                                    <!-- FTE (ผู้วิจัย) -->
+                                    <label class="block p-4 border rounded-xl bg-blue-50">
+                                        <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
+                                        <input type="number" step="0.00001" min="0" max="1"
+                                            name="fte_roles[{{ $i }}][fte_value]"
+                                            value="{{ $fte->fte_value }}"
+                                            class="fte-value w-full border p-3 rounded bg-gray-100 text-right" readonly>
+                                    </label>
+
+                                    <!-- FTE (ผู้บริหาร) -->
+                                    <label class="block p-4 border rounded-xl bg-emerald-50">
+                                        <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
+                                        <input type="number" step="0.01" min="0" max="1"
+                                            name="fte_roles[{{ $i }}][fte_value_research]"
+                                            value="{{ $fte->fte_value_research }}"
+                                            class="w-full border p-3 rounded text-right">
+                                    </label>
+
+                                    <button type="button" onclick="removeRow('fte-{{ $i }}','fte')"
+                                        class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
+                                        ✕ ลบผู้มีส่วนร่วมนี้
+                                    </button>
+
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+
+                </div>
+
+                <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
+                    + เพิ่มผู้มีส่วนร่วม
                 </button>
 
+            </div>
 
 
-                <hr class="my-6 border-t-2 border-gray-300">
-                <!-- ยุทธศาสตร์ Siriraj Health Policy -->
-                <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">ยุทธศาสตร์ Siriraj Health Policy</h3>
-                <table class="w-full table-auto text-sm mb-6">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="px-3 py-2 text-left">หมวด</th>
-                            <th class="px-3 py-2 text-left">รายการ</th>
-                            <th class="px-3 py-2 text-center">มี</th>
+            {{-- E: ผลงานวิจัย (Output) ========================= --}}
+
+            <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
+
+            <div id="output-container" class="space-y-4 mb-4">
+                @php
+                    $outs = $project->outputs ?? collect();
+                @endphp
+
+                @forelse($outs as $i => $out)
+                    <div id="output-{{ $i }}" class="output-row space-y-2 border p-4 rounded-lg bg-gray-50"
+                        data-index="{{ $i }}">
+                        {{-- hidden id ของ output เดิม --}}
+                        <input type="hidden" name="outputs[{{ $i }}][id]" value="{{ $out->id }}">
+
+                        {{-- ชื่อผลงาน --}}
+                        <label class="block w-full">
+                            <span class="block text-sm text-gray-700 mb-1">
+                                ชื่อผลงานที่ <span class="output-index">{{ $i + 1 }}</span>
+                            </span>
+                            <input name="outputs[{{ $i }}][title]" type="text"
+                                class="w-full border p-2 rounded" value="{{ old("outputs.$i.title", $out->title) }}"
+                                required oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
+                                oninput="this.setCustomValidity('')" placeholder="ชื่อผลงาน">
+                        </label>
+
+                        {{-- บรรทัด: ประเภท, หมายเหตุ, วันที่ --}}
+                        <div class="grid grid-cols-3 gap-4 items-end">
+                            <label class="w-full">
+                                <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
+                                <select name="outputs[{{ $i }}][type]"
+                                    class="w-full border p-2 rounded output-type" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
+                                    oninput="this.setCustomValidity('')" onchange="handleTypeChange(this)">
+                                    <option value="" {{ !$out->type ? 'selected' : '' }}>
+                                        เลือกประเภทของผลงาน</option>
+
+                                    @php $t = $out->type ?? ''; @endphp
+                                    <option value="EA101 Research Paper or Journal Article"
+                                        {{ str_starts_with($t, 'EA101') ? 'selected' : '' }}>
+                                        EA101 Research Paper or Journal Article
+                                    </option>
+                                    <option value="EA102 Reports and White papers"
+                                        {{ $t === 'EA102 Reports and White papers' ? 'selected' : '' }}>
+                                        EA102 Reports and White papers
+                                    </option>
+                                    <option value="EA103 Presentations in Academic Conferences"
+                                        {{ str_starts_with($t, 'EA103') ? 'selected' : '' }}>
+                                        EA103 Presentations in Academic Conferences
+                                    </option>
+                                    <option value="EA104 Data Sets and Databases"
+                                        {{ $t === 'EA104 Data Sets and Databases' ? 'selected' : '' }}>
+                                        EA104 Data Sets and Databases
+                                    </option>
+                                    <option value="EA105 Inventions or Innovations (Application /Website)"
+                                        {{ $t === 'EA105 Inventions or Innovations (Application /Website)' ? 'selected' : '' }}>
+                                        EA105 Inventions or Innovations (Application /Website)
+                                    </option>
+                                    <option value="EA106 Policy Recommendations"
+                                        {{ $t === 'EA106 Policy Recommendations' ? 'selected' : '' }}>
+                                        EA106 Policy Recommendations
+                                    </option>
+                                    <option value="EA107 Educational Materials"
+                                        {{ $t === 'EA107 Educational Materials' ? 'selected' : '' }}>
+                                        EA107 Educational Materials
+                                    </option>
+                                    <option value="EA108 Communication Materials (Creations)"
+                                        {{ $t === 'EA108 Communication Materials (Creations)' ? 'selected' : '' }}>
+                                        EA108 Communication Materials (Creations)
+                                    </option>
+                                    <option value="EA109 Change in Practices ,Procedures, Policy"
+                                        {{ $t === 'EA109 Change in Practices ,Procedures, Policy' ? 'selected' : '' }}>
+                                        EA109 Change in Practices ,Procedures, Policy
+                                    </option>
+                                    <option value="EA110 Number of participants (persons)"
+                                        {{ $t === 'EA110 Number of participants (persons)' ? 'selected' : '' }}>
+                                        EA110 Number of participants (persons)
+                                    </option>
+                                    <option value="EA111 Satisfaction Rating (1-5)"
+                                        {{ $t === 'EA111 Satisfaction Rating (1-5)' ? 'selected' : '' }}>
+                                        EA111 Satisfaction Rating (1-5)
+                                    </option>
+                                    <option value="EA112 Present to Committee Meeting / Policy Maker / Board"
+                                        {{ $t === 'EA112 Present to Committee Meeting / Policy Maker / Board' ? 'selected' : '' }}>
+                                        EA112 Present to Committee Meeting / Policy Maker / Board
+                                    </option>
+                                    <option value="EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา"
+                                        {{ $t === 'EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา' ? 'selected' : '' }}>
+                                        EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา
+                                    </option>
+                                    <option value="EA114 Events / Forum"
+                                        {{ $t === 'EA114 Events / Forum' ? 'selected' : '' }}>
+                                        EA114 Events / Forum
+                                    </option>
+                                    <option value="EA115 Capacity Building"
+                                        {{ $t === 'EA115 Capacity Building' ? 'selected' : '' }}>
+                                        EA115 Capacity Building
+                                    </option>
+                                    <option value="EA116 Research Project"
+                                        {{ $t === 'EA116 Research Project' ? 'selected' : '' }}>
+                                        EA116 Research Project
+                                    </option>
+                                    <option value="EA117 MOU" {{ $t === 'EA117 MOU' ? 'selected' : '' }}>
+                                        EA117 MOU
+                                    </option>
+                                </select>
+                            </label>
+
+                            <label class="w-full">
+                                <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
+                                <input name="outputs[{{ $i }}][project_output]" type="text"
+                                    class="w-full border p-2 rounded"
+                                    value="{{ old("outputs.$i.project_output", $out->project_output) }}"
+                                    placeholder="เพิ่มเติม">
+                            </label>
+
+                            <div class="flex gap-2 w-full">
+                                <label class="w-full relative">
+                                    <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+                                    <input name="outputs[{{ $i }}][year]" type="text"
+                                        class="thai-datepicker w-full border p-2 rounded pl-10"
+                                        value="{{ old("outputs.$i.year", $out->year) }}" placeholder="โปรดใส่วันที่">
+                                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </label>
+                                <button type="button" onclick="removeRow('output-{{ $i }}','output')"
+                                    class="text-red-600 mb-2">✕</button>
+                            </div>
+                        </div>
+
+                        {{-- จุดติดตั้งส่วนพิเศษ (EA101/EA103) --}}
+                        <div class="special-mount">
+                            @php $t = $out->type ?? ''; @endphp
+
+                            {{-- EA101 --}}
+                            @if (str_starts_with($t, 'EA101'))
+                                <div class="ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <label>
+                                            <span class="block text-sm text-gray-700 mb-1">Journal</span>
+                                            <input name="outputs[{{ $i }}][journal]" type="text"
+                                                class="w-full border p-2 rounded"
+                                                value="{{ old("outputs.$i.journal", $out->journal) }}"
+                                                placeholder="เช่น IEEE Access">
+                                        </label>
+                                        <label>
+                                            <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
+                                            @php $q = old("outputs.$i.quartile", $out->quartile); @endphp
+                                            <select name="outputs[{{ $i }}][quartile]"
+                                                class="w-full border p-2 rounded">
+                                                <option value="" {{ !$q ? 'selected' : '' }} disabled>เลือก
+                                                    Quartile</option>
+                                                <option value="Q1" {{ $q === 'Q1' ? 'selected' : '' }}>Q1
+                                                </option>
+                                                <option value="Q2" {{ $q === 'Q2' ? 'selected' : '' }}>Q2
+                                                </option>
+                                                <option value="Q3" {{ $q === 'Q3' ? 'selected' : '' }}>Q3
+                                                </option>
+                                                <option value="Q4" {{ $q === 'Q4' ? 'selected' : '' }}>Q4
+                                                </option>
+                                            </select>
+                                        </label>
+                                        <label>
+                                            <span class="block text-sm text-gray-700 mb-1">Impact Factor (IF)</span>
+                                            <input name="outputs[{{ $i }}][impact_factor]" type="number"
+                                                step="0.001" class="w-full border p-2 rounded"
+                                                value="{{ old("outputs.$i.impact_factor", $out->impact_factor) }}"
+                                                placeholder="เช่น 3.215">
+                                        </label>
+                                    </div>
+
+                                    {{-- Authors --}}
+                                    @php $authors = $out->authors ?? collect(); @endphp
+                                    <div class="space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
+                                            <button type="button"
+                                                class="add-author-btn px-3 py-1 rounded bg-blue-600 text-white"
+                                                onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+                                        </div>
+
+                                        <div class="authors-container space-y-2" id="authors-{{ $i }}">
+                                            @forelse($authors as $j => $auth)
+                                                <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                    <input type="hidden"
+                                                        name="outputs[{{ $i }}][authors][{{ $j }}][id]"
+                                                        value="{{ $auth->id }}">
+
+                                                    <label class="w-full">
+                                                        <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
+                                                            (Role)
+                                                        </span>
+                                                        <select
+                                                            name="outputs[{{ $i }}][authors][{{ $j }}][role]"
+                                                            class="w-full border p-2 rounded" required
+                                                            oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
+                                                            oninput="this.setCustomValidity('')">
+                                                            <option value="" 
+                                                                {{ !$auth->role ? 'selected' : '' }}>เลือกบทบาท
+                                                            </option>
+                                                            <option value="first"
+                                                                {{ $auth->role === 'first' ? 'selected' : '' }}>
+                                                                First-author</option>
+                                                            <option value="co"
+                                                                {{ $auth->role === 'co' ? 'selected' : '' }}>Co-author
+                                                            </option>
+                                                            <option
+                                                                value="corresponding"{{ $auth->role === 'corresponding' ? 'selected' : '' }}>
+                                                                Corresponding author</option>
+                                                        </select>
+                                                    </label>
+
+                                                    <label class="w-full">
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อ-นามสกุล
+                                                            ผู้เขียน * </span>
+                                                        <input
+                                                            name="outputs[{{ $i }}][authors][{{ $j }}][name]"
+                                                            type="text" class="w-full border p-2 rounded"
+                                                            value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}"
+                                                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                                            oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
+                                                            oninput="this.setCustomValidity('')">
+                                                    </label>
+
+                                                    <div class="flex items-end">
+                                                        <button type="button"
+                                                            class="px-3 py-2 rounded border text-red-600 border-red-300"
+                                                            onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
+                                                    </div>
+                                                </div>
+                                            @empty
+                                                <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                    <label class="w-full">
+                                                        <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
+                                                            (Role) * </span>
+                                                        <select name="outputs[{{ $i }}][authors][0][role]"
+                                                            class="w-full border p-2 rounded" required
+                                                            oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
+                                                            oninput="this.setCustomValidity('')">
+                                                            <option value="">เลือกบทบาท
+                                                            </option>
+                                                            <option value="first">First-author</option>
+                                                            <option value="co">Co-author</option>
+                                                            <option value="corresponding">Corresponding author</option>
+                                                        </select>
+                                                    </label>
+                                                    <label class="w-full">
+                                                        <span class="block text-sm text-gray-700 mb-1">คำนำหน้า ชื่อ-สกุล
+                                                            ผู้เขียน</span>
+                                                        <input name="outputs[{{ $i }}][authors][0][name]"
+                                                            type="text" class="w-full border p-2 rounded"
+                                                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                                            oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
+                                                            oninput="this.setCustomValidity('')">
+                                                    </label>
+                                                    <div class="flex items-end">
+                                                        <button type="button"
+                                                            class="px-3 py-2 rounded border text-red-600 border-red-300"
+                                                            onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
+                                                    </div>
+                                                </div>
+                                            @endforelse
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- EA103 --}}
+                            @if (str_starts_with($t, 'EA103'))
+                                <div class="ea103-section space-y-3 border rounded-xl p-4 bg-amber-50/60">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-semibold text-amber-800">Conferences</span>
+                                        <button type="button"
+                                            class="add-conf-btn px-3 py-1 rounded bg-amber-600 text-white"
+                                            onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
+                                    </div>
+
+                                    @php $confs = $out->conferences ?? collect(); @endphp
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full text-sm border">
+                                            <thead class="bg-amber-100">
+                                                <tr>
+                                                    <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
+                                                    <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
+                                                    <th class="px-2 py-2 text-left">สถานที่</th>
+                                                    <th class="px-2 py-2 text-left">หมายเหตุ</th>
+                                                    <th class="px-2 py-2 text-center">ลบ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="conference-tbody" id="confs-{{ $i }}"
+                                                data-conf-index="{{ max($confs->count() - 1, 0) }}">
+                                                @forelse($confs as $k => $c)
+                                                    <tr class="border-t conference-row">
+                                                        <input type="hidden"
+                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][id]"
+                                                            value="{{ $c->id }}">
+                                                        <td class="px-2 py-2">
+                                                            <input
+                                                                name="outputs[{{ $i }}][conferences][{{ $k }}][name]"
+                                                                class="w-56 border p-2 rounded"
+                                                                value="{{ old("outputs.$i.conferences.$k.name", $c->name) }}"
+                                                                placeholder="เช่น PMAC 2025">
+                                                        </td>
+                                                        <td class="px-2 py-2">
+                                                            @php $pt = old("outputs.$i.conferences.$k.presentation_type", $c->presentation_type); @endphp
+                                                            <select
+                                                                name="outputs[{{ $i }}][conferences][{{ $k }}][presentation_type]"
+                                                                class="w-44 border p-2 rounded">
+                                                                <option value="">เลือก</option>
+                                                                <option value="Oral"
+                                                                    {{ $pt === 'Oral' ? 'selected' : '' }}>Oral
+                                                                </option>
+                                                                <option
+                                                                    value="Poster"{{ $pt === 'Poster' ? 'selected' : '' }}>
+                                                                    Poster</option>
+                                                                <option value="Panel"
+                                                                    {{ $pt === 'Panel' ? 'selected' : '' }}>Panel
+                                                                </option>
+                                                                <option value="Invited Talk"
+                                                                    {{ $pt === 'Invited Talk' ? 'selected' : '' }}>
+                                                                    Invited Talk</option>
+                                                            </select>
+                                                        </td>
+                                                        <td class="px-2 py-2">
+                                                            <input
+                                                                name="outputs[{{ $i }}][conferences][{{ $k }}][location]"
+                                                                class="w-44 border p-2 rounded"
+                                                                value="{{ old("outputs.$i.conferences.$k.location", $c->location) }}"
+                                                                placeholder="เมือง/ประเทศ">
+                                                        </td>
+                                                        <td class="px-2 py-2">
+                                                            <input
+                                                                name="outputs[{{ $i }}][conferences][{{ $k }}][note]"
+                                                                class="w-56 border p-2 rounded"
+                                                                value="{{ old("outputs.$i.conferences.$k.note", $c->note) }}"
+                                                                placeholder="หมายเหตุ">
+                                                        </td>
+                                                        <td class="px-2 py-2 text-center">
+                                                            <button type="button"
+                                                                class="px-2 py-1 text-red-600 border border-red-300 rounded"
+                                                                onclick="removeConferenceRow(this)">ลบ</button>
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr class="border-t conference-row">
+                                                        <td class="px-2 py-2">
+                                                            <input
+                                                                name="outputs[{{ $i }}][conferences][0][name]"
+                                                                class="w-56 border p-2 rounded"
+                                                                placeholder="เช่น PMAC 2025">
+                                                        </td>
+                                                        <td class="px-2 py-2">
+                                                            <select
+                                                                name="outputs[{{ $i }}][conferences][0][presentation_type]"
+                                                                class="w-44 border p-2 rounded">
+                                                                <option value="">เลือก</option>
+                                                                <option value="Oral">Oral</option>
+                                                                <option value="Poster">Poster</option>
+                                                                <option value="Panel">Panel</option>
+                                                                <option value="Invited Talk">Invited Talk</option>
+                                                            </select>
+                                                        </td>
+                                                        <td class="px-2 py-2">
+                                                            <input
+                                                                name="outputs[{{ $i }}][conferences][0][location]"
+                                                                class="w-44 border p-2 rounded"
+                                                                placeholder="เมือง/ประเทศ">
+                                                        </td>
+                                                        <td class="px-2 py-2">
+                                                            <input
+                                                                name="outputs[{{ $i }}][conferences][0][note]"
+                                                                class="w-56 border p-2 rounded" placeholder="หมายเหตุ">
+                                                        </td>
+                                                        <td class="px-2 py-2 text-center">
+                                                            <button type="button"
+                                                                class="px-2 py-1 text-red-600 border border-red-300 rounded"
+                                                                onclick="removeConferenceRow(this)">ลบ</button>
+                                                        </td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                
+                @endforelse
+            </div>
+
+            <button type="button" onclick="addOutputRow()" class="mb-6 px-3 py-1 bg-green-600 text-white rounded">
+                + เพิ่ม Output
+            </button>
+
+
+
+            <hr class="my-6 border-t-2 border-gray-300">
+            <!-- ยุทธศาสตร์ Siriraj Health Policy -->
+            <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">ยุทธศาสตร์ Siriraj Health Policy</h3>
+            <table class="w-full table-auto text-sm mb-6">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="px-3 py-2 text-left">หมวด</th>
+                        <th class="px-3 py-2 text-left">รายการ</th>
+                        <th class="px-3 py-2 text-center">มี</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php
+                        $strategies = [
+                            '1' => [
+                                'label' => 'AA501: Capacity Building',
+                                'items' => [
+                                    '1' => '1.1 การสรรหานักวิจัยด้านนโยบายสุขภาพที่มีความสามารถ',
+                                    '2' => '1.2 การพัฒนาศักยภาพฯ ผ่านการเรียนรู้จากการปฏิบัติงานจริง',
+                                    '3' => '1.3 การพัฒนาศักยภาพฯ ผ่านการศึกษาต่อเนื่อง',
+                                    '4' => '1.4 การบูรณาการกับการเรียนการสอนนักศึกษาแพทย์',
+                                    '5' => '1.5 การพัฒนาศักยภาพฯ ให้แก่บุคลากรศิริราช',
+                                ],
+                            ],
+                            '2' => [
+                                'label' => 'AA502: Excellence Research',
+                                'items' => [
+                                    '1' => '2.1 การเพิ่มบทบาทของหน่วยวิจัยฯ',
+                                    '2' => '2.2 การสร้างความสัมพันธ์กับผู้กำหนดนโยบาย',
+                                    '3' => '2.3 การสรรหาและกำหนดหัวข้อวิจัย',
+                                ],
+                            ],
+                            '3' => [
+                                'label' => 'AA503: Health Policy Linkage',
+                                'items' => [
+                                    '1' => '3.1 การสังเคราะห์องค์ความรู้ฯ จากงานวิจัยต้นแบบ',
+                                    '2' => '3.2 การดำเนินงานวิจัยที่มีคุณภาพ',
+                                    '3' => '3.3 ผลักดันให้งานวิจัยใช้ตัดสินใจนโยบาย',
+                                    '4' => '3.4 เชื่อมโยงนวัตกรรมกับการพัฒนานโยบาย',
+                                    '5' => '3.5 การสื่อสารงานวิจัยต่อสาธารณะ',
+                                ],
+                            ],
+                            '4' => [
+                                'label' => 'AA504: Partnership Engagement',
+                                'items' => [
+                                    '1' => '4.1 การสร้างเครือข่ายงานวิจัย',
+                                    '2' => '4.2 การสร้างความร่วมมือฯ',
+                                ],
+                            ],
+                            '5' => [
+                                'label' => 'AA505: System Support',
+                                'items' => [
+                                    '1' => '5.1 การพัฒนาระบบสนับสนุนการดำเนินงานวิจัย',
+                                    '2' => '5.2 การพัฒนาระบบสนับสนุนเส้นทางอาชีพในหน่วยวิจัย',
+                                ],
+                            ],
+                        ];
+                    @endphp
+
+                    @foreach ($strategies as $sKey => $strategy)
+                        <tr class="border-t">
+                            <td class="px-3 py-2 font-bold" rowspan="{{ count($strategy['items']) + 1 }}">
+                                {{ $strategy['label'] }}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $strategies = [
-                                '1' => [
-                                    'label' => 'AA501: Capacity Building',
-                                    'items' => [
-                                        '1' => '1.1 การสรรหานักวิจัยด้านนโยบายสุขภาพที่มีความสามารถ',
-                                        '2' => '1.2 การพัฒนาศักยภาพฯ ผ่านการเรียนรู้จากการปฏิบัติงานจริง',
-                                        '3' => '1.3 การพัฒนาศักยภาพฯ ผ่านการศึกษาต่อเนื่อง',
-                                        '4' => '1.4 การบูรณาการกับการเรียนการสอนนักศึกษาแพทย์',
-                                        '5' => '1.5 การพัฒนาศักยภาพฯ ให้แก่บุคลากรศิริราช',
-                                    ],
-                                ],
-                                '2' => [
-                                    'label' => 'AA502: Excellence Research',
-                                    'items' => [
-                                        '1' => '2.1 การเพิ่มบทบาทของหน่วยวิจัยฯ',
-                                        '2' => '2.2 การสร้างความสัมพันธ์กับผู้กำหนดนโยบาย',
-                                        '3' => '2.3 การสรรหาและกำหนดหัวข้อวิจัย',
-                                    ],
-                                ],
-                                '3' => [
-                                    'label' => 'AA503: Health Policy Linkage',
-                                    'items' => [
-                                        '1' => '3.1 การสังเคราะห์องค์ความรู้ฯ จากงานวิจัยต้นแบบ',
-                                        '2' => '3.2 การดำเนินงานวิจัยที่มีคุณภาพ',
-                                        '3' => '3.3 ผลักดันให้งานวิจัยใช้ตัดสินใจนโยบาย',
-                                        '4' => '3.4 เชื่อมโยงนวัตกรรมกับการพัฒนานโยบาย',
-                                        '5' => '3.5 การสื่อสารงานวิจัยต่อสาธารณะ',
-                                    ],
-                                ],
-                                '4' => [
-                                    'label' => 'AA504: Partnership Engagement',
-                                    'items' => [
-                                        '1' => '4.1 การสร้างเครือข่ายงานวิจัย',
-                                        '2' => '4.2 การสร้างความร่วมมือฯ',
-                                    ],
-                                ],
-                                '5' => [
-                                    'label' => 'AA505: System Support',
-                                    'items' => [
-                                        '1' => '5.1 การพัฒนาระบบสนับสนุนการดำเนินงานวิจัย',
-                                        '2' => '5.2 การพัฒนาระบบสนับสนุนเส้นทางอาชีพในหน่วยวิจัย',
-                                    ],
-                                ],
-                            ];
-                        @endphp
-
-                        @foreach ($strategies as $sKey => $strategy)
+                        @foreach ($strategy['items'] as $iKey => $desc)
+                            @php $field = "strategy_{$sKey}_{$iKey}"; @endphp
                             <tr class="border-t">
-                                <td class="px-3 py-2 font-bold" rowspan="{{ count($strategy['items']) + 1 }}">
-                                    {{ $strategy['label'] }}</td>
+                                <td class="px-3 py-2">{{ $desc }}</td>
+                                <td class="px-3 py-2 text-center">
+                                    <input type="checkbox" name="{{ $field }}" class="mr-1"
+                                        {{ $project->$field ? 'checked' : '' }}>
+                                </td>
                             </tr>
-                            @foreach ($strategy['items'] as $iKey => $desc)
-                                @php $field = "strategy_{$sKey}_{$iKey}"; @endphp
-                                <tr class="border-t">
-                                    <td class="px-3 py-2">{{ $desc }}</td>
-                                    <td class="px-3 py-2 text-center">
-                                        <input type="checkbox" name="{{ $field }}" class="mr-1"
-                                            {{ $project->$field ? 'checked' : '' }}>
-                                    </td>
-                                </tr>
-                            @endforeach
                         @endforeach
-                    </tbody>
-                </table>
+                    @endforeach
+                </tbody>
+            </table>
 
 
 
-                <div class="mt-8 flex flex-col sm:flex-row sm:justify-between items-center gap-4">
+            <div class="mt-8 flex flex-col sm:flex-row sm:justify-between items-center gap-4">
+                <a href="{{ route('projects.index') }}"
+                    class="inline-flex items-center text-blue-700 font-semibold hover:underline hover:text-blue-900 transition-colors">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    กลับไปยังรายการโครงการ
+                </a>
+
+                <button type="submit"
+                    class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded shadow transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    บันทึกการเปลี่ยนแปลง
+                </button>
+            </div>
+
+    </div>
+    </form>
+
+
+    {{-- Floating Save Bar (อยู่นอกฟอร์ม) --}}
+    <div x-data="{
+        dirty: false,
+        scrolled: false,
+        nearBottom: false,
+        get show() { return (this.dirty || this.scrolled) && !this.nearBottom }
+    }" x-init="const THRESHOLD = 160; // ระยะห่างจากขอบล่างที่ต้องการให้ซ่อน (px)
+    
+    const onScrollOrResize = () => {
+        scrolled = window.scrollY > 200;
+        const doc = document.documentElement;
+        const viewportBottom = window.scrollY + window.innerHeight;
+        const docHeight = Math.max(doc.scrollHeight, doc.offsetHeight, doc.clientHeight);
+        nearBottom = (docHeight - viewportBottom) <= THRESHOLD;
+    };
+    
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize);
+    onScrollOrResize();
+    
+    const form = document.getElementById('projectForm');
+    if (form) {
+        form.addEventListener('input', () => { dirty = true }, { passive: true });
+        form.addEventListener('change', () => { dirty = true }, { passive: true });
+    }" x-show="show" x-transition.opacity
+        class="fixed inset-x-0 bottom-0 md:inset-auto md:right-6 md:bottom-6 md:left-auto z-50" style="display:none"
+        role="region" aria-live="polite">
+        <div class="mx-3 mb-3 md:mx-0 md:mb-0">
+            <div class="max-w-[520px] md:min-w-[420px] bg-white/90 backdrop-blur border shadow-xl rounded-2xl px-4 py-3">
+                <div class="flex items-center gap-3">
                     <a href="{{ route('projects.index') }}"
-                        class="inline-flex items-center text-blue-700 font-semibold hover:underline hover:text-blue-900 transition-colors">
+                        class="hidden md:inline-flex items-center text-blue-700 font-semibold hover:text-blue-900 hover:underline">
                         <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -1495,79 +1490,25 @@
                         กลับไปยังรายการโครงการ
                     </a>
 
-                    <button type="submit"
-                        class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded shadow transition">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        บันทึกการเปลี่ยนแปลง
-                    </button>
-                </div>
+                    <div class="ml-auto flex items-center gap-2">
+                        <span x-show="dirty" x-transition.opacity
+                            class="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                            มีการแก้ไขที่ยังไม่บันทึก
+                        </span>
 
-            </div>
-        </form>
-
-
-        {{-- Floating Save Bar (อยู่นอกฟอร์ม) --}}
-        <div x-data="{
-            dirty: false,
-            scrolled: false,
-            nearBottom: false,
-            get show() { return (this.dirty || this.scrolled) && !this.nearBottom }
-        }" x-init="const THRESHOLD = 160; // ระยะห่างจากขอบล่างที่ต้องการให้ซ่อน (px)
-        
-        const onScrollOrResize = () => {
-            scrolled = window.scrollY > 200;
-            const doc = document.documentElement;
-            const viewportBottom = window.scrollY + window.innerHeight;
-            const docHeight = Math.max(doc.scrollHeight, doc.offsetHeight, doc.clientHeight);
-            nearBottom = (docHeight - viewportBottom) <= THRESHOLD;
-        };
-        
-        window.addEventListener('scroll', onScrollOrResize, { passive: true });
-        window.addEventListener('resize', onScrollOrResize);
-        onScrollOrResize();
-        
-        const form = document.getElementById('projectForm');
-        if (form) {
-            form.addEventListener('input', () => { dirty = true }, { passive: true });
-            form.addEventListener('change', () => { dirty = true }, { passive: true });
-        }" x-show="show" x-transition.opacity
-            class="fixed inset-x-0 bottom-0 md:inset-auto md:right-6 md:bottom-6 md:left-auto z-50" style="display:none"
-            role="region" aria-live="polite">
-            <div class="mx-3 mb-3 md:mx-0 md:mb-0">
-                <div
-                    class="max-w-[520px] md:min-w-[420px] bg-white/90 backdrop-blur border shadow-xl rounded-2xl px-4 py-3">
-                    <div class="flex items-center gap-3">
-                        <a href="{{ route('projects.index') }}"
-                            class="hidden md:inline-flex items-center text-blue-700 font-semibold hover:text-blue-900 hover:underline">
-                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2"
+                        <button type="button" @click="document.getElementById('projectForm')?.requestSubmit()"
+                            class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-full shadow">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
-                            กลับไปยังรายการโครงการ
-                        </a>
-
-                        <div class="ml-auto flex items-center gap-2">
-                            <span x-show="dirty" x-transition.opacity
-                                class="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
-                                มีการแก้ไขที่ยังไม่บันทึก
-                            </span>
-
-                            <button type="button" @click="document.getElementById('projectForm')?.requestSubmit()"
-                                class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-full shadow">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                บันทึกการเปลี่ยนแปลง
-                            </button>
-                        </div>
+                            บันทึกการเปลี่ยนแปลง
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
 
 
@@ -1710,29 +1651,29 @@
 
 
 
- function addFTERow() {
-    const container = document.getElementById('fte-container');
-    const index = container.querySelectorAll('.fte-row').length;
-    const id = `fte-${index}`;
+        function addFTERow() {
+            const container = document.getElementById('fte-container');
+            const index = container.querySelectorAll('.fte-row').length;
+            const id = `fte-${index}`;
 
-    ensureFteDatalist();
+            ensureFteDatalist();
 
-    const roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
-    const jobDetails = [
-        'Researcher', 'Researcher Assistant', 'Project Manager',
-        'Research Coordinator', 'นักวิชาการสารสนเทศ',
-        'นักประชาสัมพันธ์', 'เจ้าหน้าที่บริหารงานทั่วไป'
-    ];
+            const roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
+            const jobDetails = [
+                'Researcher', 'Researcher Assistant', 'Project Manager',
+                'Research Coordinator', 'นักวิชาการสารสนเทศ',
+                'นักประชาสัมพันธ์', 'เจ้าหน้าที่บริหารงานทั่วไป'
+            ];
 
-    const groupDropdown = [`<option value="" disabled selected>เลือกกลุ่ม</option>`]
-        .concat(roleGroups.map(g => `<option value="${g}">${g}</option>`))
-        .join('');
+            const groupDropdown = [`<option value="" disabled selected>เลือกกลุ่ม</option>`]
+                .concat(roleGroups.map(g => `<option value="${g}">${g}</option>`))
+                .join('');
 
-    const jobDropdown = [`<option value="" disabled selected>เลือกภาระงาน</option>`]
-        .concat(jobDetails.map(j => `<option value="${j}">${j}</option>`))
-        .join('');
+            const jobDropdown = [`<option value="" disabled selected>เลือกภาระงาน</option>`]
+                .concat(jobDetails.map(j => `<option value="${j}">${j}</option>`))
+                .join('');
 
-    container.insertAdjacentHTML('beforeend', `
+            container.insertAdjacentHTML('beforeend', `
 <div id="${id}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
     <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
@@ -1874,49 +1815,49 @@
 </div>
 `);
 
-    reindexFTE();
-    initThaiDatepickers();
-    attachFTEAuto(); // สำคัญ!
-}
+            reindexFTE();
+            initThaiDatepickers();
+            attachFTEAuto(); // สำคัญ!
+        }
 
-document.addEventListener("DOMContentLoaded", function () {
-    attachFTEAuto();   // ให้แถวเดิมทำงาน auto
-});
+        document.addEventListener("DOMContentLoaded", function() {
+            attachFTEAuto(); // ให้แถวเดิมทำงาน auto
+        });
 
 
-function attachFTEAuto() {
-    document.querySelectorAll('.fte-hours').forEach(input => {
-        input.oninput = function () {
+        function attachFTEAuto() {
+            document.querySelectorAll('.fte-hours').forEach(input => {
+                input.oninput = function() {
 
-            const row = this.closest('.fte-row');
-            const fteField = row.querySelector('.fte-value');
+                    const row = this.closest('.fte-row');
+                    const fteField = row.querySelector('.fte-value');
 
-            const hours = parseFloat(this.value);
+                    const hours = parseFloat(this.value);
 
-            const oldFTE = fteField.value; // ค่าเดิมในช่อง FTE
+                    const oldFTE = fteField.value; // ค่าเดิมในช่อง FTE
 
-            // ========== RULE 1 ==========
-            // ชั่วโมง = 0 และ fte เดิม > 0 → ห้ามแก้ไข
-            if ((!hours || hours === 0) && oldFTE !== "" && parseFloat(oldFTE) > 0) {
-                return; // ไม่แตะต้องค่าเดิม
-            }
+                    // ========== RULE 1 ==========
+                    // ชั่วโมง = 0 และ fte เดิม > 0 → ห้ามแก้ไข
+                    if ((!hours || hours === 0) && oldFTE !== "" && parseFloat(oldFTE) > 0) {
+                        return; // ไม่แตะต้องค่าเดิม
+                    }
 
-            // ========== RULE 2 ==========
-            // ชั่วโมง = 0 และ FTE เดิมว่างหรือ 0 → set = 0.00000
-            if (!hours || hours === 0) {
-                if (oldFTE === "" || parseFloat(oldFTE) === 0) {
-                    fteField.value = "0.00000";
-                }
-                return;
-            }
+                    // ========== RULE 2 ==========
+                    // ชั่วโมง = 0 และ FTE เดิมว่างหรือ 0 → set = 0.00000
+                    if (!hours || hours === 0) {
+                        if (oldFTE === "" || parseFloat(oldFTE) === 0) {
+                            fteField.value = "0.00000";
+                        }
+                        return;
+                    }
 
-            // ========== RULE 3 ==========
-            // ชั่วโมงมากกว่า 0 → คำนวณปกติ
-            const fte = (hours * 0.00745).toFixed(5);
-            fteField.value = fte;
-        };
-    });
-}
+                    // ========== RULE 3 ==========
+                    // ชั่วโมงมากกว่า 0 → คำนวณปกติ
+                    const fte = (hours * 0.00745).toFixed(5);
+                    fteField.value = fte;
+                };
+            });
+        }
 
 
         function reindexFTE() {

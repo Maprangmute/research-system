@@ -10,10 +10,15 @@
     </div>
 @endif
 
+<script>
+    window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
+</script>
+
 
 @section('content')
     <!-- Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
     <!-- Select2 CSS -->
@@ -41,7 +46,7 @@
             $allUsers = \App\Models\User::orderBy('name')->get();
         @endphp
 
-        <form action="{{ route('projects.store') }}" method="POST">
+        <form id="projectForm" action="{{ route('projects.store') }}" method="POST">
             @csrf
 
             <hr class="my-6 border-t-2 border-gray-300">
@@ -88,10 +93,9 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme) *</span>
-                    <select name="theme" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')"
-                                    oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
-                        <option value="" disabled selected>กรุณาเลือกกลุ่มเนื้อหา</option>
+                    <select name="theme" required oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')"
+                        oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
+                        <option value="">กรุณาเลือกกลุ่มเนื้อหา</option>
                         <option value="T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก">T101_Research_วิจัยที่ Health
                             Policy เป็น ผู้วิจัยหลัก</option>
                         <option value="T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย">T102_Research:
@@ -150,8 +154,7 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค *</span>
                     <select name="start_year" class="w-full border p-2 rounded" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')"
-                                    oninput="this.setCustomValidity('')">
+                        oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')" oninput="this.setCustomValidity('')">
                         <option value="" disabled
                             {{ old('start_year', $project->start_year ?? '') == '' ? 'selected' : '' }}>เลือกปีโปรเจค
                         </option>
@@ -398,8 +401,8 @@
                         <input name="pi_name" list="userNames" type="text"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                             placeholder="คำนำหน้า ชื่อ-นามสกุล" required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้วิจัยหลัก')"
-                                    oninput="this.setCustomValidity('')">
+                            oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้วิจัยหลัก')"
+                            oninput="this.setCustomValidity('')">
                         <datalist id="userNames">
                             @foreach ($allUsers as $user)
                                 @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
@@ -494,9 +497,9 @@
                         <label class="col-span-5">
                             <span class="block text-sm mb-1">คนภายนอก/ภายใน *</span>
                             <select name="coresearch[0][unit_status]" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกคนภายนอก/ภายใน')"
-                                    oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
-                                <option value="" disabled selected>กรุณาเลือก</option>
+                                oninvalid="this.setCustomValidity('กรุณาเลือกคนภายนอก/ภายใน')"
+                                oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
+                                <option value="">กรุณาเลือก</option>
                                 <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
                                 <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>
                                 <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">
@@ -546,11 +549,10 @@
 
                 <!-- Modal -->
                 <!-- Overlay + Modal Wrapper -->
-                <div x-show="showFTE" x-transition.opacity
+                <div x-show="showFTE" x-cloak x-transition.opacity
                     class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
-                    @click.self="showFTE = false" x-trap.noscroll="showFTE" x-init="$watch('showFTE', value => {
-                        if (value) { setTimeout(() => $refs.fteModal?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }
-                    })">
+                    @click.self="showFTE = false" x-trap.noscroll="showFTE" x-init="...">
+
 
                     <!-- Modal Container -->
                     <div x-ref="fteModal"
@@ -636,8 +638,8 @@
                                         <input list="fteUsers" name="fte_roles[0][name]"
                                             class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
                                             placeholder="พิมพ์หรือเลือกชื่อ" required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้มีส่วนร่วม')"
-                                    oninput="this.setCustomValidity('')">
+                                            oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้มีส่วนร่วม')"
+                                            oninput="this.setCustomValidity('')">
 
                                         <datalist id="fteUsers">
                                             @foreach ($allUsers as $user)
@@ -663,10 +665,12 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
 
                                     <label class="w-full">
-                                        <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน</span>
+                                        <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน *</span>
                                         <select name="fte_roles[0][job_detail]"
-                                            class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
-                                            <option value="" disabled selected>เลือกภาระงาน</option>
+                                            class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required
+                                            oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
+                                            oninput="this.setCustomValidity('')">
+                                            <option value="">เลือกภาระงาน</option>
                                             @foreach ($jobDetails as $job)
                                                 <option value="{{ $job }}">{{ $job }}</option>
                                             @endforeach
@@ -674,13 +678,11 @@
                                     </label>
 
                                     <label class="w-full relative">
-                                        <span
-                                            class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน * </span>
+                                        <span class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน *
+                                        </span>
                                         <input name="fte_roles[0][start_date]" type="text"
                                             class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                                            placeholder="โปรดใส่วันที่" required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุวันเริ่มต้นภาระงาน')"
-                                    oninput="this.setCustomValidity('')">
+                                            placeholder="โปรดใส่วันที่" data-required-msg="กรุณาระบุวันเริ่มต้นภาระงาน">
 
                                         <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -690,13 +692,11 @@
                                     </label>
 
                                     <label class="w-full relative">
-                                        <span
-                                            class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน * </span>
+                                        <span class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน *
+                                        </span>
                                         <input name="fte_roles[0][end_date]" type="text"
                                             class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                                            placeholder="โปรดใส่วันที่" required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุวันสิ้นสุดภาระงาน')"
-                                    oninput="this.setCustomValidity('')">
+                                            placeholder="โปรดใส่วันที่" data-required-msg="กรุณาระบุวันสิ้นสุดภาระงาน">
 
                                         <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -724,9 +724,9 @@
                                     <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ *</span>
                                     <select name="fte_roles[0][task_detail]"
                                         class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกภารกิจ')"
-                                    oninput="this.setCustomValidity('')">
-                                        <option value="" disabled selected>เลือกภารกิจ</option>
+                                        oninvalid="this.setCustomValidity('กรุณาเลือกภารกิจ')"
+                                        oninput="this.setCustomValidity('')">
+                                        <option value="">เลือกภารกิจ</option>
                                         <option>ติดต่อประสานงาน</option>
                                         <option>ที่ปรึกษาโครงการ</option>
                                         <option>review literature</option>
@@ -799,18 +799,17 @@
                                 ชื่อผลงานที่ <span class="output-index">1</span>
                             </span>
                             <input name="outputs[0][title]" type="text" class="w-full border p-2 rounded" required
-                             oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
-                             oninput="this.setCustomValidity('')"
-                                placeholder="ชื่อผลงาน">
+                                oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
+                                oninput="this.setCustomValidity('')" placeholder="ชื่อผลงาน">
                         </label>
 
                         <div class="grid grid-cols-3 gap-4 items-end">
                             <label class="w-full">
-                                <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
+                                <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน * </span>
                                 <select name="outputs[0][type]" class="w-full border p-2 rounded output-type" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
                                     oninput="this.setCustomValidity('')">
-                                    <option value="" disabled selected>เลือกประเภทของผลงาน</option>
+                                    <option value="">เลือกประเภทของผลงาน</option>
                                     <option>EA101 Research Paper or Journal Article</option>
                                     <option>EA102 Reports and White papers</option>
                                     <option>EA103 Presentations in Academic Conferences</option>
@@ -968,6 +967,12 @@
         </div>
     </div>
 
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+
     <script>
         // ✅ TO BUDDHIST
         function toBuddhist(selectedDates, dateStr, instance) {
@@ -1003,21 +1008,58 @@
         }
 
         function initThaiDatepickers() {
-            flatpickr(".thai-datepicker", {
-                locale: "th",
-                dateFormat: "d-m-Y",
-                altInput: true,
-                altFormat: "j F Y",
-                prevArrow: "",
-                nextArrow: "",
-                onReady: toBuddhist,
-                onClose: toBuddhist,
-                onChange: toBuddhist,
-                onMonthChange: toBuddhist,
-                onYearChange: toBuddhist,
-                disableMobile: true
+            document.querySelectorAll('.thai-datepicker').forEach(input => {
+
+                // ✅ กัน init ซ้ำ (สำคัญมาก)
+                if (input._flatpickr) return;
+
+                flatpickr(input, {
+                    locale: "th",
+                    dateFormat: "d-m-Y",
+                    altInput: true,
+                    altFormat: "j F Y",
+                    prevArrow: "",
+                    nextArrow: "",
+                    disableMobile: true,
+
+                    onReady: function(selectedDates, dateStr, instance) {
+
+                        // ใช้ของเดิมคุณ
+                        if (typeof toBuddhist === 'function') {
+                            toBuddhist(selectedDates, dateStr, instance);
+                        }
+
+                        const alt = instance.altInput;
+                        if (!alt) return;
+
+                        const msg = instance.input.dataset.requiredMsg;
+
+                        if (msg) {
+                            // 🔑 หัวใจของ required + flatpickr
+                            alt.required = true;
+
+                            alt.oninvalid = () => {
+                                alt.setCustomValidity(msg);
+                                alt.classList.add('border-red-500');
+                            };
+
+                            alt.oninput = () => {
+                                alt.setCustomValidity('');
+                                alt.classList.remove('border-red-500');
+                            };
+                        }
+                    },
+
+                    onChange: function(selectedDates, dateStr, instance) {
+                        if (typeof toBuddhist === 'function') {
+                            toBuddhist(selectedDates, dateStr, instance);
+                        }
+                    }
+                });
             });
         }
+
+
 
         // ✅ STATUS COLOR
         function updateStatusColor(selectEl) {
@@ -1212,7 +1254,7 @@
         <label class="w-full">
           <span class="block text-sm font-semibold text-gray-700 mb-1">กลุ่ม</span>
           <select name="fte_roles[${fteIndex}][role_group]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
-            <option value="" disabled selected>โปรดเลือกกลุ่ม</option>
+            <option value=""  >โปรดเลือกกลุ่ม</option>
             ${groupDropdown}
           </select>
         </label>
@@ -1222,9 +1264,12 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
         <label class="w-full">
-          <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน</span>
-          <select name="fte_roles[${fteIndex}][job_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
-            <option value="" disabled selected>เลือกภาระงาน</option>
+          <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน *</span>
+          <select name="fte_roles[${fteIndex}][job_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
+            required
+            oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
+            oninput="this.setCustomValidity('')">>
+            <option value="" >เลือกภาระงาน</option>
             ${jobDropdown}
           </select>
         </label>
@@ -1278,7 +1323,7 @@
         <select name="fte_roles[${fteIndex}][task_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกภารกิจ')"
                                     oninput="this.setCustomValidity('')">
-          <option value="" disabled selected>เลือกภารกิจ</option>
+          <option value=""  >เลือกภารกิจ</option>
           <option>ติดต่อประสานงาน</option>
           <option>ที่ปรึกษาโครงการ</option>
           <option>review literature</option>
@@ -1393,11 +1438,11 @@
 
       <div class="grid grid-cols-3 gap-4 items-end">
         <label class="w-full">
-          <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
+          <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน *</span>
           <select name="outputs[${outputIndex}][type]" class="w-full border p-2 rounded output-type" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
                                     oninput="this.setCustomValidity('')">
-            <option value="" disabled selected>เลือกประเภทของผลงาน</option>
+            <option value=""  >เลือกประเภทของผลงาน</option>
             <option>EA101 Research Paper or Journal Article</option>
             <option>EA102 Reports and White papers</option>
             <option>EA103 Presentations in Academic Conferences</option>
@@ -1478,7 +1523,7 @@
         <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือก Quartile')"
                                     oninput="this.setCustomValidity('')">
-          <option value="" disabled selected>เลือก Quartile</option>
+          <option value=""  >เลือก Quartile</option>
           <option value="Q1">Q1</option>
           <option value="Q2">Q2</option>
           <option value="Q3">Q3</option>
@@ -1528,7 +1573,7 @@
       <select name="outputs[${outputIdx}][authors][${authorIdx}][role]" class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
-        <option value="" disabled selected>เลือกบทบาท</option>
+        <option value=""  >เลือกบทบาท</option>
         <option value="first">First-author</option>
         <option value="co">Co-author</option>
         <option value="corresponding">Corresponding author</option>
@@ -1772,6 +1817,14 @@
                             cancelButtonText: '📋 กลับไปยังรายการ'
                         }).then((result) => {
                             if (result.isConfirmed) {
+                                // 🗑️ ลบ autosave key ที่ใช้งานจริง
+                                const FORM_KEY =
+                                    `autosave:project:${window.AUTH_USER_ID}:${location.pathname}`;
+                                localStorage.removeItem(FORM_KEY);
+
+                                console.log('🗑️ autosave cleared:', FORM_KEY);
+
+                                localStorage.removeItem(FORM_KEY);
                                 location.reload(); // กรอกใหม่
                             } else if (result.dismiss === Swal.DismissReason.cancel) {
                                 window.location.href =
@@ -1828,4 +1881,177 @@
             plugins: ['remove_button']
         });
     </script>
+
+    <script>
+        (() => {
+            if (!window.AUTH_USER_ID) return;
+
+            const FORM = document.getElementById('projectForm');
+            if (!FORM) return;
+
+            const FORM_KEY = `autosave:project:${window.AUTH_USER_ID}:${location.pathname}`;
+            const TTL_HOURS = 48;
+
+            /* ---------- helpers ---------- */
+            const now = () => Date.now();
+            const expired = ts => (now() - ts) > TTL_HOURS * 3600 * 1000;
+
+            const collectForm = () => {
+                const data = {};
+                FORM.querySelectorAll('input, select, textarea').forEach(el => {
+                    if (!el.name) return;
+                    if (el.type === 'checkbox') data[el.name] = el.checked;
+                    else if (el.type === 'radio') {
+                        if (el.checked) data[el.name] = el.value;
+                    } else data[el.name] = el.value;
+                });
+                return data;
+            };
+
+            const save = () => {
+                localStorage.setItem(FORM_KEY, JSON.stringify({
+                    ts: now(),
+                    data: collectForm()
+                }));
+            };
+
+            let timer = null;
+            const debounceSave = () => {
+                clearTimeout(timer);
+                timer = setTimeout(save, 400);
+            };
+
+            FORM.addEventListener('input', debounceSave);
+            FORM.addEventListener('change', debounceSave);
+            FORM.addEventListener('submit', () => localStorage.removeItem(FORM_KEY));
+
+            /* ---------- dynamic rows ---------- */
+            const maxIndex = (data, prefix) => {
+                let max = 0;
+                Object.keys(data).forEach(k => {
+                    const m = k.match(new RegExp(`^${prefix}\\[(\\d+)\\]`));
+                    if (m) max = Math.max(max, parseInt(m[1], 10));
+                });
+                return max;
+            };
+
+            const ensureRows = (count, addFn) => {
+                for (let i = 0; i < count; i++) addFn();
+            };
+
+            const applyForm = (data) => {
+                ensureRows(maxIndex(data, 'fte_roles'), addFTERow);
+                ensureRows(maxIndex(data, 'outputs'), addOutputRow);
+                ensureRows(maxIndex(data, 'irbs'), addIRBCode);
+                ensureRows(maxIndex(data, 'copis'), addCopiRow);
+                ensureRows(maxIndex(data, 'coresearch'), addCoResearchRow);
+
+                Object.entries(data).forEach(([name, value]) => {
+                    const el = FORM.querySelector(`[name="${CSS.escape(name)}"]`);
+                    if (!el) return;
+
+                    if (el.type === 'checkbox') el.checked = !!value;
+                    else if (el.type === 'radio') {
+                        const r = FORM.querySelector(
+                            `[name="${CSS.escape(name)}"][value="${CSS.escape(value)}"]`
+                        );
+                        if (r) r.checked = true;
+                    } else el.value = value;
+
+                    el.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                });
+
+                if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
+                if (typeof attachFTEAuto === 'function') attachFTEAuto();
+            };
+
+            const formatThaiDateTime = (timestamp) => {
+                const d = new Date(timestamp);
+
+                const day = d.getDate();
+                const month = d.toLocaleString('th-TH', {
+                    month: 'long'
+                });
+                const year = d.getFullYear() + 543;
+
+                const hh = String(d.getHours()).padStart(2, '0');
+                const mm = String(d.getMinutes()).padStart(2, '0');
+
+                return `${day} ${month} ${year} เวลา ${hh}:${mm}`;
+            };
+
+
+            const askRestore = (payload, yes, no) => {
+                const projectName =
+                    payload?.data?.project_name_th?.trim() || '— ยังไม่ได้ระบุชื่อโครงการ —';
+
+                const savedAt = formatThaiDateTime(payload.ts);
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'question',
+                        title: 'พบข้อมูลที่บันทึกไว้',
+                        html: `
+                <div class="text-left space-y-2">
+                    <div>
+                        <strong>ชื่อโครงการ (ภาษาไทย)</strong><br>
+                        <span class="text-gray-800">${projectName}</span>
+                    </div>
+                    <div>
+                        <strong>บันทึกล่าสุดเมื่อ</strong><br>
+                        <span class="text-gray-700">${savedAt}</span>
+                    </div>
+                </div>
+            `,
+                        showCancelButton: true,
+                        confirmButtonText: '📂 กู้ข้อมูล',
+                        cancelButtonText: '❌ ไม่ใช้ข้อมูลนี้',
+                        focusCancel: true
+                    }).then(r => r.isConfirmed ? yes() : no());
+                } else {
+                    const msg =
+                        `ชื่อโครงการ: ${projectName}\n` +
+                        `บันทึกล่าสุด: ${savedAt}\n\n` +
+                        `ต้องการกู้ข้อมูลนี้หรือไม่?`;
+
+                    confirm(msg) ? yes() : no();
+                }
+            };
+
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const raw = localStorage.getItem(FORM_KEY);
+                if (!raw) return;
+
+                try {
+                    const payload = JSON.parse(raw);
+                    if (!payload?.data || expired(payload.ts)) {
+                        localStorage.removeItem(FORM_KEY);
+                        return;
+                    }
+
+                    askRestore(
+                        payload,
+                        () => applyForm(payload.data),
+                        () => localStorage.removeItem(FORM_KEY)
+                    );
+
+                } catch {
+                    localStorage.removeItem(FORM_KEY);
+                }
+            });
+        })();
+    </script>
+
+    @if (session('success'))
+        <script>
+            (() => {
+                const FORM_KEY = `project_form_draft_user_{{ auth()->id() }}`;
+                localStorage.removeItem(FORM_KEY);
+                console.log('✅ Draft cleared after successful save');
+            })();
+        </script>
+    @endif
 @endsection
