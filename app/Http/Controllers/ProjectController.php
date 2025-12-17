@@ -6,8 +6,8 @@ use App\Models\Output;
 use App\Models\Project;
 // ⬅️ เพิ่ม
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use PDF;
 
 class ProjectController extends Controller
@@ -21,7 +21,7 @@ class ProjectController extends Controller
             // ✅ admin และ user_all เห็นทุกโปรเจค
         } else {
             // ✅ user ปกติ เห็นเฉพาะที่เกี่ยวข้อง
-            $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
+            $fullName = trim(($user->prefix ?? '').' '.$user->name);
             $query->where(function ($q) use ($fullName, $user) {
                 $q->where('user_id', $user->id)
                     ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
@@ -35,10 +35,10 @@ class ProjectController extends Controller
             $query->where('start_year', $request->year);
         }
         if ($request->filled('type')) {
-            $query->where('project_type', 'like', '%' . $request->type . '%');
+            $query->where('project_type', 'like', '%'.$request->type.'%');
         }
         if ($request->filled('search')) {
-            $query->where('project_name_th', 'like', '%' . $request->search . '%');
+            $query->where('project_name_th', 'like', '%'.$request->search.'%');
         }
 
         // sort
@@ -50,7 +50,7 @@ class ProjectController extends Controller
             ->paginate(10)
             ->appends($request->query());
 
-        $fullName = auth()->user()->prefix . ' ' . auth()->user()->name;
+        $fullName = auth()->user()->prefix.' '.auth()->user()->name;
 
         $missingFTE = \App\Models\FteRole::where('name', $fullName)
             ->where(function ($q) {
@@ -77,15 +77,28 @@ class ProjectController extends Controller
 
         DB::transaction(function () use ($validated, $request, &$project) {
 
-            // 🔒 lock ตาราง projects กัน multi-user
-            $lastNumber = Project::lockForUpdate()
-                ->where('project_code', 'like', 'SP_%')
-                ->selectRaw("MAX(CAST(SUBSTRING(project_code, 4) AS UNSIGNED)) as max_num")
-                ->value('max_num');
+            // 🔐 lock sequence row (atomic 100%)
+            $sequence = DB::table('project_sequences')
+                ->where('prefix', 'SP')
+                ->lockForUpdate()
+                ->first();
 
-            $nextNumber = ($lastNumber ?? 0) + 1;
+            if (! $sequence) {
+                throw new \Exception('Project sequence SP not found');
+            }
 
-            $validated['project_code'] = 'SP_' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            $nextNumber = $sequence->current_number + 1;
+
+            // update sequence
+            DB::table('project_sequences')
+                ->where('id', $sequence->id)
+                ->update([
+                    'current_number' => $nextNumber,
+                    'updated_at' => now(),
+                ]);
+
+            // build project_code
+            $validated['project_code'] = 'SP_'.str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
             $validated['user_id'] = Auth::id();
 
             $project = new Project($validated);
@@ -117,7 +130,7 @@ class ProjectController extends Controller
             return redirect('/rm')->with('error', 'ไม่พบข้อมูลโครงการ');
         }
 
-        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
             || Auth::user()->role === 'user_all'
@@ -132,7 +145,7 @@ class ProjectController extends Controller
 
     public function show(Project $project)
     {
-        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
             || $project->fteRoles->contains('name', $fullName)
@@ -157,7 +170,7 @@ class ProjectController extends Controller
 
     public function update(Request $request, Project $project)
     {
-        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
             || Auth::user()->role === 'user_all' // all user check
@@ -189,7 +202,7 @@ class ProjectController extends Controller
 
     public function destroy(Project $project)
     {
-        $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
+        $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
 
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
@@ -217,8 +230,8 @@ class ProjectController extends Controller
         $project->load(['copis', 'irbs', 'fteRoles', 'outputs.authors', 'updatedBy', 'createdBy']); // ⬅️ authors
 
         $user = Auth::user();
-        $author = $project->createdBy ? ($project->createdBy->prefix . $project->createdBy->name) : '';
-        $creater = $user ? ($user->prefix . $user->name) : '';
+        $author = $project->createdBy ? ($project->createdBy->prefix.$project->createdBy->name) : '';
+        $creater = $user ? ($user->prefix.$user->name) : '';
         $dateStr = \Carbon\Carbon::now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
         $filename = "{$dateStr}_{$creater}_{$project->project_name_th}.pdf";
 
@@ -408,7 +421,7 @@ class ProjectController extends Controller
         }
 
         $project->outputs()
-            ->when($keepIds, fn($q) => $q->whereNotIn('id', $keepIds))
+            ->when($keepIds, fn ($q) => $q->whereNotIn('id', $keepIds))
             ->delete();
     }
 
@@ -528,7 +541,7 @@ class ProjectController extends Controller
             return $q;
         }
         if (in_array($q, ['1', '2', '3', '4'], true)) {
-            return 'Q' . $q;
+            return 'Q'.$q;
         }
 
         return null;
@@ -619,7 +632,7 @@ class ProjectController extends Controller
 
         $exact = Project::where('project_name_th', $name)->first();
 
-        $similar = Project::where('project_name_th', 'LIKE', '%' . $name . '%')
+        $similar = Project::where('project_name_th', 'LIKE', '%'.$name.'%')
             ->take(5)
             ->get(['project_name_th', 'pi_name', 'start_year'])
             ->map(function ($project) {

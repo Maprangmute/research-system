@@ -7,6 +7,7 @@ use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TaskLinkController;
+use App\Http\Controllers\AiDashboardController;
 
 
 use App\Http\Controllers\DocumentController;
@@ -24,6 +25,33 @@ Route::get('/', function () {
     
 });
 Route::redirect('/', '/login');           // 302 ชั่วคราว (แนะนำ)
+
+
+
+Route::middleware(['auth'])->group(function () {
+
+    Route::prefix('rm/ai-dashboard')->name('rm.ai_dashboard.')->group(function () {
+
+        // 🧠 หน้าเว็บ (ROOT ของ dashboard)
+        Route::get('/', function () {
+            return view('rm.ai_dashboard');
+        })->name('index');
+
+        // 🔥 endpoint กลาง (AI วิเคราะห์หลายมิติ)
+        Route::post('/analyze', [AiDashboardController::class, 'analyze'])
+            ->name('analyze');
+
+        // 🔹 endpoint ตามมิติ
+        Route::post('/metrics/projects', [AiDashboardController::class, 'projectsMetric'])->name('metrics.projects');
+        Route::post('/metrics/budget',   [AiDashboardController::class, 'budgetMetric'])->name('metrics.budget');
+        Route::post('/metrics/fte',      [AiDashboardController::class, 'fteMetric'])->name('metrics.fte');
+        Route::post('/metrics/output',   [AiDashboardController::class, 'outputMetric'])->name('metrics.output');
+        Route::post('/metrics/status',   [AiDashboardController::class, 'statusMetric'])->name('metrics.status');
+        Route::post('/metrics/irb',      [AiDashboardController::class, 'irbMetric'])->name('metrics.irb');
+    });
+});
+
+
 
 
 use App\Http\Controllers\AgentController;
