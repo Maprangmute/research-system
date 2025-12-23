@@ -85,3 +85,259 @@
 
 </body>
 </html>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+
+<script>
+/* =========================================================
+   DATE-BE + REPEATABLE (FINAL / PRODUCTION SAFE)
+   ========================================================= */
+
+/* ---------- DATE BE INIT ---------- */
+function initDateBE(scope = document) {
+
+  scope.querySelectorAll('.js-date-be').forEach(input => {
+
+    // ❗ กัน init ซ้ำ
+    if (input._flatpickr) return;
+
+    const fp = flatpickr(input, {
+      locale: 'th',
+      dateFormat: 'd-m-Y',   // ✅ ค่าจริง (ค.ศ.)
+      altInput: true,
+      altFormat: 'j F Y',    // ใช้ตอน init เท่านั้น
+      disableMobile: true,
+
+      onReady(_, __, inst) {
+        syncAltStyle(input, inst);
+        forceHeaderBE(inst);
+      },
+
+      onOpen(_, __, inst) {
+        forceHeaderBE(inst);
+      },
+
+      onMonthChange(_, __, inst) {
+        setTimeout(() => forceHeaderBE(inst), 0);
+      },
+
+      onYearChange(_, __, inst) {
+        setTimeout(() => forceHeaderBE(inst), 0);
+      },
+
+      // ✅ จุดสำคัญอยู่ตรงนี้
+      onChange(selectedDates, dateStr, inst) {
+        forceHeaderBE(inst);
+
+        if (!inst.altInput || !selectedDates[0]) return;
+
+        const d = selectedDates[0];
+
+        const day   = d.getDate();
+        const month = d.toLocaleDateString('th-TH', { month: 'long' });
+        const year  = d.getFullYear() + 543;
+
+        // 🔥 บังคับค่าแสดงผลเป็น พ.ศ.
+        inst.altInput.value = `${day} ${month} ${year}`;
+      }
+    });
+
+    /* ✅ ปุ่ม 📅 เปิด input ของตัวเอง */
+    const btn = scope.querySelector(
+      `[data-open-picker][data-target="${input.id}"]`
+    );
+
+    if (btn) {
+      btn.addEventListener('click', () => fp.open());
+    }
+  });
+}
+
+
+/* ---------- ทำให้ altInput หน้าตาเหมือน input เดิม ---------- */
+function syncAltStyle(originalInput, inst) {
+  if (!inst.altInput) return;
+
+  // copy class
+  inst.altInput.className = originalInput.className;
+
+  // placeholder
+  const ph = originalInput.getAttribute('placeholder') || originalInput.dataset.placeholder;
+  if (ph) inst.altInput.placeholder = ph;
+
+  inst.altInput.readOnly = true;
+}
+
+/* ---------- บังคับ header เป็น พ.ศ. ทุกกรณี ---------- */
+function forceHeaderBE(inst) {
+  const cal = inst.calendarContainer;
+  if (!cal) return;
+
+  // year input
+  const yearInput = cal.querySelector('.flatpickr-current-month input.cur-year');
+  if (yearInput) {
+    const ce = parseInt(yearInput.value || '0', 10);
+    if (ce && ce < 2400) yearInput.value = ce + 543;
+
+    if (!yearInput._beBound) {
+      yearInput._beBound = true;
+      yearInput.addEventListener('blur', () => {
+        const be = parseInt(yearInput.value || '0', 10);
+        if (be > 2400) {
+          inst.currentYear = be - 543;
+          inst.redraw();
+          setTimeout(() => forceHeaderBE(inst), 0);
+        }
+      });
+    }
+  }
+
+  // prev / next
+  ['.flatpickr-prev-month','.flatpickr-next-month'].forEach(sel => {
+    const btn = cal.querySelector(sel);
+    if (!btn || btn._beBound) return;
+    btn._beBound = true;
+    btn.addEventListener('click', () =>
+      setTimeout(() => forceHeaderBE(inst), 0)
+    );
+  });
+}
+</script>
+
+<style>
+/* highlight แถวที่เพิ่มล่าสุด */
+.repeatable-highlight {
+  animation: flash-bg 1.2s ease-out;
+  background-color: #eff6ff;
+}
+@keyframes flash-bg {
+  0% { background-color: #dbeafe; }
+  100% { background-color: transparent; }
+}
+</style>
+
+<script>
+(function () {
+
+  function updateIndex(container) {
+    container.querySelectorAll('[data-repeatable-index]')
+      .forEach((el, i) => el.textContent = i + 1);
+  }
+
+  function replaceIndex(root, index) {
+    root.querySelectorAll('[name]').forEach(el => {
+      el.name = el.name.replaceAll('__i__', index);
+    });
+  }
+
+  function highlightRow(row) {
+    row.classList.add('repeatable-highlight');
+    setTimeout(() => row.classList.remove('repeatable-highlight'), 1200);
+  }
+
+  function confirmRemove(callback) {
+    if (window.Swal) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ยืนยันการลบ',
+        text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
+        showCancelButton: true,
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#dc2626'
+      }).then(r => r.isConfirmed && callback());
+    } else {
+      if (confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) callback();
+    }
+  }
+
+  function bindRemove(row) {
+    row.querySelectorAll('[data-repeatable-remove]').forEach(btn => {
+      btn.onclick = () => {
+        const group = row.closest('[data-repeatable]');
+        const container = document.getElementById(group.dataset.container);
+
+        confirmRemove(() => {
+          row.remove();
+          updateIndex(container);
+        });
+      };
+    });
+  }
+
+  function addRow(group) {
+    const container = document.getElementById(group.dataset.container);
+    const tpl = document.getElementById(group.dataset.template);
+    let index = parseInt(group.dataset.index || '1', 10);
+
+    if (!container || !tpl) return;
+
+    const fragment = tpl.content.cloneNode(true);
+    const row = fragment.querySelector('[data-repeatable-row]');
+    if (!row) return;
+
+    replaceIndex(row, index);
+    bindRemove(row);
+
+    container.appendChild(row);
+    updateIndex(container);
+    highlightRow(row);
+
+    group.dataset.index = index + 1;
+
+    if (window.initDateBE) initDateBE(row);
+  }
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-repeatable-add]');
+    if (!btn) return;
+
+    const id = btn.getAttribute('data-repeatable-add');
+    const group = document.querySelector(`[data-repeatable][data-id="${id}"]`);
+    if (group) addRow(group);
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-repeatable]').forEach(group => {
+      const container = document.getElementById(group.dataset.container);
+      updateIndex(container);
+      container.querySelectorAll('[data-repeatable-row]')
+        .forEach(row => bindRemove(row));
+    });
+  });
+
+})();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 🔥 บังคับ init ทุก js-date-be ที่ยังไม่ถูก init
+    if (typeof initDateBE === 'function') {
+        initDateBE(document);
+    }
+});
+</script>
+
+
+<script>
+/* ===============================
+   AUTO FTE (REPEATABLE SAFE)
+   สูตร: hours × 0.00745
+   =============================== */
+document.addEventListener('input', function (e) {
+
+    if (!e.target.classList.contains('fte-hours')) return;
+
+    const row = e.target.closest('.fte-row');
+    if (!row) return;
+
+    const fteInput = row.querySelector('.fte-value');
+    if (!fteInput) return;
+
+    const hr = parseFloat(e.target.value) || 0;
+    const fte = hr * 0.00745;
+
+    fteInput.value = fte.toFixed(5);
+});
+</script>

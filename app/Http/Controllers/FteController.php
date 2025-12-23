@@ -46,6 +46,7 @@ class FteController extends Controller
             'end_date',
             'role_group',
             'job_detail',
+            'task_detail'
         ])
         ->whereIn('project_id', $projectIds);
 
@@ -189,6 +190,7 @@ class FteController extends Controller
                             'overlap_end'   => $overlapEnd,
                             'start_date'    => $item->start_date,
                             'end_date'      => $item->end_date,
+                            'task_detail'  => $item->task_detail,
                         ]);
                     }
 

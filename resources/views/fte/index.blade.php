@@ -212,8 +212,12 @@
             </td>
 
             <td class="p-2 break-words whitespace-normal">
-                {{ $item->job_detail ?? '-' }}
+             <div>{{ $item->job_detail ?? '-' }}</div>
+                 <div class="text-gray-400 text-xs">
+                      {{ $item->task_detail ?? '-' }}
+                </div>
             </td>
+
 
             <td class="p-2 text-center whitespace-nowrap">
                 {{ $item->start_date && \Carbon\Carbon::hasFormat($item->start_date, 'd-m-Y')

@@ -71,56 +71,66 @@ class ProjectController extends Controller
         return view('projects.create');
     }
 
-    public function store(Request $request)
-    {
-        $validated = $this->validateProject($request);
+public function store(Request $request)
+{
+    $validated = $this->validateProject($request);
 
-        DB::transaction(function () use ($validated, $request, &$project) {
+    // ✅ กรอง IRB ที่ไม่มี code ออกก่อน
+    $irbs = collect($request->input('irbs', []))
+        ->filter(fn ($irb) => !empty($irb['code']))
+        ->values()
+        ->toArray();
 
-            // 🔐 lock sequence row (atomic 100%)
-            $sequence = DB::table('project_sequences')
-                ->where('prefix', 'SP')
-                ->lockForUpdate()
-                ->first();
+    $request->merge(['irbs' => $irbs]);
 
-            if (! $sequence) {
-                throw new \Exception('Project sequence SP not found');
-            }
+    // ✅ validate เฉพาะ IRB ที่มี code จริง
+    $request->validate([
+        'irbs.*.exp_date' => 'required',
+    ]);
 
-            $nextNumber = $sequence->current_number + 1;
+    DB::transaction(function () use ($validated, $request, &$project) {
 
-            // update sequence
-            DB::table('project_sequences')
-                ->where('id', $sequence->id)
-                ->update([
-                    'current_number' => $nextNumber,
-                    'updated_at' => now(),
-                ]);
+        // 🔐 lock sequence row (atomic 100%)
+        $sequence = DB::table('project_sequences')
+            ->where('prefix', 'SP')
+            ->lockForUpdate()
+            ->first();
 
-            // build project_code
-            $validated['project_code'] = 'SP_'.str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-            $validated['user_id'] = Auth::id();
+        if (! $sequence) {
+            throw new \Exception('Project sequence SP not found');
+        }
 
-            $project = new Project($validated);
-            $this->fillStrategies($request, $project);
+        $nextNumber = $sequence->current_number + 1;
 
-            // ครั้งแรกให้ updated_by = ผู้สร้าง
-            $project->updated_by = Auth::id();
-            $project->save();
+        DB::table('project_sequences')
+            ->where('id', $sequence->id)
+            ->update([
+                'current_number' => $nextNumber,
+                'updated_at' => now(),
+            ]);
 
-            // sync relations
-            $this->validateOutputs($request);
-            $this->syncFTERoles($request, $project);
-            $this->syncOutputs($request, $project);
-            $this->syncCopis($request, $project);
-            $this->syncIrbs($request, $project);
-            $this->syncCoResearch($request, $project);
-        });
+        $validated['project_code'] = 'SP_'.str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        $validated['user_id'] = Auth::id();
 
-        return redirect()
-            ->route('projects.show', $project->id)
-            ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
-    }
+        $project = new Project($validated);
+        $this->fillStrategies($request, $project);
+
+        $project->updated_by = Auth::id();
+        $project->save();
+
+        // sync relations
+        $this->validateOutputs($request);
+        $this->syncFTERoles($request, $project);
+        $this->syncOutputs($request, $project);
+        $this->syncCopis($request, $project);
+        $this->syncIrbs($request, $project);
+        $this->syncCoResearch($request, $project);
+    });
+
+    return redirect()
+        ->route('projects.show', $project->id)
+        ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+}
 
     public function edit($id)
     {

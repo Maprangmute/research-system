@@ -10,17 +10,64 @@
     </div>
 @endif
 
+@php
+    $allUsers = \App\Models\User::orderBy('name')->get();
+    $roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
+    $jobDetails = [
+        'Researcher',
+        'Researcher Assistant',
+        'Project Manager',
+        'Research Coordinator',
+        'นักวิชาการสารสนเทศ',
+        'นักประชาสัมพันธ์',
+        'เจ้าหน้าที่บริหารงานทั่วไป',
+    ];
+@endphp
+
+{{-- datalist ใช้ร่วมทุกแถว --}}
+<datalist id="userNames">
+    @foreach ($allUsers as $user)
+        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+        <option value="{{ $fullName }}"></option>
+    @endforeach
+</datalist>
+{{-- ✅ DATAlIST กลาง (ใช้ร่วมกันทุก row) --}}
+<datalist id="fteUsers">
+    @foreach ($allUsers as $user)
+        @php
+            $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
+        @endphp
+        <option value="{{ $fullName }}"></option>
+    @endforeach
+</datalist>
+
+
 <script>
     window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
 </script>
 
+@php
+    $allUsers = \App\Models\User::orderBy('name')->get();
+@endphp
+
+
+@php
+    $piAffiliationList = \App\Models\Project::whereNotNull('pi_affiliation')
+        ->whereRaw("TRIM(pi_affiliation) <> ''")
+        ->selectRaw('TRIM(pi_affiliation) as pi_affiliation')
+        ->distinct()
+        ->orderBy('pi_affiliation')
+        ->pluck('pi_affiliation');
+@endphp
+
+
 
 @section('content')
-    <!-- Flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Flatpickr -->
+    {{-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script> --}}
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
@@ -28,10 +75,13 @@
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
-
+    {{-- 
     <!-- ✅ เพิ่ม Plugin สำหรับเลือกปี -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+ --}}
+
+
 
     <div class="max-w-5xl mx-auto mt-6 bg-white shadow-md rounded p-6">
         <h2 class="text-xl font-bold mb-6 text-gray-800">📋 เพิ่มข้อมูลโครงการวิจัย</h2>
@@ -225,7 +275,8 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท)</span>
                     <input id="budgetInput" name="budget" type="text" class="w-full border p-2 rounded"
-                        placeholder="ระบุจำนวนเงินที่ได้รับ" inputmode="decimal" pattern="[\d,\.]*">
+                        placeholder="ระบุจำนวนเงินที่ได้รับ" inputmode="decimal" pattern="[\d,\.]*"
+                        data-max="1000000000000">
 
                 </label>
 
@@ -235,86 +286,23 @@
             <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">B: ระยะเวลาดำเนินโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 
-                <label class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่โครงการเริ่มทำงานของทีมวิจัย</span>
-                    <input name="team_start_date" type="text"
-                        class="thai-datepicker w-full border p-2 rounded pl-10 @error('start_date') border-red-500 @enderror"
-                        value="{{ old('team_start_date') }}" placeholder="กรุณาเลือกวันที่เริ่มงานของทีม">
-                    <!-- ปุ่มไอคอนปฏิทิน (absolute ซ้ายใน input) -->
-                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </label>
+                <x-date-be name="team_start_date" label="วันที่โครงการเริ่มทำงานของทีมวิจัย"
+                    placeholder="กรุณาเลือกวันที่เริ่มทำงานของทีมวิจัย" />
 
-                <label class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดการทำงานของทีมวิจัย</span>
-                    <input name="team_end_date" type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                        value="{{ old('team_end_date') }}" placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม">
-                    <!-- ปฏิทินไอคอน -->
-                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </label>
+                <x-date-be name="team_end_date" label="วันที่สิ้นสุดการทำงานของทีมวิจัย"
+                    placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีมวิจัย" />
 
+                <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal"
+                    placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal" />
 
-                <label class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">BA001 - วันที่เริ่มเขียน Proposal</span>
-                    <input name="proposal_date" type="text"
-                        class="thai-datepicker w-full border p-2 rounded pl-10 @error('proposal_date') border-red-500 @enderror"
-                        value="{{ old('proposal_date') }}" placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal">
-                    <!-- ไอคอนปฏิทิน -->
-                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </label>
+                <x-date-be name="contract_date" label="BC101 - วันที่สัญญาอนุมัติ"
+                    placeholder="กรุณาเลือกวันที่อนุมัติสัญญา" />
 
+                <x-date-be name="start_date" label="BC102 - วันที่โครงการเริ่ม (ตามสัญญา)"
+                    placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
-                <label class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">BC101 - วันที่สัญญาอนุมัติ</span>
-                    <input name="contract_date" type="text"
-                        class="thai-datepicker w-full border p-2 rounded pl-10 @error('contract_date') border-red-500 @enderror"
-                        value="{{ old('contract_date') }}" placeholder="กรุณาเลือกวันที่อนุมัติสัญญา">
-                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    @error('contract_date')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </label>
-
-                <label class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">BC102 - วันที่โครงการเริ่ม (ตามสัญญา)</span>
-                    <input name="start_date" type="text"
-                        class="thai-datepicker w-full border p-2 rounded pl-10 @error('start_date') border-red-500 @enderror"
-                        value="{{ old('start_date') }}" placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา">
-                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    @error('start_date')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </label>
-
-                <label class="w-full relative ">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด (ตามสัญญา)</span>
-                    <input name="end_date" type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                        value="{{ old('end_date') }}" placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
-                    <svg class="absolute left-3 top-9 w-5 h-5 text-gray-500 pointer-events-none" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </label>
+                <x-date-be name="end_date" label="BC103 - วันที่สิ้นสุด (ตามสัญญา)"
+                    placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา" />
 
                 <label class="w-full">
                     {{-- BA000 - Project Planning (Status) --}}
@@ -337,57 +325,74 @@
                             ยกเลิกโปรเจค</option>
                     </select>
                 </label>
-
-
-
-
             </div>
-
-
-
-
-            <hr class="my-6 border-t-2 border-gray-300">
             <!-- รหัส IRB -->
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">รหัส IRB</h3>
-            <div id="irb-code-container" class="space-y-2 mb-4">
-                <div id="irb-0" class="irb-row grid grid-cols-3 gap-2 items-center">
-                    <div class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span
-                                class="irb-index">1</span></span>
-                        <input name="irbs[0][code]" type="text" placeholder="EC2025"
-                            class="w-full border p-2 rounded">
-                    </div>
-                    <div class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน)</span>
-                        <input name="irbs[0][source]" type="text" placeholder="ชื่อหน่วยงาน"
-                            class="w-full border p-2 rounded">
-                    </div>
-                    <div class="w-full flex gap-2 items-end">
-                        <div class="w-full relative">
-                            <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
-                            <input name="irbs[0][exp_date]" type="text" placeholder="เลือกวันที่"
-                                class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดเลือกวันที่">
+            <hr class="my-6 border-t-2 border-gray-300">
+            <h3 class="font-semibold text-lg text-blue-700 mb-2">IRB</h3>
+            <x-repeatable-row id="irb" addText="+ เพิ่ม IRB">
 
-                            <!-- ไอคอนปฏิทิน -->
-                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                {{-- ✅ ต้องมี container --}}
+                <div data-repeatable-container class="space-y-2">
+
+                    {{-- แถวแรก --}}
+                    <div class="grid grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-gray-50" data-repeatable-row>
+
+                        <div class="col-span-1 text-center">
+                            <span data-repeatable-index
+                                class="inline-flex w-8 h-8 items-center justify-center
+                           rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+                                1
+                            </span>
                         </div>
 
-                        <button type="button" onclick="removeRow('irb-0', 'irb')" class="text-red-600 mb-2">✕</button>
+                        <div class="col-span-3">
+                            <label class="text-sm">รหัส IRB</label>
+                            <input name="irbs[0][code]" class="w-full border p-2 rounded">
+                        </div>
+
+                        <div class="col-span-3">
+                            <label class="text-sm">หน่วยงาน</label>
+                            <input name="irbs[0][source]" class="w-full border p-2 rounded">
+                        </div>
+
+                        <div class="col-span-5 flex gap-2 items-end">
+                            <x-date-be name="irbs[0][exp_date]" label="วันหมดอายุ IRB" required />
+                            <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
+                        </div>
                     </div>
+
                 </div>
-            </div>
-            <button type="button" onclick="addIRBCode()" class="mb-6 px-3 py-1 bg-red-600 text-white rounded">+
-                เพิ่มรหัส IRB</button>
 
-            @php
-                $allUsers = \App\Models\User::orderBy('name')->get();
-            @endphp
+                {{-- template --}}
+                <x-slot:template>
+                    <div class="grid grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
 
+                        <div class="col-span-1 text-center">
+                            <span data-repeatable-index
+                                class="inline-flex w-8 h-8 items-center justify-center
+                           rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+                                #
+                            </span>
+                        </div>
+
+                        <div class="col-span-3">
+                            <label class="text-sm">รหัส IRB</label>
+                            <input name="irbs[__i__][code]" class="w-full border p-2 rounded">
+                        </div>
+
+                        <div class="col-span-3">
+                            <label class="text-sm">หน่วยงาน</label>
+                            <input name="irbs[__i__][source]" class="w-full border p-2 rounded">
+                        </div>
+
+                        <div class="col-span-5 flex gap-2 items-end">
+                            <x-date-be name="irbs[__i__][exp_date]" label="วันหมดอายุ IRB" required />
+                            <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
+                        </div>
+                    </div>
+                </x-slot:template>
+
+            </x-repeatable-row>
 
             <hr class="my-6 border-t-2 border-gray-300">
             <!-- C: Roles and Responsibilities -->
@@ -418,241 +423,289 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัดผู้วิจัยหลัก</span>
-                    <input name="pi_affiliation" type="text" class="w-full border p-2 rounded" value=""
-                        placeholder="สังกัดผู้วิจัยหลัก">
+                    <input name="pi_affiliation" type="text" list="piaffiliationList"
+                        class="w-full border p-2 rounded" value="" placeholder="สังกัดผู้วิจัยหลัก">
                     @error('pi_affiliation')
                         <span class="text-sm text-red-500">{{ $message }}</span>
                     @enderror
                 </label>
+
+                <datalist id="piaffiliationList">
+
+                    @foreach ($piAffiliationList as $affiliation)
+                        <option value="{{ $affiliation }}"></option>
+                    @endforeach
+
+                </datalist>
             </div>
 
 
+            <h3 class="text-balance text-blue-700 mb-2">
+                รายชื่อผู้ร่วมวิจัย (COPI)
+            </h3>
+            <x-repeatable-row id="copi" addText="+ เพิ่ม COPI">
 
+                {{-- ✅ container --}}
+                <div data-repeatable-container class="space-y-3 mb-4">
 
+                    {{-- ================== แถวแรก ================== --}}
+                    <div class="grid grid-cols-12 gap-4 items-end p-3 border rounded-lg bg-gray-50" data-repeatable-row>
 
-
-
-
-            <h3 class="text-balance text-blue-700 mb-2">รายชื่อผู้ร่วมวิจัย (COPI)</h3>
-            <div id="copi-container" class="space-y-2 mb-4">
-                <div id="copi-0" class="copi-row grid grid-cols-2 gap-4 items-center">
-                    <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">
-                            ชื่อ COPI คนที่ <span class="copi-index">1</span>
-                        </span>
-                        <div class="relative">
-                            <input name="copis[0][name]" list="userNames" type="text"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                                placeholder="คำนำหน้า ชื่อ-นามสกุล">
-                            <datalist id="userNames">
-                                @foreach ($allUsers as $user)
-                                    @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-                                    <option value="{{ $fullName }}"></option>
-                                @endforeach
-                            </datalist>
+                        {{-- เลขลำดับ --}}
+                        <div class="col-span-1 text-center">
+                            <span data-repeatable-index
+                                class="inline-flex w-8 h-8 items-center justify-center
+                             rounded-full bg-yellow-100 text-yellow-700
+                             text-sm font-semibold">
+                                1
+                            </span>
                         </div>
-                    </label>
 
-                    <div class="flex gap-2 w-full">
-                        <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span
-                                    class="copi-index">1</span></span>
+                        {{-- ชื่อ COPI --}}
+                        <div class="col-span-5">
+                            <label class="block text-sm text-gray-700 mb-1">
+                                ชื่อ COPI
+                            </label>
+                            <input name="copis[0][name]" list="userNames" type="text"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                           focus:ring-2 focus:ring-yellow-500"
+                                placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                        </div>
+
+                        {{-- สังกัด --}}
+                        <div class="col-span-5">
+                            <label class="block text-sm text-gray-700 mb-1">
+                                สังกัด COPI
+                            </label>
                             <input name="copis[0][affiliation]" type="text" class="w-full border p-2 rounded"
                                 placeholder="สังกัด COPI">
-                        </label>
-                        <button type="button" onclick="removeRow('copi-0', 'copi')" class="text-red-600 mt-6">✕</button>
-                    </div>
-                </div>
-            </div>
-            <button type="button" onclick="addCopiRow()" class="mb-6 px-3 py-1 bg-yellow-600 text-white rounded">+ เพิ่ม
-                COPI</button>
-            <h3 class="text-blue-700 font-semibold mb-2">Co-Researcher</h3>
-            <div id="coresearch-container" class="space-y-4 mb-4">
-                <div id="coresearch-0" class="coresearch-row space-y-2">
-                    <!-- บรรทัดที่ 1: ชื่อ -->
-                    <label class="block w-full">
-                        <span class="block text-sm mb-1">
-                            ชื่อ Co-Researcher ที่ <span class="coresearch-index">1</span>
-                        </span>
-                        <input name="coresearch[0][name]" list="coresearchList0" type="text"
-                            class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล">
+                        </div>
 
-                        <datalist id="coresearchList0">
-                            @foreach ($allUsers as $user)
-                                @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-                                <option value="{{ $fullName }}"></option>
-                            @endforeach
-                        </datalist>
-                    </label>
-
-
-                    <!-- บรรทัดที่ 2: สังกัด + ภายใน/ภายนอก + ลบ -->
-                    <div class="grid grid-cols-12 gap-4 items-end">
-                        <label class="col-span-5">
-                            <span class="block text-sm mb-1">สังกัด</span>
-                            <input name="coresearch[0][affiliation]" type="text" class="w-full border p-2 rounded"
-                                placeholder="สังกัด">
-                        </label>
-
-                        <label class="col-span-5">
-                            <span class="block text-sm mb-1">คนภายนอก/ภายใน *</span>
-                            <select name="coresearch[0][unit_status]" required
-                                oninvalid="this.setCustomValidity('กรุณาเลือกคนภายนอก/ภายใน')"
-                                oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
-                                <option value="">กรุณาเลือก</option>
-                                <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
-                                <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>
-                                <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">
-                                    ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ</option>
-                            </select>
-                        </label>
-
-                        <div class="col-span-2 flex items-center justify-end pt-6">
-                            <button type="button" onclick="removeRow('coresearch-0', 'coresearch')"
-                                class="text-red-600 text-xl">✕</button>
+                        {{-- ลบ --}}
+                        <div class="col-span-1 text-center">
+                            <button type="button" class="text-red-600" data-repeatable-remove>
+                                ✕
+                            </button>
                         </div>
                     </div>
+
                 </div>
-            </div>
+
+                {{-- ================== template ================== --}}
+                <x-slot:template>
+                    <div class="grid grid-cols-12 gap-4 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
+
+                        <div class="col-span-1 text-center">
+                            <span data-repeatable-index
+                                class="inline-flex w-8 h-8 items-center justify-center
+                             rounded-full bg-yellow-100 text-yellow-700
+                             text-sm font-semibold">
+                                #
+                            </span>
+                        </div>
+
+                        <div class="col-span-5">
+                            <label class="block text-sm text-gray-700 mb-1">
+                                ชื่อ COPI
+                            </label>
+                            <input name="copis[__i__][name]" list="userNames" type="text"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg
+                           focus:ring-2 focus:ring-yellow-500"
+                                placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                        </div>
+
+                        <div class="col-span-5">
+                            <label class="block text-sm text-gray-700 mb-1">
+                                สังกัด COPI
+                            </label>
+                            <input name="copis[__i__][affiliation]" type="text" class="w-full border p-2 rounded"
+                                placeholder="สังกัด COPI">
+                        </div>
+
+                        <div class="col-span-1 text-center">
+                            <button type="button" class="text-red-600" data-repeatable-remove>
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                </x-slot:template>
+
+            </x-repeatable-row>
 
 
-            <button type="button" onclick="addCoResearchRow()" class="mb-6 px-3 py-1 bg-purple-600 text-white rounded">+
-                เพิ่ม Co-Researcher</button>
+            <h3 class="text-blue-700 font-semibold mt-2"> Co-Researcher</h3>
+            <x-repeatable-row id="coresearch" addText="+ เพิ่ม Co-Researcher">
 
+                {{-- ================== container ================== --}}
+                <div data-repeatable-container class="space-y-4 mb-4">
 
+                    {{-- ================== แถวแรก ================== --}}
+                    <div class="space-y-2 p-4 border rounded-lg bg-gray-50" data-repeatable-row>
 
+                        {{-- แถวชื่อ --}}
+                        <label class="block w-full">
+                            <span class="block text-sm mb-1">
+                                ชื่อ Co-Researcher คนที่
+                                <span data-repeatable-index
+                                    class="inline-flex ml-1 px-2 py-0.5 rounded-full
+                                 bg-purple-100 text-purple-700 text-xs font-semibold">
+                                    1
+                                </span>
+                            </span>
 
-            @php
-                $allUsers = \App\Models\User::orderBy('name')->get();
-                $roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
-                $jobDetails = [
-                    'Researcher',
-                    'Researcher Assistant',
-                    'Project Manager',
-                    'Research Coordinator',
-                    'นักวิชาการสารสนเทศ',
-                    'นักประชาสัมพันธ์',
-                    'เจ้าหน้าที่บริหารงานทั่วไป',
-                ];
-            @endphp
+                            <input name="coresearch[0][name]" list="coresearchUsers" type="text"
+                                class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล">
+                        </label>
+
+                        {{-- แถวสังกัด + สถานะ + ลบ --}}
+                        <div class="grid grid-cols-12 gap-4 items-end">
+
+                            <label class="col-span-5">
+                                <span class="block text-sm mb-1">สังกัด</span>
+                                <input name="coresearch[0][affiliation]" type="text" class="w-full border p-2 rounded"
+                                    placeholder="สังกัด">
+                            </label>
+
+                            <label class="col-span-5">
+                                <span class="block text-sm mb-1">
+                                    คนภายนอก / ภายใน <span class="text-red-500">*</span>
+                                </span>
+                                <select name="coresearch[0][unit_status]" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกคนภายนอก/ภายใน')"
+                                    oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
+                                    <option value="">กรุณาเลือก</option>
+                                    <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">
+                                        ภายในคณะแพทยศาสตร์ศิริราชพยาบาล
+                                    </option>
+                                    <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">
+                                        ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล
+                                    </option>
+                                    <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">
+                                        ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ
+                                    </option>
+                                </select>
+                            </label>
+
+                            <div class="col-span-2 flex items-center justify-end pt-6">
+                                <button type="button" class="text-red-600 text-xl" data-repeatable-remove>
+                                    ✕
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                {{-- ================== template ================== --}}
+                <x-slot:template>
+                    <div class="space-y-2 p-4 border rounded-lg bg-white" data-repeatable-row>
+
+                        <label class="block w-full">
+                            <span class="block text-sm mb-1">
+                                ชื่อ Co-Researcher คนที่
+                                <span data-repeatable-index
+                                    class="inline-flex ml-1 px-2 py-0.5 rounded-full
+                                 bg-purple-100 text-purple-700 text-xs font-semibold">
+                                    #
+                                </span>
+                            </span>
+
+                            <input name="coresearch[__i__][name]" list="coresearchUsers" type="text"
+                                class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล">
+                        </label>
+
+                        <div class="grid grid-cols-12 gap-4 items-end">
+
+                            <label class="col-span-5">
+                                <span class="block text-sm mb-1">สังกัด</span>
+                                <input name="coresearch[__i__][affiliation]" type="text"
+                                    class="w-full border p-2 rounded" placeholder="สังกัด">
+                            </label>
+
+                            <label class="col-span-5">
+                                <span class="block text-sm mb-1">
+                                    คนภายนอก / ภายใน <span class="text-red-500">*</span>
+                                </span>
+                                <select name="coresearch[__i__][unit_status]" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกคนภายนอก/ภายใน')"
+                                    oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
+                                    <option value="">กรุณาเลือก</option>
+                                    <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">
+                                        ภายในคณะแพทยศาสตร์ศิริราชพยาบาล
+                                    </option>
+                                    <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">
+                                        ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล
+                                    </option>
+                                    <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">
+                                        ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ
+                                    </option>
+                                </select>
+                            </label>
+
+                            <div class="col-span-2 flex items-center justify-end pt-6">
+                                <button type="button" class="text-red-600 text-xl" data-repeatable-remove>
+                                    ✕
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </x-slot:template>
+
+            </x-repeatable-row>
+
+            {{-- datalist ใช้ร่วมทุกแถว --}}
+            <datalist id="coresearchUsers">
+                @foreach ($allUsers as $user)
+                    @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+                    <option value="{{ $fullName }}"></option>
+                @endforeach
+            </datalist>
 
             <hr class="my-6 border-t-2 border-gray-300">
-            <!-- Modal Wrapper -->
-            <div x-data="{ showFTE: false, currentTab: 'external', setTab(tab) { this.currentTab = tab } }" x-effect="document.body.classList.toggle('overflow-hidden', showFTE)">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
+            </div>
 
-                <!-- Header -->
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
-                    <a href="#" @click.prevent="showFTE = true"
-                        class="text-sm text-blue-600 hover:underline">รายละเอียดค่า FTE</a>
-                </div>
+            <x-repeatable-row id="fte" addText="+ เพิ่มผู้มีส่วนร่วม">
 
-                <!-- Modal -->
-                <!-- Overlay + Modal Wrapper -->
-                <div x-show="showFTE" x-cloak x-transition.opacity
-                    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
-                    @click.self="showFTE = false" x-trap.noscroll="showFTE" x-init="...">
+                {{-- ================== CONTAINER ================== --}}
+                <div data-repeatable-container class="space-y-6 mb-6">
 
+                    {{-- ================== ROW 0 ================== --}}
+                    <div class="fte-row p-4 border rounded-lg bg-white shadow-sm" data-repeatable-row>
 
-                    <!-- Modal Container -->
-                    <div x-ref="fteModal"
-                        class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl ring-1 ring-gray-200"
-                        @click.stop>
-
-                        <!-- Header -->
-                        <div
-                            class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-white to-blue-50 sticky top-0 z-10">
-                            <div class="flex items-center space-x-2">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h6m6-6v12m6-6h-6" />
-                                </svg>
-                                <h2 class="text-lg md:text-xl font-bold text-gray-800">ข้อมูลผู้มีส่วนร่วม (FTE)</h2>
-                            </div>
-                            <button @click="showFTE = false"
-                                class="text-gray-500 hover:text-red-500 hover:bg-red-100 rounded-full p-2 transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Tabs -->
-                        <div
-                            class="flex justify-start px-6 pt-3 space-x-4 border-b text-sm font-medium bg-white sticky top-[60px] z-10">
-                            <button @click.prevent="setTab('external')"
-                                :class="currentTab === 'external' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
-                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
-                                ทุนภายนอก
-                            </button>
-                            <button @click.prevent="setTab('internal')"
-                                :class="currentTab === 'internal' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
-                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
-                                ทุนภายใน
-                            </button>
-                            <button @click.prevent="setTab('cohort')"
-                                :class="currentTab === 'cohort' ? 'text-blue-600 border-b-2 border-blue-600 font-semibold' :
-                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent hover:border-blue-300 transition'">
-                                COHORT
-                            </button>
-                        </div>
-
-                        <!-- Content Area -->
-                        <div class="p-6 space-y-4 text-sm bg-white">
-                            <div x-show="currentTab === 'external'" x-transition>
-                                @include('projects.table.external')
-                            </div>
-                            <div x-show="currentTab === 'internal'" x-transition>
-                                @include('projects.table.internal')
-                            </div>
-                            <div x-show="currentTab === 'cohort'" x-transition>
-                                @include('projects.table.cohort')
-                            </div>
-                        </div>
-
-                        <!-- Footer (optional) -->
-                        <div class="px-6 py-4 bg-gray-50 text-right border-t">
-                            <button @click="showFTE = false"
-                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
-                                ปิดหน้าต่าง
-                            </button>
-                        </div>
-
-                    </div>
-                </div>
-                <div id="fte-container" class="space-y-6 mb-6">
-                    <div id="fte-0" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
-                        <!-- โครงร่างหลัก: ซ้ายรายละเอียด / ขวา FTE -->
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
-                            <!-- ============================= -->
-                            <!-- ซ้าย: รายละเอียด -->
-                            <!-- ============================= -->
-                            <div class="md:col-span-9 space-y-4">
+                            {{-- INDEX --}}
+                            <div class="md:col-span-1 flex justify-center pt-2">
+                                <span data-repeatable-index
+                                    class="inline-flex w-8 h-8 items-center justify-center
+                        rounded-full bg-blue-100 text-blue-700
+                        text-sm font-semibold">
+                                    1
+                                </span>
+                            </div>
 
-                                <!-- 1. Name + Group -->
+                            {{-- ================= LEFT ================= --}}
+                            <div class="md:col-span-8 space-y-4">
+
+                                {{-- NAME + GROUP --}}
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <label class="w-full">
-                                        <span class="block text-sm font-semibold text-gray-700 mb-1">1. ชื่อ-นามสกุล</span>
+                                    <label>
+                                        <span class="block text-sm font-semibold mb-1">
+                                            ชื่อ-นามสกุล *
+                                        </span>
                                         <input list="fteUsers" name="fte_roles[0][name]"
-                                            class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
-                                            placeholder="พิมพ์หรือเลือกชื่อ" required
-                                            oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้มีส่วนร่วม')"
-                                            oninput="this.setCustomValidity('')">
-
-                                        <datalist id="fteUsers">
-                                            @foreach ($allUsers as $user)
-                                                @php $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')); @endphp
-                                                <option value="{{ $fullName }}"></option>
-                                            @endforeach
-                                        </datalist>
+                                            class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อ" required>
                                     </label>
 
-                                    <label class="w-full">
-                                        <span class="block text-sm font-semibold text-gray-700 mb-1">กลุ่ม</span>
-                                        <select name="fte_roles[0][role_group]"
-                                            class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
+                                    <label>
+                                        <span class="block text-sm font-semibold mb-1">
+                                            กลุ่ม
+                                        </span>
+                                        <select name="fte_roles[0][role_group]" class="w-full border p-2 rounded">
                                             <option value="" disabled selected>เลือกกลุ่ม</option>
                                             @foreach ($roleGroups as $group)
                                                 <option value="{{ $group }}">{{ $group }}</option>
@@ -661,15 +714,15 @@
                                     </label>
                                 </div>
 
-                                <!-- 2. Job + Date + Hours -->
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+                                {{-- JOB + DATES --}}
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
-                                    <label class="w-full">
-                                        <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน *</span>
-                                        <select name="fte_roles[0][job_detail]"
-                                            class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required
-                                            oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
-                                            oninput="this.setCustomValidity('')">
+                                    <label>
+                                        <span class="block text-sm font-semibold mb-1">
+                                            ภาระงาน *
+                                        </span>
+                                        <select name="fte_roles[0][job_detail]" class="w-full border p-2 rounded"
+                                            required>
                                             <option value="">เลือกภาระงาน</option>
                                             @foreach ($jobDetails as $job)
                                                 <option value="{{ $job }}">{{ $job }}</option>
@@ -677,152 +730,234 @@
                                         </select>
                                     </label>
 
-                                    <label class="w-full relative">
-                                        <span class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน *
-                                        </span>
-                                        <input name="fte_roles[0][start_date]" type="text"
-                                            class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                                            placeholder="โปรดใส่วันที่" data-required-msg="กรุณาระบุวันเริ่มต้นภาระงาน">
+                                    <x-date-be name="fte_roles[0][start_date]" label="วันเริ่มต้นภาระงาน"
+                                        placeholder="เลือกวันเริ่มต้น" required />
 
-                                        <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </label>
-
-                                    <label class="w-full relative">
-                                        <span class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน *
-                                        </span>
-                                        <input name="fte_roles[0][end_date]" type="text"
-                                            class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                                            placeholder="โปรดใส่วันที่" data-required-msg="กรุณาระบุวันสิ้นสุดภาระงาน">
-
-                                        <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </label>
-
-
-
+                                    <x-date-be name="fte_roles[0][end_date]" label="วันสิ้นสุดภาระงาน"
+                                        placeholder="เลือกวันสิ้นสุด" required />
                                 </div>
 
-                                <!-- รายละเอียดภารกิจ -->
+                                {{-- HOURS --}}
+                                <label>
+                                    <span class="block text-sm font-semibold mb-1">
+                                        ชั่วโมงการทำงาน (Hour)
+                                    </span>
+                                    <input name="fte_roles[0][hours]" type="number" step="0.1" min="0"
+                                        class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0">
+                                </label>
 
-                                <label class="w-full">
-                                    <!-- NEW — HOURS -->
-                                    <label class="w-full">
-                                        <span class="block text-sm font-semibold text-gray-700 mb-1">ชั่วโมงการทำงาน
-                                            (Hour)</span>
-                                        <input name="fte_roles[0][hours]" type="number" step="0.1" min="0"
-                                            class="fte-hours w-full border p-2 rounded text-right focus:ring-2 focus:ring-blue-500"
-                                            placeholder="0.0">
-                                    </label>
-
-                                    <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ *</span>
-                                    <select name="fte_roles[0][task_detail]"
-                                        class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required
-                                        oninvalid="this.setCustomValidity('กรุณาเลือกภารกิจ')"
-                                        oninput="this.setCustomValidity('')">
+                                {{-- TASK DETAIL --}}
+                                <label>
+                                    <span class="block text-sm font-semibold mb-1">
+                                        รายละเอียดภารกิจ *
+                                    </span>
+                                    <select name="fte_roles[0][task_detail]" class="w-full border p-2 rounded" required>
                                         <option value="">เลือกภารกิจ</option>
                                         <option>ติดต่อประสานงาน</option>
                                         <option>ที่ปรึกษาโครงการ</option>
                                         <option>review literature</option>
-                                        <option>เขียนproposal</option>
-                                        <option>ดำเนินการเอกสารขอirb/submit irb</option>
-                                        <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
+                                        <option>เขียน proposal</option>
                                         <option>เก็บข้อมูล</option>
                                         <option>วิเคราะห์ข้อมูล</option>
-                                        <option>เขียนเล่มรายงาน</option>
-                                        <option>เขียนmanuscript</option>
+                                        <option>เขียน manuscript</option>
                                         <option>submit journal</option>
-                                        <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
-                                        <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
-                                        <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
+                                        <option>นำเสนอผลงาน Oral / Poster</option>
                                     </select>
                                 </label>
                             </div>
 
-                            <!-- ============================= -->
-                            <!-- ขวา: FTE -->
-                            <!-- ============================= -->
+                            {{-- ================= RIGHT ================= --}}
                             <div class="md:col-span-3 space-y-4">
 
-                                <!-- FTE ผู้วิจัย (AUTO) -->
+                                {{-- AUTO FTE --}}
                                 <label class="block p-4 border rounded-xl bg-blue-50">
-                                    <span class="block text-sm font-bold text-blue-800 mb-2">FTE จากการคำนวนชั่วโมง </span>
-                                    <input name="fte_roles[0][fte_value]" type="number" step="0.00001" min="0"
-                                        max="1" class="fte-value w-full border p-3 rounded text-right bg-gray-100"
+                                    <span class="block text-sm font-bold text-blue-800 mb-2">
+                                        FTE (คำนวณอัตโนมัติ)
+                                    </span>
+                                    <input name="fte_roles[0][fte_value]" type="number" step="0.00001"
+                                        class="fte-value w-full border p-3 rounded text-right bg-gray-100"
                                         placeholder="0.00000" readonly>
                                 </label>
 
-                                <!-- FTE ผู้บริหาร -->
+                                {{-- MANUAL FTE --}}
                                 <label class="block p-4 border rounded-xl bg-emerald-50">
-                                    <span class="block text-sm font-bold text-emerald-800 mb-2">FTE
-                                        (ให้โดยหัวหน้าโครงการ)</span>
+                                    <span class="block text-sm font-bold text-emerald-800 mb-2">
+                                        FTE (ให้โดยหัวหน้าโครงการ)
+                                    </span>
                                     <input name="fte_roles[0][fte_value_research]" type="number" step="0.01"
-                                        min="0" max="1"
-                                        class="w-full border p-3 rounded text-right focus:ring-2 focus:ring-emerald-500"
+                                        min="0" max="1" class="w-full border p-3 rounded text-right"
                                         placeholder="0.00">
                                 </label>
 
-                                <button type="button" onclick="removeRow('fte-0')"
-                                    class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
+                                <button type="button" class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50"
+                                    data-repeatable-remove>
                                     ✕ ลบผู้มีส่วนร่วมนี้
                                 </button>
-
                             </div>
+
                         </div>
                     </div>
+
                 </div>
 
-                <button type="button" onclick="addFTERow()"
-                    class="mb-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow">
-                    + เพิ่มผู้มีส่วนร่วม
-                </button>
+                {{-- ================== TEMPLATE ================== --}}
+                <x-slot:template>
+                    <div class="fte-row p-4 border rounded-lg bg-white shadow-sm" data-repeatable-row>
+
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+
+                            <div class="md:col-span-1 flex justify-center pt-2">
+                                <span data-repeatable-index
+                                    class="inline-flex w-8 h-8 items-center justify-center
+                        rounded-full bg-blue-100 text-blue-700
+                        text-sm font-semibold">
+                                    #
+                                </span>
+                            </div>
+
+                            <div class="md:col-span-8 space-y-4">
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <label>
+                                        <span class="block text-sm font-semibold mb-1">
+                                            ชื่อ-นามสกุล *
+                                        </span>
+                                        <input list="fteUsers" name="fte_roles[__i__][name]"
+                                            class="w-full border p-2 rounded" required>
+                                    </label>
+
+                                    <label>
+                                        <span class="block text-sm font-semibold mb-1">
+                                            กลุ่ม
+                                        </span>
+                                        <select name="fte_roles[__i__][role_group]" class="w-full border p-2 rounded">
+                                            <option value="" disabled selected>เลือกกลุ่ม</option>
+                                            @foreach ($roleGroups as $group)
+                                                <option value="{{ $group }}">{{ $group }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <label>
+                                        <span class="block text-sm font-semibold mb-1">
+                                            ภาระงาน *
+                                        </span>
+                                        <select name="fte_roles[__i__][job_detail]" class="w-full border p-2 rounded"
+                                            required>
+                                            <option value="">เลือกภาระงาน</option>
+                                            @foreach ($jobDetails as $job)
+                                                <option value="{{ $job }}">{{ $job }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+
+                                    <x-date-be name="fte_roles[__i__][start_date]" label="วันเริ่มต้นภาระงาน" required />
+                                    <x-date-be name="fte_roles[__i__][end_date]" label="วันสิ้นสุดภาระงาน" required />
+                                </div>
+
+                                <label>
+                                    <span class="block text-sm font-semibold mb-1">
+                                        ชั่วโมงการทำงาน (Hour)
+                                    </span>
+                                    <input name="fte_roles[__i__][hours]" type="number" step="0.1" min="0"
+                                        class="fte-hours w-full border p-2 rounded text-right">
+                                </label>
+
+                                <label>
+                                    <span class="block text-sm font-semibold mb-1">
+                                        รายละเอียดภารกิจ *
+                                    </span>
+                                    <select name="fte_roles[__i__][task_detail]" class="w-full border p-2 rounded"
+                                        required>
+                                        <option value="">เลือกภารกิจ</option>
+                                        <option>ติดต่อประสานงาน</option>
+                                        <option>ที่ปรึกษาโครงการ</option>
+                                        <option>review literature</option>
+                                        <option>เขียน proposal</option>
+                                        <option>เก็บข้อมูล</option>
+                                        <option>วิเคราะห์ข้อมูล</option>
+                                        <option>เขียน manuscript</option>
+                                        <option>submit journal</option>
+                                        <option>นำเสนอผลงาน Oral / Poster</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div class="md:col-span-3 space-y-4">
+                                <label class="block p-4 border rounded-xl bg-blue-50">
+                                    <span class="block text-sm font-bold text-blue-800 mb-2">
+                                        FTE (คำนวณอัตโนมัติ)
+                                    </span>
+                                    <input name="fte_roles[__i__][fte_value]" type="number" step="0.00001"
+                                        class="fte-value w-full border p-3 rounded text-right bg-gray-100" readonly>
+                                </label>
+
+                                <label class="block p-4 border rounded-xl bg-emerald-50">
+                                    <span class="block text-sm font-bold text-emerald-800 mb-2">
+                                        FTE (ให้โดยหัวหน้าโครงการ)
+                                    </span>
+                                    <input name="fte_roles[__i__][fte_value_research]" type="number" step="0.01"
+                                        min="0" max="1" class="w-full border p-3 rounded text-right">
+                                </label>
+
+                                <button type="button" class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50"
+                                    data-repeatable-remove>
+                                    ✕ ลบผู้มีส่วนร่วมนี้
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </x-slot:template>
+
+            </x-repeatable-row>
 
 
+            <hr class="my-6 border-t-2 border-gray-300">
+            <!-- E: ผลงานวิจัย (Output) -->
+            <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
 
+            <x-repeatable-row id="output" addText="+ เพิ่ม Output">
 
+                <div data-repeatable-container class="space-y-4 mb-4">
 
-                <hr class="my-6 border-t-2 border-gray-300">
-                <!-- E: ผลงานวิจัย (Output) -->
-                <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
+                    {{-- ROW แรก --}}
+                    <div class="output-row p-4 border rounded-lg bg-white space-y-3" data-repeatable-row>
 
-                <div id="output-container" class="space-y-4 mb-4">
-                    <!-- แถวแรก -->
-                    <div id="output-0" class="output-row space-y-2" data-index="0">
-                        <label class="block w-full">
-                            <span class="block text-sm text-gray-700 mb-1">
-                                ชื่อผลงานที่ <span class="output-index">1</span>
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold text-blue-700">
+                                ผลงานที่ <span data-repeatable-index>1</span>
                             </span>
-                            <input name="outputs[0][title]" type="text" class="w-full border p-2 rounded" required
-                                oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
-                                oninput="this.setCustomValidity('')" placeholder="ชื่อผลงาน">
+                            <button type="button" class="text-red-600" data-repeatable-remove>✕</button>
+                        </div>
+
+                        <label>
+                            <span class="text-sm">ชื่อผลงาน *</span>
+                            <input name="outputs[0][title]" class="w-full border p-2 rounded" required>
                         </label>
 
-                        <div class="grid grid-cols-3 gap-4 items-end">
-                            <label class="w-full">
-                                <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน * </span>
-                                <select name="outputs[0][type]" class="w-full border p-2 rounded output-type" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
-                                    oninput="this.setCustomValidity('')">
+                        <div class="grid grid-cols-3 gap-4">
+                            <label>
+                                <span class="text-sm">ประเภท *</span>
+                                <select name="outputs[0][type]" class="output-type w-full border p-2 rounded"
+                                    onchange="handleOutputType(this)" required>
                                     <option value="">เลือกประเภทของผลงาน</option>
+
                                     <option>EA101 Research Paper or Journal Article</option>
-                                    <option>EA102 Reports and White papers</option>
+                                    <option>EA102 Reports and White Papers</option>
                                     <option>EA103 Presentations in Academic Conferences</option>
                                     <option>EA104 Data Sets and Databases</option>
-                                    <option>EA105 Inventions or Innovations (Application /Website)</option>
+                                    <option>EA105 Inventions or Innovations (Application / Website)</option>
                                     <option>EA106 Policy Recommendations</option>
                                     <option>EA107 Educational Materials</option>
                                     <option>EA108 Communication Materials (Creations)</option>
-                                    <option>EA109 Change in Practices ,Procedures, Policy</option>
-                                    <option>EA110 Number of participants (persons)</option>
-                                    <option>EA111 Satisfaction Rating (1-5)</option>
-                                    <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
-                                    <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
+                                    <option>EA109 Change in Practices / Procedures / Policy</option>
+                                    <option>EA110 Number of Participants (Persons)</option>
+                                    <option>EA111 Satisfaction Rating (1–5)</option>
+                                    <option>EA112 Presentation to Committee / Policy Maker / Board</option>
+                                    <option>EA113 Appointment Orders (SIHP as Committee / Secretary)</option>
                                     <option>EA114 Events / Forum</option>
                                     <option>EA115 Capacity Building</option>
                                     <option>EA116 Research Project</option>
@@ -830,124 +965,163 @@
                                 </select>
                             </label>
 
-                            <label class="w-full">
-                                <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
-                                <input name="outputs[0][project_output]" type="text" class="w-full border p-2 rounded"
-                                    placeholder="เพิ่มเติม">
+                            <label>
+                                <span class="text-sm">หมายเหตุ</span>
+                                <input name="outputs[0][project_output]" class="w-full border p-2 rounded">
                             </label>
 
-                            <div class="flex gap-2 w-full">
-                                <label class="w-full relative">
-                                    <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
-                                    <input name="outputs[0][year]" type="text"
-                                        class="thai-datepicker w-full border p-2 rounded pl-10"
-                                        placeholder="โปรดใส่วันที่">
-                                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </label>
-                                <button type="button" onclick="removeRow('output-0','output')"
-                                    class="text-red-600 mb-2">✕</button>
-                            </div>
+                            <x-date-be name="outputs[0][year]" label="วันที่ publish" />
                         </div>
 
-                        <!-- mount ของส่วนพิเศษ (EA101/EA103) -->
-                        <div class="special-mount"></div>
+                        {{-- ตรงนี้สำคัญ --}}
+                        <div class="special-mount mt-3"></div>
                     </div>
+
                 </div>
 
-                <button type="button" onclick="addOutputRow()" class="mb-6 px-3 py-1 bg-green-600 text-white rounded">
-                    + เพิ่ม Output
-                </button>
+                {{-- TEMPLATE --}}
+                <x-slot:template>
+                    <div class="output-row p-4 border rounded-lg bg-white space-y-3" data-repeatable-row>
+
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold text-blue-700">
+                                ผลงานที่ <span data-repeatable-index>#</span>
+                            </span>
+                            <button type="button" class="text-red-600" data-repeatable-remove>✕</button>
+                        </div>
+
+                        <label>
+                            <span class="text-sm">ชื่อผลงาน *</span>
+                            <input name="outputs[__i__][title]" class="w-full border p-2 rounded" required>
+                        </label>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <label>
+                                <span class="text-sm">ประเภท *</span>
+                                <select name="outputs[__i__][type]" class="output-type w-full border p-2 rounded"
+                                    onchange="handleOutputType(this)" required>
+                                    <option value="">เลือกประเภทของผลงาน</option>
+
+                                    <option>EA101 Research Paper or Journal Article</option>
+                                    <option>EA102 Reports and White Papers</option>
+                                    <option>EA103 Presentations in Academic Conferences</option>
+                                    <option>EA104 Data Sets and Databases</option>
+                                    <option>EA105 Inventions or Innovations (Application / Website)</option>
+                                    <option>EA106 Policy Recommendations</option>
+                                    <option>EA107 Educational Materials</option>
+                                    <option>EA108 Communication Materials (Creations)</option>
+                                    <option>EA109 Change in Practices / Procedures / Policy</option>
+                                    <option>EA110 Number of Participants (Persons)</option>
+                                    <option>EA111 Satisfaction Rating (1–5)</option>
+                                    <option>EA112 Presentation to Committee / Policy Maker / Board</option>
+                                    <option>EA113 Appointment Orders (SIHP as Committee / Secretary)</option>
+                                    <option>EA114 Events / Forum</option>
+                                    <option>EA115 Capacity Building</option>
+                                    <option>EA116 Research Project</option>
+                                    <option>EA117 MOU</option>
+                                </select>
+                            </label>
+
+                            <label>
+                                <span class="text-sm">หมายเหตุ</span>
+                                <input name="outputs[__i__][project_output]" class="w-full border p-2 rounded">
+                            </label>
+
+                            <x-date-be name="outputs[__i__][year]" label="วันที่ publish" />
+                        </div>
+
+                        <div class="special-mount mt-3"></div>
+                    </div>
+                </x-slot:template>
+
+            </x-repeatable-row>
 
 
 
 
-                <hr class="my-6 border-t-2 border-gray-300">
-                <!-- ยุทธศาสตร์ -->
-                <h3 class="font-semibold text-lg text-blue-700 mb-2">ยุทธศาสตร์ Siriraj Health Policy</h3>
-                <table class="w-full table-auto text-sm mb-6">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="px-3 py-2 text-left">หมวด</th>
-                            <th class="px-3 py-2 text-left">รายการ</th>
-                            <th class="px-3 py-2">มี</th>
+
+            <hr class="my-6 border-t-2 border-gray-300">
+            <!-- ยุทธศาสตร์ -->
+            <h3 class="font-semibold text-lg text-blue-700 mb-2">ยุทธศาสตร์ Siriraj Health Policy</h3>
+            <table class="w-full table-auto text-sm mb-6">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="px-3 py-2 text-left">หมวด</th>
+                        <th class="px-3 py-2 text-left">รายการ</th>
+                        <th class="px-3 py-2">มี</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php
+                        $strategies = [
+                            '1' => [
+                                'label' => 'AA501: Capacity Building',
+                                'items' => [
+                                    '1' => '1.1 การสรรหานักวิจัยด้านนโยบายสุขภาพที่มีความสามารถ',
+                                    '2' => '1.2 การพัฒนาศักยภาพฯ ผ่านการเรียนรู้จากการปฏิบัติงานจริง',
+                                    '3' => '1.3 การพัฒนาศักยภาพฯ ผ่านการศึกษาต่อเนื่อง',
+                                    '4' => '1.4 การบูรณาการกับการเรียนการสอนนักศึกษาแพทย์',
+                                    '5' => '1.5 การพัฒนาศักยภาพฯ ให้แก่บุคลากรศิริราช',
+                                ],
+                            ],
+                            '2' => [
+                                'label' => 'AA502: Excellence Research',
+                                'items' => [
+                                    '1' => '2.1 การเพิ่มบทบาทของหน่วยวิจัยฯ',
+                                    '2' => '2.2 การสร้างความสัมพันธ์กับผู้กำหนดนโยบาย',
+                                    '3' => '2.3 การสรรหาและกำหนดหัวข้อวิจัย',
+                                ],
+                            ],
+                            '3' => [
+                                'label' => 'AA503: Health Policy Linkage',
+                                'items' => [
+                                    '1' => '3.1 การสังเคราะห์องค์ความรู้ฯ จากงานวิจัยต้นแบบ',
+                                    '2' => '3.2 การดำเนินงานวิจัยที่มีคุณภาพ',
+                                    '3' => '3.3 ผลักดันให้งานวิจัยใช้ตัดสินใจนโยบาย',
+                                    '4' => '3.4 เชื่อมโยงนวัตกรรมกับการพัฒนานโยบาย',
+                                    '5' => '3.5 การสื่อสารงานวิจัยต่อสาธารณะ',
+                                ],
+                            ],
+                            '4' => [
+                                'label' => 'AA504: Partnership Engagement',
+                                'items' => [
+                                    '1' => '4.1 การสร้างเครือข่ายงานวิจัย',
+                                    '2' => '4.2 การสร้างความร่วมมือฯ',
+                                ],
+                            ],
+                            '5' => [
+                                'label' => 'AA505: System Support',
+                                'items' => [
+                                    '1' => '5.1 การพัฒนาระบบสนับสนุนการดำเนินงานวิจัย',
+                                    '2' => '5.2 การพัฒนาระบบสนับสนุนเส้นทางอาชีพในหน่วยวิจัย',
+                                ],
+                            ],
+                        ];
+                    @endphp
+
+                    @foreach ($strategies as $sKey => $strategy)
+                        <tr class="border-t">
+                            <td class="px-3 py-2 font-bold" rowspan="{{ count($strategy['items']) + 1 }}">
+                                {{ $strategy['label'] }}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $strategies = [
-                                '1' => [
-                                    'label' => 'AA501: Capacity Building',
-                                    'items' => [
-                                        '1' => '1.1 การสรรหานักวิจัยด้านนโยบายสุขภาพที่มีความสามารถ',
-                                        '2' => '1.2 การพัฒนาศักยภาพฯ ผ่านการเรียนรู้จากการปฏิบัติงานจริง',
-                                        '3' => '1.3 การพัฒนาศักยภาพฯ ผ่านการศึกษาต่อเนื่อง',
-                                        '4' => '1.4 การบูรณาการกับการเรียนการสอนนักศึกษาแพทย์',
-                                        '5' => '1.5 การพัฒนาศักยภาพฯ ให้แก่บุคลากรศิริราช',
-                                    ],
-                                ],
-                                '2' => [
-                                    'label' => 'AA502: Excellence Research',
-                                    'items' => [
-                                        '1' => '2.1 การเพิ่มบทบาทของหน่วยวิจัยฯ',
-                                        '2' => '2.2 การสร้างความสัมพันธ์กับผู้กำหนดนโยบาย',
-                                        '3' => '2.3 การสรรหาและกำหนดหัวข้อวิจัย',
-                                    ],
-                                ],
-                                '3' => [
-                                    'label' => 'AA503: Health Policy Linkage',
-                                    'items' => [
-                                        '1' => '3.1 การสังเคราะห์องค์ความรู้ฯ จากงานวิจัยต้นแบบ',
-                                        '2' => '3.2 การดำเนินงานวิจัยที่มีคุณภาพ',
-                                        '3' => '3.3 ผลักดันให้งานวิจัยใช้ตัดสินใจนโยบาย',
-                                        '4' => '3.4 เชื่อมโยงนวัตกรรมกับการพัฒนานโยบาย',
-                                        '5' => '3.5 การสื่อสารงานวิจัยต่อสาธารณะ',
-                                    ],
-                                ],
-                                '4' => [
-                                    'label' => 'AA504: Partnership Engagement',
-                                    'items' => [
-                                        '1' => '4.1 การสร้างเครือข่ายงานวิจัย',
-                                        '2' => '4.2 การสร้างความร่วมมือฯ',
-                                    ],
-                                ],
-                                '5' => [
-                                    'label' => 'AA505: System Support',
-                                    'items' => [
-                                        '1' => '5.1 การพัฒนาระบบสนับสนุนการดำเนินงานวิจัย',
-                                        '2' => '5.2 การพัฒนาระบบสนับสนุนเส้นทางอาชีพในหน่วยวิจัย',
-                                    ],
-                                ],
-                            ];
-                        @endphp
-
-                        @foreach ($strategies as $sKey => $strategy)
+                        @foreach ($strategy['items'] as $iKey => $desc)
                             <tr class="border-t">
-                                <td class="px-3 py-2 font-bold" rowspan="{{ count($strategy['items']) + 1 }}">
-                                    {{ $strategy['label'] }}</td>
+                                <td class="px-3 py-2">{{ $desc }}</td>
+                                <td class="px-3 py-2 text-center">
+                                    <input type="checkbox" name="strategy_{{ $sKey }}_{{ $iKey }}"
+                                        class="mr-1">
+                                </td>
                             </tr>
-                            @foreach ($strategy['items'] as $iKey => $desc)
-                                <tr class="border-t">
-                                    <td class="px-3 py-2">{{ $desc }}</td>
-                                    <td class="px-3 py-2 text-center">
-                                        <input type="checkbox" name="strategy_{{ $sKey }}_{{ $iKey }}"
-                                            class="mr-1">
-                                    </td>
-                                </tr>
-                            @endforeach
                         @endforeach
-                    </tbody>
-                </table>
+                    @endforeach
+                </tbody>
+            </table>
 
-                <!-- Submit -->
-                <div class="mt-6">
-                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">💾
-                        บันทึกข้อมูล</button>
-                </div>
+            <!-- Submit -->
+            <div class="mt-6">
+                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">💾
+                    บันทึกข้อมูล</button>
+            </div>
         </form>
 
 
@@ -974,93 +1148,6 @@
     </style>
 
     <script>
-        // ✅ TO BUDDHIST
-        function toBuddhist(selectedDates, dateStr, instance) {
-            const altInput = instance.altInput;
-
-            if (selectedDates.length > 0 && altInput) {
-                const date = selectedDates[0];
-                const day = date.getDate();
-                const month = date.toLocaleString('th-TH', {
-                    month: 'long'
-                });
-                const year = date.getFullYear() + 543;
-                altInput.value = `${day} ${month} ${year}`;
-            }
-
-            setTimeout(() => {
-                const yearInputs = instance?.calendarContainer?.querySelectorAll(
-                    '.flatpickr-current-month input.cur-year') || [];
-                yearInputs.forEach(el => {
-                    let y = parseInt(el.value);
-                    if (y < 2500) el.value = y + 543;
-
-                    el.addEventListener('blur', () => {
-                        let y2 = parseInt(el.value);
-                        if (y2 > 2400) {
-                            el.value = y2 - 543;
-                            instance.setDate(new Date(y2 - 543, instance.currentMonth, 1));
-                            setTimeout(() => toBuddhist(selectedDates, dateStr, instance), 5);
-                        }
-                    });
-                });
-            }, 5);
-        }
-
-        function initThaiDatepickers() {
-            document.querySelectorAll('.thai-datepicker').forEach(input => {
-
-                // ✅ กัน init ซ้ำ (สำคัญมาก)
-                if (input._flatpickr) return;
-
-                flatpickr(input, {
-                    locale: "th",
-                    dateFormat: "d-m-Y",
-                    altInput: true,
-                    altFormat: "j F Y",
-                    prevArrow: "",
-                    nextArrow: "",
-                    disableMobile: true,
-
-                    onReady: function(selectedDates, dateStr, instance) {
-
-                        // ใช้ของเดิมคุณ
-                        if (typeof toBuddhist === 'function') {
-                            toBuddhist(selectedDates, dateStr, instance);
-                        }
-
-                        const alt = instance.altInput;
-                        if (!alt) return;
-
-                        const msg = instance.input.dataset.requiredMsg;
-
-                        if (msg) {
-                            // 🔑 หัวใจของ required + flatpickr
-                            alt.required = true;
-
-                            alt.oninvalid = () => {
-                                alt.setCustomValidity(msg);
-                                alt.classList.add('border-red-500');
-                            };
-
-                            alt.oninput = () => {
-                                alt.setCustomValidity('');
-                                alt.classList.remove('border-red-500');
-                            };
-                        }
-                    },
-
-                    onChange: function(selectedDates, dateStr, instance) {
-                        if (typeof toBuddhist === 'function') {
-                            toBuddhist(selectedDates, dateStr, instance);
-                        }
-                    }
-                });
-            });
-        }
-
-
-
         // ✅ STATUS COLOR
         function updateStatusColor(selectEl) {
             const selected = selectEl.options[selectEl.selectedIndex];
@@ -1088,7 +1175,6 @@
                 input.value = input.value.replace(/,/g, '');
             });
         }
-
         // ✅ REMOVE & REINDEX
         function removeRow(id, type) {
             const el = document.getElementById(id);
@@ -1104,21 +1190,6 @@
             map[type]?.();
         }
 
-        function reindexIRB() {
-            document.querySelectorAll('#irb-code-container .irb-row').forEach((row, i) => {
-                row.querySelector('.irb-index').textContent = i + 1;
-            });
-        }
-
-        function reindexFTE() {
-            const rows = document.querySelectorAll('.fte-row');
-            rows.forEach((row, index) => {
-                const label = row.querySelector('.fte-index');
-                if (label !== null) {
-                    label.textContent = `${index + 1}. ชื่อ-นามสกุล`;
-                }
-            });
-        }
 
         function reindexOutput() {
             document.querySelectorAll('#output-container .output-row').forEach((row, i) => {
@@ -1126,369 +1197,22 @@
             });
         }
 
-        function reindexCopi() {
-            document.querySelectorAll('#copi-container .copi-row').forEach((row, i) => {
-                row.querySelectorAll('.copi-index').forEach(span => span.textContent = i + 1);
-            });
-        }
-
-        function reindexCoResearch() {
-            document.querySelectorAll('#coresearch-container .coresearch-row').forEach((row, i) => {
-                row.querySelector('.coresearch-index').textContent = i + 1;
-            });
-        }
-
-        // ✅ ADD ROWS
-        let irbIndex = 1;
-
-        function addIRBCode() {
-            const id = `irb-${irbIndex}`;
-            document.getElementById('irb-code-container').insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="irb-row grid grid-cols-3 gap-2 items-center">
-            <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbIndex + 1}</span></span>
-                <input name="irbs[${irbIndex}][code]" type="text" class="w-full border p-2 rounded" placeholder="EC2025">
-            </div>
-            <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน)</span>
-                <input name="irbs[${irbIndex}][source]" type="text" class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงาน">
-            </div>
-            <div class="w-full flex gap-2 items-end">
-                <div class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
-                    <input name="irbs[${irbIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่">
-                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <button type="button" onclick="removeRow('${id}', 'irb')" class="text-red-600 mb-2">✕</button>
-            </div>
-        </div>
-    `);
-            irbIndex++;
-            reindexIRB();
-            initThaiDatepickers(); // สำหรับรีเปิด datepicker ใหม่ที่เพิ่มมา
-        }
-        let fteIndex = 1;
-
-        // list รายชื่อผู้ใช้จาก PHP
-        const userOptions = @json(
-            \App\Models\User::orderBy('name')->get()->map(function ($u) {
-                    return [
-                        'fullName' => trim(($u->prefix ?? '') . ' ' . ($u->name ?? '')),
-                    ];
-                }));
-
-        const roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
-        const jobDetails = [
-            'Researcher',
-            'Researcher Assistant',
-            'Project Manager',
-            'Research Coordinator',
-            'นักวิชาการสารสนเทศ',
-            'นักประชาสัมพันธ์',
-            'เจ้าหน้าที่บริหารงานทั่วไป',
-        ];
-
-        // ---------- Datalist กลาง ----------
-        const FTE_DATALIST_ID = 'fteUsers';
-
-        function ensureFteDatalist() {
-            if (document.getElementById(FTE_DATALIST_ID)) return;
-
-            const dl = document.createElement('datalist');
-            dl.id = FTE_DATALIST_ID;
-
-            dl.innerHTML = userOptions
-                .map(u => `<option value="${escapeHtml(u.fullName)}">`)
-                .join('');
-
-            document.body.appendChild(dl);
-        }
-
-        function escapeHtml(s = '') {
-            return String(s)
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        // =============== เพิ่มแถว FTE ===============
-        function addFTERow() {
-
-            ensureFteDatalist();
-
-            const id = `fte-${fteIndex}`;
-
-            const groupDropdown = roleGroups.map(g =>
-                `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`
-            ).join('');
-
-            const jobDropdown = jobDetails.map(j =>
-                `<option value="${escapeHtml(j)}">${escapeHtml(j)}</option>`
-            ).join('');
-
-            document.getElementById('fte-container').insertAdjacentHTML('beforeend', `
-<div id="${id}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
-  <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-
-    <!-- LEFT -->
-    <div class="md:col-span-9 space-y-4">
-
-      <!-- Name + Group -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <label class="w-full">
-          <span class="fte-index block text-sm font-semibold text-gray-700 mb-1">${fteIndex + 1}. ชื่อ-นามสกุล</span>
-          <input list="${FTE_DATALIST_ID}"
-                 name="fte_roles[${fteIndex}][name]"
-                 class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
-                 placeholder="พิมพ์หรือเลือกชื่อ"
-                 required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้มีส่วนร่วม')"
-                                    oninput="this.setCustomValidity('')">
-        </label>
-
-        <label class="w-full">
-          <span class="block text-sm font-semibold text-gray-700 mb-1">กลุ่ม</span>
-          <select name="fte_roles[${fteIndex}][role_group]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500">
-            <option value=""  >โปรดเลือกกลุ่ม</option>
-            ${groupDropdown}
-          </select>
-        </label>
-      </div>
-
-      <!-- Job + Date + Date + HOURS (NEW) -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-        <label class="w-full">
-          <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน *</span>
-          <select name="fte_roles[${fteIndex}][job_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
-            required
-            oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
-            oninput="this.setCustomValidity('')">>
-            <option value="" >เลือกภาระงาน</option>
-            ${jobDropdown}
-          </select>
-        </label>
-
-        <label class="w-full relative">
-          <span class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
-          <input name="fte_roles[${fteIndex}][start_date]"
-                 type="text"
-                 class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                 placeholder="โปรดใส่วันที่"
-                 required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุวันเริ่มต้นภาระงาน')"
-                                    oninput="this.setCustomValidity('')">
-
-          <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-               fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </label>
-        <label class="w-full relative">
-          <span class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
-          <input name="fte_roles[${fteIndex}][end_date]"
-                 type="text"
-                 class="thai-datepicker w-full border p-2 rounded pl-10 focus:ring-2 focus:ring-blue-500"
-                 placeholder="โปรดใส่วันที่"
-                 required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุวันสิ้นสุดภาระงาน')"
-                                    oninput="this.setCustomValidity('')">
-
-          <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
-               fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </label>
-        
-      </div>
-        <!-- NEW HOURS -->
-        <label class="w-full">
-          <span class="block text-sm font-semibold text-gray-700 mb-1">ชั่วโมง (Hour)</span>
-          <input type="number" step="0.1" min="0"
-                 name="fte_roles[${fteIndex}][hours]"
-                 class="fte-hours w-full border p-2 rounded text-right focus:ring-2 focus:ring-blue-500"
-                 placeholder="0.0">
-        </label>
-
-      <!-- Tasks -->
-      <label class="w-full">
-        <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ</span>
-        <select name="fte_roles[${fteIndex}][task_detail]" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกภารกิจ')"
-                                    oninput="this.setCustomValidity('')">
-          <option value=""  >เลือกภารกิจ</option>
-          <option>ติดต่อประสานงาน</option>
-          <option>ที่ปรึกษาโครงการ</option>
-          <option>review literature</option>
-          <option>เขียนproposal</option>
-          <option>ดำเนินการเอกสารขอirb/submit irb</option>
-          <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
-          <option>เก็บข้อมูล</option>
-          <option>วิเคราะห์ข้อมูล</option>
-          <option>เขียนเล่มรายงาน</option>
-          <option>เขียนmanuscript</option>
-          <option>submit journal</option>
-          <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
-          <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
-          <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
-        </select>
-      </label>
-
-    </div>
-
-    <!-- RIGHT -->
-    <div class="md:col-span-3 space-y-4">
-      <label class="block p-4 border rounded-xl bg-blue-50">
-        <span class="block text-sm font-bold text-blue-800 mb-2">FTE จากการคำนวนชั่วโมง</span>
-        <input type="number"
-            step="0.00001"
-            min="0" max="1"
-            name="fte_roles[${fteIndex}][fte_value]"
-            class="fte-value w-full border p-3 rounded text-right bg-gray-100"
-            placeholder="0.00000"
-            readonly>
-      </label>
-
-      <label class="block p-4 border rounded-xl bg-emerald-50">
-        <span class="block text-sm font-bold text-emerald-800 mb-2">FTE(ให้โดยหัวหน้าโครงการ)</span>
-        <input type="number" step="0.01" min="0" max="1"
-            name="fte_roles[${fteIndex}][fte_value_research]"
-            class="w-full border p-3 rounded text-right focus:ring-2 focus:ring-emerald-500"
-            placeholder="0.00">
-      </label>
-
-      <button type="button"
-              onclick="removeRow('${id}', 'fte')"
-              class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
-        ✕ ลบผู้มีส่วนร่วมนี้
-      </button>
-    </div>
-
-  </div>
-</div>
-`);
-
-            fteIndex++;
-            reindexFTE();
-            initThaiDatepickers();
-            attachFTEAuto(); // ← NEW
-        }
-
-        // =============== Auto FTE ===============
-        function attachFTEAuto() {
-
-            document.querySelectorAll('.fte-row').forEach(row => {
-
-                const hourInput = row.querySelector('.fte-hours');
-                const fteInput = row.querySelector('.fte-value');
-
-                if (!hourInput || !fteInput) return;
-
-                hourInput.addEventListener('input', () => {
-                    const hr = parseFloat(hourInput.value) || 0;
-                    fteInput.value = (hr * 0.00745).toFixed(5);
-                });
-            });
-        }
-
-        document.addEventListener("DOMContentLoaded", attachFTEAuto);
 
         // ============== Output (Create) ==============
-        /** ======= Output dynamic ======= */
         let outputIndex = 1;
 
         document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('output-container');
+            if (!container) return;
 
-            // delegate change
             container.addEventListener('change', (e) => {
                 if (e.target && e.target.classList.contains('output-type')) {
                     handleTypeChange(e.target);
                 }
             });
-
-            // init datepicker ถ้ามี
-            if (typeof initThaiDatepickers === 'function') {
-                initThaiDatepickers();
-            }
         });
 
-        function addOutputRow() {
-            const id = `output-${outputIndex}`;
-            document.getElementById('output-container').insertAdjacentHTML('beforeend', `
-    <div id="${id}" class="output-row space-y-2" data-index="${outputIndex}">
-      <label class="block w-full">
-        <span class="block text-sm text-gray-700 mb-1">
-          ชื่อผลงานที่ <span class="output-index">${outputIndex + 1}</span>
-        </span>
-        <input name="outputs[${outputIndex}][title]" type="text" class="w-full border p-2 rounded"
-    required
-    oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
-    oninput="this.setCustomValidity('')"
-    placeholder="ชื่อผลงาน">
 
-      </label>
-
-      <div class="grid grid-cols-3 gap-4 items-end">
-        <label class="w-full">
-          <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน *</span>
-          <select name="outputs[${outputIndex}][type]" class="w-full border p-2 rounded output-type" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
-                                    oninput="this.setCustomValidity('')">
-            <option value=""  >เลือกประเภทของผลงาน</option>
-            <option>EA101 Research Paper or Journal Article</option>
-            <option>EA102 Reports and White papers</option>
-            <option>EA103 Presentations in Academic Conferences</option>
-            <option>EA104 Data Sets and Databases</option>
-            <option>EA105 Inventions or Innovations (Application /Website)</option>
-            <option>EA106 Policy Recommendations</option>
-            <option>EA107 Educational Materials</option>
-            <option>EA108 Communication Materials (Creations)</option>
-            <option>EA109 Change in Practices ,Procedures, Policy</option>
-            <option>EA110 Number of participants (persons)</option>
-            <option>EA111 Satisfaction Rating (1-5)</option>
-            <option>EA112 Present to Committee Meeting / Policy Maker / Board</option>
-            <option>EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
-            <option>EA114 Events / Forum</option>
-            <option>EA115 Capacity Building</option>
-            <option>EA116 Research Project</option>
-            <option>EA117 MOU</option>
-          </select>
-        </label>
-
-        <label class="w-full">
-          <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
-          <input name="outputs[${outputIndex}][project_output]" type="text" class="w-full border p-2 rounded" placeholder="เพิ่มเติม">
-        </label>
-
-        <div class="flex gap-2 w-full">
-          <label class="w-full relative">
-            <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
-            <input name="outputs[${outputIndex}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่">
-            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </label>
-          <button type="button" onclick="removeRow('${id}','output')" class="text-red-600 mb-2">✕</button>
-        </div>
-      </div>
-
-      <div class="special-mount"></div>
-    </div>
-  `);
-
-            outputIndex++;
-            reindexOutput();
-            if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
-        }
 
         function handleTypeChange(selectEl) {
             const row = selectEl.closest('.output-row');
@@ -1699,91 +1423,12 @@
             });
         }
 
-        let copiIndex = 1;
 
-        function addCopiRow() {
-            const id = `copi-${copiIndex}`;
-            const listId = `copiList-${copiIndex}`;
-
-            // Blade จะ render datalistOptions เป็น <option> ทั้งหมด
-            const datalistOptions = `@foreach ($allUsers as $user)
-        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-        <option value="{{ $fullName }}"></option>
-    @endforeach`.replace(/\n\s*/g, ''); // clean newlines for JS string
-
-            document.getElementById('copi-container').insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="copi-row grid grid-cols-2 gap-4 items-center">
-            <label class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${copiIndex + 1}</span></span>
-                <input name="copis[${copiIndex}][name]" list="${listId}" type="text" 
-                    class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-นามสกุล">
-                <datalist id="${listId}">
-                    ${datalistOptions}
-                </datalist>
-            </label>
-            <div class="flex gap-2 w-full">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${copiIndex + 1}</span></span>
-                    <input name="copis[${copiIndex}][affiliation]" type="text" class="w-full border p-2 rounded" placeholder="สังกัด COPI">
-                </label>
-                <button type="button" onclick="removeRow('${id}', 'copi')" class="text-red-600 mt-6">✕</button>
-            </div>
-        </div>
-    `);
-
-            copiIndex++;
-            reindexCopi();
-        }
-
-        let coResearchIndex = 1;
-
-        function addCoResearchRow() {
-            const id = `coresearch-${coResearchIndex}`;
-            const listId = `coresearchList-${coResearchIndex}`;
-
-            const datalistOptions = `@foreach ($allUsers as $user)
-        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-        <option value="{{ $fullName }}"></option>
-    @endforeach`.replace(/\n\s*/g, '');
-
-            document.getElementById('coresearch-container').insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="coresearch-row space-y-2 py-4">
-            <label class="block w-full">
-                <span class="block text-sm mb-1">ชื่อ Co-Researcher ที่ <span class="coresearch-index">${coResearchIndex + 1}</span></span>
-                <input name="coresearch[${coResearchIndex}][name]" list="${listId}" type="text" class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล">
-                <datalist id="${listId}">
-                    ${datalistOptions}
-                </datalist>
-            </label>
-            <div class="grid grid-cols-12 gap-4 items-end">
-                <label class="col-span-5">
-                    <span class="block text-sm mb-1">สังกัด</span>
-                    <input name="coresearch[${coResearchIndex}][affiliation]" type="text" class="w-full border p-2 rounded" placeholder="สังกัด">
-                </label>
-                <label class="col-span-5">
-                    <span class="block text-sm mb-1">คนภายนอก/ภายใน</span>
-                    <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" >
-                        <option value="" disabled selected>กรุณาเลือก</option>
-                        <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
-                        <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>
-                        <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ</option>
-                    </select>
-                </label>
-                <div class="col-span-2 flex justify-end pt-6">
-                    <button type="button" onclick="removeRow('${id}', 'coresearch')" class="text-red-600 text-xl">✕</button>
-                </div>
-            </div>
-        </div>
-    `);
-
-            coResearchIndex++;
-            reindexCoResearch();
-        }
 
 
         // ✅ INITIALIZE
         document.addEventListener('DOMContentLoaded', () => {
-            initThaiDatepickers();
+            // initThaiDatepickers();
             setupBudgetInput();
 
             document.querySelectorAll("select[id$='_status']").forEach(updateStatusColor);
@@ -1861,7 +1506,7 @@
         }
     </script>
 
-    <script>
+    {{-- <script>
         flatpickr(".flatpickr-year", {
             plugins: [
                 new flatpickr.plugins.monthSelectPlugin({
@@ -1872,7 +1517,7 @@
             ],
             locale: "th"
         });
-    </script>
+    </script> --}}
     <script>
         new TomSelect('#pi_name', {
             create: true,
@@ -1940,11 +1585,7 @@
             };
 
             const applyForm = (data) => {
-                ensureRows(maxIndex(data, 'fte_roles'), addFTERow);
-                ensureRows(maxIndex(data, 'outputs'), addOutputRow);
-                ensureRows(maxIndex(data, 'irbs'), addIRBCode);
-                ensureRows(maxIndex(data, 'copis'), addCopiRow);
-                ensureRows(maxIndex(data, 'coresearch'), addCoResearchRow);
+
 
                 Object.entries(data).forEach(([name, value]) => {
                     const el = FORM.querySelector(`[name="${CSS.escape(name)}"]`);
@@ -1963,8 +1604,6 @@
                     }));
                 });
 
-                if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
-                if (typeof attachFTEAuto === 'function') attachFTEAuto();
             };
 
             const formatThaiDateTime = (timestamp) => {
@@ -2054,4 +1693,76 @@
             })();
         </script>
     @endif
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const projectForm = document.getElementById('projectForm');
+
+            if (projectForm) {
+                projectForm.addEventListener('submit', function(e) {
+                    let isValid = true;
+                    let firstInvalidField = null;
+
+                    // 1. ค้นหาทุกช่องที่มีคำว่า required
+                    const requiredFields = projectForm.querySelectorAll('[required]');
+
+                    requiredFields.forEach(field => {
+                        const val = field.value.trim();
+                        let displayTarget = field;
+
+                        // // ถ้าเป็น Flatpickr ต้องไปจัดการตัวที่ User เห็น (altInput)
+                        // if (field._flatpickr) {
+                        //     displayTarget = field._flatpickr.altInput;
+                        // }
+                        displayTarget = field;
+
+
+                        if (!val) {
+                            isValid = false;
+                            displayTarget.classList.add('border-red-500', 'bg-red-50');
+                            if (!firstInvalidField) firstInvalidField = displayTarget;
+                        } else {
+                            displayTarget.classList.remove('border-red-500', 'bg-red-50');
+                        }
+                    });
+
+                    // 2. ถ้าไม่ผ่าน ให้หยุดส่งข้อมูลและแจ้งเตือน
+                    if (!isValid) {
+                        e.preventDefault(); // 🛑 หยุดการส่งฟอร์มทันที
+                        e.stopPropagation();
+
+                        // เลื่อนหน้าจอไปหาจุดที่ลืมกรอก
+                        firstInvalidField.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+                            text: 'ช่องที่มีเครื่องหมาย * หรือขอบสีแดง จำเป็นต้องระบุข้อมูล',
+                            confirmButtonText: 'ตกลง',
+                            confirmButtonColor: '#4f46e5'
+                        });
+                    }
+                });
+            }
+        });
+
+        function handleOutputType(el) {
+            handleTypeChange(el);
+        }
+
+        input.addEventListener('blur', () => {
+            const val = Number(input.value.replace(/,/g, ''));
+            if (val > 1_000_000_000_000) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'งบประมาณสูงเกินไป',
+                    text: 'กรุณาตรวจสอบจำนวนเงินอีกครั้ง'
+                });
+                input.focus();
+            }
+        });
+    </script>
 @endsection
