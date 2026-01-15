@@ -890,7 +890,7 @@
                                     <span class="block text-sm font-bold text-blue-800 mb-2">
                                         FTE (คำนวณอัตโนมัติ)
                                     </span>
-                                    <input name="fte_roles[__i__][fte_value]" type="number" step="0.00001"
+                                    <input name="fte_roles[__i__][fte_value]" type="number" step="0.00001" placeholder="0.000000"
                                         class="fte-value w-full border p-3 rounded text-right bg-gray-100" readonly>
                                 </label>
 
@@ -898,7 +898,7 @@
                                     <span class="block text-sm font-bold text-emerald-800 mb-2">
                                         FTE (ให้โดยหัวหน้าโครงการ)
                                     </span>
-                                    <input name="fte_roles[__i__][fte_value_research]" type="number" step="0.01"
+                                    <input name="fte_roles[__i__][fte_value_research]" type="number" step="0.01" placeholder="0.00"
                                         min="0" max="1" class="w-full border p-3 rounded text-right">
                                 </label>
 

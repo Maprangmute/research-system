@@ -336,7 +336,8 @@ document.addEventListener('input', function (e) {
   // const fte = hr * 0.00745;
   const fte = hr * 0.000621;
 
-  // console.log('hr=', hr, 'fte(raw)=', fte, 'fte(fixed)=', fte.toFixed(5));
+  console.log('hr=', hr, 'fte(raw)=', fte, 'fte(fixed)=', fte.toFixed(5));
 
   fteInput.value = fte.toFixed(8);
 });
+</script>
