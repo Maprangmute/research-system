@@ -323,21 +323,20 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
 /* ===============================
    AUTO FTE (REPEATABLE SAFE)
-   สูตร: hours × 0.00745
+   สูตร: hours × 0.00745 0.000621
    =============================== */
 document.addEventListener('input', function (e) {
+  if (!e.target.classList.contains('fte-hours')) return;
 
-    if (!e.target.classList.contains('fte-hours')) return;
+  const row = e.target.closest('.fte-row');
+  const fteInput = row?.querySelector('.fte-value');
+  if (!fteInput) return;
 
-    const row = e.target.closest('.fte-row');
-    if (!row) return;
+  const hr = parseFloat(e.target.value) || 0;
+  // const fte = hr * 0.00745;
+  const fte = hr * 0.000621;
 
-    const fteInput = row.querySelector('.fte-value');
-    if (!fteInput) return;
+  // console.log('hr=', hr, 'fte(raw)=', fte, 'fte(fixed)=', fte.toFixed(5));
 
-    const hr = parseFloat(e.target.value) || 0;
-    const fte = hr * 0.00745;
-
-    fteInput.value = fte.toFixed(5);
+  fteInput.value = fte.toFixed(8);
 });
-</script>

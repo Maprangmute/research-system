@@ -149,10 +149,10 @@
                                 </a>
                             </td>
                             <td class="px-4 py-2 text-right font-semibold text-green-600">
-                                {{ number_format($row->total_fte, 2) }}
+                                {{ number_format($row->total_fte, 7) }}
                             </td>
                             <td class="px-4 py-2 text-right">
-                                {{ number_format($row->fte_this_month ?? 0, 2) }}
+                                {{ number_format($row->fte_this_month ?? 0, 7) }}
                             </td>
                             <td class="px-4 py-2 text-center">
                                 <button type="button"
@@ -238,7 +238,7 @@
 
             {{-- ⭐ FTE + bar + tooltip --}}
             <td class="p-2 text-right font-semibold relative group">
-                {{ number_format($item->fte_month, 3) }}
+                {{ number_format($item->fte_month, 7) }}
 
                 @php
                     $percent = min(100, ($item->fte_month / 1) * 100);
@@ -253,8 +253,8 @@
 
                     <div><b>{{ $item->project->project_name_th ?? '-' }}</b></div>
                     <div>ทำงาน: {{ $item->days_in_month }} วัน</div>
-                    <div>FTE/วัน: {{ number_format($item->fte_per_day, 4) }}</div>
-                    <div>FTE เดือนนี้: {{ number_format($item->fte_month, 4) }}</div>
+                    <div>FTE/วัน: {{ number_format($item->fte_per_day, 6) }}</div>
+                    <div>FTE เดือนนี้: {{ number_format($item->fte_month, 6) }}</div>
                     <div>
                         ช่วงซ้อน:
                         {{ $item->overlap_start->locale('th')->isoFormat('D MMM YYYY') }}

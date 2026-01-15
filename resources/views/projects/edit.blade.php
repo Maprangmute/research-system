@@ -232,7 +232,7 @@
                             XL (ภายนอก มากกว่า 5 ล้าน)
                         </option>
                         <option value="FTE Hours" {{ old('size', $project->size) == 'FTE Hours' ? 'selected' : '' }}>FTE
-                            คิดแบบรายชั่วโมง (0.00745/h)</option>
+                            คิดแบบรายชั่วโมง</option>
                     </select>
                 </label>
 
@@ -1853,8 +1853,14 @@
 
                     // ========== RULE 3 ==========
                     // ชั่วโมงมากกว่า 0 → คำนวณปกติ
-                    const fte = (hours * 0.00745).toFixed(5);
-                    fteField.value = fte;
+                    const fte = (hours * 0.000621).toFixed(8);
+                    // const fte = (hours * 0.00745).toFixed(6);
+                    
+
+
+                    console.log('[FTE AUTO] hours=', hours, 'calc fte=', fte, 'before=', fteField.value);
+fteField.value = fte;
+console.log('[FTE AUTO] after=', fteField.value);
                 };
             });
         }

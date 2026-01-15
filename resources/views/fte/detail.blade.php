@@ -65,6 +65,8 @@
                         <thead class="bg-gray-100 border-b">
                             <tr>
                                 <th class="p-2 text-left">โครงการ</th>
+                                <th class="p-2 text-left">กลุ่ม</th>
+                                <th class="p-2 text-left">ภาระงาน</th>
                                 <th class="p-2 text-center">ช่วงเวลา</th>
                                 <th class="p-2 text-center">ชั่วโมงทำงาน</th>
                                 <th class="p-2 text-center">จำนวนวัน</th>
@@ -87,8 +89,19 @@
                                 @endphp
 
                                 <tr class="border-b">
-                                    <td class="p-2 text-blue-600 underline break-words">
+                                    <td class="p-2 text-blue-600 underline break-words max-w-[600px]">
                                         {{ $item->project->project_name_th }}
+                                    </td>
+
+                                    <td class="p-2 break-words whitespace-normal">
+                                        {{ $item->role_group ?? '-' }}
+                                    </td>
+
+                                    <td class="p-2 break-words whitespace-normal">
+                                        <div>{{ $item->job_detail ?? '-' }}</div>
+                                        <div class="text-gray-400 text-xs">
+                                            {{ $item->role_group ?? '-' }}
+                                        </div>
                                     </td>
 
                                     {{-- ช่วงทับซ้อนภาษาไทย --}}
@@ -106,11 +119,11 @@
                                     </td>
 
                                     <td class="p-2 text-center">
-                                        {{ number_format($item->fte_per_day, 4) }}
+                                        {{ number_format($item->fte_per_day, 6) }}
                                     </td>
 
                                     <td class="p-2 text-center font-semibold">
-                                        {{ number_format($item->fte_value, 4) }}
+                                        {{ number_format($item->fte_value, 6) }}
                                     </td>
                                 </tr>
                             @endforeach

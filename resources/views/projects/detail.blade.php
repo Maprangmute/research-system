@@ -413,7 +413,7 @@
 
                                 <!-- FTE -->
                                 <td class="border px-3 py-3 text-center font-bold text-blue-700">
-                                    {{ number_format($fte->fte_value, 5) }}
+                                    {{ number_format($fte->fte_value, 7) }}
                                 </td>
 
                                 <td class="border px-3 py-3 text-center text-slate-700">
