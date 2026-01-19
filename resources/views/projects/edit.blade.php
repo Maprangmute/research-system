@@ -1,5 +1,56 @@
 @extends('layouts.app')
 
+@if ($errors->any())
+    <div class="bg-red-100 text-red-800 p-3 rounded mb-4">
+        <ul class="list-disc list-inside text-sm">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+@php
+    $allUsers = \App\Models\User::orderBy('name')->get();
+    $roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
+    $jobDetails = [
+        'Researcher',
+        'Researcher Assistant',
+        'Project Manager',
+        'Research Coordinator',
+        'นักวิชาการสารสนเทศ',
+        'นักประชาสัมพันธ์',
+        'เจ้าหน้าที่บริหารงานทั่วไป',
+    ];
+    $piAffiliationList = \App\Models\Project::whereNotNull('pi_affiliation')
+        ->whereRaw("TRIM(pi_affiliation) <> ''")
+        ->selectRaw('TRIM(pi_affiliation) as pi_affiliation')
+        ->distinct()
+        ->orderBy('pi_affiliation')
+        ->pluck('pi_affiliation');
+@endphp
+
+{{-- datalist ใช้ร่วมทุกแถว --}}
+<datalist id="userNames">
+    @foreach ($allUsers as $user)
+        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+        <option value="{{ $fullName }}"></option>
+    @endforeach
+</datalist>
+{{-- ✅ DATAlIST กลาง (ใช้ร่วมกันทุก row) --}}
+<datalist id="fteUsers">
+    @foreach ($allUsers as $user)
+        @php
+            $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
+        @endphp
+        <option value="{{ $fullName }}"></option>
+    @endforeach
+</datalist>
+
+<script>
+    window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
+</script>
+
 <style>
     [x-cloak] {
         display: none !important;
@@ -8,6 +59,7 @@
 
 
 @section('content')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -15,21 +67,14 @@
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+    <!-- 1. Include Tom Select -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
 
     <!-- ✅ เพิ่ม Plugin สำหรับเลือกปี -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
-
-    @php
-        $allUsers = \App\Models\User::orderBy('name')->get();
-        $affe = \App\Models\Project::whereNotNull('pi_affiliation')
-            ->pluck('pi_affiliation')
-            ->unique()
-            ->sort()
-            ->values();
-    @endphp
-
-
 
     <div class="max-w-5xl mx-auto mt-6 bg-white shadow-md rounded p-6">
 
@@ -47,16 +92,6 @@
         @if (session('success'))
             <div class="mb-4 p-3 bg-green-100 text-green-700 rounded">
                 {{ session('success') }}
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="bg-red-100 text-red-800 p-3 rounded mb-4">
-                <ul class="list-disc list-inside text-sm">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
             </div>
         @endif
 
@@ -536,16 +571,9 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI *</span>
-                    <input name="pi_name" list="piNameList" value="{{ old('pi_name', $project->pi_name) }}"
+                    <input name="pi_name" list="userNames" value="{{ old('pi_name', $project->pi_name) }}"
                         class="w-full border p-2 rounded" placeholder="ยศ-ชื่อ PI" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')" oninput="this.setCustomValidity('')">
-
-                    <datalist id="piNameList">
-                        @foreach ($allUsers as $user)
-                            @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-                            <option value="{{ $fullName }}"></option>
-                        @endforeach
-                    </datalist>
                 </label>
 
                 <label class="w-full">
@@ -555,8 +583,8 @@
                         class="w-full border p-2 rounded" placeholder="สังกัด PI" list="pi_affiliation_list">
 
                     <datalist id="pi_affiliation_list">
-                        @foreach ($affe as $aff)
-                            <option value="{{ $aff }}"></option>
+                        @foreach ($piAffiliationList as $affiliation)
+                            <option value="{{ $affiliation }}"></option>
                         @endforeach
                     </datalist>
                 </label>
@@ -574,14 +602,8 @@
                             <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ {{ $i + 1 }}</span>
                             <input name="copis[{{ $i }}][name]"
                                 value="{{ old('copis.' . $i . '.name', $copi['name']) }}"
-                                list="copiList-{{ $i }}" class="w-full border p-2 rounded"
+                                list="userNames" class="w-full border p-2 rounded"
                                 placeholder="ยศ ชื่อ-นามสกุล COPI">
-                            <datalist id="copiList-{{ $i }}">
-                                @foreach ($allUsers as $user)
-                                    @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-                                    <option value="{{ $fullName }}"></option>
-                                @endforeach
-                            </datalist>
                         </label>
 
                         <div class="flex gap-2 w-full">
@@ -612,14 +634,8 @@
                             </span>
                             <input name="coresearch[{{ $i }}][name]"
                                 value="{{ old('coresearch.' . $i . '.name', $co->name) }}"
-                                list="coresearchList-{{ $i }}" class="w-full border p-2 rounded"
+                                list="userNames" class="w-full border p-2 rounded"
                                 placeholder="ยศ ชื่อ-นามสกุล">
-                            <datalist id="coresearchList-{{ $i }}">
-                                @foreach ($allUsers as $user)
-                                    @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-                                    <option value="{{ $fullName }}"></option>
-                                @endforeach
-                            </datalist>
                         </label>
                         <!-- สังกัด + สถานะ + ปุ่มลบ -->
                         <div class="grid grid-cols-12 gap-4 items-end">
@@ -668,20 +684,6 @@
 
 
 
-
-            @php
-                $allUsers = \App\Models\User::orderBy('name')->get(); // ดึงผู้ใช้งานทั้งหมด
-                $roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
-                $jobDetails = [
-                    'Researcher',
-                    'Researcher Assistant',
-                    'Project Manager',
-                    'Research Coordinator',
-                    'นักวิชาการสารสนเทศ',
-                    'นักประชาสัมพันธ์',
-                    'เจ้าหน้าที่บริหารงานทั่วไป',
-                ];
-            @endphp
 
             <!-- ========== SECTION D : รายชื่อผู้มีส่วนร่วม (FTE) ========== -->
             <hr class="my-6 border-t-2 border-gray-300">
@@ -773,14 +775,6 @@
 
                     </div>
                 </div>
-
-                <!-- datalist ชื่อคน -->
-                <datalist id="fteUsers">
-                    @foreach ($allUsers as $user)
-                        @php $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')); @endphp
-                        <option value="{{ $fullName }}"></option>
-                    @endforeach
-                </datalist>
 
                 <!-- ========== LIST OF FTE ROWS ========== -->
                 <div id="fte-container" class="space-y-4 mb-4">
@@ -1166,7 +1160,7 @@
                                                             ผู้เขียน * </span>
                                                         <input
                                                             name="outputs[{{ $i }}][authors][{{ $j }}][name]"
-                                                            type="text" class="w-full border p-2 rounded"
+                                                            type="text" list="userNames" class="w-full border p-2 rounded"
                                                             value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}"
                                                             placeholder="คำนำหน้า ชื่อ-นามสกุล" required
                                                             oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
@@ -1199,7 +1193,7 @@
                                                         <span class="block text-sm text-gray-700 mb-1">คำนำหน้า ชื่อ-สกุล
                                                             ผู้เขียน</span>
                                                         <input name="outputs[{{ $i }}][authors][0][name]"
-                                                            type="text" class="w-full border p-2 rounded"
+                                                            type="text" list="userNames" class="w-full border p-2 rounded"
                                                             placeholder="คำนำหน้า ชื่อ-นามสกุล" required
                                                             oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
                                                             oninput="this.setCustomValidity('')">
@@ -1610,18 +1604,14 @@
         function addCopiRow() {
             const container = document.getElementById('copi-container');
             const id = `copi-${copiIndex}`;
-            const listId = `copiList-${copiIndex}`;
             const labelNum = copiIndex + 1;
 
             container.insertAdjacentHTML('beforeend', `
         <div id="${id}" class="copi-row grid grid-cols-2 gap-4 items-center">
             <label class="w-full">
                 <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${labelNum}</span></span>
-                <input name="copis[${copiIndex}][name]" list="${listId}" type="text"
+                <input name="copis[${copiIndex}][name]" list="userNames" type="text"
                     class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-นามสกุล">
-                <datalist id="${listId}">
-                    ${window.copiOptionsHtml}
-                </datalist>
             </label>
             <div class="flex gap-2 w-full">
                 <label class="w-full">
@@ -2080,7 +2070,7 @@ console.log('[FTE AUTO] after=', fteField.value);
       </label>
       <label>
         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
-        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-สกุล" required
+        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" list="userNames" class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-สกุล" required
                                     oninvalid="this.setCustomValidity('กรุณากรอกชื่อผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
       </label>
@@ -2237,7 +2227,6 @@ console.log('[FTE AUTO] after=', fteField.value);
         function addCoResearchRow() {
             const container = document.getElementById('coresearch-container');
             const id = `coresearch-${coResearchIndex}`;
-            const listId = `coresearchList-${coResearchIndex}`;
             const labelNum = coResearchIndex + 1;
 
             container.insertAdjacentHTML('beforeend', `
@@ -2246,11 +2235,8 @@ console.log('[FTE AUTO] after=', fteField.value);
                 <span class="block text-sm text-gray-700 mb-1">
                     ชื่อ Co-Researcher คนที่ <span class="coresearch-index">${labelNum}</span>
                 </span>
-                <input name="coresearch[${coResearchIndex}][name]" list="${listId}" type="text"
+                <input name="coresearch[${coResearchIndex}][name]" list="userNames" type="text"
                     class="w-full border p-2 rounded" placeholder="ยศ ชื่อ-นามสกุล">
-                <datalist id="${listId}">
-                    ${window.coresearchOptionsHtml}
-                </datalist>
             </label>
 
             <div class="grid grid-cols-12 gap-4 items-end">
