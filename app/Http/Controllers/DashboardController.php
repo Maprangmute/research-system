@@ -12,7 +12,7 @@ class DashboardController extends Controller
     {
         $projects = Project::with([
             // ดึงเฉพาะฟิลด์ที่ต้องใช้จาก coResearches
-            'coResearches:id,project_id,unit_status',
+            'coResearches:id,project_id,unit_status,affiliation',
 
             // Eager load อื่น ๆ
             'copis',
@@ -24,19 +24,6 @@ class DashboardController extends Controller
             'outputs.authors:id,output_id,name,role',
             'outputs.project:id,project_name_th', // ถ้าจะใช้ชื่อโครงการตอน drill-down
         ])
-        ->select(
-            'id',
-            'project_name_th',
-            'project_list',
-            'pi_affiliation',
-            'start_year',
-            'planning_status',
-            'theme',
-            'pi_name',
-            'budget',
-            'funding_type',
-            'funding_source'
-        )
         ->get();
 
         // collections เดิม (ยังเก็บไว้ใช้กับ Blade ส่วนอื่น ๆ ได้)
