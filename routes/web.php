@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TaskLinkController;
 use App\Http\Controllers\AiDashboardController;
+use App\Http\Controllers\OutputController;
 
 
 use App\Http\Controllers\DocumentController;
@@ -175,6 +176,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     // ✅ เส้นทางอื่น ๆ
     Route::get('/fte', [FteController::class, 'index'])->name('fte.index');
     Route::get('/fte/{person}/detail', [FteController::class, 'detail'])->name('fte.detail');
+    Route::get('/outputs', [OutputController::class, 'index'])->name('outputs.index');
 
 
 
@@ -203,4 +205,3 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/projects/{project}/fte', [FteRoleController::class, 'bulkUpdate'])
         ->name('projects.fte.update');
 });
-

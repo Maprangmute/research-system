@@ -14,7 +14,7 @@ class ProjectController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Project::query();
+        $query = Project::query()->withCount('outputs');
         $user = auth()->user();
 
         if ($user->role === 'admin' || $user->role === 'user_all') {
@@ -30,6 +30,8 @@ class ProjectController extends Controller
             });
         }
 
+        $baseQuery = clone $query;
+
         // filter
         if ($request->filled('year')) {
             $query->where('start_year', $request->year);
@@ -38,12 +40,70 @@ class ProjectController extends Controller
             $query->where('project_type', 'like', '%'.$request->type.'%');
         }
         if ($request->filled('search')) {
-            $query->where('project_name_th', 'like', '%'.$request->search.'%');
+            $search = trim($request->search);
+            $query->where('project_name_th', 'like', '%'.$search.'%');
+            $query->orderByRaw(
+                "case when project_name_th = ? then 0 when project_name_th like ? then 1 else 2 end",
+                [$search, '%'.$search.'%']
+            );
+        }
+        if ($request->filled('pi_name')) {
+            $query->where('pi_name', $request->pi_name);
+        }
+        if ($request->filled('funding_source')) {
+            $query->where('funding_source', $request->funding_source);
+        }
+        if ($request->filled('budget_range') && !$request->filled('budget_min') && !$request->filled('budget_max')) {
+            [$minRange, $maxRange] = array_pad(explode('-', $request->budget_range), 2, null);
+            if (is_numeric($minRange)) {
+                $query->where('budget', '>=', $minRange);
+            }
+            if (is_numeric($maxRange)) {
+                $query->where('budget', '<=', $maxRange);
+            }
+        }
+        if ($request->filled('budget_min')) {
+            $query->where('budget', '>=', $request->budget_min);
+        }
+        if ($request->filled('budget_max')) {
+            $query->where('budget', '<=', $request->budget_max);
+        }
+        if ($request->boolean('issue_overdue')) {
+            $query->whereNotNull('end_date')->whereDate('end_date', '<', now()->toDateString());
+        }
+        if ($request->boolean('issue_missing_dates')) {
+            $query->where(function ($q) {
+                $q->whereNull('start_date')->orWhereNull('end_date');
+            });
+        }
+        if ($request->boolean('issue_duplicates')) {
+            $duplicateNames = (clone $baseQuery)
+                ->select('project_name_th')
+                ->whereNotNull('project_name_th')
+                ->groupBy('project_name_th')
+                ->havingRaw('count(*) > 1');
+            $query->whereIn('project_name_th', $duplicateNames);
+        }
+        if ($request->filled('fte_status')) {
+            if ($request->fte_status === 'missing') {
+                $query->where(function ($q) {
+                    $q->whereDoesntHave('fteRoles')
+                        ->orWhereHas('fteRoles', function ($subQ) {
+                            $subQ->whereNull('fte_value')->orWhere('fte_value', 0);
+                        });
+                });
+            }
+            if ($request->fte_status === 'complete') {
+                $query->whereHas('fteRoles')
+                    ->whereDoesntHave('fteRoles', function ($subQ) {
+                        $subQ->whereNull('fte_value')->orWhere('fte_value', 0);
+                    });
+            }
         }
 
         // sort
-        $sortable = ['id', 'project_code', 'project_name_th', 'project_type', 'funding_type', 'theme', 'start_year', 'updated_at', 'created_at'];
-        $sort = in_array($request->get('sort'), $sortable, true) ? $request->get('sort') : 'id';
+        $sortable = ['id', 'project_code', 'project_name_th', 'project_type', 'funding_type', 'theme', 'start_year', 'updated_at', 'created_at', 'budget'];
+        $sort = in_array($request->get('sort'), $sortable, true) ? $request->get('sort') : 'updated_at';
         $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
 
         $projects = $query->orderBy($sort, $dir)
@@ -60,9 +120,34 @@ class ProjectController extends Controller
             ->with('project:id,project_code,project_name_th,start_year')
             ->get();
 
+        $piOptions = (clone $baseQuery)->whereNotNull('pi_name')->distinct()->orderBy('pi_name')->pluck('pi_name');
+        $fundingSources = (clone $baseQuery)
+            ->whereNotNull('funding_source')
+            ->distinct()
+            ->orderBy('funding_source')
+            ->pluck('funding_source');
+        $typeOptions = (clone $baseQuery)
+            ->whereNotNull('project_type')
+            ->distinct()
+            ->orderBy('project_type')
+            ->pluck('project_type');
+        $yearOptions = (clone $baseQuery)
+            ->whereNotNull('start_year')
+            ->distinct()
+            ->orderBy('start_year', 'desc')
+            ->pluck('start_year');
+        $budgetMin = (clone $baseQuery)->min('budget') ?? 0;
+        $budgetMax = (clone $baseQuery)->max('budget') ?? 0;
+
         return view('projects.index', [
             'projects' => $projects,
             'missingFTE' => $missingFTE,
+            'piOptions' => $piOptions,
+            'fundingSources' => $fundingSources,
+            'typeOptions' => $typeOptions,
+            'yearOptions' => $yearOptions,
+            'budgetMin' => $budgetMin,
+            'budgetMax' => $budgetMax,
         ]);
     }
 

@@ -25,29 +25,145 @@
             <div>
                 <h2 class="text-2xl font-bold text-gray-900">📊 รายการโครงการวิจัย</h2>
             </div>
-            <a href="{{ route('projects.create') }}"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 shadow-sm hover:shadow transition">
-                ➕ เพิ่มโครงการ
-            </a>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('outputs.index') }}"
+                    class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 text-sm rounded-lg hover:bg-slate-50">
+                    📑 รายการ Output
+                </a>
+                <a href="{{ route('projects.create') }}"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 shadow-sm hover:shadow transition">
+                    ➕ เพิ่มโครงการ
+                </a>
+            </div>
         </div>
 
         {{-- Filters --}}
-        <form method="GET" action="{{ route('projects.index') }}"
-            class="bg-white p-4 rounded-xl shadow-sm ring-1 ring-slate-100 grid grid-cols-1 md:grid-cols-4 gap-3">
-            <input type="text" name="search" placeholder="ค้นหาชื่อโครงการ" value="{{ request('search') }}"
-                class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
-            <input type="text" name="type" placeholder="ประเภทโครงการ" value="{{ request('type') }}"
-                class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
-            <input type="text" name="year" placeholder="ปี (พ.ศ.)" value="{{ request('year') }}"
-                class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
-            <div class="flex gap-2">
-                <button type="submit"
-                    class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm">🔍
-                    ค้นหา</button>
-                @if (request()->hasAny(['search', 'type', 'year', 'sort', 'dir']))
-                    <a href="{{ route('projects.index') }}"
-                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 bg-white hover:bg-slate-50">ล้าง</a>
-                @endif
+        <form id="project-filter-form" method="GET" action="{{ route('projects.index') }}"
+            class="bg-white p-4 rounded-xl shadow-sm ring-1 ring-slate-100 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+                <label class="block md:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">ค้นหาชื่อโครงการ</span>
+                    <input type="text" name="search" placeholder="ชื่อโครงการ" value="{{ request('search') }}"
+                        class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">ประเภทโครงการ</span>
+                    <select name="type" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="">ทั้งหมด</option>
+                        @foreach ($typeOptions as $type)
+                            <option value="{{ $type }}" @selected(request('type') === $type)>{{ $type }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">ปี (พ.ศ.)</span>
+                    <select name="year" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="">ทั้งหมด</option>
+                        @foreach ($yearOptions as $year)
+                            <option value="{{ $year }}" @selected(request('year') == $year)>{{ $year }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">PI</span>
+                    <select name="pi_name" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="">ทั้งหมด</option>
+                        @foreach ($piOptions as $pi)
+                            <option value="{{ $pi }}" @selected(request('pi_name') === $pi)>{{ $pi }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">แหล่งทุน</span>
+                    <select name="funding_source" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="">ทั้งหมด</option>
+                        @foreach ($fundingSources as $src)
+                            <option value="{{ $src }}" @selected(request('funding_source') === $src)>{{ $src }}</option>
+                        @endforeach
+                    </select>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+                <label class="block md:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">ช่วงงบประมาณ (preset)</span>
+                    <select name="budget_range" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="">ทั้งหมด</option>
+                        <option value="0-500000" @selected(request('budget_range') === '0-500000')>0 - 500,000</option>
+                        <option value="500000-1000000" @selected(request('budget_range') === '500000-1000000')>500,000 - 1,000,000</option>
+                        <option value="1000000-3000000" @selected(request('budget_range') === '1000000-3000000')>1,000,000 - 3,000,000</option>
+                        <option value="3000000-5000000" @selected(request('budget_range') === '3000000-5000000')>3,000,000 - 5,000,000</option>
+                        <option value="5000000-999999999" @selected(request('budget_range') === '5000000-999999999')>มากกว่า 5,000,000</option>
+                    </select>
+                </label>
+                <label class="block md:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">ช่วงงบประมาณ (เลื่อน)</span>
+                    <div class="mt-1">
+                        <input type="range" id="budgetMinRange" min="{{ $budgetMin }}" max="{{ $budgetMax }}"
+                            value="{{ request('budget_min', $budgetMin) }}" step="10000" class="w-full">
+                        <input type="range" id="budgetMaxRange" min="{{ $budgetMin }}" max="{{ $budgetMax }}"
+                            value="{{ request('budget_max', $budgetMax) }}" step="10000" class="w-full">
+                        <div class="flex gap-2 mt-2">
+                            <input type="number" name="budget_min" id="budgetMinInput" class="w-full border rounded p-2"
+                                value="{{ request('budget_min', $budgetMin) }}">
+                            <input type="number" name="budget_max" id="budgetMaxInput" class="w-full border rounded p-2"
+                                value="{{ request('budget_max', $budgetMax) }}">
+                        </div>
+                    </div>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">สถานะ FTE</span>
+                    <select name="fte_status" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="">ทั้งหมด</option>
+                        <option value="missing" @selected(request('fte_status') === 'missing')>ยังกรอกไม่ครบ</option>
+                        <option value="complete" @selected(request('fte_status') === 'complete')>กรอกครบแล้ว</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">ปัญหา</span>
+                    <div class="flex flex-wrap gap-2 text-xs text-slate-600">
+                        <label class="inline-flex items-center gap-1">
+                            <input type="checkbox" name="issue_overdue" value="1" @checked(request('issue_overdue'))>
+                            Overdue
+                        </label>
+                        <label class="inline-flex items-center gap-1">
+                            <input type="checkbox" name="issue_missing_dates" value="1" @checked(request('issue_missing_dates'))>
+                            วันที่ไม่ครบ
+                        </label>
+                        <label class="inline-flex items-center gap-1">
+                            <input type="checkbox" name="issue_duplicates" value="1" @checked(request('issue_duplicates'))>
+                            โครงการซ้ำ
+                        </label>
+                    </div>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">เรียงลำดับ</span>
+                    <select name="sort" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="updated_at" @selected(request('sort') === 'updated_at')>ล่าสุด → เก่าสุด</option>
+                        <option value="created_at" @selected(request('sort') === 'created_at')>เก่าสุด → ล่าสุด</option>
+                        <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
+                        <option value="start_year" @selected(request('sort') === 'start_year')>ปีโครงการ</option>
+                        <option value="project_name_th" @selected(request('sort') === 'project_name_th')>ชื่อโครงการ</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">ทิศทาง</span>
+                    <select name="dir" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="desc" @selected(request('dir', 'desc') === 'desc')>มาก → น้อย</option>
+                        <option value="asc" @selected(request('dir') === 'asc')>น้อย → มาก</option>
+                    </select>
+                </label>
+                <div class="flex gap-2">
+                    <button type="submit"
+                        class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm">ใช้ตัวกรอง</button>
+                    @if (request()->query())
+                        <a href="{{ route('projects.index') }}"
+                            class="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 bg-white hover:bg-slate-50">ล้าง</a>
+                    @endif
+                </div>
             </div>
         </form>
 
@@ -155,6 +271,7 @@
                         <col style="width: 180px;"> {{-- ประเภท: badge --}}
                         <col style="width: 180px;"> {{-- ทุน --}}
                         <col style="width: 220px;"> {{-- Theme --}}
+                        <col style="width: 110px;"> {{-- Outputs --}}
                         <col style="width: 88px;"> {{-- ปี --}}
                     </colgroup>
                     <thead class="bg-slate-50">
@@ -182,6 +299,9 @@
                             <th class="px-4 py-3">
                                 <a href="{{ $sortUrl('theme') }}" class="hover:text-indigo-700">Theme <span
                                         class="ml-1">{{ $sortIcon('theme') }}</span></a>
+                            </th>
+                            <th class="px-4 py-3 text-right">
+                                Outputs
                             </th>
                             <th class="px-4 py-3">
                                 <a href="{{ $sortUrl('start_year') }}" class="hover:text-indigo-700">ปี <span
@@ -228,6 +348,9 @@
                                 <td class="px-4 py-3 whitespace-normal break-words text-slate-700">
                                     {{ $project->theme ?: '-' }}
                                 </td>
+                                <td class="px-4 py-3 text-right text-slate-700">
+                                    {{ $project->outputs_count ?? 0 }}
+                                </td>
                                 <td class="px-4 py-3 text-slate-700">{{ $project->start_year ?: '-' }}</td>
 
                                 {{-- hidden form for delete --}}
@@ -240,7 +363,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-10 text-slate-500">ไม่มีข้อมูล</td>
+                                <td colspan="8" class="text-center py-10 text-slate-500">ไม่มีข้อมูล</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -400,5 +523,41 @@
                 longPressTimer = null;
             }
         }
+
+        // Budget range sync
+        (function() {
+            const minRange = document.getElementById('budgetMinRange');
+            const maxRange = document.getElementById('budgetMaxRange');
+            const minInput = document.getElementById('budgetMinInput');
+            const maxInput = document.getElementById('budgetMaxInput');
+            if (!minRange || !maxRange || !minInput || !maxInput) return;
+
+            const clamp = () => {
+                let minVal = Number(minRange.value);
+                let maxVal = Number(maxRange.value);
+                if (minVal > maxVal) {
+                    [minVal, maxVal] = [maxVal, minVal];
+                    minRange.value = minVal;
+                    maxRange.value = maxVal;
+                }
+                minInput.value = minVal;
+                maxInput.value = maxVal;
+            };
+
+            const clampInputs = () => {
+                let minVal = Number(minInput.value);
+                let maxVal = Number(maxInput.value);
+                if (minVal > maxVal) {
+                    [minVal, maxVal] = [maxVal, minVal];
+                }
+                minRange.value = minVal;
+                maxRange.value = maxVal;
+            };
+
+            minRange.addEventListener('input', clamp);
+            maxRange.addEventListener('input', clamp);
+            minInput.addEventListener('change', clampInputs);
+            maxInput.addEventListener('change', clampInputs);
+        })();
     </script>
 @endsection

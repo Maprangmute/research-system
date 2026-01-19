@@ -306,7 +306,19 @@
             </tbody>
         </table>
 
-        <h3 class="font-semibold text-lg text-blue-700 mb-2">D: รหัส IRB</h3>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+            <h3 class="font-semibold text-lg text-blue-700">D: รหัส IRB</h3>
+            <div class="flex items-center gap-2 text-xs text-gray-600">
+                <label>ตัวกรอง:
+                    <select id="irbFilter" class="ml-1 border rounded px-2 py-1 text-xs">
+                        <option value="all">ทั้งหมด</option>
+                        <option value="exp_1m">หมดอายุใน 1 เดือน</option>
+                        <option value="exp_3m">หมดอายุใน 3 เดือน</option>
+                        <option value="active_latest">ยังไม่หมดอายุ (ล่าสุด → เก่าสุด)</option>
+                    </select>
+                </label>
+            </div>
+        </div>
         <table
             class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6">
             <thead class="bg-blue-50">
@@ -326,6 +338,9 @@
                 @endphp
                 @if ($irbs->count())
                     @foreach ($irbs as $i => $irb)
+                        @php
+                            $expIso = $irb->exp_date ? \Carbon\Carbon::parse($irb->exp_date)->format('Y-m-d') : '';
+                        @endphp
                         <tr>
                             <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
                             <td class="border px-3 py-2">{{ $irb->code ?: '-' }}</td>
@@ -797,4 +812,59 @@
         </div>
 
     </div>
+    <script>
+        (function() {
+            const filter = document.getElementById('irbFilter');
+            if (!filter) return;
+            const tbody = filter.closest('div')?.nextElementSibling?.querySelector('tbody');
+            if (!tbody) return;
+            const rows = Array.from(tbody.querySelectorAll('tr')).filter(r => r.dataset.exp !== undefined);
+            const today = new Date();
+
+            function parseDate(s) {
+                if (!s) return null;
+                const d = new Date(s);
+                return isNaN(d) ? null : d;
+            }
+
+            function updateNumbers(visibleRows) {
+                visibleRows.forEach((row, idx) => {
+                    const cell = row.querySelector('td');
+                    if (cell) cell.textContent = idx + 1;
+                });
+            }
+
+            function applyFilter() {
+                const mode = filter.value;
+                let filtered = rows;
+
+                if (mode === 'exp_1m' || mode === 'exp_3m') {
+                    const maxDays = mode === 'exp_1m' ? 30 : 90;
+                    filtered = rows.filter(r => {
+                        const d = parseDate(r.dataset.exp);
+                        if (!d) return false;
+                        const diff = (d - today) / (1000 * 60 * 60 * 24);
+                        return diff >= 0 && diff <= maxDays;
+                    });
+                }
+
+                if (mode === 'active_latest') {
+                    filtered = rows.filter(r => {
+                        const d = parseDate(r.dataset.exp);
+                        return d && d >= today;
+                    }).sort((a, b) => {
+                        const da = parseDate(a.dataset.exp) || new Date(0);
+                        const db = parseDate(b.dataset.exp) || new Date(0);
+                        return db - da;
+                    });
+                }
+
+                rows.forEach(r => r.classList.add('hidden'));
+                filtered.forEach(r => r.classList.remove('hidden'));
+                updateNumbers(filtered);
+            }
+
+            filter.addEventListener('change', applyFilter);
+        })();
+    </script>
 @endsection
