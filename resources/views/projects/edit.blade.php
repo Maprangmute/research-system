@@ -28,6 +28,12 @@
         ->distinct()
         ->orderBy('pi_affiliation')
         ->pluck('pi_affiliation');
+    $fundingNameList = \App\Models\Project::whereNotNull('funding_name')
+        ->whereRaw("TRIM(funding_name) <> ''")
+        ->selectRaw('TRIM(funding_name) as funding_name')
+        ->distinct()
+        ->orderBy('funding_name')
+        ->pluck('funding_name');
 @endphp
 
 {{-- datalist ใช้ร่วมทุกแถว --}}
@@ -332,22 +338,9 @@
                 </label>
 
                 <datalist id="funding_list">
-                    <option value="National University Hospital (Singapore) PTE LTD"></option>
-                    <option value="Roland Berger"></option>
-                    <option value="ทุนพัฒนาการวิจัย"></option>
-                    <option value="บัญชียาหลักแห่งชาติ"></option>
-                    <option
-                        value="บางกอกน้อยโมเดล / สำนักงานกองทุนสนับสนุนการสร้างเสริมสุขภาพ (สสส.) โครงการพัฒนาระบบดูแลและสร้างเสริมสุขภาพชุมชนผ่านระบบฐานข้อมูลสุขภาพ (ศิริราชสานสองวัย : บางกอกน้อยโมเดล)">
-                    </option>
-                    <option value="มูลนิธิโรคมะเร็ง โรงพยาบาลศิริราช"></option>
-                    <option value="ศูนย์ความเป็นเลิศด้านชีววิทยาศาสตร์ (องค์การมหาชน)"></option>
-                    <option value="ศูนย์บริการวิชาการแห่งจุฬาลงกรณ์มหาวิทยาลัย"></option>
-                    <option value="สถาบันวิจัยระบบสาธารณสุข (สวรส.)"></option>
-                    <option
-                        value="สมาคมพฤฒาวิทยาและเวชศาสตร์ผู้สูงอายุไทย (ทุนจากบริษัท เอไซ (ประเทศไทย) มาร์เก็ตติ้ง จำกัด)">
-                    </option>
-                    <option value="สำนักงานกองทุนสนับสนุนการสร้างเสริมสุขภาพ (สสส.)"></option>
-                    <option value="สำนักงานคณะกรรมการอาหารและยา (อย.)"></option>
+                    @foreach ($fundingNameList as $fundingName)
+                        <option value="{{ $fundingName }}"></option>
+                    @endforeach
                 </datalist>
 
                 <label class="w-full">

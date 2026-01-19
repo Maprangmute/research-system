@@ -18,6 +18,67 @@
             });
         </script>
     @endif
+    <style>
+        .budget-range {
+            position: relative;
+        }
+
+        .budget-range input[type='range'] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 2rem;
+            background: transparent;
+            pointer-events: auto;
+        }
+
+        .budget-range input[type='range']::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: #10b981;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .budget-range input[type='range']::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: #10b981;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .budget-range input[type='range']::-webkit-slider-runnable-track {
+            background: transparent;
+        }
+
+        .budget-range input[type='range']::-moz-range-track {
+            background: transparent;
+        }
+
+        .budget-range-label {
+            position: absolute;
+            top: 28px;
+            transform: translateX(-50%);
+            background: #ffffff;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 12px;
+            color: #0f172a;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+            white-space: nowrap;
+            z-index: 5;
+            pointer-events: none;
+        }
+    </style>
 
     <div class="container mx-auto px-4 mt-11 space-y-6">
         {{-- Header --}}
@@ -98,18 +159,24 @@
                 </label>
                 <label class="block md:col-span-2">
                     <span class="text-xs font-semibold text-slate-600">ช่วงงบประมาณ (เลื่อน)</span>
-                    <div class="mt-1">
-                        <input type="range" id="budgetMinRange" min="{{ $budgetMin }}" max="{{ $budgetMax }}"
-                            value="{{ request('budget_min', $budgetMin) }}" step="10000" class="w-full">
-                        <input type="range" id="budgetMaxRange" min="{{ $budgetMin }}" max="{{ $budgetMax }}"
-                            value="{{ request('budget_max', $budgetMax) }}" step="10000" class="w-full">
-                        <div class="flex gap-2 mt-2">
-                            <input type="number" name="budget_min" id="budgetMinInput" class="w-full border rounded p-2"
-                                value="{{ request('budget_min', $budgetMin) }}">
-                            <input type="number" name="budget_max" id="budgetMaxInput" class="w-full border rounded p-2"
-                                value="{{ request('budget_max', $budgetMax) }}">
-                        </div>
+                    <div class="budget-range relative px-1 pt-6 pb-6">
+                        <div id="budgetRangeTrack"
+                            class="absolute left-0 right-0 top-3 h-2 rounded-full bg-slate-200"></div>
+                        <div id="budgetRangeFill"
+                            class="absolute top-3 h-2 rounded-full bg-emerald-400"></div>
+                        <div id="budgetMinLabel" class="budget-range-label">0</div>
+                        <div id="budgetMaxLabel" class="budget-range-label">0</div>
+                        <input id="budgetMinRange" type="range" min="{{ $budgetMin }}" max="{{ $budgetMax }}"
+                            value="{{ request('budget_min', $budgetMin) }}" step="10000"
+                            class="absolute left-0 right-0 w-full appearance-none bg-transparent">
+                        <input id="budgetMaxRange" type="range" min="{{ $budgetMin }}" max="{{ $budgetMax }}"
+                            value="{{ request('budget_max', $budgetMax) }}" step="10000"
+                            class="absolute left-0 right-0 w-full appearance-none bg-transparent">
                     </div>
+                    <input type="hidden" name="budget_min" id="budgetMinInput"
+                        value="{{ request('budget_min', $budgetMin) }}">
+                    <input type="hidden" name="budget_max" id="budgetMaxInput"
+                        value="{{ request('budget_max', $budgetMax) }}">
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">สถานะ FTE</span>
@@ -530,7 +597,40 @@
             const maxRange = document.getElementById('budgetMaxRange');
             const minInput = document.getElementById('budgetMinInput');
             const maxInput = document.getElementById('budgetMaxInput');
-            if (!minRange || !maxRange || !minInput || !maxInput) return;
+            const rangeFill = document.getElementById('budgetRangeFill');
+            const minLabel = document.getElementById('budgetMinLabel');
+            const maxLabel = document.getElementById('budgetMaxLabel');
+            if (!minRange || !maxRange || !minInput || !maxInput || !rangeFill || !minLabel || !maxLabel) return;
+
+            const shortNumber = (value) => {
+                const abs = Math.abs(value);
+                if (abs >= 1000000) {
+                    const v = (value / 1000000).toFixed(1).replace(/\.0$/, '');
+                    return `${v}m`;
+                }
+                if (abs >= 1000) {
+                    const v = (value / 1000).toFixed(1).replace(/\.0$/, '');
+                    return `${v}k`;
+                }
+                return `${value}`;
+            };
+            const minBound = Number(minRange.min);
+            const maxBound = Number(maxRange.max);
+
+            const updateUI = () => {
+                const minVal = Number(minRange.value);
+                const maxVal = Number(maxRange.value);
+                const total = maxBound - minBound || 1;
+                const minPct = ((minVal - minBound) / total) * 100;
+                const maxPct = ((maxVal - minBound) / total) * 100;
+                rangeFill.style.left = `${minPct}%`;
+                rangeFill.style.right = `${100 - maxPct}%`;
+                minLabel.textContent = shortNumber(minVal);
+                maxLabel.textContent = shortNumber(maxVal);
+                minLabel.style.left = `${minPct}%`;
+                maxLabel.style.left = `${maxPct}%`;
+                minLabel.style.display = minVal === minBound ? 'none' : 'block';
+            };
 
             const clamp = () => {
                 let minVal = Number(minRange.value);
@@ -542,6 +642,7 @@
                 }
                 minInput.value = minVal;
                 maxInput.value = maxVal;
+                updateUI();
             };
 
             const clampInputs = () => {
@@ -552,12 +653,14 @@
                 }
                 minRange.value = minVal;
                 maxRange.value = maxVal;
+                updateUI();
             };
 
             minRange.addEventListener('input', clamp);
             maxRange.addEventListener('input', clamp);
             minInput.addEventListener('change', clampInputs);
             maxInput.addEventListener('change', clampInputs);
+            updateUI();
         })();
     </script>
 @endsection

@@ -545,9 +545,44 @@
                     <canvas id="chartPIsPerUnit" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 การกระจาย FTE</h3>
-                    <canvas id="chartFteSummary" height="250"></canvas>
+            <div class="bg-white shadow-sm border rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 การกระจาย FTE</h3>
+                <canvas id="chartFteSummary" height="250"></canvas>
+            </div>
+        </div>
+
+            <!-- IRB List -->
+            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                    <h3 class="text-sm font-semibold text-gray-700">📑 รายการ IRB</h3>
+                    <label class="text-xs text-gray-500">ตัวกรอง:
+                        <select id="irbDashFilter" class="ml-1 border rounded px-2 py-1 text-xs">
+                            <option value="exp_3m">IRB จะหมดอายุใน 3 เดือน</option>
+                            <option value="latest">IRB ใหม่สุด → เก่าสุด</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm border" id="irbDashTable">
+                        <thead class="bg-gray-50 text-xs text-gray-700">
+                            <tr>
+                                <th class="p-2 text-left">โครงการ</th>
+                                <th class="p-2 text-left">รหัส IRB</th>
+                                <th class="p-2 text-left">หน่วยงาน</th>
+                                <th class="p-2 text-center">วันหมดอายุ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="irbDashBody">
+                            <tr class="border-t">
+                                <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
+                    <button id="irbDashPrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
+                    <div id="irbDashPagination">หน้า 1 / 1</div>
+                    <button id="irbDashNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
                 </div>
             </div>
         </div>
@@ -3348,6 +3383,104 @@
                         plugins: [barValuePlugin]
                     });
                 }
+            })();
+
+            /* ---------- IRB List (Dashboard) ---------- */
+            (function() {
+                const filterEl = document.getElementById('irbDashFilter');
+                const tbody = document.getElementById('irbDashBody');
+                const prevBtn = document.getElementById('irbDashPrev');
+                const nextBtn = document.getElementById('irbDashNext');
+                const pageEl = document.getElementById('irbDashPagination');
+                const pageSize = 10;
+                let page = 1;
+
+                const rows = [];
+                projects.forEach(p => {
+                    const list = p.irbs || [];
+                    list.forEach(irb => {
+                        const expDate = parseProjectDate(irb.exp_date);
+                        rows.push({
+                            project: p,
+                            code: irb.code || '-',
+                            source: irb.source || '-',
+                            expDate
+                        });
+                    });
+                });
+
+                function formatDate(d) {
+                    return formatDateTH(d, '-');
+                }
+
+                function applyFilter() {
+                    const mode = filterEl?.value || 'exp_3m';
+                    const now = new Date();
+                    let filtered = rows.slice();
+
+                    if (mode === 'exp_3m') {
+                        filtered = filtered.filter(r => {
+                            if (!r.expDate) return false;
+                            const diff = (r.expDate - now) / (1000 * 60 * 60 * 24);
+                            return diff >= 0 && diff <= 90;
+                        }).sort((a, b) => (a.expDate || 0) - (b.expDate || 0));
+                    } else if (mode === 'latest') {
+                        filtered = filtered
+                            .filter(r => r.expDate)
+                            .sort((a, b) => (b.expDate || 0) - (a.expDate || 0));
+                    }
+
+                    return filtered;
+                }
+
+                function render() {
+                    if (!tbody) return;
+                    const filtered = applyFilter();
+                    const total = filtered.length;
+                    const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+                    page = Math.min(Math.max(page, 1), totalPages);
+                    const start = (page - 1) * pageSize;
+                    const pageRows = filtered.slice(start, start + pageSize);
+
+                    tbody.innerHTML = '';
+                    if (!pageRows.length) {
+                        tbody.innerHTML =
+                            `<tr class="border-t"><td colspan="4" class="p-3 text-center text-gray-500">ไม่มีข้อมูล</td></tr>`;
+                    } else {
+                        pageRows.forEach(r => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-t';
+                            row.innerHTML = `
+                                <td class="p-2 text-left text-blue-700 hover:underline">
+                                    <a href="/rm/projects/${r.project.id}" target="_blank" rel="noopener">${r.project.project_name_th || '-'}</a>
+                                </td>
+                                <td class="p-2 text-left">${r.code}</td>
+                                <td class="p-2 text-left">${r.source}</td>
+                                <td class="p-2 text-center">${formatDate(r.expDate)}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+
+                    if (pageEl) pageEl.textContent = `หน้า ${page} / ${totalPages}`;
+                    if (prevBtn) prevBtn.disabled = page <= 1;
+                    if (nextBtn) nextBtn.disabled = page >= totalPages;
+                }
+
+                filterEl?.addEventListener('change', () => {
+                    page = 1;
+                    render();
+                });
+                prevBtn?.addEventListener('click', () => {
+                    page = Math.max(page - 1, 1);
+                    render();
+                });
+                nextBtn?.addEventListener('click', () => {
+                    page = page + 1;
+                    render();
+                });
+
+                render();
             })();
 
             /* ---------- Export CSV/Excel (ตามตัวกรอง) ---------- */
