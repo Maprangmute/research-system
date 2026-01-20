@@ -15,23 +15,25 @@ class ProjectController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Project::query()->withCount('outputs');
         $user = auth()->user();
-
-        if ($user->role === 'admin' || $user->role === 'user_all') {
-            // ✅ admin และ user_all เห็นทุกโปรเจค
-        } else {
-            // ✅ user ปกติ เห็นเฉพาะที่เกี่ยวข้อง
+        $applyPermission = function ($q) use ($user) {
+            if ($user->role === 'admin' || $user->role === 'user_all') {
+                return;
+            }
             $fullName = trim(($user->prefix ?? '').' '.$user->name);
-            $query->where(function ($q) use ($fullName, $user) {
-                $q->where('user_id', $user->id)
+            $q->where(function ($inner) use ($fullName, $user) {
+                $inner->where('user_id', $user->id)
                     ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
                         $subQ->where('name', $fullName);
                     });
             });
-        }
+        };
 
-        $baseQuery = clone $query;
+        $query = Project::query()->withCount('outputs');
+        $applyPermission($query);
+
+        $baseQuery = Project::query();
+        $applyPermission($baseQuery);
 
         // filter
         if ($request->filled('year')) {
@@ -49,10 +51,10 @@ class ProjectController extends Controller
             );
         }
         if ($request->filled('pi_name')) {
-            $query->where('pi_name', $request->pi_name);
+            $query->whereRaw('TRIM(pi_name) = ?', [$request->pi_name]);
         }
         if ($request->filled('funding_source')) {
-            $query->where('funding_source', $request->funding_source);
+            $query->whereRaw('TRIM(funding_source) = ?', [$request->funding_source]);
         }
         if ($request->filled('budget_range') && !$request->filled('budget_min') && !$request->filled('budget_max')) {
             [$minRange, $maxRange] = array_pad(explode('-', $request->budget_range), 2, null);
@@ -78,12 +80,32 @@ class ProjectController extends Controller
             });
         }
         if ($request->boolean('issue_duplicates')) {
+            $nameExpr = "REGEXP_REPLACE(LOWER(TRIM(project_name_th)),'\\\\s+','')";
             $duplicateNames = (clone $baseQuery)
-                ->select('project_name_th')
+                ->select(DB::raw("$nameExpr as name_norm"))
                 ->whereNotNull('project_name_th')
-                ->groupBy('project_name_th')
+                ->whereRaw("TRIM(project_name_th) <> ''")
+                ->groupBy('name_norm')
                 ->havingRaw('count(*) > 1');
-            $query->whereIn('project_name_th', $duplicateNames);
+            $query->whereIn(DB::raw($nameExpr), $duplicateNames);
+        }
+        if ($request->filled('last_update')) {
+            $now = now();
+            if ($request->last_update === '1m') {
+                $query->where('updated_at', '<', $now->copy()->subMonth())
+                    ->where('updated_at', '>=', $now->copy()->subMonths(2));
+            }
+            if ($request->last_update === '2m') {
+                $query->where('updated_at', '<', $now->copy()->subMonths(2))
+                    ->where('updated_at', '>=', $now->copy()->subMonths(3));
+            }
+            if ($request->last_update === '3m') {
+                $query->where('updated_at', '<', $now->copy()->subMonths(3))
+                    ->where('updated_at', '>=', $now->copy()->subMonths(4));
+            }
+            if ($request->last_update === 'gt3') {
+                $query->where('updated_at', '<', $now->copy()->subMonths(4));
+            }
         }
         if ($request->filled('fte_status')) {
             if ($request->fte_status === 'missing') {
@@ -121,15 +143,25 @@ class ProjectController extends Controller
             ->with('project:id,project_code,project_name_th,start_year')
             ->get();
 
-        $piOptions = (clone $baseQuery)->whereNotNull('pi_name')->distinct()->orderBy('pi_name')->pluck('pi_name');
+        $piOptions = (clone $baseQuery)
+            ->selectRaw('LOWER(TRIM(pi_name)) as name_key, MIN(TRIM(pi_name)) as pi_name')
+            ->whereNotNull('pi_name')
+            ->whereRaw("TRIM(pi_name) <> ''")
+            ->groupBy('name_key')
+            ->orderBy('pi_name')
+            ->pluck('pi_name');
         $fundingSources = (clone $baseQuery)
+            ->selectRaw('LOWER(TRIM(funding_source)) as source_key, MIN(TRIM(funding_source)) as funding_source')
             ->whereNotNull('funding_source')
-            ->distinct()
+            ->whereRaw("TRIM(funding_source) <> ''")
+            ->groupBy('source_key')
             ->orderBy('funding_source')
             ->pluck('funding_source');
         $typeOptions = (clone $baseQuery)
+            ->selectRaw('LOWER(TRIM(project_type)) as type_key, MIN(TRIM(project_type)) as project_type')
             ->whereNotNull('project_type')
-            ->distinct()
+            ->whereRaw("TRIM(project_type) <> ''")
+            ->groupBy('type_key')
             ->orderBy('project_type')
             ->pluck('project_type');
         $yearOptions = (clone $baseQuery)

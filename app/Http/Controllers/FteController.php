@@ -601,6 +601,7 @@ private function buildFteDetailData(string $person): array
                         'project'       => $item->project,
                         'role_group'    => $item->role_group,
                         'job_detail'    => $item->job_detail,
+                        'task_detail'   => $item->task_detail,
                         'days_in_month' => $daysInMonth,
                         'fte_per_day'   => $ftePerDay,
                         'fte_value'     => $fteMonth,
@@ -610,6 +611,8 @@ private function buildFteDetailData(string $person): array
 
                         'overlap_start' => $overlapStart->format('d M Y'),
                         'overlap_end'   => $overlapEnd->format('d M Y'),
+                        'start_date'    => $item->start_date,
+                        'end_date'      => $item->end_date,
                     ]);
                 }
 

@@ -187,6 +187,16 @@
                     </select>
                 </label>
                 <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">ไม่อัปเดท</span>
+                    <select name="last_update" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="">ทั้งหมด</option>
+                        <option value="1m" @selected(request('last_update') === '1m')>1 เดือน</option>
+                        <option value="2m" @selected(request('last_update') === '2m')>2 เดือน</option>
+                        <option value="3m" @selected(request('last_update') === '3m')>3 เดือน</option>
+                        <option value="gt3" @selected(request('last_update') === 'gt3')>มากกว่า 3 เดือน</option>
+                    </select>
+                </label>
+                <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ปัญหา</span>
                     <div class="flex flex-wrap gap-2 text-xs text-slate-600">
                         <label class="inline-flex items-center gap-1">
@@ -209,8 +219,8 @@
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">เรียงลำดับ</span>
                     <select name="sort" class="w-full border border-slate-200 rounded-lg p-2">
-                        <option value="updated_at" @selected(request('sort') === 'updated_at')>ล่าสุด → เก่าสุด</option>
-                        <option value="created_at" @selected(request('sort') === 'created_at')>เก่าสุด → ล่าสุด</option>
+                        <option value="updated_at" @selected(request('sort') === 'updated_at')>อัปเดทล่าสุด → เก่าสุด</option>
+                        <option value="created_at" @selected(request('sort') === 'created_at')>สร้างล่าสุด → เก่าสุด</option>
                         <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
                         <option value="start_year" @selected(request('sort') === 'start_year')>ปีโครงการ</option>
                         <option value="project_name_th" @selected(request('sort') === 'project_name_th')>ชื่อโครงการ</option>
@@ -325,6 +335,7 @@
                 <div class="text-sm text-slate-600">
                     แสดงผล {{ $projects->firstItem() ?? 0 }}–{{ $projects->lastItem() ?? 0 }} จากทั้งหมด
                     {{ $projects->total() }} รายการ
+                    <span class="ml-2 text-xs text-slate-500">เรียงลำดับจากข้อมูลที่แก้ไขล่าสุด</span>
                 </div>
                 <div class="text-xs text-slate-400">ดับเบิลคลิก = ดูรายละเอียด • คลิกขวา/กดค้าง = เมนูด่วน</div>
             </div>
@@ -340,6 +351,7 @@
                         <col style="width: 220px;"> {{-- Theme --}}
                         <col style="width: 110px;"> {{-- Outputs --}}
                         <col style="width: 88px;"> {{-- ปี --}}
+                        <col style="width: 150px;"> {{-- อัปเดทล่าสุด --}}
                     </colgroup>
                     <thead class="bg-slate-50">
                         <tr class="text-left text-xs font-semibold text-slate-600">
@@ -373,6 +385,10 @@
                             <th class="px-4 py-3">
                                 <a href="{{ $sortUrl('start_year') }}" class="hover:text-indigo-700">ปี <span
                                         class="ml-1">{{ $sortIcon('start_year') }}</span></a>
+                            </th>
+                            <th class="px-4 py-3">
+                                <a href="{{ $sortUrl('updated_at') }}" class="hover:text-indigo-700">อัปเดทล่าสุด <span
+                                        class="ml-1">{{ $sortIcon('updated_at') }}</span></a>
                             </th>
                         </tr>
                     </thead>
@@ -421,6 +437,12 @@
                                     {{ $project->outputs_count ?? 0 }}
                                 </td>
                                 <td class="px-4 py-3 text-slate-700">{{ $project->start_year ?: '-' }}</td>
+                                <td class="px-4 py-3 text-slate-600">
+                                    @php
+                                        $updated = $project->updated_at ? \Carbon\Carbon::parse($project->updated_at) : null;
+                                    @endphp
+                                    {{ $updated ? $updated->locale('th')->translatedFormat('j M') . ' ' . ($updated->year + 543) : '-' }}
+                                </td>
 
                                 {{-- hidden form for delete --}}
                                 <td class="hidden">
@@ -432,7 +454,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-10 text-slate-500">ไม่มีข้อมูล</td>
+                                <td colspan="9" class="text-center py-10 text-slate-500">ไม่มีข้อมูล</td>
                             </tr>
                         @endforelse
                     </tbody>

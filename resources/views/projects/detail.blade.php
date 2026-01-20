@@ -470,6 +470,14 @@
                                             ? $start->translatedFormat('j F') . ' ' . ($start->year + 543)
                                             : '-';
                                         $endTxt = $end ? $end->translatedFormat('j F') . ' ' . ($end->year + 543) : '-';
+                                        $jobDetailRaw = trim((string) ($fte->job_detail ?? ''));
+                                        $taskDetailRaw = trim((string) ($fte->task_detail ?? ''));
+                                        $jobDetail = $jobDetailRaw !== ''
+                                            ? $jobDetailRaw
+                                            : ($taskDetailRaw !== '' ? $taskDetailRaw : '-');
+                                        $taskDetail = ($taskDetailRaw !== '' && $taskDetailRaw !== $jobDetail)
+                                            ? $taskDetailRaw
+                                            : '-';
                                     @endphp
 
                                     <tr class="bg-white hover:bg-blue-50 transition">
@@ -485,13 +493,13 @@
 
                                             <span class="text-slate-600 text-sm">
                                                 ({{ $fte->role_group ?: '-' }})
-                                                — {{ $fte->job_detail ?: '-' }}
+                                                — {{ $jobDetail }}
                                             </span>
                                         </td>
 
                                         <!-- รายละเอียดภารกิจ -->
                                         <td class="border px-3 py-3 text-slate-700">
-                                            {{ $fte->task_detail ?: '-' }}
+                                            {{ $taskDetail }}
                                         </td>
 
                                         <!-- ชั่วโมง -->

@@ -38,11 +38,11 @@
                 <a href="/rm" class="text-blue-600 hover:underline">📋 รายการโปรเจค</a>
                 <a href="/rm/create" class="text-green-600 hover:underline">➕ เพิ่มโครงการ</a>
                 <a href="{{ route('outputs.index') }}" class="text-green-600 hover:underline">📑 outputs</a>
-                <div class="relative" x-data="{ openFte: false }">
+                <div class="relative" x-data="{ openFte: false, fteTimer: null }">
                     <button type="button"
                         @click="openFte = !openFte"
-                        @mouseenter="openFte = true"
-                        @mouseleave="openFte = false"
+                        @mouseenter="clearTimeout(fteTimer); fteTimer = setTimeout(() => { openFte = true; }, 180);"
+                        @mouseleave="clearTimeout(fteTimer); fteTimer = setTimeout(() => { openFte = false; }, 280);"
                         class="text-gray-700 hover:text-blue-600 inline-flex items-center gap-1">
                         🔥 FTE
                         <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
@@ -51,8 +51,8 @@
                         </svg>
                     </button>
                     <div x-show="openFte" x-cloak
-                        @mouseenter="openFte = true"
-                        @mouseleave="openFte = false"
+                        @mouseenter="clearTimeout(fteTimer); openFte = true;"
+                        @mouseleave="clearTimeout(fteTimer); fteTimer = setTimeout(() => { openFte = false; }, 280);"
                         class="absolute left-0 mt-2 w-52 bg-white border rounded shadow-md z-50">
                         <a href="{{ route('fte.index') }}"
                             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">

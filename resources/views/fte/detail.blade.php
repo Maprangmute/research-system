@@ -191,7 +191,10 @@
                                             $oeYear = $oeCarbon->year + 543;
                                             $projectName = $item->project->project_name_th ?? '-';
                                             $roleGroup = $item->role_group ?? '-';
-                                            $jobDetail = $item->job_detail ?? '-';
+                                            $jobDetailRaw = trim((string) ($item->job_detail ?? ''));
+                                            $taskDetailRaw = trim((string) ($item->task_detail ?? ''));
+                                            $jobDetail = $jobDetailRaw !== '' ? $jobDetailRaw : '-';
+                                            $taskDetail = $taskDetailRaw !== '' ? $taskDetailRaw : '-';
                                         @endphp
                                         <tr class="border-b fte-row"
                                             data-project="{{ $projectName }}"
@@ -215,6 +218,7 @@
                                             </td>
                                             <td class="p-2 break-words whitespace-normal">
                                                 <div>{{ $jobDetail }}</div>
+                                                <div class="text-xs text-slate-500 mt-1">{{ $taskDetail }}</div>
                                             </td>
                                             <td class="p-2 text-center">
                                                 {{ $os }} {{ $osYear }} - {{ $oe }} {{ $oeYear }}
