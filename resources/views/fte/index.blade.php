@@ -34,7 +34,7 @@
                 {{-- Year --}}
                 <div id="filter-year"
                     class="flex flex-col flex-1 min-w-[110px] max-w-xs {{ $mode === 'year' ? '' : 'hidden' }}">
-                    <label class="text-gray-800 mb-1">ปี</label>
+                    <label class="text-gray-800 mb-1">ปี (พ.ศ.)</label>
                     <select name="year" id="yearSelect" class="rounded-lg border-gray-300 p-2 w-full"
                         onchange="this.form.submit();">
                         @foreach ($years as $y)
@@ -49,7 +49,12 @@
                     <label class="text-gray-800 mb-1">เดือน</label>
                     <div
                         class="rounded-lg border border-gray-200 bg-white p-2 px-3 text-base font-semibold text-blue-800 w-full">
-                        {{ \Carbon\Carbon::now()->locale('th')->translatedFormat('F Y') }}
+                        @php
+                            $now = \Carbon\Carbon::now();
+                            $monthLabel = $now->locale('th')->translatedFormat('F');
+                            $yearLabel = $now->year + 543;
+                        @endphp
+                        {{ $monthLabel }} {{ $yearLabel }}
                     </div>
                 </div>
 
@@ -186,32 +191,32 @@
                                                 </span>
                                             </div>
                                             <div class="p-2">
-                                                <table class="w-full table-fixed text-xs border border-gray-200 rounded-lg overflow-hidden">
+                                                <table class="w-full table-auto text-sm border border-slate-200 rounded-lg overflow-hidden">
 <thead class="bg-gray-100">
     <tr>
-        <th class="p-2 text-left w-2/6">ชื่อโปรเจค</th>
-        <th class="p-2 text-left w-1/6">กลุ่ม</th>
-        <th class="p-2 text-left w-1/6">ภาระงาน</th>
-        <th class="p-2 text-center w-1/12">วันที่เริ่ม</th>
-        <th class="p-2 text-center w-1/12">วันที่สิ้นสุด</th>
-        <th class="p-2 text-center w-1/12">จำนวนวันทำงาน</th>   {{-- ⭐ เพิ่มใหม่ --}}
-        <th class="p-2 text-right w-1/12">FTE</th>
+        <th class="p-3 text-left font-semibold text-slate-700 min-w-[260px]">ชื่อโปรเจค</th>
+        <th class="p-3 text-left font-semibold text-slate-700 min-w-[110px]">กลุ่ม</th>
+        <th class="p-3 text-left font-semibold text-slate-700 min-w-[160px]">ภาระงาน</th>
+        <th class="p-3 text-center font-semibold text-slate-700 min-w-[130px]">วันที่เริ่ม</th>
+        <th class="p-3 text-center font-semibold text-slate-700 min-w-[130px]">วันที่สิ้นสุด</th>
+        <th class="p-3 text-center font-semibold text-slate-700 min-w-[110px]">จำนวนวันทำงาน</th>
+        <th class="p-3 text-right font-semibold text-slate-700 min-w-[90px]">FTE</th>
     </tr>
 </thead>
 <tbody>
     @foreach ($items as $item)
         <tr class="{{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
-            <td class="p-2 text-blue-700 underline break-words whitespace-normal">
+            <td class="p-3 text-blue-700 underline break-words whitespace-normal align-top">
                 <a href="{{ route('projects.show', $item->project->id) }}">
                     {{ $item->project->project_name_th ?? '-' }}
                 </a>
             </td>
 
-            <td class="p-2 break-words whitespace-normal">
+            <td class="p-3 break-words whitespace-normal align-top">
                 {{ $item->role_group ?? '-' }}
             </td>
 
-            <td class="p-2 break-words whitespace-normal">
+            <td class="p-3 break-words whitespace-normal align-top">
              <div>{{ $item->job_detail ?? '-' }}</div>
                  <div class="text-gray-400 text-xs">
                       {{ $item->task_detail ?? '-' }}
@@ -219,25 +224,45 @@
             </td>
 
 
-            <td class="p-2 text-center whitespace-nowrap">
-                {{ $item->start_date && \Carbon\Carbon::hasFormat($item->start_date, 'd-m-Y')
-                    ? \Carbon\Carbon::createFromFormat('d-m-Y', $item->start_date)->locale('th')->isoFormat('D MMM YYYY')
-                    : $item->start_date }}
+            <td class="p-3 text-center whitespace-nowrap align-top">
+                @php
+                    $startDisplay = $item->start_date;
+                    if ($item->start_date) {
+                        if (\Carbon\Carbon::hasFormat($item->start_date, 'd-m-Y')) {
+                            $d = \Carbon\Carbon::createFromFormat('d-m-Y', $item->start_date);
+                            $startDisplay = $d->locale('th')->translatedFormat('j F') . ' ' . ($d->year + 543);
+                        } elseif (\Carbon\Carbon::hasFormat($item->start_date, 'd/m/Y')) {
+                            $d = \Carbon\Carbon::createFromFormat('d/m/Y', $item->start_date);
+                            $startDisplay = $d->locale('th')->translatedFormat('j F') . ' ' . ($d->year + 543);
+                        }
+                    }
+                @endphp
+                {{ $startDisplay }}
             </td>
 
-            <td class="p-2 text-center whitespace-nowrap">
-                {{ $item->end_date && \Carbon\Carbon::hasFormat($item->end_date, 'd-m-Y')
-                    ? \Carbon\Carbon::createFromFormat('d-m-Y', $item->end_date)->locale('th')->isoFormat('D MMM YYYY')
-                    : $item->end_date }}
+            <td class="p-3 text-center whitespace-nowrap align-top">
+                @php
+                    $endDisplay = $item->end_date;
+                    if ($item->end_date) {
+                        if (\Carbon\Carbon::hasFormat($item->end_date, 'd-m-Y')) {
+                            $d = \Carbon\Carbon::createFromFormat('d-m-Y', $item->end_date);
+                            $endDisplay = $d->locale('th')->translatedFormat('j F') . ' ' . ($d->year + 543);
+                        } elseif (\Carbon\Carbon::hasFormat($item->end_date, 'd/m/Y')) {
+                            $d = \Carbon\Carbon::createFromFormat('d/m/Y', $item->end_date);
+                            $endDisplay = $d->locale('th')->translatedFormat('j F') . ' ' . ($d->year + 543);
+                        }
+                    }
+                @endphp
+                {{ $endDisplay }}
             </td>
 
             {{-- ⭐ จำนวนวันทำงาน (days_in_month) --}}
-            <td class="p-2 text-center font-semibold text-gray-700">
+            <td class="p-3 text-center font-semibold text-slate-700 align-top">
                 {{ $item->days_in_month }} วัน
             </td>
 
             {{-- ⭐ FTE + bar + tooltip --}}
-            <td class="p-2 text-right font-semibold relative group">
+            <td class="p-3 text-right font-semibold relative group align-top">
                 {{ number_format($item->fte_month, 7) }}
 
                 @php
@@ -257,9 +282,11 @@
                     <div>FTE เดือนนี้: {{ number_format($item->fte_month, 6) }}</div>
                     <div>
                         ช่วงซ้อน:
-                        {{ $item->overlap_start->locale('th')->isoFormat('D MMM YYYY') }}
+                        {{ $item->overlap_start->locale('th')->translatedFormat('j F') }}
+                        {{ $item->overlap_start->year + 543 }}
                         -
-                        {{ $item->overlap_end->locale('th')->isoFormat('D MMM YYYY') }}
+                        {{ $item->overlap_end->locale('th')->translatedFormat('j F') }}
+                        {{ $item->overlap_end->year + 543 }}
                     </div>
                 </div>
             </td>

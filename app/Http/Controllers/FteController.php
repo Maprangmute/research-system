@@ -8,6 +8,7 @@ use App\Models\FteRole;
 use App\Models\Project;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use PDF;
 
 
 class FteController extends Controller
@@ -245,6 +246,27 @@ class FteController extends Controller
 
 public function detail(Request $request, $person)
 {
+    $data = $this->buildFteDetailData($person);
+
+    return view('fte.detail', $data);
+}
+
+public function exportPdf($person)
+{
+    $data = $this->buildFteDetailData($person);
+    $user = auth()->user();
+    $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
+    $filename = "FTE_{$dateStr}_{$data['person']}.pdf";
+
+    $pdf = PDF::loadView('fte.pdf', array_merge($data, [
+        'user' => $user,
+    ]));
+
+    return $pdf->stream($filename);
+}
+
+private function buildFteDetailData(string $person): array
+{
     $profile = \App\Models\User::whereRaw("CONCAT(TRIM(prefix),' ',TRIM(name)) = ?", [$person])->first();
 
     $raw = FteRole::with('project')
@@ -266,14 +288,9 @@ public function detail(Request $request, $person)
             $totalDays  = $start->diffInDays($end) + 1;
             if ($totalDays <= 0) continue;
 
-            $ftePerDay  = $item->fte_value / $totalDays;
-
-            // ⭐ จำนวนเดือนทั้งหมดของช่วงงานนี้
-            $monthsTotal = $start->diffInMonths($end) + 1;
-
-            // ⭐ แบ่งจำนวนชั่วโมงเฉลี่ยรายเดือน
-            $hoursPerMonth = $item->hours 
-                ? $item->hours / $monthsTotal 
+            $ftePerDay = $item->fte_value / $totalDays;
+            $hoursPerDay = $item->hours
+                ? ((float) $item->hours / $totalDays)
                 : 0;
 
             // แตกช่วงรายเดือน
@@ -289,6 +306,7 @@ public function detail(Request $request, $person)
                 if ($overlapStart->lte($overlapEnd)) {
 
                     $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                    $hoursInMonth = $hoursPerDay * $daysInMonth;
                     $fteMonth = $daysInMonth * $ftePerDay;
 
                     // ⭐ โครงสร้างเดิม + hours_in_month ที่เพิ่มเข้ามา
@@ -302,7 +320,7 @@ public function detail(Request $request, $person)
                         'fte_value'     => $fteMonth,
 
                         // ⭐ ฟิลด์ใหม่ที่เพิ่มเข้ามา
-                        'hours_in_month' => $hoursPerMonth,
+                        'hours_in_month' => $hoursInMonth,
 
                         'overlap_start' => $overlapStart->format('d M Y'),
                         'overlap_end'   => $overlapEnd->format('d M Y'),
@@ -320,13 +338,13 @@ public function detail(Request $request, $person)
     $chartLabels = $monthlyFTE->keys()->values();
     $chartData   = $monthlyFTE->map(fn($rows) => $rows->sum('fte_value'))->values();
 
-    return view('fte.detail', compact(
+    return compact(
         'person',
         'profile',
         'monthlyFTE',
         'chartLabels',
         'chartData',
-    ));
+    );
 }
 
 

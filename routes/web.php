@@ -176,6 +176,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     // ✅ เส้นทางอื่น ๆ
     Route::get('/fte', [FteController::class, 'index'])->name('fte.index');
     Route::get('/fte/{person}/detail', [FteController::class, 'detail'])->name('fte.detail');
+    Route::get('/fte/{person}/pdf', [FteController::class, 'exportPdf'])->name('fte.pdf');
     Route::get('/outputs', [OutputController::class, 'index'])->name('outputs.index');
 
 
