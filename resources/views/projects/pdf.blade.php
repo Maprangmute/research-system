@@ -17,32 +17,56 @@
         }
         body {
             font-family: "thsarabun", Tahoma, sans-serif;
-            font-size: 13pt;
+            font-size: 11.5pt;
+            line-height: 1.35;
             color: #222;
         }
         .section-title {
-            background: #FEF9E7;
-            color: #C47F00;
-            padding: 7px 18px 7px 16px;
-            margin: 24px 0 10px;
+            background: #F8FAFC;
+            color: #0F172A;
+            padding: 6px 14px 6px 12px;
+            margin: 18px 0 8px;
             font-weight: bold;
-            border-radius: 10px;
+            border-radius: 8px;
+            border: 1px solid #E2E8F0;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         th, td {
             border: 1px solid #dde6f6;
-            padding: 8px 13px;
+            padding: 6px 10px;
+            vertical-align: top;
         }
-        thead { background: #E3ECFC; }
+        thead {
+            background: #F1F5F9;
+            color: #0F172A;
+        }
+        ul {
+            margin: 0 0 12px 18px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 4px;
+        }
         .nowrap { white-space: nowrap; }
         .check {
             text-align: center;
             font-size: 1.2em;
             color: #009900;
+        }
+        .fte-bar-wrap {
+            width: 100%;
+            height: 10px;
+            background: #E6F3F2;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .fte-bar {
+            height: 10px;
+            background: #0F766E;
         }
     </style>
 </head>
@@ -262,6 +286,69 @@
             @empty
                 <tr>
                     <td colspan="8" class="check">ไม่มีข้อมูล</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <div class="section-title">E.1: สรุป FTE รายเดือน</div>
+    <table>
+        <thead>
+            <tr>
+                <th class="nowrap">เดือน</th>
+                <th class="nowrap">FTE รวม</th>
+                <th>กราฟสรุป</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($fteMonthlySummary ?? [] as $row)
+                @php
+                    $monthLabel = $row['month'] ?? '-';
+                    if (preg_match('/^\d{4}-\d{2}$/', $monthLabel)) {
+                        $d = \Carbon\Carbon::createFromFormat('Y-m', $monthLabel)->locale('th');
+                        $monthLabel = $d->translatedFormat('F') . ' ' . ($d->year + 543);
+                    }
+                    $total = (float) ($row['total'] ?? 0);
+                    $percent = ($fteMonthlyMax ?? 0) > 0 ? ($total / $fteMonthlyMax) * 100 : 0;
+                @endphp
+                <tr>
+                    <td class="nowrap">{{ $monthLabel }}</td>
+                    <td class="nowrap">{{ number_format($total, 6) }}</td>
+                    <td>
+                        <div class="fte-bar-wrap">
+                            <div class="fte-bar" style="width: {{ round($percent, 2) }}%;"></div>
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="3" class="check">ไม่มีข้อมูล</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <div class="section-title">E.2: FTE รวม 3 ปีล่าสุด</div>
+    <table>
+        <thead>
+            <tr>
+                <th class="nowrap">ปี (พ.ศ.)</th>
+                <th class="nowrap">FTE รวม</th>
+            </tr>
+        </thead>
+        <tbody>
+            @php
+                $yearLabels = $fteYearLabels ?? [];
+                $yearData = $fteYearData ?? [];
+            @endphp
+            @forelse ($yearLabels as $i => $label)
+                <tr>
+                    <td class="nowrap">{{ $label }}</td>
+                    <td class="nowrap">{{ number_format($yearData[$i] ?? 0, 6) }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="2" class="check">ไม่มีข้อมูล</td>
                 </tr>
             @endforelse
         </tbody>

@@ -8,6 +8,7 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use PDF;
 
 class ProjectController extends Controller
@@ -260,7 +261,9 @@ public function store(Request $request)
             'createdBy',   // ✅ เพิ่มตรงนี้
         ]);
 
-        return view('projects.detail', compact('project'));
+        $fteChartData = $this->buildProjectFteChartData($project);
+
+        return view('projects.detail', array_merge(compact('project'), $fteChartData));
     }
 
     public function update(Request $request, Project $project)
@@ -330,7 +333,8 @@ public function store(Request $request)
         $dateStr = \Carbon\Carbon::now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
         $filename = "{$dateStr}_{$creater}_{$project->project_name_th}.pdf";
 
-        $pdf = PDF::loadView('projects.pdf', compact('project', 'user'));
+        $fteChartData = $this->buildProjectFteChartData($project);
+        $pdf = PDF::loadView('projects.pdf', array_merge(compact('project', 'user'), $fteChartData));
 
         return $pdf->stream($filename);
     }
@@ -370,6 +374,98 @@ public function store(Request $request)
             'updated_by' => 'nullable|integer',
             'project_list' => 'nullable|string|max:255',
         ]);
+    }
+
+    private function buildProjectFteChartData(Project $project): array
+    {
+        $rows = $project->fteRoles ?? collect();
+        $expanded = collect();
+
+        foreach ($rows as $item) {
+            if (empty($item->start_date) || empty($item->end_date)) {
+                continue;
+            }
+            try {
+                $formatStart = strpos($item->start_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
+                $formatEnd = strpos($item->end_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
+
+                $start = Carbon::createFromFormat($formatStart, $item->start_date)->startOfDay();
+                $end = Carbon::createFromFormat($formatEnd, $item->end_date)->endOfDay();
+
+                if ($start->gt($end)) {
+                    continue;
+                }
+
+                $totalDays = $start->diffInDays($end) + 1;
+                if ($totalDays <= 0) {
+                    continue;
+                }
+
+                $ftePerDay = $item->fte_value / $totalDays;
+
+                $cursor = $start->copy()->startOfMonth();
+                while ($cursor <= $end) {
+                    $mStart = $cursor->copy()->startOfMonth();
+                    $mEnd = $cursor->copy()->endOfMonth();
+
+                    $overlapStart = $start->copy()->max($mStart);
+                    $overlapEnd = $end->copy()->min($mEnd);
+
+                    if ($overlapStart->lte($overlapEnd)) {
+                        $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                        $fteMonth = $daysInMonth * $ftePerDay;
+
+                        $expanded->push((object)[
+                            'month' => $cursor->format('Y-m'),
+                            'name' => $item->name,
+                            'fte_value' => $fteMonth,
+                        ]);
+                    }
+
+                    $cursor->addMonth();
+                }
+            } catch (\Exception $e) {}
+        }
+
+        $monthlyFTE = $expanded->groupBy('month')->sortKeys();
+        $fteChartLabels = $monthlyFTE->keys()->values();
+        $personNames = $expanded->pluck('name')->filter()->unique()->values();
+        $fteChartDatasets = $personNames->map(function ($name) use ($monthlyFTE) {
+            $data = $monthlyFTE->map(function ($rows) use ($name) {
+                return $rows->where('name', $name)->sum('fte_value');
+            })->values();
+            return [
+                'label' => $name,
+                'data' => $data,
+            ];
+        })->values();
+
+        $yearTotals = [];
+        foreach ($monthlyFTE as $month => $items) {
+            $year = (int) substr($month, 0, 4);
+            $yearTotals[$year] = ($yearTotals[$year] ?? 0) + $items->sum('fte_value');
+        }
+        $currentYear = (int) now()->year;
+        $years = [$currentYear - 2, $currentYear - 1, $currentYear];
+        $fteYearLabels = array_map(fn($y) => $y + 543, $years);
+        $fteYearData = array_map(fn($y) => $yearTotals[$y] ?? 0, $years);
+
+        $fteMonthlySummary = $monthlyFTE->map(function ($rows, $month) {
+            return [
+                'month' => $month,
+                'total' => $rows->sum('fte_value'),
+            ];
+        })->values();
+        $fteMonthlyMax = $fteMonthlySummary->max('total') ?: 0;
+
+        return [
+            'fteChartLabels' => $fteChartLabels,
+            'fteChartDatasets' => $fteChartDatasets,
+            'fteYearLabels' => $fteYearLabels,
+            'fteYearData' => $fteYearData,
+            'fteMonthlySummary' => $fteMonthlySummary,
+            'fteMonthlyMax' => $fteMonthlyMax,
+        ];
     }
 
     private function validateOutputs(Request $request): void

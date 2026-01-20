@@ -383,11 +383,13 @@
                                 $editUrl = route('projects.edit', $project->id);
                                 $pdfUrl = route('projects.pdf', $project->id);
                                 $progressUrl = route('projects.progress_reports.index', $project->id);
+                                $fteProjectUrl = route('fte.project.detail', $project->id);
                                 $deleteFormId = "delete-form-{$project->id}";
                             @endphp
                             <tr class="hover:bg-indigo-50/40 transition cursor-default" data-show-url="{{ $showUrl }}"
                                 data-edit-url="{{ $editUrl }}" data-pdf-url="{{ $pdfUrl }}"
-                                data-progress-url="{{ $progressUrl }}" data-delete-form-id="{{ $deleteFormId }}"
+                                data-progress-url="{{ $progressUrl }}" data-fte-project-url="{{ $fteProjectUrl }}"
+                                data-delete-form-id="{{ $deleteFormId }}"
                                 oncontextmenu="return openRowMenu(event, this)" ondblclick="goToDetail(this)"
                                 ontouchstart="rowLongPressStart(event, this)" ontouchend="rowLongPressEnd(event)">
                                 <td class="px-4 py-3 text-sm text-slate-600">{{ $project->id }}</td>
@@ -455,6 +457,8 @@
                 class="w-full text-left px-3 py-2 hover:bg-green-50 text-green-700">🖨️ พิมพ์ PDF</button>
             <button type="button" data-action="progress"
                 class="w-full text-left px-3 py-2 hover:bg-sky-50 text-sky-700">📑 Progress Report</button>
+            <button type="button" data-action="fte-project"
+                class="w-full text-left px-3 py-2 hover:bg-emerald-50 text-emerald-700">📊 FTE โปรเจค</button>
             <div class="my-1 border-t border-slate-100"></div>
             <button type="button" data-action="delete"
                 class="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600">🗑️ ลบข้อมูล</button>
@@ -476,6 +480,7 @@
             menu.dataset.editUrl = row.getAttribute('data-edit-url') || '';
             menu.dataset.pdfUrl = row.getAttribute('data-pdf-url') || '';
             menu.dataset.progressUrl = row.getAttribute('data-progress-url') || '';
+            menu.dataset.fteProjectUrl = row.getAttribute('data-fte-project-url') || '';
             menu.dataset.deleteFormId = row.getAttribute('data-delete-form-id') || '';
 
             const vw = innerWidth,
@@ -534,6 +539,7 @@
                     editUrl = m.dataset.editUrl,
                     pdfUrl = m.dataset.pdfUrl,
                     progressUrl = m.dataset.progressUrl,
+                    fteProjectUrl = m.dataset.fteProjectUrl,
                     delId = m.dataset.deleteFormId;
                 hideMenu();
                 switch (act) {
@@ -548,6 +554,9 @@
                         break;
                     case 'progress':
                         if (progressUrl) location.href = progressUrl;
+                        break;
+                    case 'fte-project':
+                        if (fteProjectUrl) window.open(fteProjectUrl, '_blank');
                         break;
                     case 'delete':
                         const form = document.getElementById(delId);

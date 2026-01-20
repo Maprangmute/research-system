@@ -528,15 +528,122 @@
                 </tbody>
             </table>
         </div>
-            <div class="pt-4">
+            <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5 mt-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                    <h3 class="font-semibold text-lg text-blue-700">สรุป FTE รายเดือน</h3>
+                    <a href="{{ route('fte.project.detail', $project->id) }}"
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        ดูเพิ่มเติม
+                    </a>
+                </div>
+
+                @if (!empty($fteChartLabels) && count($fteChartLabels))
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div class="lg:col-span-2 bg-slate-50 rounded-xl border p-3" style="height:300px;">
+                            <canvas id="fteProjectStackedChart"></canvas>
+                        </div>
+                        <div class="bg-slate-50 rounded-xl border p-3" style="height:300px;">
+                            <canvas id="fteProjectYearChart"></canvas>
+                        </div>
+                    </div>
+                @else
+                    <div class="text-gray-500 text-sm">ยังไม่มีข้อมูล FTE สำหรับทำกราฟ</div>
+                @endif
+            </div>
+            {{-- <div class="pt-4">
                 <a href="{{ route('projects.index') }}"
                     class="inline-flex items-center gap-2 text-blue-700 font-semibold text-sm hover:text-blue-900">
                     ← กลับไปยังรายการโครงการ
                 </a>
-            </div>
+            </div> --}}
         </div>
 
+    @if (!empty($fteChartLabels) && count($fteChartLabels))
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                function stringToColor(str) {
+                    let hash = 0;
+                    for (let i = 0; i < str.length; i++) {
+                        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    const r = (hash & 0xFF0000) >> 16;
+                    const g = (hash & 0x00FF00) >> 8;
+                    const b = hash & 0x0000FF;
+                    return `rgba(${Math.abs(r)}, ${Math.abs(g)}, ${Math.abs(b)}, 0.8)`;
+                }
 
+                const labelsRaw = @json($fteChartLabels);
+                const labels = labelsRaw.map(monthKey => {
+                    const parts = String(monthKey || '').split('-');
+                    if (parts.length !== 2) return monthKey;
+                    const year = Number(parts[0]);
+                    const month = parts[1];
+                    if (!Number.isFinite(year)) return monthKey;
+                    return `${month}/${year + 543}`;
+                });
+
+                const datasets = (@json($fteChartDatasets) || []).map(item => ({
+                    label: item.label,
+                    backgroundColor: stringToColor(item.label),
+                    data: item.data || [],
+                    stack: 'stack'
+                }));
+
+                new Chart(document.getElementById('fteProjectStackedChart'), {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                stacked: true
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+
+                new Chart(document.getElementById('fteProjectYearChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: @json($fteYearLabels),
+                        datasets: [{
+                            label: 'FTE รวม',
+                            data: @json($fteYearData),
+                            backgroundColor: '#0f766e'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
+    @endif
 
 
             @php

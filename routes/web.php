@@ -175,7 +175,10 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
 
     // ✅ เส้นทางอื่น ๆ
     Route::get('/fte', [FteController::class, 'index'])->name('fte.index');
+    Route::get('/fte/projects', [FteController::class, 'projectIndex'])->name('fte.project.index');
     Route::get('/fte/{person}/detail', [FteController::class, 'detail'])->name('fte.detail');
+    Route::get('/fte/project/{project}', [FteController::class, 'projectDetail'])->name('fte.project.detail');
+    Route::get('/fte/project/{project}/pdf', [FteController::class, 'projectPdf'])->name('fte.project.pdf');
     Route::get('/fte/{person}/pdf', [FteController::class, 'exportPdf'])->name('fte.pdf');
     Route::get('/outputs', [OutputController::class, 'index'])->name('outputs.index');
 
