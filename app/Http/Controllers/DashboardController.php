@@ -12,7 +12,7 @@ class DashboardController extends Controller
     {
         $projects = Project::with([
             // ดึงเฉพาะฟิลด์ที่ต้องใช้จาก coResearches
-            'coResearches:id,project_id,unit_status,affiliation',
+            'coResearches:id,project_id,name,unit_status,affiliation',
 
             // Eager load อื่น ๆ
             'copis',

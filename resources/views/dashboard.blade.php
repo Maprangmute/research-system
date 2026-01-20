@@ -810,6 +810,62 @@
                 return Array.from(seen.values());
             }
 
+            function endYearLabel(p) {
+                const endDate = parseProjectDate(getEndDateRaw(p));
+                if (endDate) return yearLabelTH(endDate.getFullYear());
+                const start = yearCE(p.start_year);
+                if (start) return yearLabelTH(start);
+                return 'ไม่ระบุ';
+            }
+
+            function truncateText(value, max = 36) {
+                const text = String(value || '').trim();
+                if (!text) return '';
+                if (text.length <= max) return text;
+                return `${text.slice(0, max - 1)}…`;
+            }
+
+            function coResearchUnitLabel(c) {
+                const raw = c.unit_status || c.affiliation || c.unit || c.department || 'ไม่ระบุ';
+                const text = String(raw || '').trim();
+                return text || 'ไม่ระบุ';
+            }
+
+            function coResearchKey(c) {
+                const name = String(c?.name || '').trim();
+                const unit = coResearchUnitLabel(c);
+                return `${name}||${unit}`;
+            }
+
+            function uniqueCoResearch(list) {
+                const map = new Map();
+                list.forEach(c => {
+                    const key = coResearchKey(c);
+                    if (!key || key === '||') return;
+                    if (!map.has(key)) map.set(key, c);
+                });
+                return Array.from(map.values());
+            }
+
+            function getCoResearchList(p) {
+                const list = p.co_researches || p.coResearches || p.co_research || [];
+                return Array.isArray(list) ? list : [];
+            }
+
+            function coResearchMembers(p) {
+                const list = uniqueCoResearch(getCoResearchList(p));
+                return list.map(c => {
+                    const name = c.name || '-';
+                    const unitLabel = coResearchUnitLabel(c);
+                    const unit = c.affiliation || unitLabel || '';
+                    return {
+                        name,
+                        unit,
+                        unitLabel
+                    };
+                });
+            }
+
             function applyProjectSort(items, mode) {
                 const safe = (v) => (v ?? '').toString();
                 const num = (v) => Number(v || 0);
@@ -834,21 +890,203 @@
                 const {
                     title,
                     rows,
-                    includeFunding
+                    includeFunding,
+                    modalType
                 } = state;
                 if (!rows.length) {
                     showModal(title, `<div class="text-center text-gray-500">ไม่มีข้อมูลโครงการ</div>`);
                     return;
                 }
+
+                if (modalType === 'redzone' || modalType === 'overdue') {
+                    const now = new Date();
+                    const pageSize = state.pageSize || 10;
+                    const yearOptions = Array.from(new Set(rows.map(endYearLabel))).sort();
+                    const activeYear = state.yearFilter || '';
+
+                    const filtered = activeYear ? rows.filter(p => endYearLabel(p) === activeYear) : rows.slice();
+                    const sorted = applyProjectSort(filtered, mode || 'name_asc');
+                    const totalPages = Math.max(Math.ceil(sorted.length / pageSize), 1);
+                    state.page = Math.min(Math.max(state.page || 1, 1), totalPages);
+                    const start = (state.page - 1) * pageSize;
+                    const pageRows = sorted.slice(start, start + pageSize);
+
+                    let html = `
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                            <div class="text-xs text-slate-500">ทั้งหมด ${sorted.length} รายการ</div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs text-gray-500">ปี:
+                                    <select id="modalYearFilter" class="ml-1 border rounded px-2 py-1 text-xs">
+                                        <option value="">ทั้งหมด</option>
+                                        ${yearOptions.map(y => `<option value="${y}" ${activeYear === y ? 'selected' : ''}>${y}</option>`).join('')}
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="table-auto w-full border text-sm">
+                                <thead>
+                                    <tr class="bg-gray-100 text-xs text-gray-700">
+                                        <th class="p-2 text-center">#</th>
+                                        <th class="p-2 text-left">ชื่อโครงการ</th>
+                                        <th class="p-2 text-center">ปีสิ้นสุด</th>
+                                        <th class="p-2 text-center">${modalType === 'overdue' ? 'เกินกำหนด (วัน)' : 'คงเหลือ/เกิน (วัน)'}</th>
+                                        <th class="p-2 text-center">PI</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    if (!pageRows.length) {
+                        html += `<tr class="border-t"><td colspan="5" class="p-3 text-center text-gray-500">ไม่มีข้อมูล</td></tr>`;
+                    } else {
+                        pageRows.forEach((p, idx) => {
+                            const endDate = parseProjectDate(getEndDateRaw(p));
+                            const diffDays = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                            const diffLabel = diffDays == null ? '-' : (diffDays < 0 ? `${Math.abs(diffDays)}` : `${diffDays}`);
+                            html += `
+                                <tr class="border-t">
+                                    <td class="p-2 text-center">${start + idx + 1}</td>
+                                    <td class="p-2 text-left text-blue-700 hover:underline">
+                                        <a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a>
+                                    </td>
+                                    <td class="p-2 text-center">${formatDateTH(endDate, '-')}</td>
+                                    <td class="p-2 text-center ${diffDays < 0 ? 'text-red-600 font-semibold' : 'text-amber-600 font-semibold'}">${diffLabel}</td>
+                                    <td class="p-2 text-center">${p.pi_name || '-'}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
+                            <button id="modalPrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
+                            <div id="modalPagination">หน้า ${state.page} / ${totalPages}</div>
+                            <button id="modalNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                        </div>
+                    `;
+
+                    showModal(title, html);
+
+                    document.getElementById('modalYearFilter')?.addEventListener('change', (e) => {
+                        state.yearFilter = e.target.value;
+                        state.page = 1;
+                        renderProjectModal(state, mode);
+                    });
+                    document.getElementById('modalPrev')?.addEventListener('click', () => {
+                        state.page = Math.max((state.page || 1) - 1, 1);
+                        renderProjectModal(state, mode);
+                    });
+                    document.getElementById('modalNext')?.addEventListener('click', () => {
+                        state.page = (state.page || 1) + 1;
+                        renderProjectModal(state, mode);
+                    });
+                    return;
+                }
+
+                if (modalType === 'coresearch') {
+                    const sorted = applyProjectSort(rows, mode || 'name_asc');
+                    const filterUnit = state.unit || '';
+                    const allMembers = [];
+                    sorted.forEach(p => {
+                        coResearchMembers(p).filter(m => !filterUnit || m.unitLabel === filterUnit).forEach(m => {
+                            if (m.name && m.name !== '-') allMembers.push(m);
+                        });
+                    });
+                    const memberKey = (m) => `${m.name}||${m.unit || ''}`;
+                    const uniqueMembers = Array.from(new Map(allMembers.map(m => [memberKey(m), m])).values())
+                        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th'));
+                    const totalMembers = allMembers.length;
+
+                    let html = `
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                            <div class="text-xs text-slate-500">ทั้งหมด ${sorted.length} โครงการ • Co-Research ${totalMembers} คน (ไม่ซ้ำ ${uniqueMembers.length})</div>
+                            <button id="toggleAllMembers" class="border rounded px-3 py-1 text-xs hover:bg-gray-50">ดูรายชื่อทั้งหมด</button>
+                        </div>
+                        <div id="allMembersPanel" class="hidden mb-3 border rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+                            ${uniqueMembers.length ? uniqueMembers.map((m, i) => `${i + 1}. ${truncateText(m.name)}${m.unit ? ` (${truncateText(m.unit)})` : ''}`).join('<br>') : 'ไม่มีข้อมูลรายชื่อ'}
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="table-auto w-full border text-sm">
+                                <thead>
+                                    <tr class="bg-gray-100 text-xs text-gray-700">
+                                        <th class="p-2 text-center">#</th>
+                                        <th class="p-2 text-left">ชื่อโครงการ</th>
+                                        <th class="p-2 text-center">PI</th>
+                                        <th class="p-2 text-center">ปี</th>
+                                        <th class="p-2 text-center">จำนวน Co-Research</th>
+                                        <th class="p-2 text-center">รายละเอียด</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    if (!sorted.length) {
+                        html += `<tr class="border-t"><td colspan="6" class="p-3 text-center text-gray-500">ไม่มีข้อมูล</td></tr>`;
+                    } else {
+                        sorted.forEach((p, idx) => {
+                            const members = coResearchMembers(p)
+                                .filter(m => !filterUnit || m.unitLabel === filterUnit)
+                                .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th'));
+                            const memberList = members.length ?
+                                members.map((m, i) => `${i + 1}. ${truncateText(m.name)}${m.unit ? ` (${truncateText(m.unit)})` : ''}`)
+                                .join('<br>') :
+                                'ไม่มีข้อมูล';
+                            const rowId = `coresearchRow_${idx}`;
+                            html += `
+                                <tr class="border-t">
+                                    <td class="p-2 text-center">${idx + 1}</td>
+                                    <td class="p-2 text-left text-blue-700 hover:underline">
+                                        <a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a>
+                                    </td>
+                                    <td class="p-2 text-center">${p.pi_name || '-'}</td>
+                                    <td class="p-2 text-center">${p.start_year || '-'}</td>
+                                    <td class="p-2 text-center">${members.length}</td>
+                                    <td class="p-2 text-center">
+                                        <button class="toggleMembers border rounded px-2 py-1 text-xs hover:bg-gray-50" data-target="${rowId}">ดูรายละเอียด</button>
+                                    </td>
+                                </tr>
+                                <tr id="${rowId}" class="hidden border-t bg-slate-50">
+                                    <td colspan="6" class="p-2 text-xs text-slate-600">
+                                        ${memberList}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+
+                    showModal(title, html);
+                    document.getElementById('toggleAllMembers')?.addEventListener('click', () => {
+                        document.getElementById('allMembersPanel')?.classList.toggle('hidden');
+                    });
+                    document.querySelectorAll('.toggleMembers').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const target = e.currentTarget?.getAttribute('data-target');
+                            const row = target ? document.getElementById(target) : null;
+                            row?.classList.toggle('hidden');
+                        });
+                    });
+                    return;
+                }
+
                 const sorted = applyProjectSort(rows, mode || 'name_asc');
                 let html =
-                    `<table class="table-auto w-full border text-sm"><thead><tr><th class="p-2 text-left">ชื่อโครงการ</th><th class="p-2 text-center">PI</th><th class="p-2 text-center">ปี</th>`;
+                    `<table class="table-auto w-full border text-sm"><thead><tr><th class="p-2 text-center">#</th><th class="p-2 text-left">ชื่อโครงการ</th><th class="p-2 text-center">PI</th><th class="p-2 text-center">ปี</th>`;
                 if (includeFunding) {
                     html += `<th class="p-2 text-center">แหล่งทุน</th><th class="p-2 text-right">งบที่ได้รับ</th>`;
                 }
                 html += `</tr></thead><tbody>`;
-                sorted.forEach(p => {
-                    html += `<tr class="border-t"><td class="p-2 text-blue-700 hover:underline"><a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a></td><td class="p-2 text-center">${p.pi_name || '-'}</td><td class="p-2 text-center">${p.start_year || '-'}</td>`;
+                sorted.forEach((p, idx) => {
+                    html += `<tr class="border-t"><td class="p-2 text-center">${idx + 1}</td><td class="p-2 text-blue-700 hover:underline"><a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a></td><td class="p-2 text-center">${p.pi_name || '-'}</td><td class="p-2 text-center">${p.start_year || '-'}</td>`;
                     if (includeFunding) {
                         const source = getFundingSource(p) || 'ไม่ระบุ';
                         const budget = Number(getBudget(p) || 0);
@@ -866,7 +1104,13 @@
                 window.chartModalState = {
                     title,
                     rows,
-                    includeFunding
+                    includeFunding,
+                    modalType: options.modalType || null,
+                    unit: options.unit || '',
+                    windowMonths: options.windowMonths || null,
+                    yearFilter: options.yearFilter || '',
+                    page: 1,
+                    pageSize: 10
                 };
                 const sortSelect = document.getElementById('chartModalSort');
                 renderProjectModal(window.chartModalState, sortSelect?.value);
@@ -1229,7 +1473,8 @@
                     });
                     return {
                         title: `โครงการ ${bucket}`,
-                        projects: list
+                        projects: list,
+                        modalType: 'redzone'
                     };
                 }
 
@@ -1245,7 +1490,8 @@
                     });
                     return {
                         title: labelText,
-                        projects: list
+                        projects: list,
+                        modalType: 'overdue'
                     };
                 }
 
@@ -1263,7 +1509,7 @@
                         if (!endDate) return false;
                         const diffMonths = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.4375);
                         if (diffMonths < 0 || diffMonths > maxMonths) return false;
-                        const coList = p.co_researches || p.coResearches || [];
+                        const coList = getCoResearchList(p);
                         return coList.some(c => {
                             const raw = c.unit_status || c.affiliation || c.unit || c.department || 'ไม่ระบุ';
                             return String(raw || '').trim() === unit;
@@ -1271,7 +1517,10 @@
                     });
                     return {
                         title: `${unit} (${windowLabel})`,
-                        projects: list
+                        projects: list,
+                        modalType: 'coresearch',
+                        unit,
+                        windowMonths: maxMonths
                     };
                 }
 
@@ -1324,7 +1573,10 @@
                 if (!points || !points.length) return;
                 const result = resolveProjectsForChart(chart, points[0]);
                 if (result) showProjectList(result.title, result.projects, {
-                    includeFunding: result.includeFunding
+                    includeFunding: result.includeFunding,
+                    modalType: result.modalType,
+                    unit: result.unit,
+                    windowMonths: result.windowMonths
                 });
             }
 
@@ -3141,7 +3393,8 @@
                 // --- Chart 2: Overdue Projects (Gauge) ---
                 const elOverdue = document.getElementById('chartOverdueProjects');
                 if (elOverdue) {
-                    const totalProjects = projects.length || 1;
+                    const projectsWithEndDate = projects.filter(p => parseProjectDate(getEndDateRaw(p)));
+                    const totalProjects = projectsWithEndDate.length || 1;
                     const overdueCount = overdueProjects.length;
                     const remainingCount = Math.max(totalProjects - overdueCount, 0);
 
@@ -3262,44 +3515,31 @@
                 renderOverdueTable();
 
                 // --- Co-Research by Unit within 3/6/12 months ---
-                const buckets = {
-                    '3': new Map(),
-                    '6': new Map(),
-                    '12': new Map()
-                };
+                const unitLabel = (c) => coResearchUnitLabel(c);
 
-                const unitLabel = (c) => {
-                    const raw = c.unit_status || c.affiliation || c.unit || c.department || 'ไม่ระบุ';
-                    const text = String(raw || '').trim();
-                    return text || 'ไม่ระบุ';
-                };
-
+                const unitLabels = new Set();
                 projects.forEach(p => {
                     const endDate = parseProjectDate(getEndDateRaw(p));
                     if (!endDate) return;
-
-                    const diffDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-                    const diffMonths = diffDays / 30.4375;
-                    let bucket = null;
-
-                    if (diffMonths <= 3) bucket = '3';
-                    else if (diffMonths <= 6) bucket = '6';
-                    else if (diffMonths <= 12) bucket = '12';
-                    else return;
-
-                    const list = p.co_researches || p.coResearches || [];
-                    list.forEach(c => {
-                        const label = unitLabel(c);
-                        buckets[bucket].set(label, (buckets[bucket].get(label) || 0) + 1);
-                    });
+                    const diffMonths = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.4375);
+                    if (diffMonths < 0 || diffMonths > 12) return;
+                    const list = uniqueCoResearch(getCoResearchList(p));
+                    list.forEach(c => unitLabels.add(unitLabel(c)));
                 });
-
-                const unitLabels = new Set([
-                    ...buckets['3'].keys(),
-                    ...buckets['6'].keys(),
-                    ...buckets['12'].keys()
-                ]);
                 const unitList = [...unitLabels].sort();
+
+                const countByUnitWithin = (unit, maxMonths) => {
+                    let total = 0;
+                    projects.forEach(p => {
+                        const endDate = parseProjectDate(getEndDateRaw(p));
+                        if (!endDate) return;
+                        const diffMonths = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.4375);
+                        if (diffMonths < 0 || diffMonths > maxMonths) return;
+                        const members = coResearchMembers(p).filter(m => m.unitLabel === unit);
+                        total += members.length;
+                    });
+                    return total;
+                };
 
                 const elCoResearch = document.getElementById('chartCoResearchByUnitWindow');
                 if (elCoResearch && unitList.length) {
@@ -3340,17 +3580,17 @@
                             labels: unitList,
                             datasets: [{
                                     label: 'ภายใน 3 เดือน',
-                                    data: unitList.map(u => buckets['3'].get(u) || 0),
+                                    data: unitList.map(u => countByUnitWithin(u, 3)),
                                     backgroundColor: '#0f766e'
                                 },
                                 {
                                     label: 'ภายใน 6 เดือน',
-                                    data: unitList.map(u => buckets['6'].get(u) || 0),
+                                    data: unitList.map(u => countByUnitWithin(u, 6)),
                                     backgroundColor: '#c0841a'
                                 },
                                 {
                                     label: 'ภายใน 1 ปี',
-                                    data: unitList.map(u => buckets['12'].get(u) || 0),
+                                    data: unitList.map(u => countByUnitWithin(u, 12)),
                                     backgroundColor: '#475569'
                                 }
                             ]
