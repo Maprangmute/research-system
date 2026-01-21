@@ -260,7 +260,7 @@
         <div class="lux-card p-4 md:p-5">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <div>
-                    <h3 class="text-lg font-semibold text-slate-800">ตัวกรองและการส่งออกข้อมูล</h3>
+                    <h3 class="text-lg font-semibold text-slate-800">สร้างเอกสารสรุปข้อมูลทั้งหมด</h3>
                     <p class="text-xs text-slate-500">คัดกรองข้อมูลให้ตรงกับช่วงเวลาหรือธีมที่ต้องการ</p>
                 </div>
             </div>

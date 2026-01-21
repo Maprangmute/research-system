@@ -35,6 +35,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [OtpPasswordResetController::class, 'reset'])->name('password.update');
 });
 
+Route::middleware(['auth'])->group(function () {
+    Route::view('/user-guide', 'user_guide')->name('user_guide');
+});
+
 
 
 Route::middleware(['auth'])->group(function () {

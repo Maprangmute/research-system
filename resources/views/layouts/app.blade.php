@@ -85,6 +85,7 @@
                                 ตำแหน่ง: {{ Auth::user()->position }} ({{ Auth::user()->role }})
                             </div>
                         </div>
+                        <a href="{{ route('user_guide') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">📘 คู่มือ</a>
 
                         @if (Auth::user()->role === 'admin')
                             <a href="/user" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
