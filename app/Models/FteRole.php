@@ -38,21 +38,20 @@ class FteRole extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $fte->project->project_name_th ?? '',
                 'action'          => 'fte_create',
-                'changes'         => $fte->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($fte->toArray()),
             ]);
         });
 
         // Log update
         static::updating(function ($fte) {
-            $diff = $fte->getDirty();
-            unset($diff['updated_at']);
-            if (!empty($diff)) {
+            $changes = ProjectLog::buildUpdateChanges($fte);
+            if (!empty($changes)) {
                 ProjectLog::create([
                     'project_id'      => $fte->project_id,
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $fte->project->project_name_th ?? '',
                     'action'          => 'fte_update',
-                    'changes'         => $diff,
+                    'changes'         => $changes,
                 ]);
             }
         });
@@ -64,7 +63,7 @@ class FteRole extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $fte->project->project_name_th ?? '',
                 'action'          => 'fte_delete',
-                'changes'         => $fte->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($fte->toArray()),
             ]);
         });
 

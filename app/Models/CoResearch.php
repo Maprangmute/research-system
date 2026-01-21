@@ -26,21 +26,20 @@ class CoResearch extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $co->project->project_name_th ?? '',
                 'action'          => 'coresearch_create',
-                'changes'         => $co->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($co->toArray()),
             ]);
         });
 
         // Log update
         static::updating(function ($co) {
-            $diff = $co->getDirty();
-            unset($diff['updated_at']);
-            if (!empty($diff)) {
+            $changes = ProjectLog::buildUpdateChanges($co);
+            if (!empty($changes)) {
                 ProjectLog::create([
                     'project_id'      => $co->project_id,
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $co->project->project_name_th ?? '',
                     'action'          => 'coresearch_update',
-                    'changes'         => $diff,
+                    'changes'         => $changes,
                 ]);
             }
         });
@@ -52,7 +51,7 @@ class CoResearch extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $co->project->project_name_th ?? '',
                 'action'          => 'coresearch_delete',
-                'changes'         => $co->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($co->toArray()),
             ]);
         });
     }

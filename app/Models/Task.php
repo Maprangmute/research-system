@@ -28,21 +28,20 @@ class Task extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $task->project->project_name_th ?? '',
                 'action'          => 'task_create',
-                'changes'         => $task->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($task->toArray()),
             ]);
         });
 
         // Log update
         static::updating(function ($task) {
-            $diff = $task->getDirty();
-            unset($diff['updated_at']);
-            if (!empty($diff)) {
+            $changes = ProjectLog::buildUpdateChanges($task);
+            if (!empty($changes)) {
                 ProjectLog::create([
                     'project_id'      => $task->project_id,
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $task->project->project_name_th ?? '',
                     'action'          => 'task_update',
-                    'changes'         => $diff,
+                    'changes'         => $changes,
                 ]);
             }
         });
@@ -54,7 +53,7 @@ class Task extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $task->project->project_name_th ?? '',
                 'action'          => 'task_delete',
-                'changes'         => $task->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($task->toArray()),
             ]);
         });
     }

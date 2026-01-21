@@ -77,21 +77,20 @@ class Project extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $project->project_name_th,
                 'action'          => 'create',
-                'changes'         => $project->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($project->toArray()),
             ]);
         });
 
         // Log update (เฉพาะ field ที่เปลี่ยน ไม่รวม updated_at)
         static::updating(function ($project) {
-            $diff = $project->getDirty();
-            unset($diff['updated_at']);
-            if (!empty($diff)) {
+            $changes = ProjectLog::buildUpdateChanges($project);
+            if (!empty($changes)) {
                 ProjectLog::create([
                     'project_id'      => $project->id,
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $project->project_name_th,
                     'action'          => 'update',
-                    'changes'         => $diff,
+                    'changes'         => $changes,
                 ]);
             }
         });
@@ -103,7 +102,7 @@ class Project extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $project->project_name_th,
                 'action'          => 'delete',
-                'changes'         => $project->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($project->toArray()),
             ]);
         });
 

@@ -19,49 +19,57 @@
                     <th class="border px-4 py-2 text-left">วันเวลา</th>
                     <th class="border px-4 py-2 text-left">โดย</th>
                     <th class="border px-4 py-2 text-left">เหตุการณ์</th>
-                    <th class="border px-4 py-2 text-left">รายละเอียด</th>
                     <th class="border px-4 py-2"></th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($logs as $log)
-                    <tr class="hover:bg-gray-100 transition">
-                        <td class="border px-4 py-2 text-xs text-gray-600 whitespace-nowrap">
-                            {{ \Carbon\Carbon::parse($log->created_at)->format('d/m/Y H:i') }}
-                        </td>
-                        <td class="border px-4 py-2">
-                            {{ $log->user?->prefix }}{{ $log->user?->name }}
-                        </td>
-                        <td class="border px-4 py-2">
-                            <span class="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                                {{ ucfirst($log->action) }}
-                            </span>
-                        </td>
-                        <td class="border px-4 py-2 text-xs max-w-xs">
-                            @if($log->changes)
-                                <details>
-                                    <summary class="cursor-pointer text-gray-600 select-none">ดูรายละเอียด</summary>
-                                    <div class="mt-2">
-                                    @foreach($log->changes as $k => $v)
-                                        <div><span class="text-gray-700 font-medium">{{ $k }}</span>: <span class="text-gray-600">{{ is_array($v) ? json_encode($v, JSON_UNESCAPED_UNICODE) : $v }}</span></div>
-                                    @endforeach
-                                    </div>
-                                </details>
-                            @else
-                                <span class="text-gray-400">-</span>
-                            @endif
-                        </td>
-                        <td class="border px-4 py-2 text-center">
-                            <form action="{{ route('project_logs.destroy', $log->id) }}" method="POST" class="inline delete-log-form">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:text-red-800 font-bold" title="ลบ log">
-                                    🗑️
+                @forelse($groupedLogs ?? [] as $group)
+                    @foreach($group as $log)
+                        @php
+                            $showMeta = $loop->first;
+                            $thaiDate = \Carbon\Carbon::parse($log->created_at)->addYears(543)->format('d/m/Y H:i:s');
+                            $userName = $log->user?->prefix . $log->user?->name;
+                        @endphp
+                        <tr class="hover:bg-gray-100 transition">
+                            <td class="border px-4 py-2 text-xs text-gray-600 whitespace-nowrap">
+                                @if($showMeta)
+                                    {{ $thaiDate }}
+                                @else
+                                    <span class="text-gray-300">—</span>
+                                @endif
+                            </td>
+                            <td class="border px-4 py-2">
+                                @if($showMeta)
+                                    {{ $userName }}
+                                @else
+                                    <span class="text-gray-300">—</span>
+                                @endif
+                            </td>
+                            <td class="border px-4 py-2">
+                                <span class="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                    {{ $log->entity_label }}: {{ $log->action_label }}
+                                </span>
+                            </td>
+                            <td class="border px-4 py-2 text-center">
+                                <button type="button" class="text-blue-700 hover:underline text-sm toggle-details" data-target="log-details-{{ $log->id }}">
+                                    ดูรายละเอียด
                                 </button>
-                            </form>
-                        </td>
-                    </tr>
+                                <form action="{{ route('project_logs.destroy', $log->id) }}" method="POST" class="inline delete-log-form">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-800 font-bold" title="ลบ log">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr id="log-details-{{ $log->id }}" class="hidden">
+                            <td colspan="4" class="border px-4 py-3 text-xs bg-gray-50">
+                                @include('project_logs._changes', ['log' => $log])
+                            </td>
+                        </tr>
+                    @endforeach
                 @empty
-                    <tr><td colspan="5" class="text-center py-8 text-gray-400">ไม่มี log ในระบบ</td></tr>
+                    <tr><td colspan="4" class="text-center py-8 text-gray-400">ไม่มี log ในระบบ</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -71,6 +79,15 @@
 {{-- SweetAlert confirm --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.toggle-details').forEach(function(button) {
+        button.addEventListener('click', function() {
+            var targetId = button.getAttribute('data-target');
+            var row = document.getElementById(targetId);
+            if (row) {
+                row.classList.toggle('hidden');
+            }
+        });
+    });
     document.querySelectorAll('.delete-log-form').forEach(function(form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();

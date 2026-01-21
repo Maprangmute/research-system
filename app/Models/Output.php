@@ -136,21 +136,20 @@ public function authors()
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $output->project->project_name_th ?? '',
                 'action'          => 'output_create',
-                'changes'         => $output->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($output->toArray()),
             ]);
         });
 
         // Log update (เฉพาะฟิลด์ที่เปลี่ยน)
         static::updating(function ($output) {
-            $diff = $output->getDirty();
-            unset($diff['updated_at']);
-            if (!empty($diff)) {
+            $changes = ProjectLog::buildUpdateChanges($output);
+            if (!empty($changes)) {
                 ProjectLog::create([
                     'project_id'      => $output->project_id,
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $output->project->project_name_th ?? '',
                     'action'          => 'output_update',
-                    'changes'         => $diff,
+                    'changes'         => $changes,
                 ]);
             }
         });
@@ -163,7 +162,7 @@ public function authors()
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $output->project->project_name_th ?? '',
                 'action'          => 'output_delete',
-                'changes'         => $output->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($output->toArray()),
             ]);
         });
     }
