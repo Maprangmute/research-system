@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @livewireStyles
 <script src="//unpkg.com/alpinejs" defer></script>
 
 
@@ -91,11 +92,14 @@
                             </a>
                         @endif
 
-                           @if (Auth::user()->role === 'admin')
+                       @if (Auth::user()->role === 'admin')
                             <a href="/project-logs" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
                                 📝 Project log
                             </a>
                         @endif
+                        <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
+                            👤 แก้ไขข้อมูลส่วนตัว
+                        </a>
 
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -112,9 +116,17 @@
 
     <!-- ✅ main ก็ใช้ container เช่นกัน -->
     <main class="container mx-auto px-4 py-6">
-        @yield('content')
+        @if (isset($header))
+            <div class="mb-4">{{ $header }}</div>
+        @endif
+        @if (isset($slot))
+            {{ $slot }}
+        @else
+            @yield('content')
+        @endif
     </main>
 
+    @livewireScripts
 </body>
 </html>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">

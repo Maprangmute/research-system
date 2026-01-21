@@ -90,6 +90,16 @@
                     </select>
                 </div>
 
+                <div>
+                    <label class="block text-sm text-gray-700 font-medium">รหัสผ่านใหม่ (ถ้าต้องการเปลี่ยน)</label>
+                    <input type="password" name="password" class="w-full border p-2 rounded" autocomplete="new-password">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-700 font-medium">ยืนยันรหัสผ่านใหม่</label>
+                    <input type="password" name="password_confirmation" class="w-full border p-2 rounded" autocomplete="new-password">
+                </div>
+
             </div>
 
             <div class="pt-4 text-right">

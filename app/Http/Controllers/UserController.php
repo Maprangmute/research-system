@@ -76,10 +76,17 @@ class UserController extends Controller
             'position' => 'nullable|string|max:255',
             'role'     => 'required|in:user,admin,user_all', // ✅ เพิ่ม user_all
             'avatar'   => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'password' => 'nullable|string|min:6|confirmed',
         ]);
 
         if ($request->hasFile('avatar')) {
             $validated['profile_photo_path'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        if (!empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
         }
 
         $user->update($validated);

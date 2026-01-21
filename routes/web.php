@@ -12,6 +12,7 @@ use App\Http\Controllers\OutputController;
 
 
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\Auth\OtpPasswordResetController;
 
 Route::get('/falldocs', [DocumentController::class, 'gate'])->name('docs.index');
 Route::get('/falldocs/login', [DocumentController::class, 'login'])->name('docs.login'); // <= GET
@@ -26,6 +27,13 @@ Route::get('/', function () {
     
 });
 Route::redirect('/', '/login');           // 302 ชั่วคราว (แนะนำ)
+
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [OtpPasswordResetController::class, 'showRequestForm'])->name('password.request');
+    Route::post('/forgot-password', [OtpPasswordResetController::class, 'sendOtp'])->name('password.email');
+    Route::get('/reset-password', [OtpPasswordResetController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [OtpPasswordResetController::class, 'reset'])->name('password.update');
+});
 
 
 

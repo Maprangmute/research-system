@@ -1,82 +1,63 @@
 <x-form-section submit="updateProfileInformation">
     <x-slot name="title">
-        {{ __('Profile Information') }}
+        ข้อมูลโปรไฟล์
     </x-slot>
 
     <x-slot name="description">
-        {{ __('Update your account\'s profile information and email address.') }}
+        แก้ไขข้อมูลส่วนตัวและอีเมลสำหรับเข้าสู่ระบบ
     </x-slot>
 
     <x-slot name="form">
         <!-- Profile Photo -->
         @if (Laravel\Jetstream\Jetstream::managesProfilePhotos())
-            <div x-data="{photoName: null, photoPreview: null}" class="col-span-6 sm:col-span-4">
-                <!-- Profile Photo File Input -->
-                <input type="file" id="photo" class="hidden"
-                            wire:model.live="photo"
-                            x-ref="photo"
-                            x-on:change="
-                                    photoName = $refs.photo.files[0].name;
-                                    const reader = new FileReader();
-                                    reader.onload = (e) => {
-                                        photoPreview = e.target.result;
-                                    };
-                                    reader.readAsDataURL($refs.photo.files[0]);
-                            " />
+            <div x-data="{photoName: null, photoPreview: null}" class="col-span-6">
+                <div class="flex flex-col md:flex-row md:items-center gap-6">
+                    <div class="flex items-center gap-6">
+                        <!-- Current Profile Photo -->
+                        <div class="mt-2" x-show="! photoPreview">
+                            <img src="{{ $this->user->profile_photo_path ? asset('storage/' . $this->user->profile_photo_path) : asset('images/default-avatar.png') }}"
+                                onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'"
+                                alt="{{ $this->user->name }}"
+                                class="rounded-full w-32 h-32 object-cover ring-4 ring-blue-100 shadow-sm">
+                        </div>
 
-                <x-label for="photo" value="{{ __('Photo') }}" />
-
-                <!-- Current Profile Photo -->
-                <div class="mt-2" x-show="! photoPreview">
-                    <img src="{{ $this->user->profile_photo_url }}" alt="{{ $this->user->name }}" class="rounded-full size-20 object-cover">
+                        <div>
+                            <x-label for="photo" value="รูปโปรไฟล์" />
+                            <p class="text-xs text-gray-500 mt-1">ติดต่อผู้ดูแลระบบเพื่อเปลี่ยนรูปโปรไฟล์</p>
+                        </div>
+                    </div>
                 </div>
-
-                <!-- New Profile Photo Preview -->
-                <div class="mt-2" x-show="photoPreview" style="display: none;">
-                    <span class="block rounded-full size-20 bg-cover bg-no-repeat bg-center"
-                          x-bind:style="'background-image: url(\'' + photoPreview + '\');'">
-                    </span>
-                </div>
-
-                <x-secondary-button class="mt-2 me-2" type="button" x-on:click.prevent="$refs.photo.click()">
-                    {{ __('Select A New Photo') }}
-                </x-secondary-button>
-
-                @if ($this->user->profile_photo_path)
-                    <x-secondary-button type="button" class="mt-2" wire:click="deleteProfilePhoto">
-                        {{ __('Remove Photo') }}
-                    </x-secondary-button>
-                @endif
-
-                <x-input-error for="photo" class="mt-2" />
             </div>
         @endif
 
-        <!-- Name -->
-        <div class="col-span-6 sm:col-span-4">
-            <x-label for="name" value="{{ __('Name') }}" />
-            <x-input id="name" type="text" class="mt-1 block w-full" wire:model="state.name" required autocomplete="name" />
-            <x-input-error for="name" class="mt-2" />
+        <!-- Name (readonly) -->
+        <div class="col-span-6 sm:col-span-3">
+            <x-label for="name" value="ชื่อ-นามสกุล" />
+            <div class="mt-1 w-full rounded border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700">
+                {{ $this->user->name }}
+            </div>
+            <input id="name" type="hidden" wire:model="state.name" />
+            <p class="mt-2 text-xs text-gray-500">ระบบไม่อนุญาตให้แก้ไขชื่อ-นามสกุล</p>
         </div>
 
         <!-- Email -->
-        <div class="col-span-6 sm:col-span-4">
-            <x-label for="email" value="{{ __('Email') }}" />
+        <div class="col-span-6 sm:col-span-3">
+            <x-label for="email" value="อีเมล" />
             <x-input id="email" type="email" class="mt-1 block w-full" wire:model="state.email" required autocomplete="username" />
             <x-input-error for="email" class="mt-2" />
 
             @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::emailVerification()) && ! $this->user->hasVerifiedEmail())
                 <p class="text-sm mt-2">
-                    {{ __('Your email address is unverified.') }}
+                    อีเมลนี้ยังไม่ได้ยืนยัน
 
                     <button type="button" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" wire:click.prevent="sendEmailVerification">
-                        {{ __('Click here to re-send the verification email.') }}
+                        คลิกเพื่อส่งอีเมลยืนยันอีกครั้ง
                     </button>
                 </p>
 
                 @if ($this->verificationLinkSent)
                     <p class="mt-2 font-medium text-sm text-green-600">
-                        {{ __('A new verification link has been sent to your email address.') }}
+                        ระบบได้ส่งลิงก์ยืนยันใหม่ไปยังอีเมลของคุณแล้ว
                     </p>
                 @endif
             @endif
@@ -85,11 +66,11 @@
 
     <x-slot name="actions">
         <x-action-message class="me-3" on="saved">
-            {{ __('Saved.') }}
+            บันทึกแล้ว
         </x-action-message>
 
         <x-button wire:loading.attr="disabled" wire:target="photo">
-            {{ __('Save') }}
+            บันทึก
         </x-button>
     </x-slot>
 </x-form-section>
