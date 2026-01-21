@@ -92,9 +92,9 @@
                         </td>
                         <td class="border px-4 py-2">
                             <div class="flex flex-wrap gap-2">
-                                @foreach($eventLabels as $label)
-                                    <span class="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
-                                        {{ $label }}
+                                @foreach($group as $log)
+                                    <span class="inline-block {{ $log->action_color_class }} px-2 py-0.5 rounded text-xs">
+                                        {{ $log->entity_label }}: {{ $log->action_label }}
                                     </span>
                                 @endforeach
                             </div>

@@ -82,6 +82,18 @@ class ProjectLog extends Model
         return $map[$this->action_verb] ?? ucfirst($this->action_verb);
     }
 
+    public function getActionColorClassAttribute(): string
+    {
+        $map = [
+            'create' => 'bg-green-100 text-green-700',
+            'update' => 'bg-blue-100 text-blue-700',
+            'delete' => 'bg-red-100 text-red-700',
+            'restore' => 'bg-amber-100 text-amber-700',
+        ];
+
+        return $map[$this->action_verb] ?? 'bg-slate-100 text-slate-700';
+    }
+
     private function actionMeta(): array
     {
         $action = (string) $this->action;

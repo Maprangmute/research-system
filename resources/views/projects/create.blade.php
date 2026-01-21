@@ -86,6 +86,23 @@
     <div class="max-w-5xl mx-auto mt-6 bg-white shadow-md rounded p-6">
         <h2 class="text-xl font-bold mb-6 text-gray-800">📋 เพิ่มข้อมูลโครงการวิจัย</h2>
 
+        <div id="autosave-banner" class="hidden mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="text-sm">
+                    <span class="font-semibold">พบข้อมูลที่ยังไม่ได้บันทึก</span>
+                    <span class="block text-xs text-amber-700" id="autosave-banner-meta"></span>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" class="px-3 py-1.5 rounded bg-amber-600 text-white text-sm" id="autosave-banner-restore">
+                        กู้คืน
+                    </button>
+                    <button type="button" class="px-3 py-1.5 rounded bg-amber-100 text-amber-900 text-sm" id="autosave-banner-discard">
+                        ทิ้งข้อมูล
+                    </button>
+                </div>
+            </div>
+        </div>
+
         @if (session('success'))
             <div class="mb-4 p-3 bg-green-100 text-green-700 rounded">
                 {{ session('success') }}
@@ -1572,7 +1589,7 @@
 
             /* ---------- dynamic rows ---------- */
             const maxIndex = (data, prefix) => {
-                let max = 0;
+                let max = -1;
                 Object.keys(data).forEach(k => {
                     const m = k.match(new RegExp(`^${prefix}\\[(\\d+)\\]`));
                     if (m) max = Math.max(max, parseInt(m[1], 10));
@@ -1580,13 +1597,77 @@
                 return max;
             };
 
-            const ensureRows = (count, addFn) => {
-                for (let i = 0; i < count; i++) addFn();
+            const addRepeatableRows = (id, maxIdx) => {
+                if (maxIdx < 1) return;
+                const btn = document.querySelector(`[data-repeatable-add="${id}"]`);
+                if (!btn) return;
+                for (let i = 0; i < maxIdx; i++) btn.click();
+            };
+
+            const syncOutputIndexes = () => {
+                document.querySelectorAll('[data-repeatable][data-id="output"] [data-repeatable-row]')
+                    .forEach((row, i) => row.setAttribute('data-index', i));
+            };
+
+            const collectOutputMeta = (data) => {
+                const typeMap = {};
+                const authorMax = {};
+                const confMax = {};
+
+                Object.keys(data).forEach(k => {
+                    let m = k.match(/^outputs\[(\d+)\]\[type\]/);
+                    if (m) typeMap[parseInt(m[1], 10)] = data[k];
+
+                    m = k.match(/^outputs\[(\d+)\]\[authors\]\[(\d+)\]/);
+                    if (m) {
+                        const oIdx = parseInt(m[1], 10);
+                        const aIdx = parseInt(m[2], 10);
+                        authorMax[oIdx] = Math.max(authorMax[oIdx] ?? -1, aIdx);
+                    }
+
+                    m = k.match(/^outputs\[(\d+)\]\[conferences\]\[(\d+)\]/);
+                    if (m) {
+                        const oIdx = parseInt(m[1], 10);
+                        const cIdx = parseInt(m[2], 10);
+                        confMax[oIdx] = Math.max(confMax[oIdx] ?? -1, cIdx);
+                    }
+                });
+
+                return { typeMap, authorMax, confMax };
+            };
+
+            const ensureOutputSections = (data) => {
+                const meta = collectOutputMeta(data);
+                syncOutputIndexes();
+
+                Object.entries(meta.typeMap).forEach(([idxStr, typeVal]) => {
+                    const idx = parseInt(idxStr, 10);
+                    const select = FORM.querySelector(`[name="outputs[${idx}][type]"]`);
+                    if (!select) return;
+                    select.value = typeVal;
+                    handleTypeChange(select);
+                });
+
+                Object.entries(meta.authorMax).forEach(([idxStr, maxIdx]) => {
+                    if (maxIdx < 1) return;
+                    const idx = parseInt(idxStr, 10);
+                    const row = FORM.querySelector(`[name="outputs[${idx}][title]"]`)?.closest('.output-row');
+                    const btn = row?.querySelector('.ea101-section button[onclick*="addAuthorRow"]');
+                    if (!btn || typeof addAuthorRow !== 'function') return;
+                    for (let i = 0; i < maxIdx; i++) addAuthorRow(btn);
+                });
+
+                Object.entries(meta.confMax).forEach(([idxStr, maxIdx]) => {
+                    if (maxIdx < 1) return;
+                    const idx = parseInt(idxStr, 10);
+                    const row = FORM.querySelector(`[name="outputs[${idx}][title]"]`)?.closest('.output-row');
+                    const btn = row?.querySelector('.ea103-section button[onclick*="addConferenceRow"]');
+                    if (!btn || typeof addConferenceRow !== 'function') return;
+                    for (let i = 0; i < maxIdx; i++) addConferenceRow(btn);
+                });
             };
 
             const applyForm = (data) => {
-
-
                 Object.entries(data).forEach(([name, value]) => {
                     const el = FORM.querySelector(`[name="${CSS.escape(name)}"]`);
                     if (!el) return;
@@ -1603,7 +1684,6 @@
                         bubbles: true
                     }));
                 });
-
             };
 
             const formatThaiDateTime = (timestamp) => {
@@ -1659,6 +1739,11 @@
                 }
             };
 
+            const banner = document.getElementById('autosave-banner');
+            const bannerMeta = document.getElementById('autosave-banner-meta');
+            const bannerRestore = document.getElementById('autosave-banner-restore');
+            const bannerDiscard = document.getElementById('autosave-banner-discard');
+
 
             document.addEventListener('DOMContentLoaded', () => {
                 const raw = localStorage.getItem(FORM_KEY);
@@ -1671,9 +1756,44 @@
                         return;
                     }
 
+                    if (banner && bannerMeta && bannerRestore && bannerDiscard) {
+                        const projectName =
+                            payload?.data?.project_name_th?.trim() || '— ยังไม่ได้ระบุชื่อโครงการ —';
+                        bannerMeta.textContent = `ชื่อโครงการ: ${projectName} · บันทึกล่าสุด: ${formatThaiDateTime(payload.ts)}`;
+                        banner.classList.remove('hidden');
+
+                        bannerRestore.onclick = () => {
+                            banner.classList.add('hidden');
+                            askRestore(payload, () => {
+                                const data = payload.data;
+                                addRepeatableRows('irb', maxIndex(data, 'irbs'));
+                                addRepeatableRows('copi', maxIndex(data, 'copis'));
+                                addRepeatableRows('coresearch', maxIndex(data, 'coresearch'));
+                                addRepeatableRows('fte', maxIndex(data, 'fte_roles'));
+                                addRepeatableRows('output', maxIndex(data, 'outputs'));
+                                ensureOutputSections(data);
+                                applyForm(data);
+                            }, () => localStorage.removeItem(FORM_KEY));
+                        };
+
+                        bannerDiscard.onclick = () => {
+                            localStorage.removeItem(FORM_KEY);
+                            banner.classList.add('hidden');
+                        };
+                    }
+
                     askRestore(
                         payload,
-                        () => applyForm(payload.data),
+                        () => {
+                            const data = payload.data;
+                            addRepeatableRows('irb', maxIndex(data, 'irbs'));
+                            addRepeatableRows('copi', maxIndex(data, 'copis'));
+                            addRepeatableRows('coresearch', maxIndex(data, 'coresearch'));
+                            addRepeatableRows('fte', maxIndex(data, 'fte_roles'));
+                            addRepeatableRows('output', maxIndex(data, 'outputs'));
+                            ensureOutputSections(data);
+                            applyForm(data);
+                        },
                         () => localStorage.removeItem(FORM_KEY)
                     );
 
@@ -1687,7 +1807,7 @@
     @if (session('success'))
         <script>
             (() => {
-                const FORM_KEY = `project_form_draft_user_{{ auth()->id() }}`;
+                const FORM_KEY = `autosave:project:{{ auth()->id() }}:${location.pathname}`;
                 localStorage.removeItem(FORM_KEY);
                 console.log('✅ Draft cleared after successful save');
             })();

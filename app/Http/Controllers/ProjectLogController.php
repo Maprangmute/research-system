@@ -9,11 +9,20 @@ use Illuminate\Support\Facades\Auth;
 
 class ProjectLogController extends Controller
 {
+    private function authorizeAdmin(): void
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'admin') {
+            abort(403);
+        }
+    }
+
     /**
      * แสดง log ทั้งหมด
      */
     public function index(Request $request)
     {
+        $this->authorizeAdmin();
         // ต้องการให้ดูทุก log หรือเฉพาะ admin ปรับ logic ได้
         $query = ProjectLog::with(['user', 'project'])->latest();
 
@@ -82,6 +91,7 @@ class ProjectLogController extends Controller
      */
     public function projectLogs($projectId)
     {
+        $this->authorizeAdmin();
         $project = Project::findOrFail($projectId);
         $logs = $project->logs()->with('user')->latest()->get();
         $groupedLogs = $logs->groupBy(function ($log) {
@@ -95,6 +105,7 @@ class ProjectLogController extends Controller
      */
     public function show($id)
     {
+        $this->authorizeAdmin();
         $log = ProjectLog::with(['user', 'project'])->findOrFail($id);
         return view('project_logs.show', compact('log'));
     }
@@ -104,6 +115,7 @@ class ProjectLogController extends Controller
      */
     public function destroy($id)
     {
+        $this->authorizeAdmin();
         $log = ProjectLog::findOrFail($id);
         // สามารถเพิ่ม permission เช็คว่าเป็น admin เท่านั้น
         $log->delete();
@@ -115,6 +127,7 @@ class ProjectLogController extends Controller
      */
     public function purgeOld(Request $request)
     {
+        $this->authorizeAdmin();
         $cutoff = now()->subMonths(3);
         $deleted = ProjectLog::where('created_at', '<', $cutoff)->delete();
 
