@@ -157,7 +157,7 @@
                         <option value="5000000-999999999" @selected(request('budget_range') === '5000000-999999999')>มากกว่า 5,000,000</option>
                     </select>
                 </label>
-                <label class="block md:col-span-2">
+                {{-- <label class="block md:col-span-2">
                     <span class="text-xs font-semibold text-slate-600">ช่วงงบประมาณ (เลื่อน)</span>
                     <div class="budget-range relative px-1 pt-6 pb-6">
                         <div id="budgetRangeTrack"
@@ -177,7 +177,7 @@
                         value="{{ request('budget_min', $budgetMin) }}">
                     <input type="hidden" name="budget_max" id="budgetMaxInput"
                         value="{{ request('budget_max', $budgetMax) }}">
-                </label>
+                </label> --}}
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">สถานะ FTE</span>
                     <select name="fte_status" class="w-full border border-slate-200 rounded-lg p-2">
