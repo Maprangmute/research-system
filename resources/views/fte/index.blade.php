@@ -194,9 +194,9 @@
                                                 <table class="w-full table-auto text-sm border border-slate-200 rounded-lg overflow-hidden">
 <thead class="bg-gray-100">
     <tr>
-        <th class="p-3 text-left font-semibold text-slate-700 min-w-[260px]">ชื่อโปรเจค</th>
+        <th class="p-3 text-left font-semibold text-slate-700 min-w-[260px]">ชื่อโปรเจค / งานนอกโครงการ</th>
         <th class="p-3 text-left font-semibold text-slate-700 min-w-[110px]">กลุ่ม</th>
-        <th class="p-3 text-left font-semibold text-slate-700 min-w-[160px]">ภาระงาน</th>
+        <th class="p-3 text-left font-semibold text-slate-700 min-w-[200px]">รายละเอียดงาน</th>
         <th class="p-3 text-center font-semibold text-slate-700 min-w-[130px]">วันที่เริ่ม</th>
         <th class="p-3 text-center font-semibold text-slate-700 min-w-[130px]">วันที่สิ้นสุด</th>
         <th class="p-3 text-center font-semibold text-slate-700 min-w-[110px]">จำนวนวันทำงาน</th>
@@ -206,10 +206,24 @@
 <tbody>
     @foreach ($items as $item)
         <tr class="{{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
-            <td class="p-3 text-blue-700 underline break-words whitespace-normal align-top">
-                <a href="{{ route('projects.show', $item->project->id) }}">
-                    {{ $item->project->project_name_th ?? '-' }}
-                </a>
+            <td class="p-3 break-words whitespace-normal align-top">
+                @if ($item->project?->id)
+                    <a href="{{ route('projects.show', $item->project->id) }}" class="text-blue-700 underline">
+                        {{ $item->project->project_name_th ?? '-' }}
+                    </a>
+                @else
+                    @php
+                        $backOfficeTitle = $item->task_detail ?? '-';
+                    @endphp
+                    @if (!empty($item->task_id))
+                        <a href="{{ route('back_office.show', $item->task_id) }}" class="text-blue-700 underline">
+                            {{ $backOfficeTitle }}
+                        </a>
+                    @else
+                        <span class="text-slate-800">{{ $backOfficeTitle }}</span>
+                    @endif
+                    <div class="text-gray-400 text-xs">งานนอกโครงการ</div>
+                @endif
             </td>
 
             <td class="p-3 break-words whitespace-normal align-top">
@@ -217,10 +231,7 @@
             </td>
 
             <td class="p-3 break-words whitespace-normal align-top">
-             <div>{{ $item->job_detail ?? '-' }}</div>
-                 <div class="text-gray-400 text-xs">
-                      {{ $item->task_detail ?? '-' }}
-                </div>
+                {{ $item->job_detail ?? '-' }}
             </td>
 
 

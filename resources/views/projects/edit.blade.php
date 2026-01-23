@@ -82,7 +82,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
 
-    <div class="max-w-5xl mx-auto mt-6 bg-white shadow-md rounded p-6">
+    <div class="project-form max-w-6xl mx-auto mt-6 bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
 
         <div class="mb-4">
             {{-- <a href="javascript:history.back()" class="text-blue-600 hover:underline text-base font-semibold">
@@ -521,7 +521,7 @@
             <h3 class="font-semibold text-lg text-blue-700 mb-2">รหัส IRB</h3>
             <div id="irb-code-container" class="space-y-2 mb-4">
                 @foreach ($project->irbs ?? [] as $i => $irb)
-                    <div id="irb-{{ $i }}" class="irb-row grid grid-cols-3 gap-2 items-center">
+                    <div id="irb-{{ $i }}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
                         <div class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span
                                     class="irb-index">{{ $i + 1 }}</span></span>
@@ -534,7 +534,7 @@
                             <input name="irbs[{{ $i }}][source]" value="{{ $irb['source'] }}"
                                 class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงาน">
                         </div>
-                        <div class="w-full flex gap-2 items-end">
+                        <div class="w-full flex flex-col sm:flex-row gap-2 items-end">
                             <div class="w-full relative">
                                 <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
                                 <input name="irbs[{{ $i }}][exp_date]" value="{{ $irb['exp_date'] ?? '' }}"
@@ -590,7 +590,7 @@
             <h3 class="text-balance text-blue-700 mb-2">รายชื่อผู้ร่วมวิจัย (COPI)</h3>
             <div id="copi-container" class="space-y-2 mb-4">
                 @foreach ($project->copis ?? [] as $i => $copi)
-                    <div id="copi-{{ $i }}" class="copi-row grid grid-cols-2 gap-4 items-center">
+                    <div id="copi-{{ $i }}" class="copi-row grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                         <label class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ {{ $i + 1 }}</span>
                             <input name="copis[{{ $i }}][name]"
@@ -599,7 +599,7 @@
                                 placeholder="ยศ ชื่อ-นามสกุล COPI">
                         </label>
 
-                        <div class="flex gap-2 w-full">
+                        <div class="flex flex-col sm:flex-row gap-2 w-full">
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่
                                     {{ $i + 1 }}</span>
@@ -631,14 +631,14 @@
                                 placeholder="ยศ ชื่อ-นามสกุล">
                         </label>
                         <!-- สังกัด + สถานะ + ปุ่มลบ -->
-                        <div class="grid grid-cols-12 gap-4 items-end">
-                            <label class="col-span-5">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <label class="col-span-12 md:col-span-5">
                                 <span class="block text-sm text-gray-700 mb-1">สังกัด</span>
                                 <input name="coresearch[{{ $i }}][affiliation]"
                                     value="{{ $co->affiliation }}" class="w-full border p-2 rounded"
                                     placeholder="สังกัด">
                             </label>
-                            <label class="col-span-5">
+                            <label class="col-span-12 md:col-span-5">
                                 <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน *</span>
                                 <select name="coresearch[{{ $i }}][unit_status]"
                                     class="w-full border p-2 rounded" required
@@ -660,7 +660,7 @@
                                     </option>
                                 </select>
                             </label>
-                            <div class="col-span-2 flex justify-end pt-6">
+                            <div class="col-span-12 md:col-span-2 flex justify-end md:pt-6">
                                 <button type="button"
                                     onclick="removeRow('coresearch-{{ $i }}', 'coresearch')"
                                     class="text-red-600 text-xl">✕</button>
@@ -1543,7 +1543,7 @@
             const id = `irb-${irbCodeIndex}`;
 
             container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="irb-row grid grid-cols-3 gap-2 items-center">
+        <div id="${id}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
             <div class="w-full">
                 <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span></span>
                 <input name="irbs[${irbCodeIndex}][code]" type="text" placeholder="ECxxxx" class="w-full border p-2 rounded">
@@ -1552,7 +1552,7 @@
                 <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span></span>
                 <input name="irbs[${irbCodeIndex}][source]" type="text" placeholder="ชื่อหน่วยงาน" class="w-full border p-2 rounded">
             </div>
-            <div class="w-full flex gap-2 items-end">
+            <div class="w-full flex flex-col sm:flex-row gap-2 items-end">
                 <div class="w-full relative">
                     <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
                     <input name="irbs[${irbCodeIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่">
@@ -1600,13 +1600,13 @@
             const labelNum = copiIndex + 1;
 
             container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="copi-row grid grid-cols-2 gap-4 items-center">
+        <div id="${id}" class="copi-row grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
             <label class="w-full">
                 <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${labelNum}</span></span>
                 <input name="copis[${copiIndex}][name]" list="userNames" type="text"
                     class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-นามสกุล">
             </label>
-            <div class="flex gap-2 w-full">
+            <div class="flex flex-col sm:flex-row gap-2 w-full">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${labelNum}</span></span>
                     <input name="copis[${copiIndex}][affiliation]" type="text"
@@ -2232,13 +2232,13 @@ console.log('[FTE AUTO] after=', fteField.value);
                     class="w-full border p-2 rounded" placeholder="ยศ ชื่อ-นามสกุล">
             </label>
 
-            <div class="grid grid-cols-12 gap-4 items-end">
-                <label class="col-span-5">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <label class="col-span-12 md:col-span-5">
                     <span class="block text-sm text-gray-700 mb-1">สังกัด</span>
                     <input name="coresearch[${coResearchIndex}][affiliation]" type="text"
                         class="w-full border p-2 rounded" placeholder="ป สังกัด">
                 </label>
-                <label class="col-span-5">
+                <label class="col-span-12 md:col-span-5">
                     <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน</span>
                     <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกสถานะหน่วยงาน')"
@@ -2249,7 +2249,7 @@ console.log('[FTE AUTO] after=', fteField.value);
                         <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ</option>
                     </select>
                 </label>
-                <div class="col-span-2 flex justify-end pt-6">
+                <div class="col-span-12 md:col-span-2 flex justify-end md:pt-6">
                     <button type="button" onclick="removeRow('${id}', 'coresearch')" class="text-red-600 text-xl">✕</button>
                 </div>
             </div>

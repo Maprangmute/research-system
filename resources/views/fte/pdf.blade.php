@@ -106,9 +106,9 @@
         <table class="small">
             <thead>
                 <tr>
-                    <th>โครงการ</th>
+                    <th>ชื่อโปรเจค / งานนอกโครงการ</th>
                     <th>กลุ่ม</th>
-                    <th>ภาระงาน</th>
+                    <th>รายละเอียดงาน</th>
                     <th class="center">ช่วงเวลา</th>
                     <th class="center">ชั่วโมง</th>
                     <th class="center">วัน</th>
@@ -125,9 +125,18 @@
                         $oe = $oeCarbon->locale('th')->translatedFormat('j F');
                         $osYear = $osCarbon->year + 543;
                         $oeYear = $oeCarbon->year + 543;
+                        $title = $item->project?->id
+                            ? ($item->project->project_name_th ?? '-')
+                            : ($item->task_detail ?? '-');
+                        $isBackOffice = !$item->project?->id;
                     @endphp
                     <tr>
-                        <td>{{ $item->project->project_name_th ?? '-' }}</td>
+                        <td>
+                            {{ $title }}
+                            @if ($isBackOffice)
+                                <div class="muted small">งานนอกโครงการ</div>
+                            @endif
+                        </td>
                         <td>{{ $item->role_group ?? '-' }}</td>
                         <td>{{ $item->job_detail ?? '-' }}</td>
                         <td class="center">{{ $os }} {{ $osYear }} - {{ $oe }} {{ $oeYear }}</td>

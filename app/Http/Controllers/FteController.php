@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\FteRole;
 use App\Models\Project;
+use App\Models\BackOfficeEntry;
+use App\Models\BackOfficeTask;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
@@ -44,6 +46,7 @@ public function index(Request $request)
             'project_id',
             'name',
             'fte_value',
+            'hours',
             'start_date',
             'end_date',
             'role_group',
@@ -51,6 +54,27 @@ public function index(Request $request)
             'task_detail'
         ])
         ->whereIn('project_id', $projectIds);
+
+    $backOfficeQuery = BackOfficeEntry::query()
+        ->select([
+            'id',
+            'task_id',
+            'person_name',
+            'category',
+            'job_detail',
+            'hours',
+            'fte_value',
+        ])
+        ->with(['task:id,title,start_date,end_date,description,created_by']);
+
+    if ($user->role !== 'admin') {
+        $backOfficeQuery->where(function ($q) use ($fullName, $user) {
+            $q->where('person_name', $fullName)
+                ->orWhereHas('task', function ($taskQ) use ($user) {
+                    $taskQ->where('created_by', $user->id);
+                });
+        });
+    }
 
     // ========== FILTER ==========
 
@@ -62,6 +86,10 @@ public function index(Request $request)
 
         $fteQuery->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$endOfYear->format('Y-m-d H:i:s')])
                  ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$startOfYear->format('Y-m-d H:i:s')]);
+
+        $backOfficeQuery
+            ->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$endOfYear->format('Y-m-d H:i:s')])
+            ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$startOfYear->format('Y-m-d H:i:s')]);
     }
 
     // รายเดือน (เดือนนี้)
@@ -72,6 +100,10 @@ public function index(Request $request)
 
         $fteQuery->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$mEnd->format('Y-m-d H:i:s')])
                  ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$mStart->format('Y-m-d H:i:s')]);
+
+        $backOfficeQuery
+            ->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$mEnd->format('Y-m-d H:i:s')])
+            ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$mStart->format('Y-m-d H:i:s')]);
     }
 
     // custom range
@@ -82,14 +114,45 @@ public function index(Request $request)
 
             $fteQuery->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$to->format('Y-m-d H:i:s')])
                      ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$from->format('Y-m-d H:i:s')]);
+
+            $backOfficeQuery
+                ->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$to->format('Y-m-d H:i:s')])
+                ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$from->format('Y-m-d H:i:s')]);
         } catch (\Exception $e) {}
     }
 
     if ($person) {
         $fteQuery->where('name', $person);
+        $backOfficeQuery->where('person_name', $person);
     }
 
     $fteRows = $fteQuery->with(['project:id,project_name_th'])->get();
+
+    $backOfficeRows = $backOfficeQuery->get()->map(function ($entry) {
+        $task = $entry->task;
+        $startDate = $entry->start_date ?: ($task?->start_date);
+        $endDate = $entry->end_date ?: ($task?->end_date);
+        $category = $this->backOfficeCategoryLabel($entry->category);
+        return (object) [
+            'id' => 'bo-' . $entry->id,
+            'task_id' => $task?->id,
+            'project_id' => null,
+            'name' => $entry->person_name,
+            'fte_value' => $entry->fte_value,
+            'hours' => $entry->hours,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'role_group' => $category,
+            'job_detail' => $entry->job_detail,
+            'task_detail' => $task?->title,
+            'project' => (object) [
+                'id' => null,
+                'project_name_th' => 'งานนอกโครงการ',
+            ],
+        ];
+    });
+
+    $fteRows = $fteRows->concat($backOfficeRows);
 
     // ==== Profile Map ====
     $users = \App\Models\User::select('prefix', 'name', 'profile_photo_path')->get();
@@ -224,11 +287,43 @@ public function index(Request $request)
     // years
     $years = FteRole::selectRaw('DISTINCT RIGHT(start_date,4) AS year')
         ->orderByDesc('year')
-        ->pluck('year')
+        ->pluck('year');
+
+    $backOfficeYearsQuery = BackOfficeTask::query();
+    if ($user->role !== 'admin') {
+        $backOfficeYearsQuery->where(function ($q) use ($fullName, $user) {
+            $q->where('created_by', $user->id)
+                ->orWhereHas('entries', function ($entryQ) use ($fullName) {
+                    $entryQ->where('person_name', $fullName);
+                });
+        });
+    }
+    $backOfficeYears = $backOfficeYearsQuery
+        ->selectRaw('DISTINCT RIGHT(start_date,4) AS year')
+        ->pluck('year');
+
+    $years = $years
+        ->merge($backOfficeYears)
+        ->filter()
+        ->unique()
+        ->sortDesc()
         ->map(fn($y) => (int)$y + 543);
 
     $personList = FteRole::whereIn('project_id', $projectIds)
         ->distinct()->orderBy('name')->pluck('name');
+
+    $backOfficePeopleQuery = BackOfficeEntry::query();
+    if ($user->role !== 'admin') {
+        $backOfficePeopleQuery->where(function ($q) use ($fullName, $user) {
+            $q->where('person_name', $fullName)
+                ->orWhereHas('task', function ($taskQ) use ($user) {
+                    $taskQ->where('created_by', $user->id);
+                });
+        });
+    }
+    $backOfficePeople = $backOfficePeopleQuery->distinct()->orderBy('person_name')->pluck('person_name');
+
+    $personList = $personList->merge($backOfficePeople)->filter()->unique()->values();
 
     return view('fte.index', [
         'fteSummary' => $fteSummary,
@@ -559,6 +654,10 @@ private function buildFteDetailData(string $person): array
         ->where('name', $person)
         ->get();
 
+    $backOffice = BackOfficeEntry::with('task')
+        ->where('person_name', $person)
+        ->get();
+
     $expanded = collect();
 
     foreach ($raw as $item) {
@@ -613,6 +712,72 @@ private function buildFteDetailData(string $person): array
                         'overlap_end'   => $overlapEnd->format('d M Y'),
                         'start_date'    => $item->start_date,
                         'end_date'      => $item->end_date,
+                    ]);
+                }
+
+                $cursor->addMonth();
+            }
+
+        } catch (\Exception $e) {}
+    }
+
+    foreach ($backOffice as $entry) {
+        try {
+            $startRaw = $entry->start_date ?: ($entry->task?->start_date);
+            $endRaw = $entry->end_date ?: ($entry->task?->end_date);
+            if (!$startRaw || !$endRaw) {
+                continue;
+            }
+
+            $formatStart = strpos($startRaw, '/') !== false ? 'd/m/Y' : 'd-m-Y';
+            $formatEnd   = strpos($endRaw,   '/') !== false ? 'd/m/Y' : 'd-m-Y';
+
+            $start = Carbon::createFromFormat($formatStart, $startRaw)->startOfDay();
+            $end   = Carbon::createFromFormat($formatEnd,   $endRaw)->endOfDay();
+
+            if ($start->gt($end)) continue;
+
+            $totalDays  = $start->diffInDays($end) + 1;
+            if ($totalDays <= 0) continue;
+
+            $ftePerDay = $entry->fte_value / $totalDays;
+            $hoursPerDay = $entry->hours
+                ? ((float) $entry->hours / $totalDays)
+                : 0;
+
+            $cursor = $start->copy()->startOfMonth();
+            while ($cursor <= $end) {
+
+                $mStart = $cursor->copy()->startOfMonth();
+                $mEnd   = $cursor->copy()->endOfMonth();
+
+                $overlapStart = $start->copy()->max($mStart);
+                $overlapEnd   = $end->copy()->min($mEnd);
+
+                if ($overlapStart->lte($overlapEnd)) {
+
+                    $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                    $hoursInMonth = $hoursPerDay * $daysInMonth;
+                    $fteMonth = $daysInMonth * $ftePerDay;
+
+                    $expanded->push((object)[
+                        'month'         => $cursor->format('Y-m'),
+                        'project'       => (object) [
+                            'id' => null,
+                            'project_name_th' => 'งานนอกโครงการ',
+                        ],
+                        'task_id'       => $entry->task?->id,
+                        'role_group'    => $this->backOfficeCategoryLabel($entry->category),
+                        'job_detail'    => $entry->job_detail,
+                        'task_detail'   => $entry->task?->title,
+                        'days_in_month' => $daysInMonth,
+                        'fte_per_day'   => $ftePerDay,
+                        'fte_value'     => $fteMonth,
+                        'hours_in_month' => $hoursInMonth,
+                        'overlap_start' => $overlapStart->format('d M Y'),
+                        'overlap_end'   => $overlapEnd->format('d M Y'),
+                        'start_date'    => $startRaw,
+                        'end_date'      => $endRaw,
                     ]);
                 }
 
@@ -747,26 +912,43 @@ private function buildFteProjectData(Project $project): array
         }
 
         $query = FteRole::with('project')->where('name', $name);
+        $backOfficeQuery = BackOfficeEntry::with('task')->where('person_name', $name);
 
         if ($mode === 'year' && $year) {
             $yearAD = ($year > 2500) ? $year - 543 : $year;
             $query->whereRaw('RIGHT(start_date, 4) = ?', [$yearAD]);
+            $backOfficeQuery->whereRaw('RIGHT(start_date, 4) = ?', [$yearAD]);
         } elseif ($mode === 'month') {
             $now    = now();
             $month  = str_pad($now->month, 2, '0', STR_PAD_LEFT);
             $yearAD = $now->year;
             $query->whereRaw('RIGHT(start_date, 7) = ?', ["{$month}-{$yearAD}"]);
+            $backOfficeQuery->whereRaw('RIGHT(start_date, 7) = ?', ["{$month}-{$yearAD}"]);
         } elseif ($mode === 'custom' && $start && $end) {
             try {
                 $from = \Carbon\Carbon::createFromFormat('d/m/Y', $start)->format('d-m-Y');
                 $to   = \Carbon\Carbon::createFromFormat('d/m/Y', $end)->format('d-m-Y');
                 $query->whereRaw('STR_TO_DATE(start_date, "%d-%m-%Y") >= ?', [$from])
                       ->whereRaw('STR_TO_DATE(end_date, "%d-%m-%Y") <= ?', [$to]);
+                $backOfficeQuery->whereRaw('STR_TO_DATE(start_date, "%d-%m-%Y") >= ?', [$from])
+                                ->whereRaw('STR_TO_DATE(end_date, "%d-%m-%Y") <= ?', [$to]);
             } catch (\Exception $e) {}
         }
 
-        $rows = $query->get()->groupBy(function ($item) {
+        $backOfficeRows = $backOfficeQuery->get()
+            ->filter(fn($entry) => !empty($entry->start_date))
+            ->map(function ($entry) {
+                return (object) [
+                    'start_date' => $entry->start_date,
+                    'fte_value' => $entry->fte_value,
+                ];
+            });
+
+        $rows = $query->get()->concat($backOfficeRows)->groupBy(function ($item) {
             try {
+                if (!is_string($item->start_date)) {
+                    return 'invalid';
+                }
                 $format = strpos($item->start_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
                 return \Carbon\Carbon::createFromFormat($format, $item->start_date)->format('Y-m');
             } catch (\Exception $e) {
@@ -788,6 +970,30 @@ private function buildFteProjectData(Project $project): array
             'labels' => $labels->values(),
             'data'   => $chartData,
         ]);
+    }
+
+    private function backOfficeCategoryLabel(?string $category): string
+    {
+        $map = [
+            'งานบริการด้านเอกสารงานวิจัย' => 'งานบริการด้านเอกสารงานวิจัย',
+            'งานบริการด้านการขอคำปรึกษางานวิจัย' => 'งานบริการด้านการขอคำปรึกษางานวิจัย',
+            'งานบริการหน่วยงาน' => 'งานบริการหน่วยงาน',
+            'งานบริการด้านทรัพยากรบุคคล' => 'งานบริการด้านทรัพยากรบุคคล',
+            'งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย' => 'งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย',
+            'งานบริการขนส่งสินค้าเเละเอกสาร' => 'งานบริการขนส่งสินค้าเเละเอกสาร',
+            'งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์' => 'งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์',
+            'งานด้านการสื่อสาร' => 'งานด้านการสื่อสาร',
+            'งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ' => 'งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ',
+            'งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์' => 'งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์',
+            'การจัดงานหรือเข้าร่วมงานนิทรรศการ' => 'การจัดงานหรือเข้าร่วมงานนิทรรศการ',
+            'การออกแบบหลักสูตร เเละ การเรียนการสอน' => 'การออกแบบหลักสูตร เเละ การเรียนการสอน',
+            'event' => 'event',
+            'work' => 'work',
+            'consult' => 'consult',
+            'other' => 'อื่นๆ',
+        ];
+
+        return $map[$category] ?? 'อื่นๆ';
     }
 
 }

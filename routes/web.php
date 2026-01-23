@@ -9,6 +9,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\TaskLinkController;
 use App\Http\Controllers\AiDashboardController;
 use App\Http\Controllers\OutputController;
+use App\Http\Controllers\BackOfficeController;
 
 
 use App\Http\Controllers\DocumentController;
@@ -194,6 +195,13 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/fte/project/{project}/pdf', [FteController::class, 'projectPdf'])->name('fte.project.pdf');
     Route::get('/fte/{person}/pdf', [FteController::class, 'exportPdf'])->name('fte.pdf');
     Route::get('/outputs', [OutputController::class, 'index'])->name('outputs.index');
+    Route::get('/back-office', [BackOfficeController::class, 'index'])->name('back_office.index');
+    Route::get('/back-office/create', [BackOfficeController::class, 'create'])->name('back_office.create');
+    Route::post('/back-office', [BackOfficeController::class, 'store'])->name('back_office.store');
+    Route::get('/back-office/{task}', [BackOfficeController::class, 'show'])->name('back_office.show');
+    Route::get('/back-office/{task}/edit', [BackOfficeController::class, 'edit'])->name('back_office.edit');
+    Route::put('/back-office/{task}', [BackOfficeController::class, 'update'])->name('back_office.update');
+    Route::get('/back-office/{task}/pdf', [BackOfficeController::class, 'pdf'])->name('back_office.pdf');
 
 
 

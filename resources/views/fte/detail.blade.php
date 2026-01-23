@@ -170,9 +170,9 @@
                             <table class="w-full text-sm">
                                 <thead class="bg-slate-50 border-b text-xs text-slate-600">
                                     <tr>
-                                        <th class="p-2 text-left">โครงการ</th>
+                                        <th class="p-2 text-left">ชื่อโปรเจค / งานนอกโครงการ</th>
                                         <th class="p-2 text-left">กลุ่ม</th>
-                                        <th class="p-2 text-left">ภาระงาน</th>
+                                        <th class="p-2 text-left">รายละเอียดงาน</th>
                                         <th class="p-2 text-center">ช่วงเวลา</th>
                                         <th class="p-2 text-center">ชั่วโมง</th>
                                         <th class="p-2 text-center">วัน</th>
@@ -192,9 +192,7 @@
                                             $projectName = $item->project->project_name_th ?? '-';
                                             $roleGroup = $item->role_group ?? '-';
                                             $jobDetailRaw = trim((string) ($item->job_detail ?? ''));
-                                            $taskDetailRaw = trim((string) ($item->task_detail ?? ''));
                                             $jobDetail = $jobDetailRaw !== '' ? $jobDetailRaw : '-';
-                                            $taskDetail = $taskDetailRaw !== '' ? $taskDetailRaw : '-';
                                         @endphp
                                         <tr class="border-b fte-row"
                                             data-project="{{ $projectName }}"
@@ -204,21 +202,32 @@
                                             data-year="{{ $carbon->year }}"
                                             data-fte="{{ $item->fte_value }}"
                                             data-hours="{{ $item->hours_in_month }}">
-                                            <td class="p-2 text-blue-700 hover:underline break-words max-w-[420px]">
+                                            <td class="p-2 break-words max-w-[420px]">
                                                 @if ($item->project?->id)
-                                                    <a href="{{ route('projects.show', $item->project->id) }}" target="_blank" rel="noopener">
+                                                    <a href="{{ route('projects.show', $item->project->id) }}" target="_blank" rel="noopener"
+                                                        class="text-blue-700 hover:underline">
                                                         {{ $projectName }}
                                                     </a>
                                                 @else
-                                                    {{ $projectName }}
+                                                    @php
+                                                        $backOfficeTitle = $item->task_detail ?? '-';
+                                                    @endphp
+                                                    @if (!empty($item->task_id))
+                                                        <a href="{{ route('back_office.show', $item->task_id) }}" target="_blank" rel="noopener"
+                                                            class="text-blue-700 hover:underline">
+                                                            {{ $backOfficeTitle }}
+                                                        </a>
+                                                    @else
+                                                        <span class="text-slate-800">{{ $backOfficeTitle }}</span>
+                                                    @endif
+                                                    <div class="text-xs text-slate-500 mt-1">งานนอกโครงการ</div>
                                                 @endif
                                             </td>
                                             <td class="p-2 break-words whitespace-normal">
                                                 {{ $roleGroup }}
                                             </td>
                                             <td class="p-2 break-words whitespace-normal">
-                                                <div>{{ $jobDetail }}</div>
-                                                <div class="text-xs text-slate-500 mt-1">{{ $taskDetail }}</div>
+                                                {{ $jobDetail }}
                                             </td>
                                             <td class="p-2 text-center">
                                                 {{ $os }} {{ $osYear }} - {{ $oe }} {{ $oeYear }}
@@ -277,7 +286,12 @@
             const projectNames = [];
             @foreach ($monthlyFTE as $month => $items)
                 @foreach ($items as $item)
-                    projectNames.push("{{ $item->project->project_name_th }}");
+                    @php
+                        $chartTitle = $item->project?->id
+                            ? ($item->project->project_name_th ?? '-')
+                            : ($item->task_detail ?? '-');
+                    @endphp
+                    projectNames.push(@json($chartTitle));
                 @endforeach
             @endforeach
 
@@ -291,8 +305,12 @@
 
                     @foreach ($monthlyFTE as $m => $items)
                         @foreach ($items as $item)
-                            if (monthKey === "{{ $m }}" && projectName ===
-                                "{{ $item->project->project_name_th }}") {
+                            @php
+                                $chartTitle = $item->project?->id
+                                    ? ($item->project->project_name_th ?? '-')
+                                    : ($item->task_detail ?? '-');
+                            @endphp
+                            if (monthKey === "{{ $m }}" && projectName === @json($chartTitle)) {
                                 total = {{ $item->fte_value }};
                             }
                         @endforeach

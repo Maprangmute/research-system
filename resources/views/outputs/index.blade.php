@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-gray-900">🧾 รายการ Output</h2>
-                <p class="text-sm text-slate-500">เรียงจากบันทึกล่าสุด → เก่าสุด และเชื่อมกลับไปยังโครงการ</p>
+                <p class="text-sm text-slate-500">เรียงจากบันทึกล่าสุด → เก่าสุด และเชื่อมกลับไปยังโครงการ/งานนอกโครงการ</p>
             </div>
             <a href="{{ route('projects.index') }}"
                 class="inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-slate-700 hover:bg-slate-50">
@@ -97,36 +97,28 @@
                             <th class="px-4 py-3 text-left">ชื่อผลงาน</th>
                             <th class="px-4 py-3 text-left">ประเภท</th>
                             <th class="px-4 py-3 text-center">ปี (พ.ศ.)</th>
-                            <th class="px-4 py-3 text-left">โครงการ</th>
+                            <th class="px-4 py-3 text-left">โครงการ/งานนอกโครงการ</th>
                             <th class="px-4 py-3 text-center">วันที่ลงข้อมูล</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
                         @forelse ($outputs as $output)
-                            @php
-                                $rawYear = trim((string) ($output->year ?? ''));
-                                $yearVal = null;
-                                if (preg_match('/\d{4}/', $rawYear, $m)) {
-                                    $yearVal = (int) $m[0];
-                                    if ($yearVal < 2400) {
-                                        $yearVal += 543;
-                                    }
-                                }
-                            @endphp
                             <tr class="hover:bg-indigo-50/40 transition">
                                 <td class="px-4 py-3 text-slate-800">
                                     {{ $output->title ?: '-' }}
                                 </td>
                                 <td class="px-4 py-3 text-slate-600">{{ $output->type ?: '-' }}</td>
-                                <td class="px-4 py-3 text-center text-slate-600">{{ $yearVal ?: '-' }}</td>
+                                <td class="px-4 py-3 text-center text-slate-600">{{ $output->year_be ?: '-' }}</td>
                                 <td class="px-4 py-3">
-                                    @if ($output->project)
-                                        <a href="{{ route('projects.show', $output->project->id) }}"
-                                            class="text-indigo-700 hover:underline">
-                                            {{ $output->project->project_name_th }}
+                                    @if ($output->link && $output->project_label)
+                                        <a href="{{ $output->link }}" class="text-indigo-700 hover:underline">
+                                            {{ $output->project_label }}
                                         </a>
                                     @else
                                         -
+                                    @endif
+                                    @if (!empty($output->detail))
+                                        <div class="text-xs text-slate-500 mt-1">ภาระงาน: {{ $output->detail }}</div>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-center text-slate-500">

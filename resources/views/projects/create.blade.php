@@ -83,7 +83,7 @@
 
 
 
-    <div class="max-w-5xl mx-auto mt-6 bg-white shadow-md rounded p-6">
+    <div class="project-form max-w-6xl mx-auto mt-6 bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
         <h2 class="text-xl font-bold mb-6 text-gray-800">📋 เพิ่มข้อมูลโครงการวิจัย</h2>
 
         <div id="autosave-banner" class="hidden mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
@@ -352,9 +352,9 @@
                 <div data-repeatable-container class="space-y-2">
 
                     {{-- แถวแรก --}}
-                    <div class="grid grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-gray-50" data-repeatable-row>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-gray-50" data-repeatable-row>
 
-                        <div class="col-span-1 text-center">
+                        <div class="col-span-12 md:col-span-1 text-center">
                             <span data-repeatable-index
                                 class="inline-flex w-8 h-8 items-center justify-center
                            rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
@@ -362,17 +362,17 @@
                             </span>
                         </div>
 
-                        <div class="col-span-3">
+                        <div class="col-span-12 md:col-span-3">
                             <label class="text-sm">รหัส IRB</label>
                             <input name="irbs[0][code]" class="w-full border p-2 rounded">
                         </div>
 
-                        <div class="col-span-3">
+                        <div class="col-span-12 md:col-span-3">
                             <label class="text-sm">หน่วยงาน</label>
                             <input name="irbs[0][source]" class="w-full border p-2 rounded">
                         </div>
 
-                        <div class="col-span-5 flex gap-2 items-end">
+                        <div class="col-span-12 md:col-span-5 flex flex-col sm:flex-row gap-2 items-end">
                             <x-date-be name="irbs[0][exp_date]" label="วันหมดอายุ IRB" required />
                             <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
                         </div>
@@ -382,9 +382,9 @@
 
                 {{-- template --}}
                 <x-slot:template>
-                    <div class="grid grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
 
-                        <div class="col-span-1 text-center">
+                        <div class="col-span-12 md:col-span-1 text-center">
                             <span data-repeatable-index
                                 class="inline-flex w-8 h-8 items-center justify-center
                            rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
@@ -392,17 +392,17 @@
                             </span>
                         </div>
 
-                        <div class="col-span-3">
+                        <div class="col-span-12 md:col-span-3">
                             <label class="text-sm">รหัส IRB</label>
                             <input name="irbs[__i__][code]" class="w-full border p-2 rounded">
                         </div>
 
-                        <div class="col-span-3">
+                        <div class="col-span-12 md:col-span-3">
                             <label class="text-sm">หน่วยงาน</label>
                             <input name="irbs[__i__][source]" class="w-full border p-2 rounded">
                         </div>
 
-                        <div class="col-span-5 flex gap-2 items-end">
+                        <div class="col-span-12 md:col-span-5 flex flex-col sm:flex-row gap-2 items-end">
                             <x-date-be name="irbs[__i__][exp_date]" label="วันหมดอายุ IRB" required />
                             <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
                         </div>
@@ -466,10 +466,10 @@
                 <div data-repeatable-container class="space-y-3 mb-4">
 
                     {{-- ================== แถวแรก ================== --}}
-                    <div class="grid grid-cols-12 gap-4 items-end p-3 border rounded-lg bg-gray-50" data-repeatable-row>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end p-3 border rounded-lg bg-gray-50" data-repeatable-row>
 
                         {{-- เลขลำดับ --}}
-                        <div class="col-span-1 text-center">
+                        <div class="col-span-12 md:col-span-1 text-center">
                             <span data-repeatable-index
                                 class="inline-flex w-8 h-8 items-center justify-center
                              rounded-full bg-yellow-100 text-yellow-700
@@ -479,7 +479,7 @@
                         </div>
 
                         {{-- ชื่อ COPI --}}
-                        <div class="col-span-5">
+                        <div class="col-span-12 md:col-span-5">
                             <label class="block text-sm text-gray-700 mb-1">
                                 ชื่อ COPI
                             </label>
@@ -490,7 +490,7 @@
                         </div>
 
                         {{-- สังกัด --}}
-                        <div class="col-span-5">
+                        <div class="col-span-12 md:col-span-5">
                             <label class="block text-sm text-gray-700 mb-1">
                                 สังกัด COPI
                             </label>
@@ -499,7 +499,7 @@
                         </div>
 
                         {{-- ลบ --}}
-                        <div class="col-span-1 text-center">
+                        <div class="col-span-12 md:col-span-1 flex justify-end md:justify-center">
                             <button type="button" class="text-red-600" data-repeatable-remove>
                                 ✕
                             </button>
@@ -510,9 +510,9 @@
 
                 {{-- ================== template ================== --}}
                 <x-slot:template>
-                    <div class="grid grid-cols-12 gap-4 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
 
-                        <div class="col-span-1 text-center">
+                        <div class="col-span-12 md:col-span-1 text-center">
                             <span data-repeatable-index
                                 class="inline-flex w-8 h-8 items-center justify-center
                              rounded-full bg-yellow-100 text-yellow-700
@@ -521,7 +521,7 @@
                             </span>
                         </div>
 
-                        <div class="col-span-5">
+                        <div class="col-span-12 md:col-span-5">
                             <label class="block text-sm text-gray-700 mb-1">
                                 ชื่อ COPI
                             </label>
@@ -531,7 +531,7 @@
                                 placeholder="คำนำหน้า ชื่อ-นามสกุล">
                         </div>
 
-                        <div class="col-span-5">
+                        <div class="col-span-12 md:col-span-5">
                             <label class="block text-sm text-gray-700 mb-1">
                                 สังกัด COPI
                             </label>
@@ -539,7 +539,7 @@
                                 placeholder="สังกัด COPI">
                         </div>
 
-                        <div class="col-span-1 text-center">
+                        <div class="col-span-12 md:col-span-1 flex justify-end md:justify-center">
                             <button type="button" class="text-red-600" data-repeatable-remove>
                                 ✕
                             </button>
@@ -575,15 +575,15 @@
                         </label>
 
                         {{-- แถวสังกัด + สถานะ + ลบ --}}
-                        <div class="grid grid-cols-12 gap-4 items-end">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
 
-                            <label class="col-span-5">
+                            <label class="col-span-12 md:col-span-5">
                                 <span class="block text-sm mb-1">สังกัด</span>
                                 <input name="coresearch[0][affiliation]" type="text" class="w-full border p-2 rounded"
                                     placeholder="สังกัด">
                             </label>
 
-                            <label class="col-span-5">
+                            <label class="col-span-12 md:col-span-5">
                                 <span class="block text-sm mb-1">
                                     คนภายนอก / ภายใน <span class="text-red-500">*</span>
                                 </span>
@@ -603,7 +603,7 @@
                                 </select>
                             </label>
 
-                            <div class="col-span-2 flex items-center justify-end pt-6">
+                            <div class="col-span-12 md:col-span-2 flex items-center justify-end md:pt-6">
                                 <button type="button" class="text-red-600 text-xl" data-repeatable-remove>
                                     ✕
                                 </button>
@@ -632,15 +632,15 @@
                                 class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล">
                         </label>
 
-                        <div class="grid grid-cols-12 gap-4 items-end">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
 
-                            <label class="col-span-5">
+                            <label class="col-span-12 md:col-span-5">
                                 <span class="block text-sm mb-1">สังกัด</span>
                                 <input name="coresearch[__i__][affiliation]" type="text"
                                     class="w-full border p-2 rounded" placeholder="สังกัด">
                             </label>
 
-                            <label class="col-span-5">
+                            <label class="col-span-12 md:col-span-5">
                                 <span class="block text-sm mb-1">
                                     คนภายนอก / ภายใน <span class="text-red-500">*</span>
                                 </span>
@@ -660,7 +660,7 @@
                                 </select>
                             </label>
 
-                            <div class="col-span-2 flex items-center justify-end pt-6">
+                            <div class="col-span-12 md:col-span-2 flex items-center justify-end md:pt-6">
                                 <button type="button" class="text-red-600 text-xl" data-repeatable-remove>
                                     ✕
                                 </button>
