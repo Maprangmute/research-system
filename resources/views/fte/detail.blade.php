@@ -1,6 +1,51 @@
 @extends('layouts.app')
 
 @section('content')
+    <script>
+        window.disableRowCollapse = true;
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.classList.add('no-row-collapse-summary');
+            document.body.classList.add('no-row-collapse-toggle');
+        });
+    </script>
+    <style>
+        @media (max-width: 768px) {
+            .fte-table thead {
+                display: none;
+            }
+
+            .fte-table,
+            .fte-table tbody,
+            .fte-table tr,
+            .fte-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .fte-table tr {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+                background: #ffffff;
+            }
+
+            .fte-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 6px 0;
+                text-align: left;
+            }
+
+            .fte-table td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #94a3b8;
+            }
+        }
+    </style>
     @php
         $allRows = $monthlyFTE->flatten(1);
         $projectCount = $allRows->pluck('project.id')->filter()->unique()->count();
@@ -167,7 +212,7 @@
 
                     <div class="border-t">
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
+                            <table class="fte-table w-full text-sm">
                                 <thead class="bg-slate-50 border-b text-xs text-slate-600">
                                     <tr>
                                         <th class="p-2 text-left">ชื่อโปรเจค / งานนอกโครงการ</th>
@@ -202,7 +247,7 @@
                                             data-year="{{ $carbon->year }}"
                                             data-fte="{{ $item->fte_value }}"
                                             data-hours="{{ $item->hours_in_month }}">
-                                            <td class="p-2 break-words max-w-[420px]">
+                                            <td class="p-2 break-words max-w-[420px]" data-label="โครงการ">
                                                 @if ($item->project?->id)
                                                     <a href="{{ route('projects.show', $item->project->id) }}" target="_blank" rel="noopener"
                                                         class="text-blue-700 hover:underline">
@@ -223,25 +268,25 @@
                                                     <div class="text-xs text-slate-500 mt-1">งานนอกโครงการ</div>
                                                 @endif
                                             </td>
-                                            <td class="p-2 break-words whitespace-normal">
+                                            <td class="p-2 break-words whitespace-normal" data-label="กลุ่ม">
                                                 {{ $roleGroup }}
                                             </td>
-                                            <td class="p-2 break-words whitespace-normal">
+                                            <td class="p-2 break-words whitespace-normal" data-label="รายละเอียดงาน">
                                                 {{ $jobDetail }}
                                             </td>
-                                            <td class="p-2 text-center">
+                                            <td class="p-2 text-center" data-label="ช่วงเวลา">
                                                 {{ $os }} {{ $osYear }} - {{ $oe }} {{ $oeYear }}
                                             </td>
-                                            <td class="p-2 text-center">
+                                            <td class="p-2 text-center" data-label="ชั่วโมง">
                                                 {{ number_format($item->hours_in_month, 2) }}
                                             </td>
-                                            <td class="p-2 text-center">
+                                            <td class="p-2 text-center" data-label="วัน">
                                                 {{ intval($item->days_in_month) }}
                                             </td>
-                                            <td class="p-2 text-center">
+                                            <td class="p-2 text-center" data-label="FTE/วัน">
                                                 {{ number_format($item->fte_per_day, 10) }}
                                             </td>
-                                            <td class="p-2 text-center font-semibold">
+                                            <td class="p-2 text-center font-semibold" data-label="FTE เดือนนี้">
                                                 {{ number_format($item->fte_value, 6) }}
                                             </td>
                                         </tr>
@@ -321,6 +366,12 @@
                 stack: 'stack'
             }));
 
+            const truncateLegendLabel = (text, max = 18) => {
+                const value = String(text ?? '');
+                if (value.length <= max) return value;
+                return value.slice(0, max - 1) + '…';
+            };
+
             new Chart(document.getElementById('fteStackedChart'), {
                 type: 'bar',
                 data: {
@@ -341,7 +392,25 @@
                     },
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                generateLabels: (chart) => {
+                                    const base = Chart.defaults.plugins.legend.labels.generateLabels;
+                                    return base(chart).map(item => ({
+                                        ...item,
+                                        text: truncateLegendLabel(item.text),
+                                    }));
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const name = ctx.dataset?.label || '';
+                                    const value = ctx.parsed?.y ?? ctx.raw;
+                                    return `${name}: ${value}`;
+                                }
+                            }
                         }
                     }
                 }

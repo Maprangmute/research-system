@@ -10,11 +10,11 @@
         }
         body {
             font-family: "thsarabun", Tahoma, sans-serif;
-            font-size: 13pt;
+            font-size: 14pt;
             color: #222;
         }
         h1 {
-            font-size: 20pt;
+            font-size: 21pt;
             margin: 0 0 6px 0;
         }
         .muted { color: #555; }
@@ -29,6 +29,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 12px;
+            table-layout: fixed;
         }
         th, td {
             border: 1px solid #d9e2f1;
@@ -38,7 +39,19 @@
         thead { background: #F2F6FF; }
         .right { text-align: right; }
         .center { text-align: center; }
-        .small { font-size: 11pt; }
+        .small { font-size: 12.5pt; }
+        .cell-wrap {
+            word-break: break-word;
+            white-space: normal;
+        }
+        .col-name { width: 18%; }
+        .col-role { width: 12%; }
+        .col-job { width: 20%; }
+        .col-period { width: 20%; }
+        .col-hours { width: 8%; }
+        .col-days { width: 6%; }
+        .col-fte-day { width: 8%; }
+        .col-fte-month { width: 8%; }
     </style>
 </head>
 <body>
@@ -121,14 +134,14 @@
         <table class="small">
             <thead>
                 <tr>
-                    <th>บุคคล</th>
-                    <th>กลุ่ม</th>
-                    <th>ภาระงาน</th>
-                    <th class="center">ช่วงเวลา</th>
-                    <th class="center">ชั่วโมง</th>
-                    <th class="center">วัน</th>
-                    <th class="center">FTE/วัน</th>
-                    <th class="center">FTE เดือนนี้</th>
+                    <th class="col-name">บุคคล</th>
+                    <th class="col-role">กลุ่ม</th>
+                    <th class="col-job">ภาระงาน</th>
+                    <th class="center col-period">ช่วงเวลา</th>
+                    <th class="center col-hours">ชั่วโมง</th>
+                    <th class="center col-days">วัน</th>
+                    <th class="center col-fte-day">FTE/วัน</th>
+                    <th class="center col-fte-month">FTE เดือนนี้</th>
                 </tr>
             </thead>
             <tbody>
@@ -140,9 +153,9 @@
                         $oe = $oeCarbon->locale('th')->translatedFormat('j F') . ' ' . ($oeCarbon->year + 543);
                     @endphp
                     <tr>
-                        <td>{{ $item->name ?? '-' }}</td>
+                        <td class="cell-wrap">{{ $item->name ?? '-' }}</td>
                         <td>{{ $item->role_group ?? '-' }}</td>
-                        <td>{{ $item->job_detail ?? '-' }}</td>
+                        <td class="cell-wrap">{{ $item->job_detail ?? '-' }}</td>
                         <td class="center">{{ $os }} - {{ $oe }}</td>
                         <td class="center">{{ number_format($item->hours_in_month, 2) }}</td>
                         <td class="center">{{ intval($item->days_in_month) }}</td>

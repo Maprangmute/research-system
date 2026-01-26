@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Research Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -28,12 +29,44 @@
 </head>
 
 <body class="bg-gray-100 text-gray-800">
+    <style>
+        .mobile-nav {
+            border-radius: 16px;
+            padding: 8px 12px;
+        }
+
+        .mobile-nav a.brand {
+            font-weight: 700;
+            color: #0f172a;
+            text-decoration: none;
+        }
+
+        .mobile-nav-toggle {
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+        }
+
+        .mobile-nav-links a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            color: #0f172a;
+            border: 1px solid #e5e7eb;
+        }
+
+        .mobile-nav-links a:hover {
+            background: #f1f5f9;
+        }
+    </style>
 
     <!-- ✅ เปลี่ยนจาก max-w-7xl เป็น container -->
     <nav class="bg-white shadow" x-data="{ openNav: false }">
         <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between gap-4">
-                <div class="font-bold">Research Dashboard</div>
+            <div class="flex items-center justify-between gap-4 mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
+                <a href="/dashboard" class="font-bold brand">Research Dashboard</a>
 
                 <div class="hidden md:flex items-center gap-4">
                     <a href="/dashboard" class="text-blue-600 hover:underline">📊 Dashboard</a>
@@ -116,7 +149,7 @@
                         </div>
                     </div>
 
-                    <button type="button" class="md:hidden p-2 rounded-lg border text-gray-600 hover:bg-gray-50"
+                    <button type="button" class="md:hidden p-2 mobile-nav-toggle text-gray-600 hover:bg-gray-50"
                         @click="openNav = !openNav" aria-label="Toggle navigation">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
                             viewBox="0 0 24 24">
@@ -127,16 +160,16 @@
                 </div>
             </div>
 
-            <div class="md:hidden" x-show="openNav" x-cloak>
-                <div class="pt-3 pb-2 border-t mt-3 flex flex-col gap-2">
-                    <a href="/dashboard" class="text-blue-600 hover:underline">📊 Dashboard</a>
-                    <a href="/rm" class="text-blue-600 hover:underline">📋 รายการโปรเจค</a>
-                    <a href="{{ route('back_office.index') }}" class="text-blue-600 hover:underline">🧾 Back Office</a>
-                    <a href="/rm/create" class="text-green-600 hover:underline">➕ เพิ่มโครงการ</a>
-                    <a href="{{ route('outputs.index') }}" class="text-green-600 hover:underline">📑 outputs</a>
+            <div class="md:hidden mt-3" x-show="openNav" x-cloak>
+                <div class="pt-3 pb-2 border-t flex flex-col gap-2 mobile-nav-links">
+                    <a href="/dashboard">📊 Dashboard</a>
+                    <a href="/rm">📋 รายการโปรเจค</a>
+                    <a href="{{ route('back_office.index') }}">🧾 Back Office</a>
+                    <a href="/rm/create">➕ เพิ่มโครงการ</a>
+                    <a href="{{ route('outputs.index') }}">📑 outputs</a>
                     <div class="text-gray-700 font-medium">🔥 FTE</div>
-                    <a href="{{ route('fte.index') }}" class="text-gray-600 hover:text-blue-600">FTE รายบุคคล</a>
-                    <a href="{{ route('fte.project.index') }}" class="text-gray-600 hover:text-blue-600">FTE รายโปรเจค</a>
+                    <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
+                    <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
                 </div>
             </div>
         </div>
@@ -246,6 +279,12 @@ function syncAltStyle(originalInput, inst) {
   if (ph) inst.altInput.placeholder = ph;
 
   inst.altInput.readOnly = true;
+
+  // hide the original input to avoid duplicate fields (mobile bug)
+  originalInput.classList.add('flatpickr-hidden');
+  originalInput.setAttribute('aria-hidden', 'true');
+  originalInput.tabIndex = -1;
+  originalInput.style.display = 'none';
 }
 
 /* ---------- บังคับ header เป็น พ.ศ. ทุกกรณี ---------- */
@@ -382,6 +421,10 @@ function forceHeaderBE(inst) {
 .row-collapse-summary {
   padding: 0.4rem 0.8rem;
 }
+.no-row-collapse-toggle .row-collapse-toggle,
+.no-row-collapse-toggle .row-collapse-summary {
+  display: none !important;
+}
 
 @media (max-width: 640px) {
   .row-collapse-summary {
@@ -397,6 +440,16 @@ function forceHeaderBE(inst) {
 <script>
 (function () {
   const COLLAPSIBLE_SELECTOR = '[data-repeatable-row], .irb-row, .copi-row, .coresearch-row, .fte-row, .output-row';
+  const isMobileViewport = () => window.matchMedia('(max-width: 640px)').matches;
+  const disableRowCollapse = () => window.disableRowCollapse === true;
+  const disableByRoute = () => {
+    const path = window.location?.pathname || '';
+    return /\/fte\/.+\/detail$/.test(path) || /\/fte\/project\/.+/.test(path);
+  };
+  const isCollapseDisabled = () =>
+    disableRowCollapse()
+    || disableByRoute()
+    || document.body.classList.contains('no-row-collapse-toggle');
 
   function getSiblings(row) {
     if (!row) return [];
@@ -435,6 +488,7 @@ function forceHeaderBE(inst) {
   }
 
   function ensureToggle(row) {
+    if (isCollapseDisabled()) return;
     if (row.querySelector('.row-collapse-toggle')) return;
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -451,6 +505,9 @@ function forceHeaderBE(inst) {
   }
 
   function ensureSummary(row) {
+    if (isCollapseDisabled()) return;
+    if (document.body.classList.contains('no-row-collapse-summary')) return;
+    if (isMobileViewport() && !window.enableRowCollapseSummaryOnMobile) return;
     if (row.querySelector('.row-collapse-summary')) return;
     const summary = document.createElement('div');
     summary.className = 'row-collapse-summary text-sm text-slate-700 mt-2 hidden';
@@ -644,6 +701,7 @@ function forceHeaderBE(inst) {
   function prepareRow(row) {
     if (!row || row.dataset.collapseReady === '1') return;
     row.dataset.collapseReady = '1';
+    if (isCollapseDisabled()) return;
     ensureToggle(row);
     updateSummary(row);
     row.querySelectorAll('input, select, textarea').forEach(el => {
@@ -677,6 +735,7 @@ function forceHeaderBE(inst) {
   }
 
   document.addEventListener('click', (e) => {
+    if (isCollapseDisabled()) return;
     const row = e.target?.closest?.(COLLAPSIBLE_SELECTOR);
     if (!row) {
       document.querySelectorAll(COLLAPSIBLE_SELECTOR).forEach(el => setCollapsed(el, true));
@@ -693,6 +752,7 @@ function forceHeaderBE(inst) {
   });
 
   document.addEventListener('focusin', (e) => {
+    if (isCollapseDisabled()) return;
     const row = e.target?.closest?.(COLLAPSIBLE_SELECTOR);
     if (!row) return;
     if (row.dataset.collapsed === '1') setCollapsed(row, false);
@@ -703,6 +763,7 @@ function forceHeaderBE(inst) {
   });
 
   function collapseSiblings(row) {
+    if (isCollapseDisabled()) return;
     const siblings = getSiblings(row);
     siblings.forEach(el => setCollapsed(el, el !== row));
   }
@@ -790,6 +851,14 @@ function forceHeaderBE(inst) {
   });
 
   document.addEventListener('DOMContentLoaded', () => {
+    if (isCollapseDisabled()) {
+      document.querySelectorAll('.row-collapse-toggle, .row-collapse-summary').forEach(el => el.remove());
+      document.querySelectorAll(COLLAPSIBLE_SELECTOR).forEach(row => {
+        row.classList.remove('row-collapsed');
+        row.dataset.collapsed = '0';
+      });
+      return;
+    }
     document.querySelectorAll(COLLAPSIBLE_SELECTOR).forEach(row => prepareRow(row));
     document.querySelectorAll('[data-repeatable]').forEach(group => {
       const container = document.getElementById(group.dataset.container);

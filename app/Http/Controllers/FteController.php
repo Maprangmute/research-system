@@ -255,7 +255,8 @@ public function index(Request $request)
                             'overlap_end'   => $overlapEnd,
                             'start_date'    => $item->start_date,
                             'end_date'      => $item->end_date,
-                            'task_detail'  => $item->task_detail,
+                            'task_detail'   => $item->task_detail,
+                            'task_id'       => $item->task_id ?? ($item->task?->id ?? null),
                         ]);
                     }
 

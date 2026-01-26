@@ -1,6 +1,88 @@
 @extends('layouts.app')
 
 @section('content')
+    <style>
+        @media (max-width: 768px) {
+
+            .fte-index-table thead {
+                display: none;
+            }
+
+            .fte-index-table,
+            .fte-index-table tbody,
+            .fte-index-table tr,
+            .fte-index-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .fte-index-table tr {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+                background: #ffffff;
+            }
+
+            .fte-index-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 6px 0;
+                text-align: left;
+            }
+
+            .fte-index-table td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #94a3b8;
+            }
+
+            .fte-index-table .fte-detail-row td {
+                display: block;
+            }
+
+            .fte-index-table .fte-detail-row td::before {
+                content: none;
+            }
+
+            .fte-detail-table thead {
+                display: none;
+            }
+
+            .fte-detail-table,
+            .fte-detail-table tbody,
+            .fte-detail-table tr,
+            .fte-detail-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .fte-detail-table tr {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+                background: #ffffff;
+            }
+
+            .fte-detail-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 6px 0;
+                text-align: left;
+            }
+
+            .fte-detail-table td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #94a3b8;
+            }
+        }
+    </style>
     <div class="max-w-6xl mx-auto p-4">
 
         <div class="mb-5 flex items-center gap-4">
@@ -65,7 +147,7 @@
                     <div class="flex gap-2 items-end w-full">
                         <div class="relative w-[130px]">
                             <input name="start" id="dateStart"
-                                class="rounded-lg border-gray-300 p-2 w-full pl-9 focus:ring-2 focus:ring-blue-200"
+                                class="js-date-be rounded-lg border-gray-300 p-2 w-full pl-9 focus:ring-2 focus:ring-blue-200"
                                 placeholder="วันเริ่มต้น" value="{{ $start ?? '' }}" autocomplete="off">
                             <span class="absolute left-2 top-2.5 text-gray-400">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
@@ -80,7 +162,7 @@
                         <span class="text-gray-500 mb-1">-</span>
                         <div class="relative w-[130px]">
                             <input name="end" id="dateEnd"
-                                class="rounded-lg border-gray-300 p-2 w-full pl-9 focus:ring-2 focus:ring-blue-200"
+                                class="js-date-be rounded-lg border-gray-300 p-2 w-full pl-9 focus:ring-2 focus:ring-blue-200"
                                 placeholder="วันสิ้นสุด" value="{{ $end ?? '' }}" autocomplete="off">
                             <span class="absolute left-2 top-2.5 text-gray-400">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
@@ -123,7 +205,7 @@
 
         <!-- Main Table -->
         <div class="overflow-x-auto bg-white rounded-xl shadow border">
-            <table class="min-w-full table-auto text-sm">
+            <table class="fte-index-table min-w-full table-auto text-sm">
                 <thead class="bg-gray-100 text-gray-800">
                     <tr>
                         <th class="px-4 py-3 text-left">ชื่อ</th>
@@ -135,7 +217,7 @@
                 <tbody>
                     @forelse($fteSummary as $row)
                         <tr class="border-t group hover:bg-blue-50 transition">
-                            <td class="px-4 py-2 font-medium flex items-center gap-2">
+                            <td class="px-4 py-2 font-medium flex items-center gap-2" data-label="ชื่อ">
                                 @php
                                     $profileImage = $profiles[$row->name] ?? null;
                                 @endphp
@@ -153,13 +235,13 @@
                                     {{ $row->name }}
                                 </a>
                             </td>
-                            <td class="px-4 py-2 text-right font-semibold text-green-600">
+                            <td class="px-4 py-2 text-right font-semibold text-green-600" data-label="FTE สะสม">
                                 {{ number_format($row->total_fte, 7) }}
                             </td>
-                            <td class="px-4 py-2 text-right">
+                            <td class="px-4 py-2 text-right" data-label="FTE เดือนนี้">
                                 {{ number_format($row->fte_this_month ?? 0, 7) }}
                             </td>
-                            <td class="px-4 py-2 text-center">
+                            <td class="px-4 py-2 text-center" data-label="รายละเอียด">
                                 <button type="button"
                                     class="px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 font-bold"
                                     onclick="toggleDetail('{{ $loop->index }}')"
@@ -168,7 +250,7 @@
                         </tr>
 
                         {{-- Detail Row --}}
-                        <tr id="detail-row-{{ $loop->index }}" class="hidden bg-blue-50 animate-fade-in">
+                        <tr id="detail-row-{{ $loop->index }}" class="fte-detail-row bg-blue-50 animate-fade-in">
                             <td colspan="4" class="px-6 py-4">
                                 @if (isset($monthlyFTE[$row->name]))
                                     @foreach ($monthlyFTE[$row->name] as $month => $items)
@@ -184,14 +266,14 @@
                                         @endphp
 
                                         <div class="mb-4 rounded-xl border border-blue-100 bg-blue-50">
-                                            <div class="flex items-center gap-2 px-4 py-2 border-b border-blue-100 bg-blue-100 rounded-t-xl font-semibold">
+                                            <div class="flex items-center gap-2 px-4 py-3 border-b border-blue-100 bg-blue-100 rounded-t-xl font-semibold text-base md:text-lg">
                                                 {{ $thaiMonth }} {{ $thaiYear }}
                                                 <span class="ml-auto text-green-600 font-bold">
                                                     FTE: {{ number_format($sum, 2) }}
                                                 </span>
                                             </div>
                                             <div class="p-2">
-                                                <table class="w-full table-auto text-sm border border-slate-200 rounded-lg overflow-hidden">
+                                                <table class="fte-detail-table w-full table-auto text-sm border border-slate-200 rounded-lg overflow-hidden">
 <thead class="bg-gray-100">
     <tr>
         <th class="p-3 text-left font-semibold text-slate-700 min-w-[260px]">ชื่อโปรเจค / งานนอกโครงการ</th>
@@ -206,7 +288,7 @@
 <tbody>
     @foreach ($items as $item)
         <tr class="{{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
-            <td class="p-3 break-words whitespace-normal align-top">
+            <td class="p-3 break-words whitespace-normal align-top" data-label="โปรเจค/งาน">
                 @if ($item->project?->id)
                     <a href="{{ route('projects.show', $item->project->id) }}" class="text-blue-700 underline">
                         {{ $item->project->project_name_th ?? '-' }}
@@ -215,10 +297,15 @@
                     @php
                         $backOfficeTitle = $item->task_detail ?? '-';
                     @endphp
-                    @if (!empty($item->task_id))
-                        <a href="{{ route('back_office.show', $item->task_id) }}" class="text-blue-700 underline">
-                            {{ $backOfficeTitle }}
-                        </a>
+                                            @php
+                                                $backOfficeId = $item->task_id ?? ($item->task?->id ?? null);
+                                            @endphp
+                                            @if (!is_null($backOfficeId))
+                                                <a href="{{ route('back_office.show', $backOfficeId) }}"
+                                                    class="text-blue-700 underline relative z-20 pointer-events-auto"
+                                                    onclick="event.stopPropagation();">
+                                                    {{ $backOfficeTitle }}
+                                                </a>
                     @else
                         <span class="text-slate-800">{{ $backOfficeTitle }}</span>
                     @endif
@@ -226,16 +313,16 @@
                 @endif
             </td>
 
-            <td class="p-3 break-words whitespace-normal align-top">
+            <td class="p-3 break-words whitespace-normal align-top" data-label="กลุ่ม">
                 {{ $item->role_group ?? '-' }}
             </td>
 
-            <td class="p-3 break-words whitespace-normal align-top">
+            <td class="p-3 break-words whitespace-normal align-top" data-label="รายละเอียดงาน">
                 {{ $item->job_detail ?? '-' }}
             </td>
 
 
-            <td class="p-3 text-center whitespace-nowrap align-top">
+            <td class="p-3 text-center whitespace-nowrap align-top" data-label="วันที่เริ่ม">
                 @php
                     $startDisplay = $item->start_date;
                     if ($item->start_date) {
@@ -251,7 +338,7 @@
                 {{ $startDisplay }}
             </td>
 
-            <td class="p-3 text-center whitespace-nowrap align-top">
+            <td class="p-3 text-center whitespace-nowrap align-top" data-label="วันที่สิ้นสุด">
                 @php
                     $endDisplay = $item->end_date;
                     if ($item->end_date) {
@@ -268,12 +355,12 @@
             </td>
 
             {{-- ⭐ จำนวนวันทำงาน (days_in_month) --}}
-            <td class="p-3 text-center font-semibold text-slate-700 align-top">
+            <td class="p-3 text-center font-semibold text-slate-700 align-top" data-label="วันทำงาน">
                 {{ $item->days_in_month }} วัน
             </td>
 
             {{-- ⭐ FTE + bar + tooltip --}}
-            <td class="p-3 text-right font-semibold relative group align-top">
+            <td class="p-3 text-right font-semibold relative group align-top" data-label="FTE">
                 {{ number_format($item->fte_month, 7) }}
 
                 @php
@@ -324,10 +411,6 @@
         </div>
     </div>
 
-    {{-- Flatpickr --}}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
     <script>
         function resetOtherFilters() {
             let mode = document.getElementById('mode').value;
@@ -343,23 +426,39 @@
         }
 
         function toggleDetail(idx) {
-            const all = document.querySelectorAll('[id^="detail-row-"]');
+            const all = document.querySelectorAll('.fte-detail-row');
             const row = document.getElementById('detail-row-' + idx);
-            const willShow = row.classList.contains('hidden');
+            const buttons = document.querySelectorAll('button[data-detail]');
+            const willShow = !row.classList.contains('is-open');
 
-            all.forEach(el => el.classList.add('hidden'));
-            if (willShow) row.classList.remove('hidden');
+            all.forEach(el => el.classList.remove('is-open'));
+            buttons.forEach(btn => {
+                btn.textContent = 'ดูรายละเอียด';
+                btn.setAttribute('aria-expanded', 'false');
+            });
+            if (willShow) {
+                row.classList.add('is-open');
+                const btn = document.querySelector(`button[data-detail="${idx}"]`);
+                if (btn) {
+                    btn.textContent = 'ซ่อนรายละเอียด';
+                    btn.setAttribute('aria-expanded', 'true');
+                }
+            }
         }
 
         // ปิดลิ้นชักเมื่อคลิกนอกกรอบ
         document.addEventListener('click', function (e) {
             const rows = document.querySelectorAll('[id^="detail-row-"]');
             rows.forEach(row => {
-                if (row.classList.contains('hidden')) return;
+                if (!row.classList.contains('is-open')) return;
                 const idx = row.id.replace('detail-row-', '');
                 const btn = document.querySelector('button[data-detail="' + idx + '"]');
                 if (!row.contains(e.target) && (!btn || !btn.contains(e.target))) {
-                    row.classList.add('hidden');
+                    row.classList.remove('is-open');
+                    if (btn) {
+                        btn.textContent = 'ดูรายละเอียด';
+                        btn.setAttribute('aria-expanded', 'false');
+                    }
                 }
             });
         });
@@ -371,36 +470,28 @@
                 document.getElementById('filter-month').classList.toggle('hidden', mode !== 'month');
                 document.getElementById('filter-custom').classList.toggle('hidden', mode !== 'custom');
             }
+            document.querySelectorAll('.fte-detail-row').forEach(row => row.classList.remove('is-open'));
+            document.querySelectorAll('button[data-detail]').forEach(btn => {
+                btn.textContent = 'ดูรายละเอียด';
+                btn.setAttribute('aria-expanded', 'false');
+            });
             document.getElementById('mode').addEventListener('change', updateFilter);
             updateFilter();
-
-            flatpickr("#dateStart", {
-                dateFormat: "d/m/Y",
-                locale: "th",
-                allowInput: true,
-                onClose: function(selectedDates, dateStr) {
-                    let end = document.getElementById('dateEnd').value.trim();
-                    if (dateStr && end) document.getElementById('filter-form').submit();
-                }
-            });
-            flatpickr("#dateEnd", {
-                dateFormat: "d/m/Y",
-                locale: "th",
-                allowInput: true,
-                onClose: function(selectedDates, dateStr) {
-                    let start = document.getElementById('dateStart').value.trim();
-                    if (start && dateStr) document.getElementById('filter-form').submit();
-                }
-            });
         });
     </script>
     <style>
-        #filter-form label { font-size: 0.97rem; }
-        #filter-form select, #filter-form input { min-width: 100px; }
+        .fte-index-table tr.fte-detail-row {
+            display: none;
+        }
 
-        @media (max-width: 800px) {
-            #filter-form { flex-direction: column; gap: 8px; }
-            #filter-form>div { width: 100%; }
+        .fte-index-table tr.fte-detail-row.is-open {
+            display: table-row;
+        }
+
+        @media (max-width: 768px) {
+            .fte-index-table tr.fte-detail-row.is-open {
+                display: block;
+            }
         }
 
         @keyframes fade-in {

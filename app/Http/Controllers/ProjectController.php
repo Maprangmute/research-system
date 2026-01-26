@@ -184,9 +184,24 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('projects.create');
+        $view = 'projects.create';
+        $forceView = $request->query('view');
+        if ($forceView === 'mobile') {
+            $view = 'projects.create_mobile';
+        } elseif ($forceView !== 'desktop') {
+            $ua = (string) $request->header('User-Agent', '');
+            $isMobile = (bool) preg_match(
+                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
+                $ua
+            );
+            if ($isMobile) {
+                $view = 'projects.create_mobile';
+            }
+        }
+
+        return view($view);
     }
 
 public function store(Request $request)
@@ -250,7 +265,7 @@ public function store(Request $request)
         ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
 }
 
-    public function edit($id)
+    public function edit(Request $request, $id)
     {
         $project = Project::with('outputs.authors')->find($id);
 
@@ -268,11 +283,41 @@ public function store(Request $request)
             abort(403);
         }
 
-        return view('projects.edit', compact('project'));
+        $view = 'projects.edit';
+        $forceView = $request->query('view');
+        if ($forceView === 'mobile') {
+            $view = 'projects.edit_mobile';
+        } elseif ($forceView !== 'desktop') {
+            $ua = (string) $request->header('User-Agent', '');
+            $isMobile = (bool) preg_match(
+                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
+                $ua
+            );
+            if ($isMobile) {
+                $view = 'projects.edit_mobile';
+            }
+        }
+
+        return view($view, compact('project'));
     }
 
-    public function show(Project $project)
+    public function show(Request $request, Project $project)
     {
+        $view = 'projects.detail';
+        $forceView = $request->query('view');
+        if ($forceView === 'mobile') {
+            $view = 'projects.detail_mobile';
+        } elseif ($forceView !== 'desktop') {
+            $ua = (string) $request->header('User-Agent', '');
+            $isMobile = (bool) preg_match(
+                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
+                $ua
+            );
+            if ($isMobile) {
+                $view = 'projects.detail_mobile';
+            }
+        }
+
         $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
@@ -295,7 +340,7 @@ public function store(Request $request)
 
         $fteChartData = $this->buildProjectFteChartData($project);
 
-        return view('projects.detail', array_merge(compact('project'), $fteChartData));
+        return view($view, array_merge(compact('project'), $fteChartData));
     }
 
     public function update(Request $request, Project $project)

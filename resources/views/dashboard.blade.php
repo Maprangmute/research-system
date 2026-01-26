@@ -19,11 +19,24 @@
             color: var(--lux-ink);
             background: none;
             min-height: 100vh;
+            position: relative;
+            overflow: hidden;
         }
 
         .lux-title {
             font-family: 'Playfair Display', serif;
             letter-spacing: 0.02em;
+        }
+
+        .lux-page::before {
+            content: '';
+            position: fixed;
+            inset: -20% -10% auto auto;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.18), transparent 70%);
+            z-index: 0;
+            pointer-events: none;
         }
 
         .lux-card {
@@ -44,6 +57,11 @@
 
         .lux-page .rounded-xl {
             border-radius: 18px;
+        }
+
+        .lux-hero {
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(249, 250, 251, 0.9));
+            border: 1px solid rgba(15, 118, 110, 0.2);
         }
 
         .lux-page canvas[id^="chart"] {
@@ -162,6 +180,104 @@
                 border-left: none;
                 border-top: 1px solid #e5e7eb;
             }
+
+            .lux-chart-scroll {
+                display: flex;
+                overflow-x: auto;
+                gap: 1rem;
+                scroll-snap-type: x mandatory;
+                padding-bottom: 0.75rem;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .lux-chart-card {
+                min-width: 88vw;
+            }
+
+            .lux-chart-scroll::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .lux-chart-scroll::-webkit-scrollbar-thumb {
+                background: rgba(148, 163, 184, 0.6);
+                border-radius: 999px;
+            }
+
+            .lux-swipe-tip {
+                display: flex;
+            }
+
+            .lux-chart-card h3 {
+                font-size: 0.95rem;
+            }
+
+            #chartModalBody .lux-modal-table thead {
+                display: none;
+            }
+
+            #chartModalBody .lux-modal-table,
+            #chartModalBody .lux-modal-table tbody,
+            #chartModalBody .lux-modal-table tr,
+            #chartModalBody .lux-modal-table td {
+                display: block;
+                width: 100%;
+            }
+
+            #chartModalBody .lux-modal-table tr {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+                background: #ffffff;
+            }
+
+            #chartModalBody .lux-modal-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 6px 0;
+            }
+
+            #chartModalBody .lux-modal-table td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #94a3b8;
+            }
+
+            .lux-mobile-table thead {
+                display: none;
+            }
+
+            .lux-mobile-table,
+            .lux-mobile-table tbody,
+            .lux-mobile-table tr,
+            .lux-mobile-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .lux-mobile-table tr {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+                background: #ffffff;
+            }
+
+            .lux-mobile-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 6px 0;
+            }
+
+            .lux-mobile-table td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #94a3b8;
+            }
         }
 
         .lux-muted {
@@ -171,6 +287,144 @@
         .lux-divider {
             height: 1px;
             background: linear-gradient(90deg, transparent, rgba(15, 118, 110, 0.25), transparent);
+        }
+
+        .lux-quick-nav {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 6px 0 4px;
+        }
+
+        .lux-quick-nav a {
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 6px 12px;
+            font-size: 12px;
+            color: #0f172a;
+            white-space: nowrap;
+        }
+
+        .lux-summary-scroll {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .lux-summary-card {
+            border-radius: 16px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.08);
+            padding: 14px;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .lux-summary-card[data-tone='emerald'] {
+            border-color: rgba(5, 150, 105, 0.35);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(255, 255, 255, 0.96));
+        }
+
+        .lux-summary-card[data-tone='amber'] {
+            border-color: rgba(217, 119, 6, 0.35);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(255, 255, 255, 0.96));
+        }
+
+        .lux-summary-card[data-tone='sky'] {
+            border-color: rgba(14, 116, 144, 0.35);
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(255, 255, 255, 0.96));
+        }
+
+        .lux-summary-card[data-tone='violet'] {
+            border-color: rgba(124, 58, 237, 0.3);
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.18), rgba(255, 255, 255, 0.96));
+        }
+
+        .lux-summary-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: rgba(15, 23, 42, 0.06);
+        }
+
+        .lux-summary-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .lux-summary-label {
+            font-size: 0.8rem;
+            color: #475569;
+        }
+
+        .lux-summary-sub {
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+
+        .lux-chart-scroll {
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .lux-chart-scroll {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .lux-summary-scroll {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .lux-chart-card {
+            scroll-snap-align: start;
+        }
+
+        .lux-swipe-tip {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border: 1px dashed rgba(59, 130, 246, 0.4);
+            background: rgba(59, 130, 246, 0.08);
+            color: #1e3a8a;
+            border-radius: 14px;
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+
+        .lux-swipe-tip button {
+            border: none;
+            background: transparent;
+            color: #475569;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #chartModalBody .lux-modal-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #chartModalBody .lux-modal-table th,
+        #chartModalBody .lux-modal-table td {
+            padding: 8px;
+        }
+
+        .lux-mobile-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
         .lux-chip {
@@ -214,11 +468,45 @@
                 transform: translateY(0);
             }
         }
+
+        @media (max-width: 640px) {
+            .lux-page {
+                background: linear-gradient(180deg, #f1f5f9 0%, #ffffff 40%, #f8fafc 100%);
+            }
+
+            .lux-page::before {
+                width: 240px;
+                height: 240px;
+                inset: -10% -20% auto auto;
+            }
+
+            .lux-summary-scroll {
+                display: flex;
+                overflow-x: auto;
+                gap: 12px;
+                scroll-snap-type: x mandatory;
+                padding-bottom: 6px;
+            }
+
+            .lux-summary-card {
+                min-width: 82vw;
+                scroll-snap-align: start;
+            }
+
+            .lux-summary-scroll::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .lux-summary-scroll::-webkit-scrollbar-thumb {
+                background: rgba(148, 163, 184, 0.5);
+                border-radius: 999px;
+            }
+        }
     </style>
 
     <div class="lux-page">
         <div class="max-w-7xl mx-auto px-4 py-8 space-y-8">
-            <div class="lux-card p-6 md:p-8">
+            <div class="lux-card lux-hero p-6 md:p-8">
                 <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h2 class="lux-title text-3xl md:text-4xl text-slate-900">ภาพรวมโครงการวิจัย</h2>
@@ -235,29 +523,45 @@
                 </div>
                 <div class="lux-divider mt-6"></div>
 
+                <div class="lux-quick-nav md:hidden">
+                    <a href="#section-summary">สรุปภาพรวม</a>
+                    <a href="#section-charts">กราฟ</a>
+                    <a href="#section-irb">IRB</a>
+                    <a href="#section-copi">Co-PI</a>
+                    <a href="#section-projects">โครงการ</a>
+                </div>
+
                 <!-- 1) Summary Cards -->
-                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mt-6 lux-grid-stagger">
+                <div id="section-summary"></div>
+                <div class="mt-4 mb-2 text-xs text-slate-600 md:hidden">
+                    ปัดซ้ายขวาเพื่อดูสรุปทั้งหมด • แตะการ์ดเพื่ออ่านเร็วขึ้น
+                </div>
+                <div class="lux-summary-scroll mt-2 lux-grid-stagger">
             @php
                 $summaryItems = [
-                    ['count' => $projects->count(), 'label' => '📁 โครงการ'],
-                    ['count' => $projects->pluck('pi_name')->unique()->count(), 'label' => '👨‍🔬 PI'],
-                    ['count' => $copis->count(), 'label' => '👥 Co-PI'],
-                    ['count' => $coResearches->count(), 'label' => '🤝 Co-Research'],
-                    ['count' => number_format($fteRoles->sum('fte_value'), 2), 'label' => '📈 FTE รวม'],
-                    ['count' => $outputs->count(), 'label' => '📝 Outputs'],
+                    ['count' => $projects->count(), 'label' => 'โครงการ', 'icon' => '📁', 'tone' => 'emerald', 'sub' => 'ทั้งหมดในระบบ'],
+                    ['count' => $projects->pluck('pi_name')->unique()->count(), 'label' => 'หัวหน้าโครงการ', 'icon' => '👨‍🔬', 'tone' => 'sky', 'sub' => 'PI ทั้งหมด'],
+                    ['count' => $copis->count(), 'label' => 'ผู้วิจัยร่วม', 'icon' => '👥', 'tone' => 'violet', 'sub' => 'Co-PI'],
+                    ['count' => $coResearches->count(), 'label' => 'ผู้ร่วมวิจัย', 'icon' => '🤝', 'tone' => 'emerald', 'sub' => 'Co-Research'],
+                    ['count' => number_format($fteRoles->sum('fte_value'), 2), 'label' => 'FTE รวม', 'icon' => '📈', 'tone' => 'amber', 'sub' => 'รวมทุกปี'],
+                    ['count' => $outputs->count(), 'label' => 'ผลงานวิจัย', 'icon' => '📝', 'tone' => 'sky', 'sub' => 'Outputs'],
                 ];
             @endphp
                     @foreach ($summaryItems as $item)
-                        <div class="lux-card p-4 text-center">
-                            <div class="text-2xl font-bold text-emerald-700">{{ $item['count'] }}</div>
-                            <div class="text-xs text-gray-500 mt-1">{{ $item['label'] }}</div>
+                        <div class="lux-summary-card" data-tone="{{ $item['tone'] }}">
+                            <div class="lux-summary-icon">{{ $item['icon'] }}</div>
+                            <div>
+                                <div class="lux-summary-value">{{ $item['count'] }}</div>
+                                <div class="lux-summary-label">{{ $item['label'] }}</div>
+                                <div class="lux-summary-sub">{{ $item['sub'] }}</div>
+                            </div>
                         </div>
                     @endforeach
                 </div>
             </div>
 
         <!-- 2) กรอง + Export -->
-        <div class="lux-card p-4 md:p-5">
+        <div class="lux-card p-4 md:p-5" id="section-filters">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800">สร้างเอกสารสรุปข้อมูลทั้งหมด</h3>
@@ -398,31 +702,39 @@
 
 
         <!-- 3) Charts -->
-        <div>
+        <div id="section-charts">
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800">สรุปสถานะและแนวโน้มเชิงกลยุทธ์</h3>
                     <p class="text-xs text-slate-500">รวมกราฟสำคัญที่ช่วยอ่านภาพรวมได้ในมุมเดียว</p>
+                    <div class="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                        <span class="lux-chip px-3 py-1 rounded-full">แตะกราฟเพื่อดูรายละเอียด</span>
+                        <span class="lux-chip px-3 py-1 rounded-full">แตะตารางใน Pop-up เพื่อดูข้อมูลครบ</span>
+                    </div>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+            <div id="chartSwipeTip" class="lux-swipe-tip mb-3">
+                <span>เลื่อนซ้ายขวาเพื่อดูกราฟต่อไป • แตะกราฟเพื่อดูข้อมูลเพิ่ม</span>
+                <button type="button" data-close="chartSwipeTip">ปิด</button>
+            </div>
+            <div class="lux-chart-scroll mb-6">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🔴 RED ZONE: โครงการใกล้สิ้นสุด / เกินกำหนด</h3>
                 <canvas id="chartRedZoneTimeline" height="250"></canvas>
             </div>
-            <div class="bg-white shadow-sm border rounded-xl p-4">
+            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🔥 โครงการที่เกินกำหนดแล้ว (Overdue)</h3> <canvas
                     id="chartOverdueProjects" height="250"></canvas>
             </div>
 
-            <div class="bg-white shadow-sm border rounded-xl p-4 md:col-span-2">
+            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 md:col-span-2">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
                     <h3 class="text-sm font-semibold text-gray-700">⏱️ รายการโครงการที่เกินกำหนด (ลงรายละเอียด)</h3>
                     <span id="overdueCountBadge"
                         class="text-xs font-semibold px-3 py-1 rounded-full lux-chip">0 โครงการ</span>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border" id="overdueTable">
+                    <table class="min-w-full text-sm border lux-mobile-table" id="overdueTable">
                         <thead class="bg-gray-50 text-xs text-gray-700">
                             <tr>
                                 <th class="p-2 text-left">ชื่อโครงการ</th>
@@ -445,64 +757,64 @@
                 </div>
             </div>
 
-            <div class="bg-white shadow-sm border rounded-xl p-4 md:col-span-2">
+            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 md:col-span-2">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">📍 จำนวน Co-Research ตามหน่วยงาน (3/6/12 เดือน)</h3>
                 <canvas id="chartCoResearchByUnitWindow" height="200"></canvas>
             </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 จำนวนโครงการรายปี (รวม)</h3>
                     <canvas id="chartProjectsPerYear" height="250"></canvas>
                 </div>
-                <div class="bg-white shadow-sm border rounded-xl p-4 ">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 ">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">📅 โครงการทั้งหมด โครงการใหม่ เเละ
                         โครงการกำลังดำเนินการ (ต่อปี)</h3>
                     <canvas id="chartYearlyNewVsTotal" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">🏷️ สัดส่วนทุน ภายใน/ภายนอก (รายปี)</h3>
                     <canvas id="chartFundingSplit" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">💰 งบประมาณที่ได้รับ (รวมรายปี)</h3>
                     <canvas id="chartBudgetPerYear" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (Top 8)</h3>
                     <canvas id="chartExternalBySource" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายใน แยกตามแหล่งทุน (Top 8)</h3>
                     <canvas id="chartInternalBySource" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (ต่อปี | Top 8)</h3>
                     <canvas id="chartExternalBySourceYear" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏛️ ทุนภายใน แยกตามแหล่งทุน (ต่อปี | Top 8)</h3>
                     <canvas id="chartInternalBySourceYear" height="250"></canvas>
                 </div>
 
 
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">📝 Output (รายปี)</h3>
                     <canvas id="chartOutputStacked" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">📚 Publication รายปี (แท่งแนวตั้ง)</h3>
                     <canvas id="chartPublicationPerYear" height="280"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4 mt-6">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 mt-6">
                     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-3">
                         <div class="flex items-center gap-2">
                             <label class="text-xs text-gray-500">ปี (พ.ศ.):
@@ -530,29 +842,29 @@
                 </div>
 
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">🧩 สถานะของโครงการ รายปี</h3>
                     <canvas id="chartStatusYear" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 สัดส่วนโครงการ (นอกคณะ ในคณะ เเละ ในหน่วย)</h3>
                     <canvas id="chartCollabBreakdown" height="250"></canvas>
                 </div>
 
-                <div class="bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">👨‍🔬 จำนวนงานของ PI ในหน่วยงาน</h3>
                     <canvas id="chartPIsPerUnit" height="250"></canvas>
                 </div>
 
-            <div class="bg-white shadow-sm border rounded-xl p-4">
+            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 การกระจาย FTE</h3>
                 <canvas id="chartFteSummary" height="250"></canvas>
             </div>
         </div>
 
             <!-- IRB List -->
-            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6">
+            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6" id="section-irb">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
                     <h3 class="text-sm font-semibold text-gray-700">📑 รายการ IRB</h3>
                     <label class="text-xs text-gray-500">ตัวกรอง:
@@ -563,7 +875,7 @@
                     </label>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border" id="irbDashTable">
+                    <table class="min-w-full text-sm border lux-mobile-table" id="irbDashTable">
                         <thead class="bg-gray-50 text-xs text-gray-700">
                             <tr>
                                 <th class="p-2 text-left">โครงการ</th>
@@ -588,7 +900,7 @@
         </div>
 
             <!-- 4) Co-Research (จาก COPIs) Summary -->
-            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6">
+            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6" id="section-copi">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 รายชื่อผู้วิจัยร่วม CO-PI</h3>
 
                 @php
@@ -609,7 +921,7 @@
                     })->values();
                 @endphp
 
-                <table class="w-full text-sm border">
+                <table class="w-full text-sm border lux-mobile-table">
                     <thead class="bg-gray-50 text-xs text-gray-700">
                         <tr>
                             <th class="p-2 text-left">ชื่อ</th>
@@ -631,7 +943,7 @@
             </div>
 
             <!-- 5) Project Table -->
-            <div class="bg-white shadow-sm border rounded-xl p-4">
+            <div class="bg-white shadow-sm border rounded-xl p-4" id="section-projects">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">📋 รายการโครงการทั้งหมด</h3>
                 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-3">
                     <div class="flex flex-wrap items-center gap-2 text-xs text-gray-600">
@@ -646,7 +958,7 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border" id="projectTable">
+                    <table class="min-w-full text-sm border lux-mobile-table" id="projectTable">
                         <thead class="bg-gray-100 text-xs text-gray-700">
                             <tr>
                                 <th class="p-2 text-left">ชื่อโครงการ</th>
@@ -712,6 +1024,26 @@
         <script>
             // ให้สคริปต์ด้านล่างใช้ window.outputs ได้เลย
             window.outputs = @json($outputsForJs);
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const tip = document.getElementById('chartSwipeTip');
+                if (!tip) return;
+                const key = 'dashboardSwipeTipDismissed';
+                if (localStorage.getItem(key)) {
+                    tip.style.display = 'none';
+                    return;
+                }
+                const closeBtn = tip.querySelector('[data-close="chartSwipeTip"]');
+                const hideTip = () => {
+                    tip.style.display = 'none';
+                    localStorage.setItem(key, '1');
+                };
+                closeBtn?.addEventListener('click', hideTip);
+                setTimeout(() => {
+                    if (window.innerWidth <= 640) hideTip();
+                }, 7000);
+            });
         </script>
         <script>
             /* ---------- Data from backend ---------- */
@@ -903,6 +1235,7 @@
                     const pageSize = state.pageSize || 10;
                     const yearOptions = Array.from(new Set(rows.map(endYearLabel))).sort();
                     const activeYear = state.yearFilter || '';
+                    const diffHeader = modalType === 'overdue' ? 'เกินกำหนด (วัน)' : 'คงเหลือ/เกิน (วัน)';
 
                     const filtered = activeYear ? rows.filter(p => endYearLabel(p) === activeYear) : rows.slice();
                     const sorted = applyProjectSort(filtered, mode || 'name_asc');
@@ -924,13 +1257,13 @@
                             </div>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="table-auto w-full border text-sm">
+                            <table class="lux-modal-table table-auto w-full border text-sm">
                                 <thead>
                                     <tr class="bg-gray-100 text-xs text-gray-700">
                                         <th class="p-2 text-center">#</th>
                                         <th class="p-2 text-left">ชื่อโครงการ</th>
                                         <th class="p-2 text-center">ปีสิ้นสุด</th>
-                                        <th class="p-2 text-center">${modalType === 'overdue' ? 'เกินกำหนด (วัน)' : 'คงเหลือ/เกิน (วัน)'}</th>
+                                        <th class="p-2 text-center">${diffHeader}</th>
                                         <th class="p-2 text-center">PI</th>
                                     </tr>
                                 </thead>
@@ -946,13 +1279,13 @@
                             const diffLabel = diffDays == null ? '-' : (diffDays < 0 ? `${Math.abs(diffDays)}` : `${diffDays}`);
                             html += `
                                 <tr class="border-t">
-                                    <td class="p-2 text-center">${start + idx + 1}</td>
-                                    <td class="p-2 text-left text-blue-700 hover:underline">
+                                    <td class="p-2 text-center" data-label="#">${start + idx + 1}</td>
+                                    <td class="p-2 text-left text-blue-700 hover:underline" data-label="ชื่อโครงการ">
                                         <a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a>
                                     </td>
-                                    <td class="p-2 text-center">${formatDateTH(endDate, '-')}</td>
-                                    <td class="p-2 text-center ${diffDays < 0 ? 'text-red-600 font-semibold' : 'text-amber-600 font-semibold'}">${diffLabel}</td>
-                                    <td class="p-2 text-center">${p.pi_name || '-'}</td>
+                                    <td class="p-2 text-center" data-label="ปีสิ้นสุด">${formatDateTH(endDate, '-')}</td>
+                                    <td class="p-2 text-center ${diffDays < 0 ? 'text-red-600 font-semibold' : 'text-amber-600 font-semibold'}" data-label="${diffHeader}">${diffLabel}</td>
+                                    <td class="p-2 text-center" data-label="PI">${p.pi_name || '-'}</td>
                                 </tr>
                             `;
                         });
@@ -1010,7 +1343,7 @@
                             ${uniqueMembers.length ? uniqueMembers.map((m, i) => `${i + 1}. ${truncateText(m.name)}${m.unit ? ` (${truncateText(m.unit)})` : ''}`).join('<br>') : 'ไม่มีข้อมูลรายชื่อ'}
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="table-auto w-full border text-sm">
+                            <table class="lux-modal-table table-auto w-full border text-sm">
                                 <thead>
                                     <tr class="bg-gray-100 text-xs text-gray-700">
                                         <th class="p-2 text-center">#</th>
@@ -1038,14 +1371,14 @@
                             const rowId = `coresearchRow_${idx}`;
                             html += `
                                 <tr class="border-t">
-                                    <td class="p-2 text-center">${idx + 1}</td>
-                                    <td class="p-2 text-left text-blue-700 hover:underline">
+                                    <td class="p-2 text-center" data-label="#">${idx + 1}</td>
+                                    <td class="p-2 text-left text-blue-700 hover:underline" data-label="ชื่อโครงการ">
                                         <a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a>
                                     </td>
-                                    <td class="p-2 text-center">${p.pi_name || '-'}</td>
-                                    <td class="p-2 text-center">${p.start_year || '-'}</td>
-                                    <td class="p-2 text-center">${members.length}</td>
-                                    <td class="p-2 text-center">
+                                    <td class="p-2 text-center" data-label="PI">${p.pi_name || '-'}</td>
+                                    <td class="p-2 text-center" data-label="ปี">${p.start_year || '-'}</td>
+                                    <td class="p-2 text-center" data-label="จำนวน Co-Research">${members.length}</td>
+                                    <td class="p-2 text-center" data-label="รายละเอียด">
                                         <button class="toggleMembers border rounded px-2 py-1 text-xs hover:bg-gray-50" data-target="${rowId}">ดูรายละเอียด</button>
                                     </td>
                                 </tr>
@@ -1080,17 +1413,17 @@
 
                 const sorted = applyProjectSort(rows, mode || 'name_asc');
                 let html =
-                    `<table class="table-auto w-full border text-sm"><thead><tr><th class="p-2 text-center">#</th><th class="p-2 text-left">ชื่อโครงการ</th><th class="p-2 text-center">PI</th><th class="p-2 text-center">ปี</th>`;
+                    `<table class="lux-modal-table table-auto w-full border text-sm"><thead><tr><th class="p-2 text-center">#</th><th class="p-2 text-left">ชื่อโครงการ</th><th class="p-2 text-center">PI</th><th class="p-2 text-center">ปี</th>`;
                 if (includeFunding) {
                     html += `<th class="p-2 text-center">แหล่งทุน</th><th class="p-2 text-right">งบที่ได้รับ</th>`;
                 }
                 html += `</tr></thead><tbody>`;
                 sorted.forEach((p, idx) => {
-                    html += `<tr class="border-t"><td class="p-2 text-center">${idx + 1}</td><td class="p-2 text-blue-700 hover:underline"><a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a></td><td class="p-2 text-center">${p.pi_name || '-'}</td><td class="p-2 text-center">${p.start_year || '-'}</td>`;
+                    html += `<tr class="border-t"><td class="p-2 text-center" data-label="#">${idx + 1}</td><td class="p-2 text-blue-700 hover:underline" data-label="ชื่อโครงการ"><a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a></td><td class="p-2 text-center" data-label="PI">${p.pi_name || '-'}</td><td class="p-2 text-center" data-label="ปี">${p.start_year || '-'}</td>`;
                     if (includeFunding) {
                         const source = getFundingSource(p) || 'ไม่ระบุ';
                         const budget = Number(getBudget(p) || 0);
-                        html += `<td class="p-2 text-center">${source}</td><td class="p-2 text-right">${budget.toLocaleString('th-TH')}</td>`;
+                        html += `<td class="p-2 text-center" data-label="แหล่งทุน">${source}</td><td class="p-2 text-right" data-label="งบที่ได้รับ">${budget.toLocaleString('th-TH')}</td>`;
                     }
                     html += `</tr>`;
                 });
@@ -1738,9 +2071,9 @@
                             const row = document.createElement('tr');
                             row.className = 'border-t';
                             row.innerHTML = `
-                                <td class="p-2">${r.name || 'ไม่ระบุ'}</td>
-                                <td class="p-2">${r.affiliation || 'ไม่ระบุ'}</td>
-                                <td class="p-2 text-center">${r.project_count ?? 0}</td>
+                                <td class="p-2" data-label="ชื่อ">${r.name || 'ไม่ระบุ'}</td>
+                                <td class="p-2" data-label="หน่วยงาน">${r.affiliation || 'ไม่ระบุ'}</td>
+                                <td class="p-2 text-center" data-label="จำนวนโครงการ">${r.project_count ?? 0}</td>
                             `;
                             tbody.appendChild(row);
                         });
@@ -3487,12 +3820,12 @@
                             const row = document.createElement('tr');
                             row.className = 'border-t';
                             row.innerHTML = `
-                                <td class="p-2 text-left text-blue-700 hover:underline">
+                                <td class="p-2 text-left text-blue-700 hover:underline" data-label="โครงการ">
                                     <a href="/rm/projects/${item.project.id}" target="_blank" rel="noopener">${item.project.project_name_th || '-'}</a>
                                 </td>
-                                <td class="p-2 text-center">${formatDateTH(item.endDate, item.project.end_date || '-')}</td>
-                                <td class="p-2 text-center text-red-600 font-semibold">${overdueDays}</td>
-                                <td class="p-2 text-center">${item.project.pi_name || '-'}</td>
+                                <td class="p-2 text-center" data-label="วันสิ้นสุด">${formatDateTH(item.endDate, item.project.end_date || '-')}</td>
+                                <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนด (วัน)">${overdueDays}</td>
+                                <td class="p-2 text-center" data-label="PI">${item.project.pi_name || '-'}</td>
                             `;
                             tbody.appendChild(row);
                         });
@@ -3691,12 +4024,12 @@
                             const row = document.createElement('tr');
                             row.className = 'border-t';
                             row.innerHTML = `
-                                <td class="p-2 text-left text-blue-700 hover:underline">
+                                <td class="p-2 text-left text-blue-700 hover:underline" data-label="โครงการ">
                                     <a href="/rm/projects/${r.project.id}" target="_blank" rel="noopener">${r.project.project_name_th || '-'}</a>
                                 </td>
-                                <td class="p-2 text-left">${r.code}</td>
-                                <td class="p-2 text-left">${r.source}</td>
-                                <td class="p-2 text-center">${formatDate(r.expDate)}</td>
+                                <td class="p-2 text-left" data-label="รหัส IRB">${r.code}</td>
+                                <td class="p-2 text-left" data-label="หน่วยงาน">${r.source}</td>
+                                <td class="p-2 text-center" data-label="วันหมดอายุ">${formatDate(r.expDate)}</td>
                             `;
                             tbody.appendChild(row);
                         });
@@ -4009,14 +4342,14 @@
                             const row = document.createElement('tr');
                             row.className = 'border-t';
                             row.innerHTML = `
-                                <td class="p-2 text-blue-700 hover:underline"><a href="/rm/projects/${p.id}">${p.project_name_th || '-'}</a></td>
-                                <td class="p-2 text-center">${p.start_year || '-'}</td>
-                                <td class="p-2 text-center">${p.pi_name || '-'}</td>
-                                <td class="p-2 text-center">${copis}</td>
-                                <td class="p-2 text-center">${coResearches}</td>
-                                <td class="p-2 text-center">${getFteSum(p)}</td>
-                                <td class="p-2 text-center">${outputsCount}</td>
-                                <td class="p-2 text-center">${irb}</td>
+                                <td class="p-2 text-blue-700 hover:underline" data-label="ชื่อโครงการ"><a href="/rm/projects/${p.id}">${p.project_name_th || '-'}</a></td>
+                                <td class="p-2 text-center" data-label="ปี">${p.start_year || '-'}</td>
+                                <td class="p-2 text-center" data-label="PI">${p.pi_name || '-'}</td>
+                                <td class="p-2 text-center" data-label="Co-PI">${copis}</td>
+                                <td class="p-2 text-center" data-label="CoResearch">${coResearches}</td>
+                                <td class="p-2 text-center" data-label="FTE รวม">${getFteSum(p)}</td>
+                                <td class="p-2 text-center" data-label="Output">${outputsCount}</td>
+                                <td class="p-2 text-center" data-label="IRB ล่าสุด">${irb}</td>
                             `;
                             tbody.appendChild(row);
                         });
