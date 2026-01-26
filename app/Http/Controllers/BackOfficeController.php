@@ -24,6 +24,7 @@ class BackOfficeController extends Controller
         $query = BackOfficeTask::query()
             ->with(['creator'])
             ->withCount('entries')
+            ->withCount('outputs')
             ->withSum('entries', 'hours')
             ->withSum('entries', 'fte_value');
 
@@ -115,8 +116,23 @@ class BackOfficeController extends Controller
             'leaders.*' => ['nullable', 'string', 'max:255'],
             'outputs' => ['nullable', 'array'],
             'outputs.*.title' => ['required_with:outputs', 'string', 'max:255'],
+            'outputs.*.type' => ['nullable', 'string', 'max:255'],
+            'outputs.*.project_output' => ['nullable', 'string', 'max:255'],
+            'outputs.*.year' => ['nullable', 'string', 'max:255'],
+            'outputs.*.journal' => ['nullable', 'string', 'max:255'],
+            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'outputs.*.impact_factor' => ['nullable', 'numeric'],
             'outputs.*.delivered_at' => ['nullable', 'date_format:d-m-Y'],
             'outputs.*.description' => ['nullable', 'string', 'max:255'],
+            'outputs.*.document_link' => ['nullable', 'string', 'max:255'],
+            'outputs.*.authors' => ['nullable', 'array'],
+            'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
+            'outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
+            'outputs.*.conferences' => ['nullable', 'array'],
+            'outputs.*.conferences.*.name' => ['nullable', 'string', 'max:255'],
+            'outputs.*.conferences.*.presentation_type' => ['nullable', 'string', 'max:100'],
+            'outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
+            'outputs.*.conferences.*.note' => ['nullable', 'string', 'max:255'],
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.person_name' => ['required', 'string', 'max:255'],
             'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
@@ -127,8 +143,22 @@ class BackOfficeController extends Controller
             'entries.*.hours' => ['required', 'numeric', 'min:0'],
             'entries.*.outputs' => ['nullable', 'array'],
             'entries.*.outputs.*.title' => ['required_with:entries.*.outputs', 'string', 'max:255'],
+            'entries.*.outputs.*.project_output' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.year' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.journal' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'entries.*.outputs.*.impact_factor' => ['nullable', 'numeric'],
             'entries.*.outputs.*.delivered_at' => ['nullable', 'date_format:d-m-Y'],
             'entries.*.outputs.*.description' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.document_link' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.authors' => ['nullable', 'array'],
+            'entries.*.outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
+            'entries.*.outputs.*.conferences' => ['nullable', 'array'],
+            'entries.*.outputs.*.conferences.*.name' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.conferences.*.presentation_type' => ['nullable', 'string', 'max:100'],
+            'entries.*.outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.conferences.*.note' => ['nullable', 'string', 'max:255'],
         ]);
 
         $startDate = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('d-m-Y');
@@ -160,8 +190,17 @@ class BackOfficeController extends Controller
                 foreach ($data['outputs'] as $output) {
                     $task->outputs()->create([
                         'title' => $output['title'],
+                        'type' => $output['type'] ?? null,
+                        'project_output' => $output['project_output'] ?? null,
+                        'year' => $output['year'] ?? null,
+                        'journal' => $output['journal'] ?? null,
+                        'quartile' => $output['quartile'] ?? null,
+                        'impact_factor' => $output['impact_factor'] ?? null,
                         'delivered_at' => $output['delivered_at'] ?? null,
                         'description' => $output['description'] ?? null,
+                        'document_link' => $output['document_link'] ?? null,
+                        'authors' => $output['authors'] ?? null,
+                        'conferences' => $output['conferences'] ?? null,
                     ]);
                 }
             }
@@ -186,8 +225,16 @@ class BackOfficeController extends Controller
                     foreach ($entry['outputs'] as $output) {
                         $createdEntry->outputs()->create([
                             'title' => $output['title'],
+                            'project_output' => $output['project_output'] ?? null,
+                            'year' => $output['year'] ?? null,
+                            'journal' => $output['journal'] ?? null,
+                            'quartile' => $output['quartile'] ?? null,
+                            'impact_factor' => $output['impact_factor'] ?? null,
                             'delivered_at' => $output['delivered_at'] ?? null,
                             'description' => $output['description'] ?? null,
+                            'document_link' => $output['document_link'] ?? null,
+                            'authors' => $output['authors'] ?? null,
+                            'conferences' => $output['conferences'] ?? null,
                         ]);
                     }
                 }
@@ -240,8 +287,23 @@ class BackOfficeController extends Controller
             'leaders.*' => ['nullable', 'string', 'max:255'],
             'outputs' => ['nullable', 'array'],
             'outputs.*.title' => ['required_with:outputs', 'string', 'max:255'],
+            'outputs.*.type' => ['nullable', 'string', 'max:255'],
+            'outputs.*.project_output' => ['nullable', 'string', 'max:255'],
+            'outputs.*.year' => ['nullable', 'string', 'max:255'],
+            'outputs.*.journal' => ['nullable', 'string', 'max:255'],
+            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'outputs.*.impact_factor' => ['nullable', 'numeric'],
             'outputs.*.delivered_at' => ['nullable', 'date_format:d-m-Y'],
             'outputs.*.description' => ['nullable', 'string', 'max:255'],
+            'outputs.*.document_link' => ['nullable', 'string', 'max:255'],
+            'outputs.*.authors' => ['nullable', 'array'],
+            'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
+            'outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
+            'outputs.*.conferences' => ['nullable', 'array'],
+            'outputs.*.conferences.*.name' => ['nullable', 'string', 'max:255'],
+            'outputs.*.conferences.*.presentation_type' => ['nullable', 'string', 'max:100'],
+            'outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
+            'outputs.*.conferences.*.note' => ['nullable', 'string', 'max:255'],
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.person_name' => ['required', 'string', 'max:255'],
             'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
@@ -252,8 +314,22 @@ class BackOfficeController extends Controller
             'entries.*.hours' => ['required', 'numeric', 'min:0'],
             'entries.*.outputs' => ['nullable', 'array'],
             'entries.*.outputs.*.title' => ['required_with:entries.*.outputs', 'string', 'max:255'],
+            'entries.*.outputs.*.project_output' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.year' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.journal' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'entries.*.outputs.*.impact_factor' => ['nullable', 'numeric'],
             'entries.*.outputs.*.delivered_at' => ['nullable', 'date_format:d-m-Y'],
             'entries.*.outputs.*.description' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.document_link' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.authors' => ['nullable', 'array'],
+            'entries.*.outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
+            'entries.*.outputs.*.conferences' => ['nullable', 'array'],
+            'entries.*.outputs.*.conferences.*.name' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.conferences.*.presentation_type' => ['nullable', 'string', 'max:100'],
+            'entries.*.outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
+            'entries.*.outputs.*.conferences.*.note' => ['nullable', 'string', 'max:255'],
         ]);
 
         $startDate = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('d-m-Y');
@@ -284,8 +360,17 @@ class BackOfficeController extends Controller
                 foreach ($data['outputs'] as $output) {
                     $task->outputs()->create([
                         'title' => $output['title'],
+                        'type' => $output['type'] ?? null,
+                        'project_output' => $output['project_output'] ?? null,
+                        'year' => $output['year'] ?? null,
+                        'journal' => $output['journal'] ?? null,
+                        'quartile' => $output['quartile'] ?? null,
+                        'impact_factor' => $output['impact_factor'] ?? null,
                         'delivered_at' => $output['delivered_at'] ?? null,
                         'description' => $output['description'] ?? null,
+                        'document_link' => $output['document_link'] ?? null,
+                        'authors' => $output['authors'] ?? null,
+                        'conferences' => $output['conferences'] ?? null,
                     ]);
                 }
             }
@@ -311,8 +396,16 @@ class BackOfficeController extends Controller
                     foreach ($entry['outputs'] as $output) {
                         $createdEntry->outputs()->create([
                             'title' => $output['title'],
+                            'project_output' => $output['project_output'] ?? null,
+                            'year' => $output['year'] ?? null,
+                            'journal' => $output['journal'] ?? null,
+                            'quartile' => $output['quartile'] ?? null,
+                            'impact_factor' => $output['impact_factor'] ?? null,
                             'delivered_at' => $output['delivered_at'] ?? null,
                             'description' => $output['description'] ?? null,
+                            'document_link' => $output['document_link'] ?? null,
+                            'authors' => $output['authors'] ?? null,
+                            'conferences' => $output['conferences'] ?? null,
                         ]);
                     }
                 }

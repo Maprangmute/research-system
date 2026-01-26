@@ -10,8 +10,22 @@ class BackOfficeTaskOutput extends Model
     protected $fillable = [
         'task_id',
         'title',
+        'type',
+        'project_output',
+        'year',
+        'journal',
+        'quartile',
+        'impact_factor',
         'delivered_at',
         'description',
+        'document_link',
+        'authors',
+        'conferences',
+    ];
+
+    protected $casts = [
+        'authors' => 'array',
+        'conferences' => 'array',
     ];
 
     public function task(): BelongsTo

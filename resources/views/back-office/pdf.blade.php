@@ -147,8 +147,11 @@
                                     @foreach ($entry->outputs as $output)
                                         <li>
                                             {{ $output->title }}
+                                            @if ($output->project_output) • {{ $output->project_output }} @endif
+                                            @if ($output->year) • เผยแพร่ {{ $output->year }} @endif
                                             @if ($output->delivered_at) • ส่ง {{ $formatDateBE($output->delivered_at) }} @endif
                                             @if ($output->description) • {{ $output->description }} @endif
+                                            @if ($output->document_link) • เอกสาร {{ $output->document_link }} @endif
                                         </li>
                                     @endforeach
                                 </ul>
@@ -166,17 +169,64 @@
             <thead>
                 <tr>
                     <th>ชื่อผลงาน</th>
+                    <th>ประเภท</th>
+                    <th>รายละเอียด/ลิงก์</th>
+                    <th class="center">วันที่เผยแพร่</th>
                     <th class="center">วันที่จัดส่ง</th>
                     <th>รายละเอียดเพิ่มเติม</th>
+                    <th>เอกสาร</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($task->outputs as $output)
                     <tr>
                         <td>{{ $output->title }}</td>
+                        <td>{{ $output->type ?? '-' }}</td>
+                        <td>{{ $output->project_output ?? '-' }}</td>
+                        <td class="center">{{ $output->year ?? '-' }}</td>
                         <td class="center">{{ $output->delivered_at ? $formatDateBE($output->delivered_at) : '-' }}</td>
                         <td>{{ $output->description ?? '-' }}</td>
+                        <td>{{ $output->document_link ?? '-' }}</td>
                     </tr>
+                    @php
+                        $isEA101 = str_starts_with((string) ($output->type ?? ''), 'EA101');
+                        $isEA103 = str_starts_with((string) ($output->type ?? ''), 'EA103');
+                        $authors = collect($output->authors ?? []);
+                        $confs = collect($output->conferences ?? []);
+                    @endphp
+                    @if ($isEA101 || $isEA103)
+                        <tr>
+                            <td colspan="7">
+                                <div class="small" style="padding:6px 0;">
+                                    @if ($isEA101)
+                                        <div>Journal: {{ $output->journal ?? '-' }} | Quartile: {{ $output->quartile ?? '-' }} | IF: {{ $output->impact_factor ?? '-' }}</div>
+                                        @if ($authors->count())
+                                            <div>Authors:
+                                                @foreach ($authors as $author)
+                                                    {{ $author['name'] ?? '-' }}{{ !empty($author['role']) ? ' (' . $author['role'] . ')' : '' }}@if (! $loop->last), @endif
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    @endif
+                                    @if ($isEA103)
+                                        <div>Conferences:
+                                            @if ($confs->count())
+                                                @foreach ($confs as $conf)
+                                                    {{ $conf['name'] ?? '-' }}
+                                                    @if (!empty($conf['presentation_type'])) • {{ $conf['presentation_type'] }} @endif
+                                                    @if (!empty($conf['location'])) • {{ $conf['location'] }} @endif
+                                                    @if (!empty($conf['note'])) • {{ $conf['note'] }} @endif
+                                                    @if (! $loop->last) | @endif
+                                                @endforeach
+                                            @else
+                                                -
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @endif
                 @endforeach
             </tbody>
         </table>

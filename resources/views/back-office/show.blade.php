@@ -75,11 +75,71 @@
                         @foreach ($task->outputs as $output)
                             <div class="border rounded-xl p-3 bg-slate-50">
                                 <div class="font-semibold text-slate-800">{{ $output->title }}</div>
+                                @if ($output->type)
+                                    <div class="text-slate-500">ประเภท: {{ $output->type }}</div>
+                                @endif
                                 <div class="text-slate-600">
                                     วันที่จัดส่ง: {{ $output->delivered_at ? $formatDateBE($output->delivered_at) : '-' }}
                                 </div>
+                                @if ($output->year)
+                                    <div class="text-slate-600">วันที่เผยแพร่: {{ $output->year }}</div>
+                                @endif
+                                @if ($output->project_output)
+                                    <div class="text-slate-600">รายละเอียด/ลิงก์: {{ $output->project_output }}</div>
+                                @endif
                                 @if ($output->description)
                                     <div class="text-slate-600">รายละเอียดเพิ่มเติม: {{ $output->description }}</div>
+                                @endif
+                                @if ($output->document_link)
+                                    <div class="text-slate-600">
+                                        ลิงก์เอกสาร:
+                                        <a href="{{ $output->document_link }}" class="text-blue-700 underline" target="_blank" rel="noopener">
+                                            {{ $output->document_link }}
+                                        </a>
+                                    </div>
+                                @endif
+
+                                @php
+                                    $isEA101 = str_starts_with((string) ($output->type ?? ''), 'EA101');
+                                    $isEA103 = str_starts_with((string) ($output->type ?? ''), 'EA103');
+                                    $authors = collect($output->authors ?? []);
+                                    $confs = collect($output->conferences ?? []);
+                                @endphp
+
+                                @if ($isEA101)
+                                    <div class="mt-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs">
+                                        <div class="text-slate-700">Journal: {{ $output->journal ?? '-' }}</div>
+                                        <div class="text-slate-700">Quartile: {{ $output->quartile ?? '-' }}</div>
+                                        <div class="text-slate-700">Impact Factor: {{ $output->impact_factor ?? '-' }}</div>
+                                        @if ($authors->count())
+                                            <div class="mt-2 text-slate-800 font-semibold">Authors</div>
+                                            <ul class="list-disc list-inside text-slate-700">
+                                                @foreach ($authors as $author)
+                                                    <li>{{ $author['name'] ?? '-' }} {{ !empty($author['role']) ? '(' . $author['role'] . ')' : '' }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                @if ($isEA103)
+                                    <div class="mt-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs">
+                                        <div class="text-slate-800 font-semibold">Conferences</div>
+                                        @if ($confs->count())
+                                            <ul class="list-disc list-inside text-slate-700">
+                                                @foreach ($confs as $conf)
+                                                    <li>
+                                                        {{ $conf['name'] ?? '-' }}
+                                                        @if (!empty($conf['presentation_type'])) • {{ $conf['presentation_type'] }} @endif
+                                                        @if (!empty($conf['location'])) • {{ $conf['location'] }} @endif
+                                                        @if (!empty($conf['note'])) • {{ $conf['note'] }} @endif
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            <div class="text-slate-600">- ไม่มีรายการ Conference -</div>
+                                        @endif
+                                    </div>
                                 @endif
                             </div>
                         @endforeach
@@ -143,8 +203,22 @@
                                         <div class="text-slate-600">
                                             วันที่จัดส่ง: {{ $output->delivered_at ? $formatDateBE($output->delivered_at) : '-' }}
                                         </div>
+                                        @if ($output->year)
+                                            <div class="text-slate-600">วันที่เผยแพร่: {{ $output->year }}</div>
+                                        @endif
+                                        @if ($output->project_output)
+                                            <div class="text-slate-600">รายละเอียด/ลิงก์: {{ $output->project_output }}</div>
+                                        @endif
                                         @if ($output->description)
                                             <div class="text-slate-600">รายละเอียดเพิ่มเติม: {{ $output->description }}</div>
+                                        @endif
+                                        @if ($output->document_link)
+                                            <div class="text-slate-600">
+                                                ลิงก์เอกสาร:
+                                                <a href="{{ $output->document_link }}" class="text-blue-700 underline" target="_blank" rel="noopener">
+                                                    {{ $output->document_link }}
+                                                </a>
+                                            </div>
                                         @endif
                                     </div>
                                 @endforeach

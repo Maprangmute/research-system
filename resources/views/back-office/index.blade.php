@@ -136,10 +136,14 @@
                                 class="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-sm">PDF</a>
                         </div>
                     </div>
-                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
                         <div class="rounded-xl bg-slate-50 p-3">
                             <div class="text-xs text-slate-500">ภาระงาน</div>
                             <div class="text-lg font-semibold text-slate-900">{{ number_format($task->entries_count) }}</div>
+                        </div>
+                        <div class="rounded-xl bg-slate-50 p-3">
+                            <div class="text-xs text-slate-500">ผลงาน</div>
+                            <div class="text-lg font-semibold text-slate-900">{{ number_format($task->outputs_count ?? 0) }}</div>
                         </div>
                         <div class="rounded-xl bg-slate-50 p-3">
                             <div class="text-xs text-slate-500">ชั่วโมงรวม</div>
