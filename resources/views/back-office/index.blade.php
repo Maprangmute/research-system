@@ -165,7 +165,7 @@
         </div>
 
         <div>
-            {{ $tasks->links() }}
+            {{ $tasks->links('vendor.pagination.th') }}
         </div>
     </div>
 @endsection

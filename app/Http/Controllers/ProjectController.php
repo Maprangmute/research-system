@@ -15,6 +15,21 @@ class ProjectController extends Controller
 {
     public function index(Request $request)
     {
+        $view = 'projects.index';
+        $forceView = $request->query('view');
+        if ($forceView === 'mobile') {
+            $view = 'projects.index_mobile';
+        } elseif ($forceView !== 'desktop') {
+            $ua = (string) $request->header('User-Agent', '');
+            $isMobile = (bool) preg_match(
+                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
+                $ua
+            );
+            if ($isMobile) {
+                $view = 'projects.index_mobile';
+            }
+        }
+
         $user = auth()->user();
         $applyPermission = function ($q) use ($user) {
             if ($user->role === 'admin' || $user->role === 'user_all') {
@@ -172,7 +187,7 @@ class ProjectController extends Controller
         $budgetMin = (clone $baseQuery)->min('budget') ?? 0;
         $budgetMax = (clone $baseQuery)->max('budget') ?? 0;
 
-        return view('projects.index', [
+        return view($view, [
             'projects' => $projects,
             'missingFTE' => $missingFTE,
             'piOptions' => $piOptions,

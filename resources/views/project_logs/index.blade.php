@@ -127,7 +127,7 @@
         </table>
     </div>
     <div class="mt-4">
-        {{ $logs->links() }}
+        {{ $logs->links('vendor.pagination.th') }}
     </div>
 </div>
 

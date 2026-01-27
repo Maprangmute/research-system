@@ -14,13 +14,25 @@
             --lux-mist: #fbfaf7;
         }
 
+        html,
+        body {
+            height: 100%;
+            overscroll-behavior-y: none;
+        }
+
+        body {
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #f3f4f6;
+        }
+
         .lux-page {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             color: var(--lux-ink);
             background: none;
-            min-height: 100vh;
+            min-height: 100%;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
         .lux-title {
@@ -512,24 +524,10 @@
                         <h2 class="lux-title text-3xl md:text-4xl text-slate-900">ภาพรวมโครงการวิจัย</h2>
 
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        <span class="lux-chip text-xs font-semibold px-3 py-1 rounded-full">อัปเดตล่าสุด
-                            {{ now()->format('d/m/Y') }}</span>
-                        <span class="lux-chip text-xs font-semibold px-3 py-1 rounded-full">ทั้งหมด
-                            {{ $projects->count() }} โครงการ</span>
-                        <span class="lux-chip text-xs font-semibold px-3 py-1 rounded-full">PI
-                            {{ $projects->pluck('pi_name')->unique()->count() }} คน</span>
-                    </div>
+                   
                 </div>
                 <div class="lux-divider mt-6"></div>
 
-                <div class="lux-quick-nav md:hidden">
-                    <a href="#section-summary">สรุปภาพรวม</a>
-                    <a href="#section-charts">กราฟ</a>
-                    <a href="#section-irb">IRB</a>
-                    <a href="#section-copi">Co-PI</a>
-                    <a href="#section-projects">โครงการ</a>
-                </div>
 
                 <!-- 1) Summary Cards -->
                 <div id="section-summary"></div>
@@ -727,33 +725,44 @@
                     id="chartOverdueProjects" height="250"></canvas>
             </div>
 
-            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 md:col-span-2">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-                    <h3 class="text-sm font-semibold text-gray-700">⏱️ รายการโครงการที่เกินกำหนด (ลงรายละเอียด)</h3>
-                    <span id="overdueCountBadge"
-                        class="text-xs font-semibold px-3 py-1 rounded-full lux-chip">0 โครงการ</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border lux-mobile-table" id="overdueTable">
-                        <thead class="bg-gray-50 text-xs text-gray-700">
-                            <tr>
-                                <th class="p-2 text-left">ชื่อโครงการ</th>
-                                <th class="p-2 text-center">วันสิ้นสุด</th>
-                                <th class="p-2 text-center">เกินกำหนด (วัน)</th>
-                                <th class="p-2 text-center">PI</th>
-                            </tr>
-                        </thead>
-                        <tbody id="overdueTableBody">
-                            <tr class="border-t">
-                                <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
-                    <button id="overduePrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
-                    <div id="overduePagination">หน้า 1 / 1</div>
-                    <button id="overdueNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 md:col-span-2 lux-drawer"
+                data-lux-drawer="overdue">
+                <button type="button"
+                    class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-left"
+                    data-drawer-toggle aria-expanded="false">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-semibold text-gray-700">⏱️ รายการโครงการที่เกินกำหนด (ลงรายละเอียด)</h3>
+                        <span id="overdueCountBadge"
+                            class="text-xs font-semibold px-3 py-1 rounded-full lux-chip">0 โครงการ</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <span>กดเพื่อดู/ซ่อน</span>
+                        <span class="drawer-chevron transition-transform">▾</span>
+                    </div>
+                </button>
+                <div class="lux-drawer-body hidden mt-3" data-drawer-body>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm border lux-mobile-table" id="overdueTable">
+                            <thead class="bg-gray-50 text-xs text-gray-700">
+                                <tr>
+                                    <th class="p-2 text-left">ชื่อโครงการ</th>
+                                    <th class="p-2 text-center">วันสิ้นสุด</th>
+                                    <th class="p-2 text-center">เกินกำหนด (วัน)</th>
+                                    <th class="p-2 text-center">PI</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overdueTableBody">
+                                <tr class="border-t">
+                                    <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
+                        <button id="overduePrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
+                        <div id="overduePagination">หน้า 1 / 1</div>
+                        <button id="overdueNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                    </div>
                 </div>
             </div>
 
@@ -864,44 +873,66 @@
         </div>
 
             <!-- IRB List -->
-            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6" id="section-irb">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6 lux-drawer" id="section-irb"
+                data-lux-drawer="irb">
+                <button type="button"
+                    class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-left"
+                    data-drawer-toggle aria-expanded="false">
                     <h3 class="text-sm font-semibold text-gray-700">📑 รายการ IRB</h3>
-                    <label class="text-xs text-gray-500">ตัวกรอง:
-                        <select id="irbDashFilter" class="ml-1 border rounded px-2 py-1 text-xs">
-                            <option value="exp_3m">IRB จะหมดอายุใน 3 เดือน</option>
-                            <option value="latest">IRB ใหม่สุด → เก่าสุด</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border lux-mobile-table" id="irbDashTable">
-                        <thead class="bg-gray-50 text-xs text-gray-700">
-                            <tr>
-                                <th class="p-2 text-left">โครงการ</th>
-                                <th class="p-2 text-left">รหัส IRB</th>
-                                <th class="p-2 text-left">หน่วยงาน</th>
-                                <th class="p-2 text-center">วันหมดอายุ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="irbDashBody">
-                            <tr class="border-t">
-                                <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
-                    <button id="irbDashPrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
-                    <div id="irbDashPagination">หน้า 1 / 1</div>
-                    <button id="irbDashNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <span>กดเพื่อดู/ซ่อน</span>
+                        <span class="drawer-chevron transition-transform">▾</span>
+                    </div>
+                </button>
+                <div class="lux-drawer-body hidden mt-3" data-drawer-body>
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                        <div class="text-xs text-gray-500">ตัวกรอง:</div>
+                        <label class="text-xs text-gray-500">
+                            <select id="irbDashFilter" class="ml-1 border rounded px-2 py-1 text-xs">
+                                <option value="exp_3m">IRB จะหมดอายุใน 3 เดือน</option>
+                                <option value="latest">IRB ใหม่สุด → เก่าสุด</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm border lux-mobile-table" id="irbDashTable">
+                            <thead class="bg-gray-50 text-xs text-gray-700">
+                                <tr>
+                                    <th class="p-2 text-left">โครงการ</th>
+                                    <th class="p-2 text-left">รหัส IRB</th>
+                                    <th class="p-2 text-left">หน่วยงาน</th>
+                                    <th class="p-2 text-center">วันหมดอายุ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irbDashBody">
+                                <tr class="border-t">
+                                    <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
+                        <button id="irbDashPrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
+                        <div id="irbDashPagination">หน้า 1 / 1</div>
+                        <button id="irbDashNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                    </div>
                 </div>
             </div>
         </div>
 
             <!-- 4) Co-Research (จาก COPIs) Summary -->
-            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6" id="section-copi">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 รายชื่อผู้วิจัยร่วม CO-PI</h3>
+            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6 lux-drawer" id="section-copi"
+                data-lux-drawer="copi">
+                <button type="button"
+                    class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-left mb-3"
+                    data-drawer-toggle aria-expanded="false">
+                    <h3 class="text-sm font-semibold text-gray-700">🤝 รายชื่อผู้วิจัยร่วม CO-PI</h3>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <span>กดเพื่อดู/ซ่อน</span>
+                        <span class="drawer-chevron transition-transform">▾</span>
+                    </div>
+                </button>
+                <div class="lux-drawer-body hidden" data-drawer-body>
 
                 @php
                     // รวมตาม "ชื่อ|หน่วยงาน" เพื่อกันกรณีชื่อซ้ำคนละสังกัด
@@ -939,6 +970,7 @@
                     <button id="copiPrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
                     <div id="copiPagination">หน้า 1 / 1</div>
                     <button id="copiNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                </div>
                 </div>
             </div>
 
@@ -1043,6 +1075,57 @@
                 setTimeout(() => {
                     if (window.innerWidth <= 640) hideTip();
                 }, 7000);
+            });
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const drawers = Array.from(document.querySelectorAll('[data-lux-drawer]'));
+                if (!drawers.length) return;
+
+                const closeDrawer = (drawer) => {
+                    const body = drawer.querySelector('[data-drawer-body]');
+                    const toggle = drawer.querySelector('[data-drawer-toggle]');
+                    const chevron = drawer.querySelector('.drawer-chevron');
+                    body?.classList.add('hidden');
+                    toggle?.setAttribute('aria-expanded', 'false');
+                    chevron?.classList.remove('rotate-180');
+                };
+
+                const openDrawer = (drawer) => {
+                    const body = drawer.querySelector('[data-drawer-body]');
+                    const toggle = drawer.querySelector('[data-drawer-toggle]');
+                    const chevron = drawer.querySelector('.drawer-chevron');
+                    body?.classList.remove('hidden');
+                    toggle?.setAttribute('aria-expanded', 'true');
+                    chevron?.classList.add('rotate-180');
+                };
+
+                drawers.forEach(drawer => {
+                    const toggle = drawer.querySelector('[data-drawer-toggle]');
+                    const body = drawer.querySelector('[data-drawer-body]');
+                    if (!toggle || !body) return;
+                    toggle.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        const isOpen = !body.classList.contains('hidden');
+                        drawers.forEach(d => {
+                            if (d !== drawer) closeDrawer(d);
+                        });
+                        if (isOpen) {
+                            closeDrawer(drawer);
+                        } else {
+                            openDrawer(drawer);
+                        }
+                    });
+                    body.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                    });
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!event.target.closest('[data-lux-drawer]')) {
+                        drawers.forEach(closeDrawer);
+                    }
+                });
             });
         </script>
         <script>
@@ -1230,12 +1313,14 @@
                     return;
                 }
 
-                if (modalType === 'redzone' || modalType === 'overdue') {
+                if (modalType === 'redzone' || modalType === 'overdue' || modalType === 'remaining') {
                     const now = new Date();
                     const pageSize = state.pageSize || 10;
                     const yearOptions = Array.from(new Set(rows.map(endYearLabel))).sort();
                     const activeYear = state.yearFilter || '';
-                    const diffHeader = modalType === 'overdue' ? 'เกินกำหนด (วัน)' : 'คงเหลือ/เกิน (วัน)';
+                    const diffHeader = modalType === 'overdue'
+                        ? 'เกินกำหนด (วัน)'
+                        : (modalType === 'remaining' ? 'คงเหลือ (วัน)' : 'คงเหลือ/เกิน (วัน)');
 
                     const filtered = activeYear ? rows.filter(p => endYearLabel(p) === activeYear) : rows.slice();
                     const sorted = applyProjectSort(filtered, mode || 'name_asc');
@@ -1276,7 +1361,21 @@
                         pageRows.forEach((p, idx) => {
                             const endDate = parseProjectDate(getEndDateRaw(p));
                             const diffDays = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
-                            const diffLabel = diffDays == null ? '-' : (diffDays < 0 ? `${Math.abs(diffDays)}` : `${diffDays}`);
+                            let diffLabel = '-';
+                            let diffClass = 'text-amber-600 font-semibold';
+                            if (diffDays != null) {
+                                if (modalType === 'overdue') {
+                                    diffLabel = `${Math.abs(diffDays)}`;
+                                    diffClass = 'text-red-600 font-semibold';
+                                } else if (modalType === 'remaining') {
+                                    diffLabel = `${Math.max(diffDays, 0)}`;
+                                    diffClass = 'text-emerald-600 font-semibold';
+                                } else {
+                                    diffLabel = diffDays < 0 ? `${Math.abs(diffDays)}` : `${diffDays}`;
+                                    diffClass = diffDays < 0 ? 'text-red-600 font-semibold' :
+                                        'text-amber-600 font-semibold';
+                                }
+                            }
                             html += `
                                 <tr class="border-t">
                                     <td class="p-2 text-center" data-label="#">${start + idx + 1}</td>
@@ -1284,7 +1383,7 @@
                                         <a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a>
                                     </td>
                                     <td class="p-2 text-center" data-label="ปีสิ้นสุด">${formatDateTH(endDate, '-')}</td>
-                                    <td class="p-2 text-center ${diffDays < 0 ? 'text-red-600 font-semibold' : 'text-amber-600 font-semibold'}" data-label="${diffHeader}">${diffLabel}</td>
+                                    <td class="p-2 text-center ${diffClass}" data-label="${diffHeader}">${diffLabel}</td>
                                     <td class="p-2 text-center" data-label="PI">${p.pi_name || '-'}</td>
                                 </tr>
                             `;
@@ -1814,17 +1913,18 @@
                 if (id === 'chartOverdueProjects') {
                     const now = new Date();
                     const labelText = String(label || '');
+                    const isOverdue = labelText.includes('เกินกำหนด');
                     const list = projects.filter(p => {
                         const endDate = parseProjectDate(getEndDateRaw(p));
                         if (!endDate) return false;
                         const diffDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-                        if (labelText.includes('เกินกำหนด')) return diffDays < 0;
+                        if (isOverdue) return diffDays < 0;
                         return diffDays >= 0;
                     });
                     return {
                         title: labelText,
                         projects: list,
-                        modalType: 'overdue'
+                        modalType: isOverdue ? 'overdue' : 'remaining'
                     };
                 }
 

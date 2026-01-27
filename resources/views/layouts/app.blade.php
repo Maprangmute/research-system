@@ -112,7 +112,7 @@
                                 alt="Profile" class="w-full h-full object-cover">
                         </button>
 
-                        <div x-show="open" @click.away="open = false"
+                        <div x-show="open" x-cloak @click.away="open = false"
                             class="absolute right-0 mt-2 w-72 bg-white border rounded shadow-md z-50">
                             <div class="px-4 py-2 text-sm text-gray-800 border-b leading-tight">
                                 <div class="font-medium">

@@ -441,7 +441,7 @@
                                     @php
                                         $updated = $project->updated_at ? \Carbon\Carbon::parse($project->updated_at) : null;
                                     @endphp
-                                    {{ $updated ? $updated->locale('th')->translatedFormat('j M') . ' ' . ($updated->year + 543) : '-' }}
+                                    {{ $updated ? $updated->locale('th')->translatedFormat('j F') . ' ' . ($updated->year + 543) : '-' }}
                                 </td>
 
                                 {{-- hidden form for delete --}}
@@ -462,7 +462,7 @@
             </div>
 
             <div class="px-4 py-3 border-t bg-slate-50">
-                {{ $projects->links() }}
+                {{ $projects->links('vendor.pagination.th') }}
             </div>
         </div>
     </div>

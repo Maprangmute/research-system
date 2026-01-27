@@ -4,9 +4,11 @@
     <style>
         html,
         body {
-            height: 100%;
-            overscroll-behavior: none;
-            background: #f8fafc;
+            height: auto;
+            min-height: 100%;
+            background: transparent;
+            overscroll-behavior: auto;
+            overflow-y: auto;
         }
 
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap');
@@ -187,12 +189,32 @@
                 height: 100dvh;
                 border-left: none;
                 border-top: 1px solid #e5e7eb;
+                border-radius: 16px 16px 0 0;
+            }
+
+            #aiChatPanel .ai-suggest {
+                font-size: 11px;
+                white-space: normal;
+                line-height: 1.3;
+            }
+
+            #aiChatBody {
+                padding-bottom: 12px;
+            }
+
+            #aiChatForm {
+                padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            }
+
+            #aiChatFabWrap {
+                right: 1rem;
+                bottom: calc(1rem + env(safe-area-inset-bottom));
             }
 
             .lux-chart-scroll {
                 display: flex;
                 overflow-x: auto;
-                gap: 1rem;
+                gap: 6px;
                 scroll-snap-type: x mandatory;
                 align-items: flex-start;
                 padding-bottom: 0.75rem;
@@ -299,10 +321,7 @@
         }
 
         .lux-quick-nav {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 6px 0 4px;
+            display: none;
         }
 
         .lux-quick-nav a {
@@ -315,60 +334,155 @@
             white-space: nowrap;
         }
 
+        .lux-quick-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .lux-quick-tile {
+            border-radius: 14px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            background: rgba(255, 255, 255, 0.96);
+            padding: 8px 10px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 4px;
+            color: #0f172a;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        .lux-quick-icon {
+            font-size: 16px;
+        }
+
+        .lux-quick-title {
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .lux-quick-sub {
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        .lux-chart-meta {
+            margin-top: 8px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px dashed rgba(148, 163, 184, 0.5);
+            font-size: 12px;
+            color: #334155;
+            line-height: 1.4;
+        }
+
+        .lux-scroll-hint {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.92);
+            color: #ffffff;
+            font-size: 11px;
+            z-index: 5;
+            pointer-events: none;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.22);
+        }
+
+        .lux-scroll-hint.blink {
+            animation: lux-blink 1.2s ease-in-out infinite;
+        }
+
+        @keyframes lux-blink {
+            0%,
+            100% {
+                opacity: 0.35;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .lux-scroll-hint .arrow {
+            font-size: 14px;
+        }
+
+        .lux-scroll-hint.is-hide {
+            display: none;
+        }
+
         .lux-summary-scroll {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 1rem;
         }
 
-        .lux-summary-card {
-            border-radius: 16px;
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            background: #ffffff;
-            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.08);
-            padding: 14px;
+        .lux-summary-tiles {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .lux-summary-tile {
+            border-radius: 14px;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            background: rgba(255, 255, 255, 0.96);
+            padding: 10px 12px;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
             display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 12px;
+            gap: 6px;
+        }
+
+        .lux-summary-tile[data-tone='emerald'] {
+            border-color: rgba(5, 150, 105, 0.35);
+        }
+
+        .lux-summary-tile[data-tone='amber'] {
+            border-color: rgba(217, 119, 6, 0.35);
+        }
+
+        .lux-summary-tile[data-tone='sky'] {
+            border-color: rgba(14, 116, 144, 0.35);
+        }
+
+        .lux-summary-tile[data-tone='violet'] {
+            border-color: rgba(124, 58, 237, 0.3);
+        }
+
+        .lux-summary-top {
+            display: flex;
             align-items: center;
-        }
-
-        .lux-summary-card[data-tone='emerald'] {
-            border-color: rgba(5, 150, 105, 0.4);
-        }
-
-        .lux-summary-card[data-tone='amber'] {
-            border-color: rgba(217, 119, 6, 0.4);
-        }
-
-        .lux-summary-card[data-tone='sky'] {
-            border-color: rgba(14, 116, 144, 0.4);
-        }
-
-        .lux-summary-card[data-tone='violet'] {
-            border-color: rgba(124, 58, 237, 0.35);
+            justify-content: space-between;
+            gap: 10px;
         }
 
         .lux-summary-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 14px;
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
-            background: rgba(15, 23, 42, 0.08);
+            font-size: 14px;
+            background: rgba(15, 23, 42, 0.06);
         }
 
         .lux-summary-value {
-            font-size: 1.4rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: #0f172a;
         }
 
         .lux-summary-label {
             font-size: 0.8rem;
-            color: #475569;
+            color: #0f172a;
+            font-weight: 600;
         }
 
         .lux-summary-sub {
@@ -476,7 +590,7 @@
 
         @media (max-width: 640px) {
             .lux-page {
-                background: linear-gradient(180deg, #f1f5f9 0%, #ffffff 40%, #f8fafc 100%);
+                background: transparent;
             }
 
             .lux-page::before {
@@ -510,8 +624,7 @@
 
         .lux-page {
             font-family: 'Plus Jakarta Sans', 'IBM Plex Sans Thai', sans-serif;
-            background: radial-gradient(circle at top, rgba(14, 116, 144, 0.12), transparent 55%),
-                linear-gradient(180deg, #f8fafc 0%, #ffffff 45%, #f1f5f9 100%);
+            background: transparent;
             font-size: 17px;
             line-height: 1.65;
         }
@@ -536,6 +649,27 @@
             color: #0f172a;
         }
 
+        .lux-top-nav {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .lux-top-nav a {
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(255, 255, 255, 0.96);
+            color: #0f172a;
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            line-height: 1.2;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
         .lux-summary-scroll {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -558,14 +692,15 @@
             font-size: 1.75rem;
         }
 
-        .lux-chart-scroll {
-            display: flex;
-            overflow-x: auto;
-            gap: 1rem;
-            scroll-snap-type: x mandatory;
-            padding-bottom: 0.75rem;
-            -webkit-overflow-scrolling: touch;
-        }
+            .lux-chart-scroll {
+                display: flex;
+                overflow-x: auto;
+                gap: 1rem;
+                scroll-snap-type: x mandatory;
+                align-items: flex-start;
+                padding-bottom: 0.75rem;
+                -webkit-overflow-scrolling: touch;
+            }
 
         .lux-chart-card {
             min-width: 86vw;
@@ -608,7 +743,7 @@
             }
 
             .lux-chart-card canvas {
-                height: 260px !important;
+                height: clamp(260px, 70vw, 420px) !important;
             }
         }
 
@@ -781,6 +916,43 @@
             }
         }
 
+        /* Let chart cards size to content on mobile */
+        @media (max-width: 640px) {
+            .lux-chart-card {
+                height: auto !important;
+                min-height: 0 !important;
+            }
+
+            .lux-page .lux-chart-card canvas {
+                width: 100% !important;
+                height: auto !important;
+            }
+        }
+
+        /* Summary tiles override (final) */
+        .lux-summary-tiles {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+            overflow: hidden !important;
+        }
+
+        .lux-summary-tiles .lux-summary-tile {
+            min-width: 0 !important;
+        }
+
+        @media (max-width: 640px) {
+            .lux-summary-tiles {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .lux-summary-tiles {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
         .lux-page .text-xs {
             font-size: 0.95rem;
         }
@@ -795,6 +967,13 @@
 
         .lux-page .text-xl {
             font-size: 1.35rem;
+        }
+
+        /* Summary cards: compact, consistent on small screens */
+        @media (max-width: 380px) {
+            .lux-summary-tiles {
+                grid-template-columns: 1fr;
+            }
         }
 
         .lux-page .lux-chart-card {
@@ -823,44 +1002,145 @@
         }
 
         .lux-mobile-container {
-            max-width: 36rem;
+            max-width: 60rem;
             margin: 0 auto;
+            background: transparent;
+        }
+
+        /* Mobile polish */
+        .lux-page *,
+        .lux-page *::before,
+        .lux-page *::after {
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 640px) {
+            .lux-mobile-container {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
+            .lux-card,
+            .lux-hero {
+                padding: 16px !important;
+            }
+
+            .lux-summary-scroll {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .lux-summary-card {
+                display: grid;
+                grid-template-columns: 32px 1fr;
+                align-items: center;
+                gap: 10px;
+                padding: 10px;
+            }
+
+            .lux-summary-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+                border-radius: 10px;
+            }
+
+            .lux-summary-value {
+                font-size: 1.1rem;
+            }
+
+            .lux-summary-label {
+                font-size: 0.75rem;
+            }
+
+            .lux-chart-card canvas {
+                max-width: 100% !important;
+            }
+
+            .lux-filter-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            .lux-mobile-table td {
+                align-items: flex-start;
+                flex-wrap: wrap;
+                word-break: break-word;
+            }
+
+            .lux-quick-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .lux-mobile-table tr {
+                padding: 8px 10px;
+            }
+
+            .lux-mobile-table td {
+                padding: 4px 0;
+            }
         }
     </style>
 
     <div class="lux-page">
-        <div class="lux-mobile-container mx-auto px-4 py-8 space-y-8">
+        <div class="lux-mobile-container mx-auto px-4 py-8 space-y-6">
+            <div class="lux-top-nav">
+                <a href="/dashboard">📊 Dashboard</a>
+                <a href="/rm">📋 รายการโปรเจค</a>
+                <a href="{{ route('back_office.index') }}">🧾 Back Office</a>
+                <a href="/rm/create">➕ เพิ่มโครงการ</a>
+                <a href="{{ route('outputs.index') }}">📑 outputs</a>
+                <a href="{{ route('fte.index') }}">🔥 FTE รายบุคคล</a>
+                <a href="{{ route('fte.project.index') }}">🔥 FTE รายโปรเจค</a>
+            </div>
             <div class="lux-card lux-hero p-6 md:p-8">
                 <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h2 class="lux-title text-3xl md:text-4xl text-slate-900">ภาพรวมโครงการวิจัย</h2>
 
                     </div>
-                    <div class="flex flex-wrap gap-2">
+                    {{-- <div class="flex flex-wrap gap-2">
                         <span class="lux-chip text-xs font-semibold px-3 py-1 rounded-full">อัปเดตล่าสุด
                             {{ now()->format('d/m/Y') }}</span>
                         <span class="lux-chip text-xs font-semibold px-3 py-1 rounded-full">ทั้งหมด
                             {{ $projects->count() }} โครงการ</span>
                         <span class="lux-chip text-xs font-semibold px-3 py-1 rounded-full">PI
                             {{ $projects->pluck('pi_name')->unique()->count() }} คน</span>
-                    </div>
+                    </div> --}}
                 </div>
                 <div class="lux-divider mt-6"></div>
 
-                <div class="lux-quick-nav md:hidden">
-                    <a href="#section-summary">สรุปภาพรวม</a>
-                    <a href="#section-charts">กราฟ</a>
-                    <a href="#section-irb">IRB</a>
-                    <a href="#section-copi">Co-PI</a>
-                    <a href="#section-projects">โครงการ</a>
-                </div>
+                {{-- <div class="lux-quick-grid md:hidden">
+                    <a href="#section-summary" class="lux-quick-tile">
+                        <span class="lux-quick-icon">🧭</span>
+                        <span class="lux-quick-title">สรุปภาพรวม</span>
+                        <span class="lux-quick-sub">ตัวเลขหลัก</span>
+                    </a>
+                    <a href="#section-charts" class="lux-quick-tile">
+                        <span class="lux-quick-icon">📈</span>
+                        <span class="lux-quick-title">กราฟ</span>
+                        <span class="lux-quick-sub">แนวโน้ม</span>
+                    </a>
+                    <a href="#section-irb" class="lux-quick-tile">
+                        <span class="lux-quick-icon">🧾</span>
+                        <span class="lux-quick-title">IRB</span>
+                        <span class="lux-quick-sub">ติดตาม</span>
+                    </a>
+                    <a href="#section-copi" class="lux-quick-tile">
+                        <span class="lux-quick-icon">👥</span>
+                        <span class="lux-quick-title">Co-PI</span>
+                        <span class="lux-quick-sub">ผู้ร่วม</span>
+                    </a>
+                    <a href="#section-projects" class="lux-quick-tile">
+                        <span class="lux-quick-icon">📁</span>
+                        <span class="lux-quick-title">โครงการ</span>
+                        <span class="lux-quick-sub">รายการ</span>
+                    </a>
+                </div> --}}
 
                 <!-- 1) Summary Cards -->
                 <div id="section-summary"></div>
-                <div class="mt-4 mb-2 text-xs text-slate-600 md:hidden">
-                    ปัดซ้ายขวาเพื่อดูสรุปทั้งหมด • แตะการ์ดเพื่ออ่านเร็วขึ้น
-                </div>
-                <div class="lux-summary-scroll mt-2 lux-grid-stagger">
+               
+                <div class="lux-summary-scroll mt-2 lux-grid-stagger lux-summary-tiles">
             @php
                 $summaryItems = [
                     ['count' => $projects->count(), 'label' => 'โครงการ', 'icon' => '📁', 'tone' => 'emerald', 'sub' => 'ทั้งหมดในระบบ'],
@@ -872,13 +1152,13 @@
                 ];
             @endphp
                     @foreach ($summaryItems as $item)
-                        <div class="lux-summary-card" data-tone="{{ $item['tone'] }}">
-                            <div class="lux-summary-icon">{{ $item['icon'] }}</div>
-                            <div>
-                                <div class="lux-summary-value">{{ $item['count'] }}</div>
-                                <div class="lux-summary-label">{{ $item['label'] }}</div>
-                                <div class="lux-summary-sub">{{ $item['sub'] }}</div>
+                        <div class="lux-summary-tile" data-tone="{{ $item['tone'] }}">
+                            <div class="lux-summary-top">
+                                <span class="lux-summary-icon">{{ $item['icon'] }}</span>
+                                <span class="lux-summary-value">{{ $item['count'] }}</span>
                             </div>
+                            <div class="lux-summary-label">{{ $item['label'] }}</div>
+                            <div class="lux-summary-sub">{{ $item['sub'] }}</div>
                         </div>
                     @endforeach
                 </div>
@@ -1037,14 +1317,17 @@
                     </div>
                 </div>
             </div>
-            <div id="chartSwipeTip" class="lux-swipe-tip mb-3">
-                <span>เลื่อนซ้ายขวาเพื่อดูกราฟต่อไป • แตะกราฟเพื่อดูข้อมูลเพิ่ม</span>
-                <button type="button" data-close="chartSwipeTip">ปิด</button>
-            </div>
-            <div class="lux-chart-scroll mb-6">
+        <div id="chartSwipeTip" class="lux-swipe-tip mb-3">
+            <span>เลื่อนซ้ายขวาเพื่อดูกราฟต่อไป • แตะกราฟเพื่อดูข้อมูลเพิ่ม</span>
+            <button type="button" data-close="chartSwipeTip">ปิด</button>
+        </div>
+            <div class="lux-chart-scroll mb-6 relative">
+                <div id="chartScrollHint" class="lux-scroll-hint blink md:hidden" role="status" aria-live="polite">
+                    <span>เลื่อน →</span>
+                </div>
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🔴 RED ZONE: โครงการใกล้สิ้นสุด / เกินกำหนด</h3>
-                <canvas id="chartRedZoneTimeline" height="250"></canvas>
+                <canvas id="chartRedZoneTimeline" height="320"></canvas>
             </div>
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🔥 โครงการที่เกินกำหนดแล้ว (Overdue)</h3> <canvas
@@ -1079,11 +1362,13 @@
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (Top 8)</h3>
                     <canvas id="chartExternalBySource" height="250"></canvas>
+                    <div id="externalFundingMeta" class="lux-chart-meta"></div>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายใน แยกตามแหล่งทุน (Top 8)</h3>
                     <canvas id="chartInternalBySource" height="250"></canvas>
+                    <div id="internalFundingMeta" class="lux-chart-meta"></div>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
@@ -1157,75 +1442,107 @@
             </div>
         </div>
 
-            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-                    <h3 class="text-sm font-semibold text-gray-700">⏱️ รายการโครงการที่เกินกำหนด (ลงรายละเอียด)</h3>
-                    <span id="overdueCountBadge"
-                        class="text-xs font-semibold px-3 py-1 rounded-full lux-chip">0 โครงการ</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border lux-mobile-table" id="overdueTable">
-                        <thead class="bg-gray-50 text-xs text-gray-700">
-                            <tr>
-                                <th class="p-2 text-left">ชื่อโครงการ</th>
-                                <th class="p-2 text-center">วันสิ้นสุด</th>
-                                <th class="p-2 text-center">เกินกำหนด (วัน)</th>
-                                <th class="p-2 text-center">PI</th>
-                            </tr>
-                        </thead>
-                        <tbody id="overdueTableBody">
-                            <tr class="border-t">
-                                <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
-                    <button id="overduePrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
-                    <div id="overduePagination">หน้า 1 / 1</div>
-                    <button id="overdueNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6 lux-drawer" data-lux-drawer="overdue">
+                <button type="button"
+                    class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-left"
+                    data-drawer-toggle aria-expanded="false">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-semibold text-gray-700">⏱️ รายการโครงการที่เกินกำหนด (ลงรายละเอียด)</h3>
+                        <span id="overdueCountBadge"
+                            class="text-xs font-semibold px-3 py-1 rounded-full lux-chip">0 โครงการ</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <span>กดเพื่อดู/ซ่อน</span>
+                        <span class="drawer-chevron transition-transform">▾</span>
+                    </div>
+                </button>
+                <div class="lux-drawer-body hidden mt-3" data-drawer-body>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm border lux-mobile-table" id="overdueTable">
+                            <thead class="bg-gray-50 text-xs text-gray-700">
+                                <tr>
+                                    <th class="p-2 text-left">ชื่อโครงการ</th>
+                                    <th class="p-2 text-center">วันสิ้นสุด</th>
+                                    <th class="p-2 text-center">เกินกำหนด (วัน)</th>
+                                    <th class="p-2 text-center">PI</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overdueTableBody">
+                                <tr class="border-t">
+                                    <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
+                        <button id="overduePrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
+                        <div id="overduePagination">หน้า 1 / 1</div>
+                        <button id="overdueNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                    </div>
                 </div>
             </div>
 
             <!-- IRB List -->
-            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6" id="section-irb">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6 lux-drawer" id="section-irb"
+                data-lux-drawer="irb">
+                <button type="button"
+                    class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-left"
+                    data-drawer-toggle aria-expanded="false">
                     <h3 class="text-sm font-semibold text-gray-700">📑 รายการ IRB</h3>
-                    <label class="text-xs text-gray-500">ตัวกรอง:
-                        <select id="irbDashFilter" class="ml-1 border rounded px-2 py-1 text-xs">
-                            <option value="exp_3m">IRB จะหมดอายุใน 3 เดือน</option>
-                            <option value="latest">IRB ใหม่สุด → เก่าสุด</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border lux-mobile-table" id="irbDashTable">
-                        <thead class="bg-gray-50 text-xs text-gray-700">
-                            <tr>
-                                <th class="p-2 text-left">โครงการ</th>
-                                <th class="p-2 text-left">รหัส IRB</th>
-                                <th class="p-2 text-left">หน่วยงาน</th>
-                                <th class="p-2 text-center">วันหมดอายุ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="irbDashBody">
-                            <tr class="border-t">
-                                <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
-                    <button id="irbDashPrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
-                    <div id="irbDashPagination">หน้า 1 / 1</div>
-                    <button id="irbDashNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <span>กดเพื่อดู/ซ่อน</span>
+                        <span class="drawer-chevron transition-transform">▾</span>
+                    </div>
+                </button>
+                <div class="lux-drawer-body hidden mt-3" data-drawer-body>
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                        <div class="text-xs text-gray-500">ตัวกรอง:</div>
+                        <label class="text-xs text-gray-500">
+                            <select id="irbDashFilter" class="ml-1 border rounded px-2 py-1 text-xs">
+                                <option value="exp_3m">IRB จะหมดอายุใน 3 เดือน</option>
+                                <option value="latest">IRB ใหม่สุด → เก่าสุด</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm border lux-mobile-table" id="irbDashTable">
+                            <thead class="bg-gray-50 text-xs text-gray-700">
+                                <tr>
+                                    <th class="p-2 text-left">โครงการ</th>
+                                    <th class="p-2 text-left">รหัส IRB</th>
+                                    <th class="p-2 text-left">หน่วยงาน</th>
+                                    <th class="p-2 text-center">วันหมดอายุ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="irbDashBody">
+                                <tr class="border-t">
+                                    <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
+                        <button id="irbDashPrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
+                        <div id="irbDashPagination">หน้า 1 / 1</div>
+                        <button id="irbDashNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                    </div>
                 </div>
             </div>
         </div>
 
             <!-- 4) Co-Research (จาก COPIs) Summary -->
-            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6" id="section-copi">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 รายชื่อผู้วิจัยร่วม CO-PI</h3>
+            <div class="bg-white shadow-sm border rounded-xl p-4 mb-6 lux-drawer" id="section-copi"
+                data-lux-drawer="copi">
+                <button type="button"
+                    class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-left mb-3"
+                    data-drawer-toggle aria-expanded="false">
+                    <h3 class="text-sm font-semibold text-gray-700">🤝 รายชื่อผู้วิจัยร่วม CO-PI</h3>
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <span>กดเพื่อดู/ซ่อน</span>
+                        <span class="drawer-chevron transition-transform">▾</span>
+                    </div>
+                </button>
+                <div class="lux-drawer-body hidden" data-drawer-body>
 
                 @php
                     // รวมตาม "ชื่อ|หน่วยงาน" เพื่อกันกรณีชื่อซ้ำคนละสังกัด
@@ -1263,6 +1580,7 @@
                     <button id="copiPrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
                     <div id="copiPagination">หน้า 1 / 1</div>
                     <button id="copiNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                </div>
                 </div>
             </div>
 
@@ -1392,6 +1710,57 @@
             });
         </script>
         <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const drawers = Array.from(document.querySelectorAll('[data-lux-drawer]'));
+                if (!drawers.length) return;
+
+                const closeDrawer = (drawer) => {
+                    const body = drawer.querySelector('[data-drawer-body]');
+                    const toggle = drawer.querySelector('[data-drawer-toggle]');
+                    const chevron = drawer.querySelector('.drawer-chevron');
+                    body?.classList.add('hidden');
+                    toggle?.setAttribute('aria-expanded', 'false');
+                    chevron?.classList.remove('rotate-180');
+                };
+
+                const openDrawer = (drawer) => {
+                    const body = drawer.querySelector('[data-drawer-body]');
+                    const toggle = drawer.querySelector('[data-drawer-toggle]');
+                    const chevron = drawer.querySelector('.drawer-chevron');
+                    body?.classList.remove('hidden');
+                    toggle?.setAttribute('aria-expanded', 'true');
+                    chevron?.classList.add('rotate-180');
+                };
+
+                drawers.forEach(drawer => {
+                    const toggle = drawer.querySelector('[data-drawer-toggle]');
+                    const body = drawer.querySelector('[data-drawer-body]');
+                    if (!toggle || !body) return;
+                    toggle.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        const isOpen = !body.classList.contains('hidden');
+                        drawers.forEach(d => {
+                            if (d !== drawer) closeDrawer(d);
+                        });
+                        if (isOpen) {
+                            closeDrawer(drawer);
+                        } else {
+                            openDrawer(drawer);
+                        }
+                    });
+                    body.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                    });
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!event.target.closest('[data-lux-drawer]')) {
+                        drawers.forEach(closeDrawer);
+                    }
+                });
+            });
+        </script>
+        <script>
             /* ---------- Data from backend ---------- */
 
             const projects = @json($projects);
@@ -1404,6 +1773,38 @@
             const isTabletLandscape = window.matchMedia(
                 '(min-width: 900px) and (max-width: 1180px) and (orientation: landscape)'
             ).matches;
+
+            // Mobile readability defaults
+            if (window.Chart && isMobileView) {
+                Chart.defaults.font.size = 12;
+                Chart.defaults.layout.padding = 6;
+                if (Chart.defaults.plugins?.legend) {
+                    Chart.defaults.plugins.legend.position = 'bottom';
+                    Chart.defaults.plugins.legend.labels.boxWidth = 8;
+                    Chart.defaults.plugins.legend.labels.padding = 6;
+                }
+                Chart.defaults.scales = Chart.defaults.scales || {};
+                Chart.defaults.scales.x = Object.assign({}, Chart.defaults.scales.x, {
+                    ticks: {
+                        autoSkip: true,
+                        maxTicksLimit: 4,
+                        maxRotation: 0,
+                        minRotation: 0
+                    },
+                    grid: {
+                        display: false
+                    }
+                });
+                Chart.defaults.scales.y = Object.assign({}, Chart.defaults.scales.y, {
+                    ticks: {
+                        autoSkip: true,
+                        maxTicksLimit: 5
+                    },
+                    grid: {
+                        color: 'rgba(148, 163, 184, 0.25)'
+                    }
+                });
+            }
             const truncateLegendLabel = (text, max = 16) => {
                 const value = String(text ?? '');
                 if (!isMobileView || value.length <= max) return value;
@@ -1593,12 +1994,14 @@
                     return;
                 }
 
-                if (modalType === 'redzone' || modalType === 'overdue') {
+                if (modalType === 'redzone' || modalType === 'overdue' || modalType === 'remaining') {
                     const now = new Date();
                     const pageSize = state.pageSize || 10;
                     const yearOptions = Array.from(new Set(rows.map(endYearLabel))).sort();
                     const activeYear = state.yearFilter || '';
-                    const diffHeader = modalType === 'overdue' ? 'เกินกำหนด (วัน)' : 'คงเหลือ/เกิน (วัน)';
+                    const diffHeader = modalType === 'overdue'
+                        ? 'เกินกำหนด (วัน)'
+                        : (modalType === 'remaining' ? 'คงเหลือ (วัน)' : 'คงเหลือ/เกิน (วัน)');
 
                     const filtered = activeYear ? rows.filter(p => endYearLabel(p) === activeYear) : rows.slice();
                     const sorted = applyProjectSort(filtered, mode || 'name_asc');
@@ -1639,7 +2042,21 @@
                         pageRows.forEach((p, idx) => {
                             const endDate = parseProjectDate(getEndDateRaw(p));
                             const diffDays = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
-                            const diffLabel = diffDays == null ? '-' : (diffDays < 0 ? `${Math.abs(diffDays)}` : `${diffDays}`);
+                            let diffLabel = '-';
+                            let diffClass = 'text-amber-600 font-semibold';
+                            if (diffDays != null) {
+                                if (modalType === 'overdue') {
+                                    diffLabel = `${Math.abs(diffDays)}`;
+                                    diffClass = 'text-red-600 font-semibold';
+                                } else if (modalType === 'remaining') {
+                                    diffLabel = `${Math.max(diffDays, 0)}`;
+                                    diffClass = 'text-emerald-600 font-semibold';
+                                } else {
+                                    diffLabel = diffDays < 0 ? `${Math.abs(diffDays)}` : `${diffDays}`;
+                                    diffClass = diffDays < 0 ? 'text-red-600 font-semibold' :
+                                        'text-amber-600 font-semibold';
+                                }
+                            }
                             html += `
                                 <tr class="border-t">
                                     <td class="p-2 text-center" data-label="#">${start + idx + 1}</td>
@@ -1647,7 +2064,7 @@
                                         <a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a>
                                     </td>
                                     <td class="p-2 text-center" data-label="ปีสิ้นสุด">${formatDateTH(endDate, '-')}</td>
-                                    <td class="p-2 text-center ${diffDays < 0 ? 'text-red-600 font-semibold' : 'text-amber-600 font-semibold'}" data-label="${diffHeader}">${diffLabel}</td>
+                                    <td class="p-2 text-center ${diffClass}" data-label="${diffHeader}">${diffLabel}</td>
                                     <td class="p-2 text-center" data-label="PI">${p.pi_name || '-'}</td>
                                 </tr>
                             `;
@@ -2177,17 +2594,18 @@
                 if (id === 'chartOverdueProjects') {
                     const now = new Date();
                     const labelText = String(label || '');
+                    const isOverdue = labelText.includes('เกินกำหนด');
                     const list = projects.filter(p => {
                         const endDate = parseProjectDate(getEndDateRaw(p));
                         if (!endDate) return false;
                         const diffDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-                        if (labelText.includes('เกินกำหนด')) return diffDays < 0;
+                        if (isOverdue) return diffDays < 0;
                         return diffDays >= 0;
                     });
                     return {
                         title: labelText,
                         projects: list,
-                        modalType: 'overdue'
+                        modalType: isOverdue ? 'overdue' : 'remaining'
                     };
                 }
 
@@ -3450,6 +3868,13 @@
                     el.style.width = '100%';
                     externalChart.resize();
                 }
+
+                const meta = document.getElementById('externalFundingMeta');
+                if (meta) {
+                    const topText = top.slice(0, 3).map(e => `${e.label} (${e.count})`).join(' • ') || '-';
+                    const totalAll = entries.reduce((s, e) => s + (e.budget || 0), 0);
+                    meta.textContent = `Top แหล่งทุน: ${topText} · งบรวม ${formatThaiMoney(totalAll)}`;
+                }
             })();
 
 
@@ -3567,6 +3992,13 @@
                     el.style.height = '840px';
                     el.style.width = '100%';
                     internalChart.resize();
+                }
+
+                const meta = document.getElementById('internalFundingMeta');
+                if (meta) {
+                    const topText = top.slice(0, 3).map(e => `${e.label} (${e.count})`).join(' • ') || '-';
+                    const totalAll = entries.reduce((s, e) => s + (e.budget || 0), 0);
+                    meta.textContent = `Top แหล่งทุน: ${topText} · งบรวม ${formatThaiMoney(totalAll)}`;
                 }
             })();
 
@@ -5360,5 +5792,36 @@
                 }
             });
         </script>
+
+        <script>
+            // Hide chart scroll hint once user scrolls
+            document.addEventListener('DOMContentLoaded', () => {
+                const scroller = document.querySelector('.lux-chart-scroll');
+                const hint = document.getElementById('chartScrollHint');
+                if (!scroller || !hint) return;
+
+                const hide = () => hint.classList.add('is-hide');
+                scroller.addEventListener('scroll', hide, { once: true });
+                scroller.addEventListener('touchmove', hide, { once: true });
+            });
+        </script>
+
+        <script>
+            // Ensure charts resize on mobile orientation/viewport changes
+            const resizeCharts = () => {
+                document.querySelectorAll('.lux-chart-card canvas').forEach((c) => {
+                    const chart = typeof Chart !== 'undefined' ? Chart.getChart(c) : null;
+                    if (chart) chart.resize();
+                });
+            };
+            window.addEventListener('resize', () => {
+                clearTimeout(window.__chartResizeTimer);
+                window.__chartResizeTimer = setTimeout(resizeCharts, 150);
+            });
+            window.addEventListener('orientationchange', () => {
+                setTimeout(resizeCharts, 200);
+            });
+        </script>
+
     </div>
 @endsection
