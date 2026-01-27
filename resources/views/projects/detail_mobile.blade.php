@@ -722,8 +722,10 @@
                                     <div class="list-index">{{ $iKey }}</div>
                                     <div class="text-sm text-slate-700">{{ $desc }}</div>
                                     @if (!empty($project->$field))
-                                        <div class="tag bg-emerald-100 text-emerald-800">✓ มี</div>
+                                        <div class="tag bg-emerald-100 text-emerald-800">✓ </div>
+                                    @else <div class="tag bg-rose-100 text-rose-800">✗ </div>
                                     @endif
+                                   
                                 </div>
                             @endforeach
                         </div>
