@@ -36,6 +36,19 @@
                 @endforeach
             </select>
         </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">เรียงตาม</label>
+            <select name="sort" class="border rounded px-3 py-1.5 text-sm w-40">
+                <option value="latest" @selected(($sort ?? 'latest') === 'latest')>สร้างล่าสุด → เก่าสุด</option>
+                <option value="oldest" @selected(($sort ?? '') === 'oldest')>สร้างเก่าสุด → ล่าสุด</option>
+                <option value="project_asc" @selected(($sort ?? '') === 'project_asc')>ชื่อโครงการ (ก-ฮ)</option>
+                <option value="project_desc" @selected(($sort ?? '') === 'project_desc')>ชื่อโครงการ (ฮ-ก)</option>
+                <option value="user_asc" @selected(($sort ?? '') === 'user_asc')>ผู้ใช้ (ก-ฮ)</option>
+                <option value="user_desc" @selected(($sort ?? '') === 'user_desc')>ผู้ใช้ (ฮ-ก)</option>
+                <option value="action_asc" @selected(($sort ?? '') === 'action_asc')>เหตุการณ์ (ก-ฮ)</option>
+                <option value="action_desc" @selected(($sort ?? '') === 'action_desc')>เหตุการณ์ (ฮ-ก)</option>
+            </select>
+        </div>
         <div class="flex gap-2">
             <button type="submit" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">ค้นหา</button>
             <a href="{{ route('project_logs.index') }}" class="px-3 py-1.5 rounded bg-gray-100 text-gray-700 text-sm hover:bg-gray-200">ล้าง</a>
@@ -74,11 +87,7 @@
                             ];
                         })->values()->all();
                     @endphp
-                    <tr class="hover:bg-gray-100 transition cursor-pointer open-log-drawer"
-                        data-time="{{ $thaiDate }}"
-                        data-project="{{ $projectName }}"
-                        data-user="{{ $userName }}"
-                        data-events='@json($eventItems)'>
+                    <tr class="hover:bg-gray-100 transition">
                         <td class="border px-4 py-2 text-xs text-gray-600 whitespace-nowrap">
                             {{ $thaiDate }}
                         </td>
@@ -101,11 +110,17 @@
                         </td>
                         <td class="border px-4 py-2 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <span class="text-blue-700 text-sm">ดูรายละเอียด</span>
+                                <span class="text-blue-700 hover:underline text-sm cursor-pointer open-log-drawer"
+                                    data-time="{{ $thaiDate }}"
+                                    data-project="{{ $projectName }}"
+                                    data-user="{{ $userName }}"
+                                    data-events='@json($eventItems)'>
+                                    ดูรายละเอียด
+                                </span>
                                 <form action="{{ route('project_logs.destroy', $first->id) }}" method="POST" class="inline delete-log-form">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-800 font-bold" title="ลบ log">
-                                        🗑️
+                                    <button type="submit" class="px-3 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700" title="ลบ log">
+                                        ลบ
                                     </button>
                                 </form>
                             </div>

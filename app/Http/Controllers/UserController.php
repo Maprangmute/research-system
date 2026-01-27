@@ -8,16 +8,65 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function index()
+    private function resolveView(Request $request, string $base): string
     {
-        $users = User::orderBy('name')->get();
-        return view('users.index', compact('users'));
+        $view = $base;
+        $forceView = $request->query('view');
+        if ($forceView === 'mobile') {
+            $view = $base . '_mobile';
+        } elseif ($forceView !== 'desktop') {
+            $ua = (string) $request->header('User-Agent', '');
+            $isMobile = (bool) preg_match(
+                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
+                $ua
+            );
+            if ($isMobile) {
+                $view = $base . '_mobile';
+            }
+        }
+        return $view;
     }
 
-    public function manageList()
+    public function index(Request $request)
+    {
+        $query = User::query();
+
+        $search = trim((string) $request->input('q'));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('position', 'like', "%{$search}%")
+                    ->orWhere('prefix', 'like', "%{$search}%");
+            });
+        }
+
+        $role = (string) $request->input('role', 'all');
+        if ($role !== '' && $role !== 'all') {
+            $query->where('role', $role);
+        }
+
+        $sort = (string) $request->input('sort', 'name_asc');
+        $sortMap = [
+            'name_asc' => ['name', 'asc'],
+            'name_desc' => ['name', 'desc'],
+            'newest' => ['created_at', 'desc'],
+            'oldest' => ['created_at', 'asc'],
+            'email_asc' => ['email', 'asc'],
+            'email_desc' => ['email', 'desc'],
+        ];
+        [$sortField, $sortDir] = $sortMap[$sort] ?? $sortMap['name_asc'];
+
+        $users = $query->orderBy($sortField, $sortDir)->get();
+        $view = $this->resolveView($request, 'users.index');
+        return view($view, compact('users', 'search', 'role', 'sort'));
+    }
+
+    public function manageList(Request $request)
     {
         $users = User::all();
-        return view('users.manage', compact('users'));
+        $view = $this->resolveView($request, 'users.manage');
+        return view($view, compact('users'));
     }
 
     public function updateRole(Request $request, User $user)
@@ -32,9 +81,10 @@ class UserController extends Controller
         return redirect()->route('users.manage')->with('success', 'อัปเดตสิทธิ์เรียบร้อยแล้ว');
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('users.create');
+        $view = $this->resolveView($request, 'users.create');
+        return view($view);
     }
 
     public function store(Request $request)
@@ -59,10 +109,11 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'สร้างผู้ใช้งานเรียบร้อย');
     }
 
-    public function edit($id)
+    public function edit(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        return view('users.edit', compact('user'));
+        $view = $this->resolveView($request, 'users.edit');
+        return view($view, compact('user'));
     }
 
     public function update(Request $request, $id)

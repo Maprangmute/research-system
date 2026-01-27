@@ -9,6 +9,25 @@ use Illuminate\Support\Facades\Auth;
 
 class ProjectLogController extends Controller
 {
+    private function resolveView(Request $request, string $base): string
+    {
+        $view = $base;
+        $forceView = $request->query('view');
+        if ($forceView === 'mobile') {
+            $view = $base . '_mobile';
+        } elseif ($forceView !== 'desktop') {
+            $ua = (string) $request->header('User-Agent', '');
+            $isMobile = (bool) preg_match(
+                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
+                $ua
+            );
+            if ($isMobile) {
+                $view = $base . '_mobile';
+            }
+        }
+        return $view;
+    }
+
     private function authorizeAdmin(): void
     {
         $user = Auth::user();
@@ -24,7 +43,7 @@ class ProjectLogController extends Controller
     {
         $this->authorizeAdmin();
         // ต้องการให้ดูทุก log หรือเฉพาะ admin ปรับ logic ได้
-        $query = ProjectLog::with(['user', 'project'])->latest();
+        $query = ProjectLog::with(['user', 'project']);
 
         $entity = $request->input('entity');
         if (!empty($entity) && $entity !== 'all') {
@@ -41,6 +60,27 @@ class ProjectLogController extends Controller
                 $q->where('action', $verb)
                     ->orWhere('action', 'like', '%_' . $verb);
             });
+        }
+
+        $sort = $request->input('sort', 'latest');
+        $sortMap = [
+            'latest' => ['project_logs.created_at', 'desc'],
+            'oldest' => ['project_logs.created_at', 'asc'],
+            'project_asc' => ['projects.project_name_th', 'asc'],
+            'project_desc' => ['projects.project_name_th', 'desc'],
+            'user_asc' => ['users.name', 'asc'],
+            'user_desc' => ['users.name', 'desc'],
+            'action_asc' => ['project_logs.action', 'asc'],
+            'action_desc' => ['project_logs.action', 'desc'],
+        ];
+
+        if (array_key_exists($sort, $sortMap)) {
+            $query->leftJoin('projects', 'project_logs.project_id', '=', 'projects.id')
+                ->leftJoin('users', 'project_logs.user_id', '=', 'users.id')
+                ->select('project_logs.*')
+                ->orderBy($sortMap[$sort][0], $sortMap[$sort][1]);
+        } else {
+            $query->latest();
         }
 
         $search = trim((string) $request->input('q'));
@@ -83,13 +123,14 @@ class ProjectLogController extends Controller
             'restore' => 'กู้คืน',
         ];
 
-        return view('project_logs.index', compact('logs', 'groupedLogs', 'entityOptions', 'verbOptions', 'entity', 'verb', 'search'));
+        $view = $this->resolveView($request, 'project_logs.index');
+        return view($view, compact('logs', 'groupedLogs', 'entityOptions', 'verbOptions', 'entity', 'verb', 'search', 'sort'));
     }
 
     /**
      * แสดง log ทั้งหมดของ project เดียว (แสดงใน project detail)
      */
-    public function projectLogs($projectId)
+    public function projectLogs(Request $request, $projectId)
     {
         $this->authorizeAdmin();
         $project = Project::findOrFail($projectId);
@@ -97,17 +138,19 @@ class ProjectLogController extends Controller
         $groupedLogs = $logs->groupBy(function ($log) {
             return $log->created_at->format('Y-m-d H:i:s') . '|' . ($log->user_id ?? '-');
         });
-        return view('project_logs.project', compact('project', 'logs', 'groupedLogs'));
+        $view = $this->resolveView($request, 'project_logs.project');
+        return view($view, compact('project', 'logs', 'groupedLogs'));
     }
 
     /**
      * แสดง log รายการเดียว
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $this->authorizeAdmin();
         $log = ProjectLog::with(['user', 'project'])->findOrFail($id);
-        return view('project_logs.show', compact('log'));
+        $view = $this->resolveView($request, 'project_logs.show');
+        return view($view, compact('log'));
     }
 
     /**
