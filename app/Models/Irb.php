@@ -21,21 +21,20 @@ class Irb extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $irb->project->project_name_th ?? '',
                 'action'          => 'irb_create',
-                'changes'         => $irb->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($irb->toArray()),
             ]);
         });
 
         // Log update
         static::updating(function ($irb) {
-            $diff = $irb->getDirty();
-            unset($diff['updated_at']);
-            if (!empty($diff)) {
+            $changes = ProjectLog::buildUpdateChanges($irb);
+            if (!empty($changes)) {
                 ProjectLog::create([
                     'project_id'      => $irb->project_id,
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $irb->project->project_name_th ?? '',
                     'action'          => 'irb_update',
-                    'changes'         => $diff,
+                    'changes'         => $changes,
                 ]);
             }
         });
@@ -47,7 +46,7 @@ class Irb extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $irb->project->project_name_th ?? '',
                 'action'          => 'irb_delete',
-                'changes'         => $irb->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($irb->toArray()),
             ]);
         });
     }

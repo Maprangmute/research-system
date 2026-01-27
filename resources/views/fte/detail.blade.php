@@ -1,265 +1,496 @@
 @extends('layouts.app')
+
 @section('content')
+    <script>
+        window.disableRowCollapse = true;
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.classList.add('no-row-collapse-summary');
+            document.body.classList.add('no-row-collapse-toggle');
+        });
+    </script>
+    <style>
+        @media (max-width: 768px) {
+            .fte-table thead {
+                display: none;
+            }
 
-{{-- FullCalendar (ต้องใช้ index.global.min.js ไม่ใช่ main.min.js) --}}
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+            .fte-table,
+            .fte-table tbody,
+            .fte-table tr,
+            .fte-table td {
+                display: block;
+                width: 100%;
+            }
 
-<div class="max-w-7xl mx-auto p-6 space-y-8">
+            .fte-table tr {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+                background: #ffffff;
+            }
 
-    {{-- Profile Card --}}
-    <div class="bg-white shadow rounded-2xl p-6 flex items-center gap-6">
-        @if($profile && $profile->profile_photo_path)
-            <img src="{{ asset('storage/'.$profile->profile_photo_path) }}"
-                 class="w-32 h-32 rounded-full border-4 border-blue-200 shadow-lg object-cover">
-        @else
-            <img src="https://ui-avatars.com/api/?name={{ urlencode($person) }}&background=random&size=128"
-                 class="w-32 h-32 rounded-full border-4 border-blue-200 shadow-lg object-cover">
-        @endif
-        <div>
-            <h1 class="text-3xl font-bold text-gray-800">{{ $person }}</h1>
-            <p class="text-gray-500 mt-2">
-                FTE รวม (ตาม filter):
-                <span class="font-semibold text-green-600">{{ number_format($fteRows->sum('fte_value'), 2) }}</span>
-            </p>
-        </div>
-    </div>
+            .fte-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 6px 0;
+                text-align: left;
+            }
 
-    {{-- Filter Bar --}}
-    <div class="bg-gradient-to-r from-blue-50 to-white border border-blue-100 rounded-xl shadow px-4 py-5">
-        <form method="GET" id="filter-form" class="flex flex-wrap gap-4 items-end w-full">
-            <input type="hidden" name="person" value="{{ $person }}">
+            .fte-table td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #94a3b8;
+            }
+        }
+    </style>
+    @php
+        $allRows = $monthlyFTE->flatten(1);
+        $projectCount = $allRows->pluck('project.id')->filter()->unique()->count();
+        $monthCount = $monthlyFTE->count();
+        $totalFte = $allRows->sum('fte_value');
+        $totalHours = $allRows->sum('hours_in_month');
+        $projectOptions = $allRows->pluck('project.project_name_th')->filter()->unique()->sort()->values();
+        $roleOptions = $allRows->pluck('role_group')->filter()->unique()->sort()->values();
+        $yearOptions = $monthlyFTE->keys()->map(fn($m) => substr($m, 0, 4))->unique()->sort()->values();
+        $monthOptions = $monthlyFTE->keys()->values();
+    @endphp
 
-            {{-- Mode --}}
-            <div class="flex flex-col min-w-[140px]">
-                <label class="text-gray-800 font-semibold mb-1">ดูข้อมูล</label>
-                <select name="mode" id="mode"
-                        class="rounded-lg border-gray-300 p-2 focus:ring-2 focus:ring-blue-300"
-                        onchange="resetOtherFilters(); this.form.submit();">
-                    <option value="year" {{ $mode == 'year' ? 'selected' : '' }}>รายปี</option>
-                    <option value="month" {{ $mode == 'month' ? 'selected' : '' }}>เดือนนี้</option>
-                    <option value="custom" {{ $mode == 'custom' ? 'selected' : '' }}>เลือกช่วงวันที่</option>
-                </select>
-            </div>
-
-            {{-- Year --}}
-            <div id="filter-year" class="flex flex-col min-w-[120px] {{ $mode === 'year' ? '' : 'hidden' }}">
-                <label class="text-gray-800 mb-1">ปี</label>
-                <select name="year" id="yearSelect" class="rounded-lg border-gray-300 p-2 w-full"
-                        onchange="this.form.submit();">
-                    @foreach ($allYears as $y)
-                        <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            {{-- Custom Range --}}
-            <div id="filter-custom" class="flex flex-col min-w-[250px] {{ $mode === 'custom' ? '' : 'hidden' }}">
-                <label class="text-gray-800 mb-1">ช่วงวันที่</label>
-                <div class="flex gap-2 items-center">
-                    <input name="start" id="dateStart"
-                           class="rounded-lg border-gray-300 p-2 w-[140px] focus:ring-2 focus:ring-blue-200"
-                           placeholder="วันเริ่มต้น" value="{{ $start ?? '' }}">
-                    <span>-</span>
-                    <input name="end" id="dateEnd"
-                           class="rounded-lg border-gray-300 p-2 w-[140px] focus:ring-2 focus:ring-blue-200"
-                           placeholder="วันสิ้นสุด" value="{{ $end ?? '' }}">
+    <div class="max-w-7xl mx-auto p-4 space-y-6">
+        <div class="bg-white border shadow-sm rounded-2xl p-5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    @if ($profile && $profile->profile_photo_path)
+                        <img src="{{ asset('storage/' . $profile->profile_photo_path) }}?v={{ time() }}"
+                            class="w-40 h-40 rounded-2xl border shadow object-cover">
+                    @else
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($person) }}&background=random&size=128"
+                            class="w-40 h-40 rounded-2xl border shadow object-cover">
+                    @endif
+                    <div>
+                        <h1 class="text-2xl font-semibold text-slate-900">{{ $person }}</h1>
+                        <div class="text-xs text-slate-500">
+                            @if (!empty($profile?->department))
+                                • {{ $profile->department }}
+                            @endif
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            {{-- Reset --}}
-            @if (request()->has('year') || request()->has('mode') || request()->has('start'))
-                <div class="flex flex-col">
-                    <label class="invisible mb-1">ล้าง</label>
-                    <a href="{{ route('fte.detail', ['person' => $person, 'mode' => 'year', 'year' => now()->year + 543]) }}"
-                       class="px-4 py-2 rounded-lg bg-gray-100 text-blue-700 font-bold shadow hover:bg-blue-200 text-center">
-                        ล้างตัวกรอง
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('fte.index') }}"
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
+                        ย้อนกลับ
+                    </a>
+                    <a href="{{ route('fte.pdf', $person) }}" target="_blank" rel="noopener"
+                        class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                        ดาวน์โหลด PDF
                     </a>
                 </div>
-            @endif
-        </form>
-    </div>
-
-    {{-- Tabs --}}
-    <div>
-        <div class="flex border-b mb-4 text-gray-600">
-            <button class="tab-btn px-6 py-2 font-bold border-b-2 transition" data-tab="tab1">📋 ตาราง</button>
-            <button class="tab-btn px-6 py-2 font-bold border-b-2 transition" data-tab="tab2">📈 กราฟ</button>
-            <button class="tab-btn px-6 py-2 font-bold border-b-2 transition" data-tab="tab3">📆 ปฏิทิน</button>
+            </div>
         </div>
 
-        {{-- ตาราง --}}
-        <div id="tab1" class="tab-pane">
-            <div class="space-y-6">
-                @foreach($fteMonthly as $monthKey => $rows)
-                    @php $c = \Carbon\Carbon::createFromFormat('Y-m', $monthKey); @endphp
-                    <div class="bg-white rounded-xl shadow p-4">
-                        <h3 class="font-semibold text-blue-700 mb-3">
-                            {{ $c->locale('th')->isoFormat('MMMM YYYY') }}
-                        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white border rounded-xl p-4">
+                <div class="text-xs text-slate-500">จำนวนเดือนที่มีงาน</div>
+                <div class="text-2xl font-semibold text-slate-900">{{ number_format($monthCount) }}</div>
+            </div>
+            <div class="bg-white border rounded-xl p-4">
+                <div class="text-xs text-slate-500">จำนวนโครงการ</div>
+                <div class="text-2xl font-semibold text-slate-900">{{ number_format($projectCount) }}</div>
+            </div>
+            <div class="bg-white border rounded-xl p-4">
+                <div class="text-xs text-slate-500">FTE รวมทั้งหมด</div>
+                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totalFte, 4) }}</div>
+            </div>
+            <div class="bg-white border rounded-xl p-4">
+                <div class="text-xs text-slate-500">ชั่วโมงรวมทั้งหมด</div>
+                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totalHours, 2) }}</div>
+            </div>
+        </div>
+
+        <div class="bg-white border rounded-2xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-semibold text-slate-800">📊 สรุป FTE รายเดือน (Stacked)</h3>
+            </div>
+            <div id="chart-container" class="bg-slate-50 rounded-xl border p-3" style="height:300px;">
+                <canvas id="fteStackedChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border p-4">
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-800">📅 รายการ FTE รายเดือน</h3>
+                    <p class="text-xs text-slate-500">ค้นหาและกรองข้อมูลให้เห็นเฉพาะที่ต้องการ</p>
+                </div>
+                <button id="fteResetFilters"
+                    class="px-3 py-2 text-xs border rounded-lg hover:bg-slate-50">ล้างตัวกรอง</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-3 mt-4">
+                <label class="block md:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
+                    <input id="fteSearch" type="text" placeholder="ชื่อโครงการ / กลุ่ม / ภาระงาน"
+                        class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">โครงการ</span>
+                    <select id="fteProjectFilter" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                        <option value="">ทั้งหมด</option>
+                        @foreach ($projectOptions as $project)
+                            <option value="{{ $project }}">{{ $project }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">กลุ่มงาน</span>
+                    <select id="fteRoleFilter" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                        <option value="">ทั้งหมด</option>
+                        @foreach ($roleOptions as $role)
+                            <option value="{{ $role }}">{{ $role }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">ปี (พ.ศ.)</span>
+                    <select id="fteYearFilter" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                        <option value="">ทั้งหมด</option>
+                        @foreach ($yearOptions as $year)
+                            <option value="{{ $year }}">{{ $year + 543 }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">เดือน</span>
+                    <select id="fteMonthFilter" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                        <option value="">ทั้งหมด</option>
+                        @foreach ($monthOptions as $month)
+                            @php
+                                $mCarbon = \Carbon\Carbon::createFromFormat('Y-m', $month);
+                                $mLabel = $mCarbon->locale('th')->translatedFormat('F Y');
+                            @endphp
+                            <option value="{{ $month }}">{{ $mLabel }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block md:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">เรียงลำดับรายการ</span>
+                    <select id="fteSort" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                        <option value="fte_desc">FTE มาก → น้อย</option>
+                        <option value="fte_asc">FTE น้อย → มาก</option>
+                        <option value="hours_desc">ชั่วโมง มาก → น้อย</option>
+                        <option value="project_asc">ชื่อโครงการ A → Z</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div id="fte-months" class="space-y-4">
+            @forelse($monthlyFTE as $monthKey => $rows)
+                @php
+                    $carbon = \Carbon\Carbon::createFromFormat('Y-m', $monthKey);
+                    $monthName = $carbon->locale('th')->translatedFormat('F');
+                    $year = $carbon->year + 543;
+                    $sumFTE = $rows->sum('fte_value');
+                    $sumHours = $rows->sum('hours_in_month');
+                @endphp
+
+                <details class="month-card bg-white border rounded-2xl shadow-sm" open data-month="{{ $monthKey }}"
+                    data-year="{{ $carbon->year }}">
+                    <summary class="cursor-pointer px-4 py-3 flex flex-col md:flex-row md:items-center gap-2">
+                        <div class="text-sm font-semibold text-slate-800">
+                            {{ $monthName }} {{ $year }}
+                        </div>
+                        <div class="text-xs text-slate-500">
+                            {{ $rows->count() }} รายการ •
+                            FTE {{ number_format($sumFTE, 4) }} •
+                            ชั่วโมง {{ number_format($sumHours, 2) }}
+                        </div>
+                    </summary>
+
+                    <div class="border-t">
                         <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead class="bg-gray-100">
+                            <table class="fte-table w-full text-sm">
+                                <thead class="bg-slate-50 border-b text-xs text-slate-600">
                                     <tr>
-                                        <th class="p-2 text-left">ชื่อโปรเจค</th>
+                                        <th class="p-2 text-left">ชื่อโปรเจค / งานนอกโครงการ</th>
                                         <th class="p-2 text-left">กลุ่ม</th>
-                                        <th class="p-2 text-left">ภาระงาน</th>
-                                        <th class="p-2 text-center">วันที่เริ่ม</th>
-                                        <th class="p-2 text-center">วันที่สิ้นสุด</th>
-                                        <th class="p-2 text-right">FTE</th>
+                                        <th class="p-2 text-left">รายละเอียดงาน</th>
+                                        <th class="p-2 text-center">ช่วงเวลา</th>
+                                        <th class="p-2 text-center">ชั่วโมง</th>
+                                        <th class="p-2 text-center">วัน</th>
+                                        <th class="p-2 text-center">FTE/วัน</th>
+                                        <th class="p-2 text-center">FTE เดือนนี้</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($rows as $item)
-                                    <tr class="border-b">
-                                        <td class="p-2 text-blue-700 underline">
-                                            <a href="{{ route('projects.show', $item->project->id) }}">
-                                                {{ $item->project->project_name_th ?? '-' }}
-                                            </a>
-                                        </td>
-                                        <td class="p-2">{{ $item->role_group ?? '-' }}</td>
-                                        <td class="p-2">{{ $item->job_detail ?? '-' }}</td>
-                                        <td class="p-2 text-center">{{ $item->start_date }}</td>
-                                        <td class="p-2 text-center">{{ $item->end_date }}</td>
-                                        <td class="p-2 text-right font-semibold">{{ number_format($item->fte_value, 2) }}</td>
-                                    </tr>
+                                    @foreach ($rows as $item)
+                                        @php
+                                            $osCarbon = \Carbon\Carbon::parse($item->overlap_start);
+                                            $oeCarbon = \Carbon\Carbon::parse($item->overlap_end);
+                                            $os = $osCarbon->locale('th')->translatedFormat('j F');
+                                            $oe = $oeCarbon->locale('th')->translatedFormat('j F');
+                                            $osYear = $osCarbon->year + 543;
+                                            $oeYear = $oeCarbon->year + 543;
+                                            $projectName = $item->project->project_name_th ?? '-';
+                                            $roleGroup = $item->role_group ?? '-';
+                                            $jobDetailRaw = trim((string) ($item->job_detail ?? ''));
+                                            $jobDetail = $jobDetailRaw !== '' ? $jobDetailRaw : '-';
+                                        @endphp
+                                        <tr class="border-b fte-row"
+                                            data-project="{{ $projectName }}"
+                                            data-role="{{ $roleGroup }}"
+                                            data-job="{{ $jobDetail }}"
+                                            data-month="{{ $monthKey }}"
+                                            data-year="{{ $carbon->year }}"
+                                            data-fte="{{ $item->fte_value }}"
+                                            data-hours="{{ $item->hours_in_month }}">
+                                            <td class="p-2 break-words max-w-[420px]" data-label="โครงการ">
+                                                @if ($item->project?->id)
+                                                    <a href="{{ route('projects.show', $item->project->id) }}" target="_blank" rel="noopener"
+                                                        class="text-blue-700 hover:underline">
+                                                        {{ $projectName }}
+                                                    </a>
+                                                @else
+                                                    @php
+                                                        $backOfficeTitle = $item->task_detail ?? '-';
+                                                    @endphp
+                                                    @if (!empty($item->task_id))
+                                                        <a href="{{ route('back_office.show', $item->task_id) }}" target="_blank" rel="noopener"
+                                                            class="text-blue-700 hover:underline">
+                                                            {{ $backOfficeTitle }}
+                                                        </a>
+                                                    @else
+                                                        <span class="text-slate-800">{{ $backOfficeTitle }}</span>
+                                                    @endif
+                                                    <div class="text-xs text-slate-500 mt-1">งานนอกโครงการ</div>
+                                                @endif
+                                            </td>
+                                            <td class="p-2 break-words whitespace-normal" data-label="กลุ่ม">
+                                                {{ $roleGroup }}
+                                            </td>
+                                            <td class="p-2 break-words whitespace-normal" data-label="รายละเอียดงาน">
+                                                {{ $jobDetail }}
+                                            </td>
+                                            <td class="p-2 text-center" data-label="ช่วงเวลา">
+                                                {{ $os }} {{ $osYear }} - {{ $oe }} {{ $oeYear }}
+                                            </td>
+                                            <td class="p-2 text-center" data-label="ชั่วโมง">
+                                                {{ number_format($item->hours_in_month, 2) }}
+                                            </td>
+                                            <td class="p-2 text-center" data-label="วัน">
+                                                {{ intval($item->days_in_month) }}
+                                            </td>
+                                            <td class="p-2 text-center" data-label="FTE/วัน">
+                                                {{ number_format($item->fte_per_day, 10) }}
+                                            </td>
+                                            <td class="p-2 text-center font-semibold" data-label="FTE เดือนนี้">
+                                                {{ number_format($item->fte_value, 6) }}
+                                            </td>
+                                        </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                @endforeach
-            </div>
-        </div>
-
-        {{-- กราฟ --}}
-        <div id="tab2" class="tab-pane hidden">
-            <div class="bg-white rounded-xl shadow p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="font-semibold text-blue-700">แนวโน้มค่า FTE</h3>
-                    <select id="compareSelect" class="rounded-lg border-gray-300 text-sm px-3 py-2">
-                        <option value="">-- เปรียบเทียบ --</option>
-                        @foreach($allPeople as $p)
-                            <option value="{{ $p }}">{{ $p }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <canvas id="fteChart" height="120"></canvas>
-            </div>
-        </div>
-
-        {{-- ปฏิทิน --}}
-        <div id="tab3" class="tab-pane hidden">
-            <div id="calendar" class="bg-white rounded-xl shadow p-6"></div>
+                </details>
+            @empty
+                <div class="text-gray-400 text-center py-8 bg-white border rounded-2xl">ไม่มีข้อมูล</div>
+            @endforelse
         </div>
     </div>
-</div>
 
-{{-- Chart.js --}}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Tabs
-    const tabs = document.querySelectorAll('.tab-btn');
-    const panes = document.querySelectorAll('.tab-pane');
-    function activateTab(tab) {
-        panes.forEach(x => x.classList.add('hidden'));
-        tabs.forEach(x => x.classList.remove('border-blue-700','text-blue-700'));
-        document.getElementById(tab).classList.remove('hidden');
-        document.querySelector('.tab-btn[data-tab="'+tab+'"]').classList.add('border-blue-700','text-blue-700');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
 
-        if(tab === 'tab3' && !window.calendarRendered) {
-            renderCalendar();
-            window.calendarRendered = true;
-        }
-    }
-    tabs.forEach(btn => btn.onclick = () => activateTab(btn.dataset.tab));
-    activateTab('tab1');
+            function stringToColor(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const r = (hash & 0xFF0000) >> 16;
+                const g = (hash & 0x00FF00) >> 8;
+                const b = hash & 0x0000FF;
+                return `rgba(${Math.abs(r)}, ${Math.abs(g)}, ${Math.abs(b)}, 0.8)`;
+            }
 
-    // Chart
-    let ctx = document.getElementById('fteChart');
-    let chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {!! $chartLabels->toJson() !!},
-            datasets: [{
-                label: '{{ $person }}',
-                data: {!! $chartData->toJson() !!},
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37,99,235,0.2)',
-                fill: false,
-                tension: 0.3
-            }]
-        },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' }} }
-    });
-
-    // Compare AJAX
-    document.getElementById('compareSelect').addEventListener('change', function() {
-        const name = this.value;
-        if (!name) {
-            chart.data.datasets = chart.data.datasets.slice(0,1);
-            chart.update();
-            return;
-        }
-        fetch(`/fte/compare-data?name=${encodeURIComponent(name)}&mode={{ $mode }}&year={{ $year }}&start={{ $start }}&end={{ $end }}`)
-            .then(res => res.json())
-            .then(res => {
-                chart.data.datasets = chart.data.datasets.slice(0,1);
-                chart.data.datasets.push({
-                    label: res.name,
-                    data: res.data,
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239,68,68,0.2)',
-                    fill: false,
-                    tension: 0.3
-                });
-                chart.update();
+            const labelsRaw = @json($chartLabels);
+            const labels = labelsRaw.map(monthKey => {
+                const parts = String(monthKey || '').split('-');
+                if (parts.length !== 2) return monthKey;
+                const year = Number(parts[0]);
+                const month = parts[1];
+                if (!Number.isFinite(year)) return monthKey;
+                return `${month}/${year + 543}`;
             });
-    });
-});
 
-// Calendar
-function renderCalendar() {
-    let events = {!! $calendarEvents->toJson() !!};
-    let colors = {};
-    let palette = ['#2563eb','#16a34a','#dc2626','#d97706','#9333ea','#0891b2','#db2777','#65a30d'];
-    let idx = 0;
-    events = events.map(ev => {
-        if(!colors[ev.title]) colors[ev.title] = palette[idx++ % palette.length];
-        return { ...ev, color: colors[ev.title] };
-    });
+            const projectNames = [];
+            @foreach ($monthlyFTE as $month => $items)
+                @foreach ($items as $item)
+                    @php
+                        $chartTitle = $item->project?->id
+                            ? ($item->project->project_name_th ?? '-')
+                            : ($item->task_detail ?? '-');
+                    @endphp
+                    projectNames.push(@json($chartTitle));
+                @endforeach
+            @endforeach
 
-    let calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-        initialView: 'dayGridMonth',
-        locale: 'th',
-        height: 650,
-        events: events,
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
-        dayMaxEventRows: 3
-    });
-    calendar.render();
-}
-</script>
+            const uniqueProjects = [...new Set(projectNames)];
 
-{{-- Flatpickr --}}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
-<script>
-flatpickr("#dateStart", { dateFormat: "d/m/Y", locale: "th" });
-flatpickr("#dateEnd",   { dateFormat: "d/m/Y", locale: "th" });
+            const datasets = uniqueProjects.map(projectName => ({
+                label: projectName,
+                backgroundColor: stringToColor(projectName),
+                data: labelsRaw.map(monthKey => {
+                    let total = 0;
 
-function resetOtherFilters() {
-    let mode = document.getElementById('mode').value;
-    if (mode !== 'year' && document.getElementById('yearSelect')) {
-        document.getElementById('yearSelect').value = '';
-    }
-    if (mode !== 'custom') {
-        document.getElementById('dateStart').value = '';
-        document.getElementById('dateEnd').value = '';
-    }
-}
-</script>
+                    @foreach ($monthlyFTE as $m => $items)
+                        @foreach ($items as $item)
+                            @php
+                                $chartTitle = $item->project?->id
+                                    ? ($item->project->project_name_th ?? '-')
+                                    : ($item->task_detail ?? '-');
+                            @endphp
+                            if (monthKey === "{{ $m }}" && projectName === @json($chartTitle)) {
+                                total = {{ $item->fte_value }};
+                            }
+                        @endforeach
+                    @endforeach
+
+                    return total;
+                }),
+                stack: 'stack'
+            }));
+
+            const truncateLegendLabel = (text, max = 18) => {
+                const value = String(text ?? '');
+                if (value.length <= max) return value;
+                return value.slice(0, max - 1) + '…';
+            };
+
+            new Chart(document.getElementById('fteStackedChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                generateLabels: (chart) => {
+                                    const base = Chart.defaults.plugins.legend.labels.generateLabels;
+                                    return base(chart).map(item => ({
+                                        ...item,
+                                        text: truncateLegendLabel(item.text),
+                                    }));
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const name = ctx.dataset?.label || '';
+                                    const value = ctx.parsed?.y ?? ctx.raw;
+                                    return `${name}: ${value}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const searchEl = document.getElementById('fteSearch');
+            const projectEl = document.getElementById('fteProjectFilter');
+            const roleEl = document.getElementById('fteRoleFilter');
+            const yearEl = document.getElementById('fteYearFilter');
+            const monthEl = document.getElementById('fteMonthFilter');
+            const sortEl = document.getElementById('fteSort');
+            const resetBtn = document.getElementById('fteResetFilters');
+
+            const normalize = (v) => String(v || '').toLowerCase().trim();
+
+            function sortRows(rows, mode) {
+                const list = Array.from(rows);
+                const by = {
+                    fte_desc: (a, b) => Number(b.dataset.fte) - Number(a.dataset.fte),
+                    fte_asc: (a, b) => Number(a.dataset.fte) - Number(b.dataset.fte),
+                    hours_desc: (a, b) => Number(b.dataset.hours) - Number(a.dataset.hours),
+                    project_asc: (a, b) => normalize(a.dataset.project).localeCompare(normalize(b.dataset.project))
+                };
+                list.sort(by[mode] || by.fte_desc);
+                return list;
+            }
+
+            function applyFilters() {
+                const search = normalize(searchEl?.value);
+                const project = normalize(projectEl?.value);
+                const role = normalize(roleEl?.value);
+                const year = normalize(yearEl?.value);
+                const month = normalize(monthEl?.value);
+                const sortMode = sortEl?.value || 'fte_desc';
+
+                document.querySelectorAll('.month-card').forEach(card => {
+                    const rows = Array.from(card.querySelectorAll('.fte-row'));
+                    let visible = 0;
+
+                    rows.forEach(row => {
+                        const rowText = normalize([
+                            row.dataset.project,
+                            row.dataset.role,
+                            row.dataset.job
+                        ].join(' '));
+                        const matchSearch = !search || rowText.includes(search);
+                        const matchProject = !project || normalize(row.dataset.project) === project;
+                        const matchRole = !role || normalize(row.dataset.role) === role;
+                        const matchYear = !year || normalize(row.dataset.year) === year;
+                        const matchMonth = !month || normalize(row.dataset.month) === month;
+
+                        const show = matchSearch && matchProject && matchRole && matchYear && matchMonth;
+                        row.classList.toggle('hidden', !show);
+                        if (show) visible++;
+                    });
+
+                    const tbody = card.querySelector('tbody');
+                    const visibleRows = rows.filter(r => !r.classList.contains('hidden'));
+                    sortRows(visibleRows, sortMode).forEach(row => tbody.appendChild(row));
+
+                    card.classList.toggle('hidden', visible === 0);
+                });
+            }
+
+            [searchEl, projectEl, roleEl, yearEl, monthEl, sortEl].forEach(el => {
+                el?.addEventListener('input', applyFilters);
+                el?.addEventListener('change', applyFilters);
+            });
+
+            resetBtn?.addEventListener('click', () => {
+                if (searchEl) searchEl.value = '';
+                if (projectEl) projectEl.value = '';
+                if (roleEl) roleEl.value = '';
+                if (yearEl) yearEl.value = '';
+                if (monthEl) monthEl.value = '';
+                if (sortEl) sortEl.value = 'fte_desc';
+                applyFilters();
+            });
+
+            applyFilters();
+        });
+    </script>
 @endsection

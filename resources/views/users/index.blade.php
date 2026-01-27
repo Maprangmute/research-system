@@ -9,7 +9,7 @@
         <<< ย้อนกลับ
     </a>
 </div>
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between mb-4">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">รายชื่อผู้เข้าใช้ระบบ</h2>
             {{-- <p class="text-sm text-gray-500">A list of all the users in your account including their name, title, email and role.</p> --}}
@@ -19,6 +19,38 @@
             เพิ่มผู้เข้าใช้งาน
         </a>
     </div>
+
+    <form action="{{ route('users.index') }}" method="GET" class="mb-4 bg-white border rounded-lg p-3 flex flex-wrap gap-3 items-end">
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">ค้นหา</label>
+            <input type="text" name="q" value="{{ $search ?? '' }}" placeholder="ชื่อ/อีเมล/ตำแหน่ง"
+                class="border rounded px-3 py-1.5 text-sm w-56">
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">สิทธิ์</label>
+            <select name="role" class="border rounded px-3 py-1.5 text-sm w-40">
+                <option value="all" @selected(($role ?? 'all') === 'all')>ทั้งหมด</option>
+                <option value="admin" @selected(($role ?? '') === 'admin')>admin</option>
+                <option value="user" @selected(($role ?? '') === 'user')>user</option>
+                <option value="user_all" @selected(($role ?? '') === 'user_all')>user_all</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">เรียงตาม</label>
+            <select name="sort" class="border rounded px-3 py-1.5 text-sm w-44">
+                <option value="name_asc" @selected(($sort ?? 'name_asc') === 'name_asc')>ชื่อ (ก-ฮ)</option>
+                <option value="name_desc" @selected(($sort ?? '') === 'name_desc')>ชื่อ (ฮ-ก)</option>
+                <option value="newest" @selected(($sort ?? '') === 'newest')>ใหม่ → เก่า</option>
+                <option value="oldest" @selected(($sort ?? '') === 'oldest')>เก่า → ใหม่</option>
+                <option value="email_asc" @selected(($sort ?? '') === 'email_asc')>อีเมล (ก-ฮ)</option>
+                <option value="email_desc" @selected(($sort ?? '') === 'email_desc')>อีเมล (ฮ-ก)</option>
+            </select>
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">ค้นหา</button>
+            <a href="{{ route('users.index') }}" class="px-3 py-1.5 rounded bg-gray-100 text-gray-700 text-sm hover:bg-gray-200">ล้าง</a>
+        </div>
+    </form>
 
     @if(session('success'))
         <div class="mb-4 p-3 bg-green-100 text-green-700 rounded">{{ session('success') }}</div>

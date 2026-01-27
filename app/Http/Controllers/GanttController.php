@@ -13,6 +13,7 @@ class GanttController extends Controller
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
             || Auth::id() === $project->user_id
+            || Auth::user()->role === 'user_all' // all user check
             || $project->fteRoles->contains('name', $fullName);
 
         if (!$hasPermission) {

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>FTE Project - {{ $project->project_name_th }}</title>
+    <style>
+        @page {
+            margin: 60px 40px 70px 40px;
+            footer: html_Footer;
+        }
+        body {
+            font-family: "thsarabun", Tahoma, sans-serif;
+            font-size: 14pt;
+            color: #222;
+        }
+        h1 {
+            font-size: 21pt;
+            margin: 0 0 6px 0;
+        }
+        .muted { color: #555; }
+        .section-title {
+            background: #EAF2FF;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 18px 0 8px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid #d9e2f1;
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+        thead { background: #F2F6FF; }
+        .right { text-align: right; }
+        .center { text-align: center; }
+        .small { font-size: 12.5pt; }
+        .cell-wrap {
+            word-break: break-word;
+            white-space: normal;
+        }
+        .col-name { width: 18%; }
+        .col-role { width: 12%; }
+        .col-job { width: 20%; }
+        .col-period { width: 20%; }
+        .col-hours { width: 8%; }
+        .col-days { width: 6%; }
+        .col-fte-day { width: 8%; }
+        .col-fte-month { width: 8%; }
+    </style>
+</head>
+<body>
+    @php
+        $allRows = $monthlyFTE->flatten(1);
+        $personCount = $allRows->pluck('name')->filter()->unique()->count();
+        $monthCount = $monthlyFTE->count();
+        $totalFte = $allRows->sum('fte_value');
+        $totalHours = $allRows->sum('hours_in_month');
+        $reporter = $user ? trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) : 'ผู้ใช้ระบบ';
+        $reportDate = now()->setTimezone('Asia/Bangkok')->locale('th')->translatedFormat('j F Y เวลา H:i');
+    @endphp
+
+    <h1>รายงาน FTE รายโปรเจค: {{ $project->project_name_th ?? '-' }}</h1>
+    <div class="muted small">
+        วันที่ออกรายงาน: {{ $reportDate }} • ผู้สร้างรายงาน: {{ $reporter }}
+    </div>
+
+    <htmlpagefooter name="Footer">
+        <div style="width: 100%; font-size: 11pt; color: #333; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>FTE Project: {{ $project->project_name_th ?? '-' }}</div>
+            <div style="text-align: right;">
+                ผู้สร้าง: {{ $reporter }} • {{ $reportDate }}<br>
+                หน้า {PAGENO} จาก {nbpg}
+            </div>
+        </div>
+    </htmlpagefooter>
+
+    <div class="section-title">สรุปภาพรวม</div>
+    <table>
+        <tbody>
+            <tr>
+                <td>จำนวนเดือนที่มีงาน</td>
+                <td class="right">{{ number_format($monthCount) }}</td>
+            </tr>
+            <tr>
+                <td>จำนวนบุคคล</td>
+                <td class="right">{{ number_format($personCount) }}</td>
+            </tr>
+            <tr>
+                <td>FTE รวมทั้งหมด</td>
+                <td class="right">{{ number_format($totalFte, 4) }}</td>
+            </tr>
+            <tr>
+                <td>ชั่วโมงรวมทั้งหมด</td>
+                <td class="right">{{ number_format($totalHours, 2) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">FTE รวม 3 ปีล่าสุด</div>
+    <table>
+        <thead>
+            <tr>
+                @foreach ($yearChartLabels as $label)
+                    <th class="center">{{ $label }}</th>
+                @endforeach
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                @foreach ($yearChartData as $val)
+                    <td class="center">{{ number_format($val, 4) }}</td>
+                @endforeach
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">รายละเอียดการทำงานรายเดือน</div>
+    @forelse ($monthlyFTE as $monthKey => $rows)
+        @php
+            $carbon = \Carbon\Carbon::createFromFormat('Y-m', $monthKey);
+            $monthName = $carbon->locale('th')->translatedFormat('F');
+            $year = $carbon->year + 543;
+        @endphp
+
+        <div style="margin: 8px 0; font-weight: bold;">
+            {{ $monthName }} {{ $year }} ({{ $rows->count() }} รายการ)
+        </div>
+        <table class="small">
+            <thead>
+                <tr>
+                    <th class="col-name">บุคคล</th>
+                    <th class="col-role">กลุ่ม</th>
+                    <th class="col-job">ภาระงาน</th>
+                    <th class="center col-period">ช่วงเวลา</th>
+                    <th class="center col-hours">ชั่วโมง</th>
+                    <th class="center col-days">วัน</th>
+                    <th class="center col-fte-day">FTE/วัน</th>
+                    <th class="center col-fte-month">FTE เดือนนี้</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($rows as $item)
+                    @php
+                        $osCarbon = \Carbon\Carbon::parse($item->overlap_start);
+                        $oeCarbon = \Carbon\Carbon::parse($item->overlap_end);
+                        $os = $osCarbon->locale('th')->translatedFormat('j F') . ' ' . ($osCarbon->year + 543);
+                        $oe = $oeCarbon->locale('th')->translatedFormat('j F') . ' ' . ($oeCarbon->year + 543);
+                    @endphp
+                    <tr>
+                        <td class="cell-wrap">{{ $item->name ?? '-' }}</td>
+                        <td>{{ $item->role_group ?? '-' }}</td>
+                        <td class="cell-wrap">{{ $item->job_detail ?? '-' }}</td>
+                        <td class="center">{{ $os }} - {{ $oe }}</td>
+                        <td class="center">{{ number_format($item->hours_in_month, 2) }}</td>
+                        <td class="center">{{ intval($item->days_in_month) }}</td>
+                        <td class="center">{{ number_format($item->fte_per_day, 10) }}</td>
+                        <td class="center">{{ number_format($item->fte_value, 6) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @empty
+        <div class="muted">ไม่มีข้อมูล</div>
+    @endforelse
+</body>
+</html>

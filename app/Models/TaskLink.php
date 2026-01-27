@@ -25,21 +25,20 @@ class TaskLink extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $link->project->project_name_th ?? '',
                 'action'          => 'tasklink_create',
-                'changes'         => $link->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($link->toArray()),
             ]);
         });
 
         // Log update
         static::updating(function ($link) {
-            $diff = $link->getDirty();
-            unset($diff['updated_at']);
-            if (!empty($diff)) {
+            $changes = ProjectLog::buildUpdateChanges($link);
+            if (!empty($changes)) {
                 ProjectLog::create([
                     'project_id'      => $link->project_id,
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $link->project->project_name_th ?? '',
                     'action'          => 'tasklink_update',
-                    'changes'         => $diff,
+                    'changes'         => $changes,
                 ]);
             }
         });
@@ -51,7 +50,7 @@ class TaskLink extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $link->project->project_name_th ?? '',
                 'action'          => 'tasklink_delete',
-                'changes'         => $link->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($link->toArray()),
             ]);
         });
     }

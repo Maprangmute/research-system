@@ -7,9 +7,13 @@ use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TaskLinkController;
+use App\Http\Controllers\AiDashboardController;
+use App\Http\Controllers\OutputController;
+use App\Http\Controllers\BackOfficeController;
 
 
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\Auth\OtpPasswordResetController;
 
 Route::get('/falldocs', [DocumentController::class, 'gate'])->name('docs.index');
 Route::get('/falldocs/login', [DocumentController::class, 'login'])->name('docs.login'); // <= GET
@@ -24,6 +28,44 @@ Route::get('/', function () {
     
 });
 Route::redirect('/', '/login');           // 302 ชั่วคราว (แนะนำ)
+
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [OtpPasswordResetController::class, 'showRequestForm'])->name('password.request');
+    Route::post('/forgot-password', [OtpPasswordResetController::class, 'sendOtp'])->name('password.email');
+    Route::get('/reset-password', [OtpPasswordResetController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [OtpPasswordResetController::class, 'reset'])->name('password.update');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::view('/user-guide', 'user_guide')->name('user_guide');
+});
+
+
+
+Route::middleware(['auth'])->group(function () {
+
+    Route::prefix('rm/ai-dashboard')->name('rm.ai_dashboard.')->group(function () {
+
+        // 🧠 หน้าเว็บ (ROOT ของ dashboard)
+        Route::get('/', function () {
+            return view('rm.ai_dashboard');
+        })->name('index');
+
+        // 🔥 endpoint กลาง (AI วิเคราะห์หลายมิติ)
+        Route::post('/analyze', [AiDashboardController::class, 'analyze'])
+            ->name('analyze');
+
+        // 🔹 endpoint ตามมิติ
+        Route::post('/metrics/projects', [AiDashboardController::class, 'projectsMetric'])->name('metrics.projects');
+        Route::post('/metrics/budget',   [AiDashboardController::class, 'budgetMetric'])->name('metrics.budget');
+        Route::post('/metrics/fte',      [AiDashboardController::class, 'fteMetric'])->name('metrics.fte');
+        Route::post('/metrics/output',   [AiDashboardController::class, 'outputMetric'])->name('metrics.output');
+        Route::post('/metrics/status',   [AiDashboardController::class, 'statusMetric'])->name('metrics.status');
+        Route::post('/metrics/irb',      [AiDashboardController::class, 'irbMetric'])->name('metrics.irb');
+    });
+});
+
+
 
 
 use App\Http\Controllers\AgentController;
@@ -63,8 +105,9 @@ use App\Http\Controllers\ProjectLogController;
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/project-logs', [ProjectLogController::class, 'index'])->name('project_logs.index');
-    Route::get('/project-logs/{id}', [ProjectLogController::class, 'show'])->name('project_logs.show');
-    Route::delete('/project-logs/{id}', [ProjectLogController::class, 'destroy'])->name('project_logs.destroy');
+    Route::delete('/project-logs/purge-old', [ProjectLogController::class, 'purgeOld'])->name('project_logs.purge_old');
+    Route::get('/project-logs/{id}', [ProjectLogController::class, 'show'])->name('project_logs.show')->whereNumber('id');
+    Route::delete('/project-logs/{id}', [ProjectLogController::class, 'destroy'])->name('project_logs.destroy')->whereNumber('id');
     // ดู log เฉพาะโปรเจค
     Route::get('/projects/{project}/logs', [ProjectLogController::class, 'projectLogs'])->name('project_logs.project');
 });
@@ -146,7 +189,19 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
 
     // ✅ เส้นทางอื่น ๆ
     Route::get('/fte', [FteController::class, 'index'])->name('fte.index');
+    Route::get('/fte/projects', [FteController::class, 'projectIndex'])->name('fte.project.index');
     Route::get('/fte/{person}/detail', [FteController::class, 'detail'])->name('fte.detail');
+    Route::get('/fte/project/{project}', [FteController::class, 'projectDetail'])->name('fte.project.detail');
+    Route::get('/fte/project/{project}/pdf', [FteController::class, 'projectPdf'])->name('fte.project.pdf');
+    Route::get('/fte/{person}/pdf', [FteController::class, 'exportPdf'])->name('fte.pdf');
+    Route::get('/outputs', [OutputController::class, 'index'])->name('outputs.index');
+    Route::get('/back-office', [BackOfficeController::class, 'index'])->name('back_office.index');
+    Route::get('/back-office/create', [BackOfficeController::class, 'create'])->name('back_office.create');
+    Route::post('/back-office', [BackOfficeController::class, 'store'])->name('back_office.store');
+    Route::get('/back-office/{task}', [BackOfficeController::class, 'show'])->name('back_office.show');
+    Route::get('/back-office/{task}/edit', [BackOfficeController::class, 'edit'])->name('back_office.edit');
+    Route::put('/back-office/{task}', [BackOfficeController::class, 'update'])->name('back_office.update');
+    Route::get('/back-office/{task}/pdf', [BackOfficeController::class, 'pdf'])->name('back_office.pdf');
 
 
 
@@ -175,4 +230,3 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/projects/{project}/fte', [FteRoleController::class, 'bulkUpdate'])
         ->name('projects.fte.update');
 });
-

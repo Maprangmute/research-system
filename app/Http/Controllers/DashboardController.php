@@ -8,11 +8,11 @@ use App\Models\Project;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $projects = Project::with([
             // ดึงเฉพาะฟิลด์ที่ต้องใช้จาก coResearches
-            'coResearches:id,project_id,unit_status',
+            'coResearches:id,project_id,name,unit_status,affiliation',
 
             // Eager load อื่น ๆ
             'copis',
@@ -24,19 +24,6 @@ class DashboardController extends Controller
             'outputs.authors:id,output_id,name,role',
             'outputs.project:id,project_name_th', // ถ้าจะใช้ชื่อโครงการตอน drill-down
         ])
-        ->select(
-            'id',
-            'project_name_th',
-            'project_list',
-            'pi_affiliation',
-            'start_year',
-            'planning_status',
-            'theme',
-            'pi_name',
-            'budget',
-            'funding_type',
-            'funding_source'
-        )
         ->get();
 
         // collections เดิม (ยังเก็บไว้ใช้กับ Blade ส่วนอื่น ๆ ได้)
@@ -65,7 +52,22 @@ class DashboardController extends Controller
 
         $themes = Project::select('theme')->distinct()->pluck('theme');
 
-        return view('dashboard', compact(
+        $view = 'dashboard';
+        $forceView = $request->query('view');
+        if ($forceView === 'mobile') {
+            $view = 'dashboard_mobile';
+        } elseif ($forceView !== 'desktop') {
+            $ua = (string) $request->header('User-Agent', '');
+            $isMobile = (bool) preg_match(
+                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
+                $ua
+            );
+            if ($isMobile) {
+                $view = 'dashboard_mobile';
+            }
+        }
+
+        return view($view, compact(
             'projects',
             'copis',
             'coResearches',

@@ -23,21 +23,20 @@ class Copi extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $copi->project->project_name_th ?? '',
                 'action'          => 'copi_create',
-                'changes'         => $copi->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($copi->toArray()),
             ]);
         });
 
         // Create log เมื่อแก้ไข Co-PI
         static::updating(function ($copi) {
-            $diff = $copi->getDirty();
-            unset($diff['updated_at']);
-            if (!empty($diff)) {
+            $changes = ProjectLog::buildUpdateChanges($copi);
+            if (!empty($changes)) {
                 ProjectLog::create([
                     'project_id'      => $copi->project_id,
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $copi->project->project_name_th ?? '',
                     'action'          => 'copi_update',
-                    'changes'         => $diff,
+                    'changes'         => $changes,
                 ]);
             }
         });
@@ -49,7 +48,7 @@ class Copi extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $copi->project->project_name_th ?? '',
                 'action'          => 'copi_delete',
-                'changes'         => $copi->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($copi->toArray()),
             ]);
         });
     }

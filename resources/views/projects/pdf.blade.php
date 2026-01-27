@@ -17,36 +17,76 @@
         }
         body {
             font-family: "thsarabun", Tahoma, sans-serif;
-            font-size: 13pt;
+            font-size: 11.5pt;
+            line-height: 1.35;
             color: #222;
         }
         .section-title {
-            background: #FEF9E7;
-            color: #C47F00;
-            padding: 7px 18px 7px 16px;
-            margin: 24px 0 10px;
+            background: #F8FAFC;
+            color: #0F172A;
+            padding: 6px 14px 6px 12px;
+            margin: 18px 0 8px;
             font-weight: bold;
-            border-radius: 10px;
+            border-radius: 8px;
+            border: 1px solid #E2E8F0;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         th, td {
             border: 1px solid #dde6f6;
-            padding: 8px 13px;
+            padding: 6px 10px;
+            vertical-align: top;
         }
-        thead { background: #E3ECFC; }
+        thead {
+            background: #F1F5F9;
+            color: #0F172A;
+        }
+        ul {
+            margin: 0 0 12px 18px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 4px;
+        }
         .nowrap { white-space: nowrap; }
         .check {
             text-align: center;
             font-size: 1.2em;
             color: #009900;
         }
+        .fte-bar-wrap {
+            width: 100%;
+            height: 10px;
+            background: #E6F3F2;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .fte-bar {
+            height: 10px;
+            background: #0F766E;
+        }
     </style>
 </head>
 <body>
+@php
+    function th_date_or_dash($value) {
+        if (!$value) return '-';
+        try {
+            \Carbon\Carbon::setLocale('th');
+            $d = \Carbon\Carbon::parse($value);
+            return $d->translatedFormat('j F') . ' ' . ($d->year + 543);
+        } catch (\Exception $e) {
+            return $value ?: '-';
+        }
+    }
+    function text_or_dash($value) {
+        $txt = trim((string)($value ?? ''));
+        return $txt !== '' ? $txt : '-';
+    }
+@endphp
 {{-- HEADER --}}
 <htmlpageheader name="Header">
     <div style="font-size: 16pt; color: black; padding-left: 10px;">
@@ -79,19 +119,55 @@
     {{-- SECTION A --}}
     <div class="section-title">A: ข้อมูลโครงการ</div>
     <ul>
-        <li><strong>ชื่อโครงการ (TH):</strong> {{ $project->project_name_th }}</li>
-        <li><strong>ชื่อโครงการ (EN):</strong> {{ $project->project_name_en }}</li>
-        <li><strong>ประเภท:</strong> {{ $project->project_type }}</li>
-        <li><strong>Theme:</strong> {{ $project->theme }}</li>
-        <li><strong>Shortcut:</strong> {{ $project->shortcut_link }}</li>
-        <li><strong>ขนาด:</strong> {{ $project->size }}</li>
-        <li><strong>รหัสโครงการ R:</strong> {{ $project->r_code }}</li>
-        <li><strong>ปีโปรเจค:</strong> {{ $project->start_year }}</li>
-        <li><strong>สถานะ</strong> {{ $project->planning_status }}</li>
+        <li><strong>ชื่อโครงการ (TH):</strong> {{ text_or_dash($project->project_name_th) }}</li>
+        <li><strong>ชื่อโครงการ (EN):</strong> {{ text_or_dash($project->project_name_en) }}</li>
+        <li><strong>ประเภท:</strong> {{ text_or_dash($project->project_type) }}</li>
+        <li><strong>ลักษณะ:</strong> {{ text_or_dash($project->project_list) }}</li>
+        <li><strong>Theme:</strong> {{ text_or_dash($project->theme) }}</li>
+        <li><strong>Shortcut:</strong> {{ text_or_dash($project->shortcut_link) }}</li>
+        <li><strong>ขนาด:</strong> {{ text_or_dash($project->size) }}</li>
+        <li><strong>รหัสโครงการ R:</strong> {{ text_or_dash($project->r_code) }}</li>
+        <li><strong>ปีโปรเจค:</strong> {{ text_or_dash($project->start_year) }}</li>
+        <li><strong>สถานะ:</strong> {{ text_or_dash($project->planning_status) }}</li>
     </ul>
 
     {{-- SECTION B --}}
-    <div class="section-title">B: ข้อมูลแหล่งทุน</div>
+    <div class="section-title">B: ระยะเวลาดำเนินโครงการ</div>
+    <table>
+        <thead>
+            <tr>
+                <th>วันที่โครงการเริ่มทำงานของทีมวิจัย</th>
+                <th>วันที่สิ้นสุดการทำงานของทีมวิจัย</th>
+                <th>BA001 - วันที่เริ่มเขียน Proposal</th>
+                <th>BC101 - วันที่สัญญาอนุมัติ</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ th_date_or_dash($project->team_start_date) }}</td>
+                <td>{{ th_date_or_dash($project->team_end_date) }}</td>
+                <td>{{ th_date_or_dash($project->proposal_date) }}</td>
+                <td>{{ th_date_or_dash($project->contract_date) }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <table>
+        <thead>
+            <tr>
+                <th>BC102 - วันที่โครงการเริ่ม (ตามสัญญา)</th>
+                <th>BC103 - วันที่สิ้นสุด (ตามสัญญา)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ th_date_or_dash($project->start_date) }}</td>
+                <td>{{ th_date_or_dash($project->end_date) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {{-- SECTION C --}}
+    <div class="section-title">C: ข้อมูลแหล่งทุน</div>
     <table>
         <thead>
             <tr>
@@ -104,17 +180,17 @@
         </thead>
         <tbody>
             <tr>
-                <td>{{ $project->funding_type }}</td>
-                <td>{{ $project->funding_source }}</td>
-                <td>{{ $project->funding_org_type }}</td>
-                <td>{{ $project->funding_name }}</td>
-                <td>{{ number_format($project->budget, 2) }}</td>
+                <td>{{ text_or_dash($project->funding_type) }}</td>
+                <td>{{ text_or_dash($project->funding_source) }}</td>
+                <td>{{ text_or_dash($project->funding_org_type) }}</td>
+                <td>{{ text_or_dash($project->funding_name) }}</td>
+                <td>{{ $project->budget !== null ? number_format($project->budget, 2) : '-' }}</td>
             </tr>
         </tbody>
     </table>
 
-    {{-- SECTION C: Roles and COPI --}}
-    <div class="section-title">C: รายชื่อผู้ร่วมวิจัย</div>
+    {{-- SECTION D: Roles and COPI --}}
+    <div class="section-title">D: รายชื่อผู้ร่วมวิจัย</div>
     <table>
         <thead>
             <tr>
@@ -128,16 +204,16 @@
             {{-- PI --}}
             <tr>
                 <td class="nowrap">1</td>
-                <td>{{ $project->pi_name ?? '-' }}</td>
-                <td>{{ $project->pi_affiliation ?? '-' }}</td>
+                <td>{{ text_or_dash($project->pi_name) }}</td>
+                <td>{{ text_or_dash($project->pi_affiliation) }}</td>
                 <td>PI</td>
             </tr>
             {{-- COPI --}}
             @forelse ($project->copis as $i => $copi)
                 <tr>
                     <td class="nowrap">{{ $i+2 }}</td>
-                    <td>{{ $copi->name }}</td>
-                    <td>{{ $copi->affiliation }}</td>
+                    <td>{{ text_or_dash($copi->name) }}</td>
+                    <td>{{ text_or_dash($copi->affiliation) }}</td>
                     <td>Co-PI</td>
                 </tr>
             @empty
@@ -148,8 +224,8 @@
         </tbody>
     </table>
 
-    {{-- SECTION C2: Co-Researcher --}}
-    <div class="section-title">C2: Co-Researcher</div>
+    {{-- SECTION D2: Co-Researcher --}}
+    <div class="section-title">D2: Co-Researcher</div>
     <table>
         <thead>
             <tr>
@@ -164,9 +240,9 @@
             @forelse ($project->coResearches as $co)
                 <tr>
                     <td class="nowrap">{{ $i++ }}</td>
-                    <td>{{ $co->name }}</td>
-                    <td>{{ $co->affiliation }}</td>
-                    <td>{{ $co->unit_status }}</td>
+                    <td>{{ text_or_dash($co->name) }}</td>
+                    <td>{{ text_or_dash($co->affiliation) }}</td>
+                    <td>{{ text_or_dash($co->unit_status) }}</td>
                 </tr>
             @empty
                 <tr>
@@ -176,8 +252,8 @@
         </tbody>
     </table>
 
-    {{-- SECTION D: FTE --}}
-    <div class="section-title">D: รายชื่อผู้มีส่วนร่วม (FTE)</div>
+    {{-- SECTION E: FTE --}}
+    <div class="section-title">E: รายชื่อผู้มีส่วนร่วม (FTE)</div>
     <table>
         <thead>
             <tr>
@@ -195,34 +271,17 @@
             @forelse ($project->fteRoles as $i => $fte)
                 <tr>
                     <td class="nowrap">{{ $i+1 }}</td>
-                    <td>{{ $fte->name }}</td>
-                    <td>{{ $fte->role_group }}</td>
-                    <td>{{ $fte->job_detail }}</td>
-                    <td>{{ $fte->task_detail ?? '-' }}</td>
+                    <td>{{ text_or_dash($fte->name) }}</td>
+                    <td>{{ text_or_dash($fte->role_group) }}</td>
+                    <td>{{ text_or_dash($fte->job_detail) }}</td>
+                    <td>{{ text_or_dash($fte->task_detail) }}</td>
                     <td>
-                        @if($fte->start_date)
-                            @php
-                                \Carbon\Carbon::setLocale('th');
-                                $d = \Carbon\Carbon::parse($fte->start_date);
-                                $thaiMonth = $d->translatedFormat('j F') . ' ' . ($d->year + 543);
-                            @endphp
-                            {{ $thaiMonth }}
-                        @else
-                            -
-                        @endif
+                        {{ th_date_or_dash($fte->start_date) }}
                     </td>
                     <td>
-                        @if($fte->end_date)
-                            @php
-                                $d = \Carbon\Carbon::parse($fte->end_date);
-                                $thaiMonth = $d->translatedFormat('j F') . ' ' . ($d->year + 543);
-                            @endphp
-                            {{ $thaiMonth }}
-                        @else
-                            -
-                        @endif
+                        {{ th_date_or_dash($fte->end_date) }}
                     </td>
-                    <td class="nowrap">{{ $fte->fte_value }}</td>
+                    <td class="nowrap">{{ text_or_dash($fte->fte_value) }}</td>
                 </tr>
             @empty
                 <tr>
@@ -232,8 +291,71 @@
         </tbody>
     </table>
 
-    {{-- SECTION E: IRB --}}
-    <div class="section-title">E: รหัส IRB</div>
+    <div class="section-title">E.1: สรุป FTE รายเดือน</div>
+    <table>
+        <thead>
+            <tr>
+                <th class="nowrap">เดือน</th>
+                <th class="nowrap">FTE รวม</th>
+                <th>กราฟสรุป</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($fteMonthlySummary ?? [] as $row)
+                @php
+                    $monthLabel = $row['month'] ?? '-';
+                    if (preg_match('/^\d{4}-\d{2}$/', $monthLabel)) {
+                        $d = \Carbon\Carbon::createFromFormat('Y-m', $monthLabel)->locale('th');
+                        $monthLabel = $d->translatedFormat('F') . ' ' . ($d->year + 543);
+                    }
+                    $total = (float) ($row['total'] ?? 0);
+                    $percent = ($fteMonthlyMax ?? 0) > 0 ? ($total / $fteMonthlyMax) * 100 : 0;
+                @endphp
+                <tr>
+                    <td class="nowrap">{{ $monthLabel }}</td>
+                    <td class="nowrap">{{ number_format($total, 6) }}</td>
+                    <td>
+                        <div class="fte-bar-wrap">
+                            <div class="fte-bar" style="width: {{ round($percent, 2) }}%;"></div>
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="3" class="check">ไม่มีข้อมูล</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <div class="section-title">E.2: FTE รวม 3 ปีล่าสุด</div>
+    <table>
+        <thead>
+            <tr>
+                <th class="nowrap">ปี (พ.ศ.)</th>
+                <th class="nowrap">FTE รวม</th>
+            </tr>
+        </thead>
+        <tbody>
+            @php
+                $yearLabels = $fteYearLabels ?? [];
+                $yearData = $fteYearData ?? [];
+            @endphp
+            @forelse ($yearLabels as $i => $label)
+                <tr>
+                    <td class="nowrap">{{ $label }}</td>
+                    <td class="nowrap">{{ number_format($yearData[$i] ?? 0, 6) }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="2" class="check">ไม่มีข้อมูล</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    {{-- SECTION F: IRB --}}
+    <div class="section-title">F: รหัส IRB</div>
     <table>
         <thead>
             <tr>
@@ -247,18 +369,10 @@
             @forelse ($project->irbs as $i => $irb)
                 <tr>
                     <td class="nowrap">{{ $i+1 }}</td>
-                    <td>{{ $irb->code }}</td>
-                    <td>{{ $irb->source }}</td>
+                    <td>{{ text_or_dash($irb->code) }}</td>
+                    <td>{{ text_or_dash($irb->source) }}</td>
                     <td>
-                        @if($irb->exp_date)
-                            @php
-                                $d = \Carbon\Carbon::parse($irb->exp_date);
-                                $thaiMonth = $d->translatedFormat('j F') . ' ' . ($d->year + 543);
-                            @endphp
-                            {{ $thaiMonth }}
-                        @else
-                            -
-                        @endif
+                        {{ th_date_or_dash($irb->exp_date) }}
                     </td>
                 </tr>
             @empty
@@ -269,27 +383,55 @@
         </tbody>
     </table>
 
-    {{-- SECTION F: Outputs --}}
-    <div class="section-title">F: ผลงานวิจัย (Outputs)</div>
+    {{-- SECTION G: Outputs --}}
+    <div class="section-title">G: ผลงานวิจัย (Outputs)</div>
     <table>
         <thead>
             <tr>
                 <th class="nowrap">#</th>
                 <th>ชื่อผลงาน</th>
                 <th>ประเภท</th>
-                <th>รายละเอียด</th>
-                <th>ปี</th>
+                <th>รายละเอียด/ลิงก์</th>
+                <th>วันที่เผยแพร่</th>
             </tr>
         </thead>
         <tbody>
             @forelse ($project->outputs as $i => $output)
                 <tr>
                     <td class="nowrap">{{ $i+1 }}</td>
-                    <td>{{ $output->title }}</td>
-                    <td>{{ $output->type }}</td>
-                    <td>{{ $output->output ?? '-' }}</td>
-                    <td>{{ $output->year }}</td>
+                    <td>{{ text_or_dash($output->title) }}</td>
+                    <td>{{ text_or_dash($output->type) }}</td>
+                    <td>{{ text_or_dash($output->project_output ?? $output->output ?? '') }}</td>
+                    <td>{{ th_date_or_dash($output->year) }}</td>
                 </tr>
+                @if (!empty($output->journal) || !empty($output->quartile) || $output->impact_factor !== null)
+                    <tr>
+                        <td></td>
+                        <td colspan="4">
+                            <strong>Journal:</strong> {{ text_or_dash($output->journal) }} |
+                            <strong>Quartile:</strong> {{ text_or_dash($output->quartile) }} |
+                            <strong>Impact Factor:</strong> {{ text_or_dash($output->impact_factor) }}
+                        </td>
+                    </tr>
+                @endif
+                @if (!empty($output->authors) && $output->authors->count())
+                    <tr>
+                        <td></td>
+                        <td colspan="4">
+                            <strong>Authors:</strong>
+                            {{ $output->authors->pluck('name')->filter()->implode(', ') }}
+                        </td>
+                    </tr>
+                @endif
+                @if (!empty($output->conferences) && $output->conferences->count())
+                    <tr>
+                        <td></td>
+                        <td colspan="4">
+                            <strong>Conferences:</strong>
+                            {{ $output->conferences->pluck('name')->filter()->implode(', ') }}
+                        </td>
+                    </tr>
+                @endif
             @empty
                 <tr>
                     <td colspan="5" class="check">ไม่มีข้อมูล</td>
@@ -298,8 +440,8 @@
         </tbody>
     </table>
 
-    {{-- SECTION G: ยุทธศาสตร์ --}}
-    <div class="section-title">G: ยุทธศาสตร์ Siriraj Health Policy</div>
+    {{-- SECTION H: ยุทธศาสตร์ --}}
+    <div class="section-title">H: ยุทธศาสตร์ Siriraj Health Policy</div>
     <table>
         <thead>
             <tr>

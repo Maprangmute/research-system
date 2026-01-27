@@ -36,20 +36,19 @@ class OutputAuthor extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => optional($author->output->project)->project_name_th ?? '',
                 'action'          => 'output_author_create',
-                'changes'         => $author->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($author->toArray()),
             ]);
         });
 
         static::updating(function ($author) {
-            $diff = $author->getDirty();
-            unset($diff['updated_at']);
-            if (!empty($diff)) {
+            $changes = ProjectLog::buildUpdateChanges($author);
+            if (!empty($changes)) {
                 ProjectLog::create([
                     'project_id'      => $author->output->project_id ?? null,
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => optional($author->output->project)->project_name_th ?? '',
                     'action'          => 'output_author_update',
-                    'changes'         => $diff,
+                    'changes'         => $changes,
                 ]);
             }
         });
@@ -60,7 +59,7 @@ class OutputAuthor extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => optional($author->output->project)->project_name_th ?? '',
                 'action'          => 'output_author_delete',
-                'changes'         => $author->toArray(),
+                'changes'         => ProjectLog::sanitizeChanges($author->toArray()),
             ]);
         });
     }
