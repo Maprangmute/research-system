@@ -1316,12 +1316,12 @@
                         <span class="lux-chip px-3 py-1 rounded-full">แตะตารางใน Pop-up เพื่อดูข้อมูลครบ</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
+                {{-- <div class="flex items-center gap-2">
                     <button id="btnExportPdfMobile"
                         class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg shadow-sm">
                         Export Overview แบบ PDF
                     </button>
-                </div>
+                </div> --}}
             </div>
         <div id="chartSwipeTip" class="lux-swipe-tip mb-3">
             <span>เลื่อนซ้ายขวาเพื่อดูกราฟต่อไป • แตะกราฟเพื่อดูข้อมูลเพิ่ม</span>
@@ -1695,7 +1695,6 @@
                 }
             }
         </script>
-        <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -5657,6 +5656,280 @@
                 }
             });
 
+            /* ---------- PDF Export (mobile) ---------- */
+            document.addEventListener('DOMContentLoaded', () => {
+                const btn = document.getElementById('btnExportPdfMobile');
+                const overlay = document.getElementById('pdfExportOverlay');
+                const container = document.getElementById('pdfExportContainer');
+                if (!btn || !container) return;
+
+                const chartTitles = (window.chartTitles = window.chartTitles || {
+                    chartRedZoneTimeline: 'RED ZONE: โครงการใกล้สิ้นสุด / เกินกำหนด',
+                    chartOverdueProjects: 'โครงการที่เกินกำหนด (โดนัท)',
+                    chartCoResearchByUnitWindow: 'Co-Research ตามหน่วยงาน (3/6/12 เดือน)',
+                    chartProjectsPerYear: 'จำนวนโครงการรายปี',
+                    chartYearlyNewVsTotal: 'โครงการทั้งหมด/ใหม่/ดำเนินการ (รายปี)',
+                    chartFundingSplit: 'สัดส่วนทุน ภายใน/ภายนอก (รายปี)',
+                    chartBudgetPerYear: 'งบประมาณรวม (รายปี)',
+                    chartExternalBySource: 'ทุนภายนอก ตามแหล่งทุน (Top 8)',
+                    chartInternalBySource: 'ทุนภายใน ตามแหล่งทุน (Top 8)',
+                    chartExternalBySourceYear: 'ทุนภายนอก แยกตามปี (Top 8)',
+                    chartInternalBySourceYear: 'ทุนภายใน แยกตามปี (Top 8)',
+                    chartOutputStacked: 'Output แยกประเภท (รายปี)',
+                    chartPublicationPerYear: 'Publication รายปี',
+                    chartAuthorRolePerYear: 'บทบาทผู้เขียน (First/Co/Corresponding) รายปี + Top N',
+                    chartStatusYear: 'สถานะโครงการ (รายปี)',
+                    chartCollabBreakdown: 'ความร่วมมือ (นอกคณะ/ในคณะ/ในหน่วย)',
+                    chartPIsPerUnit: 'จำนวนงานของ PI ตามหน่วยงาน',
+                    chartFteSummary: 'Bubble FTE รวมต่อคน',
+                    chartIRBExpiry: 'IRB ใกล้หมดอายุ (6 เดือน)'});
+
+                const chartOrder = (window.chartOrder = window.chartOrder || [
+                    'chartRedZoneTimeline', 'chartOverdueProjects',
+                    'chartCoResearchByUnitWindow', 'chartProjectsPerYear',
+                    'chartYearlyNewVsTotal', 'chartFundingSplit',
+                    'chartBudgetPerYear', 'chartExternalBySource',
+                    'chartInternalBySource', 'chartExternalBySourceYear',
+                    'chartInternalBySourceYear', 'chartOutputStacked',
+                    'chartPublicationPerYear', 'chartAuthorRolePerYear',
+                    'chartStatusYear', 'chartCollabBreakdown',
+                    'chartPIsPerUnit', 'chartFteSummary',
+                    'chartIRBExpiry'
+                ]);
+
+                const safe = (v, fb = '-') => (v ?? '').toString().trim() || fb;
+
+                const buildOverdueRows = () => {
+                    const now = new Date();
+                    return projects
+                        .map(p => {
+                            const endDate = parseProjectDate(getEndDateRaw(p));
+                            if (!endDate) return null;
+                            const diffDays = (endDate - now) / (1000 * 60 * 60 * 24);
+                            if (diffDays >= 0) return null;
+                            return {
+                                project: p.project_name_th || '-',
+                                endDate,
+                                endDateStr: formatDateTH(endDate, '-'),
+                                overdueDays: Math.abs(Math.ceil(diffDays)),
+                                pi: p.pi_name || '-'
+                            };
+                        })
+                        .filter(Boolean)
+                        .sort((a, b) => a.endDate - b.endDate);
+                };
+
+                const buildIrbRows = () => {
+                    return (Array.isArray(irbs) ? irbs : []).map(irb => {
+                        const project = projects.find(p => p.id === irb.project_id) || {};
+                        const expDate = parseProjectDate(irb.exp_date);
+                        return {
+                            project: project.project_name_th || '-',
+                            code: irb.code || '-',
+                            source: irb.source || irb.irb_source || '-',
+                            expDate,
+                            expDateStr: formatDateTH(expDate, irb.exp_date || '-')
+                        };
+                    }).sort((a, b) => (a.expDate?.getTime?.() || 0) - (b.expDate?.getTime?.() || 0));
+                };
+
+                const buildCopiRows = () => {
+                    const list = Array.isArray(copisSummary) ? copisSummary : [];
+                    return list.map(r => ({
+                        name: safe(r.name),
+                        affiliation: safe(r.affiliation),
+                        project_count: r.project_count || 0
+                    })).sort((a, b) => b.project_count - a.project_count);
+                };
+
+                const buildProjectRows = () => {
+                    const list = projects || [];
+                    const num = v => Number(v || 0) || 0;
+                    const latestIrb = (p) => {
+                        const list = p.irbs || [];
+                        if (!list.length) return '-';
+                        const sorted = [...list].sort((a, b) => (parseProjectDate(b.exp_date)?.getTime?.() || 0) - (parseProjectDate(a.exp_date)?.getTime?.() || 0));
+                        return formatDateTH(parseProjectDate(sorted[0].exp_date), sorted[0].exp_date || '-');
+                    };
+                    return list.map(p => ({
+                        project: p.project_name_th || '-',
+                        year: p.start_year || '-',
+                        pi: p.pi_name || '-',
+                        copis: (p.copis || []).length,
+                        coResearch: (p.co_researches || p.coResearches || []).length,
+                        fte: (p.fte_roles || p.fteRoles || []).reduce((s, r) => s + num(r.fte_value || r.fte), 0).toFixed(2),
+                        outputs: (p.outputs || []).length,
+                        irb: latestIrb(p)
+                    }));
+                };
+
+                function downscaleChart(ch) {
+                    try {
+                        const src = ch.canvas;
+                        const maxW = 1100;
+                        const scale = Math.min(1, maxW / src.width);
+                        if (scale >= 0.999) return ch.toBase64Image();
+                        const dest = document.createElement('canvas');
+                        dest.width = Math.round(src.width * scale);
+                        dest.height = Math.round(src.height * scale);
+                        dest.getContext('2d').drawImage(src, 0, 0, dest.width, dest.height);
+                        return dest.toDataURL('image/png', 0.9);
+                    } catch {
+                        return ch.toBase64Image();
+                    }
+                }
+
+                btn.addEventListener('click', async () => {
+                    const generatedAt = new Date();
+                    const generatedText = generatedAt.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', hour12: false });
+                    const generatedBy = window.currentUserName || 'ผู้ใช้ไม่ระบุ';
+                    const docTitle = 'Siriraj Health Policy Database Research';
+                    const docSubtitle = 'Dashboard Export: กราฟและตารางสถานะโครงการ';
+                    overlay?.classList.remove('hidden');
+                    container.classList.remove('hidden');
+                    container.innerHTML = '';
+                    try {
+                        // cover
+                        const cover = document.createElement('div');
+                        cover.className = 'pdf-page';
+                        cover.innerHTML = `
+                            <div class=\"pdf-header\">
+                                <div class=\"pdf-title\">${docTitle}</div>
+                                <div class=\"pdf-subtitle\">${docSubtitle} • สร้างเมื่อ ${generatedText}</div>
+                            </div>
+                            <div class=\"pdf-meta\">
+                                <span>ผู้สร้าง: <strong>${generatedBy}</strong></span>
+                                <span>เวลารัน: ${generatedText}</span>
+                                <span>กราฟทั้งหมด: ${chartOrder.length} รายการ</span>
+                            </div>
+                        `;
+                        container.appendChild(cover);
+
+                        // charts 2 per page
+                        for (let i = 0; i < chartOrder.length; i += 2) {
+                            const page = document.createElement('div');
+                            page.className = 'pdf-page';
+                            const grid = document.createElement('div');
+                            grid.className = 'pdf-grid-2';
+                            chartOrder.slice(i, i + 2).forEach(id => {
+                                const card = document.createElement('div');
+                                card.className = 'pdf-chart-card';
+                                const title = document.createElement('div');
+                                title.className = 'pdf-chart-title';
+                                title.textContent = chartTitles[id] || id;
+                                card.appendChild(title);
+                                const el = document.getElementById(id);
+                                const ch = el ? Chart.getChart(el) : null;
+                                if (ch) {
+                                    const img = document.createElement('img');
+                                    img.src = downscaleChart(ch);
+                                    card.appendChild(img);
+                                } else {
+                                    const t = document.createElement('div');
+                                    t.className = 'text-sm text-slate-500';
+                                    t.textContent = 'ไม่มีข้อมูล';
+                                    card.appendChild(t);
+                                }
+                                grid.appendChild(card);
+                            });
+                            page.appendChild(grid);
+                            container.appendChild(page);
+                        }
+
+                        // tables
+                        const tables = [
+                            { title: 'ตารางโครงการเกินกำหนด', rows: buildOverdueRows(), perPage: 12, columns: ['project','endDateStr','overdueDays','pi'] },
+                            { title: 'ตาราง IRB', rows: buildIrbRows(), perPage: 12, columns: ['project','code','source','expDateStr'] },
+                            { title: 'Co-PI / ผู้วิจัยร่วม', rows: buildCopiRows(), perPage: 15, columns: ['name','affiliation','project_count'] },
+                            { title: 'โครงการทั้งหมด (ตามตัวกรองปัจจุบัน)', rows: buildProjectRows(), perPage: 8, columns: ['project','year','pi','copis','coResearch','fte','outputs','irb'] },
+                        ];
+
+                        const renderTablePage = (setRows, setTitle, setColumns) => {
+                            const page = document.createElement('div');
+                            page.className = 'pdf-page';
+                            const card = document.createElement('div');
+                            card.className = 'pdf-table-card';
+                            const head = document.createElement('div');
+                            head.className = 'pdf-table-title';
+                            head.textContent = setTitle;
+                            card.appendChild(head);
+                            const table = document.createElement('table');
+                            const thead = document.createElement('thead');
+                            const trh = document.createElement('tr');
+                            setColumns.forEach(c => {
+                                const th = document.createElement('th');
+                                th.textContent = c;
+                                trh.appendChild(th);
+                            });
+                            thead.appendChild(trh);
+                            table.appendChild(thead);
+                            const tbody = document.createElement('tbody');
+                            if (!setRows.length) {
+                                const tr = document.createElement('tr');
+                                const td = document.createElement('td');
+                                td.colSpan = setColumns.length;
+                                td.className = 'text-center text-slate-500';
+                                td.textContent = 'ไม่มีข้อมูล';
+                                tr.appendChild(td);
+                                tbody.appendChild(tr);
+                            } else {
+                                setRows.forEach(r => {
+                                    const tr = document.createElement('tr');
+                                    setColumns.forEach(c => {
+                                        const td = document.createElement('td');
+                                        td.textContent = safe(r[c]);
+                                        tr.appendChild(td);
+                                    });
+                                    tbody.appendChild(tr);
+                                });
+                            }
+                            table.appendChild(tbody);
+                            card.appendChild(table);
+                            page.appendChild(card);
+                            container.appendChild(page);
+                        };
+
+                        tables.forEach(set => {
+                            const per = set.perPage || set.rows.length || 1;
+                            for (let i = 0; i < set.rows.length; i += per) {
+                                renderTablePage(set.rows.slice(i, i + per), set.title, set.columns);
+                            }
+                            if (!set.rows.length) renderTablePage([], set.title, set.columns);
+                        });
+
+                        await new Promise(res => setTimeout(res, 80));
+                        const pages = Array.from(container.querySelectorAll('.pdf-page'));
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
+                        for (let i = 0; i < pages.length; i++) {
+                            const cv = await html2canvas(pages[i], { scale: 1.1, useCORS: true, allowTaint: true });
+                            const img = cv.toDataURL('image/png', 0.9);
+                            const pw = pdf.internal.pageSize.getWidth();
+                            const ph = pdf.internal.pageSize.getHeight();
+                            const ratio = Math.min(pw / cv.width, ph / cv.height);
+                            pdf.addImage(img, 'PNG', 0, 0, cv.width * ratio, cv.height * ratio);
+                            // footer (เหมือน desktop)
+                            pdf.setFontSize(10);
+                            pdf.text(`ผู้สร้าง: ${generatedBy} • ${generatedText}`, 18, ph - 12, { align: 'left' });
+                            pdf.text(`หน้า ${i + 1} / ${pages.length}`, pw - 18, ph - 12, { align: 'right' });
+                            if (i < pages.length - 1) pdf.addPage('a4', 'landscape');
+                        }
+                        const now = new Date();
+                        const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+                        const name = `SiHealthpolicy_overview_${generatedBy.replace(/\\s+/g,'')}_${stamp}.pdf`;
+                        const url = pdf.output('bloburl');
+                        window.open(url, '_blank');
+                    } catch (err) {
+                        console.error(err);
+                        alert('สร้าง PDF ไม่สำเร็จ กรุณาลองอีกครั้ง');
+                    } finally {
+                        container.classList.add('hidden');
+                        container.innerHTML = '';
+                        overlay?.classList.add('hidden');
+                    }
+                });
+            });
+
             function bubble(role, html) {
                 const wrap = document.createElement('div');
                 const base = role === 'user' ?
@@ -5837,5 +6110,50 @@
             });
         </script>
 
+    </div>
+
+    <!-- PDF Export workspace (mobile) -->
+    <style>
+        #pdfExportContainer {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 1200px;
+            padding: 0;
+            background: #f8fafc;
+            font-family: 'Sarabun', 'Prompt', 'Inter', 'Tahoma', sans-serif;
+            color: #0f172a;
+        }
+        .pdf-page {
+            width: 1200px;
+            height: 820px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            padding: 22px;
+            box-sizing: border-box;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .pdf-header { margin-bottom: 8px; }
+        .pdf-title { font-size: 18px; font-weight: 700; letter-spacing: 0.01em; }
+        .pdf-subtitle { font-size: 12px; color: #475569; }
+        .pdf-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 11px; color: #1f2937; margin-top: 4px; }
+        .pdf-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .pdf-chart-card, .pdf-table-card { border: none; border-radius: 0; padding: 8px; background: #ffffff; box-shadow: none; height: 100%; box-sizing: border-box; }
+        .pdf-chart-title, .pdf-table-title { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+        .pdf-chart-card img { width: 100%; height: auto; display: block; border-radius: 8px; background: #f8fafc; }
+        .pdf-table-card table { width: 100%; border-collapse: collapse; font-size: 11px; color: #0f172a; table-layout: fixed; }
+        .pdf-table-card th, .pdf-table-card td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; word-break: break-word; white-space: normal; vertical-align: top; }
+        .pdf-table-card th { background: #f1f5f9; font-weight: 700; }
+    </style>
+    <div id="pdfExportContainer" class="hidden"></div>
+    <div id="pdfExportOverlay"
+        class="hidden fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-lg px-4 py-3 text-sm text-slate-700 flex items-center gap-2">
+            <div class="h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <div>กำลังสร้างไฟล์ PDF...</div>
+        </div>
     </div>
 @endsection
