@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Project;
+use PDF;
 
 class DashboardController extends Controller
 {
@@ -78,5 +79,69 @@ class DashboardController extends Controller
             'progressReports',
             'themes'
         ));
+    }
+
+    public function exportPdf(Request $request)
+    {
+        @set_time_limit(120);
+        @ini_set('memory_limit', '512M');
+
+        $user = $request->user();
+        $generatedBy = $user?->name ?? 'ไม่ระบุ';
+
+        $data = $request->validate([
+            'charts' => 'array',
+            'charts.*.id' => 'required|string',
+            'charts.*.title' => 'required|string',
+            'charts.*.image' => 'required|string',
+            'overdueRows' => 'array',
+            'irbRows' => 'array',
+            'copiRows' => 'array',
+            'projectRows' => 'array',
+            'meta.generatedText' => 'required|string',
+            'meta.generatedAt' => 'nullable|string',
+            'meta.logo' => 'nullable|string',
+        ]);
+
+        $charts = $data['charts'] ?? [];
+        $tables = [
+            'overdue' => $data['overdueRows'] ?? [],
+            'irb' => $data['irbRows'] ?? [],
+            'copi' => $data['copiRows'] ?? [],
+            'projects' => $data['projectRows'] ?? [],
+        ];
+
+        $meta = [
+            'generatedBy' => $generatedBy,
+            'generatedText' => $data['meta']['generatedText'] ?? '',
+            'generatedAt' => $data['meta']['generatedAt'] ?? '',
+            'logo' => $data['meta']['logo'] ?? null,
+            'title' => 'Siriraj Health Policy Database Research',
+            'subtitle' => 'Dashboard Export: กราฟและตารางสถานะโครงการ',
+        ];
+
+        $html = view('dashboard_pdf', compact('charts', 'tables', 'meta'))->render();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('defaultFont', 'THSarabunNew');
+
+        // ✅ ปิดการรัน <script type="text/php"> (ตัด footer ที่ถูก inject แบบ dompdf)
+        $options->set('isPhpEnabled', false);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->setPaper('a4', 'landscape');
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->render();
+
+        $stamp = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
+        $userSlug = preg_replace('/\\s+/', '', $generatedBy);
+        $filename = "SiHealthpolicy_overview_{$userSlug}_{$stamp}.pdf";
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "inline; filename=\"{$filename}\""
+        ]);
     }
 }

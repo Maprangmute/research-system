@@ -1316,6 +1316,12 @@
                         <span class="lux-chip px-3 py-1 rounded-full">แตะตารางใน Pop-up เพื่อดูข้อมูลครบ</span>
                     </div>
                 </div>
+                <div class="flex items-center gap-2">
+                    <button id="btnExportPdfMobile"
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg shadow-sm">
+                        Export Overview แบบ PDF
+                    </button>
+                </div>
             </div>
         <div id="chartSwipeTip" class="lux-swipe-tip mb-3">
             <span>เลื่อนซ้ายขวาเพื่อดูกราฟต่อไป • แตะกราฟเพื่อดูข้อมูลเพิ่ม</span>
@@ -1439,6 +1445,11 @@
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 การกระจาย FTE</h3>
                 <canvas id="chartFteSummary" height="250"></canvas>
+            </div>
+
+            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">📑 IRB ใกล้หมดอายุ (6 เดือนข้างหน้า)</h3>
+                <canvas id="chartIRBExpiry" height="250"></canvas>
             </div>
         </div>
 
@@ -1684,6 +1695,9 @@
                 }
             }
         </script>
+        <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
         <script>
             // ให้สคริปต์ด้านล่างใช้ window.outputs ได้เลย

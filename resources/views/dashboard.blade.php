@@ -710,6 +710,12 @@
                         <span class="lux-chip px-3 py-1 rounded-full">แตะตารางใน Pop-up เพื่อดูข้อมูลครบ</span>
                     </div>
                 </div>
+                <div class="flex items-center gap-2">
+                    <button id="btnExportPdf"
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg shadow-sm">
+                        Export Overview เป็น PDF
+                    </button>
+                </div>
             </div>
             <div id="chartSwipeTip" class="lux-swipe-tip mb-3">
                 <span>เลื่อนซ้ายขวาเพื่อดูกราฟต่อไป • แตะกราฟเพื่อดูข้อมูลเพิ่ม</span>
@@ -861,14 +867,19 @@
                     <canvas id="chartCollabBreakdown" height="250"></canvas>
                 </div>
 
-                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">👨‍🔬 จำนวนงานของ PI ในหน่วยงาน</h3>
-                    <canvas id="chartPIsPerUnit" height="250"></canvas>
-                </div>
+            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">👨‍🔬 จำนวนงานของ PI ในหน่วยงาน</h3>
+                <canvas id="chartPIsPerUnit" height="250"></canvas>
+            </div>
 
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 การกระจาย FTE</h3>
                 <canvas id="chartFteSummary" height="250"></canvas>
+            </div>
+
+            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">📑 IRB ใกล้หมดอายุ (6 เดือนข้างหน้า)</h3>
+                <canvas id="chartIRBExpiry" height="250"></canvas>
             </div>
         </div>
 
@@ -1050,12 +1061,152 @@
             </div>
         </div>
 
+        <!-- PDF Export workspace (hidden from UI) -->
+        <style>
+            #pdfExportContainer {
+                position: absolute;
+                left: -9999px;
+                top: 0;
+                width: 1200px;
+                padding: 0;
+                background: #f8fafc;
+                font-family: 'Sarabun', 'Prompt', 'Inter', 'Tahoma', sans-serif;
+                color: #0f172a;
+            }
+
+            .pdf-page {
+                width: 1200px;
+                height: 820px;
+                background: #ffffff;
+                border: 1px solid #e5e7eb;
+                border-radius: 16px;
+                box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+                padding: 22px;
+                box-sizing: border-box;
+                margin-bottom: 24px;
+                overflow: hidden;
+            }
+
+            .pdf-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                margin-bottom: 14px;
+            }
+
+            .pdf-title {
+                font-size: 18px;
+                font-weight: 700;
+                letter-spacing: 0.01em;
+            }
+
+            .pdf-subtitle {
+                font-size: 12px;
+                color: #475569;
+            }
+
+            .pdf-meta {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                align-items: center;
+                font-size: 11px;
+                color: #1f2937;
+                margin-top: 4px;
+            }
+
+            .pdf-grid-2 {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 14px;
+            }
+
+            .pdf-chart-card,
+            .pdf-table-card {
+                border: none;
+                border-radius: 0;
+                padding: 8px;
+                background: #ffffff;
+                box-shadow: none;
+                height: 100%;
+                box-sizing: border-box;
+            }
+
+            .pdf-chart-title,
+            .pdf-table-title {
+                font-size: 13px;
+                font-weight: 700;
+                color: #0f172a;
+                margin-bottom: 8px;
+            }
+
+            .pdf-chart-card img {
+                width: 100%;
+                height: auto;
+                display: block;
+                border-radius: 8px;
+                background: #f8fafc;
+            }
+
+            .pdf-table-card table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 11px;
+                color: #0f172a;
+                table-layout: fixed;
+            }
+
+            .pdf-table-card th,
+            .pdf-table-card td {
+                border: 1px solid #e2e8f0;
+                padding: 6px 8px;
+                text-align: left;
+                word-break: break-word;
+                white-space: normal;
+                vertical-align: top;
+            }
+
+            .pdf-table-card th {
+                background: #f1f5f9;
+                font-weight: 700;
+            }
+
+            .pdf-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                font-size: 11px;
+                border-radius: 999px;
+                background: #ecfeff;
+                color: #0ea5e9;
+                border: 1px solid #bae6fd;
+            }
+
+            @page {
+                size: A4 landscape;
+                margin: 12mm;
+            }
+        </style>
+        <div id="pdfExportContainer" class="hidden"></div>
+        <div id="pdfExportOverlay"
+            class="hidden fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm flex items-center justify-center">
+            <div class="bg-white rounded-xl shadow-lg px-4 py-3 text-sm text-slate-700 flex items-center gap-2">
+                <div class="h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <div>กำลังสร้างไฟล์ PDF...</div>
+            </div>
+        </div>
+
         <!-- Scripts -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
         <script>
             // ให้สคริปต์ด้านล่างใช้ window.outputs ได้เลย
             window.outputs = @json($outputsForJs);
+            window.currentUserName = @json(auth()->user()->name ?? 'ไม่ระบุ');
+            window.loginLogoUrl = @json(asset('images/sihp-logo.png'));
         </script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
@@ -4829,6 +4980,497 @@
                         render(selYear.value);
                     }
                 });
+            })();
+
+            /* ---------- PDF Export (charts + tables) ---------- */
+            (function setupPdfExport() {
+                const btn = document.getElementById('btnExportPdf');
+                const overlay = document.getElementById('pdfExportOverlay');
+                const container = document.getElementById('pdfExportContainer');
+                if (!btn || !container) return;
+
+                const chartTitles = {
+                    chartRedZoneTimeline: 'RED ZONE: โครงการใกล้สิ้นสุด / เกินกำหนด',
+                    chartOverdueProjects: 'โครงการที่เกินกำหนด (โดนัท)',
+                    chartCoResearchByUnitWindow: 'Co-Research ตามหน่วยงาน (3/6/12 เดือน)',
+                    chartProjectsPerYear: 'จำนวนโครงการรายปี',
+                    chartYearlyNewVsTotal: 'โครงการทั้งหมด/ใหม่/ดำเนินการ (รายปี)',
+                    chartFundingSplit: 'สัดส่วนทุน ภายใน/ภายนอก (รายปี)',
+                    chartBudgetPerYear: 'งบประมาณรวม (รายปี)',
+                    chartExternalBySource: 'ทุนภายนอก ตามแหล่งทุน (Top 8)',
+                    chartInternalBySource: 'ทุนภายใน ตามแหล่งทุน (Top 8)',
+                    chartExternalBySourceYear: 'ทุนภายนอก แยกตามปี (Top 8)',
+                    chartInternalBySourceYear: 'ทุนภายใน แยกตามปี (Top 8)',
+                    chartOutputStacked: 'Output แยกประเภท (รายปี)',
+                    chartPublicationPerYear: 'Publication รายปี',
+                    chartAuthorRolePerYear: 'บทบาทผู้เขียน (First/Co/Corresponding) รายปี + Top N',
+                    chartStatusYear: 'สถานะโครงการ (รายปี)',
+                    chartCollabBreakdown: 'ความร่วมมือ (นอกคณะ/ในคณะ/ในหน่วย)',
+                    chartPIsPerUnit: 'จำนวนงานของ PI ตามหน่วยงาน',
+                    chartFteSummary: 'Bubble FTE รวมต่อคน',
+                    chartIRBExpiry: 'IRB ใกล้หมดอายุ (6 เดือน)'
+                };
+
+                const chartOrder = [
+                    'chartRedZoneTimeline', 'chartOverdueProjects',
+                    'chartCoResearchByUnitWindow', 'chartProjectsPerYear',
+                    'chartYearlyNewVsTotal', 'chartFundingSplit',
+                    'chartBudgetPerYear', 'chartExternalBySource',
+                    'chartInternalBySource', 'chartExternalBySourceYear',
+                    'chartInternalBySourceYear', 'chartOutputStacked',
+                    'chartPublicationPerYear', 'chartAuthorRolePerYear',
+                    'chartStatusYear', 'chartCollabBreakdown',
+                    'chartPIsPerUnit', 'chartFteSummary',
+                    'chartIRBExpiry'
+                ];
+
+                const wait = (ms = 0) => new Promise(res => setTimeout(res, ms));
+                const chunk = (arr, size) => {
+                    const out = [];
+                    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+                    return out;
+                };
+                const safe = (v, fallback = '-') => (v ?? '').toString().trim() || fallback;
+                const generatedAt = new Date();
+                const generatedText = generatedAt.toLocaleString('th-TH', {
+                    timeZone: 'Asia/Bangkok',
+                    hour12: false
+                });
+                const generatedBy = window.currentUserName || 'ผู้ใช้ไม่ระบุ';
+                const docTitle = 'Siriraj Health Policy Database Research';
+                const docSubtitle = 'Dashboard Export: กราฟและตารางสถานะโครงการ';
+
+                const buildOverdueRows = () => {
+                    const now = new Date();
+                    return projects
+                        .map(p => {
+                            const endDate = parseProjectDate(getEndDateRaw(p));
+                            if (!endDate) return null;
+                            const diffDays = (endDate - now) / (1000 * 60 * 60 * 24);
+                            if (diffDays >= 0) return null;
+                            return {
+                                project: p.project_name_th || '-',
+                                endDate,
+                                endDateStr: formatDateTH(endDate, '-'),
+                                overdueDays: Math.abs(Math.ceil(diffDays)),
+                                pi: p.pi_name || '-'
+                            };
+                        })
+                        .filter(Boolean)
+                        .sort((a, b) => a.endDate - b.endDate);
+                };
+
+                const buildIrbRows = () => {
+                    const rows = (Array.isArray(irbs) ? irbs : []).map(irb => {
+                        const project = projectById.get(irb.project_id) || {};
+                        const expDate = parseProjectDate(irb.exp_date);
+                        return {
+                            project: project.project_name_th || '-',
+                            code: irb.code || '-',
+                            source: irb.source || irb.irb_source || '-',
+                            expDate,
+                            expDateStr: formatDateTH(expDate, irb.exp_date || '-')
+                        };
+                    });
+                    return rows.sort((a, b) => (a.expDate?.getTime?.() || 0) - (b.expDate?.getTime?.() || 0));
+                };
+
+                const buildCopiRows = () => {
+                    const list = Array.isArray(copisSummary) ? copisSummary : [];
+                    return list.map(r => ({
+                        name: safe(r.name),
+                        affiliation: safe(r.affiliation),
+                        project_count: r.project_count || 0
+                    })).sort((a, b) => b.project_count - a.project_count);
+                };
+
+                const buildProjectRows = () => {
+                    const list = typeof getFilteredProjects === 'function' ? getFilteredProjects() : projects;
+                    const num = (v) => Number(v || 0) || 0;
+                    const latestIrb = (p) => {
+                        const list = p.irbs || [];
+                        if (!list.length) return '-';
+                        const sorted = [...list].sort((a, b) => (parseProjectDate(b.exp_date)?.getTime?.() || 0) - (parseProjectDate(a.exp_date)?.getTime?.() || 0));
+                        return formatDateTH(parseProjectDate(sorted[0].exp_date), sorted[0].exp_date || '-');
+                    };
+                    return list.map(p => ({
+                        project: p.project_name_th || '-',
+                        year: p.start_year || '-',
+                        pi: p.pi_name || '-',
+                        copis: (p.copis || []).length,
+                        coResearch: (p.co_researches || p.coResearches || []).length,
+                        fte: (p.fte_roles || p.fteRoles || []).reduce((s, r) => s + num(r.fte_value || r.fte), 0).toFixed(2),
+                        outputs: (p.outputs || []).length,
+                        irb: latestIrb(p)
+                    }));
+                };
+
+                function createPage(title, subtitle = '') {
+                    const page = document.createElement('div');
+                    page.className = 'pdf-page';
+                    const header = document.createElement('div');
+                    header.className = 'pdf-header';
+                    const h1 = document.createElement('div');
+                    h1.className = 'pdf-title';
+                    h1.textContent = title;
+                    header.appendChild(h1);
+                    if (subtitle) {
+                        const sub = document.createElement('div');
+                        sub.className = 'pdf-subtitle';
+                        sub.textContent = subtitle;
+                        header.appendChild(sub);
+                    }
+                    const meta = document.createElement('div');
+                    meta.className = 'pdf-meta';
+                    meta.innerHTML = `
+                        <span>ผู้สร้าง: <strong>${generatedBy}</strong></span>
+                        <span>สร้างเมื่อ: ${generatedText}</span>
+                    `;
+                    page.appendChild(header);
+                    page.appendChild(meta);
+                    return page;
+                }
+
+                function addCoverPage() {
+                    const page = document.createElement('div');
+                    page.className = 'pdf-page';
+                    const header = document.createElement('div');
+                    header.className = 'pdf-header';
+                    const h1 = document.createElement('div');
+                    h1.className = 'pdf-title';
+                    h1.textContent = docTitle;
+                    header.appendChild(h1);
+                    const sub = document.createElement('div');
+                    sub.className = 'pdf-subtitle';
+                    sub.textContent = `${docSubtitle} • สร้างเมื่อ ${generatedText}`;
+                    header.appendChild(sub);
+                    page.appendChild(header);
+
+                    const meta = document.createElement('div');
+                    meta.className = 'pdf-meta';
+                    meta.innerHTML = `
+                        <span>ผู้สร้าง: <strong>${generatedBy}</strong></span>
+                        <span>เวลารัน: ${generatedText}</span>
+                        <span>กราฟทั้งหมด: ${chartOrder.length} รายการ</span>
+                    `;
+                    page.appendChild(meta);
+
+                    const list = document.createElement('div');
+                    list.className = 'mt-4 text-sm text-slate-700';
+                    list.innerHTML = `
+                        <div class="font-semibold mb-2">รายการที่รวมในไฟล์:</div>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>กราฟกลยุทธ์ 2 กราฟต่อหน้า (รวม ${chartOrder.length} กราฟ)</li>
+                            <li>ตารางโครงการเกินกำหนด</li>
+                            <li>ตาราง IRB</li>
+                            <li>Co-PI / ผู้วิจัยร่วม</li>
+                            <li>รายการโครงการตามตัวกรองปัจจุบัน</li>
+                        </ul>
+                    `;
+                    if (window.loginLogoUrl) {
+                        const logoBox = document.createElement('div');
+                        logoBox.className = 'mt-6 flex items-center gap-3';
+                        const img = document.createElement('img');
+                        img.src = window.loginLogoUrl;
+                        img.alt = 'Siriraj Health Policy Database Logo';
+                        img.style.height = '110px';
+                        img.style.width = 'auto';
+                        img.style.objectFit = 'contain';
+                        img.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.08))';
+                        logoBox.appendChild(img);
+                        const txt = document.createElement('div');
+                        txt.className = 'text-sm text-slate-600';
+                        txt.textContent = 'ข้อมูลและกราฟจากระบบ Siriraj Health Policy Database';
+                        logoBox.appendChild(txt);
+                        page.appendChild(logoBox);
+                    }
+                    page.appendChild(list);
+                    container.appendChild(page);
+                }
+
+                function createChartCard(id) {
+                    const card = document.createElement('div');
+                    card.className = 'pdf-chart-card';
+                    const title = document.createElement('div');
+                    title.className = 'pdf-chart-title';
+                    title.textContent = chartTitles[id] || id;
+                    card.appendChild(title);
+
+                    const chartObj = Chart.getChart(document.getElementById(id));
+                    if (chartObj) {
+                        const img = document.createElement('img');
+                        img.alt = chartTitles[id] || id;
+                        img.src = chartObj.toBase64Image();
+                        card.appendChild(img);
+                    } else {
+                        const empty = document.createElement('div');
+                        empty.className = 'text-sm text-slate-500';
+                        empty.textContent = 'ไม่มีข้อมูลกราฟ';
+                        card.appendChild(empty);
+                    }
+                    return card;
+                }
+
+                function createTableCard(title, columns, rows, badgeText = '') {
+                    const card = document.createElement('div');
+                    card.className = 'pdf-table-card';
+                    const head = document.createElement('div');
+                    head.className = 'pdf-table-title flex items-center justify-between gap-2';
+                    const label = document.createElement('div');
+                    label.textContent = title;
+                    head.appendChild(label);
+                    if (badgeText) {
+                        const badge = document.createElement('span');
+                        badge.className = 'pdf-badge';
+                        badge.textContent = badgeText;
+                        head.appendChild(badge);
+                    }
+                    card.appendChild(head);
+
+                    const table = document.createElement('table');
+                    const thead = document.createElement('thead');
+                    const trHead = document.createElement('tr');
+                    columns.forEach(col => {
+                        const th = document.createElement('th');
+                        th.textContent = col.label;
+                        if (col.align) th.style.textAlign = col.align;
+                        trHead.appendChild(th);
+                    });
+                    thead.appendChild(trHead);
+                    table.appendChild(thead);
+
+                    const tbody = document.createElement('tbody');
+                    if (!rows.length) {
+                        const tr = document.createElement('tr');
+                        const td = document.createElement('td');
+                        td.colSpan = columns.length;
+                        td.className = 'text-center text-slate-500';
+                        td.textContent = 'ไม่มีข้อมูล';
+                        tr.appendChild(td);
+                        tbody.appendChild(tr);
+                    } else {
+                        rows.forEach(r => {
+                            const tr = document.createElement('tr');
+                            columns.forEach(col => {
+                                const td = document.createElement('td');
+                                const value = typeof col.format === 'function' ? col.format(r[col.key], r) : r[col.key];
+                                td.textContent = safe(value, '-');
+                                if (col.align) td.style.textAlign = col.align;
+                                tr.appendChild(td);
+                            });
+                            tbody.appendChild(tr);
+                        });
+                    }
+                    table.appendChild(tbody);
+                    card.appendChild(table);
+                    return card;
+                }
+
+                function addChartPages() {
+                    const pairs = chunk(chartOrder, 2);
+                    pairs.forEach((pair, idx) => {
+                        const page = createPage('สรุปกราฟสำคัญ', `หน้า ${idx + 1} : 2 กราฟ/หน้า`);
+                        const grid = document.createElement('div');
+                        grid.className = 'pdf-grid-2';
+                        pair.forEach(id => grid.appendChild(createChartCard(id)));
+                        page.appendChild(grid);
+                        container.appendChild(page);
+                    });
+                }
+
+                function addTablePages() {
+                        const tableSets = [{
+                            title: 'ตารางโครงการเกินกำหนด',
+                            rows: buildOverdueRows(),
+                        columns: [{
+                                key: 'project',
+                                label: 'โครงการ'
+                                },
+                                {
+                                    key: 'endDateStr',
+                                    label: 'วันสิ้นสุด',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'overdueDays',
+                                    label: 'เกินกำหนด (วัน)',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'pi',
+                                    label: 'PI',
+                                    align: 'center'
+                                }
+                            ],
+                            perPage: 12
+                        },
+                        {
+                            title: 'ตาราง IRB',
+                            rows: buildIrbRows(),
+                            columns: [{
+                                    key: 'project',
+                                    label: 'โครงการ'
+                                },
+                                {
+                                    key: 'code',
+                                    label: 'รหัส IRB',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'source',
+                                    label: 'หน่วยงาน/แหล่ง',
+                                    align: 'left'
+                                },
+                                {
+                                    key: 'expDateStr',
+                                    label: 'วันหมดอายุ',
+                                    align: 'center'
+                                }
+                            ],
+                            perPage: 12
+                        },
+                        {
+                            title: 'Co-PI / ผู้วิจัยร่วม',
+                            rows: buildCopiRows(),
+                            columns: [{
+                                    key: 'name',
+                                    label: 'ชื่อ'
+                                },
+                                {
+                                    key: 'affiliation',
+                                    label: 'หน่วยงาน'
+                                },
+                                {
+                                    key: 'project_count',
+                                    label: 'จำนวนโครงการ',
+                                    align: 'center'
+                                }
+                            ],
+                            perPage: 15
+                        },
+                        {
+                            title: 'โครงการทั้งหมด (ตามตัวกรองปัจจุบัน)',
+                            rows: buildProjectRows(),
+                            columns: [{
+                                    key: 'project',
+                                    label: 'ชื่อโครงการ'
+                                },
+                                {
+                                    key: 'year',
+                                    label: 'ปี',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'pi',
+                                    label: 'PI',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'copis',
+                                    label: 'Co-PI',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'coResearch',
+                                    label: 'Co-Research',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'fte',
+                                    label: 'FTE รวม',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'outputs',
+                                    label: 'Output',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'irb',
+                                    label: 'IRB ล่าสุด',
+                                    align: 'center'
+                                }
+                            ],
+                            perPage: 8
+                        }
+                    ];
+
+                    tableSets.forEach(set => {
+                        const rows = set.rows || [];
+                        const total = rows.length;
+                        const perPage = set.perPage || total || 1;
+                        if (!total) {
+                            const page = createPage(set.title, 'ไม่มีข้อมูล');
+                            page.appendChild(createTableCard(set.title, set.columns, []));
+                            container.appendChild(page);
+                            return;
+                        }
+                        chunk(rows, perPage).forEach((pageRows, idx) => {
+                            const page = createPage(set.title, `หน้าตาราง ${idx + 1}`);
+                            page.appendChild(createTableCard(set.title + (rows.length > perPage ? ` (ชุด ${idx + 1})` : ''), set.columns, pageRows, `${total.toLocaleString('th-TH')} รายการ`));
+                            container.appendChild(page);
+                        });
+                    });
+                }
+
+                async function renderAndDownload() {
+                    if (typeof html2canvas === 'undefined' || !window.jspdf) {
+                        alert('ไม่พบตัวช่วยสร้าง PDF (html2canvas / jsPDF)');
+                        return;
+                    }
+                    overlay?.classList.remove('hidden');
+                    container.classList.remove('hidden');
+                    container.innerHTML = '';
+
+                    try {
+                        addCoverPage();
+                        addChartPages();
+                        addTablePages();
+                        await wait(80); // เผื่อเวลาให้ layout เสร็จ
+
+                        const pages = Array.from(container.querySelectorAll('.pdf-page'));
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF({
+                            orientation: 'landscape',
+                            unit: 'px',
+                            format: 'a4'
+                        });
+
+                        for (let i = 0; i < pages.length; i++) {
+                            const canvas = await html2canvas(pages[i], {
+                                scale: 1.2,
+                                useCORS: true,
+                                allowTaint: true,
+                                windowWidth: pages[i].offsetWidth,
+                                windowHeight: pages[i].offsetHeight
+                            });
+                            const imgData = canvas.toDataURL('image/png', 0.90);
+                            const pageW = pdf.internal.pageSize.getWidth();
+                            const pageH = pdf.internal.pageSize.getHeight();
+                            const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
+                            const w = canvas.width * ratio;
+                            const h = canvas.height * ratio;
+                            pdf.addImage(imgData, 'PNG', 0, 0, w, h);
+                            if (i < pages.length - 1) pdf.addPage('a4', 'landscape');
+                        }
+
+                        const now = new Date();
+                        const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+                        const userSlug = (generatedBy || 'user').replace(/\\s+/g, '');
+                        const name = `SiHealthpolicy_overview_${userSlug}_${stamp}.pdf`;
+                        const blobUrl = pdf.output('bloburl');
+                        window.open(blobUrl, '_blank');
+                    } catch (err) {
+                        console.error('PDF export failed', err);
+                        alert('สร้าง PDF ไม่สำเร็จ กรุณาลองอีกครั้ง');
+                    } finally {
+                        container.classList.add('hidden');
+                        container.innerHTML = '';
+                        overlay?.classList.add('hidden');
+                    }
+                }
+
+                btn.addEventListener('click', renderAndDownload);
             })();
 
             const aiFab = document.getElementById('aiChatFab');
