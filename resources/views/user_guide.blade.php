@@ -25,6 +25,8 @@
                         <li><a class="hover:underline" href="#logs-detail">Project Logs (Grouped)</a></li>
                         <li><a class="hover:underline" href="#pages">การใช้งานแต่ละหน้า</a></li>
                         <li><a class="hover:underline" href="#otp">ลืมรหัสผ่าน (OTP)</a></li>
+                        <li><a class="hover:underline" href="#process">กระบวนการบันทึกแต่ละส่วน</a></li>
+                        <li><a class="hover:underline" href="#dev">สำหรับนักพัฒนา (Dev)</a></li>
                         <li><a class="hover:underline" href="#faq">คำถามที่พบบ่อย</a></li>
                     </ul>
                 </div>
@@ -396,6 +398,77 @@
                     <p class="text-sm text-gray-600">ดูประวัติการเปลี่ยนแปลงแบบ grouped และกดดูรายละเอียดเป็นลิ้นชัก</p>
                 </div>
             </section>
+
+            <section id="process" class="bg-white border rounded-xl p-6 space-y-4">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">กระบวนการบันทึกแต่ละส่วน & สิ่งที่เกิดขึ้นหลังบันทึก</h2>
+                <p class="text-sm text-gray-700">ทำตามลำดับนี้จะครบทุกส่วนของโครงการ และรู้ว่าระบบทำอะไรให้เพิ่มเติมอัตโนมัติ</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900">1) ข้อมูลโครงการ</div>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li>กรอกชื่อ (ไทย/อังกฤษ), รหัสโครงการ, ประเภท, Theme, ปี</li>
+                            <li>ผลลัพธ์: สร้างระเบียน Project หลัก + log “create/update”</li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900">2) Funding</div>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li>แหล่งทุน, ชื่อทุน, งบประมาณ, ประเภททุน</li>
+                            <li>ผลลัพธ์: เก็บใน Project และไปแสดงสรุปใน Dashboard</li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900">3) IRB</div>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li>รหัส IRB, หน่วยงานออก, วันหมดอายุ</li>
+                            <li>ผลลัพธ์: ใช้คำนวณ “IRB ใกล้หมดอายุ” ใน Dashboard + log ส่วน IRB</li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900">4) COPI / Co‑Researcher</div>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li>เพิ่มรายชื่อและบทบาทผู้ร่วมวิจัย</li>
+                            <li>ผลลัพธ์: แสดงในหน้ารายละเอียดโครงการ + log</li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900">5) FTE</div>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li>กรอกชื่อ, กลุ่ม, job_detail, task_detail, ชั่วโมง, วันที่เริ่ม/สิ้นสุด</li>
+                            <li>ผลลัพธ์: ระบบกระจายช่วงวันที่เป็นรายเดือน คำนวณ FTE/วัน และ FTE ต่อเดือนให้</li>
+                            <li>แสดงในหน้า FTE รายบุคคล/โครงการ + PDF + Dashboard</li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900">6) Outputs</div>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li>เลือกประเภท (EA101/EA103) → ระบบเปิดฟิลด์เฉพาะ</li>
+                            <li>กรอกผู้เขียน, Journal/Conference</li>
+                            <li>ผลลัพธ์: แสดงในหน้า Outputs, นับสถิติใน Dashboard</li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900">7) Back Office (งานนอกโครงการ)</div>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li>งานสนับสนุนที่ไม่ผูกโครงการ แต่มีชั่วโมง/รายละเอียด</li>
+                            <li>ผลลัพธ์: รวมใน FTE รายบุคคล (ป้าย “งานนอกโครงการ”)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-4 text-sm text-gray-700">
+                    <div class="font-semibold text-gray-900">สิ่งที่ระบบทำอัตโนมัติหลังบันทึก</div>
+                    <ul class="list-disc list-inside space-y-1 mt-2">
+                        <li>สร้าง Project Logs พร้อม diff ฟิลด์ที่เปลี่ยน (admin ดูที่ Project Logs)</li>
+                        <li>ล้างข้อมูล Auto Save ของฟอร์มเมื่อบันทึกสำเร็จ</li>
+                        <li>คำนวณ FTE/เดือนใหม่จากช่วงวันที่และชั่วโมงที่กรอก</li>
+                        <li>อัปเดตข้อมูลที่ใช้ใน Dashboard (FTE summary, Outputs, IRB ใกล้หมดอายุ ฯลฯ)</li>
+                        <li>สามารถดาวน์โหลด PDF FTE (รายคน/รายโครงการ) ได้ทันที</li>
+                    </ul>
+                </div>
+            </section>
+
 
             <section id="otp" class="bg-white border rounded-xl p-6">
                 <h2 class="text-2xl font-bold text-gray-800 mb-3">ลืมรหัสผ่าน (OTP)</h2>

@@ -38,6 +38,15 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::view('/user-guide', 'user_guide')->name('user_guide');
+
+    // Admin-only Dev Guide
+    Route::get('/dev-guide', function () {
+        $user = auth()->user();
+        if (!$user || $user->role !== 'admin') {
+            abort(403);
+        }
+        return view('dev_guide');
+    })->name('dev_guide');
 });
 
 

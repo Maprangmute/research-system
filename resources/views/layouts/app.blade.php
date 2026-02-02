@@ -128,6 +128,12 @@
                             <a href="{{ route('user_guide') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">📘 คู่มือ</a>
 
                             @if (Auth::user()->role === 'admin')
+                                <a href="{{ route('dev_guide') }}" class="block px-4 py-2 text-sm text-purple-700 hover:bg-gray-100">
+                                    🛠️ Dev Guide (Admin)
+                                </a>
+                            @endif
+
+                            @if (Auth::user()->role === 'admin')
                                 <a href="/user" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
                                     👥 จัดการผู้ใช้
                                 </a>
