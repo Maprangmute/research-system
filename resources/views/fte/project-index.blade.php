@@ -478,8 +478,8 @@
                                                             <th class="p-3 text-left font-semibold text-slate-700 min-w-[160px]">ชื่อบุคคล</th>
                                                             <th class="p-3 text-left font-semibold text-slate-700 min-w-[120px]">กลุ่ม</th>
                                                             <th class="p-3 text-left font-semibold text-slate-700 min-w-[200px]">ภาระงาน</th>
-                                                            <th class="p-3 text-center font-semibold text-slate-700 min-w-[120px]">วันที่เริ่ม</th>
-                                                            <th class="p-3 text-center font-semibold text-slate-700 min-w-[120px]">วันที่สิ้นสุด</th>
+                                                            {{-- <th class="p-3 text-center font-semibold text-slate-700 min-w-[120px]">วันที่เริ่ม</th> --}}
+                                                            {{-- <th class="p-3 text-center font-semibold text-slate-700 min-w-[120px]">วันที่สิ้นสุด</th> --}}
                                                             <th class="p-3 text-center font-semibold text-slate-700 min-w-[100px]">จำนวนวันทำงาน</th>
                                                             <th class="p-3 text-right font-semibold text-slate-700 min-w-[80px]">FTE</th>
                                                         </tr>
@@ -518,12 +518,12 @@
                                                                         {{ $item->task_detail ?? '-' }}
                                                                     </div>
                                                                 </td>
-                                                                <td class="p-3 text-center whitespace-nowrap">
+                                                                {{-- <td class="p-3 text-center whitespace-nowrap">
                                                                     {{ $startDisplay }}
                                                                 </td>
                                                                 <td class="p-3 text-center whitespace-nowrap">
                                                                     {{ $endDisplay }}
-                                                                </td>
+                                                                </td> --}}
                                                                 <td class="p-3 text-center font-semibold text-gray-700">
                                                                     {{ $item->days_in_month }} วัน
                                                                 </td>
@@ -532,7 +532,10 @@
                                                                     @php
                                                                         $percent = min(100, ($item->fte_month / 1) * 100);
                                                                     @endphp
-                                                                    <div class="mt-1 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                                                                    <div class=" text-xs text-gray-400">
+                                                                        FTE/วัน: {{ number_format($item->fte_per_day, 10) }}
+                                                                    </div>
+                                                                    {{-- <div class="mt-1 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                                                                         <div class="h-full bg-blue-500" style="width: {{ $percent }}%"></div>
                                                                     </div>
                                                                     <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block
@@ -541,7 +544,7 @@
                                                                         <div>ทำงาน: {{ $item->days_in_month }} วัน</div>
                                                                         <div>FTE/วัน: {{ number_format($item->fte_per_day, 10) }}</div>
                                                                         <div>FTE เดือนนี้: {{ number_format($item->fte_month, 6) }}</div>
-                                                                    </div>
+                                                                    </div> --}}
                                                                 </td>
                                                             </tr>
                                                         @endforeach

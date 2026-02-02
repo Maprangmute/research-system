@@ -92,9 +92,13 @@
                             {{ $thaiDate }}
                         </td>
                         <td class="border px-4 py-2">
-                            <a href="{{ route('project_logs.project', $first->project_id) }}" class="text-blue-600 hover:underline">
+                            @if ($first->project_id)
+                                <a href="{{ route('project_logs.project', $first->project_id) }}" class="text-blue-600 hover:underline">
+                                    {{ $projectName }}
+                                </a>
+                            @else
                                 {{ $projectName }}
-                            </a>
+                            @endif
                         </td>
                         <td class="border px-4 py-2">
                             {{ $userName }}

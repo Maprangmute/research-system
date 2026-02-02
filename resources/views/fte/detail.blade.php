@@ -119,7 +119,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border p-4">
+        <div id="fte-filters" class="bg-white rounded-2xl shadow-sm border p-4">
             <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800">📅 รายการ FTE รายเดือน</h3>
@@ -188,7 +188,11 @@
         </div>
 
         <div id="fte-months" class="space-y-4">
-            @forelse($monthlyFTE as $monthKey => $rows)
+            @php
+                $monthPaginator = $monthlyFTEPage ?? null;
+                $monthLoop = $monthPaginator ? $monthPaginator->items() : $monthlyFTE;
+            @endphp
+            @forelse($monthLoop as $monthKey => $rows)
                 @php
                     $carbon = \Carbon\Carbon::createFromFormat('Y-m', $monthKey);
                     $monthName = $carbon->locale('th')->translatedFormat('F');
@@ -237,12 +241,15 @@
                                             $projectName = $item->project->project_name_th ?? '-';
                                             $roleGroup = $item->role_group ?? '-';
                                             $jobDetailRaw = trim((string) ($item->job_detail ?? ''));
+                                            $taskDetailRaw = trim((string) ($item->task_detail ?? ''));
                                             $jobDetail = $jobDetailRaw !== '' ? $jobDetailRaw : '-';
+                                            $taskDetail = $taskDetailRaw !== '' ? $taskDetailRaw : '-';
+                                            $combinedJob = trim($jobDetailRaw . ' ' . $taskDetailRaw);
                                         @endphp
                                         <tr class="border-b fte-row"
                                             data-project="{{ $projectName }}"
                                             data-role="{{ $roleGroup }}"
-                                            data-job="{{ $jobDetail }}"
+                                            data-job="{{ $combinedJob }}"
                                             data-month="{{ $monthKey }}"
                                             data-year="{{ $carbon->year }}"
                                             data-fte="{{ $item->fte_value }}"
@@ -272,7 +279,10 @@
                                                 {{ $roleGroup }}
                                             </td>
                                             <td class="p-2 break-words whitespace-normal" data-label="รายละเอียดงาน">
-                                                {{ $jobDetail }}
+                                                <div class="text-slate-700">{{ $jobDetail }}</div>
+                                                @if ($taskDetail !== '-')
+                                                    <div class="text-slate-500 text-sm mt-0.5">{{ $taskDetail }}</div>
+                                                @endif
                                             </td>
                                             <td class="p-2 text-center" data-label="ช่วงเวลา">
                                                 {{ $os }} {{ $osYear }} - {{ $oe }} {{ $oeYear }}
@@ -299,6 +309,12 @@
             @empty
                 <div class="text-gray-400 text-center py-8 bg-white border rounded-2xl">ไม่มีข้อมูล</div>
             @endforelse
+
+            @if ($monthPaginator)
+                <div class="mt-4">
+                    {{ $monthPaginator->withQueryString()->links() }}
+                </div>
+            @endif
         </div>
     </div>
 

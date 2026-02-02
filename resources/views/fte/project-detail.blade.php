@@ -15,9 +15,9 @@
         <div class="bg-white border shadow-sm rounded-2xl p-5">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <a href="{{ route('projects.show', $project->id) }}"
+                    <a href="{{ route('fte.project.index') }}"
                         class="inline-flex items-center gap-2 text-blue-700 font-semibold text-sm hover:text-blue-900">
-                        ← กลับไปหน้าโครงการ
+                        ← กลับไปหน้ารายการ FTE โปรเจค
                     </a>
                     <h1 class="text-2xl font-semibold text-slate-900 mt-2">
                         FTE รายโปรเจค: {{ $project->project_name_th ?? '-' }}
@@ -206,9 +206,14 @@
             </div>
         </div>
 
+        @php
+            $monthPaginator = $monthlyFTEPage ?? null;
+            $monthLoop = $monthPaginator ? $monthPaginator->items() : $monthlyFTE;
+        @endphp
+
         {{-- Mobile cards --}}
         <div id="fte-months-mobile" class="md:hidden space-y-4">
-            @forelse($monthlyFTE as $monthKey => $rows)
+            @forelse($monthLoop as $monthKey => $rows)
                 @php
                     $carbon = \Carbon\Carbon::createFromFormat('Y-m', $monthKey);
                     $monthName = $carbon->locale('th')->translatedFormat('F');
@@ -283,7 +288,7 @@
 
         {{-- Desktop table --}}
         <div id="fte-months" class="hidden md:block space-y-4">
-            @forelse($monthlyFTE as $monthKey => $rows)
+            @forelse($monthLoop as $monthKey => $rows)
                 @php
                     $carbon = \Carbon\Carbon::createFromFormat('Y-m', $monthKey);
                     $monthName = $carbon->locale('th')->translatedFormat('F');
@@ -369,6 +374,11 @@
             @empty
                 <div class="text-gray-400 text-center py-8 bg-white border rounded-2xl">ไม่มีข้อมูล</div>
             @endforelse
+            @if ($monthPaginator)
+                <div class="mt-4">
+                    {{ $monthPaginator->withQueryString()->links() }}
+                </div>
+            @endif
         </div>
     </div>
 

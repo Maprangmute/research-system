@@ -43,7 +43,10 @@ class ProjectLogController extends Controller
     {
         $this->authorizeAdmin();
         // ต้องการให้ดูทุก log หรือเฉพาะ admin ปรับ logic ได้
-        $query = ProjectLog::with(['user', 'project']);
+        $query = ProjectLog::with([
+            'user',
+            'project' => fn ($q) => $q->withTrashed(),
+        ]);
 
         $entity = $request->input('entity');
         if (!empty($entity) && $entity !== 'all') {
@@ -133,8 +136,18 @@ class ProjectLogController extends Controller
     public function projectLogs(Request $request, $projectId)
     {
         $this->authorizeAdmin();
-        $project = Project::findOrFail($projectId);
-        $logs = $project->logs()->with('user')->latest()->get();
+        $project = Project::withTrashed()->find($projectId);
+        $logs = ProjectLog::with('user')
+            ->where('project_id', $projectId)
+            ->latest()
+            ->get();
+        if (!$project) {
+            $latest = $logs->first();
+            $project = (object) [
+                'id' => $projectId,
+                'project_name_th' => $latest->project_name_th ?? 'โครงการที่ถูกลบ',
+            ];
+        }
         $groupedLogs = $logs->groupBy(function ($log) {
             return $log->created_at->format('Y-m-d H:i:s') . '|' . ($log->user_id ?? '-');
         });
@@ -148,7 +161,10 @@ class ProjectLogController extends Controller
     public function show(Request $request, $id)
     {
         $this->authorizeAdmin();
-        $log = ProjectLog::with(['user', 'project'])->findOrFail($id);
+        $log = ProjectLog::with([
+            'user',
+            'project' => fn ($q) => $q->withTrashed(),
+        ])->findOrFail($id);
         $view = $this->resolveView($request, 'project_logs.show');
         return view($view, compact('log'));
     }

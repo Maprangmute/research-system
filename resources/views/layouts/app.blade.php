@@ -60,42 +60,45 @@
         .mobile-nav-links a:hover {
             background: #f1f5f9;
         }
+
+        /* Nav auto hide/show */
+        #main-nav.nav-hidden {
+            transform: translateY(-110%);
+        }
     </style>
 
     <!-- ✅ เปลี่ยนจาก max-w-7xl เป็น container -->
-    <nav class="bg-white shadow" x-data="{ openNav: false }">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between gap-4 mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
-                <a href="/dashboard" class="font-bold brand">Research Dashboard</a>
+    <nav id="main-nav" class="bg-white border-b border-slate-200 shadow-sm fixed top-0 inset-x-0 z-50 transition-transform duration-200" x-data="{ openNav: false }">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center gap-4 mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
+                <a href="/dashboard" class="font-bold brand text-slate-900 tracking-tight text-lg">Research Dashboard</a>
 
-                <div class="hidden md:flex items-center gap-4">
-                    <a href="/dashboard" class="text-blue-600 hover:underline">📊 Dashboard</a>
-                    <a href="/rm" class="text-blue-600 hover:underline">📋 รายการโปรเจค</a>
-                    <a href="{{ route('back_office.index') }}" class="text-blue-600 hover:underline">🧾 Back Office</a>
-                    <a href="/rm/create" class="text-green-600 hover:underline">➕ เพิ่มโครงการ</a>
-                    <a href="{{ route('outputs.index') }}" class="text-green-600 hover:underline">📑 outputs</a>
-                    <div class="relative" x-data="{ openFte: false, fteTimer: null }">
+                <div class="hidden md:flex items-center gap-1 flex-1 justify-center">
+                    <a href="/dashboard" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📊 Dashboard</a>
+                    <a href="/rm" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📋 รายการโปรเจค</a>
+                    <a href="{{ route('back_office.index') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧾 Back Office</a>
+                    <a href="/rm/create" class="px-3 py-2 rounded-lg text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50">➕ เพิ่มโครงการ</a>
+                    <a href="{{ route('outputs.index') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-amber-700 hover:text-amber-800 hover:bg-amber-50">📑 outputs</a>
+
+                    <div class="relative" x-data="{ openFte: false }">
                         <button type="button"
                             @click="openFte = !openFte"
-                            @mouseenter="clearTimeout(fteTimer); fteTimer = setTimeout(() => { openFte = true; }, 180);"
-                            @mouseleave="clearTimeout(fteTimer); fteTimer = setTimeout(() => { openFte = false; }, 280);"
-                            class="text-gray-700 hover:text-blue-600 inline-flex items-center gap-1">
+                            @click.away="openFte = false"
+                            class="px-3 py-2 rounded-lg text-sm font-semibold inline-flex items-center gap-1 text-slate-700 hover:text-blue-700 hover:bg-slate-100">
                             🔥 FTE
-                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
+                            <svg :class="{'rotate-180': openFte}" class="w-4 h-4 text-gray-500 transition-transform" fill="none" stroke="currentColor" stroke-width="2"
                                 viewBox="0 0 24 24">
                                 <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </button>
                         <div x-show="openFte" x-cloak
-                            @mouseenter="clearTimeout(fteTimer); openFte = true;"
-                            @mouseleave="clearTimeout(fteTimer); fteTimer = setTimeout(() => { openFte = false; }, 280);"
-                            class="absolute left-0 mt-2 w-52 bg-white border rounded shadow-md z-50">
+                            class="absolute left-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
                             <a href="{{ route('fte.index') }}"
-                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
                                 FTE รายบุคคล
                             </a>
                             <a href="{{ route('fte.project.index') }}"
-                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
                                 FTE รายโปรเจค
                             </a>
                         </div>
@@ -176,7 +179,7 @@
     </nav>
 
     <!-- ✅ main ก็ใช้ container เช่นกัน -->
-    <main class="container mx-auto px-4 py-6">
+    <main class="container mx-auto px-4 pt-24 pb-6">
         @if (isset($header))
             <div class="mb-4">{{ $header }}</div>
         @endif
@@ -195,6 +198,45 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
 
 <script>
+// ===== Auto hide nav on scroll down, show on scroll up =====
+(function() {
+  const nav = document.getElementById('main-nav');
+  if (!nav) return;
+
+  let lastY = window.scrollY || 0;
+  let ticking = false;
+
+  function onScroll() {
+    const currentY = window.scrollY || 0;
+    const delta = currentY - lastY;
+
+    // Always show near top
+    if (currentY < 40) {
+      nav.classList.remove('nav-hidden');
+      lastY = currentY;
+      ticking = false;
+      return;
+    }
+
+    if (Math.abs(delta) > 6) {
+      if (delta > 0) {
+        nav.classList.add('nav-hidden');   // scrolling down -> hide
+      } else {
+        nav.classList.remove('nav-hidden'); // scrolling up -> show
+      }
+      lastY = currentY;
+    }
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(onScroll);
+      ticking = true;
+    }
+  }, { passive: true });
+})();
+
 /* =========================================================
    DATE-BE + REPEATABLE (FINAL / PRODUCTION SAFE)
    ========================================================= */

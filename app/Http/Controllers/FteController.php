@@ -609,15 +609,57 @@ public function detail(Request $request, $person)
 {
     $data = $this->buildFteDetailData($person);
 
+    // แบ่งหน้าเดือนละ 10 เดือน (เรียงใหม่ล่าสุดก่อน)
+    $months = $data['monthlyFTE']->sortKeysDesc();
+    $perPage = 10;
+    $page = LengthAwarePaginator::resolveCurrentPage();
+    $sliced = $months->slice(($page - 1) * $perPage, $perPage, true);
+
+    $monthlyFTEPage = new LengthAwarePaginator(
+        $sliced,
+        $months->count(),
+        $perPage,
+        $page,
+        [
+            'path' => LengthAwarePaginator::resolveCurrentPath(),
+            'query' => $request->query(),
+        ]
+    );
+    $monthlyFTEPage->setCollection($sliced);
+    // กลับขึ้นไปบริเวณตัวกรองเมื่อเปลี่ยนหน้า
+    $monthlyFTEPage = $monthlyFTEPage->withQueryString()->fragment('fte-filters');
+
+    $data['monthlyFTEPage'] = $monthlyFTEPage;
+
     return view('fte.detail', $data);
 }
 
-public function projectDetail(Project $project)
-{
-    $data = $this->buildFteProjectData($project);
+    public function projectDetail(Project $project)
+    {
+        $data = $this->buildFteProjectData($project);
 
-    return view('fte.project-detail', $data);
-}
+        // แบ่งหน้าเดือนละ 10 เดือน (ล่าสุดก่อน)
+        $months = $data['monthlyFTE']->sortKeysDesc();
+        $perPage = 10;
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $sliced = $months->slice(($page - 1) * $perPage, $perPage, true);
+
+        $monthlyFTEPage = new LengthAwarePaginator(
+            $sliced,
+            $months->count(),
+            $perPage,
+            $page,
+            [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+                'query' => request()->query(),
+            ]
+        );
+        $monthlyFTEPage->setCollection($sliced);
+
+        $data['monthlyFTEPage'] = $monthlyFTEPage;
+
+        return view('fte.project-detail', $data);
+    }
 
 public function projectPdf(Project $project)
 {

@@ -277,10 +277,8 @@
 <thead class="bg-gray-100">
     <tr>
         <th class="p-3 text-left font-semibold text-slate-700 min-w-[260px]">ชื่อโปรเจค / งานนอกโครงการ</th>
-        <th class="p-3 text-left font-semibold text-slate-700 min-w-[110px]">กลุ่ม</th>
-        <th class="p-3 text-left font-semibold text-slate-700 min-w-[200px]">รายละเอียดงาน</th>
-        <th class="p-3 text-center font-semibold text-slate-700 min-w-[130px]">วันที่เริ่ม</th>
-        <th class="p-3 text-center font-semibold text-slate-700 min-w-[130px]">วันที่สิ้นสุด</th>
+        <th class="p-3 text-left font-semibold text-slate-700 min-w-[120px]">กลุ่ม</th>
+        <th class="p-3 text-left font-semibold text-slate-700 min-w-[240px]">รายละเอียดงาน</th>
         <th class="p-3 text-center font-semibold text-slate-700 min-w-[110px]">จำนวนวันทำงาน</th>
         <th class="p-3 text-right font-semibold text-slate-700 min-w-[90px]">FTE</th>
     </tr>
@@ -314,44 +312,20 @@
             </td>
 
             <td class="p-3 break-words whitespace-normal align-top" data-label="กลุ่ม">
-                {{ $item->role_group ?? '-' }}
+                {{ trim((string) ($item->role_group ?? '')) !== '' ? $item->role_group : '-' }}
             </td>
 
             <td class="p-3 break-words whitespace-normal align-top" data-label="รายละเอียดงาน">
-                {{ $item->job_detail ?? '-' }}
-            </td>
-
-
-            <td class="p-3 text-center whitespace-nowrap align-top" data-label="วันที่เริ่ม">
                 @php
-                    $startDisplay = $item->start_date;
-                    if ($item->start_date) {
-                        if (\Carbon\Carbon::hasFormat($item->start_date, 'd-m-Y')) {
-                            $d = \Carbon\Carbon::createFromFormat('d-m-Y', $item->start_date);
-                            $startDisplay = $d->locale('th')->translatedFormat('j F') . ' ' . ($d->year + 543);
-                        } elseif (\Carbon\Carbon::hasFormat($item->start_date, 'd/m/Y')) {
-                            $d = \Carbon\Carbon::createFromFormat('d/m/Y', $item->start_date);
-                            $startDisplay = $d->locale('th')->translatedFormat('j F') . ' ' . ($d->year + 543);
-                        }
-                    }
+                    $jobDetail = trim((string) ($item->job_detail ?? ''));
+                    $taskDetail = trim((string) ($item->task_detail ?? ''));
+                    $hasJob = $jobDetail !== '';
+                    $hasTask = $taskDetail !== '';
                 @endphp
-                {{ $startDisplay }}
-            </td>
-
-            <td class="p-3 text-center whitespace-nowrap align-top" data-label="วันที่สิ้นสุด">
-                @php
-                    $endDisplay = $item->end_date;
-                    if ($item->end_date) {
-                        if (\Carbon\Carbon::hasFormat($item->end_date, 'd-m-Y')) {
-                            $d = \Carbon\Carbon::createFromFormat('d-m-Y', $item->end_date);
-                            $endDisplay = $d->locale('th')->translatedFormat('j F') . ' ' . ($d->year + 543);
-                        } elseif (\Carbon\Carbon::hasFormat($item->end_date, 'd/m/Y')) {
-                            $d = \Carbon\Carbon::createFromFormat('d/m/Y', $item->end_date);
-                            $endDisplay = $d->locale('th')->translatedFormat('j F') . ' ' . ($d->year + 543);
-                        }
-                    }
-                @endphp
-                {{ $endDisplay }}
+                <div class="text-slate-700">{{ $hasJob ? $jobDetail : '-' }}</div>
+                @if ($hasTask)
+                    <div class="text-slate-500 text-sm mt-0.5">{{ $taskDetail }}</div>
+                @endif
             </td>
 
             {{-- ⭐ จำนวนวันทำงาน (days_in_month) --}}
@@ -359,34 +333,12 @@
                 {{ $item->days_in_month }} วัน
             </td>
 
-            {{-- ⭐ FTE + bar + tooltip --}}
-            <td class="p-3 text-right font-semibold relative group align-top" data-label="FTE">
+            {{-- ⭐ FTE --}}
+            <td class="p-3 text-right font-semibold align-top" data-label="FTE">
                 {{ number_format($item->fte_month, 7) }}
-
-                @php
-                    $percent = min(100, ($item->fte_month / 1) * 100);
-                @endphp
-
-                <div class="mt-1 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                    <div class="h-full bg-blue-500" style="width: {{ $percent }}%"></div>
-                </div>
-
-                <div class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block
-                    bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-20 shadow">
-
-                    <div><b>{{ $item->project->project_name_th ?? '-' }}</b></div>
-                    <div>ทำงาน: {{ $item->days_in_month }} วัน</div>
-                    <div>FTE/วัน: {{ number_format($item->fte_per_day, 6) }}</div>
-                    <div>FTE เดือนนี้: {{ number_format($item->fte_month, 6) }}</div>
-                    <div>
-                        ช่วงซ้อน:
-                        {{ $item->overlap_start->locale('th')->translatedFormat('j F') }}
-                        {{ $item->overlap_start->year + 543 }}
-                        -
-                        {{ $item->overlap_end->locale('th')->translatedFormat('j F') }}
-                        {{ $item->overlap_end->year + 543 }}
-                    </div>
-                </div>
+                {{-- <div class="text-xs text-gray-400">
+                   {{ number_format($item->fte_per_day, 2) }}  FTE / วัน
+                </div> --}}
             </td>
         </tr>
     @endforeach
