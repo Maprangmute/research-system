@@ -105,7 +105,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 ml-auto">
                     <!-- Profile Dropdown -->
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open"
@@ -126,12 +126,6 @@
                                 </div>
                             </div>
                             <a href="{{ route('user_guide') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">📘 คู่มือ</a>
-
-                            @if (Auth::user()->role === 'admin')
-                                <a href="{{ route('dev_guide') }}" class="block px-4 py-2 text-sm text-purple-700 hover:bg-gray-100">
-                                    🛠️ Dev Guide (Admin)
-                                </a>
-                            @endif
 
                             @if (Auth::user()->role === 'admin')
                                 <a href="/user" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
