@@ -393,11 +393,14 @@ function forceHeaderBE(inst) {
   padding: 0.15rem 0.6rem;
   border-radius: 9999px;
 }
+.row-collapse-toggle-with-remove {
+  right: 0.5rem;
+}
 .row-collapsed > :not(.row-collapse-toggle) {
   display: none !important;
 }
 .row-collapsed > .row-collapse-summary {
-  display: block !important;
+  display: flex !important;
 }
 .row-collapse-summary {
   width: 100%;
@@ -405,7 +408,6 @@ function forceHeaderBE(inst) {
   white-space: normal;
   overflow: hidden;
   text-overflow: clip;
-  display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   word-break: break-word;
@@ -423,12 +425,52 @@ function forceHeaderBE(inst) {
 .row-collapse-summary .summary-muted {
   color: #64748b;
 }
+.row-collapse-summary-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.row-collapse-remove {
+  flex: 0 0 auto;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  background: #fff1f2;
+  border-radius: 9999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+.row-collapsible.has-inline-remove {
+  padding-bottom: 2rem;
+}
+.row-collapsible.has-inline-remove [data-repeatable-remove].repeatable-remove-text {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 6;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  background: #fff1f2;
+  border-radius: 9999px;
+  padding: 0.1rem 0.55rem;
+}
+.row-collapsed .row-collapse-remove {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  z-index: 6;
+}
+.row-collapsed .row-collapse-toggle,
+.row-collapsed .row-collapse-toggle-with-remove {
+  top: 0.5rem;
+  right: 0.5rem;
+}
 .row-collapsed {
   min-height: 2.5rem;
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
   background: #f8fafc;
   box-sizing: border-box;
+  padding-bottom: 2rem;
 }
 
 /* project create/edit modern buttons */
@@ -460,6 +502,12 @@ function forceHeaderBE(inst) {
   border-radius: 0.9rem;
   box-shadow: 0 10px 26px rgba(37, 99, 235, 0.2);
 }
+.project-form .repeatable-remove-text {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
 .row-collapse-summary {
   padding: 0.4rem 0.8rem;
 }
@@ -476,12 +524,29 @@ function forceHeaderBE(inst) {
     top: 0.35rem;
     right: 0.35rem;
   }
+  .row-collapse-toggle-with-remove {
+    right: 0.35rem;
+  }
+  .row-collapsed .row-collapse-remove {
+    bottom: 0.35rem;
+    right: 0.35rem;
+  }
+  .row-collapsible.has-inline-remove [data-repeatable-remove].repeatable-remove-text {
+    right: 0.35rem;
+    bottom: 0.35rem;
+  }
+  .row-collapsed .row-collapse-toggle,
+  .row-collapsed .row-collapse-toggle-with-remove {
+    top: 0.35rem;
+    right: 0.35rem;
+  }
 }
 </style>
 
 <script>
 (function () {
   const COLLAPSIBLE_SELECTOR = '[data-repeatable-row], .irb-row, .copi-row, .coresearch-row, .fte-row, .output-row';
+  const isProjectCreatePage = () => /^\/rm\/create\/?$/.test(window.location?.pathname || '');
   const isMobileViewport = () => window.matchMedia('(max-width: 640px)').matches;
   const disableRowCollapse = () => window.disableRowCollapse === true;
   const disableByRoute = () => {
@@ -523,6 +588,9 @@ function forceHeaderBE(inst) {
   }
 
   function setCollapsed(row, collapsed) {
+    if (collapsed && row?.dataset?.forceOpen === '1') {
+      collapsed = false;
+    }
     updateSummary(row);
     row.dataset.collapsed = collapsed ? '1' : '0';
     row.classList.toggle('row-collapsed', collapsed);
@@ -535,9 +603,16 @@ function forceHeaderBE(inst) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'row-collapse-toggle';
+    if (row.querySelector('[data-repeatable-remove]')) {
+      btn.classList.add('row-collapse-toggle-with-remove');
+    }
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (row.dataset.forceOpen === '1') {
+        setCollapsed(row, false);
+        return;
+      }
       setCollapsed(row, row.dataset.collapsed !== '1');
     });
     row.classList.add('row-collapsible');
@@ -553,6 +628,20 @@ function forceHeaderBE(inst) {
     if (row.querySelector('.row-collapse-summary')) return;
     const summary = document.createElement('div');
     summary.className = 'row-collapse-summary text-sm text-slate-700 mt-2 hidden';
+    const text = document.createElement('div');
+    text.className = 'row-collapse-summary-text';
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'row-collapse-remove';
+    removeBtn.textContent = 'ลบ';
+    removeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const targetRemove = row.querySelector('[data-repeatable-remove]');
+      if (targetRemove) targetRemove.click();
+    });
+    summary.appendChild(text);
+    summary.appendChild(removeBtn);
     row.appendChild(summary);
   }
 
@@ -627,6 +716,8 @@ function forceHeaderBE(inst) {
   function updateSummary(row) {
     const summary = row.querySelector('.row-collapse-summary');
     if (!summary) return;
+    const summaryText = summary.querySelector('.row-collapse-summary-text');
+    if (!summaryText) return;
 
     const siblings = getSiblings(row);
     const index = Math.max(1, siblings.indexOf(row) + 1);
@@ -644,7 +735,7 @@ function forceHeaderBE(inst) {
       const code = values.code || '-';
       const source = values.source || '-';
       const exp = values.exp_date || '-';
-      summary.innerHTML = `
+      summaryText.innerHTML = `
         <span class="summary-chip">${prefix} • IRB รหัส ${code}</span>
         <span class="summary-chip summary-muted">หน่วยงาน ${source}</span>
         <span class="summary-chip summary-muted">หมดอายุ ${exp}</span>
@@ -663,7 +754,7 @@ function forceHeaderBE(inst) {
       const values = idx !== null ? getGroupValues(row, 'copis', idx) : {};
       const name = values.name || 'ไม่ระบุชื่อ';
       const aff = values.affiliation || '-';
-      summary.innerHTML = `
+      summaryText.innerHTML = `
         <span class="summary-chip">${prefix} • COPI ชื่อ ${name}</span>
         <span class="summary-chip summary-muted">สังกัด ${aff}</span>
       `;
@@ -682,7 +773,7 @@ function forceHeaderBE(inst) {
       const name = values.name || 'ไม่ระบุชื่อ';
       const aff = values.affiliation || '-';
       const status = values.unit_status || '-';
-      summary.innerHTML = `
+      summaryText.innerHTML = `
         <span class="summary-chip">${prefix} • ${name}</span>
         <span class="summary-chip summary-muted">${aff}</span>
         <span class="summary-chip summary-muted">${status}</span>
@@ -702,7 +793,7 @@ function forceHeaderBE(inst) {
       );
       const dateText = (start || end) ? `${start || '-'} ถึง ${end || '-'}` : 'ยังไม่ระบุช่วงเวลา';
       const fteText = fte ? `FTE ${fte}` : 'FTE -';
-      summary.innerHTML = `
+      summaryText.innerHTML = `
         <span class="summary-chip">${prefix} • ${name}</span>
         <span class="summary-chip summary-muted">${task}</span>
         <span class="summary-chip summary-muted">${dateText}</span>
@@ -716,7 +807,7 @@ function forceHeaderBE(inst) {
       const type = getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[type]')) || '-';
       const publish = getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[year]')) || '-';
       const projectOutput = getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[project_output]')) || '';
-      summary.innerHTML = `
+      summaryText.innerHTML = `
         <span class="summary-chip">${prefix} • ${title}</span>
         <span class="summary-chip summary-muted">${type}${projectOutput ? ` • ${projectOutput}` : ''}</span>
         <span class="summary-chip summary-muted">เผยแพร่ ${publish}</span>
@@ -732,7 +823,7 @@ function forceHeaderBE(inst) {
     const dateText = (start || end) ? `${start || '-'} ถึง ${end || '-'}` : 'ยังไม่ระบุช่วงเวลา';
     const fteText = fte ? `FTE ${fte}` : 'FTE -';
 
-    summary.innerHTML = `
+    summaryText.innerHTML = `
       <span class="summary-chip">${prefix} • ${name}</span>
       <span class="summary-chip summary-muted">${task}</span>
       <span class="summary-chip summary-muted">${dateText}</span>
@@ -846,6 +937,13 @@ function forceHeaderBE(inst) {
 
   function bindRemove(row) {
     row.querySelectorAll('[data-repeatable-remove]').forEach(btn => {
+      const currentText = (btn.textContent || '').trim();
+      if (currentText === '✕' || currentText.toLowerCase() === 'x') {
+        btn.textContent = 'ลบ';
+        btn.classList.add('repeatable-remove-text');
+      }
+      row.classList.add('has-inline-remove');
+
       btn.onclick = () => {
         const group = row.closest('[data-repeatable]');
         const container = document.getElementById(group.dataset.container);
@@ -876,7 +974,7 @@ function forceHeaderBE(inst) {
     container.appendChild(row);
     updateIndex(container);
     highlightRow(row);
-    collapseSiblings(row);
+    setCollapsed(row, false);
 
     group.dataset.index = index + 1;
 
@@ -911,6 +1009,16 @@ function forceHeaderBE(inst) {
           prepareRow(row);
         });
     });
+
+    // /rm/create: ไม่ให้มีแถวตั้งต้นติดมา ต้องกด + เพิ่ม ก่อนเสมอ
+    if (isProjectCreatePage()) {
+      document.querySelectorAll('[data-repeatable]').forEach(group => {
+        const container = document.getElementById(group.dataset.container);
+        if (!container) return;
+        container.innerHTML = '';
+        group.dataset.index = '0';
+      });
+    }
 
     // collapse pre-filled rows on edit screens only
     const isEdit = document.querySelector('input[name="_method"][value="PUT"], input[name="_method"][value="PATCH"]');

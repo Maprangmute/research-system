@@ -58,6 +58,26 @@
         ->distinct()
         ->orderBy('pi_affiliation')
         ->pluck('pi_affiliation');
+
+    $coresearchAffiliationList = \App\Models\CoResearch::whereNotNull('affiliation')
+        ->whereRaw("TRIM(affiliation) <> ''")
+        ->selectRaw('TRIM(affiliation) as affiliation')
+        ->distinct()
+        ->orderBy('affiliation')
+        ->pluck('affiliation');
+
+    $copiAffiliationList = \App\Models\Copi::whereNotNull('affiliation')
+        ->whereRaw("TRIM(affiliation) <> ''")
+        ->selectRaw('TRIM(affiliation) as affiliation')
+        ->orderBy('affiliation')
+        ->pluck('affiliation');
+
+    $irbSourceList = \App\Models\Irb::whereNotNull('source')
+        ->whereRaw("TRIM(source) <> ''")
+        ->selectRaw('TRIM(source) as source')
+        ->distinct()
+        ->orderBy('source')
+        ->pluck('source');
 @endphp
 
 
@@ -185,7 +205,7 @@
             $allUsers = \App\Models\User::orderBy('name')->get();
         @endphp
 
-        <form id="projectForm" action="{{ route('projects.store') }}" method="POST">
+        <form id="projectForm" action="{{ route('projects.store') }}" method="POST" novalidate>
             @csrf
 
             <hr class="my-6 border-t-2 border-gray-300">
@@ -201,8 +221,10 @@
                     <input name="project_name_en" type="text" class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ*</span>
-                    <select name="project_type" id="project_type" class="w-full border p-2 rounded">
+                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ<span class="text-red-500">*</span></span>
+                    <select name="project_type" id="project_type" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของโครงการ')"
+                        oninput="this.setCustomValidity('')">
                         <option value="" disabled selected>เลือกประเภทของโครงการ</option> <!-- สำหรับ placeholder -->
                         <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล">01 ผู้สูงอายุ
                             ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล</option>
@@ -231,7 +253,7 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme) *</span>
+                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme) <span class="text-red-500">*</span></span>
                     <select name="theme" required oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')"
                         oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
                         <option value="">กรุณาเลือกกลุ่มเนื้อหา</option>
@@ -264,8 +286,10 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ลักษณะโครงการ</span>
-                    <select name="project_list" class="w-full border p-2 rounded">
+                    <span class="block text-sm text-gray-700 mb-1">ลักษณะโครงการ <span class="text-red-500">*</span></span>
+                    <select name="project_list" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกลักษณะโครงการ')"
+                        oninput="this.setCustomValidity('')">
                         <option value="">-- เลือกประเภทลักษณะ --</option>
                         <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภา">
                             โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
@@ -291,7 +315,7 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค *</span>
+                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค <span class="text-red-500">*</span></span>
                     <select name="start_year" class="w-full border p-2 rounded" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')" oninput="this.setCustomValidity('')">
                         <option value="" disabled
@@ -418,7 +442,7 @@
             <!-- รหัส IRB -->
             <hr class="my-6 border-t-2 border-gray-300">
             <h3 class="font-semibold text-lg text-blue-700 mb-2">IRB</h3>
-            <x-repeatable-row id="irb" addText="+ เพิ่ม IRB" startIndex="0">
+            <x-repeatable-row id="irb" addText="+ เพิ่ม IRB" startIndex="0" addClass="mb-6 px-3 py-1 bg-red-600 text-white rounded">
 
                 {{-- ✅ ต้องมี container --}}
                 <div data-repeatable-container class="space-y-2">
@@ -438,13 +462,17 @@
                         </div>
 
                         <div class="col-span-12 md:col-span-3">
-                            <label class="text-sm">รหัส IRB</label>
-                            <input name="irbs[__i__][code]" class="w-full border p-2 rounded">
+                            <label class="text-sm">รหัส IRB <span class="text-red-500">*</span></label>
+                            <input name="irbs[__i__][code]" class="w-full border p-2 rounded" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
+                                oninput="this.setCustomValidity('')">
                         </div>
 
                         <div class="col-span-12 md:col-span-3">
-                            <label class="text-sm">หน่วยงาน</label>
-                            <input name="irbs[__i__][source]" class="w-full border p-2 rounded">
+                            <label class="text-sm">หน่วยงาน <span class="text-red-500">*</span></label>
+                            <input name="irbs[__i__][source]" list="irbSourceList" class="w-full border p-2 rounded" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
+                                oninput="this.setCustomValidity('')">
                         </div>
 
                         <div class="col-span-12 md:col-span-5 flex flex-col sm:flex-row gap-2 items-end">
@@ -462,7 +490,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="block w-full">
                     <span class="block text-sm font-medium text-gray-700 mb-1">
-                        CA101 - ชื่อ PI (ผู้วิจัยหลัก) *
+                        CA101 - ชื่อ PI (ผู้วิจัยหลัก) <span class="text-red-500">*</span>
                     </span>
                     <div class="relative">
                         <input name="pi_name" list="userNames" type="text"
@@ -486,7 +514,9 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัดผู้วิจัยหลัก</span>
                     <input name="pi_affiliation" type="text" list="piaffiliationList"
-                        class="w-full border p-2 rounded" value="" placeholder="สังกัดผู้วิจัยหลัก">
+                        class="w-full border p-2 rounded" value="" placeholder="สังกัดผู้วิจัยหลัก" required
+                        oninvalid="this.setCustomValidity('กรุณาระบุสังกัดผู้วิจัยหลัก')"
+                        oninput="this.setCustomValidity('')">
                     @error('pi_affiliation')
                         <span class="text-sm text-red-500">{{ $message }}</span>
                     @enderror
@@ -499,13 +529,28 @@
                     @endforeach
 
                 </datalist>
+                <datalist id="coresearchAffiliationList">
+                    @foreach ($coresearchAffiliationList as $affiliation)
+                        <option value="{{ $affiliation }}"></option>
+                    @endforeach
+                </datalist>
+                <datalist id="irbSourceList">
+                    @foreach ($irbSourceList as $source)
+                        <option value="{{ $source }}"></option>
+                    @endforeach
+                </datalist>
+                <datalist id="copiAffiliationList">
+                    @foreach ($copiAffiliationList as $affiliation)
+                        <option value="{{ $affiliation }}"></option>
+                    @endforeach
+                </datalist>
             </div>
 
 
             <h3 class="text-balance text-blue-700 mb-2">
                 รายชื่อผู้ร่วมวิจัย (COPI)
             </h3>
-            <x-repeatable-row id="copi" addText="+ เพิ่ม COPI" startIndex="0">
+            <x-repeatable-row id="copi" addText="+ เพิ่ม COPI" startIndex="0" addClass="mb-6 px-3 py-1 bg-yellow-600 text-white rounded">
 
                 {{-- ✅ container --}}
                 <div data-repeatable-container class="space-y-3 mb-4">
@@ -527,20 +572,24 @@
 
                         <div class="col-span-12 md:col-span-5">
                             <label class="block text-sm text-gray-700 mb-1">
-                                ชื่อ COPI
+                                ชื่อ COPI <span class="text-red-500">*</span>
                             </label>
                             <input name="copis[__i__][name]" list="userNames" type="text"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg
                            focus:ring-2 focus:ring-yellow-500"
-                                placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
+                                oninput="this.setCustomValidity('')">
                         </div>
 
                         <div class="col-span-12 md:col-span-5">
                             <label class="block text-sm text-gray-700 mb-1">
-                                สังกัด COPI
+                                สังกัด COPI <span class="text-red-500">*</span>
                             </label>
-                            <input name="copis[__i__][affiliation]" type="text" class="w-full border p-2 rounded"
-                                placeholder="สังกัด COPI">
+                            <input name="copis[__i__][affiliation]" type="text" list="copiAffiliationList" class="w-full border p-2 rounded"
+                                placeholder="สังกัด COPI" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุสังกัด COPI')"
+                                oninput="this.setCustomValidity('')">
                         </div>
 
                         <div class="col-span-12 md:col-span-1 flex justify-end md:justify-center">
@@ -555,7 +604,7 @@
 
 
             <h3 class="text-blue-700 font-semibold mt-2"> Co-Researcher</h3>
-            <x-repeatable-row id="coresearch" addText="+ เพิ่ม Co-Researcher" startIndex="0">
+            <x-repeatable-row id="coresearch" addText="+ เพิ่ม Co-Researcher" startIndex="0" addClass="mb-6 px-3 py-1 bg-purple-600 text-white rounded">
 
                 {{-- ================== container ================== --}}
                 <div data-repeatable-container class="space-y-4 mb-4">
@@ -568,7 +617,7 @@
 
                         <label class="block w-full">
                             <span class="block text-sm mb-1">
-                                ชื่อ Co-Researcher คนที่
+                                ชื่อ Co-Researcher คนที่ <span class="text-red-500">*</span>
                                 <span data-repeatable-index
                                     class="inline-flex ml-1 px-2 py-0.5 rounded-full
                                  bg-purple-100 text-purple-700 text-xs font-semibold">
@@ -577,15 +626,19 @@
                             </span>
 
                             <input name="coresearch[__i__][name]" list="coresearchUsers" type="text"
-                                class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล">
+                                class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
+                                oninput="this.setCustomValidity('')">
                         </label>
 
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
 
                             <label class="col-span-12 md:col-span-5">
-                                <span class="block text-sm mb-1">สังกัด</span>
-                                <input name="coresearch[__i__][affiliation]" type="text"
-                                    class="w-full border p-2 rounded" placeholder="สังกัด">
+                                <span class="block text-sm mb-1">สังกัด <span class="text-red-500">*</span></span>
+                                <input name="coresearch[__i__][affiliation]" type="text" list="coresearchAffiliationList"
+                                    class="w-full border p-2 rounded" placeholder="สังกัด" required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
+                                    oninput="this.setCustomValidity('')">
                             </label>
 
                             <label class="col-span-12 md:col-span-5">
@@ -633,7 +686,7 @@
                 <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
             </div>
 
-            <x-repeatable-row id="fte" addText="+ เพิ่มผู้มีส่วนร่วม" startIndex="0">
+            <x-repeatable-row id="fte" addText="+ เพิ่มผู้มีส่วนร่วม" startIndex="0" addClass="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
 
                 {{-- ================== CONTAINER ================== --}}
                 <div data-repeatable-container class="space-y-6 mb-6">
@@ -660,7 +713,7 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <label>
                                         <span class="block text-sm font-semibold mb-1">
-                                            ชื่อ-นามสกุล *
+                                            ชื่อ-นามสกุล <span class="text-red-500">*</span>
                                         </span>
                                         <input list="fteUsers" name="fte_roles[__i__][name]"
                                             class="w-full border p-2 rounded" required>
@@ -670,7 +723,9 @@
                                         <span class="block text-sm font-semibold mb-1">
                                             กลุ่ม
                                         </span>
-                                        <select name="fte_roles[__i__][role_group]" class="w-full border p-2 rounded">
+                                        <select name="fte_roles[__i__][role_group]" class="w-full border p-2 rounded" required
+                                            oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่ม')"
+                                            oninput="this.setCustomValidity('')">
                                             <option value="" disabled selected>เลือกกลุ่ม</option>
                                             @foreach ($roleGroups as $group)
                                                 <option value="{{ $group }}">{{ $group }}</option>
@@ -682,7 +737,7 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <label>
                                         <span class="block text-sm font-semibold mb-1">
-                                            ภาระงาน *
+                                            ภาระงาน <span class="text-red-500">*</span>
                                         </span>
                                         <select name="fte_roles[__i__][job_detail]" class="w-full border p-2 rounded"
                                             required>
@@ -702,12 +757,14 @@
                                         ชั่วโมงการทำงาน (Hour)
                                     </span>
                                     <input name="fte_roles[__i__][hours]" type="number" step="0.1" min="0"
-                                        class="fte-hours w-full border p-2 rounded text-right">
+                                        class="fte-hours w-full border p-2 rounded text-right" required
+                                        oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
+                                        oninput="this.setCustomValidity('')">
                                 </label>
 
                                 <label>
                                     <span class="block text-sm font-semibold mb-1">
-                                        รายละเอียดภารกิจ *
+                                        รายละเอียดภารกิจ <span class="text-red-500">*</span>
                                     </span>
                                     <select name="fte_roles[__i__][task_detail]" class="w-full border p-2 rounded"
                                         required>
@@ -759,7 +816,7 @@
             <!-- E: ผลงานวิจัย (Output) -->
             <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
 
-            <x-repeatable-row id="output" addText="+ เพิ่ม Output" startIndex="0">
+            <x-repeatable-row id="output" addText="+ เพิ่ม Output" startIndex="0" addClass="mb-6 px-3 py-1 bg-green-600 text-white rounded">
 
                 <div data-repeatable-container class="space-y-4 mb-4">
 
@@ -777,13 +834,13 @@
                         </div>
 
                         <label>
-                            <span class="text-sm">ชื่อผลงาน *</span>
+                            <span class="text-sm">ชื่อผลงาน <span class="text-red-500">*</span></span>
                             <input name="outputs[__i__][title]" class="w-full border p-2 rounded" required>
                         </label>
 
                         <div class="grid grid-cols-3 gap-4">
                             <label>
-                                <span class="text-sm">ประเภท *</span>
+                                <span class="text-sm">ประเภท <span class="text-red-500">*</span></span>
                                 <select name="outputs[__i__][type]" class="output-type w-full border p-2 rounded"
                                     onchange="handleOutputType(this)" required>
                                     <option value="">เลือกประเภทของผลงาน</option>
@@ -813,7 +870,7 @@
                                 <input name="outputs[__i__][project_output]" class="w-full border p-2 rounded">
                             </label>
 
-                            <x-date-be name="outputs[__i__][year]" label="วันที่ publish" />
+                            <x-date-be name="outputs[__i__][year]" label="วันที่ publish" required />
                         </div>
 
                         <div class="special-mount mt-3"></div>
@@ -904,8 +961,8 @@
             </table>
 
             <!-- Submit -->
-            <div class="mt-6">
-                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">💾
+            <div class="mt-6 flex justify-center">
+                <button type="submit" class="w-full max-w-2xl bg-indigo-600 text-white px-6 py-3 rounded hover:bg-indigo-700">💾
                     บันทึกข้อมูล</button>
             </div>
         </form>
@@ -1587,15 +1644,79 @@
         document.addEventListener('DOMContentLoaded', () => {
             const projectForm = document.getElementById('projectForm');
 
+            function revealFieldIfCollapsed(field) {
+                if (!field || field.closest('template')) return false;
+
+                let node = field.parentElement;
+                let changed = false;
+
+                while (node && node !== document.body) {
+                    if (node.classList?.contains('row-collapsed')) {
+                        node.classList.remove('row-collapsed');
+                        node.dataset.collapsed = '0';
+                        changed = true;
+                    }
+
+                    if (node.tagName === 'DETAILS' && !node.open) {
+                        node.open = true;
+                        changed = true;
+                    }
+
+                    if (node.classList?.contains('collapse') && !node.classList.contains('show')) {
+                        node.classList.add('show');
+                        changed = true;
+                    }
+
+                    if (node.hasAttribute('hidden')) {
+                        node.removeAttribute('hidden');
+                        changed = true;
+                    }
+
+                    if (node.id) {
+                        const trigger = document.querySelector(`[aria-controls="${node.id}"]`);
+                        if (trigger && trigger.getAttribute('aria-expanded') === 'false') {
+                            trigger.click();
+                            changed = true;
+                        }
+                    }
+
+                    node = node.parentElement;
+                }
+
+                return changed || field.offsetParent !== null;
+            }
+
             if (projectForm) {
                 projectForm.addEventListener('submit', function(e) {
                     let isValid = true;
                     let firstInvalidField = null;
+                    const invalidRows = new Set();
+                    const invalidSections = new Set();
+                    const sectionNameById = {
+                        irb: 'IRB',
+                        copi: 'COPI',
+                        coresearch: 'Co-Researcher',
+                        fte: 'Roles and Responsibilities',
+                        output: 'ผลงานวิจัย (Output)',
+                    };
 
                     // 1. ค้นหาทุกช่องที่มีคำว่า required
                     const requiredFields = projectForm.querySelectorAll('[required]');
+                    projectForm.querySelectorAll('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row')
+                        .forEach(row => {
+                            delete row.dataset.forceOpen;
+                        });
 
                     requiredFields.forEach(field => {
+                        if (field.disabled || field.type === 'hidden' || field.closest('template')) {
+                            return;
+                        }
+
+                        if (field.offsetParent === null) {
+                            const visibleNow = revealFieldIfCollapsed(field);
+                            if (!visibleNow) return;
+                        }
+
                         const val = field.value.trim();
                         let displayTarget = field;
 
@@ -1610,6 +1731,13 @@
                             isValid = false;
                             displayTarget.classList.add('border-red-500', 'bg-red-50');
                             if (!firstInvalidField) firstInvalidField = displayTarget;
+                            const row = displayTarget.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row');
+                            if (row) invalidRows.add(row);
+                            const group = displayTarget.closest('[data-repeatable]');
+                            if (group) {
+                                const id = group.dataset.id || '';
+                                if (sectionNameById[id]) invalidSections.add(sectionNameById[id]);
+                            }
                         } else {
                             displayTarget.classList.remove('border-red-500', 'bg-red-50');
                         }
@@ -1620,18 +1748,43 @@
                         e.preventDefault(); // 🛑 หยุดการส่งฟอร์มทันที
                         e.stopPropagation();
 
-                        // เลื่อนหน้าจอไปหาจุดที่ลืมกรอก
-                        firstInvalidField.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
+                        // เปิดทุกลิ้นชักที่มีช่องบังคับยังไม่ถูกกรอก
+                        invalidRows.forEach(row => {
+                            row.classList.remove('row-collapsed');
+                            row.dataset.collapsed = '0';
+                            row.dataset.forceOpen = '1';
                         });
+
+                        // เลื่อนหน้าจอ + โฟกัสไปที่ช่องแรกที่ยังไม่กรอก
+                        const focusInvalidField = () => {
+                            if (!firstInvalidField) return;
+                            revealFieldIfCollapsed(firstInvalidField);
+                            firstInvalidField.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                            setTimeout(() => {
+                                firstInvalidField.focus({
+                                    preventScroll: true
+                                });
+                            }, 250);
+                        };
+                        focusInvalidField();
+
+                        const fieldLabel = firstInvalidField?.closest('label')?.querySelector('span')?.textContent
+                            ?.trim() || 'ช่องข้อมูลที่จำเป็น';
+                        const sectionText = invalidSections.size
+                            ? ` (ส่วน: ${Array.from(invalidSections).join(', ')})`
+                            : '';
 
                         Swal.fire({
                             icon: 'error',
                             title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
-                            text: 'ช่องที่มีเครื่องหมาย * หรือขอบสีแดง จำเป็นต้องระบุข้อมูล',
+                            text: `กรุณากรอก: ${fieldLabel}${sectionText}`,
                             confirmButtonText: 'ตกลง',
-                            confirmButtonColor: '#4f46e5'
+                            confirmButtonColor: '#4f46e5',
+                            returnFocus: false,
+                            didClose: focusInvalidField
                         });
                     }
                 });
@@ -1642,15 +1795,16 @@
             handleTypeChange(el);
         }
 
-        input.addEventListener('blur', () => {
-            const val = Number(input.value.replace(/,/g, ''));
+        const budgetInput = document.getElementById('budgetInput');
+        budgetInput?.addEventListener('blur', () => {
+            const val = Number(budgetInput.value.replace(/,/g, ''));
             if (val > 1_000_000_000_000) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'งบประมาณสูงเกินไป',
                     text: 'กรุณาตรวจสอบจำนวนเงินอีกครั้ง'
                 });
-                input.focus();
+                budgetInput.focus();
             }
         });
     </script>

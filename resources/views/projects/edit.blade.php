@@ -34,6 +34,17 @@
         ->distinct()
         ->orderBy('funding_name')
         ->pluck('funding_name');
+    $coresearchAffiliationList = \App\Models\CoResearch::whereNotNull('affiliation')
+        ->whereRaw("TRIM(affiliation) <> ''")
+        ->selectRaw('TRIM(affiliation) as affiliation')
+        ->distinct()
+        ->orderBy('affiliation')
+        ->pluck('affiliation');
+    $copiAffiliationList = \App\Models\Copi::whereNotNull('affiliation')
+        ->whereRaw("TRIM(affiliation) <> ''")
+        ->selectRaw('TRIM(affiliation) as affiliation')
+        ->orderBy('affiliation')
+        ->pluck('affiliation');
 @endphp
 
 {{-- datalist ใช้ร่วมทุกแถว --}}
@@ -101,7 +112,8 @@
             </div>
         @endif
 
-        <form id="projectForm" class="pb-10 md:pb-0" action="{{ route('projects.update', $project->id) }}" method="POST">
+        <form id="projectForm" class="pb-10 md:pb-0" action="{{ route('projects.update', $project->id) }}" method="POST"
+            novalidate>
             @csrf
             @method('PUT')
 
@@ -118,7 +130,7 @@
                         class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ * </span>
+                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ<span class="text-red-500">*</span></span>
                     <select name="project_type" id="project_type" class="w-full border p-2 rounded" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกประเภทโครงการ')" oninput="this.setCustomValidity('')">
                         <option value="" {{ old('project_type', $project->project_type) ? '' : 'selected' }}>
@@ -178,7 +190,7 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme) *</span>
+                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme) <span class="text-red-500">*</span></span>
                     <select name="theme" class="w-full border p-2 rounded" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')" oninput="this.setCustomValidity('')">
                         <option value="" {{ old('theme', $project->theme) ? '' : 'selected' }}>
@@ -234,8 +246,10 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ลักษณะโครงการ</span>
-                    <select name="project_list" class="w-full border p-2 rounded">
+                    <span class="block text-sm text-gray-700 mb-1">ลักษณะโครงการ <span class="text-red-500">*</span></span>
+                    <select name="project_list" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกลักษณะโครงการ')"
+                        oninput="this.setCustomValidity('')">
                         <option value="">-- เลือกประเภทลักษณะ --</option>
                         <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ"
                             {{ old('project_list', $project->project_list) == 'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ' ? 'selected' : '' }}>
@@ -283,7 +297,7 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค *</span>
+                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค <span class="text-red-500">*</span></span>
                     <select name="start_year" class="w-full border p-2 rounded" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')" oninput="this.setCustomValidity('')">
                         <option value="" disabled
@@ -518,28 +532,34 @@
 
 
             <hr class="my-6 border-t-2 border-gray-300">
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">รหัส IRB</h3>
+            <h3 class="font-semibold text-lg text-blue-700 mb-2">IRB</h3>
             <div id="irb-code-container" class="space-y-2 mb-4">
                 @foreach ($project->irbs ?? [] as $i => $irb)
-                    <div id="irb-{{ $i }}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                    <div id="irb-{{ $i }}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center p-3 border rounded-lg bg-gray-50">
                         <div class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span
-                                    class="irb-index">{{ $i + 1 }}</span></span>
+                                    class="irb-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span></span>
                             <input name="irbs[{{ $i }}][code]" value="{{ $irb['code'] }}"
-                                class="w-full border p-2 rounded" placeholder="Eg. 2025xxx">
+                                class="w-full border p-2 rounded" placeholder="Eg. 2025xxx" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
+                                oninput="this.setCustomValidity('')">
                         </div>
                         <div class="w-full">
                             <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span
-                                    class="irb-index">{{ $i + 1 }}</span></span>
+                                    class="irb-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span></span>
                             <input name="irbs[{{ $i }}][source]" value="{{ $irb['source'] }}"
-                                class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงาน">
+                                class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงาน" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
+                                oninput="this.setCustomValidity('')">
                         </div>
                         <div class="w-full flex flex-col sm:flex-row gap-2 items-end">
                             <div class="w-full relative">
-                                <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
+                                <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ <span class="text-red-500">*</span></span>
                                 <input name="irbs[{{ $i }}][exp_date]" value="{{ $irb['exp_date'] ?? '' }}"
                                     type="text" placeholder="เลือกวันที่"
-                                    class="thai-datepicker w-full border p-2 rounded pl-10">
+                                    class="thai-datepicker w-full border p-2 rounded pl-10" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกวันหมดอายุ IRB')"
+                                    oninput="this.setCustomValidity('')">
                                 <!-- ไอคอนปฏิทิน -->
                                 <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -563,20 +583,32 @@
             <h3 class="font-semibold text-lg text-blue-700 mb-2">C: Roles and Responsibilities</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI *</span>
+                    <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI (ผู้วิจัยหลัก) <span class="text-red-500">*</span></span>
                     <input name="pi_name" list="userNames" value="{{ old('pi_name', $project->pi_name) }}"
                         class="w-full border p-2 rounded" placeholder="ยศ-ชื่อ PI" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')" oninput="this.setCustomValidity('')">
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัด PI</span>
+                    <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัดผู้วิจัยหลัก <span class="text-red-500">*</span></span>
 
                     <input name="pi_affiliation" value="{{ old('pi_affiliation', $project->pi_affiliation ?? '') }}"
-                        class="w-full border p-2 rounded" placeholder="สังกัด PI" list="pi_affiliation_list">
+                        class="w-full border p-2 rounded" placeholder="สังกัด PI" list="pi_affiliation_list" required
+                        oninvalid="this.setCustomValidity('กรุณาระบุสังกัดผู้วิจัยหลัก')"
+                        oninput="this.setCustomValidity('')">
 
                     <datalist id="pi_affiliation_list">
                         @foreach ($piAffiliationList as $affiliation)
+                            <option value="{{ $affiliation }}"></option>
+                        @endforeach
+                    </datalist>
+                    <datalist id="coresearchAffiliationList">
+                        @foreach ($coresearchAffiliationList as $affiliation)
+                            <option value="{{ $affiliation }}"></option>
+                        @endforeach
+                    </datalist>
+                    <datalist id="copiAffiliationList">
+                        @foreach ($copiAffiliationList as $affiliation)
                             <option value="{{ $affiliation }}"></option>
                         @endforeach
                     </datalist>
@@ -590,21 +622,25 @@
             <h3 class="text-balance text-blue-700 mb-2">รายชื่อผู้ร่วมวิจัย (COPI)</h3>
             <div id="copi-container" class="space-y-2 mb-4">
                 @foreach ($project->copis ?? [] as $i => $copi)
-                    <div id="copi-{{ $i }}" class="copi-row grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <div id="copi-{{ $i }}" class="copi-row grid grid-cols-1 md:grid-cols-2 gap-4 items-center p-3 border rounded-lg bg-gray-50">
                         <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ {{ $i + 1 }}</span>
+                            <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ {{ $i + 1 }} <span class="text-red-500">*</span></span>
                             <input name="copis[{{ $i }}][name]"
                                 value="{{ old('copis.' . $i . '.name', $copi['name']) }}"
                                 list="userNames" class="w-full border p-2 rounded"
-                                placeholder="ยศ ชื่อ-นามสกุล COPI">
+                                placeholder="ยศ ชื่อ-นามสกุล COPI" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
+                                oninput="this.setCustomValidity('')">
                         </label>
 
                         <div class="flex flex-col sm:flex-row gap-2 w-full">
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่
-                                    {{ $i + 1 }}</span>
+                                    {{ $i + 1 }} <span class="text-red-500">*</span></span>
                                 <input name="copis[{{ $i }}][affiliation]" value="{{ $copi['affiliation'] }}"
-                                    class="w-full border p-2 rounded" placeholder="สังกัด COPI">
+                                    class="w-full border p-2 rounded" placeholder="สังกัด COPI" list="copiAffiliationList" required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด COPI')"
+                                    oninput="this.setCustomValidity('')">
                             </label>
                             <button type="button" onclick="removeRow('copi-{{ $i }}', 'copi')"
                                 class="text-red-600 mt-6">✕</button>
@@ -619,27 +655,31 @@
             <h3 class="text-balance text-blue-700 mb-2">รายชื่อผู้ร่วมวิจัย (Co-Researcher)</h3>
             <div id="coresearch-container" class="space-y-4 mb-4">
                 @foreach ($project->coResearches ?? [] as $i => $co)
-                    <div id="coresearch-{{ $i }}" class="coresearch-row space-y-2">
+                    <div id="coresearch-{{ $i }}" class="coresearch-row space-y-2 p-4 border rounded-lg bg-gray-50">
                         <!-- ชื่อ -->
                         <label class="block w-full">
                             <span class="block text-sm text-gray-700 mb-1">
-                                ชื่อ Co-Researcher คนที่ <span class="coresearch-index">{{ $i + 1 }}</span>
+                                ชื่อ Co-Researcher คนที่ <span class="coresearch-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span>
                             </span>
                             <input name="coresearch[{{ $i }}][name]"
                                 value="{{ old('coresearch.' . $i . '.name', $co->name) }}"
                                 list="userNames" class="w-full border p-2 rounded"
-                                placeholder="ยศ ชื่อ-นามสกุล">
+                                placeholder="ยศ ชื่อ-นามสกุล" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
+                                oninput="this.setCustomValidity('')">
                         </label>
                         <!-- สังกัด + สถานะ + ปุ่มลบ -->
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                             <label class="col-span-12 md:col-span-5">
-                                <span class="block text-sm text-gray-700 mb-1">สังกัด</span>
+                                <span class="block text-sm text-gray-700 mb-1">สังกัด <span class="text-red-500">*</span></span>
                                 <input name="coresearch[{{ $i }}][affiliation]"
                                     value="{{ $co->affiliation }}" class="w-full border p-2 rounded"
-                                    placeholder="สังกัด">
+                                    placeholder="สังกัด" list="coresearchAffiliationList" required
+                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
+                                    oninput="this.setCustomValidity('')">
                             </label>
                             <label class="col-span-12 md:col-span-5">
-                                <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน *</span>
+                                <span class="block text-sm text-gray-700 mb-1">คนภายนอก / ภายใน <span class="text-red-500">*</span></span>
                                 <select name="coresearch[{{ $i }}][unit_status]"
                                     class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณเลือกสถานะของ Co-Researcher')"
@@ -784,15 +824,19 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                                         <label class="w-full">
-                                            <span class="block text-sm font-semibold">ชื่อ-นามสกุล</span>
+                                            <span class="block text-sm font-semibold">ชื่อ-นามสกุล <span class="text-red-500">*</span></span>
                                             <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
-                                                value="{{ $fte->name }}" class="w-full border p-2 rounded">
+                                                value="{{ $fte->name }}" class="w-full border p-2 rounded" required
+                                                oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
+                                                oninput="this.setCustomValidity('')">
                                         </label>
 
                                         <label class="w-full">
                                             <span class="block text-sm font-semibold">กลุ่ม</span>
                                             <select name="fte_roles[{{ $i }}][role_group]"
-                                                class="w-full border p-2 rounded">
+                                                class="w-full border p-2 rounded" required
+                                                oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่ม')"
+                                                oninput="this.setCustomValidity('')">
                                                 <option value="" disabled>เลือกกลุ่ม</option>
 
                                                 @foreach ($roleGroups as $group)
@@ -809,9 +853,11 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
                                         <label class="w-full">
-                                            <span class="block text-sm font-semibold">ภาระงาน</span>
+                                            <span class="block text-sm font-semibold">ภาระงาน <span class="text-red-500">*</span></span>
                                             <select name="fte_roles[{{ $i }}][job_detail]"
-                                                class="w-full border p-2 rounded">
+                                                class="w-full border p-2 rounded" required
+                                                oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
+                                                oninput="this.setCustomValidity('')">
                                                 <option value="" disabled>เลือกภาระงาน</option>
 
                                                 @foreach ($jobDetails as $job)
@@ -823,10 +869,12 @@
                                         </label>
 
                                         <label class="w-full relative">
-                                            <span class="block text-sm font-semibold">วันเริ่มต้น</span>
+                                            <span class="block text-sm font-semibold">วันเริ่มต้นภาระงาน <span class="text-red-500">*</span></span>
                                             <input name="fte_roles[{{ $i }}][start_date]" type="text"
                                                 value="{{ $fte->start_date }}"
-                                                class="thai-datepicker w-full border p-2 rounded pl-10">
+                                                class="thai-datepicker w-full border p-2 rounded pl-10" required
+                                                oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
+                                                oninput="this.setCustomValidity('')">
                                             <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                                 fill="none" stroke="currentColor" stroke-width="2"
                                                 viewBox="0 0 24 24">
@@ -836,10 +884,12 @@
                                         </label>
 
                                         <label class="w-full relative">
-                                            <span class="block text-sm font-semibold">วันสิ้นสุด</span>
+                                            <span class="block text-sm font-semibold">วันสิ้นสุดภาระงาน <span class="text-red-500">*</span></span>
                                             <input name="fte_roles[{{ $i }}][end_date]" type="text"
                                                 value="{{ $fte->end_date }}"
-                                                class="thai-datepicker w-full border p-2 rounded pl-10">
+                                                class="thai-datepicker w-full border p-2 rounded pl-10" required
+                                                oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
+                                                oninput="this.setCustomValidity('')">
                                             <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                                 fill="none" stroke="currentColor" stroke-width="2"
                                                 viewBox="0 0 24 24">
@@ -852,17 +902,21 @@
 
                                     <!-- ชั่วโมง -->
                                     <label class="w-full">
-                                        <span class="block text-sm font-semibold">ชั่วโมงการทำงาน (Hour)</span>
+                                        <span class="block text-sm font-semibold">ชั่วโมงการทำงาน (Hour) <span class="text-red-500">*</span></span>
                                         <input type="number" step="0.1" min="0"
                                             name="fte_roles[{{ $i }}][hours]" value="{{ $fte->hours }}"
-                                            class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0">
+                                            class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0" required
+                                            oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
+                                            oninput="this.setCustomValidity('')">
                                     </label>
 
                                     <!-- รายละเอียดภารกิจ -->
                                     <label class="w-full">
-                                        <span class="block text-sm font-semibold">รายละเอียดภารกิจ</span>
+                                        <span class="block text-sm font-semibold">รายละเอียดภารกิจ <span class="text-red-500">*</span></span>
                                         <select name="fte_roles[{{ $i }}][task_detail]"
-                                            class="w-full border p-2 rounded">
+                                            class="w-full border p-2 rounded" required
+                                            oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
+                                            oninput="this.setCustomValidity('')">
 
                                             <option value="" disabled>เลือกภารกิจ</option>
 
@@ -950,7 +1004,7 @@
                         {{-- ชื่อผลงาน --}}
                         <label class="block w-full">
                             <span class="block text-sm text-gray-700 mb-1">
-                                ชื่อผลงานที่ <span class="output-index">{{ $i + 1 }}</span>
+                                ชื่อผลงานที่ <span class="output-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span>
                             </span>
                             <input name="outputs[{{ $i }}][title]" type="text"
                                 class="w-full border p-2 rounded" value="{{ old("outputs.$i.title", $out->title) }}"
@@ -961,7 +1015,7 @@
                         {{-- บรรทัด: ประเภท, หมายเหตุ, วันที่ --}}
                         <div class="grid grid-cols-3 gap-4 items-end">
                             <label class="w-full">
-                                <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
+                                <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน <span class="text-red-500">*</span></span>
                                 <select name="outputs[{{ $i }}][type]"
                                     class="w-full border p-2 rounded output-type" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
@@ -1050,10 +1104,12 @@
 
                             <div class="flex gap-2 w-full">
                                 <label class="w-full relative">
-                                    <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+                                    <span class="block text-sm text-gray-700 mb-1">วันที่ publish <span class="text-red-500">*</span></span>
                                     <input name="outputs[{{ $i }}][year]" type="text"
                                         class="thai-datepicker w-full border p-2 rounded pl-10"
-                                        value="{{ old("outputs.$i.year", $out->year) }}" placeholder="โปรดใส่วันที่">
+                                        value="{{ old("outputs.$i.year", $out->year) }}" placeholder="โปรดใส่วันที่" required
+                                        oninvalid="this.setCustomValidity('กรุณาเลือกวันที่ publish')"
+                                        oninput="this.setCustomValidity('')">
                                     <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor">
@@ -1535,6 +1591,22 @@
 
 
     <script>
+        function keepAddedRowOpen(rowOrId) {
+            const row = typeof rowOrId === 'string' ? document.getElementById(rowOrId) : rowOrId;
+            if (!row) return;
+            row.dataset.forceOpen = '1';
+            row.dataset.newlyAdded = '1';
+            row.dataset.collapsed = '0';
+            row.classList.remove('row-collapsed');
+            setTimeout(() => {
+                if (!row.isConnected) return;
+                if (row.dataset.newlyAdded === '1') {
+                    delete row.dataset.forceOpen;
+                    delete row.dataset.newlyAdded;
+                }
+            }, 400);
+        }
+
         // let irbCodeIndex = {{ count($project->irbs ?? []) }};
         let irbCodeIndex = document.querySelectorAll('.irb-row').length;
 
@@ -1543,19 +1615,25 @@
             const id = `irb-${irbCodeIndex}`;
 
             container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+        <div id="${id}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center p-3 border rounded-lg bg-white">
             <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span></span>
-                <input name="irbs[${irbCodeIndex}][code]" type="text" placeholder="ECxxxx" class="w-full border p-2 rounded">
+                <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span> <span class="text-red-500">*</span></span>
+                <input name="irbs[${irbCodeIndex}][code]" type="text" placeholder="ECxxxx" class="w-full border p-2 rounded" required
+                    oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
+                    oninput="this.setCustomValidity('')">
             </div>
             <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span></span>
-                <input name="irbs[${irbCodeIndex}][source]" type="text" placeholder="ชื่อหน่วยงาน" class="w-full border p-2 rounded">
+                <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span> <span class="text-red-500">*</span></span>
+                <input name="irbs[${irbCodeIndex}][source]" type="text" placeholder="ชื่อหน่วยงาน" class="w-full border p-2 rounded" required
+                    oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
+                    oninput="this.setCustomValidity('')">
             </div>
             <div class="w-full flex flex-col sm:flex-row gap-2 items-end">
                 <div class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ</span>
-                    <input name="irbs[${irbCodeIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่">
+                    <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ <span class="text-red-500">*</span></span>
+                    <input name="irbs[${irbCodeIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกวันหมดอายุ IRB')"
+                        oninput="this.setCustomValidity('')">
                     <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -1570,6 +1648,7 @@
 
             irbCodeIndex++;
             reindexIRB();
+            keepAddedRowOpen(id);
 
             flatpickr(`#${id} .thai-datepicker`, {
                 locale: "th",
@@ -1600,24 +1679,29 @@
             const labelNum = copiIndex + 1;
 
             container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="copi-row grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+        <div id="${id}" class="copi-row grid grid-cols-1 md:grid-cols-2 gap-4 items-center p-3 border rounded-lg bg-white">
             <label class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${labelNum}</span></span>
+                <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${labelNum}</span> <span class="text-red-500">*</span></span>
                 <input name="copis[${copiIndex}][name]" list="userNames" type="text"
-                    class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-นามสกุล">
+                    class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
+                    oninput="this.setCustomValidity('')">
             </label>
             <div class="flex flex-col sm:flex-row gap-2 w-full">
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${labelNum}</span></span>
-                    <input name="copis[${copiIndex}][affiliation]" type="text"
-                        class="w-full border p-2 rounded" placeholder="สังกัด COPI">
+                    <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${labelNum}</span> <span class="text-red-500">*</span></span>
+                    <input name="copis[${copiIndex}][affiliation]" type="text" list="copiAffiliationList"
+                        class="w-full border p-2 rounded" placeholder="สังกัด COPI" required
+                        oninvalid="this.setCustomValidity('กรุณาระบุสังกัด COPI')"
+                        oninput="this.setCustomValidity('')">
                 </label>
                 <button type="button" onclick="removeRow('${id}', 'copi')" class="text-red-600 mt-6">✕</button>
             </div>
         </div>
-    `);
+            `);
 
             copiIndex++;
+            keepAddedRowOpen(id);
         }
 
 
@@ -1666,7 +1750,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label class="w-full">
                     <span class="block text-sm font-semibold text-gray-700 mb-1">
-                        <span class="fte-index">${index + 1}</span>. ชื่อ-นามสกุล
+                        <span class="fte-index">${index + 1}</span>. ชื่อ-นามสกุล <span class="text-red-500">*</span>
                     </span>
 
                     <input list="${FTE_DATALIST_ID}"
@@ -1680,7 +1764,9 @@
 
                 <label class="w-full">
                     <span class="block text-sm font-semibold text-gray-700 mb-1">กลุ่ม</span>
-                    <select name="fte_roles[${index}][role_group]" class="w-full border p-2 rounded">
+                    <select name="fte_roles[${index}][role_group]" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่ม')"
+                        oninput="this.setCustomValidity('')">
                         ${groupDropdown}
                     </select>
                 </label>
@@ -1690,18 +1776,23 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
                 <label class="w-full">
-                    <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน</span>
-                    <select name="fte_roles[${index}][job_detail]" class="w-full border p-2 rounded">
+                    <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน <span class="text-red-500">*</span></span>
+                    <select name="fte_roles[${index}][job_detail]" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
+                        oninput="this.setCustomValidity('')">
                         ${jobDropdown}
                     </select>
                 </label>
 
                 <label class="w-full relative">
-                    <span class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน</span>
+                    <span class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน <span class="text-red-500">*</span></span>
                     <input name="fte_roles[${index}][start_date]"
                         type="text"
                         class="thai-datepicker w-full border p-2 rounded pl-10"
-                        placeholder="โปรดใส่วันที่">
+                        placeholder="โปรดใส่วันที่"
+                        required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
+                        oninput="this.setCustomValidity('')">
 
                     <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1711,11 +1802,14 @@
                 </label>
 
                 <label class="w-full relative">
-                    <span class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน</span>
+                    <span class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน <span class="text-red-500">*</span></span>
                     <input name="fte_roles[${index}][end_date]"
                         type="text"
                         class="thai-datepicker w-full border p-2 rounded pl-10"
-                        placeholder="โปรดใส่วันที่">
+                        placeholder="โปรดใส่วันที่"
+                        required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
+                        oninput="this.setCustomValidity('')">
 
                     <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1728,20 +1822,26 @@
 
             <!-- ชั่วโมง (NEW) -->
             <label class="w-full">
-                <span class="block text-sm font-semibold text-gray-700 mb-1">ชั่วโมง (Hour)</span>
+                <span class="block text-sm font-semibold text-gray-700 mb-1">ชั่วโมง (Hour) <span class="text-red-500">*</span></span>
                 <input type="number"
                     step="0.1"
                     min="0"
                     name="fte_roles[${index}][hours]"
                     class="fte-hours w-full border p-2 rounded text-right"
-                    placeholder="0.0">
+                    placeholder="0.0"
+                    required
+                    oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
+                    oninput="this.setCustomValidity('')">
             </label>
 
             <!-- รายละเอียดภารกิจ -->
             <label class="w-full">
-                <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ</span>
+                <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ <span class="text-red-500">*</span></span>
                 <select name="fte_roles[${index}][task_detail]"
-                    class="w-full border p-2 rounded">
+                    class="w-full border p-2 rounded"
+                    required
+                    oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
+                    oninput="this.setCustomValidity('')">
                     <option value="" disabled selected>เลือกภารกิจ</option>
                     <option>ติดต่อประสานงาน</option>
                     <option>ที่ปรึกษาโครงการ</option>
@@ -1799,6 +1899,7 @@
 `);
 
             reindexFTE();
+            keepAddedRowOpen(id);
             initThaiDatepickers();
             attachFTEAuto(); // สำคัญ!
         }
@@ -1892,7 +1993,7 @@ console.log('[FTE AUTO] after=', fteField.value);
       <input type="hidden" name="outputs[${idx}][id]" value="">
       <label class="block w-full">
         <span class="block text-sm text-gray-700 mb-1">
-          ชื่อผลงานที่ <span class="output-index">${idx + 1}</span>
+          ชื่อผลงานที่ <span class="output-index">${idx + 1}</span> <span class="text-red-500">*</span>
         </span>
         <input name="outputs[${idx}][title]" type="text" class="w-full border p-2 rounded" 
         required
@@ -1903,7 +2004,7 @@ console.log('[FTE AUTO] after=', fteField.value);
 
       <div class="grid grid-cols-3 gap-4 items-end">
         <label class="w-full">
-          <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน</span>
+          <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน <span class="text-red-500">*</span></span>
           <select name="outputs[${idx}][type]" class="w-full border p-2 rounded output-type" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของผลงาน')"
                                     oninput="this.setCustomValidity('')" onchange="handleTypeChange(this)">
@@ -1935,8 +2036,10 @@ console.log('[FTE AUTO] after=', fteField.value);
 
         <div class="flex gap-2 w-full">
           <label class="w-full relative">
-            <span class="block text-sm text-gray-700 mb-1">วันที่เผยแพร่ผลงาน</span>
-            <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่">
+            <span class="block text-sm text-gray-700 mb-1">วันที่ publish <span class="text-red-500">*</span></span>
+            <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่" required
+                oninvalid="this.setCustomValidity('กรุณาเลือกวันที่ publish')"
+                oninput="this.setCustomValidity('')">
             <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
@@ -1956,6 +2059,7 @@ console.log('[FTE AUTO] after=', fteField.value);
 
             outputIndex++;
             reindexOutput();
+            keepAddedRowOpen(id);
             if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
         }
 
@@ -2223,23 +2327,27 @@ console.log('[FTE AUTO] after=', fteField.value);
             const labelNum = coResearchIndex + 1;
 
             container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="coresearch-row space-y-2 py-4">
+        <div id="${id}" class="coresearch-row space-y-2 p-4 border rounded-lg bg-white">
             <label class="block w-full">
                 <span class="block text-sm text-gray-700 mb-1">
-                    ชื่อ Co-Researcher คนที่ <span class="coresearch-index">${labelNum}</span>
+                    ชื่อ Co-Researcher คนที่ <span class="coresearch-index">${labelNum}</span> <span class="text-red-500">*</span>
                 </span>
                 <input name="coresearch[${coResearchIndex}][name]" list="userNames" type="text"
-                    class="w-full border p-2 rounded" placeholder="ยศ ชื่อ-นามสกุล">
+                    class="w-full border p-2 rounded" placeholder="ยศ ชื่อ-นามสกุล" required
+                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
+                    oninput="this.setCustomValidity('')">
             </label>
 
             <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                 <label class="col-span-12 md:col-span-5">
-                    <span class="block text-sm text-gray-700 mb-1">สังกัด</span>
-                    <input name="coresearch[${coResearchIndex}][affiliation]" type="text"
-                        class="w-full border p-2 rounded" placeholder="ป สังกัด">
+                    <span class="block text-sm text-gray-700 mb-1">สังกัด <span class="text-red-500">*</span></span>
+                    <input name="coresearch[${coResearchIndex}][affiliation]" type="text" list="coresearchAffiliationList"
+                        class="w-full border p-2 rounded" placeholder="ป สังกัด" required
+                        oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
+                        oninput="this.setCustomValidity('')">
                 </label>
                 <label class="col-span-12 md:col-span-5">
-                    <span class="block text-sm text-gray-700 mb-1">คนภายนอก/ภายใน</span>
+                    <span class="block text-sm text-gray-700 mb-1">คนภายนอก / ภายใน <span class="text-red-500">*</span></span>
                     <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกสถานะหน่วยงาน')"
                                     oninput="this.setCustomValidity('')">
@@ -2258,6 +2366,7 @@ console.log('[FTE AUTO] after=', fteField.value);
 
             coResearchIndex++;
             reindexCoResearch();
+            keepAddedRowOpen(id);
         }
 
 
@@ -2424,6 +2533,157 @@ console.log('[FTE AUTO] after=', fteField.value);
 
 
 
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const projectForm = document.getElementById('projectForm');
+
+            function revealFieldIfCollapsed(field) {
+                if (!field || field.closest('template')) return false;
+
+                let node = field.parentElement;
+                let changed = false;
+
+                while (node && node !== document.body) {
+                    if (node.classList?.contains('row-collapsed')) {
+                        node.classList.remove('row-collapsed');
+                        node.dataset.collapsed = '0';
+                        changed = true;
+                    }
+
+                    if (node.tagName === 'DETAILS' && !node.open) {
+                        node.open = true;
+                        changed = true;
+                    }
+
+                    if (node.classList?.contains('collapse') && !node.classList.contains('show')) {
+                        node.classList.add('show');
+                        changed = true;
+                    }
+
+                    if (node.hasAttribute('hidden')) {
+                        node.removeAttribute('hidden');
+                        changed = true;
+                    }
+
+                    if (node.id) {
+                        const trigger = document.querySelector(`[aria-controls="${node.id}"]`);
+                        if (trigger && trigger.getAttribute('aria-expanded') === 'false') {
+                            trigger.click();
+                            changed = true;
+                        }
+                    }
+
+                    node = node.parentElement;
+                }
+
+                return changed || field.offsetParent !== null;
+            }
+
+            if (projectForm) {
+                projectForm.addEventListener('submit', function(e) {
+                    let isValid = true;
+                    let firstInvalidField = null;
+                    const invalidRows = new Set();
+                    const invalidSections = new Set();
+                    const sectionNameById = {
+                        irb: 'IRB',
+                        copi: 'COPI',
+                        coresearch: 'Co-Researcher',
+                        fte: 'Roles and Responsibilities',
+                        output: 'ผลงานวิจัย (Output)',
+                    };
+
+                    const requiredFields = projectForm.querySelectorAll('[required]');
+                    projectForm.querySelectorAll('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row')
+                        .forEach(row => {
+                            delete row.dataset.forceOpen;
+                        });
+
+                    requiredFields.forEach(field => {
+                        if (field.disabled || field.type === 'hidden' || field.closest('template')) return;
+                        if (field.offsetParent === null) {
+                            const visibleNow = revealFieldIfCollapsed(field);
+                            if (!visibleNow) return;
+                        }
+
+                        const val = field.value.trim();
+                        const displayTarget = field;
+
+                        if (!val) {
+                            isValid = false;
+                            displayTarget.classList.add('border-red-500', 'bg-red-50');
+                            if (!firstInvalidField) firstInvalidField = displayTarget;
+                            const row = displayTarget.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row');
+                            if (row) invalidRows.add(row);
+                            const group = displayTarget.closest('[data-repeatable]');
+                            if (group) {
+                                const id = group.dataset.id || '';
+                                if (sectionNameById[id]) invalidSections.add(sectionNameById[id]);
+                            }
+                        } else {
+                            displayTarget.classList.remove('border-red-500', 'bg-red-50');
+                        }
+                    });
+
+                    if (!isValid) {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        invalidRows.forEach(row => {
+                            row.classList.remove('row-collapsed');
+                            row.dataset.collapsed = '0';
+                            row.dataset.forceOpen = '1';
+                        });
+
+                        const focusInvalidField = () => {
+                            if (!firstInvalidField) return;
+                            revealFieldIfCollapsed(firstInvalidField);
+                            firstInvalidField.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                            setTimeout(() => {
+                                firstInvalidField.focus({
+                                    preventScroll: true
+                                });
+                            }, 250);
+                        };
+                        focusInvalidField();
+
+                        const fieldLabel = firstInvalidField?.closest('label')?.querySelector('span')?.textContent
+                            ?.trim() || 'ช่องข้อมูลที่จำเป็น';
+                        const sectionText = invalidSections.size
+                            ? ` (ส่วน: ${Array.from(invalidSections).join(', ')})`
+                            : '';
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+                            text: `กรุณากรอก: ${fieldLabel}${sectionText}`,
+                            confirmButtonText: 'ตกลง',
+                            confirmButtonColor: '#4f46e5',
+                            returnFocus: false,
+                            didClose: focusInvalidField
+                        });
+                    }
+                });
+            }
+        });
+
+        const budgetInput = document.getElementById('budgetInput');
+        budgetInput?.addEventListener('blur', () => {
+            const val = Number(budgetInput.value.replace(/,/g, ''));
+            if (val > 1_000_000_000_000) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'งบประมาณสูงเกินไป',
+                    text: 'กรุณาตรวจสอบจำนวนเงินอีกครั้ง'
+                });
+                budgetInput.focus();
+            }
+        });
+    </script>
 
     <script>
         // ใช้ Blade render รายชื่อเป็น HTML <option> พร้อม escape

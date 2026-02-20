@@ -8,6 +8,7 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 use PDF;
 
@@ -222,6 +223,7 @@ class ProjectController extends Controller
 public function store(Request $request)
 {
     $validated = $this->validateProject($request);
+    $project = null;
 
     // ✅ กรอง IRB ที่ไม่มี code ออกก่อน
     $irbs = collect($request->input('irbs', []))
@@ -237,27 +239,7 @@ public function store(Request $request)
     ]);
 
     DB::transaction(function () use ($validated, $request, &$project) {
-
-        // 🔐 lock sequence row (atomic 100%)
-        $sequence = DB::table('project_sequences')
-            ->where('prefix', 'SP')
-            ->lockForUpdate()
-            ->first();
-
-        if (! $sequence) {
-            throw new \Exception('Project sequence SP not found');
-        }
-
-        $nextNumber = $sequence->current_number + 1;
-
-        DB::table('project_sequences')
-            ->where('id', $sequence->id)
-            ->update([
-                'current_number' => $nextNumber,
-                'updated_at' => now(),
-            ]);
-
-        $validated['project_code'] = 'SP_'.str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        $validated['project_code'] = $this->nextProjectCode();
         $validated['user_id'] = Auth::id();
 
         $project = new Project($validated);
@@ -279,6 +261,42 @@ public function store(Request $request)
         ->route('projects.show', $project->id)
         ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
 }
+
+    private function nextProjectCode(): string
+    {
+        if (Schema::hasTable('project_sequences')) {
+            $sequence = DB::table('project_sequences')
+                ->where('prefix', 'SP')
+                ->lockForUpdate()
+                ->first();
+
+            if ($sequence) {
+                $nextNumber = (int) $sequence->current_number + 1;
+
+                DB::table('project_sequences')
+                    ->where('id', $sequence->id)
+                    ->update([
+                        'current_number' => $nextNumber,
+                        'updated_at' => now(),
+                    ]);
+
+                return 'SP_'.str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+            }
+        }
+
+        // fallback: ใช้รหัสล่าสุดจาก projects หากยังไม่มี sequence table/row
+        $lastCode = Project::query()
+            ->where('project_code', 'like', 'SP_%')
+            ->orderByRaw("CAST(SUBSTRING(project_code, 4) AS UNSIGNED) DESC")
+            ->value('project_code');
+
+        $nextNumber = 1;
+        if (is_string($lastCode) && preg_match('/^SP_(\d+)$/', $lastCode, $m)) {
+            $nextNumber = ((int) $m[1]) + 1;
+        }
+
+        return 'SP_'.str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+    }
 
     public function edit(Request $request, $id)
     {
