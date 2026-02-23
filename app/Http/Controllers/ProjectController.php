@@ -300,7 +300,12 @@ public function store(Request $request)
 
     public function edit(Request $request, $id)
     {
-        $project = Project::with('outputs.authors')->find($id);
+        $project = Project::with([
+            'outputs.authors',
+            'progressReports' => function ($query) {
+                $query->orderByDesc('submit_date')->orderByDesc('id');
+            },
+        ])->find($id);
 
         if (! $project) {
             return redirect('/rm')->with('error', 'ไม่พบข้อมูลโครงการ');
@@ -365,6 +370,9 @@ public function store(Request $request)
             'copis',
             'irbs',
             'fteRoles',
+            'progressReports' => function ($query) {
+                $query->orderByDesc('submit_date')->orderByDesc('id');
+            },
             'outputs.authors',
             'outputs.conferences',
             'updatedBy',
@@ -435,7 +443,18 @@ public function store(Request $request)
 
     public function exportPdf(Project $project)
     {
-        $project->load(['copis', 'irbs', 'fteRoles', 'outputs.authors', 'updatedBy', 'createdBy']); // ⬅️ authors
+        $project->load([
+            'copis',
+            'irbs',
+            'fteRoles',
+            'progressReports' => function ($query) {
+                $query->orderByDesc('submit_date')->orderByDesc('id');
+            },
+            'outputs.authors',
+            'outputs.conferences',
+            'updatedBy',
+            'createdBy',
+        ]); // ⬅️ authors
 
         $user = Auth::user();
         $author = $project->createdBy ? ($project->createdBy->prefix.$project->createdBy->name) : '';

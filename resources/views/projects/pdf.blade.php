@@ -252,8 +252,113 @@
         </tbody>
     </table>
 
-    {{-- SECTION E: FTE --}}
-    <div class="section-title">E: รายชื่อผู้มีส่วนร่วม (FTE)</div>
+    @if (false)
+    @php
+        $latestProgressReport = ($project->progressReports ?? collect())->first();
+    @endphp
+    <div class="section-title">E: ความก้าวหน้าของการดำเนินงาน</div>
+    @if ($latestProgressReport)
+        @php
+            $progressTitle = text_or_dash($latestProgressReport->progress_title ?: 'ความก้าวหน้าของการดำเนินงาน');
+            $progressSubtitle = text_or_dash($latestProgressReport->progress_subtitle);
+            $progressRows = collect($latestProgressReport->progress_rows ?? [])
+                ->filter(function ($row) {
+                    return !empty(trim((string) ($row['plan'] ?? ''))) ||
+                        !empty(trim((string) ($row['actual'] ?? ''))) ||
+                        !empty(trim((string) ($row['alignment'] ?? '')));
+                })
+                ->values();
+            $issueRows = collect($latestProgressReport->issue_rows ?? [])
+                ->filter(function ($row) {
+                    return !empty(trim((string) ($row['problem'] ?? ''))) ||
+                        !empty(trim((string) ($row['solution'] ?? ''))) ||
+                        !empty(trim((string) ($row['consultation'] ?? '')));
+                })
+                ->values();
+        @endphp
+
+        <table>
+            <tbody>
+                <tr>
+                    <td style="width: 50%;">
+                        <strong>ผู้รายงาน:</strong> {{ text_or_dash($latestProgressReport->submitter_name) }}
+                    </td>
+                    <td style="width: 50%;">
+                        <strong>วันที่รายงาน:</strong> {{ th_date_or_dash($latestProgressReport->submit_date) }}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <strong>หัวข้อ:</strong> {{ $progressTitle }}
+                        @if ($progressSubtitle !== '-')
+                            <br><strong>คำอธิบาย:</strong> {{ $progressSubtitle }}
+                        @endif
+                        @if (!empty($latestProgressReport->file_info))
+                            <br><strong>ไฟล์/ลิงก์:</strong> {{ text_or_dash($latestProgressReport->file_info) }}
+                        @endif
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>แผนการดำเนินงาน</th>
+                    <th>การดำเนินงานจริง</th>
+                    <th>ความสอดคล้องของการดำเนินงานจริงกับแผนการดำเนินงาน</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($progressRows as $row)
+                    <tr>
+                        <td>{{ text_or_dash($row['plan'] ?? '') }}</td>
+                        <td>{{ text_or_dash($row['actual'] ?? '') }}</td>
+                        <td>{{ text_or_dash($row['alignment'] ?? '') }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="3" class="check">ไม่มีข้อมูลกิจกรรม</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ปัญหาอุปสรรค</th>
+                    <th>แนวทางการแก้ปัญหา</th>
+                    <th>ประเด็นขอคำปรึกษาจากที่ประชุม</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($issueRows as $row)
+                    <tr>
+                        <td>{{ text_or_dash($row['problem'] ?? '') }}</td>
+                        <td>{{ text_or_dash($row['solution'] ?? '') }}</td>
+                        <td>{{ text_or_dash($row['consultation'] ?? '') }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="3" class="check">ไม่มีข้อมูลปัญหาอุปสรรค</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    @else
+        <table>
+            <tbody>
+                <tr>
+                    <td class="check">ไม่มีข้อมูลความก้าวหน้าของการดำเนินงาน</td>
+                </tr>
+            </tbody>
+        </table>
+    @endif
+    @endif
+
+    {{-- SECTION F: FTE --}}
+    <div class="section-title">F: รายชื่อผู้มีส่วนร่วม (FTE)</div>
     <table>
         <thead>
             <tr>
@@ -291,7 +396,7 @@
         </tbody>
     </table>
 
-    <div class="section-title">E.1: สรุป FTE รายเดือน</div>
+    <div class="section-title">F.1: สรุป FTE รายเดือน</div>
     <table>
         <thead>
             <tr>
@@ -328,7 +433,7 @@
         </tbody>
     </table>
 
-    <div class="section-title">E.2: FTE รวม 3 ปีล่าสุด</div>
+    <div class="section-title">F.2: FTE รวม 3 ปีล่าสุด</div>
     <table>
         <thead>
             <tr>
@@ -354,8 +459,8 @@
         </tbody>
     </table>
 
-    {{-- SECTION F: IRB --}}
-    <div class="section-title">F: รหัส IRB</div>
+    {{-- SECTION G: IRB --}}
+    <div class="section-title">G: รหัส IRB</div>
     <table>
         <thead>
             <tr>
@@ -383,8 +488,8 @@
         </tbody>
     </table>
 
-    {{-- SECTION G: Outputs --}}
-    <div class="section-title">G: ผลงานวิจัย (Outputs)</div>
+    {{-- SECTION H: Outputs --}}
+    <div class="section-title">H: ผลงานวิจัย (Outputs)</div>
     <table>
         <thead>
             <tr>
@@ -440,8 +545,10 @@
         </tbody>
     </table>
 
-    {{-- SECTION H: ยุทธศาสตร์ --}}
-    <div class="section-title">H: ยุทธศาสตร์ Siriraj Health Policy</div>
+    @include('projects.partials.progress_section_pdf', ['project' => $project])
+
+    {{-- SECTION J: ยุทธศาสตร์ --}}
+    <div class="section-title">J: ยุทธศาสตร์ Siriraj Health Policy</div>
     <table>
         <thead>
             <tr>

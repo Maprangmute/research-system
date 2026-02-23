@@ -1,77 +1,200 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-6xl mx-auto mt-8 px-2">
+    @php
+        $isModalView = request()->boolean('modal');
+        $modalQuery = $isModalView ? ['modal' => 1] : [];
 
-    @if(session('success'))
-        <div class="mb-4 text-green-600 font-semibold text-center">
-            ✅ {{ session('success') }}
+        $formatDateThai = function ($value) {
+            if (!$value) {
+                return '-';
+            }
+            try {
+                $d = \Carbon\Carbon::parse($value)->locale('th');
+                return $d->translatedFormat('j F') . ' ' . ($d->year + 543);
+            } catch (\Throwable $e) {
+                return (string) $value;
+            }
+        };
+    @endphp
+
+    <div class="max-w-7xl mx-auto mt-6 px-3 space-y-4">
+        @if (session('success'))
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700 text-sm font-medium">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                <div class="space-y-2 min-w-0">
+                    <a href="{{ route('projects.show', ['project' => $project->id] + $modalQuery) }}" class="text-blue-600 hover:underline text-sm">
+                        ← กลับหน้าโครงการ
+                    </a>
+                    <h1 class="text-xl md:text-2xl font-bold text-slate-900">
+                        รายงานความก้าวหน้าของการดำเนินงาน
+                    </h1>
+                    <p class="text-sm text-slate-600 break-words">โครงการ: {{ $project->project_name_th }}</p>
+                </div>
+                <a href="{{ route('projects.progress_reports.create', ['project' => $project->id] + $modalQuery) }}"
+                    class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
+                    เพิ่มรายงาน
+                </a>
+            </div>
         </div>
+
+        <div class="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <table class="min-w-full">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="px-3 py-3 text-center text-sm font-semibold text-slate-700 w-14">#</th>
+                        <th class="px-3 py-3 text-left text-sm font-semibold text-slate-700">ผู้จัดทำ</th>
+                        <th class="px-3 py-3 text-left text-sm font-semibold text-slate-700">วันที่รายงาน</th>
+                        <th class="px-3 py-3 text-left text-sm font-semibold text-slate-700">หัวข้อรายงาน</th>
+                        <th class="px-3 py-3 text-center text-sm font-semibold text-slate-700">กิจกรรม</th>
+                        <th class="px-3 py-3 text-center text-sm font-semibold text-slate-700">ปัญหา</th>
+                        <th class="px-3 py-3 text-left text-sm font-semibold text-slate-700">รายละเอียดไฟล์/ลิงก์</th>
+                        <th class="px-3 py-3 text-center text-sm font-semibold text-slate-700 w-[270px]">ดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($progressReports as $i => $report)
+                        @php
+                            $progressCount = collect($report->progress_rows ?? [])->count();
+                            $issueCount = collect($report->issue_rows ?? [])->count();
+                            $reportTitle = trim((string) ($report->progress_title ?? '')) ?: 'ความก้าวหน้าของการดำเนินงาน';
+                        @endphp
+                        <tr class="border-t border-slate-200 odd:bg-white even:bg-slate-50">
+                            <td class="px-3 py-3 text-center text-sm text-slate-700">{{ $i + 1 }}</td>
+                            <td class="px-3 py-3 text-sm text-slate-800">{{ $report->submitter_name ?: '-' }}</td>
+                            <td class="px-3 py-3 text-sm text-slate-700 whitespace-nowrap">{{ $formatDateThai($report->submit_date) }}</td>
+                            <td class="px-3 py-3 text-sm font-semibold text-slate-900 max-w-[380px] break-words">{{ $reportTitle }}</td>
+                            <td class="px-3 py-3 text-center text-sm font-semibold text-slate-700">{{ $progressCount }}</td>
+                            <td class="px-3 py-3 text-center text-sm font-semibold text-slate-700">{{ $issueCount }}</td>
+                            <td class="px-3 py-3 text-sm text-slate-700 break-words">{{ $report->file_info ?: '-' }}</td>
+                            <td class="px-3 py-3 text-center">
+                                <div class="flex flex-wrap items-center justify-center gap-2">
+                                    <a href="{{ route('projects.progress_reports.show', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}"
+                                        class="px-3 py-1.5 rounded-lg border border-sky-200 bg-sky-50 text-sky-700 text-sm font-semibold hover:bg-sky-100">
+                                        ดูรายละเอียด
+                                    </a>
+                                    <a href="{{ route('projects.progress_reports.edit', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}"
+                                        class="px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100">
+                                        แก้ไข
+                                    </a>
+                                    <form action="{{ route('projects.progress_reports.destroy', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}" method="POST"
+                                        onsubmit="return confirm('ยืนยันการลบ?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        @if ($isModalView)
+                                            <input type="hidden" name="modal" value="1">
+                                        @endif
+                                        <button type="submit"
+                                            class="px-3 py-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-sm font-semibold hover:bg-rose-100">
+                                            ลบ
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="px-3 py-10 text-center text-sm text-slate-500">
+                                ยังไม่มีรายงานความก้าวหน้าในโครงการนี้
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="md:hidden space-y-3">
+            @forelse ($progressReports as $i => $report)
+                @php
+                    $progressCount = collect($report->progress_rows ?? [])->count();
+                    $issueCount = collect($report->issue_rows ?? [])->count();
+                    $reportTitle = trim((string) ($report->progress_title ?? '')) ?: 'ความก้าวหน้าของการดำเนินงาน';
+                @endphp
+                <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="text-xs text-slate-500">รายงานที่ {{ $i + 1 }}</div>
+                            <div class="text-sm font-semibold text-slate-900 break-words">{{ $reportTitle }}</div>
+                            <div class="text-base font-semibold text-slate-900">{{ $report->submitter_name ?: '-' }}</div>
+                            <div class="text-sm text-slate-600">{{ $formatDateThai($report->submit_date) }}</div>
+                        </div>
+                        <div class="text-right text-xs text-slate-500">
+                            <div>กิจกรรม {{ $progressCount }}</div>
+                            <div>ปัญหา {{ $issueCount }}</div>
+                        </div>
+                    </div>
+
+                    <div class="text-sm text-slate-700 break-words">
+                        <span class="font-semibold">ไฟล์/ลิงก์:</span> {{ $report->file_info ?: '-' }}
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('projects.progress_reports.show', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}"
+                            class="px-3 py-2 rounded-lg border border-sky-200 bg-sky-50 text-sky-700 text-sm font-semibold">
+                            ดูรายละเอียด
+                        </a>
+                        <a href="{{ route('projects.progress_reports.edit', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}"
+                            class="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold">
+                            แก้ไข
+                        </a>
+                        <form action="{{ route('projects.progress_reports.destroy', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}" method="POST"
+                            onsubmit="return confirm('ยืนยันการลบ?')">
+                            @csrf
+                            @method('DELETE')
+                            @if ($isModalView)
+                                <input type="hidden" name="modal" value="1">
+                            @endif
+                            <button type="submit"
+                                class="px-3 py-2 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-sm font-semibold">
+                                ลบ
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 text-center text-sm text-slate-500">
+                    ยังไม่มีรายงานความก้าวหน้าในโครงการนี้
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    @if ($isModalView && session('success'))
+        @php
+            $latestReportForModal = $progressReports->first();
+            $latestReportTitleForModal = $latestReportForModal
+                ? (trim((string) ($latestReportForModal->progress_title ?? '')) ?: 'ความก้าวหน้าของการดำเนินงาน')
+                : '';
+            $latestReportDateForModal = $latestReportForModal ? $formatDateThai($latestReportForModal->submit_date) : '';
+            $latestReportSubmitterForModal = $latestReportForModal ? (string) ($latestReportForModal->submitter_name ?? '') : '';
+            $latestReportEditUrlForModal = $latestReportForModal
+                ? route('projects.progress_reports.edit', [
+                    'project' => $project->id,
+                    'progress_report' => $latestReportForModal->id,
+                    'modal' => 1,
+                ])
+                : '';
+        @endphp
+        <script>
+            (() => {
+                if (!window.parent || window.parent === window) return;
+                window.parent.postMessage({
+                    type: 'progress-report:updated',
+                    projectId: @json($project->id),
+                    summary: {
+                        count: @json($progressReports->count()),
+                        latestDate: @json($latestReportDateForModal),
+                        submitter: @json($latestReportSubmitterForModal),
+                        title: @json($latestReportTitleForModal),
+                        editUrl: @json($latestReportEditUrlForModal),
+                    },
+                }, window.location.origin);
+            })();
+        </script>
     @endif
-
-    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-5 gap-2">
-        <div class="min-w-0">
-            <a href="{{ route('projects.show', $project->id) }}" class="text-blue-600 hover:underline text-sm block mb-3">
-                ← กลับหน้าโครงการ
-            </a>
-            <div class="flex items-center gap-2 mb-2">
-                <span class="text-xl font-extrabold text-black-500 drop-shadow-sm">
-                    <svg class="inline h-7 w-7 text-blue-400 -mt-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
-                    {{ $project->project_name_th }}
-                </span>
-            </div>
-            <div class="text-gray-500 text-base font-light break-words whitespace-pre-line max-w-full sm:max-w-4xl mt-1" style="word-break: break-word;">
-                <span class="font-medium">Progress Reports</span>
-            </div>
-        </div>
-      <a href="{{ route('projects.progress_reports.create', $project->id) }}"
-   class="bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white px-5 py-2 rounded-xl shadow-lg transition text-sm font-semibold flex items-center gap-1 w-fit self-end">
-    <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
-    </svg>
-    เพิ่ม Progress
-</a>
-
-    </div>
-
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white rounded-2xl shadow-lg ring-1 ring-slate-100 border-separate border-spacing-0">
-    <thead class="bg-blue-50 sticky top-0 z-10">
-        <tr>
-            <th class="py-3 px-4 text-center font-semibold rounded-tl-2xl w-12">#</th>
-            <th class="py-3 px-4 text-left font-semibold">ชื่อผู้ส่ง</th>
-            <th class="py-3 px-4 text-left font-semibold">วันที่ส่ง</th>
-            <th class="py-3 px-4 text-left font-semibold">รายละเอียดไฟล์</th>
-            <th class="py-3 px-4 text-center font-semibold rounded-tr-2xl w-40">ดำเนินการ</th>
-        </tr>
-    </thead>
-    <tbody>
-        @forelse($progressReports as $i => $report)
-            <tr class="even:bg-slate-50 hover:bg-blue-100/40 transition">
-                <td class="py-3 px-4 text-center">{{ $i+1 }}</td>
-                <td class="py-3 px-4 text-left break-all max-w-xs">{{ $report->submitter_name }}</td>
-                <td class="py-3 px-4 text-left whitespace-nowrap">
-                    {{ \Carbon\Carbon::parse($report->submit_date)->locale('th')->translatedFormat('j F ') . (\Carbon\Carbon::parse($report->submit_date)->year + 543) }}
-                </td>
-                <td class="py-3 px-4 text-left break-all max-w-sm" title="{{ $report->file_info }}">
-                    {{ $report->file_info ?? '-' }}
-                </td>
-                <td class="py-3 px-4 flex flex-wrap gap-2 justify-center text-center">
-                    <a href="{{ route('projects.progress_reports.edit', [$project->id, $report->id]) }}"
-                        class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-400 hover:text-white transition text-sm font-semibold">แก้ไข</a>
-                    <form action="{{ route('projects.progress_reports.destroy', [$project->id, $report->id]) }}" method="POST" onsubmit="return confirm('ยืนยันการลบ?')" class="inline">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition text-sm font-semibold">ลบ</button>
-                    </form>
-                </td>
-            </tr>
-        @empty
-            <tr>
-                <td colspan="5" class="py-8 text-center text-gray-400">ไม่มี Progress Report ในโครงการนี้</td>
-            </tr>
-        @endforelse
-    </tbody>
-</table>
-    </div>
-</div>
 @endsection

@@ -72,6 +72,11 @@
     [x-cloak] {
         display: none !important;
     }
+
+    .required-mark {
+        color: #ef4444;
+        font-weight: 600;
+    }
 </style>
 
 
@@ -1182,7 +1187,7 @@
 
                                                     <label class="w-full">
                                                         <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
-                                                            (Role)
+                                                            (Role) <span class="required-mark">*</span>
                                                         </span>
                                                         <select
                                                             name="outputs[{{ $i }}][authors][{{ $j }}][role]"
@@ -1206,7 +1211,7 @@
 
                                                     <label class="w-full">
                                                         <span class="block text-sm text-gray-700 mb-1">ชื่อ-นามสกุล
-                                                            ผู้เขียน * </span>
+                                                            ผู้เขียน <span class="required-mark">*</span></span>
                                                         <input
                                                             name="outputs[{{ $i }}][authors][{{ $j }}][name]"
                                                             type="text" list="userNames" class="w-full border p-2 rounded"
@@ -1226,7 +1231,7 @@
                                                 <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
                                                     <label class="w-full">
                                                         <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
-                                                            (Role) * </span>
+                                                            (Role) <span class="required-mark">*</span></span>
                                                         <select name="outputs[{{ $i }}][authors][0][role]"
                                                             class="w-full border p-2 rounded" required
                                                             oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
@@ -1240,7 +1245,7 @@
                                                     </label>
                                                     <label class="w-full">
                                                         <span class="block text-sm text-gray-700 mb-1">คำนำหน้า ชื่อ-สกุล
-                                                            ผู้เขียน</span>
+                                                            ผู้เขียน <span class="required-mark">*</span></span>
                                                         <input name="outputs[{{ $i }}][authors][0][name]"
                                                             type="text" list="userNames" class="w-full border p-2 rounded"
                                                             placeholder="คำนำหน้า ชื่อ-นามสกุล" required
@@ -1389,10 +1394,85 @@
             </button>
 
 
+            @php
+                $latestProgressReport = ($project->progressReports ?? collect())->first();
+                $progressCount = ($project->progressReports ?? collect())->count();
+                $latestProgressDate = '-';
+                $latestProgressTitle = 'ความก้าวหน้าของการดำเนินงาน';
+                if ($latestProgressReport && $latestProgressReport->submit_date) {
+                    try {
+                        $d = \Carbon\Carbon::parse($latestProgressReport->submit_date)->locale('th');
+                        $latestProgressDate = $d->translatedFormat('j F') . ' ' . ($d->year + 543);
+                    } catch (\Throwable $e) {
+                        $latestProgressDate = (string) $latestProgressReport->submit_date;
+                    }
+                }
+                if ($latestProgressReport) {
+                    $latestProgressTitle = trim((string) ($latestProgressReport->progress_title ?? '')) ?: 'ความก้าวหน้าของการดำเนินงาน';
+                }
+            @endphp
+            <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">I: ความก้าวหน้าของการดำเนินงาน</h3>
+            <div class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                        <p id="progressReportSummaryText" class="text-sm text-blue-700">
+                            มีรายงานทั้งหมด {{ $progressCount }} รายการ
+                            @if ($latestProgressReport)
+                                · ล่าสุดวันที่ {{ $latestProgressDate }} โดย {{ $latestProgressReport->submitter_name ?: '-' }}
+                            @endif
+                        </p>
+                        <p id="progressReportLatestTitle"
+                            class="text-sm text-blue-900 font-semibold mt-1 {{ $latestProgressReport ? '' : 'hidden' }}">
+                            หัวข้อรายงานล่าสุด: {{ $latestProgressTitle }}
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button"
+                            data-progress-modal-open
+                            data-url="{{ route('projects.progress_reports.create', ['project' => $project->id, 'modal' => 1]) }}"
+                            data-title="เพิ่มความก้าวหน้าของการดำเนินงาน"
+                            class="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
+                            + เพิ่มความก้าวหน้า
+                        </button>
+                        <button type="button"
+                            data-progress-modal-open
+                            data-url="{{ route('projects.progress_reports.index', ['project' => $project->id, 'modal' => 1]) }}"
+                            data-title="จัดการรายการความก้าวหน้า"
+                            class="px-3 py-2 rounded-lg border border-blue-300 bg-white text-blue-700 text-sm font-semibold hover:bg-blue-100">
+                            จัดการรายการ
+                        </button>
+                        <button type="button"
+                            id="progressEditLatestBtn"
+                            data-progress-modal-open
+                            data-url="{{ $latestProgressReport ? route('projects.progress_reports.edit', ['project' => $project->id, 'progress_report' => $latestProgressReport->id, 'modal' => 1]) : '' }}"
+                            data-title="แก้ไขรายงาน: {{ $latestProgressTitle }}"
+                            class="px-3 py-2 rounded-lg border border-blue-300 bg-white text-blue-700 text-sm font-semibold hover:bg-blue-100 {{ $latestProgressReport ? '' : 'hidden' }}">
+                            แก้ไขรายงานล่าสุด
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="progressReportModal" class="fixed inset-0 z-[90] hidden">
+                <div class="absolute inset-0 bg-slate-900/50" data-progress-modal-close></div>
+                <div class="relative mx-auto h-[100dvh] w-full rounded-none bg-white border border-slate-200 shadow-xl md:mt-3 md:h-[94vh] md:w-[98vw] md:max-w-[1700px] md:rounded-2xl">
+                    <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200">
+                        <h4 id="progressReportModalTitle" class="text-sm md:text-base font-semibold text-slate-900">ความก้าวหน้าของการดำเนินงาน</h4>
+                        <div class="flex items-center gap-2">
+                            <button type="button" data-progress-modal-close
+                                class="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-900">
+                                ปิด
+                            </button>
+                        </div>
+                    </div>
+                    <iframe id="progressReportModalFrame" src="about:blank" class="w-full h-[calc(100dvh-57px)] md:h-[calc(94vh-57px)] rounded-none md:rounded-b-2xl"></iframe>
+                </div>
+            </div>
+
 
             <hr class="my-6 border-t-2 border-gray-300">
-            <!-- ยุทธศาสตร์ Siriraj Health Policy -->
-            <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">ยุทธศาสตร์ Siriraj Health Policy</h3>
+            <!-- J: ยุทธศาสตร์ Siriraj Health Policy -->
+            <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">J: ยุทธศาสตร์ Siriraj Health Policy</h3>
             <table class="w-full table-auto text-sm mb-6">
                 <thead>
                     <tr class="bg-gray-100">
@@ -2155,7 +2235,7 @@ console.log('[FTE AUTO] after=', fteField.value);
             authorsWrap.insertAdjacentHTML('beforeend', `
     <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
       <label>
-        <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน</span>
+        <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน <span class="required-mark">*</span></span>
         <select name="outputs[${idx}][authors][${aIdx}][role]" class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
@@ -2166,7 +2246,7 @@ console.log('[FTE AUTO] after=', fteField.value);
         </select>
       </label>
       <label>
-        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
+        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน <span class="required-mark">*</span></span>
         <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" list="userNames" class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-สกุล" required
                                     oninvalid="this.setCustomValidity('กรุณากรอกชื่อผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
@@ -2696,6 +2776,100 @@ console.log('[FTE AUTO] after=', fteField.value);
                 $name = trim($u->prefix . ' ' . $u->name);
                 return "<option value=\"{$name}\"></option>";
             })->implode('') !!}`;
+    </script>
+
+    <script>
+        (function() {
+            const modal = document.getElementById('progressReportModal');
+            if (!modal) return;
+
+            const frame = document.getElementById('progressReportModalFrame');
+            const title = document.getElementById('progressReportModalTitle');
+            const summaryTextEl = document.getElementById('progressReportSummaryText');
+            const latestTitleEl = document.getElementById('progressReportLatestTitle');
+            const latestEditBtn = document.getElementById('progressEditLatestBtn');
+            const currentProjectId = Number(@json($project->id));
+
+            const closeModal = () => {
+                modal.classList.add('hidden');
+                if (frame) frame.src = 'about:blank';
+                document.body.classList.remove('overflow-hidden');
+            };
+
+            const openModal = (url, label) => {
+                if (!url || !frame) return;
+                frame.src = url;
+                if (title) title.textContent = label || 'ความก้าวหน้าของการดำเนินงาน';
+                modal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            };
+
+            const applyProgressSummary = (summary) => {
+                if (!summary || typeof summary !== 'object') return;
+
+                const count = Number(summary.count ?? 0);
+                const latestDate = (summary.latestDate || '').toString().trim();
+                const submitter = (summary.submitter || '-').toString().trim() || '-';
+                const reportTitle = (summary.title || '').toString().trim();
+                const editUrl = (summary.editUrl || '').toString().trim();
+
+                if (summaryTextEl) {
+                    let text = `มีรายงานทั้งหมด ${count} รายการ`;
+                    if (latestDate) {
+                        text += ` · ล่าสุดวันที่ ${latestDate} โดย ${submitter}`;
+                    }
+                    summaryTextEl.textContent = text;
+                }
+
+                if (latestTitleEl) {
+                    if (reportTitle) {
+                        latestTitleEl.textContent = `หัวข้อรายงานล่าสุด: ${reportTitle}`;
+                        latestTitleEl.classList.remove('hidden');
+                    } else {
+                        latestTitleEl.classList.add('hidden');
+                        latestTitleEl.textContent = '';
+                    }
+                }
+
+                if (latestEditBtn) {
+                    if (editUrl) {
+                        latestEditBtn.dataset.url = editUrl;
+                        latestEditBtn.dataset.title = `แก้ไขรายงาน: ${reportTitle || 'ความก้าวหน้าของการดำเนินงาน'}`;
+                        latestEditBtn.classList.remove('hidden');
+                    } else {
+                        latestEditBtn.dataset.url = '';
+                        latestEditBtn.classList.add('hidden');
+                    }
+                }
+            };
+
+            document.querySelectorAll('[data-progress-modal-open]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    openModal(btn.dataset.url || '', btn.dataset.title || '');
+                });
+            });
+
+            modal.querySelectorAll('[data-progress-modal-close]').forEach((btn) => {
+                btn.addEventListener('click', closeModal);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+
+            window.addEventListener('message', (event) => {
+                if (event.origin !== window.location.origin) return;
+
+                const payload = event.data;
+                if (!payload || payload.type !== 'progress-report:updated') return;
+                if (Number(payload.projectId) !== currentProjectId) return;
+
+                applyProgressSummary(payload.summary || {});
+                closeModal();
+            });
+        })();
     </script>
 
 @endsection

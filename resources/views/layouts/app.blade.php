@@ -28,7 +28,12 @@
 
 </head>
 
-<body class="bg-gray-100 text-gray-800">
+@php
+    $isModalView = request()->boolean('modal');
+@endphp
+
+<body class="{{ $isModalView ? 'bg-white text-gray-800' : 'bg-gray-100 text-gray-800' }}">
+    @if (!$isModalView)
     <style>
         .mobile-nav {
             border-radius: 16px;
@@ -66,120 +71,123 @@
             transform: translateY(-110%);
         }
     </style>
+    @endif
 
-    <!-- ✅ เปลี่ยนจาก max-w-7xl เป็น container -->
-    <nav id="main-nav" class="bg-white border-b border-slate-200 shadow-sm fixed top-0 inset-x-0 z-50 transition-transform duration-200" x-data="{ openNav: false }">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex items-center gap-4 mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
-                <a href="/dashboard" class="font-bold brand text-slate-900 tracking-tight text-lg">Research Dashboard</a>
+    @if (!$isModalView)
+        <!-- ✅ เปลี่ยนจาก max-w-7xl เป็น container -->
+        <nav id="main-nav" class="bg-white border-b border-slate-200 shadow-sm fixed top-0 inset-x-0 z-50 transition-transform duration-200" x-data="{ openNav: false }">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex items-center gap-4 mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
+                    <a href="/dashboard" class="font-bold brand text-slate-900 tracking-tight text-lg">Research Dashboard</a>
 
-                <div class="hidden md:flex items-center gap-1 flex-1 justify-center">
-                    <a href="/dashboard" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📊 Dashboard</a>
-                    <a href="/rm" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📋 รายการโปรเจค</a>
-                    <a href="{{ route('back_office.index') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧾 Back Office</a>
-                    <a href="/rm/create" class="px-3 py-2 rounded-lg text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50">➕ เพิ่มโครงการ</a>
-                    <a href="{{ route('outputs.index') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-amber-700 hover:text-amber-800 hover:bg-amber-50">📑 outputs</a>
+                    <div class="hidden md:flex items-center gap-1 flex-1 justify-center">
+                        <a href="/dashboard" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📊 Dashboard</a>
+                        <a href="/rm" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📋 รายการโปรเจค</a>
+                        <a href="{{ route('back_office.index') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧾 Back Office</a>
+                        <a href="/rm/create" class="px-3 py-2 rounded-lg text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50">➕ เพิ่มโครงการ</a>
+                        <a href="{{ route('outputs.index') }}" class="px-3 py-2 rounded-lg text-sm font-semibold text-amber-700 hover:text-amber-800 hover:bg-amber-50">📑 outputs</a>
 
-                    <div class="relative" x-data="{ openFte: false }">
-                        <button type="button"
-                            @click="openFte = !openFte"
-                            @click.away="openFte = false"
-                            class="px-3 py-2 rounded-lg text-sm font-semibold inline-flex items-center gap-1 text-slate-700 hover:text-blue-700 hover:bg-slate-100">
-                            🔥 FTE
-                            <svg :class="{'rotate-180': openFte}" class="w-4 h-4 text-gray-500 transition-transform" fill="none" stroke="currentColor" stroke-width="2"
-                                viewBox="0 0 24 24">
-                                <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                        </button>
-                        <div x-show="openFte" x-cloak
-                            class="absolute left-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                            <a href="{{ route('fte.index') }}"
-                                class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
-                                FTE รายบุคคล
-                            </a>
-                            <a href="{{ route('fte.project.index') }}"
-                                class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
-                                FTE รายโปรเจค
-                            </a>
+                        <div class="relative" x-data="{ openFte: false }">
+                            <button type="button"
+                                @click="openFte = !openFte"
+                                @click.away="openFte = false"
+                                class="px-3 py-2 rounded-lg text-sm font-semibold inline-flex items-center gap-1 text-slate-700 hover:text-blue-700 hover:bg-slate-100">
+                                🔥 FTE
+                                <svg :class="{'rotate-180': openFte}" class="w-4 h-4 text-gray-500 transition-transform" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                            <div x-show="openFte" x-cloak
+                                class="absolute left-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                                <a href="{{ route('fte.index') }}"
+                                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                    FTE รายบุคคล
+                                </a>
+                                <a href="{{ route('fte.project.index') }}"
+                                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                    FTE รายโปรเจค
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="flex items-center gap-2 ml-auto">
-                    <!-- Profile Dropdown -->
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open"
-                            class="w-10 h-10 bg-gray-200 rounded-full overflow-hidden focus:outline-none">
-                            <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}?v={{ time() }}"
-                                onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'"
-                                alt="Profile" class="w-full h-full object-cover">
-                        </button>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <!-- Profile Dropdown -->
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open"
+                                class="w-10 h-10 bg-gray-200 rounded-full overflow-hidden focus:outline-none">
+                                <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}?v={{ time() }}"
+                                    onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'"
+                                    alt="Profile" class="w-full h-full object-cover">
+                            </button>
 
-                        <div x-show="open" x-cloak @click.away="open = false"
-                            class="absolute right-0 mt-2 w-72 bg-white border rounded shadow-md z-50">
-                            <div class="px-4 py-2 text-sm text-gray-800 border-b leading-tight">
-                                <div class="font-medium">
-                                    {{ Auth::user()->prefix }} {{ Auth::user()->name }}
+                            <div x-show="open" x-cloak @click.away="open = false"
+                                class="absolute right-0 mt-2 w-72 bg-white border rounded shadow-md z-50">
+                                <div class="px-4 py-2 text-sm text-gray-800 border-b leading-tight">
+                                    <div class="font-medium">
+                                        {{ Auth::user()->prefix }} {{ Auth::user()->name }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        ตำแหน่ง: {{ Auth::user()->position }} ({{ Auth::user()->role }})
+                                    </div>
                                 </div>
-                                <div class="text-xs text-gray-500">
-                                    ตำแหน่ง: {{ Auth::user()->position }} ({{ Auth::user()->role }})
-                                </div>
-                            </div>
-                            <a href="{{ route('user_guide') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">📘 คู่มือ</a>
+                                <a href="{{ route('user_guide') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">📘 คู่มือ</a>
+
+                                @if (Auth::user()->role === 'admin')
+                                    <a href="/user" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
+                                        👥 จัดการผู้ใช้
+                                    </a>
+                                @endif
 
                             @if (Auth::user()->role === 'admin')
-                                <a href="/user" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                    👥 จัดการผู้ใช้
+                                    <a href="/project-logs" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
+                                        📝 Project log
+                                    </a>
+                                @endif
+                                <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
+                                    👤 แก้ไขข้อมูลส่วนตัว
                                 </a>
-                            @endif
 
-                           @if (Auth::user()->role === 'admin')
-                                <a href="/project-logs" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                    📝 Project log
-                                </a>
-                            @endif
-                            <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                👤 แก้ไขข้อมูลส่วนตัว
-                            </a>
-
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit"
-                                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    🚪 ออกจากระบบ
-                                </button>
-                            </form>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit"
+                                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        🚪 ออกจากระบบ
+                                    </button>
+                                </form>
+                            </div>
                         </div>
+
+                        <button type="button" class="md:hidden p-2 mobile-nav-toggle text-gray-600 hover:bg-gray-50"
+                            @click="openNav = !openNav" aria-label="Toggle navigation">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
                     </div>
+                </div>
 
-                    <button type="button" class="md:hidden p-2 mobile-nav-toggle text-gray-600 hover:bg-gray-50"
-                        @click="openNav = !openNav" aria-label="Toggle navigation">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
+                <div class="md:hidden mt-3" x-show="openNav" x-cloak>
+                    <div class="pt-3 pb-2 border-t flex flex-col gap-2 mobile-nav-links">
+                        <a href="/dashboard">📊 Dashboard</a>
+                        <a href="/rm">📋 รายการโปรเจค</a>
+                        <a href="{{ route('back_office.index') }}">🧾 Back Office</a>
+                        <a href="/rm/create">➕ เพิ่มโครงการ</a>
+                        <a href="{{ route('outputs.index') }}">📑 outputs</a>
+                        <div class="text-gray-700 font-medium">🔥 FTE</div>
+                        <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
+                        <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
+                    </div>
                 </div>
             </div>
-
-            <div class="md:hidden mt-3" x-show="openNav" x-cloak>
-                <div class="pt-3 pb-2 border-t flex flex-col gap-2 mobile-nav-links">
-                    <a href="/dashboard">📊 Dashboard</a>
-                    <a href="/rm">📋 รายการโปรเจค</a>
-                    <a href="{{ route('back_office.index') }}">🧾 Back Office</a>
-                    <a href="/rm/create">➕ เพิ่มโครงการ</a>
-                    <a href="{{ route('outputs.index') }}">📑 outputs</a>
-                    <div class="text-gray-700 font-medium">🔥 FTE</div>
-                    <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
-                    <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+        </nav>
+    @endif
 
     <!-- ✅ main ก็ใช้ container เช่นกัน -->
-    <main class="container mx-auto px-4 pt-24 pb-6">
+    <main class="container mx-auto px-4 {{ $isModalView ? 'pt-4 pb-4' : 'pt-24 pb-6' }}">
         @if (isset($header))
             <div class="mb-4">{{ $header }}</div>
         @endif

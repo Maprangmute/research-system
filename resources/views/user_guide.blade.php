@@ -1,5 +1,28 @@
 @extends('layouts.app')
 @section('content')
+<style>
+    .user-guide-main section {
+        scroll-margin-top: 7rem;
+    }
+
+    .user-guide-toc {
+        max-height: calc(100vh - 8.5rem);
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+
+    .user-guide-toc a {
+        display: block;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.4rem;
+    }
+
+    .user-guide-toc a:hover {
+        background: #eff6ff;
+        text-decoration: none;
+    }
+</style>
+
 <div class="max-w-7xl mx-auto">
     <div class="mb-6 rounded-xl bg-gradient-to-r from-blue-50 via-sky-50 to-white border border-blue-100 p-6">
         <div class="text-sm text-blue-600 font-semibold">คู่มือการใช้งาน</div>
@@ -9,10 +32,10 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <aside class="lg:col-span-3">
-            <div class="sticky top-6 space-y-3">
+            <div class="sticky top-24 space-y-3">
                 <div class="bg-white border rounded-lg p-4">
                     <div class="font-semibold text-gray-800 mb-2">สารบัญ</div>
-                    <ul class="text-sm text-blue-700 space-y-1">
+                    <ul class="user-guide-toc text-sm text-blue-700 space-y-1">
                         <li><a class="hover:underline" href="#overview">ภาพรวมระบบ</a></li>
                         <li><a class="hover:underline" href="#roles">บทบาทและสิทธิ์</a></li>
                         <li><a class="hover:underline" href="#flow">โฟลว์การทำงาน</a></li>
@@ -21,11 +44,15 @@
                         <li><a class="hover:underline" href="#autosave">Auto Save</a></li>
                         <li><a class="hover:underline" href="#fte-calc">การคิด FTE</a></li>
                         <li><a class="hover:underline" href="#fte-detail">กรอก FTE แบบละเอียด</a></li>
+                        <li><a class="hover:underline" href="#fte-monthly-split">FTE รายคน/รายโปรเจค แบ่งรายเดือนอย่างไร</a></li>
                         <li><a class="hover:underline" href="#outputs-detail">Outputs: EA101/EA103</a></li>
                         <li><a class="hover:underline" href="#logs-detail">Project Logs (Grouped)</a></li>
                         <li><a class="hover:underline" href="#pages">การใช้งานแต่ละหน้า</a></li>
                         <li><a class="hover:underline" href="#otp">ลืมรหัสผ่าน (OTP)</a></li>
                         <li><a class="hover:underline" href="#process">กระบวนการบันทึกแต่ละส่วน</a></li>
+                        <li><a class="hover:underline" href="#deep-usage">คู่มือปฏิบัติละเอียด</a></li>
+                        <li><a class="hover:underline" href="#role-guide">คู่มือแยกตามบทบาท</a></li>
+                        <li><a class="hover:underline" href="#troubleshoot-deep">แก้ปัญหาแบบละเอียด</a></li>
                         <li><a class="hover:underline" href="#dev">สำหรับนักพัฒนา (Dev)</a></li>
                         <li><a class="hover:underline" href="#faq">คำถามที่พบบ่อย</a></li>
                     </ul>
@@ -33,7 +60,7 @@
             </div>
         </aside>
 
-        <main class="lg:col-span-9 space-y-10">
+        <main class="user-guide-main lg:col-span-9 space-y-10">
             <section id="overview" class="bg-white border rounded-xl p-6">
                 <h2 class="text-2xl font-bold text-gray-800 mb-3">ภาพรวมระบบ</h2>
                 <p class="text-gray-700">
@@ -76,31 +103,82 @@
 
             <section id="flow" class="bg-white border rounded-xl p-6">
                 <h2 class="text-2xl font-bold text-gray-800 mb-3">โฟลว์การทำงานหลัก</h2>
-                <div class="overflow-x-auto">
-                    <div class="min-w-[920px] grid grid-cols-9 gap-3 items-center">
-                        <div class="border rounded-lg p-3 text-center bg-blue-50">
-                            <div class="font-semibold">Login</div>
-                            <div class="text-xs text-gray-600">อีเมล/รหัสผ่าน</div>
+                <div class="mt-2">
+                    <div class="hidden md:grid md:grid-cols-5 gap-4">
+                        <div class="relative">
+                            <div class="h-full rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm">
+                                <div class="text-xs uppercase tracking-wide text-blue-600 font-semibold">Step 1</div>
+                                <div class="mt-1 text-lg font-semibold text-slate-800">Login</div>
+                                <div class="mt-1 text-sm text-slate-600">อีเมล/รหัสผ่าน</div>
+                            </div>
+                            <div class="absolute top-1/2 -right-3 -translate-y-1/2 text-slate-300 text-2xl">→</div>
                         </div>
-                        <div class="text-center text-gray-400">→</div>
-                        <div class="border rounded-lg p-3 text-center bg-sky-50">
-                            <div class="font-semibold">รายการโปรเจค</div>
-                            <div class="text-xs text-gray-600">/rm</div>
+                        <div class="relative">
+                            <div class="h-full rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm">
+                                <div class="text-xs uppercase tracking-wide text-sky-600 font-semibold">Step 2</div>
+                                <div class="mt-1 text-lg font-semibold text-slate-800">รายการโปรเจค</div>
+                                <div class="mt-1 text-sm text-slate-600"><code>/rm</code></div>
+                            </div>
+                            <div class="absolute top-1/2 -right-3 -translate-y-1/2 text-slate-300 text-2xl">→</div>
                         </div>
-                        <div class="text-center text-gray-400">→</div>
-                        <div class="border rounded-lg p-3 text-center bg-indigo-50">
-                            <div class="font-semibold">สร้าง/แก้ไข</div>
-                            <div class="text-xs text-gray-600">/rm/create | /rm/edit</div>
+                        <div class="relative">
+                            <div class="h-full rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-4 shadow-sm">
+                                <div class="text-xs uppercase tracking-wide text-indigo-600 font-semibold">Step 3</div>
+                                <div class="mt-1 text-lg font-semibold text-slate-800">สร้าง/แก้ไข</div>
+                                <div class="mt-1 text-sm text-slate-600"><code>/rm/create</code> หรือ <code>/rm/edit</code></div>
+                            </div>
+                            <div class="absolute top-1/2 -right-3 -translate-y-1/2 text-slate-300 text-2xl">→</div>
                         </div>
-                        <div class="text-center text-gray-400">→</div>
-                        <div class="border rounded-lg p-3 text-center bg-emerald-50">
-                            <div class="font-semibold">FTE/Outputs</div>
-                            <div class="text-xs text-gray-600">ข้อมูลประกอบ</div>
+                        <div class="relative">
+                            <div class="h-full rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm">
+                                <div class="text-xs uppercase tracking-wide text-emerald-600 font-semibold">Step 4</div>
+                                <div class="mt-1 text-lg font-semibold text-slate-800">FTE / Outputs</div>
+                                <div class="mt-1 text-sm text-slate-600">ข้อมูลประกอบโครงการ</div>
+                            </div>
+                            <div class="absolute top-1/2 -right-3 -translate-y-1/2 text-slate-300 text-2xl">→</div>
                         </div>
-                        <div class="text-center text-gray-400">→</div>
-                        <div class="border rounded-lg p-3 text-center bg-amber-50">
-                            <div class="font-semibold">รายละเอียดโครงการ</div>
-                            <div class="text-xs text-gray-600">/rm/projects/{id}</div>
+                        <div>
+                            <div class="h-full rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
+                                <div class="text-xs uppercase tracking-wide text-amber-700 font-semibold">Step 5</div>
+                                <div class="mt-1 text-lg font-semibold text-slate-800">รายละเอียดโครงการ</div>
+                                <div class="mt-1 text-sm text-slate-600"><code>/rm/projects/{id}</code></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="md:hidden space-y-3">
+                        <div class="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm">
+                            <div class="text-xs uppercase tracking-wide text-blue-600 font-semibold">Step 1</div>
+                            <div class="mt-1 text-lg font-semibold text-slate-800">Login</div>
+                            <div class="mt-1 text-sm text-slate-600">อีเมล/รหัสผ่าน</div>
+                        </div>
+                        <div class="text-center text-slate-300 text-2xl">↓</div>
+
+                        <div class="rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm">
+                            <div class="text-xs uppercase tracking-wide text-sky-600 font-semibold">Step 2</div>
+                            <div class="mt-1 text-lg font-semibold text-slate-800">รายการโปรเจค</div>
+                            <div class="mt-1 text-sm text-slate-600"><code>/rm</code></div>
+                        </div>
+                        <div class="text-center text-slate-300 text-2xl">↓</div>
+
+                        <div class="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-4 shadow-sm">
+                            <div class="text-xs uppercase tracking-wide text-indigo-600 font-semibold">Step 3</div>
+                            <div class="mt-1 text-lg font-semibold text-slate-800">สร้าง/แก้ไข</div>
+                            <div class="mt-1 text-sm text-slate-600"><code>/rm/create</code> หรือ <code>/rm/edit</code></div>
+                        </div>
+                        <div class="text-center text-slate-300 text-2xl">↓</div>
+
+                        <div class="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm">
+                            <div class="text-xs uppercase tracking-wide text-emerald-600 font-semibold">Step 4</div>
+                            <div class="mt-1 text-lg font-semibold text-slate-800">FTE / Outputs</div>
+                            <div class="mt-1 text-sm text-slate-600">ข้อมูลประกอบโครงการ</div>
+                        </div>
+                        <div class="text-center text-slate-300 text-2xl">↓</div>
+
+                        <div class="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
+                            <div class="text-xs uppercase tracking-wide text-amber-700 font-semibold">Step 5</div>
+                            <div class="mt-1 text-lg font-semibold text-slate-800">รายละเอียดโครงการ</div>
+                            <div class="mt-1 text-sm text-slate-600"><code>/rm/projects/{id}</code></div>
                         </div>
                     </div>
                 </div>
@@ -284,6 +362,110 @@
                     <div class="text-sm text-gray-600 mt-2">
                         สมมติกรอก hours = 160 → ระบบจะคำนวณ FTE ≈ 0.09936
                     </div>
+                </div>
+            </section>
+
+            <section id="fte-monthly-split" class="bg-white border rounded-xl p-6 space-y-4">
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">FTE รายคน/รายโปรเจค ระบบแบ่งรายเดือนอย่างไร</h2>
+                <p class="text-sm text-gray-700">
+                    หน้า <code>FTE รายบุคคล</code> และ <code>FTE รายโปรเจค</code> ใช้หลักเดียวกัน: เอา FTE ทั้งก้อนของแต่ละรายการมาเฉลี่ยต่อวัน
+                    แล้วกระจายตามจำนวนวันที่ทับในแต่ละเดือน (นับวันแบบรวมวันเริ่มและวันสิ้นสุด)
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">ตัวแปรในระบบ (ภาษาคนอ่านง่าย)</div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm border">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="border px-3 py-2 text-left">ชื่อในระบบ</th>
+                                        <th class="border px-3 py-2 text-left">ความหมายจริง</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-gray-700">
+                                    <tr><td class="border px-3 py-2"><code>hours</code></td><td class="border px-3 py-2">ชั่วโมงที่กรอกในฟอร์ม</td></tr>
+                                    <tr><td class="border px-3 py-2"><code>fte_value</code></td><td class="border px-3 py-2">FTE รวมของรายการนั้น (คำนวณจากชั่วโมง)</td></tr>
+                                    <tr><td class="border px-3 py-2"><code>start_date / end_date</code></td><td class="border px-3 py-2">วันเริ่มและวันสิ้นสุดของงาน</td></tr>
+                                    <tr><td class="border px-3 py-2"><code>total_days</code></td><td class="border px-3 py-2">จำนวนวันทั้งหมดของช่วงงาน (นับรวมทุกวัน)</td></tr>
+                                    <tr><td class="border px-3 py-2"><code>fte_per_day</code></td><td class="border px-3 py-2">FTE เฉลี่ยต่อวัน</td></tr>
+                                    <tr><td class="border px-3 py-2"><code>days_in_month</code></td><td class="border px-3 py-2">จำนวนวันที่งานทับกับเดือนนั้น</td></tr>
+                                    <tr><td class="border px-3 py-2"><code>fte_month</code></td><td class="border px-3 py-2">FTE ของเดือนนั้น</td></tr>
+                                    <tr><td class="border px-3 py-2"><code>hours_in_month</code></td><td class="border px-3 py-2">ชั่วโมงของเดือนนั้น</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">หลักคำนวณที่ระบบใช้จริง</div>
+                        <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1">
+                            <li>เอา <span class="font-semibold">ชั่วโมงที่กรอก</span> มาคูณ <code>0.000621</code> เพื่อได้ <span class="font-semibold">FTE รวมของงาน</span></li>
+                            <li>นับจำนวนวันตั้งแต่วันเริ่มถึงวันสิ้นสุดแบบ <span class="font-semibold">นับวันแรกและวันสุดท้ายด้วย</span></li>
+                            <li>เอา FTE รวม หารด้วยจำนวนวันทั้งหมด เพื่อได้ <span class="font-semibold">FTE เฉลี่ยต่อวัน</span></li>
+                            <li>ในแต่ละเดือน ระบบจะดูว่าเดือนนั้นมีวันทำงานของรายการนี้กี่วัน (เฉพาะวันที่ทับกันจริง)</li>
+                            <li>เอา <span class="font-semibold">จำนวนวันที่ทับในเดือน</span> คูณ <span class="font-semibold">FTE เฉลี่ยต่อวัน</span> = <span class="font-semibold">FTE ของเดือนนั้น</span></li>
+                            <li>เอา <span class="font-semibold">ชั่วโมงรวม</span> เฉลี่ยต่อวัน แล้วคูณจำนวนวันที่ทับในเดือน = <span class="font-semibold">ชั่วโมงของเดือนนั้น</span></li>
+                        </ol>
+                        <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                            ระบบนับ “วันปฏิทินจริงทั้งหมด” รวม <span class="font-semibold">เสาร์-อาทิตย์ และวันหยุด</span> ด้วย
+                            (ไม่ได้หักออกอัตโนมัติ) เพราะบางงานมีการทำงานจริงในวันดังกล่าว
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-4">
+                    <div class="font-semibold text-gray-900 mb-2">ตัวอย่างตารางเข้าใจง่าย: 1610 ชั่วโมง (ประมาณ 1 FTE)</div>
+                    <div class="text-sm text-gray-700 space-y-1">
+                        <div>กำหนดช่วงงาน: <code>01/01/2026 - 31/12/2026</code> (365 วัน)</div>
+                        <div>FTE รวมของงาน = <code>1610 × 0.000621 = 0.999810</code> (ประมาณ <code>1.00 FTE</code>)</div>
+                        <div>FTE เฉลี่ยต่อวัน = <code>0.999810 ÷ 365 = 0.002739205</code></div>
+                    </div>
+                    <div class="mt-3 overflow-x-auto">
+                        <table class="min-w-full text-sm border">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="border px-3 py-2 text-left">เดือน</th>
+                                    <th class="border px-3 py-2 text-center">จำนวนวันที่ทับในเดือน</th>
+                                    <th class="border px-3 py-2 text-right">ชั่วโมงของเดือนนั้น</th>
+                                    <th class="border px-3 py-2 text-right">FTE ของเดือนนั้น</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-700">
+                                <tr><td class="border px-3 py-2">มกราคม 2026</td><td class="border px-3 py-2 text-center">31</td><td class="border px-3 py-2 text-right">136.74</td><td class="border px-3 py-2 text-right">0.084915</td></tr>
+                                <tr><td class="border px-3 py-2">กุมภาพันธ์ 2026</td><td class="border px-3 py-2 text-center">28</td><td class="border px-3 py-2 text-right">123.51</td><td class="border px-3 py-2 text-right">0.076698</td></tr>
+                                <tr><td class="border px-3 py-2">มีนาคม 2026</td><td class="border px-3 py-2 text-center">31</td><td class="border px-3 py-2 text-right">136.74</td><td class="border px-3 py-2 text-right">0.084915</td></tr>
+                                <tr><td class="border px-3 py-2">เมษายน 2026</td><td class="border px-3 py-2 text-center">30</td><td class="border px-3 py-2 text-right">132.33</td><td class="border px-3 py-2 text-right">0.082176</td></tr>
+                                <tr><td class="border px-3 py-2">พฤษภาคม 2026</td><td class="border px-3 py-2 text-center">31</td><td class="border px-3 py-2 text-right">136.74</td><td class="border px-3 py-2 text-right">0.084915</td></tr>
+                                <tr><td class="border px-3 py-2">มิถุนายน 2026</td><td class="border px-3 py-2 text-center">30</td><td class="border px-3 py-2 text-right">132.33</td><td class="border px-3 py-2 text-right">0.082176</td></tr>
+                                <tr><td class="border px-3 py-2">กรกฎาคม 2026</td><td class="border px-3 py-2 text-center">31</td><td class="border px-3 py-2 text-right">136.74</td><td class="border px-3 py-2 text-right">0.084915</td></tr>
+                                <tr><td class="border px-3 py-2">สิงหาคม 2026</td><td class="border px-3 py-2 text-center">31</td><td class="border px-3 py-2 text-right">136.74</td><td class="border px-3 py-2 text-right">0.084915</td></tr>
+                                <tr><td class="border px-3 py-2">กันยายน 2026</td><td class="border px-3 py-2 text-center">30</td><td class="border px-3 py-2 text-right">132.33</td><td class="border px-3 py-2 text-right">0.082176</td></tr>
+                                <tr><td class="border px-3 py-2">ตุลาคม 2026</td><td class="border px-3 py-2 text-center">31</td><td class="border px-3 py-2 text-right">136.74</td><td class="border px-3 py-2 text-right">0.084915</td></tr>
+                                <tr><td class="border px-3 py-2">พฤศจิกายน 2026</td><td class="border px-3 py-2 text-center">30</td><td class="border px-3 py-2 text-right">132.33</td><td class="border px-3 py-2 text-right">0.082176</td></tr>
+                                <tr><td class="border px-3 py-2">ธันวาคม 2026</td><td class="border px-3 py-2 text-center">31</td><td class="border px-3 py-2 text-right">136.74</td><td class="border px-3 py-2 text-right">0.084915</td></tr>
+                                <tr class="bg-blue-50 font-semibold">
+                                    <td class="border px-3 py-2">รวม</td>
+                                    <td class="border px-3 py-2 text-center">365</td>
+                                    <td class="border px-3 py-2 text-right">1610.00</td>
+                                    <td class="border px-3 py-2 text-right">0.999810</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-500">
+                        หมายเหตุ: ถ้าต้องการให้ได้ <code>1.000000 FTE</code> เป๊ะตามสูตรระบบนี้ จะอยู่ประมาณ <code>1610.31 ชั่วโมง</code>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-4">
+                    <div class="font-semibold text-gray-900 mb-2">ผลของตัวกรองช่วงเวลาในหน้า FTE</div>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                        <li><code>month</code>: คิดเฉพาะช่วงที่ทับกับเดือนปัจจุบัน</li>
+                        <li><code>year</code>: คิดเฉพาะช่วงที่ทับกับปีที่เลือก</li>
+                        <li><code>custom</code>: คิดเฉพาะช่วงวันที่เริ่ม-สิ้นสุดที่ผู้ใช้ระบุ</li>
+                        <li>ระบบจะตัดช่วงวันที่ให้เหลือเฉพาะส่วนที่ทับกับตัวกรองก่อน แล้วค่อยแตกเป็นรายเดือน</li>
+                    </ul>
                 </div>
             </section>
 
@@ -477,6 +659,221 @@
                     <li>กรอกอีเมล → ระบบส่ง OTP</li>
                     <li>กรอก OTP 6 หลัก และตั้งรหัสผ่านใหม่</li>
                 </ol>
+            </section>
+
+            <section id="deep-usage" class="bg-white border rounded-xl p-6 space-y-5">
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">คู่มือปฏิบัติละเอียด (Step-by-Step)</h2>
+                <p class="text-sm text-gray-600">
+                    ส่วนนี้เพิ่มรายละเอียดเชิงปฏิบัติจริงในระดับช่องข้อมูล เพื่อให้ใช้งานได้ครบตั้งแต่สร้างโครงการจนถึงปิดงาน
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">Step 1: เตรียมข้อมูลก่อนกด “เพิ่มโครงการ”</div>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>ชื่อโครงการภาษาไทย (ควรตรวจชื่อซ้ำก่อน)</li>
+                            <li>ประเภทโครงการ, Theme, ปีโปรเจค</li>
+                            <li>ข้อมูลทุน: ประเภททุน/แหล่งทุน/ชื่อทุน/งบประมาณ</li>
+                            <li>รายชื่อทีม: PI, COPI, Co-Researcher</li>
+                            <li>ช่วงวันเริ่มและสิ้นสุดของโครงการ</li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">Step 2: วิธีกรอกให้ผ่าน Validation รอบเดียว</div>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>ทุกช่องที่มี <span class="text-red-500">*</span> ต้องมีค่า</li>
+                            <li>แถว IRB ที่มีรหัส ต้องมีวันหมดอายุ</li>
+                            <li>FTE ต้องมีชื่อ + กลุ่ม + ภาระงาน + ชั่วโมง + ช่วงวันที่</li>
+                            <li>Output ควรมีอย่างน้อย: ชื่อผลงาน + ประเภท + วันที่เผยแพร่</li>
+                            <li>ถ้าฟอร์มยาว ให้บันทึกเป็นช่วงและตรวจจากหน้ารายละเอียดทันที</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-4">
+                    <div class="font-semibold text-gray-900 mb-2">Step 3: กรอกหน้าสร้างโครงการแบบละเอียดทีละส่วน</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                        <div>
+                            <div class="font-semibold mb-1">A) ข้อมูลโครงการ</div>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>ชื่อไทย/อังกฤษของโครงการ</li>
+                                <li>ประเภทโครงการ, Theme, ลักษณะโครงการ</li>
+                                <li>ขนาดโครงการ, รหัส R, ปีโปรเจค</li>
+                                <li>ลิงก์ Drive/Shortcut (ถ้ามี)</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="font-semibold mb-1">B) ระยะเวลาดำเนินโครงการ</div>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>วันที่เริ่ม-สิ้นสุดของทีมวิจัย</li>
+                                <li>BA001, BC101, BC102, BC103</li>
+                                <li>Project Status ตามขั้นตอนโครงการ</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="font-semibold mb-1">C) Roles and Responsibilities</div>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>PI: ชื่อ + สังกัด</li>
+                                <li>COPI: เพิ่มได้หลายคน (ชื่อ/สังกัด)</li>
+                                <li>Co-Researcher: ชื่อ/สังกัด/ภายใน-ภายนอก</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="font-semibold mb-1">D) IRB</div>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>รหัส IRB</li>
+                                <li>หน่วยงานที่ออกเอกสาร</li>
+                                <li>วันหมดอายุ IRB</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="font-semibold mb-1">E) FTE</div>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>กรอกชั่วโมงเพื่อให้ระบบคำนวณ FTE อัตโนมัติ</li>
+                                <li>สูตร: <code>FTE = ชั่วโมง × 0.000621</code></li>
+                                <li>ช่อง FTE ของหัวหน้าโครงการ เป็นค่าประเมินเพิ่มเติม</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="font-semibold mb-1">F) Outputs</div>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>EA101: เพิ่ม Journal / Quartile / IF / Authors</li>
+                                <li>EA103: เพิ่ม Conference / Presentation / Location</li>
+                                <li>ประเภทอื่น: กรอกข้อมูลพื้นฐานของผลงาน</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">Step 4: หลังบันทึกต้องตรวจอะไร</div>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>เปิดหน้า “รายละเอียดโครงการ” เพื่อตรวจ A-H</li>
+                            <li>ตรวจ IRB ว่าแสดงวันที่หมดอายุถูกต้อง</li>
+                            <li>ตรวจตาราง FTE และกราฟ FTE รายเดือน</li>
+                            <li>ตรวจ Outputs ว่าแยก EA101/EA103 ถูกส่วน</li>
+                            <li>ทดลองเปิด PDF โครงการ</li>
+                        </ol>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">Step 5: งานที่ต้องทำต่อหลังสร้างโครงการ</div>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>สร้าง/อัปเดต Progress Reports ตามรอบงาน</li>
+                            <li>วางแผน Gantt และกด “บันทึกทั้งหมด” ทุกครั้ง</li>
+                            <li>อัปเดต FTE รายเดือนให้ครบ</li>
+                            <li>ติดตาม Outputs ให้สอดคล้องกับปีเผยแพร่</li>
+                            <li>ย้อนเช็ก Dashboard เพื่อดูภาพรวม</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-4 text-sm text-gray-700">
+                    <div class="font-semibold text-gray-900 mb-2">Auto Save ที่ควรรู้ (ป้องกันข้อมูลหาย)</div>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>หน้าสร้างโครงการมี Auto Save เป็นระยะ</li>
+                        <li>กลับเข้าหน้าเดิม ระบบถามว่าจะกู้หรือทิ้ง draft</li>
+                        <li>ถ้าบันทึกสำเร็จ Draft จะถูกล้างอัตโนมัติ</li>
+                        <li>ถ้ากรอกแล้วรีโหลดหน้าโดยไม่บันทึก ให้ตรวจแบนเนอร์กู้ข้อมูลก่อนเริ่มกรอกใหม่</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="role-guide" class="bg-white border rounded-xl p-6 space-y-4">
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">คู่มือแยกตามบทบาท</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-sm text-gray-700">
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">user</div>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>เข้า `/rm` เลือกโครงการที่เกี่ยวข้อง</li>
+                            <li>กรอก FTE ของตนเองให้ครบ</li>
+                            <li>เพิ่ม Output ที่ตนรับผิดชอบ</li>
+                            <li>ติดตาม Progress Report ในโครงการ</li>
+                            <li>แก้ไขโปรไฟล์และรหัสผ่านที่ `/user/profile`</li>
+                        </ol>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">admin</div>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>ดูภาพรวมที่ Dashboard และกรองประเด็นเสี่ยง</li>
+                            <li>จัดการผู้ใช้ที่ `/user`</li>
+                            <li>ตรวจ Project Logs ที่ `/project-logs`</li>
+                            <li>ลบ log เก่ากว่า 3 เดือนตามนโยบาย</li>
+                            <li>ตรวจข้อมูล FTE/IRB/Outputs ให้ครบทั้งระบบ</li>
+                        </ol>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">user_all</div>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>เข้าถึงโครงการและรายงานได้ทั้งระบบ</li>
+                            <li>ช่วยติดตามงานข้ามทีมได้</li>
+                            <li>ตรวจ FTE/Outputs ของหลายโครงการในรอบเดียว</li>
+                            <li>ใช้ตัวกรองใน `/rm` และ `/rm/outputs` ให้เต็มที่</li>
+                            <li>ประสานงานกับ admin เมื่อพบข้อมูลผิดปกติ</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <section id="troubleshoot-deep" class="bg-white border rounded-xl p-6 space-y-4">
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">แก้ปัญหาแบบละเอียด</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm border">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="border px-3 py-2 text-left">อาการที่พบ</th>
+                                <th class="border px-3 py-2 text-left">สาเหตุที่พบบ่อย</th>
+                                <th class="border px-3 py-2 text-left">วิธีแก้แนะนำ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-700">
+                            <tr>
+                                <td class="border px-3 py-2">บันทึกโครงการไม่ผ่าน</td>
+                                <td class="border px-3 py-2">ช่องบังคับ (*) ยังไม่ครบ หรือแถวซ้ำกรอกไม่ครบ</td>
+                                <td class="border px-3 py-2">เลื่อนไปช่องที่กรอบแดง กรอกให้ครบทุกแถว IRB/FTE/Outputs</td>
+                            </tr>
+                            <tr>
+                                <td class="border px-3 py-2">ไม่เห็น Project Logs</td>
+                                <td class="border px-3 py-2">สิทธิ์ผู้ใช้ไม่ใช่ admin</td>
+                                <td class="border px-3 py-2">ให้ admin ปรับ role หรือใช้งานผ่านบัญชี admin</td>
+                            </tr>
+                            <tr>
+                                <td class="border px-3 py-2">FTE ดูผิด/ไม่ขึ้นกราฟ</td>
+                                <td class="border px-3 py-2">วันเริ่ม-สิ้นสุดไม่ถูก หรือชั่วโมงเป็น 0</td>
+                                <td class="border px-3 py-2">แก้ช่วงวันที่และชั่วโมงในแถว FTE แล้วบันทึกใหม่</td>
+                            </tr>
+                            <tr>
+                                <td class="border px-3 py-2">เลือก EA101/EA103 แล้วข้อมูลไม่ครบ</td>
+                                <td class="border px-3 py-2">ยังไม่เพิ่ม Authors/Conference ในส่วนพิเศษ</td>
+                                <td class="border px-3 py-2">กดเพิ่มแถวผู้เขียนหรือ conference ให้ครบ แล้วบันทึกอีกครั้ง</td>
+                            </tr>
+                            <tr>
+                                <td class="border px-3 py-2">แก้ Gantt แล้วข้อมูลหาย</td>
+                                <td class="border px-3 py-2">กดเฉพาะลงตาราง แต่ยังไม่กดบันทึกทั้งหมด</td>
+                                <td class="border px-3 py-2">หลังจัดงานทุกครั้ง ต้องกด “บันทึกทั้งหมด” เสมอ</td>
+                            </tr>
+                            <tr>
+                                <td class="border px-3 py-2">OTP ไม่ผ่าน/หมดอายุ</td>
+                                <td class="border px-3 py-2">เกินเวลารหัส OTP หรือพิมพ์ผิด</td>
+                                <td class="border px-3 py-2">ขอ OTP ใหม่ที่หน้า “ลืมรหัสผ่าน” แล้วกรอกทันที</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="dev" class="bg-white border rounded-xl p-6 space-y-3">
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">สำหรับนักพัฒนา (Dev)</h2>
+                <div class="text-sm text-gray-700 space-y-2">
+                    <p>จุดที่ปรับบ่อยในระบบนี้มักอยู่ในฟอร์มโครงการ, การคำนวณ FTE, และหน้ารายงาน</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>Routes หลักอยู่ที่ <code>routes/web.php</code></li>
+                        <li>การจัดการโครงการอยู่ที่ <code>app/Http/Controllers/ProjectController.php</code></li>
+                        <li>การคำนวณ/กระจาย FTE อยู่ที่ <code>app/Http/Controllers/FteController.php</code></li>
+                        <li>หน้า UI คู่มือนี้อยู่ที่ <code>resources/views/user_guide.blade.php</code></li>
+                        <li>เอกสารฉบับเต็มอยู่ที่ <code>USER_GUIDE_TH.md</code></li>
+                    </ul>
+                </div>
             </section>
 
             <section id="faq" class="bg-white border rounded-xl p-6">

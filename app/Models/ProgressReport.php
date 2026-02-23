@@ -8,7 +8,22 @@ use Illuminate\Database\Eloquent\Model;
 class ProgressReport extends Model
 {
     protected $fillable = [
-        'project_id', 'submitter_name', 'submit_date', 'file_info', 'created_by', 'updated_by'
+        'project_id',
+        'submitter_name',
+        'submit_date',
+        'progress_title',
+        'progress_subtitle',
+        'file_info',
+        'progress_rows',
+        'issue_rows',
+        'created_by',
+        'updated_by',
+    ];
+
+    protected $casts = [
+        'submit_date' => 'date',
+        'progress_rows' => 'array',
+        'issue_rows' => 'array',
     ];
 
     public function project()
