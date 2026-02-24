@@ -180,7 +180,7 @@ class OutputController extends Controller
                 'year_be' => $yearBe,
                 'project_label' => $output->project?->project_name_th,
                 'detail' => null,
-                'link' => $output->project ? route('projects.show', $output->project->id) : null,
+                'link' => $output->project ? route('projects.show', $output->project) : null,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
                 'sort_title' => mb_strtolower($output->title ?? ''),

@@ -157,11 +157,11 @@
                 สถานะ: {{ $statusText }}
             </span>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('projects.edit', $project->id) }}"
+                <a href="{{ route('projects.edit', $project) }}"
                     class="px-3 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm font-semibold hover:bg-amber-200">
                     ✏️ แก้ไข
                 </a>
-                <a href="{{ route('projects.progress_reports.index', $project->id) }}"
+                <a href="{{ route('projects.progress_reports.index', $project) }}"
                     class="px-3 py-2 rounded-lg bg-indigo-100 text-indigo-800 text-sm font-semibold hover:bg-indigo-200">
                     📑 Progress Report
                 </a>
@@ -170,12 +170,12 @@
                     $isAdmin = auth()->user() && auth()->user()->role === 'admin';
                 @endphp
                 @if ($isOwner || $isAdmin)
-                    <a href="{{ route('projects.pdf', $project->id) }}" target="_blank"
+                    <a href="{{ route('projects.pdf', $project) }}" target="_blank"
                         class="px-3 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200">
                         🖨️ PDF
                     </a>
                 @endif
-                <a href="{{ route('projects.gantt', $project->id) }}"
+                <a href="{{ route('projects.gantt', $project) }}"
                     class="px-3 py-2 rounded-lg bg-sky-100 text-sky-800 text-sm font-semibold hover:bg-sky-200">
                     📊 Gantt
                 </a>
@@ -185,7 +185,7 @@
                 </button>
             </div>
             <form id="delete-project-{{ $project->id }}"
-                action="{{ route('projects.destroy', $project->id) }}" method="POST" class="hidden">
+                action="{{ route('projects.destroy', $project) }}" method="POST" class="hidden">
                 @csrf
                 @method('DELETE')
             </form>
@@ -440,7 +440,7 @@
         <div class="mobile-section space-y-3">
             <div class="flex items-center justify-between gap-2">
                 <h3 class="font-semibold text-lg text-blue-700">E: ความก้าวหน้าของการดำเนินงาน</h3>
-                <a href="{{ route('projects.progress_reports.index', $project->id) }}"
+                <a href="{{ route('projects.progress_reports.index', $project) }}"
                     class="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white">ทั้งหมด</a>
             </div>
 
@@ -522,7 +522,7 @@
             @else
                 <div class="mobile-card text-sm text-slate-500">
                     ยังไม่มีรายงานความก้าวหน้า
-                    <a href="{{ route('projects.progress_reports.create', $project->id) }}" class="text-blue-600 underline ml-1">เพิ่มรายงาน</a>
+                    <a href="{{ route('projects.progress_reports.create', $project) }}" class="text-blue-600 underline ml-1">เพิ่มรายงาน</a>
                 </div>
             @endif
         </div>
@@ -614,7 +614,7 @@
         <div class="mobile-section space-y-3">
             <div class="flex items-center justify-between gap-2">
                 <h3 class="font-semibold text-lg text-blue-700">สรุป FTE รายเดือน</h3>
-                <a href="{{ route('fte.project.detail', $project->id) }}"
+                <a href="{{ route('fte.project.detail', $project) }}"
                     class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                     ดูเพิ่มเติม
                 </a>

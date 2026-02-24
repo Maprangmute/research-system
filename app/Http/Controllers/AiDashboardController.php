@@ -79,7 +79,7 @@ class AiDashboardController extends Controller
 
         if ($hasEnd) {
             $overdue = DB::table('projects')
-                ->select('id', 'project_name', 'pi_name', DB::raw($yearExpr.' as year_ad'), 'funding_name', 'funding_type', 'date_end')
+                ->select('id', 'project_code', 'project_name', 'pi_name', DB::raw($yearExpr.' as year_ad'), 'funding_name', 'funding_type', 'date_end')
                 ->when(Schema::hasColumn('projects', 'project_name'), fn($q)=>$q, fn($q)=>$q) // noop
                 ->whereNotNull('date_end')
                 ->where('date_end', '<', $now->toDateString())
@@ -95,11 +95,11 @@ class AiDashboardController extends Controller
                     'funding' => $r->funding_name ?? '',
                     'fund_type' => $r->funding_type ?? 'unknown',
                     'date_end' => (string) $r->date_end,
-                    'href' => route('projects.show', $r->id),
+                    'href' => url('/rm/projects/'.($r->project_code ?: $r->id)),
                 ])->values()->all();
 
             $nearEnd = DB::table('projects')
-                ->select('id', 'project_name', 'pi_name', DB::raw($yearExpr.' as year_ad'), 'funding_name', 'funding_type', 'date_end')
+                ->select('id', 'project_code', 'project_name', 'pi_name', DB::raw($yearExpr.' as year_ad'), 'funding_name', 'funding_type', 'date_end')
                 ->whereNotNull('date_end')
                 ->whereBetween('date_end', [$now->toDateString(), $now->copy()->addDays(60)->toDateString()])
                 ->orderBy('date_end', 'asc')
@@ -115,7 +115,7 @@ class AiDashboardController extends Controller
                     'fund_type' => $r->funding_type ?? 'unknown',
                     'date_end' => (string) $r->date_end,
                     'days_left' => Carbon::parse($r->date_end)->diffInDays($now, false) * -1,
-                    'href' => route('projects.show', $r->id),
+                    'href' => url('/rm/projects/'.($r->project_code ?: $r->id)),
                 ])->values()->all();
 
             // timeline buckets: overdue / 0-30 / 31-60 / 61-120 / >120 days

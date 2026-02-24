@@ -383,7 +383,7 @@
             <div class="sticky bottom-0 z-20 -mx-4 md:-mx-6 border-t border-slate-200 bg-white/95 px-4 py-3 md:px-6 backdrop-blur">
                 <div class="flex flex-col sm:flex-row justify-end gap-2">
                     @if (!$isModalView)
-                        <a href="{{ route('projects.progress_reports.index', ['project' => $project->id] + $modalQuery) }}"
+                        <a href="{{ route('projects.progress_reports.index', ['project' => $project] + $modalQuery) }}"
                             class="w-full sm:w-auto px-4 py-3 rounded-xl border border-slate-300 text-slate-700 text-center font-semibold hover:bg-slate-50">
                             ยกเลิก
                         </a>

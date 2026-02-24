@@ -275,7 +275,7 @@ public function store(Request $request)
     });
 
     return redirect()
-        ->route('projects.show', $project->id)
+        ->route('projects.show', $project)
         ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
 }
 
@@ -315,18 +315,10 @@ public function store(Request $request)
         return 'SP_'.str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
-    public function edit(Request $request, $id)
+    public function edit(Request $request, Project $project)
     {
-        $project = Project::with([
-            'outputs.authors',
-            'progressReports' => function ($query) {
-                $query->orderByDesc('submit_date')->orderByDesc('id');
-            },
-        ])->find($id);
-
-        if (! $project) {
-            return redirect('/rm')->with('error', 'ไม่พบข้อมูลโครงการ');
-        }
+        $routeProjectParam = trim((string) ($request->route()?->originalParameter('project') ?? ''));
+        $canonicalProjectKey = (string) $project->getRouteKey();
 
         $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
         $hasPermission = Auth::user()->role === 'admin'
@@ -337,6 +329,17 @@ public function store(Request $request)
         if (! $hasPermission) {
             abort(403);
         }
+
+        if ($routeProjectParam !== '' && $canonicalProjectKey !== '' && $routeProjectParam !== $canonicalProjectKey) {
+            return redirect()->route('projects.edit', array_merge(['project' => $project], $request->query()));
+        }
+
+        $project->load([
+            'outputs.authors',
+            'progressReports' => function ($query) {
+                $query->orderByDesc('submit_date')->orderByDesc('id');
+            },
+        ]);
 
         $view = 'projects.edit';
         $forceView = $request->query('view');
@@ -358,6 +361,9 @@ public function store(Request $request)
 
     public function show(Request $request, Project $project)
     {
+        $routeProjectParam = trim((string) ($request->route()?->originalParameter('project') ?? ''));
+        $canonicalProjectKey = (string) $project->getRouteKey();
+
         $view = 'projects.detail';
         $forceView = $request->query('view');
         if ($forceView === 'mobile') {
@@ -381,6 +387,10 @@ public function store(Request $request)
 
         if (! $hasPermission) {
             abort(403);
+        }
+
+        if ($routeProjectParam !== '' && $canonicalProjectKey !== '' && $routeProjectParam !== $canonicalProjectKey) {
+            return redirect()->route('projects.show', array_merge(['project' => $project], $request->query()));
         }
 
         $project->load([

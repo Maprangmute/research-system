@@ -20,7 +20,7 @@
 <div class="mobile-section space-y-3">
     <div class="flex items-center justify-between gap-2">
         <h3 class="font-semibold text-lg text-blue-700">I: ความก้าวหน้าของการดำเนินงาน</h3>
-        <a href="{{ route('projects.progress_reports.index', $project->id) }}"
+        <a href="{{ route('projects.progress_reports.index', $project) }}"
             class="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white">ทั้งหมด</a>
     </div>
 
@@ -102,7 +102,7 @@
     @else
         <div class="mobile-card text-sm text-slate-500">
             ยังไม่มีรายงานความก้าวหน้า
-            <a href="{{ route('projects.progress_reports.create', $project->id) }}" class="text-blue-600 underline ml-1">เพิ่มรายงาน</a>
+            <a href="{{ route('projects.progress_reports.create', $project) }}" class="text-blue-600 underline ml-1">เพิ่มรายงาน</a>
         </div>
     @endif
 </div>

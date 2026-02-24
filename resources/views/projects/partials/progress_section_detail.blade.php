@@ -22,11 +22,11 @@
             @endif
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('projects.progress_reports.index', $project->id) }}"
+            <a href="{{ route('projects.progress_reports.index', $project) }}"
                 class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 รายงานทั้งหมด
             </a>
-            <a href="{{ route('projects.progress_reports.create', $project->id) }}"
+            <a href="{{ route('projects.progress_reports.create', $project) }}"
                 class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
                 เพิ่มรายงาน
             </a>

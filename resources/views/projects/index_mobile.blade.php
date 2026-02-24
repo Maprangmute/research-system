@@ -305,7 +305,7 @@
                     <ul class="list-disc pl-5 space-y-1 text-sm">
                         @foreach ($missingFTE as $fte)
                             <li>
-                                <a href="{{ route('projects.edit', $fte->project_id) }}"
+                                <a href="{{ route('projects.edit', $fte->project ?? $fte->project_id) }}"
                                     class="text-indigo-700 font-medium hover:underline">
                                     {{ $fte->project->project_name_th ?? 'ไม่พบชื่อโครงการ' }}
                                 </a>
@@ -325,11 +325,11 @@
             <div class="space-y-3">
                 @forelse ($projects as $project)
                     @php
-                        $showUrl = route('projects.show', $project->id);
-                        $editUrl = route('projects.edit', $project->id);
-                        $pdfUrl = route('projects.pdf', $project->id);
-                        $progressUrl = route('projects.progress_reports.index', $project->id);
-                        $fteProjectUrl = route('fte.project.detail', $project->id);
+                        $showUrl = route('projects.show', $project);
+                        $editUrl = route('projects.edit', $project);
+                        $pdfUrl = route('projects.pdf', $project);
+                        $progressUrl = route('projects.progress_reports.index', $project);
+                        $fteProjectUrl = route('fte.project.detail', $project);
                         $deleteFormId = "delete-form-{$project->id}";
                         $updated = $project->updated_at ? \Carbon\Carbon::parse($project->updated_at) : null;
                     @endphp
@@ -387,7 +387,7 @@
                             <button type="button" onclick="confirmDelete('{{ $deleteFormId }}')"
                                 class="px-3 py-1.5 rounded-md bg-red-50 text-red-700 text-xs font-medium">ลบ</button>
                         </div>
-                        <form id="{{ $deleteFormId }}" action="{{ route('projects.destroy', $project->id) }}" method="POST" class="hidden">
+                        <form id="{{ $deleteFormId }}" action="{{ route('projects.destroy', $project) }}" method="POST" class="hidden">
                             @csrf @method('DELETE')
                         </form>
                     </div>

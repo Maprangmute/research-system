@@ -28,7 +28,7 @@
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
             <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
                 <div class="space-y-2 min-w-0">
-                    <a href="{{ route('projects.show', ['project' => $project->id] + $modalQuery) }}" class="text-blue-600 hover:underline text-sm">
+                    <a href="{{ route('projects.show', ['project' => $project] + $modalQuery) }}" class="text-blue-600 hover:underline text-sm">
                         ← กลับหน้าโครงการ
                     </a>
                     <h1 class="text-xl md:text-2xl font-bold text-slate-900">
@@ -36,7 +36,7 @@
                     </h1>
                     <p class="text-sm text-slate-600 break-words">โครงการ: {{ $project->project_name_th }}</p>
                 </div>
-                <a href="{{ route('projects.progress_reports.create', ['project' => $project->id] + $modalQuery) }}"
+                <a href="{{ route('projects.progress_reports.create', ['project' => $project] + $modalQuery) }}"
                     class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
                     เพิ่มรายงาน
                 </a>
@@ -74,15 +74,15 @@
                             <td class="px-3 py-3 text-sm text-slate-700 break-words">{{ $report->file_info ?: '-' }}</td>
                             <td class="px-3 py-3 text-center">
                                 <div class="flex flex-wrap items-center justify-center gap-2">
-                                    <a href="{{ route('projects.progress_reports.show', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}"
+                                    <a href="{{ route('projects.progress_reports.show', ['project' => $project, 'progress_report' => $report->id] + $modalQuery) }}"
                                         class="px-3 py-1.5 rounded-lg border border-sky-200 bg-sky-50 text-sky-700 text-sm font-semibold hover:bg-sky-100">
                                         ดูรายละเอียด
                                     </a>
-                                    <a href="{{ route('projects.progress_reports.edit', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}"
+                                    <a href="{{ route('projects.progress_reports.edit', ['project' => $project, 'progress_report' => $report->id] + $modalQuery) }}"
                                         class="px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100">
                                         แก้ไข
                                     </a>
-                                    <form action="{{ route('projects.progress_reports.destroy', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}" method="POST"
+                                    <form action="{{ route('projects.progress_reports.destroy', ['project' => $project, 'progress_report' => $report->id] + $modalQuery) }}" method="POST"
                                         onsubmit="return confirm('ยืนยันการลบ?')">
                                         @csrf
                                         @method('DELETE')
@@ -134,15 +134,15 @@
                     </div>
 
                     <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('projects.progress_reports.show', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}"
+                        <a href="{{ route('projects.progress_reports.show', ['project' => $project, 'progress_report' => $report->id] + $modalQuery) }}"
                             class="px-3 py-2 rounded-lg border border-sky-200 bg-sky-50 text-sky-700 text-sm font-semibold">
                             ดูรายละเอียด
                         </a>
-                        <a href="{{ route('projects.progress_reports.edit', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}"
+                        <a href="{{ route('projects.progress_reports.edit', ['project' => $project, 'progress_report' => $report->id] + $modalQuery) }}"
                             class="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold">
                             แก้ไข
                         </a>
-                        <form action="{{ route('projects.progress_reports.destroy', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}" method="POST"
+                        <form action="{{ route('projects.progress_reports.destroy', ['project' => $project, 'progress_report' => $report->id] + $modalQuery) }}" method="POST"
                             onsubmit="return confirm('ยืนยันการลบ?')">
                             @csrf
                             @method('DELETE')
@@ -174,7 +174,7 @@
             $latestReportSubmitterForModal = $latestReportForModal ? (string) ($latestReportForModal->submitter_name ?? '') : '';
             $latestReportEditUrlForModal = $latestReportForModal
                 ? route('projects.progress_reports.edit', [
-                    'project' => $project->id,
+                    'project' => $project,
                     'progress_report' => $latestReportForModal->id,
                     'modal' => 1,
                 ])

@@ -67,6 +67,48 @@ class Project extends Model
         'project_list'
     ];
 
+    /**
+     * Use project_code as the primary route key for URL generation.
+     * When a record has no code yet, fall back to numeric id.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'project_code';
+    }
+
+    public function getRouteKey(): mixed
+    {
+        $code = trim((string) ($this->project_code ?? ''));
+
+        return $code !== '' ? $code : $this->getAttribute($this->getKeyName());
+    }
+
+    /**
+     * Support both /projects/{id} and /projects/{project_code} while transitioning.
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        $lookup = trim((string) $value);
+        if ($lookup === '') {
+            return null;
+        }
+
+        if ($field !== null && $field !== 'project_code') {
+            return parent::resolveRouteBinding($value, $field);
+        }
+
+        if (ctype_digit($lookup)) {
+            $foundById = $this->newQuery()->whereKey((int) $lookup)->first();
+            if ($foundById) {
+                return $foundById;
+            }
+        }
+
+        return $this->newQuery()
+            ->whereRaw('LOWER(TRIM(project_code)) = ?', [mb_strtolower($lookup, 'UTF-8')])
+            ->first();
+    }
+
     // ====== Log events: create, update, delete, restore ======
     protected static function booted()
     {

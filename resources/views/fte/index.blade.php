@@ -288,7 +288,7 @@
         <tr class="{{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
             <td class="p-3 break-words whitespace-normal align-top" data-label="โปรเจค/งาน">
                 @if ($item->project?->id)
-                    <a href="{{ route('projects.show', $item->project->id) }}" class="text-blue-700 underline">
+                    <a href="{{ route('projects.show', $item->project) }}" class="text-blue-700 underline">
                         {{ $item->project->project_name_th ?? '-' }}
                     </a>
                 @else

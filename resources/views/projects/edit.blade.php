@@ -117,7 +117,7 @@
             </div>
         @endif
 
-        <form id="projectForm" class="pb-10 md:pb-0" action="{{ route('projects.update', $project->id) }}" method="POST"
+        <form id="projectForm" class="pb-10 md:pb-0" action="{{ route('projects.update', $project) }}" method="POST"
             novalidate>
             @csrf
             @method('PUT')
@@ -1427,14 +1427,14 @@
                     <div class="flex flex-wrap gap-2">
                         <button type="button"
                             data-progress-modal-open
-                            data-url="{{ route('projects.progress_reports.create', ['project' => $project->id, 'modal' => 1]) }}"
+                            data-url="{{ route('projects.progress_reports.create', ['project' => $project, 'modal' => 1]) }}"
                             data-title="เพิ่มความก้าวหน้าของการดำเนินงาน"
                             class="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
                             + เพิ่มความก้าวหน้า
                         </button>
                         <button type="button"
                             data-progress-modal-open
-                            data-url="{{ route('projects.progress_reports.index', ['project' => $project->id, 'modal' => 1]) }}"
+                            data-url="{{ route('projects.progress_reports.index', ['project' => $project, 'modal' => 1]) }}"
                             data-title="จัดการรายการความก้าวหน้า"
                             class="px-3 py-2 rounded-lg border border-blue-300 bg-white text-blue-700 text-sm font-semibold hover:bg-blue-100">
                             จัดการรายการ
@@ -1442,7 +1442,7 @@
                         <button type="button"
                             id="progressEditLatestBtn"
                             data-progress-modal-open
-                            data-url="{{ $latestProgressReport ? route('projects.progress_reports.edit', ['project' => $project->id, 'progress_report' => $latestProgressReport->id, 'modal' => 1]) : '' }}"
+                            data-url="{{ $latestProgressReport ? route('projects.progress_reports.edit', ['project' => $project, 'progress_report' => $latestProgressReport->id, 'modal' => 1]) : '' }}"
                             data-title="แก้ไขรายงาน: {{ $latestProgressTitle }}"
                             class="px-3 py-2 rounded-lg border border-blue-300 bg-white text-blue-700 text-sm font-semibold hover:bg-blue-100 {{ $latestProgressReport ? '' : 'hidden' }}">
                             แก้ไขรายงานล่าสุด

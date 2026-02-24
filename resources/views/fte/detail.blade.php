@@ -256,7 +256,7 @@
                                             data-hours="{{ $item->hours_in_month }}">
                                             <td class="p-2 break-words max-w-[420px]" data-label="โครงการ">
                                                 @if ($item->project?->id)
-                                                    <a href="{{ route('projects.show', $item->project->id) }}" target="_blank" rel="noopener"
+                                                    <a href="{{ route('projects.show', $item->project) }}" target="_blank" rel="noopener"
                                                         class="text-blue-700 hover:underline">
                                                         {{ $projectName }}
                                                     </a>

@@ -58,7 +58,7 @@ class ProgressReportController extends Controller
 
     private function progressIndexRouteParams(Project $project, Request $request): array
     {
-        $params = ['project' => $project->id];
+        $params = ['project' => $project];
         if ($request->boolean('modal')) {
             $params['modal'] = 1;
         }

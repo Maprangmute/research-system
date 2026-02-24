@@ -73,12 +73,12 @@
 
                     {{-- Action buttons (another row) --}}
                     <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('projects.edit', $project->id) }}"
+                        <a href="{{ route('projects.edit', $project) }}"
                             class="px-3 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm font-semibold hover:bg-amber-200">
                             ✏️ แก้ไข
                         </a>
 
-                        <a href="{{ route('projects.progress_reports.index', $project->id) }}"
+                        <a href="{{ route('projects.progress_reports.index', $project) }}"
                             class="px-3 py-2 rounded-lg bg-indigo-100 text-indigo-800 text-sm font-semibold hover:bg-indigo-200">
                             📑 Progress Report
                         </a>
@@ -89,13 +89,13 @@
                         @endphp
 
                         @if ($isOwner || $isAdmin)
-                            <a href="{{ route('projects.pdf', $project->id) }}" target="_blank"
+                            <a href="{{ route('projects.pdf', $project) }}" target="_blank"
                                 class="px-3 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200">
                                 🖨️ PDF
                             </a>
                         @endif
 
-                        <a href="{{ route('projects.gantt', $project->id) }}"
+                        <a href="{{ route('projects.gantt', $project) }}"
                             class="px-3 py-2 rounded-lg bg-sky-100 text-sky-800 text-sm font-semibold hover:bg-sky-200">
                             📊 Gantt
                         </a>
@@ -107,7 +107,7 @@
                         </button>
 
                         <form id="delete-project-{{ $project->id }}"
-                            action="{{ route('projects.destroy', $project->id) }}" method="POST" class="hidden">
+                            action="{{ route('projects.destroy', $project) }}" method="POST" class="hidden">
                             @csrf
                             @method('DELETE')
                         </form>
@@ -396,11 +396,11 @@
                         @endif
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('projects.progress_reports.index', $project->id) }}"
+                        <a href="{{ route('projects.progress_reports.index', $project) }}"
                             class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                             รายงานทั้งหมด
                         </a>
-                        <a href="{{ route('projects.progress_reports.create', $project->id) }}"
+                        <a href="{{ route('projects.progress_reports.create', $project) }}"
                             class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
                             เพิ่มรายงาน
                         </a>
@@ -681,7 +681,7 @@
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5 mt-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                     <h3 class="font-semibold text-lg text-blue-700">สรุป FTE รายเดือน</h3>
-                    <a href="{{ route('fte.project.detail', $project->id) }}"
+                    <a href="{{ route('fte.project.detail', $project) }}"
                         class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         ดูเพิ่มเติม
                     </a>

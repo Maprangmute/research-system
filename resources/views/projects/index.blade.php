@@ -426,7 +426,7 @@
                 <ul class="list-disc pl-5 space-y-1 text-sm">
                     @foreach ($missingFTE as $fte)
                         <li>
-                            <a href="{{ route('projects.edit', $fte->project_id) }}"
+                            <a href="{{ route('projects.edit', $fte->project ?? $fte->project_id) }}"
                                 class="text-indigo-700 font-medium hover:underline">
                                 {{ $fte->project->project_name_th ?? 'ไม่พบชื่อโครงการ' }}
                             </a>
@@ -512,11 +512,11 @@
                     <tbody class="divide-y">
                         @forelse ($projects as $project)
                             @php
-                                $showUrl = route('projects.show', $project->id);
-                                $editUrl = route('projects.edit', $project->id);
-                                $pdfUrl = route('projects.pdf', $project->id);
-                                $progressUrl = route('projects.progress_reports.index', $project->id);
-                                $fteProjectUrl = route('fte.project.detail', $project->id);
+                                $showUrl = route('projects.show', $project);
+                                $editUrl = route('projects.edit', $project);
+                                $pdfUrl = route('projects.pdf', $project);
+                                $progressUrl = route('projects.progress_reports.index', $project);
+                                $fteProjectUrl = route('fte.project.detail', $project);
                                 $deleteFormId = "delete-form-{$project->id}";
                             @endphp
                             <tr class="hover:bg-indigo-50/40 transition cursor-default" data-show-url="{{ $showUrl }}"
@@ -574,7 +574,7 @@
                                 {{-- hidden form for delete --}}
                                 <td class="hidden">
                                     <form id="{{ $deleteFormId }}"
-                                        action="{{ route('projects.destroy', $project->id) }}" method="POST">
+                                        action="{{ route('projects.destroy', $project) }}" method="POST">
                                         @csrf @method('DELETE')
                                     </form>
                                 </td>
@@ -596,7 +596,11 @@
 
     {{-- Context Menu --}}
     <div id="row-menu"
-        class="hidden fixed z-50 min-w-[200px] rounded-lg border border-slate-200 bg-white shadow-lg ring-1 ring-black/5">
+        class="hidden fixed z-50 w-[188px] max-w-[88vw] max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg ring-1 ring-black/5">
+        <div class="px-3 pt-2 pb-1 border-b border-slate-100 bg-slate-50/80">
+            <div class="text-[10px] font-normal text-slate-400">โครงการ</div>
+            <div id="row-menu-project-name" class="text-[11px] font-normal text-slate-600 leading-snug cell-clamp-2">-</div>
+        </div>
         <div class="py-1 text-sm">
             <button type="button" data-action="show" class="w-full text-left px-3 py-2 hover:bg-indigo-50">🔎
                 ดูรายละเอียด</button>
@@ -629,6 +633,10 @@
             const menu = document.getElementById('row-menu');
             if (!menu) return;
 
+            if (menu.parentElement !== document.body) {
+                document.body.appendChild(menu);
+            }
+
             menu.dataset.showUrl = row.getAttribute('data-show-url') || '';
             menu.dataset.editUrl = row.getAttribute('data-edit-url') || '';
             menu.dataset.pdfUrl = row.getAttribute('data-pdf-url') || '';
@@ -637,19 +645,33 @@
             menu.dataset.deleteFormId = row.getAttribute('data-delete-form-id') || '';
             menu.dataset.projectName = row.getAttribute('data-project-name') || '';
 
-            const vw = innerWidth,
-                vh = innerHeight,
-                rect = {
-                    w: 220,
-                    h: 260
-                };
-            let x = e.clientX,
-                y = e.clientY;
-            if (x + rect.w > vw) x = vw - rect.w - 8;
-            if (y + rect.h > vh) y = vh - rect.h - 8;
+            const nameLabel = document.getElementById('row-menu-project-name');
+            if (nameLabel) {
+                nameLabel.textContent = menu.dataset.projectName || '-';
+                nameLabel.title = menu.dataset.projectName || '';
+            }
+
+            const margin = 8;
+            menu.style.left = '0px';
+            menu.style.top = '0px';
+            menu.style.visibility = 'hidden';
+            menu.classList.remove('hidden');
+
+            const measured = menu.getBoundingClientRect();
+            let x = e.clientX;
+            let y = e.clientY;
+            if (x + measured.width + margin > innerWidth) {
+                x = innerWidth - measured.width - margin;
+            }
+            if (y + measured.height + margin > innerHeight) {
+                y = innerHeight - measured.height - margin;
+            }
+
+            x = Math.max(margin, x);
+            y = Math.max(margin, y);
             menu.style.left = `${x}px`;
             menu.style.top = `${y}px`;
-            menu.classList.remove('hidden');
+            menu.style.visibility = 'visible';
 
             setTimeout(() => {
                 document.addEventListener('click', clickAwayClose, {
@@ -670,7 +692,10 @@
 
         function hideMenu() {
             const m = document.getElementById('row-menu');
-            if (m) m.classList.add('hidden');
+            if (m) {
+                m.classList.add('hidden');
+                m.style.visibility = '';
+            }
         }
 
         function clickAwayClose(ev) {

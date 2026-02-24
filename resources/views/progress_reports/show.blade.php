@@ -59,8 +59,8 @@
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div class="space-y-2">
                     <div class="flex flex-wrap gap-3 text-sm">
-                        <a href="{{ route('projects.show', ['project' => $project->id] + $modalQuery) }}" class="text-blue-600 hover:underline">← กลับหน้าโครงการ</a>
-                        <a href="{{ route('projects.progress_reports.index', ['project' => $project->id] + $modalQuery) }}" class="text-blue-600 hover:underline">กลับหน้ารายงานความก้าวหน้า</a>
+                        <a href="{{ route('projects.show', ['project' => $project] + $modalQuery) }}" class="text-blue-600 hover:underline">← กลับหน้าโครงการ</a>
+                        <a href="{{ route('projects.progress_reports.index', ['project' => $project] + $modalQuery) }}" class="text-blue-600 hover:underline">กลับหน้ารายงานความก้าวหน้า</a>
                     </div>
                     <h1 class="text-xl md:text-2xl font-bold text-slate-900">{{ $progressTitle }}</h1>
                     @if ($progressSubtitle !== '')
@@ -70,11 +70,11 @@
                 </div>
 
                 <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('projects.progress_reports.edit', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}"
+                    <a href="{{ route('projects.progress_reports.edit', ['project' => $project, 'progress_report' => $report->id] + $modalQuery) }}"
                         class="px-3 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm font-semibold hover:bg-amber-200">
                         แก้ไข
                     </a>
-                    <form action="{{ route('projects.progress_reports.destroy', ['project' => $project->id, 'progress_report' => $report->id] + $modalQuery) }}" method="POST"
+                    <form action="{{ route('projects.progress_reports.destroy', ['project' => $project, 'progress_report' => $report->id] + $modalQuery) }}" method="POST"
                         onsubmit="return confirm('ยืนยันการลบ?')" class="inline">
                         @csrf
                         @method('DELETE')
