@@ -1109,12 +1109,10 @@
 
                             <div class="flex gap-2 w-full">
                                 <label class="w-full relative">
-                                    <span class="block text-sm text-gray-700 mb-1">วันที่ publish <span class="text-red-500">*</span></span>
+                                    <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
                                     <input name="outputs[{{ $i }}][year]" type="text"
                                         class="thai-datepicker w-full border p-2 rounded pl-10"
-                                        value="{{ old("outputs.$i.year", $out->year) }}" placeholder="โปรดใส่วันที่" required
-                                        oninvalid="this.setCustomValidity('กรุณาเลือกวันที่ publish')"
-                                        oninput="this.setCustomValidity('')">
+                                        value="{{ old("outputs.$i.year", $out->year) }}" placeholder="โปรดใส่วันที่">
                                     <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor">
@@ -2116,10 +2114,8 @@ console.log('[FTE AUTO] after=', fteField.value);
 
         <div class="flex gap-2 w-full">
           <label class="w-full relative">
-            <span class="block text-sm text-gray-700 mb-1">วันที่ publish <span class="text-red-500">*</span></span>
-            <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่" required
-                oninvalid="this.setCustomValidity('กรุณาเลือกวันที่ publish')"
-                oninput="this.setCustomValidity('')">
+            <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+            <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่">
             <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>

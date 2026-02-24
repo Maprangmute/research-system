@@ -78,6 +78,9 @@
 
         .lux-page canvas[id^="chart"] {
             cursor: pointer;
+            display: block;
+            width: 100% !important;
+            max-width: 100%;
         }
 
         #aiChatPanel {
@@ -563,7 +566,13 @@
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800">สร้างเอกสารสรุปข้อมูลทั้งหมด</h3>
-                    <p class="text-xs text-slate-500">คัดกรองข้อมูลให้ตรงกับช่วงเวลาหรือธีมที่ต้องการ</p>
+                    <p class="text-xs text-slate-500">คัดกรองข้อมูลให้ตรงกับช่วงเวลาหรือธีมที่ต้องการ (Realtime)</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="rtFilterBadge" class="inline-flex items-center rounded-full bg-cyan-50 border border-cyan-200 px-3 py-1 text-xs font-semibold text-cyan-700">0 โครงการ</span>
+                    <button id="filterReset" type="button" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                        ล้างฟิลเตอร์
+                    </button>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
@@ -612,6 +621,49 @@
                         class="w-full bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 text-sm rounded shadow">
                         ⬇ Export Excel
                     </button>
+                </div>
+            </div>
+
+            <div class="mt-4 rounded-xl border border-cyan-100 bg-gradient-to-br from-cyan-50 to-white p-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800">เอกสารสรุปข้อมูลทั้งหมด (Realtime)</h4>
+                        <p id="rtSummaryCaption" class="text-xs text-slate-500">สรุปตามฟิลเตอร์ปัจจุบัน</p>
+                    </div>
+                    <div class="text-xs text-slate-500">กราฟที่ผูก realtime: จำนวนโครงการรายปี / สัดส่วนทุน / งบประมาณรายปี</div>
+                </div>
+
+                <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="rounded-lg border border-slate-200 bg-white p-3">
+                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">โครงการทั้งหมด</div>
+                        <div id="rtSummaryProjects" class="mt-1 text-2xl font-extrabold text-slate-900">0</div>
+                    </div>
+                    <div class="rounded-lg border border-slate-200 bg-white p-3">
+                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">หัวหน้าโครงการ (PI)</div>
+                        <div id="rtSummaryPi" class="mt-1 text-2xl font-extrabold text-slate-900">0</div>
+                    </div>
+                    <div class="rounded-lg border border-slate-200 bg-white p-3">
+                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">งบประมาณรวม</div>
+                        <div id="rtSummaryBudget" class="mt-1 text-lg md:text-2xl font-extrabold text-slate-900">0 บ.</div>
+                    </div>
+                    <div class="rounded-lg border border-slate-200 bg-white p-3">
+                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">งบเฉลี่ย/โครงการ</div>
+                        <div id="rtSummaryAvgBudget" class="mt-1 text-lg md:text-2xl font-extrabold text-slate-900">0 บ.</div>
+                    </div>
+                </div>
+
+                <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                    <table class="min-w-full text-xs md:text-sm">
+                        <thead class="bg-slate-100 text-slate-600">
+                            <tr>
+                                <th class="px-3 py-2 text-left">ประเภทโครงการ</th>
+                                <th class="px-3 py-2 text-right">จำนวนโครงการ</th>
+                                <th class="px-3 py-2 text-right">สัดส่วน</th>
+                                <th class="px-3 py-2 text-right">งบรวม</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rtTypeSummaryBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -779,12 +831,12 @@
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 จำนวนโครงการรายปี (รวม)</h3>
-                    <canvas id="chartProjectsPerYear" height="250"></canvas>
+                    <canvas id="chartProjectsPerYear" height="420"></canvas>
                 </div>
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 ">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">📅 โครงการทั้งหมด โครงการใหม่ เเละ
-                        โครงการกำลังดำเนินการ (ต่อปี)</h3>
-                    <canvas id="chartYearlyNewVsTotal" height="250"></canvas>
+                        โครงการกำลังดำเนินการ เเละ ปิด/ยกเลิกโปรเจค (ต่อปี)</h3>
+                    <canvas id="chartYearlyNewVsTotal" height="420"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
@@ -798,30 +850,30 @@
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (Top 8)</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (Top 5)</h3>
                     <canvas id="chartExternalBySource" height="250"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายใน แยกตามแหล่งทุน (Top 8)</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายใน แยกตามแหล่งทุน (Top 5)</h3>
                     <canvas id="chartInternalBySource" height="250"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (ต่อปี | Top 8)</h3>
-                    <canvas id="chartExternalBySourceYear" height="250"></canvas>
+                    <canvas id="chartExternalBySourceYear" height="380"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏛️ ทุนภายใน แยกตามแหล่งทุน (ต่อปี | Top 8)</h3>
-                    <canvas id="chartInternalBySourceYear" height="250"></canvas>
+                    <canvas id="chartInternalBySourceYear" height="380"></canvas>
                 </div>
 
 
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">📝 Output (รายปี)</h3>
-                    <canvas id="chartOutputStacked" height="250"></canvas>
+                    <canvas id="chartOutputStacked" height="380"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
@@ -859,17 +911,17 @@
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">🧩 สถานะของโครงการ รายปี</h3>
-                    <canvas id="chartStatusYear" height="250"></canvas>
+                    <canvas id="chartStatusYear" height="380"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 สัดส่วนโครงการ (นอกคณะ ในคณะ เเละ ในหน่วย)</h3>
-                    <canvas id="chartCollabBreakdown" height="250"></canvas>
+                    <canvas id="chartCollabBreakdown" height="380"></canvas>
                 </div>
 
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">👨‍🔬 จำนวนงานของ PI ในหน่วยงาน</h3>
-                <canvas id="chartPIsPerUnit" height="250"></canvas>
+                <canvas id="chartPIsPerUnit" height="300"></canvas>
             </div>
 
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
@@ -1368,6 +1420,32 @@
             const norm = (v) => String(v ?? '').toLowerCase().trim();
             const projectById = new Map(projects.map(p => [p.id, p]));
 
+            // ล็อกความสูงกราฟตามค่า height ของ canvas เพื่อกันกราฟยืดผิดสัดส่วน
+            function applyChartCanvasSizing(root = document) {
+                root.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
+                    const raw = Number.parseInt(canvas.getAttribute('height') || '', 10);
+                    if (Number.isFinite(raw) && raw > 0) {
+                        const h = `${raw}px`;
+                        canvas.style.height = h;
+                        canvas.style.minHeight = h;
+                        canvas.style.maxHeight = h;
+                    }
+                    canvas.style.width = '100%';
+                    canvas.style.maxWidth = '100%';
+                });
+            }
+
+            window.applyChartCanvasSizing = applyChartCanvasSizing;
+            applyChartCanvasSizing();
+            setTimeout(() => applyChartCanvasSizing(), 0);
+            window.addEventListener('load', () => applyChartCanvasSizing());
+
+            let chartCanvasResizeTimer = null;
+            window.addEventListener('resize', () => {
+                clearTimeout(chartCanvasResizeTimer);
+                chartCanvasResizeTimer = setTimeout(() => applyChartCanvasSizing(), 120);
+            });
+
             function uniqueProjects(list) {
                 const seen = new Map();
                 list.forEach(p => {
@@ -1707,12 +1785,32 @@
             function normalizeOutputYear(raw) {
                 if (!raw) return 'ไม่ระบุ';
                 const str = String(raw).trim();
-                if (/^\d{4}$/.test(str)) return str;
-                const match = str.match(/(25\d{2}|20\d{2}|19\d{2})/);
-                if (match) return match[1];
+                if (!str) return 'ไม่ระบุ';
+                const match = str.match(/(\d{4})/);
+                if (match) {
+                    let y = parseInt(match[1], 10);
+                    if (y > 2400) y -= 543;
+                    if (y >= 1900 && y <= 2600) return String(y);
+                }
                 const d = new Date(str);
                 if (!isNaN(d)) return String(d.getFullYear());
                 return 'ไม่ระบุ';
+            }
+
+            function outputYearKey(o) {
+                const direct = normalizeOutputYear(o?.year ?? o?.export_year ?? o?.date ?? o?.created_at);
+                if (direct !== 'ไม่ระบุ') return direct;
+                const p = projectById.get(o?.project_id);
+                const pYear = yearCE(p?.start_year);
+                if (pYear) return String(pYear);
+                return 'ไม่ระบุ';
+            }
+
+            function outputYearLabelForKey(key) {
+                const text = String(key ?? '').trim();
+                if (/^\d+$/.test(text)) return yearLabelTH(Number(text));
+                if (text === 'ไม่ระบุ') return 'ไม่ระบุปี';
+                return text || 'ไม่ระบุปี';
             }
 
             function normalizeYear(raw) {
@@ -1735,6 +1833,74 @@
             }
             const yearLabelTH = ce => ce ? String(ce + 543) : '-';
 
+            function parseYearCEFromAny(raw) {
+                if (raw == null || raw === '') return null;
+                const y = yearCE(raw);
+                if (Number.isFinite(y)) return y;
+                const d = new Date(String(raw).trim());
+                if (!isNaN(d)) return d.getFullYear();
+                return null;
+            }
+
+            function projectLifecycleStatusKey(p) {
+                const statusRaw = [p?.planning_status, p?.closure_status, p?.execution_status]
+                    .map(v => String(v || '').trim())
+                    .find(v => v) || '';
+                const s = norm(statusRaw);
+                if (s.includes('ยกเลิก') || s.includes('cancel')) return 'cancelled';
+                if (s.includes('ปิดโปรเจค') || s.includes('closed') || s.includes('complete')) return 'completed';
+                return 'in_progress';
+            }
+
+            function projectLifecycleStartYearCE(p) {
+                const startYear = yearCE(p?.start_year);
+                if (Number.isFinite(startYear)) return startYear;
+                const byDate = parseYearCEFromAny(p?.start_date || p?.team_start_date || p?.created_at || p?.updated_at);
+                if (Number.isFinite(byDate)) return byDate;
+                return null;
+            }
+
+            function projectLifecycleEventYearCE(p) {
+                const byField = parseYearCEFromAny(getEndYear(p));
+                if (Number.isFinite(byField)) return byField;
+                const endDate = parseProjectDate(getEndDateRaw(p));
+                if (endDate && !isNaN(endDate)) return endDate.getFullYear();
+                const byUpdatedAt = parseYearCEFromAny(p?.updated_at);
+                if (Number.isFinite(byUpdatedAt)) return byUpdatedAt;
+                return projectLifecycleStartYearCE(p);
+            }
+
+            function projectLifecycleTerminalYearCE(p, horizonCE) {
+                const startY = projectLifecycleStartYearCE(p);
+                if (!Number.isFinite(startY)) return null;
+                const key = projectLifecycleStatusKey(p);
+                if (key === 'completed' || key === 'cancelled') {
+                    const eventY = projectLifecycleEventYearCE(p);
+                    return Number.isFinite(eventY) ? Math.max(startY, eventY) : startY;
+                }
+                const h = Number.isFinite(horizonCE) ? horizonCE : startY;
+                return Math.max(startY, h);
+            }
+
+            function projectExistsInYear(p, yCE, horizonCE) {
+                const startY = projectLifecycleStartYearCE(p);
+                const terminalY = projectLifecycleTerminalYearCE(p, horizonCE);
+                const Y = Number(yCE);
+                if (!(Number.isFinite(startY) && Number.isFinite(terminalY) && Number.isFinite(Y))) return false;
+                return startY <= Y && Y <= terminalY;
+            }
+
+            function projectIsInProgressInYear(p, yCE, horizonCE) {
+                const Y = Number(yCE);
+                const startY = projectLifecycleStartYearCE(p);
+                if (!Number.isFinite(startY) || Y <= startY) return false;
+                if (!projectExistsInYear(p, Y, horizonCE)) return false;
+                const key = projectLifecycleStatusKey(p);
+                if (key === 'in_progress') return true;
+                const terminalY = projectLifecycleTerminalYearCE(p, horizonCE);
+                return Y < terminalY;
+            }
+
             function matchYearLabel(p, label) {
                 const labelStr = String(label ?? '').trim();
                 if (!labelStr) return false;
@@ -1743,6 +1909,17 @@
                 const ce = yearCE(yearRaw);
                 if (ce && (String(ce) === labelStr || yearLabelTH(ce) === labelStr)) return true;
                 return labelStr === 'ไม่ระบุ' && !yearRaw;
+            }
+
+            function matchFundingYearLabel(p, label) {
+                const labelStr = String(label ?? '').trim();
+                if (!labelStr) return false;
+                const yearRaw = p?.start_year ?? p?.year ?? p?.funding_year ?? null;
+                const ce = yearCE(yearRaw);
+                if (Number.isFinite(ce)) {
+                    return labelStr === String(ce) || labelStr === yearLabelTH(ce);
+                }
+                return matchYearLabel(p, labelStr);
             }
 
             function getFilteredProjects() {
@@ -1873,36 +2050,63 @@
 
                 if (!id) return null;
 
+                // ใช้ชุดข้อมูลที่ผ่านฟิลเตอร์ปัจจุบัน เพื่อให้ drill-down สอดคล้องกับหน้าจอ
+                const projects = typeof getFilteredProjects === 'function'
+                    ? getFilteredProjects()
+                    : Array.from(projectById.values());
+                const filteredProjectIds = new Set((projects || []).map(p => p?.id).filter(v => v != null));
+                const keepFilteredProjects = (list) => (Array.isArray(list) ? list.filter(p => p && filteredProjectIds.has(p.id)) : []);
+                const projectsFromOutputsScoped = (filterFn) => keepFilteredProjects(projectsFromOutputs(filterFn));
+                const projectsFromFtesScoped = (filterFn) => keepFilteredProjects(projectsFromFtes(filterFn));
+
                 if (id === 'chartProjectsPerYear') {
+                    const labelText = String(label ?? '').trim();
+                    const Y = Number(yearCE(labelText) || toNumber(labelText));
+                    const startYears = projects
+                        .map(p => projectLifecycleStartYearCE(p))
+                        .filter(Number.isFinite);
+                    const horizonCE = startYears.length ? Math.max(...startYears) : (new Date().getFullYear());
                     return {
-                        title: `โครงการปี ${label}`,
-                        projects: projects.filter(p => matchYearLabel(p, label))
+                        title: `โครงการทั้งหมดสะสมถึงปี ${labelText}`,
+                        projects: projects.filter(p => {
+                            const startY = projectLifecycleStartYearCE(p);
+                            if (Number.isFinite(startY) && Number.isFinite(Y)) return startY <= Y;
+                            return Number.isFinite(Y) && Y === horizonCE;
+                        })
                     };
                 }
 
                 if (id === 'chartYearlyNewVsTotal') {
-                    const Y = toNumber(label);
-                    const type = datasetLabel || '';
-                    const isActiveInYear = (p, y) => {
-                        const s = toNumber(p.start_year);
-                        const e = toNumber(getEndYear(p)) || Infinity;
-                        const yr = toNumber(y);
-                        return s <= yr && yr <= e;
-                    };
+                    const labelText = String(label ?? '').trim();
+                    const type = String(datasetLabel || '').trim();
+                    const map = window.yearlyNewVsTotalLabelMap || {};
+                    const Y = Number(map[labelText] || yearCE(labelText) || toNumber(labelText));
+                    const horizonCE = Number(window.yearlyLifecycleHorizonCE) || new Date().getFullYear();
+                    const isCompletedInYear = (p, y) =>
+                        projectLifecycleStatusKey(p) === 'completed' &&
+                        Number(projectLifecycleTerminalYearCE(p, horizonCE)) === Number(y);
+                    const isCancelledInYear = (p, y) =>
+                        projectLifecycleStatusKey(p) === 'cancelled' &&
+                        Number(projectLifecycleTerminalYearCE(p, horizonCE)) === Number(y);
+
                     let list = [];
                     if (type === 'ทั้งหมด') {
-                        list = projects.filter(p => isActiveInYear(p, Y));
-                    } else if (type === 'ใหม่') {
-                        list = projects.filter(p => matchYearLabel(p, label));
-                    } else if (type === 'กำลังทำ') {
                         list = projects.filter(p => {
-                            const s = toNumber(p.start_year);
-                            const e = toNumber(getEndYear(p)) || Infinity;
-                            return s < Y && Y <= e;
+                            const startY = projectLifecycleStartYearCE(p);
+                            if (Number.isFinite(startY)) return startY <= Y;
+                            return Y === horizonCE;
                         });
+                    } else if (type === 'ใหม่') {
+                        list = projects.filter(p => projectLifecycleStartYearCE(p) === Y);
+                    } else if (type === 'กำลังทำ' || type === 'กำลังดำเนินการ') {
+                        list = projects.filter(p => projectIsInProgressInYear(p, Y, horizonCE));
+                    } else if (type === 'เสร็จสิ้น' || type === 'เสร็จสิ้นแล้ว' || type === 'ปิดโปรเจค') {
+                        list = projects.filter(p => isCompletedInYear(p, Y));
+                    } else if (type === 'ยกเลิก' || type === 'ยกเลิกโปรเจค') {
+                        list = projects.filter(p => isCancelledInYear(p, Y));
                     }
                     return {
-                        title: `โครงการ${type} ปี ${label}`,
+                        title: `โครงการ${type} ปี ${labelText}`,
                         projects: list
                     };
                 }
@@ -1970,7 +2174,7 @@
                             title: `ทุน${type} อื่นๆ ปี ${label}`,
                             projects: projects.filter(p =>
                                 getFundingType(p) === type &&
-                                matchYearLabel(p, label) &&
+                                matchFundingYearLabel(p, label) &&
                                 others.includes((getFundingSource(p) || 'ไม่ระบุ'))
                             ),
                             includeFunding: true
@@ -1980,7 +2184,7 @@
                         title: `ทุน${type} ${datasetLabel || ''} ปี ${label}`,
                         projects: projects.filter(p =>
                             getFundingType(p) === type &&
-                            matchYearLabel(p, label) &&
+                            matchFundingYearLabel(p, label) &&
                             (getFundingSource(p) || 'ไม่ระบุ') === datasetLabel
                         ),
                         includeFunding: true
@@ -1988,11 +2192,13 @@
                 }
 
                 if (id === 'chartOutputStacked') {
-                    const year = String(label ?? '');
+                    const clickedLabel = String(label ?? '');
+                    const map = window.outputYearLabelKeyMap || {};
+                    const year = map[clickedLabel] || (clickedLabel === 'ไม่ระบุปี' ? 'ไม่ระบุ' : normalizeOutputYear(clickedLabel));
                     const type = String(datasetLabel ?? '');
                     return {
-                        title: `Outputs ${type} ปี ${year}`,
-                        projects: projectsFromOutputs(o => normalizeOutputYear(o.year ?? o.date ?? o.created_at) === year && outputType(o) === type)
+                        title: `Outputs ${type} ปี ${clickedLabel}`,
+                        projects: projectsFromOutputsScoped(o => outputYearKey(o) === year && outputType(o) === type)
                     };
                 }
 
@@ -2000,7 +2206,7 @@
                     const yearLabel = String(label ?? '');
                     return {
                         title: `Publication ปี ${yearLabel}`,
-                        projects: projectsFromOutputs(o => {
+                        projects: projectsFromOutputsScoped(o => {
                             if (!isPublicationType(o.type)) return false;
                             const ce = normalizeYear(o.year);
                             const be = ce ? toBE(ce) : 'ไม่ทราบปี';
@@ -2036,7 +2242,7 @@
                 if (id === 'chartFteSummary') {
                     return {
                         title: `ผู้รับผิดชอบ ${datasetLabel || ''}`,
-                        projects: projectsFromFtes(f => (f.name || 'ไม่ระบุ') === datasetLabel)
+                        projects: projectsFromFtesScoped(f => (f.name || 'ไม่ระบุ') === datasetLabel)
                     };
                 }
 
@@ -2134,7 +2340,7 @@
                     };
                     const role = roleMap[datasetLabel] || String(datasetLabel || '').toLowerCase();
                     const name = String(label || '').trim();
-                    const list = projectsFromOutputs(o => {
+                    const list = projectsFromOutputsScoped(o => {
                         if (!isPublicationType(o.type)) return false;
                         const y = normalizeYear(o.year);
                         if (!y || String(y) !== String(yearCEValue)) return false;
@@ -2151,11 +2357,38 @@
             }
 
             function handleChartClick(evt, chart) {
-                const points = chart.getElementsAtEventForMode(evt, 'nearest', {
-                    intersect: true
+                const isYearlyLifecycle = chart?.canvas?.id === 'chartYearlyNewVsTotal';
+                let points = chart.getElementsAtEventForMode(evt, 'nearest', {
+                    intersect: true,
+                    axis: 'xy'
                 }, true);
+                if ((!points || !points.length) && isYearlyLifecycle) {
+                    points = chart.getElementsAtEventForMode(evt, 'index', {
+                        intersect: false,
+                        axis: 'x'
+                    }, true);
+                }
                 if (!points || !points.length) return;
-                const result = resolveProjectsForChart(chart, points[0]);
+                let picked = points[0];
+                if (isYearlyLifecycle && points.length > 1) {
+                    const px = Number(evt?.offsetX);
+                    const py = Number(evt?.offsetY);
+                    if (Number.isFinite(px) && Number.isFinite(py)) {
+                        let minDist = Number.POSITIVE_INFINITY;
+                        points.forEach(pt => {
+                            const el = chart.getDatasetMeta(pt.datasetIndex)?.data?.[pt.index];
+                            const ex = Number(el?.x);
+                            const ey = Number(el?.y);
+                            if (!Number.isFinite(ex) || !Number.isFinite(ey)) return;
+                            const d = ((ex - px) ** 2) + ((ey - py) ** 2);
+                            if (d < minDist) {
+                                minDist = d;
+                                picked = pt;
+                            }
+                        });
+                    }
+                }
+                const result = resolveProjectsForChart(chart, picked);
                 if (result) showProjectList(result.title, result.projects, {
                     includeFunding: result.includeFunding,
                     modalType: result.modalType,
@@ -2175,20 +2408,23 @@
 
             /* ---------- 1) จำนวนโครงการรายปี (Bar + ตัวเลขบนแท่ง | กันเลขตกขอบ) ---------- */
             (function() {
-                // รวมจำนวนโครงการต่อปี
-                const counts = new Map();
-                projects.forEach(p => {
-                    const y = (getYear(p) ?? '').toString().trim() || 'ไม่ระบุ';
-                    counts.set(y, (counts.get(y) || 0) + 1);
-                });
+                // ยอดสะสมต่อปี (ใช้ปีเริ่มต้นโครงการ เพื่อให้ตรงกับกราฟ "ทั้งหมด")
+                const startYearsCE = projects
+                    .map(p => projectLifecycleStartYearCE(p))
+                    .filter(Number.isFinite)
+                    .sort((a, b) => a - b);
+                if (!startYearsCE.length) return;
 
-                // ปีตัวเลขก่อน แล้วค่อยหมวดอื่น
-                const isNumeric = (s) => /^\d+$/.test(s);
-                const numericYears = [...counts.keys()].filter(isNumeric).map(Number).sort((a, b) => a - b).map(String);
-                const otherYears = [...counts.keys()].filter(k => !isNumeric(k)).sort();
-                const labels = numericYears.concat(otherYears);
-
-                const data = labels.map(y => counts.get(y) ?? 0);
+                const yearsCE = Array.from(new Set(startYearsCE));
+                const maxYearCE = yearsCE[yearsCE.length - 1];
+                const labels = yearsCE.map(y => yearLabelTH(y));
+                const data = yearsCE.map(y =>
+                    projects.filter(p => {
+                        const startY = projectLifecycleStartYearCE(p);
+                        if (Number.isFinite(startY)) return startY <= y;
+                        return y === maxYearCE;
+                    }).length
+                );
                 const colors = labels.map((_, i) => `hsl(${(i * 37) % 360} 70% 60%)`);
 
                 // ทำลายกราฟเดิมถ้ามี
@@ -2256,6 +2492,7 @@
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         layout: {
                             padding: {
                                 top: 14
@@ -2286,7 +2523,7 @@
                             x: {
                                 title: {
                                     display: true,
-                                    text: 'ปี'
+                                    text: 'ปี (พ.ศ.)'
                                 }
                             }
                         }
@@ -2613,43 +2850,39 @@
 
             /* ---------- 4) Output Stacked by Type / Year (กันเลขตกขอบ + เช็ค toggle legend) ---------- */
             (function() {
-                function safeYear(val) {
-                    if (!val) return 'ไม่ระบุ';
-                    const str = String(val).trim();
-                    if (/^\d{4}$/.test(str)) return str;
-                    const match = str.match(/(25\d{2}|20\d{2}|19\d{2})/);
-                    if (match) return match[1];
-                    const d = new Date(str);
-                    if (!isNaN(d)) return String(d.getFullYear());
-                    return 'ไม่ระบุ';
-                }
+                const rows = Array.isArray(outputs) ? outputs : [];
+                const types = [...new Set(rows.map(outputType).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+                const matrix = {};
 
-                const years = [...new Set(outputs.map(o => safeYear(o.year ?? o.date ?? o.created_at)))];
-                const isNum = s => /^\d+$/.test(s);
-                const sortedYears = years.filter(isNum).map(Number).sort((a, b) => a - b).map(String)
-                    .concat(years.filter(y => !isNum(y)));
+                rows.forEach((o) => {
+                    const y = outputYearKey(o);
+                    const t = outputType(o) || 'อื่นๆ';
+                    matrix[y] = matrix[y] || {};
+                    matrix[y][t] = (matrix[y][t] || 0) + 1;
+                });
 
-                const types = [...new Set(outputs.map(outputType))].sort();
-                const grid = {};
-                sortedYears.forEach(y => grid[y] = Object.fromEntries(types.map(t => [t, 0])));
+                const years = Object.keys(matrix);
+                const isNum = (s) => /^\d+$/.test(String(s || ''));
+                const sortedYears = years
+                    .filter(isNum).map(Number).sort((a, b) => a - b).map(String)
+                    .concat(years.filter((y) => !isNum(y)).sort((a, b) => String(a).localeCompare(String(b), 'th')));
+                const displayLabels = sortedYears.map((y) => outputYearLabelForKey(y));
 
-                outputs.forEach(o => {
-                    const y = safeYear(o.year ?? o.date ?? o.created_at);
-                    const t = outputType(o);
-                    if (!grid[y]) grid[y] = Object.fromEntries(types.map(tt => [tt, 0]));
-                    grid[y][t] += 1;
+                window.outputYearLabelKeyMap = {};
+                displayLabels.forEach((label, idx) => {
+                    window.outputYearLabelKeyMap[label] = sortedYears[idx];
                 });
 
                 const datasets = types.map((t, i) => ({
                     label: t,
-                    data: sortedYears.map(y => grid[y][t]),
-                    backgroundColor: `hsl(${(i*53)%360} 70% 60%)`,
+                    data: sortedYears.map((y) => Number(matrix[y]?.[t] || 0)),
+                    backgroundColor: `hsl(${(i * 53) % 360} 70% 60%)`,
                     stack: 'out'
                 }));
 
-                // ปลั๊กอินแสดงตัวเลขบนแท่ง + กันตกขอบบน/ขวา + เช็คซ่อนชุดข้อมูล
-                const dataLabelPlugin = {
-                    id: 'dataLabelPluginOutputs',
+                // แสดงเฉพาะ "ยอดรวมต่อปี" บนสุด เพื่อลดความรกของเลขหลายชั้น
+                const totalLabelPlugin = {
+                    id: 'outputTotalLabel',
                     afterDatasetsDraw(chart) {
                         const {
                             ctx,
@@ -2659,34 +2892,32 @@
                             }
                         } = chart;
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
+                        ctx.fillStyle = '#111827';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
-                        ctx.fillStyle = '#111';
 
-                        chart.data.datasets.forEach((ds, dsIndex) => {
-                            // ถ้าชุดนี้ถูกซ่อนจาก legend -> ข้าม
-                            if (!chart.isDatasetVisible(dsIndex)) return;
-
-                            const meta = chart.getDatasetMeta(dsIndex);
-                            meta.data.forEach((bar, i) => {
-                                if (!bar || bar.hidden) return;
-
-                                const v = Number(ds.data[i] || 0);
-                                if (!isFinite(v) || v <= 0) return;
-
-                                let drawX = bar.x;
-                                let drawY = bar.y - 3; // วางเหนือแท่งเล็กน้อย
-
-                                // clamp กันตกขอบบน
-                                const minY = top + 8;
-                                if (drawY < minY) drawY = minY;
-
-                                // กันชิดขอบขวา (เผื่อข้อความยาว)
-                                if (drawX > right - 2) drawX = right - 2;
-
-                                ctx.fillText(String(v), drawX, drawY);
+                        chart.data.labels.forEach((_, i) => {
+                            let sum = 0;
+                            chart.data.datasets.forEach((ds, dsIndex) => {
+                                if (!chart.isDatasetVisible(dsIndex)) return;
+                                sum += Number(ds.data?.[i] || 0);
                             });
+                            if (sum <= 0) return;
+
+                            let topBar = null;
+                            chart.data.datasets.forEach((ds, dsIndex) => {
+                                if (!chart.isDatasetVisible(dsIndex)) return;
+                                const el = chart.getDatasetMeta(dsIndex).data[i];
+                                if (el && (!topBar || el.y < topBar.y)) topBar = el;
+                            });
+                            if (!topBar) return;
+
+                            let { x, y } = topBar.tooltipPosition();
+                            y -= 4;
+                            if (y < top + 8) y = top + 8;
+                            if (x > right - 2) x = right - 2;
+                            ctx.fillText(String(sum), x, y);
                         });
 
                         ctx.restore();
@@ -2694,25 +2925,48 @@
                 };
 
                 const el = document.getElementById('chartOutputStacked');
+                if (!el) return;
                 const prev = Chart.getChart(el);
                 if (prev) prev.destroy();
+
+                if (!sortedYears.length || !datasets.length) {
+                    const c = el.getContext('2d');
+                    c.clearRect(0, 0, el.width, el.height);
+                    c.font = '14px sans-serif';
+                    c.fillStyle = '#6b7280';
+                    c.textAlign = 'center';
+                    c.textBaseline = 'middle';
+                    c.fillText('ไม่มีข้อมูล', el.width / 2, el.height / 2);
+                    return;
+                }
 
                 new Chart(el, {
                     type: 'bar',
                     data: {
-                        labels: sortedYears,
+                        labels: displayLabels,
                         datasets
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         layout: {
                             padding: {
                                 top: 16
                             }
-                        }, // เผื่อพื้นที่ด้านบน
+                        },
                         plugins: {
                             legend: {
                                 position: 'bottom'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    footer: (items) => {
+                                        const total = (items || []).reduce((sum, it) => sum + (it.parsed?.y || 0), 0);
+                                        return `รวมปีนี้: ${total}`;
+                                    }
+                                }
                             }
                         },
                         scales: {
@@ -2720,13 +2974,13 @@
                                 stacked: true,
                                 title: {
                                     display: true,
-                                    text: 'ปี'
+                                    text: 'ปี (พ.ศ.)'
                                 }
                             },
                             y: {
                                 stacked: true,
                                 beginAtZero: true,
-                                grace: '12%', // headroom กันเลขชนขอบ
+                                grace: '12%',
                                 ticks: {
                                     precision: 0
                                 },
@@ -2737,7 +2991,7 @@
                             }
                         }
                     },
-                    plugins: [dataLabelPlugin]
+                    plugins: [totalLabelPlugin]
                 });
             })();
 
@@ -2904,7 +3158,8 @@
                 const now = new Date();
                 const group = {};
                 irbs.forEach(irb => {
-                    const exp = new Date(irb.exp_date);
+                    const exp = parseProjectDate(irb.exp_date);
+                    if (!exp) return;
                     const monthsAhead = (exp - now) / (1000 * 60 * 60 * 24 * 30);
                     if (monthsAhead >= 0 && monthsAhead <= 6) {
                         const key = `${exp.getMonth()+1}/${exp.getFullYear()}`;
@@ -3037,6 +3292,7 @@
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         layout: {
                             padding: {
                                 top: 16
@@ -3090,333 +3346,381 @@
             })();
 
 
-            /* ---------- 9) จำนวน PI ต่อหน่วยงาน (เฉพาะ theme = T101_Research...) ---------- */
+            /* ---------- 9) จำนวน PI ต่อหน่วยงาน (Chart.js bar แนวนอน + กันตัวเลขปลายแท่งโดนตัด) ---------- */
             (function() {
-                // กรองเฉพาะโครงการ theme = T101_Research...
-                const filtered = projects.filter(p =>
-                    (p.pi_affiliation || '').trim() === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ'
-                );
-
-                // นับจำนวนโครงการต่อ PI
-                const countByPI = {};
-                filtered.forEach(p => {
-                    const name = (p.pi_name || '').toString().trim();
-                    if (!name || name === 'ไม่ระบุ') return;
-                    countByPI[name] = (countByPI[name] || 0) + 1;
-                });
-
-                // เรียงมาก→น้อย และเลือก Top N
                 const TOP_N = 20;
-                const sorted = Object.entries(countByPI).sort((a, b) => b[1] - a[1]);
-                const top = sorted.slice(0, TOP_N);
+                const PI_COLORS = ['#4f7ac8', '#4fbf5f', '#d4a153', '#ef4444', '#7b5ac8', '#3cb9c8', '#0ea5e9'];
+                const PI_LABEL_LIMIT = 32;
 
-                const labels = top.map(([pi]) => pi);
-                const data = top.map(([, count]) => count);
+                function shorten(text, max = PI_LABEL_LIMIT) {
+                    const s = String(text || '').trim();
+                    return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+                }
 
-                const el = document.getElementById('chartPIsPerUnit');
-                if (!el) return;
-
-                el.height = Math.max(250, labels.length * 28);
-
-                // plugin แสดงตัวเลขขวาสุด
                 const valueLabelRight = {
-                    id: 'valueLabelRight',
+                    id: 'valueLabelRightPi',
                     afterDatasetsDraw(chart) {
                         const {
                             ctx,
                             chartArea: {
-                                right
+                                left,
+                                right,
+                                top,
+                                bottom
+                            },
+                            scales: {
+                                x: scaleX
                             }
                         } = chart;
+                        const ds = chart.data.datasets?.[0];
                         const meta = chart.getDatasetMeta(0);
-                        const scaleX = chart.scales.x;
+                        if (!ds || !meta?.data?.length) return;
+
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
                         ctx.fillStyle = '#111827';
                         ctx.textBaseline = 'middle';
-                        ctx.textAlign = 'right';
-                        chart.data.datasets[0].data.forEach((v, i) => {
-                            if (!isFinite(v) || v <= 0) return;
-                            const y = meta.data[i].y;
-                            let x = scaleX.getPixelForValue(v) + 8;
-                            if (x > right - 2) x = right - 2;
-                            ctx.fillText(String(v), x, y);
+                        ctx.textAlign = 'left';
+
+                        meta.data.forEach((bar, i) => {
+                            const v = Number(ds.data?.[i] || 0);
+                            if (!(v > 0)) return;
+
+                            const text = String(v);
+                            const textWidth = ctx.measureText(text).width;
+                            let drawX = scaleX.getPixelForValue(v) + 8;
+                            const maxX = right - textWidth - 2;
+                            if (drawX > maxX) drawX = maxX;
+                            if (drawX < left + 2) drawX = left + 2;
+
+                            let drawY = bar.y;
+                            if (drawY < top + 10) drawY = top + 10;
+                            if (drawY > bottom - 10) drawY = bottom - 10;
+
+                            ctx.fillText(text, drawX, drawY);
                         });
+
                         ctx.restore();
                     }
                 };
 
-                const prev = Chart.getChart(el);
-                if (prev) prev.destroy();
+                function renderPiByUnitChart(rows) {
+                    const sourceRows = Array.isArray(rows) ? rows : projects;
+                    const filtered = sourceRows.filter((p) =>
+                        (p.pi_affiliation || '').trim() === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ'
+                    );
 
-                new Chart(el, {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets: [{
-                            label: 'จำนวนโครงการ',
-                            data,
-                            backgroundColor: labels.map((_, i) => `hsl(${(i*33)%360} 70% 60%)`),
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                display: false
+                    const countByPI = {};
+                    filtered.forEach((p) => {
+                        const name = (p.pi_name || '').toString().trim();
+                        if (!name || name === 'ไม่ระบุ') return;
+                        countByPI[name] = (countByPI[name] || 0) + 1;
+                    });
+
+                    const top = Object.entries(countByPI)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, TOP_N);
+
+                    const labels = top.map(([pi]) => pi).reverse();
+                    const values = top.map(([, count]) => count).reverse();
+                    const chartLabels = labels.length ? labels : ['ไม่มีข้อมูล'];
+                    const chartValues = values.length ? values : [0];
+
+                    const canvas = document.getElementById('chartPIsPerUnit');
+                    if (!canvas) return;
+                    const targetHeight = Math.min(720, Math.max(340, chartLabels.length * 34));
+                    canvas.setAttribute('height', String(targetHeight));
+                    window.applyChartCanvasSizing?.();
+
+                    const prev = Chart.getChart(canvas);
+                    if (prev) prev.destroy();
+
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: chartLabels,
+                            datasets: [{
+                                label: 'จำนวนโครงการ',
+                                data: chartValues,
+                                backgroundColor: chartLabels.map((_, i) => PI_COLORS[i % PI_COLORS.length]),
+                                borderRadius: 8,
+                                barThickness: 22,
+                                categoryPercentage: 0.74,
+                                barPercentage: 0.92
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 6,
+                                    bottom: 6,
+                                    right: 76
+                                }
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: (ctx) => ` ${ctx.raw} โครงการ`
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` จำนวนโครงการ: ${ctx.raw || 0}`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    grace: '18%',
+                                    grid: {
+                                        color: 'rgba(148,163,184,0.22)'
+                                    },
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                },
+                                y: {
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        autoSkip: false,
+                                        padding: 8,
+                                        callback: (value, index) => shorten(chartLabels[index] || value)
+                                    }
                                 }
                             }
                         },
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                ticks: {
-                                    precision: 0
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'จำนวนโครงการ'
-                                }
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'PI'
-                                }
-                            }
-                        }
-                    },
-                    plugins: [valueLabelRight]
-                });
+                        plugins: [valueLabelRight]
+                    });
+                }
+
+                window.renderPiByUnitChart = renderPiByUnitChart;
+                renderPiByUnitChart(typeof getFilteredProjects === 'function' ? getFilteredProjects() : projects);
             })();
 
 
-            /* ---------- 10) ทุนภายนอกตามแหล่งทุน (จำนวน + ยอดเงินย่อ) ---------- */
+            /* ---------- 10) ทุนแยกตามแหล่งทุน (Top 5 + อื่นๆ) แบบโดนัท รายละเอียดเหมือนเดิม ---------- */
             (function() {
-                // ย่อเงินไทย: พัน/หมื่น/แสน/ล้าน บาท
-                function formatThaiMoney(num) {
-                    const n = Number(num) || 0;
-                    return (n / 1_000_000).toFixed(2).replace(/\.00$/, '') + ' ล้านบ.';
-                }
+                const TOP_N_SOURCES = 5;
+                const FUNDING_COLORS = ['#dc4b4b', '#d4a153', '#9acb4b', '#4fbf5f', '#3cb9c8', '#5f88d6', '#7b5ac8'];
 
-                // สะสม "จำนวนโครงการ" และ "ยอดเงินรวม" ต่อแหล่งทุน (เฉพาะทุนภายนอก)
-                const countBySrc = {};
-                const budgetBySrc = {};
-                projects.forEach(p => {
-                    if ((getFundingType(p) || '').trim() === 'ภายนอก') {
+                function summarizeFundingSources(rows, targetType) {
+                    const countBySrc = {};
+                    const budgetBySrc = {};
+
+                    (rows || []).forEach((p) => {
+                        if ((getFundingType(p) || '').trim() !== targetType) return;
                         const src = (getFundingSource(p) || 'ไม่ระบุ').toString().trim();
-                        const amt = Number(p.budget) || 0;
+                        const budget = Number(getBudget(p)) || 0;
                         countBySrc[src] = (countBySrc[src] || 0) + 1;
-                        budgetBySrc[src] = (budgetBySrc[src] || 0) + amt;
+                        budgetBySrc[src] = (budgetBySrc[src] || 0) + budget;
+                    });
+
+                    const entries = Object.keys(countBySrc).map((label) => ({
+                        label,
+                        count: countBySrc[label],
+                        budget: budgetBySrc[label]
+                    })).sort((a, b) => (b.count - a.count) || (b.budget - a.budget));
+
+                    const top = entries.slice(0, TOP_N_SOURCES);
+                    const others = entries.slice(TOP_N_SOURCES);
+                    if (others.length) {
+                        top.push({
+                            label: 'อื่นๆ',
+                            count: others.reduce((sum, e) => sum + e.count, 0),
+                            budget: others.reduce((sum, e) => sum + e.budget, 0),
+                        });
                     }
-                });
 
-                const entries = Object.keys(countBySrc).map(label => ({
-                    label,
-                    count: countBySrc[label],
-                    budget: budgetBySrc[label]
-                }));
-                entries.sort((a, b) => (b.count - a.count) || (b.budget - a.budget));
-
-                const TOP_N_SOURCES = 8;
-                const top = entries.slice(0, TOP_N_SOURCES);
-                const others = entries.slice(TOP_N_SOURCES);
-
-                const labels = top.map(e => e.label);
-                const counts = top.map(e => e.count);
-                const budgets = top.map(e => e.budget);
-
-                if (others.length) {
-                    labels.push('อื่นๆ');
-                    counts.push(others.reduce((s, e) => s + e.count, 0));
-                    budgets.push(others.reduce((s, e) => s + e.budget, 0));
+                    return {
+                        labels: top.map((e) => e.label),
+                        counts: top.map((e) => e.count),
+                        budgets: top.map((e) => e.budget),
+                        others: others.map((e) => e.label),
+                        topOnly: entries.slice(0, TOP_N_SOURCES).map((e) => e.label)
+                    };
                 }
 
-                window.fundingSourceGroups = window.fundingSourceGroups || {};
-                window.fundingSourceGroups.external = {
-                    top: top.map(e => e.label),
-                    others: others.map(e => e.label)
-                };
-                const totalBudget = budgets.reduce((s, v) => s + v, 0) || 1;
+                function buildFundingDetailPlugin(budgets, totalCount) {
+                    return {
+                        id: `fundingDetail_${Math.random().toString(36).slice(2, 8)}`,
+                        afterDatasetsDraw(chart) {
+                            const dataset = chart.data.datasets?.[0];
+                            const meta = chart.getDatasetMeta(0);
+                            if (!dataset || !meta?.data?.length) return;
 
-                // data label บนชิ้นโดนัท: "จำนวน (ยอดเงินย่อ)"
-                const valueLabelCenter = {
-                    id: 'valueLabelCenterExt',
-                    afterDatasetsDraw(chart) {
-                        const {
-                            ctx
-                        } = chart;
-                        const meta = chart.getDatasetMeta(0);
-                        ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
-                        ctx.fillStyle = '#111827';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        meta.data.forEach((el, i) => {
-                            const c = counts[i];
-                            const m = budgets[i];
-                            if (!c) return;
                             const {
-                                x,
-                                y
-                            } = el.tooltipPosition();
-                            ctx.fillText(`${c} (${formatThaiMoney(m)})`, x, y);
-                        });
-                        ctx.restore();
-                    }
-                };
+                                ctx,
+                                chartArea: {
+                                    left,
+                                    right,
+                                    top,
+                                    bottom
+                                }
+                            } = chart;
 
-                const el = document.getElementById('chartExternalBySource');
-                if (!el) return;
-                const prev = Chart.getChart(el);
-                if (prev) prev.destroy();
+                            ctx.save();
+                            ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
+                            ctx.fillStyle = '#0f172a';
+                            ctx.strokeStyle = 'rgba(100,116,139,0.5)';
+                            ctx.lineWidth = 1;
+                            ctx.textBaseline = 'middle';
 
-                new Chart(el, {
-                    type: 'doughnut',
-                    data: {
-                        labels,
-                        datasets: [{
-                            label: 'จำนวนโครงการ',
-                            data: counts,
-                            backgroundColor: labels.map((_, i) => `hsl(${(i*37)%360} 70% 60%)`)
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
+                            meta.data.forEach((arc, i) => {
+                                const value = Number(dataset.data?.[i] || 0);
+                                if (!(value > 0)) return;
+
+                                const labelText = `${value} (${formatThaiMoney(budgets[i] || 0)})`;
+                                const textWidth = ctx.measureText(labelText).width;
+                                const angle = (arc.startAngle + arc.endAngle) / 2;
+                                const isRight = Math.cos(angle) >= 0;
+
+                                const sx = arc.x + Math.cos(angle) * (arc.outerRadius - 1);
+                                const sy = arc.y + Math.sin(angle) * (arc.outerRadius - 1);
+                                const mx = arc.x + Math.cos(angle) * (arc.outerRadius + 10);
+                                let my = arc.y + Math.sin(angle) * (arc.outerRadius + 10);
+                                let tx = mx + (isRight ? 12 : -12);
+
+                                if (isRight) {
+                                    if (tx + textWidth > right - 4) tx = right - textWidth - 4;
+                                    if (tx < left + 4) tx = left + 4;
+                                    ctx.textAlign = 'left';
+                                } else {
+                                    if (tx - textWidth < left + 4) tx = left + textWidth + 4;
+                                    if (tx > right - 4) tx = right - 4;
+                                    ctx.textAlign = 'right';
+                                }
+
+                                if (my < top + 10) my = top + 10;
+                                if (my > bottom - 10) my = bottom - 10;
+
+                                ctx.beginPath();
+                                ctx.moveTo(sx, sy);
+                                ctx.lineTo(mx, my);
+                                ctx.lineTo(tx + (isRight ? -4 : 4), my);
+                                ctx.stroke();
+
+                                ctx.fillText(labelText, tx, my);
+                            });
+
+                            const center = meta.data[0];
+                            if (center) {
+                                ctx.textAlign = 'center';
+                                ctx.fillStyle = '#334155';
+                                ctx.font = '700 12px "IBM Plex Sans Thai", sans-serif';
+                                ctx.fillText(`รวม ${totalCount}`, center.x, center.y);
+                            }
+
+                            ctx.restore();
+                        }
+                    };
+                }
+
+                function renderFundingSourceChart(chartId, targetType, groupKey, rows) {
+                    const canvas = document.getElementById(chartId);
+                    if (!canvas) return;
+
+                    const sourceRows = Array.isArray(rows) ? rows : [];
+                    const summary = summarizeFundingSources(sourceRows, targetType);
+                    const totalCount = summary.counts.reduce((sum, n) => sum + n, 0);
+
+                    window.fundingSourceGroups = window.fundingSourceGroups || {};
+                    window.fundingSourceGroups[groupKey] = {
+                        top: summary.topOnly,
+                        others: summary.others
+                    };
+
+                    const prev = Chart.getChart(canvas);
+                    if (prev) prev.destroy();
+
+                    if (!summary.labels.length) {
+                        new Chart(canvas, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['ไม่มีข้อมูล'],
+                                datasets: [{
+                                    data: [1],
+                                    backgroundColor: ['#e5e7eb'],
+                                    borderWidth: 0
+                                }]
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: (ctx) => {
-                                        const i = ctx.dataIndex;
-                                        const c = counts[i];
-                                        const m = budgets[i];
-                                        const pct = ((m / totalBudget) * 100).toFixed(1);
-                                        return ` ${ctx.label}: ${c} โครงการ, ${formatThaiMoney(m)} (${pct}%)`;
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '58%',
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        enabled: false
                                     }
                                 }
                             }
-                        }
-                    },
-                    plugins: [valueLabelCenter]
-                });
-            })();
-
-
-
-            /* ---------- ทุนภายในตามแหล่งทุน (จำนวน + ยอดเงิน) ---------- */
-            (function() {
-                const mapCount = {};
-                const mapBudget = {};
-
-                projects.forEach(p => {
-                    if ((getFundingType(p) || '').trim() === 'ภายใน') {
-                        const src = (getFundingSource(p) || 'ไม่ระบุ').toString().trim();
-                        const amt = Number(p.budget) || 0;
-                        mapCount[src] = (mapCount[src] || 0) + 1;
-                        mapBudget[src] = (mapBudget[src] || 0) + amt;
-                    }
-                });
-
-                const entries = Object.keys(mapCount).map(label => ({
-                    label,
-                    count: mapCount[label],
-                    budget: mapBudget[label]
-                }));
-                entries.sort((a, b) => (b.count - a.count) || (b.budget - a.budget));
-
-                const TOP_N_SOURCES = 8;
-                const top = entries.slice(0, TOP_N_SOURCES);
-                const others = entries.slice(TOP_N_SOURCES);
-
-                const labels = top.map(e => e.label);
-                const counts = top.map(e => e.count);
-                const budgets = top.map(e => e.budget);
-
-                if (others.length) {
-                    labels.push('อื่นๆ');
-                    counts.push(others.reduce((s, e) => s + e.count, 0));
-                    budgets.push(others.reduce((s, e) => s + e.budget, 0));
-                }
-
-                window.fundingSourceGroups = window.fundingSourceGroups || {};
-                window.fundingSourceGroups.internal = {
-                    top: top.map(e => e.label),
-                    others: others.map(e => e.label)
-                };
-                const totalBudget = budgets.reduce((s, v) => s + v, 0) || 1;
-
-                const dataLabelPlugin = {
-                    id: 'dataLabelPluginInternal',
-                    afterDatasetsDraw(chart) {
-                        const {
-                            ctx
-                        } = chart;
-                        ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
-                        ctx.fillStyle = '#111827';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-
-                        const meta = chart.getDatasetMeta(0);
-                        meta.data.forEach((el, i) => {
-                            const count = counts[i];
-                            const money = budgets[i];
-                            if (!count || !money) return;
-                            const {
-                                x,
-                                y
-                            } = el.tooltipPosition();
-                            ctx.fillText(`${count} (${formatThaiMoney(money)})`, x, y);
                         });
-                        ctx.restore();
+                        return;
                     }
-                };
 
-                const el = document.getElementById('chartInternalBySource');
-                if (!el) return;
-                const prev = Chart.getChart(el);
-                if (prev) prev.destroy();
-
-                new Chart(el, {
-                    type: 'doughnut',
-                    data: {
-                        labels,
-                        datasets: [{
-                            label: 'โครงการ',
-                            data: counts,
-                            backgroundColor: labels.map((_, i) => `hsl(${(i*37)%360} 70% 60%)`)
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
+                    new Chart(canvas, {
+                        type: 'doughnut',
+                        data: {
+                            labels: summary.labels,
+                            datasets: [{
+                                data: summary.counts,
+                                backgroundColor: summary.labels.map((_, i) => FUNDING_COLORS[i % FUNDING_COLORS.length]),
+                                borderColor: '#ffffff',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '55%',
+                            layout: {
+                                padding: {
+                                    left: 24,
+                                    right: 24,
+                                    top: 12,
+                                    bottom: 12
+                                }
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: (ctx) => {
-                                        const idx = ctx.dataIndex;
-                                        const c = counts[idx];
-                                        const m = budgets[idx];
-                                        const pct = ((m / totalBudget) * 100).toFixed(1);
-                                        return ` ${ctx.label}: ${c} โครงการ, ${formatThaiMoney(m)} (${pct}%)`;
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => {
+                                            const i = ctx.dataIndex;
+                                            const count = Number(summary.counts[i] || 0);
+                                            const budget = Number(summary.budgets[i] || 0);
+                                            const pct = totalCount ? ((count / totalCount) * 100).toFixed(1) : '0.0';
+                                            return ` ${ctx.label}: ${count} งาน | ${formatThaiMoney(budget)} (${pct}%)`;
+                                        }
                                     }
                                 }
                             }
-                        }
-                    },
-                    plugins: [dataLabelPlugin]
-                });
+                        },
+                        plugins: [buildFundingDetailPlugin(summary.budgets, totalCount)]
+                    });
+                }
+
+                function getRowsForRender() {
+                    if (typeof getFilteredProjects === 'function') return getFilteredProjects();
+                    return projects;
+                }
+
+                function renderAllFundingSourceCharts(rows) {
+                    const baseRows = Array.isArray(rows) ? rows : getRowsForRender();
+                    renderFundingSourceChart('chartExternalBySource', 'ภายนอก', 'external', baseRows);
+                    renderFundingSourceChart('chartInternalBySource', 'ภายใน', 'internal', baseRows);
+                }
+
+                window.renderFundingSourceCharts = renderAllFundingSourceCharts;
+                renderAllFundingSourceCharts(getRowsForRender());
             })();
 
             // special graphs below here
@@ -3497,7 +3801,7 @@
                 projects.forEach(p => {
                     const type = (getFundingType(p) || '').trim();
                     const src = (getFundingSource(p) || 'ไม่ระบุ').trim();
-                    const amt = Number(p.budget) || 0;
+                    const amt = Number(getBudget(p)) || 0;
                     const y = yearCE(p.start_year ?? p.year ?? p.funding_year);
                     if (!y) return;
 
@@ -3665,32 +3969,57 @@
 
             // emd special graphs
 
-            /* ---------- 11) โครงการทั้งหมด vs ใหม่ vs ค้างจากปีก่อน (ต่อปี) + Data Label + กันเลขตกขอบ ---------- */
+            /* ---------- 11) โครงการทั้งหมด/ใหม่/กำลังดำเนินการ/ปิดโปรเจค/ยกเลิก (ต่อปี) ---------- */
             (function() {
-                const uniqYears = [...new Set(projects.map(getYear))]
-                    .filter(y => y != null && String(y).trim() !== '');
-                const years = uniqYears.map(Number).sort((a, b) => a - b).map(String);
+                const startYears = projects
+                    .map((p) => projectLifecycleStartYearCE(p))
+                    .filter((y) => Number.isFinite(y));
+                if (!startYears.length) return;
 
-                function isActiveInYear(p, y) {
-                    const s = toNumber(p.start_year);
-                    const e = toNumber(getEndYear(p)) || Infinity;
-                    const Y = toNumber(y);
-                    return s <= Y && Y <= e;
-                }
+                const eventYears = projects
+                    .filter((p) => {
+                        const key = projectLifecycleStatusKey(p);
+                        return key === 'completed' || key === 'cancelled';
+                    })
+                    .map((p) => projectLifecycleEventYearCE(p))
+                    .filter((y) => Number.isFinite(y));
+
+                const minYearCE = Math.min(...startYears);
+                const currentYearCE = new Date().getFullYear();
+                const maxYearCE = Math.max(...startYears, ...eventYears, currentYearCE);
+                window.yearlyLifecycleHorizonCE = maxYearCE;
+
+                const yearsCE = [];
+                for (let y = minYearCE; y <= maxYearCE; y += 1) yearsCE.push(y);
+
+                const yearLabels = yearsCE.map(y => yearLabelTH(y));
+                window.yearlyNewVsTotalLabelMap = {};
+                yearLabels.forEach((label, idx) => {
+                    window.yearlyNewVsTotalLabelMap[label] = yearsCE[idx];
+                });
 
                 const totalPerYear = {};
                 const newPerYear = {};
-                const carryoverPerYear = {};
+                const inProgressPerYear = {};
+                const completedPerYear = {};
+                const cancelledPerYear = {};
 
-                years.forEach(y => {
-                    totalPerYear[y] = projects.filter(p => isActiveInYear(p, y)).length;
-                    newPerYear[y] = projects.filter(p => String(getYear(p)) === String(y)).length;
-                    carryoverPerYear[y] = projects.filter(p => {
-                        const s = toNumber(p.start_year);
-                        const e = toNumber(getEndYear(p)) || Infinity;
-                        const Y = toNumber(y);
-                        return s < Y && Y <= e; // เริ่มก่อนปีนี้และยัง active
+                yearsCE.forEach(y => {
+                    totalPerYear[y] = projects.filter(p => {
+                        const startY = projectLifecycleStartYearCE(p);
+                        if (Number.isFinite(startY)) return startY <= y;
+                        return y === maxYearCE;
                     }).length;
+                    newPerYear[y] = projects.filter(p => projectLifecycleStartYearCE(p) === y).length;
+                    inProgressPerYear[y] = projects.filter(p => projectIsInProgressInYear(p, y, maxYearCE)).length;
+                    completedPerYear[y] = projects.filter(p =>
+                        projectLifecycleStatusKey(p) === 'completed' &&
+                        Number(projectLifecycleTerminalYearCE(p, maxYearCE)) === y
+                    ).length;
+                    cancelledPerYear[y] = projects.filter(p =>
+                        projectLifecycleStatusKey(p) === 'cancelled' &&
+                        Number(projectLifecycleTerminalYearCE(p, maxYearCE)) === y
+                    ).length;
                 });
 
                 // ปลั๊กอินโชว์เลข + เช็คการซ่อน + กันตกขอบบน/ขวา
@@ -3710,29 +4039,25 @@
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
 
-                        chart.data.datasets.forEach((dataset, dsIndex) => {
-                            // ถ้าชุดข้อมูลถูกซ่อนจาก legend ให้ข้าม
-                            if (!chart.isDatasetVisible(dsIndex)) return;
-
-                            const meta = chart.getDatasetMeta(dsIndex);
-                            meta.data.forEach((bar, index) => {
-                                if (!bar || bar.hidden) return;
+                        const totalIndex = chart.data.datasets.findIndex(d => String(d.label || '').trim() === 'ทั้งหมด');
+                        if (totalIndex >= 0 && chart.isDatasetVisible(totalIndex)) {
+                            const dataset = chart.data.datasets[totalIndex];
+                            const meta = chart.getDatasetMeta(totalIndex);
+                            meta.data.forEach((point, index) => {
+                                if (!point || point.hidden) return;
                                 const val = dataset.data[index];
                                 if (!isFinite(val) || val <= 0) return;
 
-                                let drawX = bar.x;
-                                let drawY = bar.y - 2;
+                                let drawX = point.x;
+                                let drawY = point.y - 10;
 
-                                // clamp กันตกขอบบน
-                                const minY = top + 8;
+                                const minY = top + 10;
                                 if (drawY < minY) drawY = minY;
-
-                                // กันชิดขอบขวา (เผื่อข้อความ)
-                                if (drawX > right - 2) drawX = right - 2;
+                                if (drawX > right - 6) drawX = right - 6;
 
                                 ctx.fillText(val, drawX, drawY);
                             });
-                        });
+                        }
 
                         ctx.restore();
                     }
@@ -3746,34 +4071,82 @@
                 new Chart(el, {
                     type: 'bar',
                     data: {
-                        labels: years,
+                        labels: yearLabels,
                         datasets: [{
                                 label: 'ทั้งหมด',
-                                data: years.map(y => totalPerYear[y]),
-                                backgroundColor: '#93c5fd'
+                                data: yearsCE.map(y => totalPerYear[y]),
+                                type: 'line',
+                                borderColor: '#60a5fa',
+                                backgroundColor: '#60a5fa',
+                                pointBackgroundColor: '#60a5fa',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 1.5,
+                                pointRadius: 4,
+                                pointHoverRadius: 7,
+                                pointHitRadius: 16,
+                                borderWidth: 3,
+                                tension: 0.25,
+                                fill: false,
+                                order: 0,
+                                stack: 'totalLine'
                             },
                             {
                                 label: 'ใหม่',
-                                data: years.map(y => newPerYear[y]),
-                                backgroundColor: '#34d399'
+                                data: yearsCE.map(y => newPerYear[y]),
+                                backgroundColor: '#34d399',
+                                stack: 'status',
+                                order: 1
                             },
                             {
-                                label: 'กำลังทำ',
-                                data: years.map(y => carryoverPerYear[y]),
-                                backgroundColor: '#fbbf24'
+                                label: 'กำลังดำเนินการ',
+                                data: yearsCE.map(y => inProgressPerYear[y]),
+                                backgroundColor: '#fbbf24',
+                                stack: 'status',
+                                order: 1
+                            },
+                            {
+                                label: 'ปิดโปรเจค',
+                                data: yearsCE.map(y => completedPerYear[y]),
+                                backgroundColor: '#ef4444',
+                                stack: 'status',
+                                order: 1
+                            },
+                            {
+                                label: 'ยกเลิกโปรเจค',
+                                data: yearsCE.map(y => cancelledPerYear[y]),
+                                backgroundColor: '#f97316',
+                                stack: 'status',
+                                order: 1
                             }
                         ]
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        datasets: {
+                            bar: {
+                                barPercentage: 0.72,
+                                categoryPercentage: 0.74,
+                                maxBarThickness: 34
+                            }
+                        },
                         layout: {
                             padding: {
-                                top: 16
+                                top: 16,
+                                right: 16
                             }
                         }, // ← เผื่อพื้นที่ด้านบนให้ label
                         plugins: {
                             legend: {
-                                position: 'bottom'
+                                position: 'bottom',
+                                labels: {
+                                    padding: 18,
+                                    usePointStyle: true
+                                }
                             },
                             tooltip: {
                                 mode: 'index',
@@ -3783,6 +4156,7 @@
                         scales: {
                             y: {
                                 beginAtZero: true,
+                                stacked: true,
                                 grace: '12%', // ← headroom กันเลขชนขอบบน
                                 ticks: {
                                     precision: 0
@@ -3793,9 +4167,19 @@
                                 }
                             },
                             x: {
+                                stacked: true,
+                                offset: true,
+                                grid: {
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    maxRotation: 0,
+                                    minRotation: 0,
+                                    padding: 8
+                                },
                                 title: {
                                     display: true,
-                                    text: 'ปี'
+                                    text: 'ปี (พ.ศ.)'
                                 }
                             }
                         }
@@ -3978,29 +4362,80 @@
                 const elOverdue = document.getElementById('chartOverdueProjects');
                 if (elOverdue) {
                     const projectsWithEndDate = projects.filter(p => parseProjectDate(getEndDateRaw(p)));
-                    const totalProjects = projectsWithEndDate.length || 1;
+                    const totalProjectsRaw = projectsWithEndDate.length;
+                    const totalProjects = totalProjectsRaw || 1;
                     const overdueCount = overdueProjects.length;
-                    const remainingCount = Math.max(totalProjects - overdueCount, 0);
+                    const remainingCount = Math.max(totalProjectsRaw - overdueCount, 0);
 
-                    const doughnutValuePlugin = {
-                        id: 'doughnutValueOverdue',
+                    // วาดเส้นกิ่งชี้ + ตัวเลขด้านนอกโดนัท
+                    const overdueCalloutPlugin = {
+                        id: 'doughnutCalloutOverdue',
                         afterDatasetsDraw(chart) {
                             const {
-                                ctx
+                                ctx,
+                                chartArea: {
+                                    left,
+                                    right,
+                                    top,
+                                    bottom
+                                }
                             } = chart;
                             const meta = chart.getDatasetMeta(0);
-                            const ds = chart.data.datasets[0];
+                            const ds = chart.data.datasets?.[0];
                             if (!meta || !ds) return;
+
+                            const total = (Array.isArray(ds.data) ? ds.data : [])
+                                .reduce((sum, v) => sum + (Number(v) || 0), 0) || 1;
+
                             ctx.save();
-                            ctx.font = 'bold 12px sans-serif';
-                            ctx.fillStyle = '#111827';
-                            ctx.textAlign = 'center';
+                            ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
                             ctx.textBaseline = 'middle';
+                            ctx.lineWidth = 1.2;
+
                             meta.data.forEach((arc, i) => {
                                 const v = Number(ds.data[i] || 0);
                                 if (!isFinite(v) || v <= 0) return;
-                                const pos = arc.tooltipPosition();
-                                ctx.fillText(String(v), pos.x, pos.y);
+
+                                const angle = (arc.startAngle + arc.endAngle) / 2;
+                                const cos = Math.cos(angle);
+                                const sin = Math.sin(angle);
+
+                                const sx = arc.x + cos * (arc.outerRadius - 1);
+                                const sy = arc.y + sin * (arc.outerRadius - 1);
+                                const mx = arc.x + cos * (arc.outerRadius + 12);
+                                let my = arc.y + sin * (arc.outerRadius + 12);
+
+                                const pct = ((v / total) * 100).toFixed(1);
+                                const label = `${v} โครงการ (${pct}%)`;
+                                const textWidth = ctx.measureText(label).width;
+                                let tx = mx + (cos >= 0 ? 16 : -16);
+
+                                if (cos >= 0) {
+                                    const maxX = right - textWidth - 4;
+                                    if (tx > maxX) tx = maxX;
+                                    if (tx < left + 4) tx = left + 4;
+                                    ctx.textAlign = 'left';
+                                } else {
+                                    const minX = left + textWidth + 4;
+                                    if (tx < minX) tx = minX;
+                                    if (tx > right - 4) tx = right - 4;
+                                    ctx.textAlign = 'right';
+                                }
+
+                                if (my < top + 10) my = top + 10;
+                                if (my > bottom - 10) my = bottom - 10;
+
+                                const segColor = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : '#64748b';
+                                ctx.strokeStyle = segColor || '#64748b';
+                                ctx.fillStyle = '#0f172a';
+
+                                ctx.beginPath();
+                                ctx.moveTo(sx, sy);
+                                ctx.lineTo(mx, my);
+                                ctx.lineTo(tx + (cos >= 0 ? -4 : 4), my);
+                                ctx.stroke();
+
+                                ctx.fillText(label, tx, my);
                             });
                             ctx.restore();
                         }
@@ -4012,16 +4447,29 @@
                             labels: ['เกินกำหนดแล้ว', 'โครงการที่ยังดำเนินการ'],
                             datasets: [{
                                 data: [overdueCount, remainingCount],
-                                backgroundColor: ['#b91c1c', '#0f766e'],
+                                backgroundColor: ['#ef4444', '#38bdf8'],
+                                borderColor: '#ffffff',
+                                borderWidth: 2,
                                 hoverOffset: 4
                             }]
                         },
                         options: {
                             responsive: true,
-                            cutout: '62%',
+                            cutout: '64%',
+                            layout: {
+                                padding: {
+                                    left: 26,
+                                    right: 26,
+                                    top: 14,
+                                    bottom: 14
+                                }
+                            },
                             plugins: {
                                 legend: {
-                                    position: 'bottom'
+                                    position: 'bottom',
+                                    labels: {
+                                        usePointStyle: true
+                                    }
                                 },
                                 tooltip: {
                                     callbacks: {
@@ -4034,7 +4482,7 @@
                                 }
                             }
                         },
-                        plugins: [doughnutValuePlugin]
+                        plugins: [overdueCalloutPlugin]
                     });
                 }
 
@@ -4120,7 +4568,7 @@
                         const diffMonths = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.4375);
                         if (diffMonths < 0 || diffMonths > maxMonths) return;
                         const members = coResearchMembers(p).filter(m => m.unitLabel === unit);
-                        total += members.length;
+                        if (members.length) total += 1;
                     });
                     return total;
                 };
@@ -4994,11 +5442,11 @@
                     chartOverdueProjects: 'โครงการที่เกินกำหนด (โดนัท)',
                     chartCoResearchByUnitWindow: 'Co-Research ตามหน่วยงาน (3/6/12 เดือน)',
                     chartProjectsPerYear: 'จำนวนโครงการรายปี',
-                    chartYearlyNewVsTotal: 'โครงการทั้งหมด/ใหม่/ดำเนินการ (รายปี)',
+                    chartYearlyNewVsTotal: 'โครงการทั้งหมด/ใหม่/กำลังดำเนินการ/ปิดโปรเจค/ยกเลิกโปรเจค (รายปี)',
                     chartFundingSplit: 'สัดส่วนทุน ภายใน/ภายนอก (รายปี)',
                     chartBudgetPerYear: 'งบประมาณรวม (รายปี)',
-                    chartExternalBySource: 'ทุนภายนอก ตามแหล่งทุน (Top 8)',
-                    chartInternalBySource: 'ทุนภายใน ตามแหล่งทุน (Top 8)',
+                    chartExternalBySource: 'ทุนภายนอก ตามแหล่งทุน (Top 5)',
+                    chartInternalBySource: 'ทุนภายใน ตามแหล่งทุน (Top 5)',
                     chartExternalBySourceYear: 'ทุนภายนอก แยกตามปี (Top 8)',
                     chartInternalBySourceYear: 'ทุนภายใน แยกตามปี (Top 8)',
                     chartOutputStacked: 'Output แยกประเภท (รายปี)',
@@ -5196,7 +5644,8 @@
                     title.textContent = chartTitles[id] || id;
                     card.appendChild(title);
 
-                    const chartObj = Chart.getChart(document.getElementById(id));
+                    const chartEl = document.getElementById(id);
+                    const chartObj = Chart.getChart(chartEl);
                     if (chartObj) {
                         const img = document.createElement('img');
                         img.alt = chartTitles[id] || id;
@@ -5676,6 +6125,557 @@
                     thinking.innerHTML = `<div class="text-red-600">เกิดข้อผิดพลาดในการเรียกผู้ช่วย</div>`;
                 }
             });
+        </script>
+        <script>
+            (function() {
+                if (window.__dashboardRealtimeBound) return;
+                window.__dashboardRealtimeBound = true;
+
+                const fmtNum = new Intl.NumberFormat('th-TH');
+                const fmtMoney = new Intl.NumberFormat('th-TH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+
+                const el = {
+                    filterYear: document.getElementById('filterYear'),
+                    filterTheme: document.getElementById('filterTheme'),
+                    filterFunding: document.getElementById('filterFunding'),
+                    filterName: document.getElementById('filterName'),
+                    filterPI: document.getElementById('filterPI'),
+                    tableSearch: document.getElementById('tableSearch'),
+                    filterReset: document.getElementById('filterReset'),
+                    badge: document.getElementById('rtFilterBadge'),
+                    caption: document.getElementById('rtSummaryCaption'),
+                    totalProjects: document.getElementById('rtSummaryProjects'),
+                    totalPi: document.getElementById('rtSummaryPi'),
+                    totalBudget: document.getElementById('rtSummaryBudget'),
+                    avgBudget: document.getElementById('rtSummaryAvgBudget'),
+                    typeBody: document.getElementById('rtTypeSummaryBody'),
+                };
+
+                const safeText = (v, fallback = '') => {
+                    const s = String(v ?? '').trim();
+                    return s || fallback;
+                };
+                const safeNum = (v) => {
+                    const n = Number(v);
+                    return Number.isFinite(n) ? n : 0;
+                };
+                const getBudget = (p) => safeNum(p?.total_budget ?? p?.budget ?? 0);
+                const getType = (p) => safeText(p?.project_type, 'ไม่ระบุประเภท');
+                const getYearLabel = (p) => safeText(p?.start_year, 'ไม่ระบุปี');
+                const escapeHtml = (value) => String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+
+                const allProjects = Array.isArray(projects) ? projects : [];
+
+                function getRows() {
+                    if (typeof getFilteredProjects === 'function') return getFilteredProjects();
+                    return allProjects.slice();
+                }
+
+                function parseYearKey(label) {
+                    const m = String(label ?? '').match(/\d{4}/);
+                    return m ? Number(m[0]) : NaN;
+                }
+
+                function sortYearLabels(labels) {
+                    return labels.slice().sort((a, b) => {
+                        const ay = parseYearKey(a);
+                        const by = parseYearKey(b);
+                        if (Number.isFinite(ay) && Number.isFinite(by)) return ay - by;
+                        if (Number.isFinite(ay)) return -1;
+                        if (Number.isFinite(by)) return 1;
+                        return String(a).localeCompare(String(b), 'th');
+                    });
+                }
+
+                function summarizeByType(rows) {
+                    const map = new Map();
+                    rows.forEach((p) => {
+                        const type = getType(p);
+                        if (!map.has(type)) map.set(type, {
+                            count: 0,
+                            budget: 0
+                        });
+                        const item = map.get(type);
+                        item.count += 1;
+                        item.budget += getBudget(p);
+                    });
+
+                    return Array.from(map.entries())
+                        .map(([type, value]) => ({
+                            type,
+                            ...value
+                        }))
+                        .sort((a, b) => b.count - a.count);
+                }
+
+                function updateSummary(rows) {
+                    const total = rows.length;
+                    const uniquePi = new Set(rows.map(p => safeText(p?.pi_name)).filter(Boolean)).size;
+                    const totalBudget = rows.reduce((sum, p) => sum + getBudget(p), 0);
+                    const avgBudget = total > 0 ? (totalBudget / total) : 0;
+
+                    if (el.badge) el.badge.textContent = `${fmtNum.format(total)} โครงการ`;
+                    if (el.caption) el.caption.textContent = `สรุปตามฟิลเตอร์ปัจจุบัน ${fmtNum.format(total)} / ${fmtNum.format(allProjects.length)} โครงการ`;
+                    if (el.totalProjects) el.totalProjects.textContent = fmtNum.format(total);
+                    if (el.totalPi) el.totalPi.textContent = fmtNum.format(uniquePi);
+                    if (el.totalBudget) el.totalBudget.textContent = `${fmtMoney.format(totalBudget)} บ.`;
+                    if (el.avgBudget) el.avgBudget.textContent = `${fmtMoney.format(avgBudget)} บ.`;
+                }
+
+                function updateTypeTable(rows) {
+                    if (!el.typeBody) return;
+                    const summary = summarizeByType(rows);
+                    const total = rows.length || 1;
+                    el.typeBody.innerHTML = '';
+
+                    if (!summary.length) {
+                        el.typeBody.innerHTML = `<tr><td colspan="4" class="px-3 py-3 text-center text-slate-500">ไม่พบข้อมูลตามเงื่อนไข</td></tr>`;
+                        return;
+                    }
+
+                    summary.slice(0, 8).forEach((row) => {
+                        const ratio = ((row.count / total) * 100).toFixed(1);
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="px-3 py-2 text-left text-slate-700">${escapeHtml(row.type)}</td>
+                            <td class="px-3 py-2 text-right text-slate-700">${fmtNum.format(row.count)}</td>
+                            <td class="px-3 py-2 text-right text-slate-700">${ratio}%</td>
+                            <td class="px-3 py-2 text-right text-slate-700">${fmtMoney.format(row.budget)}</td>
+                        `;
+                        el.typeBody.appendChild(tr);
+                    });
+                }
+
+                function gradient(canvasId, start, end) {
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) return start;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return start;
+                    const g = ctx.createLinearGradient(0, 0, 0, canvas.height || 260);
+                    g.addColorStop(0, start);
+                    g.addColorStop(1, end);
+                    return g;
+                }
+
+                function createBarValueLabelPlugin(formatter, options = {}) {
+                    const minValue = Number(options.minValue ?? 0);
+                    return {
+                        id: `rtBarValue_${Math.random().toString(36).slice(2, 8)}`,
+                        afterDatasetsDraw(chart) {
+                            const {
+                                ctx,
+                                chartArea: {
+                                    top,
+                                    right,
+                                    left
+                                }
+                            } = chart;
+                            ctx.save();
+                            ctx.font = '700 11px sans-serif';
+                            ctx.fillStyle = '#111827';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+
+                            chart.data.datasets.forEach((ds, dsIndex) => {
+                                if (!chart.isDatasetVisible(dsIndex)) return;
+                                const meta = chart.getDatasetMeta(dsIndex);
+                                meta.data.forEach((bar, i) => {
+                                    if (!bar || bar.hidden) return;
+                                    const v = Number(ds.data?.[i] ?? 0);
+                                    if (!isFinite(v) || v <= 0) return;
+                                    if (v < minValue) return;
+                                    const txt = typeof formatter === 'function' ? formatter(v) : String(v);
+                                    let x = bar.x;
+                                    let y = bar.y - 4;
+                                    if (y < top + 8) y = top + 8;
+                                    if (x > right - 2) x = right - 2;
+                                    if (x < left + 2) x = left + 2;
+                                    ctx.fillText(txt, x, y);
+                                });
+                            });
+
+                            ctx.restore();
+                        }
+                    };
+                }
+
+                function createStackTotalLabelPlugin(formatter) {
+                    return {
+                        id: `rtStackTotal_${Math.random().toString(36).slice(2, 8)}`,
+                        afterDatasetsDraw(chart) {
+                            const {
+                                ctx,
+                                chartArea: {
+                                    top,
+                                    right,
+                                    left
+                                }
+                            } = chart;
+                            ctx.save();
+                            ctx.font = '700 11px sans-serif';
+                            ctx.fillStyle = '#0f172a';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+
+                            const labels = chart.data.labels || [];
+                            labels.forEach((_, i) => {
+                                let total = 0;
+                                let topElement = null;
+
+                                chart.data.datasets.forEach((ds, dsIndex) => {
+                                    if (!chart.isDatasetVisible(dsIndex)) return;
+                                    const v = Number(ds.data?.[i] ?? 0);
+                                    if (!isFinite(v) || v <= 0) return;
+                                    total += v;
+                                    const el = chart.getDatasetMeta(dsIndex)?.data?.[i];
+                                    if (el && (!topElement || el.y < topElement.y)) topElement = el;
+                                });
+
+                                if (!(total > 0) || !topElement) return;
+                                const txt = typeof formatter === 'function' ? formatter(total) : String(total);
+                                let x = topElement.x;
+                                let y = topElement.y - 6;
+                                if (y < top + 10) y = top + 10;
+                                if (x > right - 2) x = right - 2;
+                                if (x < left + 2) x = left + 2;
+                                ctx.fillText(txt, x, y);
+                            });
+
+                            ctx.restore();
+                        }
+                    };
+                }
+
+                function renderProjectsPerYear(rows) {
+                    const sourceRows = Array.isArray(rows) ? rows : [];
+                    const startYearsCE = sourceRows
+                        .map((p) => projectLifecycleStartYearCE(p))
+                        .filter(Number.isFinite)
+                        .sort((a, b) => a - b);
+
+                    const canvas = document.getElementById('chartProjectsPerYear');
+                    if (!canvas) return;
+                    Chart.getChart(canvas)?.destroy();
+
+                    if (!startYearsCE.length) {
+                        new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: ['ไม่มีข้อมูล'],
+                                datasets: [{
+                                    label: 'จำนวนโครงการ',
+                                    data: [0],
+                                    backgroundColor: gradient('chartProjectsPerYear', 'rgba(14,165,233,0.9)', 'rgba(14,165,233,0.2)'),
+                                    borderColor: '#0284c7',
+                                    borderWidth: 1.5,
+                                    borderRadius: 10,
+                                    maxBarThickness: 42,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false
+                            }
+                        });
+                        return;
+                    }
+
+                    const yearsCE = Array.from(new Set(startYearsCE));
+                    const maxYearCE = yearsCE[yearsCE.length - 1];
+                    const labels = yearsCE.map((y) => yearLabelTH(y));
+                    const data = yearsCE.map((y) =>
+                        sourceRows.filter((p) => {
+                            const startY = projectLifecycleStartYearCE(p);
+                            if (Number.isFinite(startY)) return startY <= y;
+                            return y === maxYearCE;
+                        }).length
+                    );
+
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'จำนวนโครงการสะสม',
+                                data,
+                                backgroundColor: gradient('chartProjectsPerYear', 'rgba(14,165,233,0.9)', 'rgba(14,165,233,0.2)'),
+                                borderColor: '#0284c7',
+                                borderWidth: 1.5,
+                                borderRadius: 10,
+                                maxBarThickness: 42,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 350
+                            },
+                            layout: {
+                                padding: {
+                                    top: 14
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${fmtNum.format(ctx.raw || 0)} โครงการ`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'ปี (พ.ศ.)'
+                                    },
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'จำนวนโครงการ'
+                                    },
+                                    ticks: {
+                                        precision: 0
+                                    },
+                                    grid: {
+                                        color: 'rgba(148,163,184,0.2)'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createBarValueLabelPlugin((v) => fmtNum.format(v))]
+                    });
+                }
+
+                function renderFundingSplit(rows) {
+                    const labels = sortYearLabels(Array.from(new Set(rows.map(getYearLabel))));
+                    const internal = labels.map((y) => rows.filter((p) => getYearLabel(p) === y && safeText(p?.funding_type) === 'ภายใน').length);
+                    const external = labels.map((y) => rows.filter((p) => getYearLabel(p) === y && safeText(p?.funding_type) === 'ภายนอก').length);
+
+                    const canvas = document.getElementById('chartFundingSplit');
+                    if (!canvas) return;
+                    Chart.getChart(canvas)?.destroy();
+
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: labels.length ? labels : ['ไม่มีข้อมูล'],
+                            datasets: [{
+                                    label: 'ภายใน',
+                                    data: internal.length ? internal : [0],
+                                    backgroundColor: gradient('chartFundingSplit', 'rgba(16,185,129,0.95)', 'rgba(16,185,129,0.4)'),
+                                    maxBarThickness: 40,
+                                    borderRadius: 8,
+                                },
+                                {
+                                    label: 'ภายนอก',
+                                    data: external.length ? external : [0],
+                                    backgroundColor: gradient('chartFundingSplit', 'rgba(249,115,22,0.95)', 'rgba(249,115,22,0.4)'),
+                                    maxBarThickness: 40,
+                                    borderRadius: 8,
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 350
+                            },
+                            layout: {
+                                padding: {
+                                    top: 14
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        footer: (items) => {
+                                            const sum = items.reduce((acc, it) => acc + (Number(it.parsed?.y || 0)), 0);
+                                            return `รวม: ${fmtNum.format(sum)} โครงการ`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    ticks: {
+                                        precision: 0
+                                    },
+                                    grid: {
+                                        color: 'rgba(148,163,184,0.2)'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createStackTotalLabelPlugin((v) => fmtNum.format(v))]
+                    });
+                }
+
+                function renderBudgetPerYear(rows) {
+                    const labels = sortYearLabels(Array.from(new Set(rows.map(getYearLabel))));
+                    const budgets = labels.map((y) => rows
+                        .filter((p) => getYearLabel(p) === y)
+                        .reduce((sum, p) => sum + getBudget(p), 0));
+
+                    const canvas = document.getElementById('chartBudgetPerYear');
+                    if (!canvas) return;
+                    Chart.getChart(canvas)?.destroy();
+                    const maxBudget = Math.max(0, ...budgets);
+                    const minLabelBudget = maxBudget > 0 ? Math.max(maxBudget * 0.03, 1_000_000) : 0;
+
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: labels.length ? labels : ['ไม่มีข้อมูล'],
+                            datasets: [{
+                                label: 'งบประมาณรวม',
+                                data: budgets.length ? budgets : [0],
+                                backgroundColor: gradient('chartBudgetPerYear', 'rgba(37,99,235,0.9)', 'rgba(37,99,235,0.35)'),
+                                borderColor: '#2563eb',
+                                borderWidth: 1.5,
+                                borderRadius: 8,
+                                maxBarThickness: 42,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 350
+                            },
+                            layout: {
+                                padding: {
+                                    top: 24
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${fmtMoney.format(ctx.raw || 0)} บาท`,
+                                        footer: (items) => {
+                                            const v = Number(items?.[0]?.parsed?.y ?? 0);
+                                            return `ประมาณ ${formatThaiMoney(v)}`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grace: '14%',
+                                    ticks: {
+                                        callback: (value) => `${(Number(value) / 1_000_000).toLocaleString('th-TH', { maximumFractionDigits: 0 })} ล.`
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'ล้านบาท'
+                                    },
+                                    grid: {
+                                        color: 'rgba(148,163,184,0.2)'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createBarValueLabelPlugin((v) => formatThaiMoney(v), { minValue: minLabelBudget })]
+                    });
+                }
+
+                function refreshRealtimeDashboard() {
+                    const rows = getRows();
+                    updateSummary(rows);
+                    updateTypeTable(rows);
+                    renderProjectsPerYear(rows);
+                    renderFundingSplit(rows);
+                    renderBudgetPerYear(rows);
+                    window.renderFundingSourceCharts?.(rows);
+                    window.renderPiByUnitChart?.(rows);
+                    window.applyChartCanvasSizing?.();
+                }
+
+                let debounceTimer = null;
+                const refreshDebounced = () => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(refreshRealtimeDashboard, 120);
+                };
+
+                [el.filterYear, el.filterTheme, el.filterFunding].forEach((node) => {
+                    node?.addEventListener('change', refreshRealtimeDashboard);
+                });
+                [el.filterName, el.filterPI, el.tableSearch].forEach((node) => {
+                    node?.addEventListener('input', refreshDebounced);
+                });
+
+                el.filterReset?.addEventListener('click', () => {
+                    if (el.filterYear) el.filterYear.value = '';
+                    if (el.filterTheme) el.filterTheme.value = '';
+                    if (el.filterFunding) el.filterFunding.value = '';
+                    if (el.filterName) el.filterName.value = '';
+                    if (el.filterPI) el.filterPI.value = '';
+                    if (el.tableSearch) el.tableSearch.value = '';
+
+                    el.filterYear?.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                    el.filterTheme?.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                    el.filterFunding?.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                    el.filterName?.dispatchEvent(new Event('input', {
+                        bubbles: true
+                    }));
+                    el.filterPI?.dispatchEvent(new Event('input', {
+                        bubbles: true
+                    }));
+                    el.tableSearch?.dispatchEvent(new Event('input', {
+                        bubbles: true
+                    }));
+
+                    refreshRealtimeDashboard();
+                });
+
+                window.refreshRealtimeDashboard = refreshRealtimeDashboard;
+                refreshRealtimeDashboard();
+            })();
         </script>
     </div>
 @endsection

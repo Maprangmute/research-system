@@ -108,6 +108,7 @@ Route::middleware([
 ])->group(function () {
     // Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/overview', [OverviewController::class, 'index'])->name('overview');
 });
 
 use App\Http\Controllers\ProjectLogController;
