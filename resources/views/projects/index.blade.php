@@ -78,6 +78,65 @@
             z-index: 5;
             pointer-events: none;
         }
+
+        .project-table {
+            table-layout: fixed;
+            min-width: 1240px;
+        }
+
+        .project-table th {
+            white-space: nowrap;
+            font-size: 12px;
+            letter-spacing: 0.01em;
+            color: #475569;
+        }
+
+        .project-table td {
+            vertical-align: top;
+        }
+
+        .project-table tbody tr:nth-child(even) {
+            background: #fbfdff;
+        }
+
+        .project-table tbody tr:hover {
+            background: #eef2ff;
+        }
+
+        .cell-clamp-2,
+        .cell-clamp-3,
+        .cell-clamp-4,
+        .cell-clamp-5 {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        .cell-clamp-2 {
+            -webkit-line-clamp: 2;
+        }
+
+        .cell-clamp-3 {
+            -webkit-line-clamp: 3;
+        }
+
+        .cell-clamp-4 {
+            -webkit-line-clamp: 4;
+        }
+
+        .cell-clamp-5 {
+            -webkit-line-clamp: 5;
+        }
+
+        .status-box {
+            display: block;
+            width: 100%;
+            padding: 6px 8px;
+            border-radius: 0;
+            line-height: 1.3;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
     </style>
 
     <div class="container mx-auto px-4 mt-11 space-y-6">
@@ -103,9 +162,11 @@
             class="bg-white p-4 rounded-xl shadow-sm ring-1 ring-slate-100 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
                 <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ค้นหาชื่อโครงการ</span>
-                    <input type="text" name="search" placeholder="ชื่อโครงการ" value="{{ request('search') }}"
+                    <span class="text-xs font-semibold text-slate-600">ค้นหาชื่อโครงการ / Project ID</span>
+                    <input id="project-search-input" type="text" name="search"
+                        placeholder="ชื่อโครงการ หรือ Project ID (รองรับคำใกล้เคียง)" value="{{ request('search') }}"
                         class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
+                    <span class="mt-1 block text-[11px] text-slate-500">ค้นหาแบบ realtime ไม่ต้องกดปุ่ม</span>
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ประเภทโครงการ</span>
@@ -155,6 +216,16 @@
                         <option value="1000000-3000000" @selected(request('budget_range') === '1000000-3000000')>1,000,000 - 3,000,000</option>
                         <option value="3000000-5000000" @selected(request('budget_range') === '3000000-5000000')>3,000,000 - 5,000,000</option>
                         <option value="5000000-999999999" @selected(request('budget_range') === '5000000-999999999')>มากกว่า 5,000,000</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">Project Status</span>
+                    <select name="project_status" class="w-full border border-slate-200 rounded-lg p-2">
+                        <option value="">ทั้งหมด</option>
+                        <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
+                        @foreach ($statusOptions as $status)
+                            <option value="{{ $status }}" @selected(request('project_status') === $status)>{{ $status }}</option>
+                        @endforeach
                     </select>
                 </label>
                 {{-- <label class="block md:col-span-2">
@@ -223,6 +294,7 @@
                         <option value="created_at" @selected(request('sort') === 'created_at')>สร้างล่าสุด → เก่าสุด</option>
                         <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
                         <option value="start_year" @selected(request('sort') === 'start_year')>ปีโครงการ</option>
+                        <option value="planning_status" @selected(request('sort') === 'planning_status')>Project Status</option>
                         <option value="project_name_th" @selected(request('sort') === 'project_name_th')>ชื่อโครงการ</option>
                     </select>
                 </label>
@@ -236,17 +308,19 @@
                 <div class="flex gap-2">
                     <button type="submit"
                         class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm">ใช้ตัวกรอง</button>
-                    @if (request()->query())
-                        <a href="{{ route('projects.index') }}"
-                            class="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 bg-white hover:bg-slate-50">ล้าง</a>
-                    @endif
+                    <a id="project-filter-reset" href="{{ route('projects.index') }}"
+                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 bg-white hover:bg-slate-50">ล้าง</a>
                 </div>
             </div>
         </form>
+        <div id="table-loading-indicator" class="hidden items-center gap-2 text-xs text-slate-500">
+            <span class="inline-block h-3 w-3 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin"></span>
+            กำลังอัปเดตตาราง...
+        </div>
 
         {{-- Helpers: sort + color badge --}}
         @php
-            $currentSort = request('sort', 'id');
+            $currentSort = request('sort', 'updated_at');
             $currentDir = request('dir', 'desc');
             $toggleDir = fn($field) => $currentSort === $field && $currentDir === 'asc' ? 'desc' : 'asc';
             $sortUrl = function ($field) use ($toggleDir) {
@@ -262,24 +336,77 @@
             // แผนที่สี badge ตามประเภท (ถ้าไม่พบ ใช้สีกลาง)
             function type_badge_classes($type)
             {
-                $t = trim(strtolower((string) $type));
-                $map = [
-                    'clinical' => 'bg-pink-100 text-pink-800',
-                    'policy' => 'bg-amber-100 text-amber-800',
-                    'education' => 'bg-sky-100 text-sky-800',
-                    'innovation' => 'bg-emerald-100 text-emerald-800',
-                    'public health' => 'bg-violet-100 text-violet-800',
-                    'survey' => 'bg-indigo-100 text-indigo-800',
-                    'basic' => 'bg-rose-100 text-rose-800',
-                    'ai' => 'bg-fuchsia-100 text-fuchsia-800',
-                    'it' => 'bg-cyan-100 text-cyan-800',
-                ];
-                foreach ($map as $key => $cls) {
-                    if (str_contains($t, $key)) {
-                        return $cls;
-                    }
+                $label = trim((string) $type);
+                if ($label === '') {
+                    return 'bg-slate-200 text-slate-800 border border-slate-300';
                 }
-                return 'bg-slate-100 text-slate-800';
+
+                $palette = [
+                    ['bg' => 'bg-rose-100', 'text' => 'text-rose-800', 'border' => 'border-rose-200'],
+                    ['bg' => 'bg-orange-100', 'text' => 'text-orange-800', 'border' => 'border-orange-200'],
+                    ['bg' => 'bg-amber-100', 'text' => 'text-amber-800', 'border' => 'border-amber-200'],
+                    ['bg' => 'bg-lime-100', 'text' => 'text-lime-800', 'border' => 'border-lime-200'],
+                    ['bg' => 'bg-emerald-100', 'text' => 'text-emerald-800', 'border' => 'border-emerald-200'],
+                    ['bg' => 'bg-teal-100', 'text' => 'text-teal-800', 'border' => 'border-teal-200'],
+                    ['bg' => 'bg-cyan-100', 'text' => 'text-cyan-800', 'border' => 'border-cyan-200'],
+                    ['bg' => 'bg-sky-100', 'text' => 'text-sky-800', 'border' => 'border-sky-200'],
+                    ['bg' => 'bg-blue-100', 'text' => 'text-blue-800', 'border' => 'border-blue-200'],
+                    ['bg' => 'bg-indigo-100', 'text' => 'text-indigo-800', 'border' => 'border-indigo-200'],
+                    ['bg' => 'bg-violet-100', 'text' => 'text-violet-800', 'border' => 'border-violet-200'],
+                    ['bg' => 'bg-fuchsia-100', 'text' => 'text-fuchsia-800', 'border' => 'border-fuchsia-200'],
+                    ['bg' => 'bg-pink-100', 'text' => 'text-pink-800', 'border' => 'border-pink-200'],
+                ];
+
+                $normalized = mb_strtolower($label, 'UTF-8');
+                $hash = hexdec(substr(md5($normalized), 0, 8));
+                $tone = $palette[$hash % count($palette)];
+
+                return "{$tone['bg']} {$tone['text']} border {$tone['border']}";
+            }
+
+            function funding_badge_classes($fundingType)
+            {
+                $t = trim(mb_strtolower((string) $fundingType, 'UTF-8'));
+                if ($t === '') {
+                    return 'bg-slate-200 text-slate-800';
+                }
+                if (str_contains($t, 'ภายใน')) {
+                    return 'bg-emerald-200 text-emerald-900';
+                }
+                if (str_contains($t, 'ภายนอก')) {
+                    return 'bg-sky-200 text-sky-900';
+                }
+                if (str_contains($t, 'ร่วม') || str_contains($t, 'co-') || str_contains($t, 'collab')) {
+                    return 'bg-amber-200 text-amber-900';
+                }
+                return 'bg-slate-200 text-slate-800';
+            }
+
+            function project_status_badge_classes($status)
+            {
+                $s = trim(mb_strtolower((string) $status, 'UTF-8'));
+                if ($s === '') {
+                    return 'bg-slate-200 text-slate-800';
+                }
+                if (str_contains($s, 'ยกเลิก')) {
+                    return 'bg-rose-200 text-rose-900';
+                }
+                if (str_contains($s, 'ปิดโปรเจค') || str_contains($s, 'เสร็จ')) {
+                    return 'bg-emerald-200 text-emerald-900';
+                }
+                if (str_contains($s, 'เขียนรายงาน') || str_contains($s, 'publication')) {
+                    return 'bg-indigo-200 text-indigo-900';
+                }
+                if (str_contains($s, 'วิเคราะห์')) {
+                    return 'bg-violet-200 text-violet-900';
+                }
+                if (str_contains($s, 'เก็บข้อมูล')) {
+                    return 'bg-sky-200 text-sky-900';
+                }
+                if (str_contains($s, 'plan') || str_contains($s, 'เริ่มต้น') || str_contains($s, 'submit irb')) {
+                    return 'bg-amber-200 text-amber-900';
+                }
+                return 'bg-slate-200 text-slate-800';
             }
         @endphp
 
@@ -330,7 +457,7 @@
 
 
         {{-- Table --}}
-        <div class="bg-white rounded-2xl shadow-md ring-1 ring-slate-100 overflow-hidden">
+        <div id="project-table-shell" class="bg-white rounded-2xl shadow-md ring-1 ring-slate-100 overflow-hidden transition-opacity duration-200">
             <div class="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
                 <div class="text-sm text-slate-600">
                     แสดงผล {{ $projects->firstItem() ?? 0 }}–{{ $projects->lastItem() ?? 0 }} จากทั้งหมด
@@ -341,24 +468,18 @@
             </div>
 
             <div class="overflow-auto">
-                <table class="min-w-full">
+                <table class="project-table min-w-full">
                     <colgroup>
-                        <col style="width: 72px;"> {{-- ID สั้น ๆ --}}
-                        <col style="width: 140px;"> {{-- Project ID (โค้ด) --}}
-                        <col style="width: auto;"> {{-- ชื่อโครงการ ยืดได้ --}}
-                        <col style="width: 180px;"> {{-- ประเภท: badge --}}
-                        <col style="width: 180px;"> {{-- ทุน --}}
-                        <col style="width: 220px;"> {{-- Theme --}}
-                        <col style="width: 110px;"> {{-- Outputs --}}
-                        <col style="width: 88px;"> {{-- ปี --}}
-                        <col style="width: 150px;"> {{-- อัปเดทล่าสุด --}}
+                        <col style="width: 8%;"> {{-- Project ID --}}
+                        <col style="width: 56%;"> {{-- ชื่อโครงการ + Theme + ประเภท --}}
+                        <col style="width: 9%;"> {{-- ทุน --}}
+                        <col style="width: 8%;"> {{-- Status --}}
+                        <col style="width: 4%;"> {{-- Outputs --}}
+                        <col style="width: 6%;"> {{-- ปี --}}
+                        <col style="width: 6%;"> {{-- อัปเดทล่าสุด --}}
                     </colgroup>
-                    <thead class="bg-slate-50">
+                    <thead class="bg-slate-50 border-b border-slate-200">
                         <tr class="text-left text-xs font-semibold text-slate-600">
-                            <th class="px-4 py-3">
-                                <a href="{{ $sortUrl('id') }}" class="hover:text-indigo-700">ID <span
-                                        class="ml-1">{{ $sortIcon('id') }}</span></a>
-                            </th>
                             <th class="px-4 py-3">
                                 <a href="{{ $sortUrl('project_code') }}" class="hover:text-indigo-700">Project ID <span
                                         class="ml-1">{{ $sortIcon('project_code') }}</span></a>
@@ -368,16 +489,12 @@
                                         class="ml-1">{{ $sortIcon('project_name_th') }}</span></a>
                             </th>
                             <th class="px-4 py-3">
-                                <a href="{{ $sortUrl('project_type') }}" class="hover:text-indigo-700">ประเภท <span
-                                        class="ml-1">{{ $sortIcon('project_type') }}</span></a>
-                            </th>
-                            <th class="px-4 py-3">
                                 <a href="{{ $sortUrl('funding_type') }}" class="hover:text-indigo-700">ทุน <span
                                         class="ml-1">{{ $sortIcon('funding_type') }}</span></a>
                             </th>
                             <th class="px-4 py-3">
-                                <a href="{{ $sortUrl('theme') }}" class="hover:text-indigo-700">Theme <span
-                                        class="ml-1">{{ $sortIcon('theme') }}</span></a>
+                                <a href="{{ $sortUrl('planning_status') }}" class="hover:text-indigo-700">Project Status <span
+                                        class="ml-1">{{ $sortIcon('planning_status') }}</span></a>
                             </th>
                             <th class="px-4 py-3 text-right">
                                 Outputs
@@ -406,38 +523,48 @@
                                 data-edit-url="{{ $editUrl }}" data-pdf-url="{{ $pdfUrl }}"
                                 data-progress-url="{{ $progressUrl }}" data-fte-project-url="{{ $fteProjectUrl }}"
                                 data-delete-form-id="{{ $deleteFormId }}"
+                                data-project-name="{{ $project->project_name_th }}"
                                 oncontextmenu="return openRowMenu(event, this)" ondblclick="goToDetail(this)"
                                 ontouchstart="rowLongPressStart(event, this)" ontouchend="rowLongPressEnd(event)">
-                                <td class="px-4 py-3 text-sm text-slate-600">{{ $project->id }}</td>
-                                <td class="px-4 py-3 text-sm font-mono text-slate-700">
+                                <td class="px-4 py-3 text-sm font-mono text-slate-700 whitespace-nowrap">
                                     <a href="{{ $showUrl }}" class="hover:underline">{{ $project->project_code }}</a>
                                 </td>
                                 <td class="px-4 py-3">
                                     <a href="{{ $showUrl }}"
-                                        class="text-slate-900 hover:text-indigo-700 font-medium break-words">
+                                        class="text-slate-900 hover:text-indigo-700 font-medium cell-clamp-5"
+                                        title="{{ $project->project_name_th }}">
                                         {{ $project->project_name_th }}
                                     </a>
-                                </td>
-                                <td class="px-4 py-3">
+                                    <div class="mt-1 text-xs text-slate-500 cell-clamp-2" title="{{ $project->theme ?: 'ไม่ระบุ Theme' }}">
+                                        Theme: {{ $project->theme ?: 'ไม่ระบุ' }}
+                                    </div>
                                     <span
-                                        class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium {{ type_badge_classes($project->project_type) }}">
-                                        {{ $project->project_type ?: '-' }}
+                                        class="mt-1 inline-flex items-center px-2 py-0.5 rounded-none text-xs font-medium {{ type_badge_classes($project->project_type) }}">
+                                        <span class="cell-clamp-2" title="{{ $project->project_type ?: '-' }}">
+                                            {{ $project->project_type ?: '-' }}
+                                        </span>
                                     </span>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
-                                        class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
-                                        {{ $project->funding_type ?: '-' }}
+                                        class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium {{ funding_badge_classes($project->funding_type) }}">
+                                        {{ $project->funding_type ?: 'ยังไม่ได้ระบุ' }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 whitespace-normal break-words text-slate-700">
-                                    {{ $project->theme ?: '-' }}
+                                <td class="px-4 py-3 whitespace-normal text-slate-700">
+                                    @php
+                                        $projectStatus = trim((string) ($project->planning_status ?? ''));
+                                    @endphp
+                                    <span
+                                        class="status-box text-xs font-semibold {{ project_status_badge_classes($projectStatus) }}">
+                                        {{ $projectStatus !== '' ? $projectStatus : 'ยังไม่ได้ระบุ' }}
+                                    </span>
                                 </td>
-                                <td class="px-4 py-3 text-right text-slate-700">
+                                <td class="px-4 py-3 text-right font-semibold text-slate-700">
                                     {{ $project->outputs_count ?? 0 }}
                                 </td>
-                                <td class="px-4 py-3 text-slate-700">{{ $project->start_year ?: '-' }}</td>
-                                <td class="px-4 py-3 text-slate-600">
+                                <td class="px-4 py-3 text-slate-700 text-center">{{ $project->start_year ?: '-' }}</td>
+                                <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
                                     @php
                                         $updated = $project->updated_at ? \Carbon\Carbon::parse($project->updated_at) : null;
                                     @endphp
@@ -454,7 +581,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-10 text-slate-500">ไม่มีข้อมูล</td>
+                                <td colspan="7" class="text-center py-10 text-slate-500">ไม่มีข้อมูล</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -473,6 +600,10 @@
         <div class="py-1 text-sm">
             <button type="button" data-action="show" class="w-full text-left px-3 py-2 hover:bg-indigo-50">🔎
                 ดูรายละเอียด</button>
+            <button type="button" data-action="show-new-tab" class="w-full text-left px-3 py-2 hover:bg-indigo-50">🗂️
+                เปิดข้อมูลในแท็บใหม่</button>
+            <button type="button" data-action="copy-project-name" class="w-full text-left px-3 py-2 hover:bg-indigo-50">📋
+                คัดลอกชื่อโครงการ</button>
             <button type="button" data-action="edit" class="w-full text-left px-3 py-2 hover:bg-indigo-50">✏️
                 แก้ไข</button>
             <button type="button" data-action="pdf"
@@ -504,12 +635,13 @@
             menu.dataset.progressUrl = row.getAttribute('data-progress-url') || '';
             menu.dataset.fteProjectUrl = row.getAttribute('data-fte-project-url') || '';
             menu.dataset.deleteFormId = row.getAttribute('data-delete-form-id') || '';
+            menu.dataset.projectName = row.getAttribute('data-project-name') || '';
 
             const vw = innerWidth,
                 vh = innerHeight,
                 rect = {
                     w: 220,
-                    h: 200
+                    h: 260
                 };
             let x = e.clientX,
                 y = e.clientY;
@@ -550,10 +682,42 @@
             if (ev.key === 'Escape') hideMenu();
         }
 
+        async function copyTextToClipboard(text) {
+            if (!text) return false;
+
+            if (navigator.clipboard && window.isSecureContext) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } catch (error) {
+                    // fallback below
+                }
+            }
+
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            temp.setAttribute('readonly', '');
+            temp.style.position = 'fixed';
+            temp.style.top = '-9999px';
+            temp.style.left = '-9999px';
+            document.body.appendChild(temp);
+            temp.select();
+            temp.setSelectionRange(0, text.length);
+
+            let copied = false;
+            try {
+                copied = document.execCommand('copy');
+            } catch (error) {
+                copied = false;
+            }
+            document.body.removeChild(temp);
+            return copied;
+        }
+
         (function bindMenu() {
             const m = document.getElementById('row-menu');
             if (!m) return;
-            m.addEventListener('click', (ev) => {
+            m.addEventListener('click', async (ev) => {
                 const btn = ev.target.closest('button[data-action]');
                 if (!btn) return;
                 const act = btn.dataset.action,
@@ -562,11 +726,28 @@
                     pdfUrl = m.dataset.pdfUrl,
                     progressUrl = m.dataset.progressUrl,
                     fteProjectUrl = m.dataset.fteProjectUrl,
-                    delId = m.dataset.deleteFormId;
+                    delId = m.dataset.deleteFormId,
+                    projectName = m.dataset.projectName || '';
                 hideMenu();
                 switch (act) {
                     case 'show':
                         if (showUrl) location.href = showUrl;
+                        break;
+                    case 'show-new-tab':
+                        if (showUrl) window.open(showUrl, '_blank', 'noopener,noreferrer');
+                        break;
+                    case 'copy-project-name':
+                        if (!projectName) return;
+                        {
+                            const copied = await copyTextToClipboard(projectName);
+                            Swal.fire({
+                                icon: copied ? 'success' : 'error',
+                                title: copied ? 'คัดลอกชื่อโครงการแล้ว' : 'คัดลอกไม่สำเร็จ',
+                                text: copied ? projectName : 'เบราว์เซอร์ไม่อนุญาตให้คัดลอกอัตโนมัติ',
+                                timer: copied ? 1400 : 2200,
+                                showConfirmButton: false
+                            });
+                        }
                         break;
                     case 'edit':
                         if (editUrl) location.href = editUrl;
@@ -692,6 +873,218 @@
             minInput.addEventListener('change', clampInputs);
             maxInput.addEventListener('change', clampInputs);
             updateUI();
+        })();
+
+        // AJAX filter/search/sort/pagination (no page refresh)
+        (function() {
+            const form = document.getElementById('project-filter-form');
+            const shellSelector = '#project-table-shell';
+            const loadingEl = document.getElementById('table-loading-indicator');
+            if (!form) return;
+
+            const selectors = [
+                'input[name="search"]',
+                'select[name="type"]',
+                'select[name="year"]',
+                'select[name="pi_name"]',
+                'select[name="funding_source"]',
+                'select[name="project_status"]',
+                'select[name="budget_range"]',
+                'select[name="fte_status"]',
+                'select[name="last_update"]',
+                'input[name="issue_overdue"]',
+                'input[name="issue_missing_dates"]',
+                'input[name="issue_duplicates"]',
+                'select[name="sort"]',
+                'select[name="dir"]'
+            ];
+
+            const fields = Array.from(form.querySelectorAll(selectors.join(',')));
+            if (!fields.length) return;
+
+            let timer = null;
+            let controller = null;
+            let requestToken = 0;
+
+            const setLoading = (isLoading) => {
+                if (loadingEl) {
+                    loadingEl.classList.toggle('hidden', !isLoading);
+                    loadingEl.classList.toggle('flex', isLoading);
+                }
+                const shell = document.querySelector(shellSelector);
+                if (shell) {
+                    shell.classList.toggle('opacity-60', isLoading);
+                }
+            };
+
+            const parseAndReplaceShell = (html) => {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const nextShell = doc.querySelector(shellSelector);
+                const currentShell = document.querySelector(shellSelector);
+                if (!nextShell || !currentShell) {
+                    return false;
+                }
+                currentShell.replaceWith(nextShell);
+                return true;
+            };
+
+            const syncFormWithUrl = (url) => {
+                form.querySelectorAll('input[name], select[name]').forEach((field) => {
+                    const name = field.name;
+                    if (!name) return;
+
+                    if (field.type === 'checkbox') {
+                        const values = url.searchParams.getAll(name);
+                        const fieldValue = field.value || '1';
+                        field.checked = values.includes(fieldValue);
+                        return;
+                    }
+
+                    field.value = url.searchParams.get(name) ?? '';
+                });
+            };
+
+            const buildUrlFromForm = () => {
+                const url = new URL(form.action, window.location.origin);
+                const formData = new FormData(form);
+                for (const [key, value] of formData.entries()) {
+                    if (value !== null && String(value).trim() !== '') {
+                        url.searchParams.append(key, String(value));
+                    }
+                }
+                url.searchParams.delete('page');
+                return url;
+            };
+
+            const fetchAndRender = async (url, options = {}) => {
+                const {
+                    updateUrl = true
+                } = options;
+                const token = ++requestToken;
+
+                if (controller) {
+                    controller.abort();
+                }
+                controller = new AbortController();
+                setLoading(true);
+
+                try {
+                    const res = await fetch(url.toString(), {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        signal: controller.signal
+                    });
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}`);
+                    }
+
+                    const html = await res.text();
+                    if (token !== requestToken) {
+                        return;
+                    }
+
+                    if (!parseAndReplaceShell(html)) {
+                        throw new Error('Cannot find table shell in response');
+                    }
+
+                    if (updateUrl) {
+                        history.replaceState({
+                            ajax: true
+                        }, '', `${url.pathname}${url.search}`);
+                    }
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error(error);
+                    }
+                } finally {
+                    if (token === requestToken) {
+                        setLoading(false);
+                    }
+                }
+            };
+
+            const submitDebounced = (delay = 220) => {
+                if (timer) clearTimeout(timer);
+                timer = setTimeout(() => {
+                    fetchAndRender(buildUrlFromForm(), {
+                        updateUrl: true
+                    });
+                }, delay);
+            };
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                fetchAndRender(buildUrlFromForm(), {
+                    updateUrl: true
+                });
+            });
+
+            fields.forEach((field) => {
+                const isTypingField = field.matches('input[type="text"], input[type="search"]');
+                if (isTypingField) {
+                    field.addEventListener('input', () => submitDebounced(260));
+                    field.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            submitDebounced(0);
+                        }
+                    });
+                    return;
+                }
+
+                field.addEventListener('change', () => submitDebounced(120));
+            });
+
+            document.addEventListener('click', (event) => {
+                const link = event.target.closest(`${shellSelector} a[href]`);
+                if (!link) return;
+
+                const href = link.getAttribute('href');
+                if (!href) return;
+
+                const url = new URL(href, window.location.origin);
+                const isSamePage = url.pathname === window.location.pathname;
+                const isListInteraction = url.searchParams.has('page') || url.searchParams.has('sort') || url.searchParams.has('dir');
+
+                if (!isSamePage || !isListInteraction) {
+                    return;
+                }
+
+                event.preventDefault();
+                syncFormWithUrl(url);
+                fetchAndRender(url, {
+                    updateUrl: true
+                });
+            });
+
+            const resetLink = document.getElementById('project-filter-reset');
+            if (resetLink) {
+                resetLink.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    form.querySelectorAll('input[name], select[name]').forEach((field) => {
+                        if (field.type === 'checkbox') {
+                            field.checked = false;
+                            return;
+                        }
+
+                        if (field.name === 'sort') {
+                            field.value = 'updated_at';
+                            return;
+                        }
+                        if (field.name === 'dir') {
+                            field.value = 'desc';
+                            return;
+                        }
+                        field.value = '';
+                    });
+
+                    fetchAndRender(new URL(resetLink.href, window.location.origin), {
+                        updateUrl: true
+                    });
+                });
+            }
         })();
     </script>
 @endsection

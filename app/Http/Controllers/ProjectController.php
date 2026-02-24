@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Output;
 use App\Models\Project;
 // ⬅️ เพิ่ม
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -58,19 +59,22 @@ class ProjectController extends Controller
         if ($request->filled('type')) {
             $query->where('project_type', 'like', '%'.$request->type.'%');
         }
-        if ($request->filled('search')) {
-            $search = trim($request->search);
-            $query->where('project_name_th', 'like', '%'.$search.'%');
-            $query->orderByRaw(
-                "case when project_name_th = ? then 0 when project_name_th like ? then 1 else 2 end",
-                [$search, '%'.$search.'%']
-            );
-        }
         if ($request->filled('pi_name')) {
             $query->whereRaw('TRIM(pi_name) = ?', [$request->pi_name]);
         }
         if ($request->filled('funding_source')) {
             $query->whereRaw('TRIM(funding_source) = ?', [$request->funding_source]);
+        }
+        if ($request->filled('project_status')) {
+            $status = trim((string) $request->project_status);
+            if ($status === '__unspecified__') {
+                $query->where(function ($q) {
+                    $q->whereNull('planning_status')
+                        ->orWhereRaw("TRIM(planning_status) = ''");
+                });
+            } else {
+                $query->whereRaw('TRIM(planning_status) = ?', [$status]);
+            }
         }
         if ($request->filled('budget_range') && !$request->filled('budget_min') && !$request->filled('budget_max')) {
             [$minRange, $maxRange] = array_pad(explode('-', $request->budget_range), 2, null);
@@ -136,12 +140,17 @@ class ProjectController extends Controller
                 $query->whereHas('fteRoles')
                     ->whereDoesntHave('fteRoles', function ($subQ) {
                         $subQ->whereNull('fte_value')->orWhere('fte_value', 0);
-                    });
+                });
             }
+        }
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $searchScope = clone $query;
+            $this->applyProjectNameSearch($query, $searchScope, $search);
         }
 
         // sort
-        $sortable = ['id', 'project_code', 'project_name_th', 'project_type', 'funding_type', 'theme', 'start_year', 'updated_at', 'created_at', 'budget'];
+        $sortable = ['id', 'project_code', 'project_name_th', 'project_type', 'funding_type', 'theme', 'planning_status', 'start_year', 'updated_at', 'created_at', 'budget'];
         $sort = in_array($request->get('sort'), $sortable, true) ? $request->get('sort') : 'updated_at';
         $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
 
@@ -180,6 +189,13 @@ class ProjectController extends Controller
             ->groupBy('type_key')
             ->orderBy('project_type')
             ->pluck('project_type');
+        $statusOptions = (clone $baseQuery)
+            ->selectRaw('LOWER(TRIM(planning_status)) as status_key, MIN(TRIM(planning_status)) as planning_status')
+            ->whereNotNull('planning_status')
+            ->whereRaw("TRIM(planning_status) <> ''")
+            ->groupBy('status_key')
+            ->orderBy('planning_status')
+            ->pluck('planning_status');
         $yearOptions = (clone $baseQuery)
             ->whereNotNull('start_year')
             ->distinct()
@@ -194,6 +210,7 @@ class ProjectController extends Controller
             'piOptions' => $piOptions,
             'fundingSources' => $fundingSources,
             'typeOptions' => $typeOptions,
+            'statusOptions' => $statusOptions,
             'yearOptions' => $yearOptions,
             'budgetMin' => $budgetMin,
             'budgetMax' => $budgetMax,
@@ -944,6 +961,207 @@ public function store(Request $request)
             }
         }
         $project->coResearches()->whereNotIn('id', $ids)->delete();
+    }
+
+    private function applyProjectNameSearch(Builder $query, Builder $searchScope, string $rawSearch): void
+    {
+        $search = trim($rawSearch);
+        if ($search === '') {
+            return;
+        }
+
+        $searchLower = mb_strtolower($search, 'UTF-8');
+        $searchNormalized = $this->normalizeSearchText($searchLower);
+        $normalizedNeedle = $searchNormalized !== '' ? $searchNormalized : $searchLower;
+        $searchNumericId = ctype_digit($search) ? (int) $search : null;
+        $tokens = $this->tokenizeSearchTerms($searchLower);
+        $fuzzyIds = $this->findFuzzyProjectIds($searchScope, $searchNormalized, $tokens);
+
+        $nameExpr = "REGEXP_REPLACE(LOWER(TRIM(project_name_th)), '[[:space:][:punct:]]+', '')";
+        $codeExpr = "REGEXP_REPLACE(LOWER(TRIM(project_code)), '[[:space:][:punct:]]+', '')";
+        $normalizedLike = '%'.$normalizedNeedle.'%';
+
+        $query->where(function (Builder $inner) use ($search, $searchLower, $searchNormalized, $searchNumericId, $tokens, $fuzzyIds, $nameExpr, $codeExpr) {
+            $inner->where('project_name_th', 'like', '%'.$search.'%')
+                ->orWhereRaw('LOWER(project_name_th) like ?', ['%'.$searchLower.'%'])
+                ->orWhereRaw('LOWER(project_code) like ?', ['%'.$searchLower.'%']);
+
+            if ($searchNormalized !== '') {
+                $inner->orWhereRaw("$nameExpr like ?", ['%'.$searchNormalized.'%'])
+                    ->orWhereRaw("$codeExpr like ?", ['%'.$searchNormalized.'%']);
+            }
+
+            if ($searchNumericId !== null) {
+                $inner->orWhere('id', $searchNumericId);
+            }
+
+            foreach ($tokens as $token) {
+                $inner->orWhereRaw('LOWER(project_name_th) like ?', ['%'.$token.'%']);
+            }
+
+            if ($fuzzyIds !== []) {
+                $inner->orWhereIn('id', $fuzzyIds);
+            }
+        });
+
+        $query->orderByRaw(
+            "CASE
+                WHEN LOWER(TRIM(project_code)) = ? THEN 0
+                WHEN $codeExpr = ? THEN 1
+                WHEN ? IS NOT NULL AND id = ? THEN 2
+                WHEN LOWER(TRIM(project_name_th)) = ? THEN 3
+                WHEN LOWER(project_code) LIKE ? THEN 4
+                WHEN LOWER(project_name_th) LIKE ? THEN 5
+                WHEN $nameExpr LIKE ? THEN 6
+                WHEN project_name_th LIKE ? THEN 7
+                ELSE 8
+            END",
+            [
+                $searchLower,
+                $normalizedNeedle,
+                $searchNumericId,
+                $searchNumericId,
+                $searchLower,
+                '%'.$searchLower.'%',
+                '%'.$searchLower.'%',
+                $normalizedLike,
+                '%'.$search.'%',
+            ]
+        );
+    }
+
+    private function findFuzzyProjectIds(Builder $scope, string $searchNormalized, array $tokens): array
+    {
+        if ($searchNormalized === '' && $tokens === []) {
+            return [];
+        }
+
+        if ($searchNormalized !== '' && mb_strlen($searchNormalized, 'UTF-8') < 2) {
+            return [];
+        }
+
+        $threshold = $searchNormalized !== '' && mb_strlen($searchNormalized, 'UTF-8') <= 4 ? 0.55 : 0.42;
+
+        $candidates = (clone $scope)
+            ->select(['id', 'project_name_th'])
+            ->whereNotNull('project_name_th')
+            ->whereRaw("TRIM(project_name_th) <> ''")
+            ->limit(1200)
+            ->get();
+
+        $scored = [];
+        foreach ($candidates as $candidate) {
+            $score = $this->calculateFuzzyScore($searchNormalized, $tokens, (string) $candidate->project_name_th);
+            if ($score >= $threshold) {
+                $scored[] = [
+                    'id' => (int) $candidate->id,
+                    'score' => $score,
+                ];
+            }
+        }
+
+        usort($scored, static fn(array $a, array $b): int => $b['score'] <=> $a['score']);
+
+        return array_values(array_unique(array_slice(array_column($scored, 'id'), 0, 80)));
+    }
+
+    private function calculateFuzzyScore(string $needleNormalized, array $tokens, string $candidateName): float
+    {
+        $candidateLower = mb_strtolower(trim($candidateName), 'UTF-8');
+        $candidateNormalized = $this->normalizeSearchText($candidateLower);
+
+        if ($needleNormalized === '' || $candidateNormalized === '') {
+            return 0.0;
+        }
+
+        if ($candidateNormalized === $needleNormalized) {
+            return 1.0;
+        }
+
+        if (str_contains($candidateNormalized, $needleNormalized)) {
+            return 0.92;
+        }
+
+        if (str_contains($needleNormalized, $candidateNormalized)) {
+            return 0.75;
+        }
+
+        $tokenScore = 0.0;
+        if ($tokens !== []) {
+            $candidateTokens = $this->tokenizeSearchTerms($candidateLower);
+            if ($candidateTokens !== []) {
+                $tokenHits = count(array_intersect($tokens, $candidateTokens));
+                $tokenScore = $tokenHits / max(count($tokens), 1);
+            }
+        }
+
+        $bigramScore = $this->ngramJaccardScore($needleNormalized, $candidateNormalized, 2);
+        $trigramScore = $this->ngramJaccardScore($needleNormalized, $candidateNormalized, 3);
+        $prefix = mb_substr($needleNormalized, 0, min(3, mb_strlen($needleNormalized, 'UTF-8')), 'UTF-8');
+        $prefixBonus = $prefix !== '' && str_starts_with($candidateNormalized, $prefix) ? 0.08 : 0.0;
+
+        return min(1.0, ($bigramScore * 0.45) + ($trigramScore * 0.25) + ($tokenScore * 0.22) + $prefixBonus);
+    }
+
+    private function normalizeSearchText(string $value): string
+    {
+        $normalized = mb_strtolower(trim($value), 'UTF-8');
+        $normalized = preg_replace('/\s+/u', '', $normalized) ?? $normalized;
+        $normalized = preg_replace('/[^\p{L}\p{N}]+/u', '', $normalized) ?? $normalized;
+
+        return $normalized;
+    }
+
+    private function tokenizeSearchTerms(string $value): array
+    {
+        $normalized = mb_strtolower(trim($value), 'UTF-8');
+        if ($normalized === '') {
+            return [];
+        }
+
+        $tokens = preg_split('/[^\p{L}\p{N}]+/u', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $tokens = array_filter($tokens, static fn(string $token): bool => mb_strlen($token, 'UTF-8') >= 2);
+
+        return array_values(array_unique($tokens));
+    }
+
+    private function ngramJaccardScore(string $left, string $right, int $size): float
+    {
+        $leftNgrams = $this->makeNgrams($left, $size);
+        $rightNgrams = $this->makeNgrams($right, $size);
+
+        if ($leftNgrams === [] || $rightNgrams === []) {
+            return 0.0;
+        }
+
+        $leftSet = array_values(array_unique($leftNgrams));
+        $rightSet = array_values(array_unique($rightNgrams));
+
+        $intersection = count(array_intersect($leftSet, $rightSet));
+        $union = count(array_unique(array_merge($leftSet, $rightSet)));
+
+        return $union > 0 ? $intersection / $union : 0.0;
+    }
+
+    private function makeNgrams(string $value, int $size): array
+    {
+        $chars = preg_split('//u', $value, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $length = count($chars);
+
+        if ($length === 0) {
+            return [];
+        }
+
+        if ($length <= $size) {
+            return [$value];
+        }
+
+        $ngrams = [];
+        for ($i = 0; $i <= $length - $size; $i++) {
+            $ngrams[] = implode('', array_slice($chars, $i, $size));
+        }
+
+        return $ngrams;
     }
 
     public function checkProjectName(Request $request)
