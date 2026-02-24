@@ -60,7 +60,7 @@ class DashboardController extends Controller
         } elseif ($forceView !== 'desktop') {
             $ua = (string) $request->header('User-Agent', '');
             $isMobile = (bool) preg_match(
-                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
+                '/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i',
                 $ua
             );
             if ($isMobile) {

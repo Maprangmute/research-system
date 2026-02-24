@@ -79,11 +79,11 @@
             class="bg-white border-b border-slate-200 shadow-sm fixed top-0 inset-x-0 z-50 transition-transform duration-200"
             x-data="{ openNav: false }">
             <div class="container mx-auto px-4 py-3">
-                <div class="flex items-center gap-4 mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
+                <div class="flex items-center gap-4 mobile-nav xl:rounded-none xl:border-0 xl:bg-transparent xl:p-0">
                     <a href="/dashboard" class="font-bold brand text-slate-900 tracking-tight text-lg">Research
                         Dashboard</a>
 
-                    <div class="hidden md:flex items-center gap-1 flex-1 justify-center">
+                    <div class="hidden xl:flex items-center gap-1 flex-1 justify-center">
                         <a href="/dashboard"
                             class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📊
                             Dashboard</a>
@@ -173,7 +173,7 @@
                             </div>
                         </div>
 
-                        <button type="button" class="md:hidden p-2 mobile-nav-toggle text-gray-600 hover:bg-gray-50"
+                        <button type="button" class="xl:hidden p-2 mobile-nav-toggle text-gray-600 hover:bg-gray-50"
                             @click="openNav = !openNav" aria-label="Toggle navigation">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
                                 viewBox="0 0 24 24">
@@ -183,7 +183,7 @@
                     </div>
                 </div>
 
-                <div class="md:hidden mt-3" x-show="openNav" x-cloak>
+                <div class="xl:hidden mt-3" x-show="openNav" x-cloak>
                     <div class="pt-3 pb-2 border-t flex flex-col gap-2 mobile-nav-links">
                         <a href="/dashboard">📊 Dashboard</a>
                         <a href="/rm">📋 รายการโปรเจค</a>

@@ -912,7 +912,7 @@
             .lux-page #chartOverdueProjects,
             .lux-page #chartExternalBySource,
             .lux-page #chartInternalBySource {
-                height: 840px !important;
+                height: 240px !important;
             }
         }
 
@@ -925,7 +925,9 @@
 
             .lux-page .lux-chart-card canvas {
                 width: 100% !important;
-                height: auto !important;
+                height: 180px !important;
+                min-height: 180px !important;
+                max-height: 180px !important;
             }
         }
 
@@ -1077,6 +1079,119 @@
 
             .lux-mobile-table td {
                 padding: 4px 0;
+            }
+        }
+
+        /* Final chart guardrail (must stay last in this style block) */
+        .lux-page .lux-chart-scroll {
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: visible !important;
+            gap: 1rem !important;
+            align-items: stretch !important;
+        }
+
+        .lux-page .lux-chart-card {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+        }
+
+        .lux-page .lux-chart-card canvas[id^="chart"] {
+            width: 100% !important;
+            height: var(--chart-height, 220px) !important;
+            min-height: var(--chart-height, 220px) !important;
+            max-height: var(--chart-height, 220px) !important;
+        }
+
+        /* Phone: grouped layout for easier reading */
+        @media (max-width: 640px) {
+            .lux-page .lux-chart-scroll {
+                display: block !important;
+                overflow: visible !important;
+                padding-bottom: 0 !important;
+            }
+
+            .lux-page .lux-chart-card {
+                min-width: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                flex: none !important;
+                margin: 0 !important;
+            }
+
+            .mobile-chart-nav {
+                display: flex;
+                gap: 8px;
+                overflow-x: auto;
+                padding: 2px 0 10px;
+                margin-bottom: 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .mobile-chart-nav::-webkit-scrollbar {
+                height: 4px;
+            }
+
+            .mobile-chart-nav-chip {
+                border: 1px solid #cbd5e1;
+                background: #ffffff;
+                color: #0f172a;
+                border-radius: 999px;
+                font-size: 12px;
+                padding: 6px 10px;
+                white-space: nowrap;
+            }
+
+            .mobile-chart-group {
+                border: 1px solid #e2e8f0;
+                border-radius: 14px;
+                background: #ffffff;
+                padding: 10px;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+            }
+
+            .mobile-chart-group-toggle {
+                width: 100%;
+                border: none;
+                background: transparent;
+                text-align: left;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .mobile-chart-group-title {
+                font-size: 13px;
+                font-weight: 700;
+                color: #0f172a;
+            }
+
+            .mobile-chart-group-sub {
+                display: block;
+                font-size: 11px;
+                color: #64748b;
+                margin-top: 2px;
+            }
+
+            .mobile-chart-group-chevron {
+                color: #64748b;
+                transition: transform 0.2s ease;
+            }
+
+            .mobile-chart-group.is-open .mobile-chart-group-chevron {
+                transform: rotate(180deg);
+            }
+
+            .mobile-chart-group-body {
+                display: grid;
+                gap: 10px;
+                margin-top: 10px;
             }
         }
     </style>
@@ -1675,23 +1790,25 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
             if (window.Chart) {
+                const isCompactMobile = window.innerWidth <= 640;
+                const uiFontSize = isCompactMobile ? 14 : 13;
                 Chart.defaults.responsive = true;
                 Chart.defaults.maintainAspectRatio = false;
                 Chart.defaults.layout = Chart.defaults.layout || {};
                 Chart.defaults.layout.padding = 8;
                 Chart.defaults.font.family = "'Plus Jakarta Sans','IBM Plex Sans Thai',sans-serif";
-                Chart.defaults.font.size = 13;
+                Chart.defaults.font.size = uiFontSize;
                 if (Chart.defaults.plugins?.legend?.labels) {
                     Chart.defaults.plugins.legend.labels.boxWidth = 10;
                     Chart.defaults.plugins.legend.labels.padding = 10;
                     Chart.defaults.plugins.legend.labels.font = {
-                        size: 13,
+                        size: uiFontSize,
                         family: "'Plus Jakarta Sans','IBM Plex Sans Thai',sans-serif",
                     };
                 }
                 if (Chart.defaults.plugins?.tooltip) {
-                    Chart.defaults.plugins.tooltip.bodyFont = { size: 13 };
-                    Chart.defaults.plugins.tooltip.titleFont = { size: 13 };
+                    Chart.defaults.plugins.tooltip.bodyFont = { size: uiFontSize };
+                    Chart.defaults.plugins.tooltip.titleFont = { size: uiFontSize };
                 }
             }
         </script>
@@ -1701,6 +1818,61 @@
         <script>
             // ให้สคริปต์ด้านล่างใช้ window.outputs ได้เลย
             window.outputs = @json($outputsForJs);
+        </script>
+        <script>
+            function ensureChartBaseHeights(root = document) {
+                root.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
+                    if (canvas.dataset.baseHeight) return;
+                    const declared = Number.parseInt(canvas.getAttribute('height') || '', 10);
+                    const base = Number.isFinite(declared) && declared > 0 ? declared : 240;
+                    canvas.dataset.baseHeight = String(base);
+                });
+            }
+
+            function chartHeightScale(vw) {
+                if (vw <= 430) return 1.1;
+                if (vw <= 640) return 1.02;
+                if (vw <= 1024) return 0.9;
+                if (vw <= 1366) return 0.82;
+                if (vw <= 1536) return 0.9;
+                return 1;
+            }
+
+            function isDenseChart(canvasId) {
+                const denseIds = new Set([
+                    'chartProjectsPerYear',
+                    'chartYearlyNewVsTotal',
+                    'chartExternalBySourceYear',
+                    'chartInternalBySourceYear',
+                    'chartOutputStacked',
+                    'chartStatusYear',
+                    'chartCollabBreakdown',
+                    'chartPIsPerUnit',
+                    'chartAuthorRolePerYear',
+                ]);
+                return denseIds.has(String(canvasId || ''));
+            }
+
+            function applyChartCanvasSizing(root = document) {
+                ensureChartBaseHeights(root);
+                const vw = window.innerWidth || document.documentElement.clientWidth || 1024;
+                const scale = chartHeightScale(vw);
+                const minHeight = vw <= 640 ? 240 : (vw <= 1024 ? 220 : 190);
+                const maxHeight = vw <= 640 ? 520 : 460;
+                root.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
+                    const base = Number.parseInt(canvas.dataset.baseHeight || '', 10) || 240;
+                    const boost = isDenseChart(canvas.id) ? (vw <= 640 ? 1.25 : 1.15) : 1;
+                    const target = Math.round(Math.min(maxHeight, Math.max(minHeight, base * scale * boost)));
+                    canvas.style.setProperty('--chart-height', `${target}px`);
+                    canvas.style.width = '100%';
+                    canvas.style.maxWidth = '100%';
+                });
+            }
+
+            window.applyChartCanvasSizing = applyChartCanvasSizing;
+            applyChartCanvasSizing();
+            setTimeout(() => applyChartCanvasSizing(), 0);
+            document.addEventListener('DOMContentLoaded', () => applyChartCanvasSizing());
         </script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
@@ -1786,6 +1958,154 @@
             const isTabletLandscape = window.matchMedia(
                 '(min-width: 900px) and (max-width: 1180px) and (orientation: landscape)'
             ).matches;
+
+            function initMobileChartLayout() {
+                if (!isMobileView) return;
+                const scroll = document.querySelector('#section-charts .lux-chart-scroll');
+                if (!scroll || scroll.dataset.mobileGrouped === '1') return;
+                scroll.dataset.mobileGrouped = '1';
+
+                document.getElementById('chartSwipeTip')?.remove();
+                document.getElementById('chartScrollHint')?.remove();
+
+                const cards = Array.from(scroll.querySelectorAll('.lux-chart-card'));
+                const cardByChartId = new Map();
+                cards.forEach((card) => {
+                    const id = card.querySelector('canvas[id^="chart"]')?.id;
+                    if (id) cardByChartId.set(id, card);
+                });
+
+                const groups = [
+                    {
+                        key: 'urgent',
+                        title: 'เร่งด่วน',
+                        subtitle: 'โครงการใกล้สิ้นสุดและเกินกำหนด',
+                        charts: ['chartRedZoneTimeline', 'chartOverdueProjects', 'chartCoResearchByUnitWindow'],
+                    },
+                    {
+                        key: 'project_fund',
+                        title: 'โครงการและทุน',
+                        subtitle: 'ภาพรวมโครงการ งบประมาณ และแหล่งทุน',
+                        charts: [
+                            'chartProjectsPerYear', 'chartYearlyNewVsTotal', 'chartFundingSplit', 'chartBudgetPerYear',
+                            'chartExternalBySource', 'chartInternalBySource', 'chartExternalBySourceYear',
+                            'chartInternalBySourceYear'
+                        ],
+                    },
+                    {
+                        key: 'output_people',
+                        title: 'ผลงานและบุคลากร',
+                        subtitle: 'Outputs, authors, FTE และ IRB',
+                        charts: [
+                            'chartOutputStacked', 'chartPublicationPerYear', 'chartAuthorRolePerYear', 'chartStatusYear',
+                            'chartCollabBreakdown', 'chartPIsPerUnit', 'chartFteSummary', 'chartIRBExpiry'
+                        ],
+                    },
+                ];
+
+                const sectionNodes = [];
+                const nav = document.createElement('div');
+                nav.className = 'mobile-chart-nav';
+
+                const closeAllSections = () => {
+                    sectionNodes.forEach((s) => {
+                        s.classList.remove('is-open');
+                        const body = s.querySelector('.mobile-chart-group-body');
+                        const btn = s.querySelector('.mobile-chart-group-toggle');
+                        if (body) body.hidden = true;
+                        btn?.setAttribute('aria-expanded', 'false');
+                    });
+                };
+
+                const openSection = (node, {
+                    toggle = false
+                } = {}) => {
+                    const nodeBody = node?.querySelector('.mobile-chart-group-body');
+                    const isOpen = !!nodeBody && !nodeBody.hidden;
+                    if (toggle && isOpen) {
+                        closeAllSections();
+                        return;
+                    }
+                    sectionNodes.forEach((s) => {
+                        const isActive = s === node;
+                        s.classList.toggle('is-open', isActive);
+                        const body = s.querySelector('.mobile-chart-group-body');
+                        const btn = s.querySelector('.mobile-chart-group-toggle');
+                        if (body) body.hidden = !isActive;
+                        btn?.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+                    });
+                };
+
+                const renderGroup = (group, isFirst = false) => {
+                    const section = document.createElement('section');
+                    section.className = `mobile-chart-group${isFirst ? ' is-open' : ''}`;
+                    section.id = `mobileChartGroup_${group.key}`;
+
+                    const toggle = document.createElement('button');
+                    toggle.type = 'button';
+                    toggle.className = 'mobile-chart-group-toggle';
+                    toggle.setAttribute('aria-expanded', isFirst ? 'true' : 'false');
+                    toggle.innerHTML = `
+                        <div>
+                            <div class="mobile-chart-group-title">${group.title}</div>
+                            <span class="mobile-chart-group-sub">${group.subtitle}</span>
+                        </div>
+                        <span class="mobile-chart-group-chevron">▾</span>
+                    `;
+
+                    const body = document.createElement('div');
+                    body.className = 'mobile-chart-group-body';
+                    body.hidden = !isFirst;
+
+                    group.charts.forEach((chartId) => {
+                        const card = cardByChartId.get(chartId);
+                        if (card) {
+                            body.appendChild(card);
+                            cardByChartId.delete(chartId);
+                        }
+                    });
+
+                    toggle.addEventListener('click', () => openSection(section, {
+                        toggle: true
+                    }));
+
+                    const navChip = document.createElement('button');
+                    navChip.type = 'button';
+                    navChip.className = 'mobile-chart-nav-chip';
+                    navChip.textContent = group.title;
+                    navChip.addEventListener('click', () => {
+                        openSection(section);
+                        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
+                    nav.appendChild(navChip);
+
+                    section.appendChild(toggle);
+                    section.appendChild(body);
+                    sectionNodes.push(section);
+                    return section;
+                };
+
+                scroll.innerHTML = '';
+                scroll.appendChild(nav);
+
+                groups.forEach((group, idx) => {
+                    scroll.appendChild(renderGroup(group, false));
+                });
+
+                if (cardByChartId.size) {
+                    const restGroup = {
+                        key: 'more',
+                        title: 'กราฟเพิ่มเติม',
+                        subtitle: 'รายการอื่น ๆ',
+                        charts: Array.from(cardByChartId.keys()),
+                    };
+                    scroll.appendChild(renderGroup(restGroup, false));
+                }
+
+                closeAllSections();
+            }
+
+            initMobileChartLayout();
 
             // Mobile readability defaults
             if (window.Chart && isMobileView) {
@@ -3670,7 +3990,7 @@
                 });
 
                 // เรียงมาก→น้อย และเลือก Top N
-                const TOP_N = 20;
+                const TOP_N = isMobileView ? 10 : 20;
                 const sorted = Object.entries(countByPI).sort((a, b) => b[1] - a[1]);
                 const top = sorted.slice(0, TOP_N);
 
@@ -3680,7 +4000,7 @@
                 const el = document.getElementById('chartPIsPerUnit');
                 if (!el) return;
 
-                el.height = Math.max(250, labels.length * 28);
+                el.height = Math.min(Math.max(250, labels.length * 28), 420);
 
                 // plugin แสดงตัวเลขขวาสุด
                 const valueLabelRight = {
@@ -3842,17 +4162,56 @@
                 const prev = Chart.getChart(el);
                 if (prev) prev.destroy();
 
+                const externalType = isMobileView ? 'bar' : 'doughnut';
                 const externalChart = new Chart(el, {
-                    type: 'doughnut',
+                    type: externalType,
                     data: {
                         labels,
                         datasets: [{
                             label: 'จำนวนโครงการ',
                             data: counts,
-                            backgroundColor: labels.map((_, i) => `hsl(${(i*37)%360} 70% 60%)`)
+                            backgroundColor: labels.map((_, i) => `hsl(${(i*37)%360} 70% 60%)`),
+                            borderRadius: isMobileView ? 8 : 0,
+                            barThickness: isMobileView ? 16 : undefined
                         }]
                     },
-                    options: {
+                    options: isMobileView ? {
+                        indexAxis: 'y',
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const i = ctx.dataIndex;
+                                        const c = counts[i];
+                                        const m = budgets[i];
+                                        const pct = ((m / totalBudget) * 100).toFixed(1);
+                                        return ` ${ctx.label}: ${c} โครงการ, ${formatThaiMoney(m)} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'จำนวนโครงการ'
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    callback: (value, index) => truncateLegendLabel(labels[index], 14)
+                                }
+                            }
+                        }
+                    } : {
                         responsive: true,
                         plugins: {
                             legend: {
@@ -3874,10 +4233,9 @@
                             }
                         }
                     },
-                    plugins: [valueLabelCenter]
+                    plugins: isMobileView ? [] : [valueLabelCenter]
                 });
                 if (isTabletLandscape) {
-                    el.style.height = '840px';
                     el.style.width = '100%';
                     externalChart.resize();
                 }
@@ -3967,17 +4325,56 @@
                 const prev = Chart.getChart(el);
                 if (prev) prev.destroy();
 
+                const internalType = isMobileView ? 'bar' : 'doughnut';
                 const internalChart = new Chart(el, {
-                    type: 'doughnut',
+                    type: internalType,
                     data: {
                         labels,
                         datasets: [{
                             label: 'โครงการ',
                             data: counts,
-                            backgroundColor: labels.map((_, i) => `hsl(${(i*37)%360} 70% 60%)`)
+                            backgroundColor: labels.map((_, i) => `hsl(${(i*37)%360} 70% 60%)`),
+                            borderRadius: isMobileView ? 8 : 0,
+                            barThickness: isMobileView ? 16 : undefined
                         }]
                     },
-                    options: {
+                    options: isMobileView ? {
+                        indexAxis: 'y',
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const idx = ctx.dataIndex;
+                                        const c = counts[idx];
+                                        const m = budgets[idx];
+                                        const pct = ((m / totalBudget) * 100).toFixed(1);
+                                        return ` ${ctx.label}: ${c} โครงการ, ${formatThaiMoney(m)} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'จำนวนโครงการ'
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    callback: (value, index) => truncateLegendLabel(labels[index], 14)
+                                }
+                            }
+                        }
+                    } : {
                         responsive: true,
                         plugins: {
                             legend: {
@@ -3999,10 +4396,9 @@
                             }
                         }
                     },
-                    plugins: [dataLabelPlugin]
+                    plugins: isMobileView ? [] : [dataLabelPlugin]
                 });
                 if (isTabletLandscape) {
-                    el.style.height = '840px';
                     el.style.width = '100%';
                     internalChart.resize();
                 }
@@ -4651,7 +5047,6 @@
                         plugins: [doughnutValuePlugin]
                     });
                     if (isTabletLandscape) {
-                        elOverdue.style.height = '840px';
                         elOverdue.style.width = '100%';
                         overdueChart.resize();
                     }
@@ -4746,9 +5141,24 @@
 
                 const elCoResearch = document.getElementById('chartCoResearchByUnitWindow');
                 if (elCoResearch && unitList.length) {
+                    const unitRows = unitList.map((u) => ({
+                        unit: u,
+                        m3: countByUnitWithin(u, 3),
+                        m6: countByUnitWithin(u, 6),
+                        m12: countByUnitWithin(u, 12),
+                    }));
+                    unitRows.sort((a, b) => b.m12 - a.m12);
+                    const unitRowsLimited = isMobileView ? unitRows.slice(0, 6) : unitRows;
+
+                    const labels = unitRowsLimited.map(r => r.unit);
+                    const within3 = unitRowsLimited.map(r => r.m3);
+                    const within6 = unitRowsLimited.map(r => r.m6);
+                    const within12 = unitRowsLimited.map(r => r.m12);
+
                     const barValuePlugin = {
                         id: 'barValueCoResearch',
                         afterDatasetsDraw(chart) {
+                            if (isMobileView) return;
                             const {
                                 ctx,
                                 chartArea: {
@@ -4780,25 +5190,67 @@
                     new Chart(elCoResearch, {
                         type: 'bar',
                         data: {
-                            labels: unitList,
+                            labels,
                             datasets: [{
                                     label: 'ภายใน 3 เดือน',
-                                    data: unitList.map(u => countByUnitWithin(u, 3)),
+                                    data: within3,
                                     backgroundColor: '#0f766e'
                                 },
                                 {
                                     label: 'ภายใน 6 เดือน',
-                                    data: unitList.map(u => countByUnitWithin(u, 6)),
+                                    data: within6,
                                     backgroundColor: '#c0841a'
                                 },
                                 {
                                     label: 'ภายใน 1 ปี',
-                                    data: unitList.map(u => countByUnitWithin(u, 12)),
+                                    data: within12,
                                     backgroundColor: '#475569'
                                 }
                             ]
                         },
-                        options: {
+                        options: isMobileView ? {
+                            indexAxis: 'y',
+                            responsive: true,
+                            layout: {
+                                padding: {
+                                    right: 14,
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        boxWidth: 10,
+                                        padding: 8,
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw || 0} คน`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        precision: 0,
+                                        maxTicksLimit: 5
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'จำนวน Co-Research'
+                                    }
+                                },
+                                y: {
+                                    ticks: {
+                                        callback: function(value) {
+                                            return truncateLegendLabel(this.getLabelForValue(value), 18);
+                                        }
+                                    }
+                                }
+                            }
+                        } : {
                             responsive: true,
                             plugins: {
                                 legend: {
@@ -5481,7 +5933,8 @@
                 function render(yCE) {
                     const target = authorRoleByYear[yCE] || {};
                     const term = String(inpSearch?.value || '').trim().toLowerCase();
-                    const TOP_N = parseInt(selTopN?.value || '12', 10);
+                    const requestedTopN = parseInt(selTopN?.value || '12', 10);
+                    const TOP_N = isMobileView ? Math.min(requestedTopN, 8) : requestedTopN;
 
                     let rows = Object.entries(target).map(([name, roles]) => {
                         const total = (roles.first || 0) + (roles.co || 0) + (roles.corresponding || 0);
@@ -5521,7 +5974,7 @@
 
                     const el = document.getElementById('chartAuthorRolePerYear');
                     if (!el) return;
-                    el.height = Math.max(320, labels.length * 30);
+                    el.height = Math.min(Math.max(320, labels.length * 30), 460);
 
                     if (authorChart) authorChart.destroy();
                     authorChart = new Chart(el, {
@@ -6096,6 +6549,7 @@
         <script>
             // Ensure charts resize on mobile orientation/viewport changes
             const resizeCharts = () => {
+                window.applyChartCanvasSizing?.();
                 document.querySelectorAll('.lux-chart-card canvas').forEach((c) => {
                     const chart = typeof Chart !== 'undefined' ? Chart.getChart(c) : null;
                     if (chart) chart.resize();

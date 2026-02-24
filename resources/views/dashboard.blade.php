@@ -81,6 +81,9 @@
             display: block;
             width: 100% !important;
             max-width: 100%;
+            height: var(--chart-height, 240px) !important;
+            min-height: var(--chart-height, 240px) !important;
+            max-height: var(--chart-height, 240px) !important;
         }
 
         #aiChatPanel {
@@ -390,9 +393,10 @@
             display: grid;
             grid-template-columns: repeat(1, minmax(0, 1fr));
             gap: 1.5rem;
+            align-items: start;
         }
 
-        @media (min-width: 768px) {
+        @media (min-width: 1536px) {
             .lux-chart-scroll {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -402,8 +406,19 @@
             }
         }
 
+        @media (max-width: 1535px) {
+            .lux-chart-scroll {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+            }
+
+            .lux-summary-scroll {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
         .lux-chart-card {
             scroll-snap-align: start;
+            height: auto;
         }
 
         .lux-swipe-tip {
@@ -517,17 +532,34 @@
                 border-radius: 999px;
             }
         }
+
+        /* Final chart guardrail (must stay last in this style block) */
+        .lux-page .lux-chart-scroll {
+            align-items: start !important;
+        }
+
+        .lux-page .lux-chart-card {
+            height: auto !important;
+            min-height: 0 !important;
+        }
+
+        .lux-page .lux-chart-card canvas[id^="chart"] {
+            width: 100% !important;
+            height: var(--chart-height, 240px) !important;
+            min-height: var(--chart-height, 240px) !important;
+            max-height: var(--chart-height, 240px) !important;
+        }
     </style>
 
     <div class="lux-page">
         <div class="max-w-7xl mx-auto px-4 py-8 space-y-8">
             <div class="lux-card lux-hero p-6 md:p-8">
-                <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <h2 class="lux-title text-3xl md:text-4xl text-slate-900">ภาพรวมโครงการวิจัย</h2>
 
                     </div>
-                   
+
                 </div>
                 <div class="lux-divider mt-6"></div>
 
@@ -563,7 +595,7 @@
 
         <!-- 2) กรอง + Export -->
         <div class="lux-card p-4 md:p-5" id="section-filters">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800">สร้างเอกสารสรุปข้อมูลทั้งหมด</h3>
                     <p class="text-xs text-slate-500">คัดกรองข้อมูลให้ตรงกับช่วงเวลาหรือธีมที่ต้องการ (Realtime)</p>
@@ -575,7 +607,7 @@
                     </button>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
                 <div>
                     <label class="text-xs font-semibold text-gray-700 block">ปีเริ่มต้น</label>
                     <select id="filterYear" class="w-full border rounded px-2 py-1 text-sm">
@@ -612,7 +644,7 @@
                     <input type="text" id="filterPI" class="w-full border rounded px-2 py-1 text-sm"
                         placeholder="ชื่อ PI">
                 </div>
-                <div class="flex items-end gap-2">
+                <div class="flex flex-col sm:flex-row xl:flex-col 2xl:flex-row items-end gap-2 sm:col-span-2 xl:col-span-1">
                     <button id="exportCSV"
                         class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-sm rounded shadow">
                         ⬇ Export CSV
@@ -625,7 +657,7 @@
             </div>
 
             <div class="mt-4 rounded-xl border border-cyan-100 bg-gradient-to-br from-cyan-50 to-white p-4">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
                     <div>
                         <h4 class="text-sm font-bold text-slate-800">เอกสารสรุปข้อมูลทั้งหมด (Realtime)</h4>
                         <p id="rtSummaryCaption" class="text-xs text-slate-500">สรุปตามฟิลเตอร์ปัจจุบัน</p>
@@ -633,7 +665,7 @@
                     <div class="text-xs text-slate-500">กราฟที่ผูก realtime: จำนวนโครงการรายปี / สัดส่วนทุน / งบประมาณรายปี</div>
                 </div>
 
-                <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-3">
                     <div class="rounded-lg border border-slate-200 bg-white p-3">
                         <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">โครงการทั้งหมด</div>
                         <div id="rtSummaryProjects" class="mt-1 text-2xl font-extrabold text-slate-900">0</div>
@@ -644,11 +676,11 @@
                     </div>
                     <div class="rounded-lg border border-slate-200 bg-white p-3">
                         <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">งบประมาณรวม</div>
-                        <div id="rtSummaryBudget" class="mt-1 text-lg md:text-2xl font-extrabold text-slate-900">0 บ.</div>
+                        <div id="rtSummaryBudget" class="mt-1 text-lg lg:text-2xl font-extrabold text-slate-900">0 บ.</div>
                     </div>
                     <div class="rounded-lg border border-slate-200 bg-white p-3">
                         <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">งบเฉลี่ย/โครงการ</div>
-                        <div id="rtSummaryAvgBudget" class="mt-1 text-lg md:text-2xl font-extrabold text-slate-900">0 บ.</div>
+                        <div id="rtSummaryAvgBudget" class="mt-1 text-lg lg:text-2xl font-extrabold text-slate-900">0 บ.</div>
                     </div>
                 </div>
 
@@ -753,7 +785,7 @@
 
         <!-- 3) Charts -->
         <div id="section-charts">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-800">สรุปสถานะและแนวโน้มเชิงกลยุทธ์</h3>
                     <p class="text-xs text-slate-500">รวมกราฟสำคัญที่ช่วยอ่านภาพรวมได้ในมุมเดียว</p>
@@ -1420,16 +1452,57 @@
             const norm = (v) => String(v ?? '').toLowerCase().trim();
             const projectById = new Map(projects.map(p => [p.id, p]));
 
-            // ล็อกความสูงกราฟตามค่า height ของ canvas เพื่อกันกราฟยืดผิดสัดส่วน
-            function applyChartCanvasSizing(root = document) {
+            if (window.Chart) {
+                // บังคับพฤติกรรมเดียวกันทุกกราฟตอน responsive
+                Chart.defaults.responsive = true;
+                Chart.defaults.maintainAspectRatio = false;
+            }
+
+            function ensureChartBaseHeights(root = document) {
                 root.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
-                    const raw = Number.parseInt(canvas.getAttribute('height') || '', 10);
-                    if (Number.isFinite(raw) && raw > 0) {
-                        const h = `${raw}px`;
-                        canvas.style.height = h;
-                        canvas.style.minHeight = h;
-                        canvas.style.maxHeight = h;
-                    }
+                    if (canvas.dataset.baseHeight) return;
+                    const declared = Number.parseInt(canvas.getAttribute('height') || '', 10);
+                    const fallback = 260;
+                    const base = Number.isFinite(declared) && declared > 0 ? declared : fallback;
+                    canvas.dataset.baseHeight = String(base);
+                });
+            }
+
+            function chartHeightScale(vw) {
+                if (vw <= 640) return 0.64;
+                if (vw <= 1024) return 0.72;
+                if (vw <= 1366) return 0.8;
+                if (vw <= 1536) return 0.9;
+                return 1;
+            }
+
+            function isDenseChart(canvasId) {
+                const denseIds = new Set([
+                    'chartProjectsPerYear',
+                    'chartYearlyNewVsTotal',
+                    'chartExternalBySourceYear',
+                    'chartInternalBySourceYear',
+                    'chartOutputStacked',
+                    'chartStatusYear',
+                    'chartCollabBreakdown',
+                    'chartPIsPerUnit',
+                    'chartAuthorRolePerYear',
+                ]);
+                return denseIds.has(String(canvasId || ''));
+            }
+
+            // คุมความสูงแบบสัดส่วนตามค่าเดิมของแต่ละกราฟ (ไม่สูงเพี้ยน และยังคงสัดส่วนเดิม)
+            function applyChartCanvasSizing(root = document) {
+                ensureChartBaseHeights(root);
+                const vw = window.innerWidth || document.documentElement.clientWidth || 1366;
+                const scale = chartHeightScale(vw);
+
+                root.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
+                    const base = Number.parseInt(canvas.dataset.baseHeight || '', 10) || 260;
+                    const boost = isDenseChart(canvas.id) ? (vw <= 1366 ? 1.15 : 1.05) : 1;
+                    const target = Math.round(Math.min(460, Math.max(170, base * scale * boost)));
+                    const h = `${target}px`;
+                    canvas.style.setProperty('--chart-height', h);
                     canvas.style.width = '100%';
                     canvas.style.maxWidth = '100%';
                 });
@@ -3428,7 +3501,7 @@
 
                     const canvas = document.getElementById('chartPIsPerUnit');
                     if (!canvas) return;
-                    const targetHeight = Math.min(720, Math.max(340, chartLabels.length * 34));
+                    const targetHeight = Math.min(360, Math.max(240, chartLabels.length * 20));
                     canvas.setAttribute('height', String(targetHeight));
                     window.applyChartCanvasSizing?.();
 
@@ -5350,7 +5423,7 @@
 
                     const el = document.getElementById('chartAuthorRolePerYear');
                     if (!el) return;
-                    el.height = Math.max(320, labels.length * 30);
+                    el.height = Math.min(Math.max(280, labels.length * 20), 420);
 
                     if (authorChart) authorChart.destroy();
                     authorChart = new Chart(el, {
