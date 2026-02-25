@@ -492,9 +492,11 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">Project Status</span>
+                    <span class="block text-sm text-gray-700 mb-1">Project Status <span class="text-red-500">*</span></span>
                     <select name="planning_status" id="planning_status" class="w-full border p-2 rounded font-semibold"
-                        onchange="updateStatusColor(this)">
+                        onchange="updateStatusColor(this)" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือก Project Status')"
+                        oninput="this.setCustomValidity('')">
                         <option value="" disabled
                             {{ old('planning_status', $project->planning_status) ? '' : 'selected' }}
                             style="background-color: #fff; color: #222;">
@@ -528,6 +530,9 @@
                             ยกเลิกโปรเจค
                         </option>
                     </select>
+                    @error('planning_status')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
                 </label>
 
 
@@ -2476,18 +2481,193 @@ console.log('[FTE AUTO] after=', fteField.value);
     </script>
 
     <script>
+        function getClientTodayLocal() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return today;
+        }
+
+        function normalizeDateOnly(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        function parseLocalDateInput(raw) {
+            const normalizeThaiDigits = (input) => String(input || '').replace(/[๐-๙]/g, (ch) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(ch)));
+            const value = normalizeThaiDigits(String(raw || '').trim()).replace(/\s+/g, ' ');
+            if (!value) return null;
+
+            let match = value.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+            if (match) {
+                const [, dd, mm, yyyy] = match;
+                let year = Number(yyyy);
+                if (year > 2400) year -= 543;
+                return new Date(year, Number(mm) - 1, Number(dd));
+            }
+
+            match = value.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+            if (match) {
+                const [, yyyy, mm, dd] = match;
+                let year = Number(yyyy);
+                if (year > 2400) year -= 543;
+                return new Date(year, Number(mm) - 1, Number(dd));
+            }
+
+            match = value.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/);
+            if (match) {
+                const [, dd, monthRaw, yyyyRaw] = match;
+                const monthMap = {
+                    'มกราคม': 0, 'ม.ค.': 0, 'ม.ค': 0,
+                    'กุมภาพันธ์': 1, 'ก.พ.': 1, 'ก.พ': 1,
+                    'มีนาคม': 2, 'มี.ค.': 2, 'มี.ค': 2,
+                    'เมษายน': 3, 'เม.ย.': 3, 'เม.ย': 3,
+                    'พฤษภาคม': 4, 'พ.ค.': 4, 'พ.ค': 4,
+                    'มิถุนายน': 5, 'มิ.ย.': 5, 'มิ.ย': 5,
+                    'กรกฎาคม': 6, 'ก.ค.': 6, 'ก.ค': 6,
+                    'สิงหาคม': 7, 'ส.ค.': 7, 'ส.ค': 7,
+                    'กันยายน': 8, 'ก.ย.': 8, 'ก.ย': 8,
+                    'ตุลาคม': 9, 'ต.ค.': 9, 'ต.ค': 9,
+                    'พฤศจิกายน': 10, 'พ.ย.': 10, 'พ.ย': 10,
+                    'ธันวาคม': 11, 'ธ.ค.': 11, 'ธ.ค': 11
+                };
+                const monthIdx = monthMap[monthRaw];
+                if (monthIdx !== undefined) {
+                    let yyyy = Number(yyyyRaw);
+                    if (yyyy > 2400) yyyy -= 543;
+                    return new Date(yyyy, monthIdx, Number(dd));
+                }
+            }
+
+            const fallback = new Date(value);
+            if (!Number.isNaN(fallback.getTime())) return fallback;
+            return null;
+        }
+
+        function appendFlatpickrHook(instance, hook, callback) {
+            if (!instance || typeof callback !== 'function') return;
+            const current = instance.config?.[hook];
+            if (Array.isArray(current)) {
+                if (!current.includes(callback)) current.push(callback);
+                return;
+            }
+            if (typeof current === 'function') {
+                instance.config[hook] = [current, callback];
+                return;
+            }
+            instance.config[hook] = [callback];
+        }
+
+        function bindEndDateMinThaiPicker(startInput, endInput, key) {
+            if (!(startInput instanceof HTMLElement) || !(endInput instanceof HTMLElement)) {
+                return;
+            }
+
+            const retryKey = `__thaiDateRangeRetry_${key}`;
+            const startReady = !!startInput._flatpickr;
+            const endReady = !!endInput._flatpickr;
+            if (!startReady || !endReady) {
+                const retries = Number(endInput[retryKey] || 0);
+                if (retries >= 60) return;
+                endInput[retryKey] = String(retries + 1);
+                setTimeout(() => bindEndDateMinThaiPicker(startInput, endInput, key), 80);
+                return;
+            }
+            delete endInput[retryKey];
+
+            const updaterKey = `__thaiDateRangeUpdater_${key}`;
+            if (!endInput[updaterKey]) {
+                endInput[updaterKey] = () => {
+                    const fpEnd = endInput._flatpickr;
+                    if (!fpEnd) return;
+
+                    const startDate = startInput._flatpickr?.selectedDates?.[0] ||
+                        parseLocalDateInput(startInput.value) ||
+                        parseLocalDateInput(startInput._flatpickr?.altInput?.value);
+                    const minDate = startDate
+                        ? normalizeDateOnly(startDate)
+                        : (endInput.dataset.noPast === '1' ? getClientTodayLocal() : null);
+
+                    fpEnd.set('minDate', minDate || null);
+
+                    const endDate = fpEnd.selectedDates?.[0] ||
+                        parseLocalDateInput(endInput.value) ||
+                        parseLocalDateInput(fpEnd.altInput?.value);
+                    if (endDate && minDate && normalizeDateOnly(endDate) < minDate) {
+                        fpEnd.clear();
+                        endInput.dispatchEvent(new Event('change', {
+                            bubbles: true
+                        }));
+                    }
+                };
+
+                startInput.addEventListener('change', endInput[updaterKey]);
+                startInput.addEventListener('input', endInput[updaterKey]);
+            }
+
+            const hookKey = `${updaterKey}_hooked`;
+            if (!endInput[hookKey]) {
+                const fpStart = startInput._flatpickr;
+                if (fpStart) {
+                    appendFlatpickrHook(fpStart, 'onChange', endInput[updaterKey]);
+                    appendFlatpickrHook(fpStart, 'onValueUpdate', endInput[updaterKey]);
+                }
+
+                const fpEnd = endInput._flatpickr;
+                if (fpEnd) {
+                    appendFlatpickrHook(fpEnd, 'onOpen', endInput[updaterKey]);
+                    fpEnd.altInput?.addEventListener('focus', endInput[updaterKey]);
+                    fpEnd.altInput?.addEventListener('click', endInput[updaterKey]);
+                }
+
+                endInput[hookKey] = '1';
+            }
+
+            endInput[updaterKey]();
+        }
+
+        function bindProjectDatePairsThaiPicker() {
+            bindEndDateMinThaiPicker(
+                document.querySelector('input[name="team_start_date"]'),
+                document.querySelector('input[name="team_end_date"]'),
+                'team'
+            );
+
+            bindEndDateMinThaiPicker(
+                document.querySelector('input[name="start_date"]'),
+                document.querySelector('input[name="end_date"]'),
+                'contract'
+            );
+
+            document.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
+                const endName = startInput.name.replace('[start_date]', '[end_date]');
+                const endInput = document.querySelector(`input[name="${endName}"]`);
+                bindEndDateMinThaiPicker(startInput, endInput, `fte_${startInput.name}`);
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            flatpickr(".thai-datepicker", {
-                locale: "th",
-                dateFormat: "d-m-Y", // สำหรับส่งไป controller
-                altInput: true,
-                altFormat: "j F Y", // <-- เราจะเปลี่ยนตรงนี้ด้านล่าง
-                prevArrow: "", // 🔒 ซ่อนปุ่มย้อนเดือน
-                nextArrow: "", // 🔒 ซ่อนปุ่มถัดไปเดือน
-                onReady: toBuddhist,
-                onChange: toBuddhist,
-                onMonthChange: toBuddhist,
-                onYearChange: toBuddhist,
+            document.querySelectorAll('.thai-datepicker').forEach((input) => {
+                if (input._flatpickr) return;
+
+                const options = {
+                    locale: "th",
+                    dateFormat: "d-m-Y", // สำหรับส่งไป controller
+                    altInput: true,
+                    altFormat: "j F Y", // <-- เราจะเปลี่ยนตรงนี้ด้านล่าง
+                    prevArrow: "", // 🔒 ซ่อนปุ่มย้อนเดือน
+                    nextArrow: "", // 🔒 ซ่อนปุ่มถัดไปเดือน
+                    onReady: toBuddhist,
+                    onChange: toBuddhist,
+                    onMonthChange: toBuddhist,
+                    onYearChange: toBuddhist,
+                };
+
+                if (input.dataset.noPast === '1') {
+                    options.minDate = getClientTodayLocal();
+                }
+
+                flatpickr(input, options);
             });
 
             function toBuddhist(selectedDates, dateStr, instance) {
@@ -2517,6 +2697,8 @@ console.log('[FTE AUTO] after=', fteField.value);
                     });
                 });
             }
+
+            bindProjectDatePairsThaiPicker();
         });
     </script>
 
@@ -2544,18 +2726,30 @@ console.log('[FTE AUTO] after=', fteField.value);
         });
 
         function initThaiDatepickers() {
-            flatpickr(".thai-datepicker", {
-                locale: "th",
-                dateFormat: "d-m-Y",
-                altInput: true,
-                altFormat: "j F Y",
-                prevArrow: "", // 🔒 ซ่อนปุ่มย้อนเดือน
-                nextArrow: "", // 🔒 ซ่อนปุ่มถัดไปเดือน
-                onReady: toBuddhist,
-                onChange: toBuddhist,
-                onMonthChange: toBuddhist,
-                onYearChange: toBuddhist,
+            document.querySelectorAll('.thai-datepicker').forEach((input) => {
+                if (input._flatpickr) return;
+
+                const options = {
+                    locale: "th",
+                    dateFormat: "d-m-Y",
+                    altInput: true,
+                    altFormat: "j F Y",
+                    prevArrow: "", // 🔒 ซ่อนปุ่มย้อนเดือน
+                    nextArrow: "", // 🔒 ซ่อนปุ่มถัดไปเดือน
+                    onReady: toBuddhist,
+                    onChange: toBuddhist,
+                    onMonthChange: toBuddhist,
+                    onYearChange: toBuddhist,
+                };
+
+                if (input.dataset.noPast === '1') {
+                    options.minDate = getClientTodayLocal();
+                }
+
+                flatpickr(input, options);
             });
+
+            bindProjectDatePairsThaiPicker();
         }
 
         function toBuddhist(selectedDates, dateStr, instance) {
@@ -2585,7 +2779,10 @@ console.log('[FTE AUTO] after=', fteField.value);
             });
         }
 
-        document.addEventListener('DOMContentLoaded', initThaiDatepickers);
+        document.addEventListener('DOMContentLoaded', () => {
+            initThaiDatepickers();
+            bindProjectDatePairsThaiPicker();
+        });
 
 
 
@@ -2689,6 +2886,10 @@ console.log('[FTE AUTO] after=', fteField.value);
                         if (!val) {
                             isValid = false;
                             displayTarget.classList.add('border-red-500', 'bg-red-50');
+                            if (displayTarget.name === 'planning_status') {
+                                displayTarget.style.backgroundColor = '#fef2f2';
+                                displayTarget.style.color = '#991b1b';
+                            }
                             if (!firstInvalidField) firstInvalidField = displayTarget;
                             const row = displayTarget.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row');
                             if (row) invalidRows.add(row);
@@ -2699,6 +2900,9 @@ console.log('[FTE AUTO] after=', fteField.value);
                             }
                         } else {
                             displayTarget.classList.remove('border-red-500', 'bg-red-50');
+                            if (displayTarget.name === 'planning_status') {
+                                updateStatusColor(displayTarget);
+                            }
                         }
                     });
 

@@ -10,7 +10,7 @@ class Task extends Model
 {
     protected $fillable = [
         'title', 'start', 'end', 'project_id', 'user_id',
-        'parent_id', 'status', 'progress', 'owner'
+        'parent_id', 'status', 'workflow_status', 'progress', 'owner', 'order'
     ];
 
     protected $casts = [

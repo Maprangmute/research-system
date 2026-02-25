@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use PDF;
 
@@ -499,7 +500,7 @@ public function store(Request $request)
 
     private function validateProject(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'project_name_th' => 'required|string',
             'project_name_en' => 'nullable|string',
             'project_type' => 'required|string|max:255',
@@ -517,7 +518,7 @@ public function store(Request $request)
             'team_end_date' => 'nullable|date',
             'pi_name' => 'nullable|string',
             'pi_affiliation' => 'nullable|string',
-            'planning_status' => 'nullable|string',
+            'planning_status' => 'required|string',
             'proposal_date' => 'nullable|string',
             'execution_status' => 'nullable|string',
             'contract_date' => 'nullable|string',
@@ -529,7 +530,122 @@ public function store(Request $request)
             'end_date' => 'nullable|string',
             'updated_by' => 'nullable|integer',
             'project_list' => 'nullable|string|max:255',
+        ], [
+            'planning_status.required' => 'กรุณาเลือก Project Status',
         ]);
+
+        $this->validateNoPastProjectDates($request);
+
+        return $validated;
+    }
+
+    private function validateNoPastProjectDates(Request $request): void
+    {
+        $errors = [];
+
+        $teamStart = $this->parseProjectDateInput((string) $request->input('team_start_date', ''));
+        $teamEnd = $this->parseProjectDateInput((string) $request->input('team_end_date', ''));
+        if ($teamStart && $teamEnd && $teamEnd->lt($teamStart)) {
+            $errors['team_end_date'] = 'วันที่สิ้นสุดการทำงานของทีมวิจัย ต้องไม่น้อยกว่าวันที่เริ่มทำงาน';
+        }
+
+        $contractStart = $this->parseProjectDateInput((string) $request->input('start_date', ''));
+        $contractEnd = $this->parseProjectDateInput((string) $request->input('end_date', ''));
+        if ($contractStart && $contractEnd && $contractEnd->lt($contractStart)) {
+            $errors['end_date'] = 'BC103 - วันที่สิ้นสุด (ตามสัญญา) ต้องไม่น้อยกว่า BC102 - วันที่โครงการเริ่ม (ตามสัญญา)';
+        }
+
+        foreach ((array) $request->input('fte_roles', []) as $idx => $fteRow) {
+            $startRaw = trim((string) data_get($fteRow, 'start_date', ''));
+            $endRaw = trim((string) data_get($fteRow, 'end_date', ''));
+
+            $start = $this->parseProjectDateInput($startRaw);
+            $end = $this->parseProjectDateInput($endRaw);
+
+            if ($start && $end && $end->lt($start)) {
+                $errors["fte_roles.$idx.end_date"] = 'วันสิ้นสุดภาระงาน ต้องไม่น้อยกว่าวันเริ่มต้นภาระงาน';
+            }
+        }
+
+        if (! empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function parseProjectDateInput(?string $value): ?Carbon
+    {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return null;
+        }
+
+        $raw = preg_replace_callback('/[๐-๙]/u', static fn ($m) => (string) mb_strpos('๐๑๒๓๔๕๖๗๘๙', $m[0]), $raw);
+        $raw = preg_replace('/\s+/u', ' ', trim((string) $raw));
+
+        if (preg_match('/^(\d{1,2})([-\/])(\d{1,2})\2(\d{4})$/', $raw, $m)) {
+            $day = (int) $m[1];
+            $sep = $m[2];
+            $month = (int) $m[3];
+            $year = (int) $m[4];
+            if ($year > 2400) {
+                $year -= 543;
+            }
+            $raw = sprintf('%02d%s%02d%s%04d', $day, $sep, $month, $sep, $year);
+        } elseif (preg_match('/^(\d{4})([-\/])(\d{1,2})\2(\d{1,2})$/', $raw, $m)) {
+            $year = (int) $m[1];
+            $sep = $m[2];
+            $month = (int) $m[3];
+            $day = (int) $m[4];
+            if ($year > 2400) {
+                $year -= 543;
+            }
+            $raw = sprintf('%04d%s%02d%s%02d', $year, $sep, $month, $sep, $day);
+        }
+
+        $formats = ['d-m-Y', 'd/m/Y', 'Y-m-d', 'Y/m/d'];
+        foreach ($formats as $format) {
+            try {
+                return Carbon::createFromFormat($format, $raw)->startOfDay();
+            } catch (\Throwable $e) {
+            }
+        }
+
+        if (preg_match('/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/u', $raw, $m)) {
+            $day = (int) $m[1];
+            $monthRaw = trim($m[2]);
+            $year = (int) $m[3];
+
+            $monthMap = [
+                'มกราคม' => 1, 'ม.ค.' => 1, 'ม.ค' => 1,
+                'กุมภาพันธ์' => 2, 'ก.พ.' => 2, 'ก.พ' => 2,
+                'มีนาคม' => 3, 'มี.ค.' => 3, 'มี.ค' => 3,
+                'เมษายน' => 4, 'เม.ย.' => 4, 'เม.ย' => 4,
+                'พฤษภาคม' => 5, 'พ.ค.' => 5, 'พ.ค' => 5,
+                'มิถุนายน' => 6, 'มิ.ย.' => 6, 'มิ.ย' => 6,
+                'กรกฎาคม' => 7, 'ก.ค.' => 7, 'ก.ค' => 7,
+                'สิงหาคม' => 8, 'ส.ค.' => 8, 'ส.ค' => 8,
+                'กันยายน' => 9, 'ก.ย.' => 9, 'ก.ย' => 9,
+                'ตุลาคม' => 10, 'ต.ค.' => 10, 'ต.ค' => 10,
+                'พฤศจิกายน' => 11, 'พ.ย.' => 11, 'พ.ย' => 11,
+                'ธันวาคม' => 12, 'ธ.ค.' => 12, 'ธ.ค' => 12,
+            ];
+
+            if (array_key_exists($monthRaw, $monthMap)) {
+                if ($year > 2400) {
+                    $year -= 543;
+                }
+                try {
+                    return Carbon::create($year, $monthMap[$monthRaw], $day, 0, 0, 0)->startOfDay();
+                } catch (\Throwable $e) {
+                }
+            }
+        }
+
+        try {
+            return Carbon::parse($raw)->startOfDay();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function buildProjectFteChartData(Project $project): array

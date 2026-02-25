@@ -4,11 +4,13 @@
     'value' => old($name),
     'placeholder' => 'กรุณาเลือกวันที่',
     'required' => false,
+    'noPast' => false,
 ])
 
 @php
     // ✅ สร้าง id จาก name (กันซ้ำ / กัน [])
     $id = 'date_' . str_replace(['[',']'], '_', $name);
+    $errorKey = trim(str_replace(['][', '[', ']'], ['.', '.', ''], $name), '.');
 @endphp
 
 <div class="w-full">
@@ -26,8 +28,9 @@
             placeholder="{{ $placeholder }}"
             readonly
             @if($required) required @endif
+            @if($noPast) data-no-past="1" @endif
             class="js-date-be w-full border rounded-lg px-3 py-2 pr-10 bg-white cursor-pointer
-                   focus:ring-2 focus:ring-blue-500"
+                   focus:ring-2 focus:ring-blue-500 @error($errorKey) border-red-500 bg-red-50 @enderror"
         >
 
         <!-- 📅 icon -->
@@ -40,4 +43,8 @@
             📅
         </button>
     </div>
+
+    @error($errorKey)
+        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+    @enderror
 </div>

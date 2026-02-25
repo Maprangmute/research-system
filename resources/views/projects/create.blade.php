@@ -347,9 +347,11 @@
 
                 <label class="w-full">
                     {{-- BA000 - Project Planning (Status) --}}
-                    <span class="block text-sm text-gray-700 mb-1">Project Status</span>
+                    <span class="block text-sm text-gray-700 mb-1">Project Status <span class="text-red-500">*</span></span>
                     <select name="planning_status" id="planning_status" class="w-full border p-2 rounded font-semibold"
-                        onchange="updateStatusColor(this)">
+                        onchange="updateStatusColor(this)" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือก Project Status')"
+                        oninput="this.setCustomValidity('')">
                         <option value="" disabled selected style="background-color: #fff; color: #222;">
                             ระบุสถานะของโปรเจค</option>
                         <option value="Project Planing (เริ่มต้น - submit IRB)" data-color="#FFE599"
@@ -365,6 +367,9 @@
                         <option value="ยกเลิกโปรเจค" data-color="#F7A9A8" style="background-color:#F7A9A8; color:#222;">
                             ยกเลิกโปรเจค</option>
                     </select>
+                    @error('planning_status')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
                 </label>
             </div>
             <!-- รหัส IRB -->
@@ -1740,6 +1745,31 @@
                 });
             };
 
+            const parseLocalDateValue = (raw) => {
+                const val = String(raw ?? '').trim();
+                if (!val) return null;
+
+                let match = val.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+                if (match) {
+                    const [, dd, mm, yyyy] = match;
+                    return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+                }
+
+                match = val.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+                if (match) {
+                    const [, yyyy, mm, dd] = match;
+                    return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+                }
+
+                return null;
+            };
+
+            const NO_PAST_CLIENT_TODAY = (() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return today;
+            })();
+
             const applyForm = (data) => {
                 Object.entries(data).forEach(([name, value]) => {
                     const el = FORM.querySelector(`[name="${CSS.escape(name)}"]`);
@@ -1751,7 +1781,25 @@
                             `[name="${CSS.escape(name)}"][value="${CSS.escape(value)}"]`
                         );
                         if (r) r.checked = true;
-                    } else el.value = value;
+                    } else if (el._flatpickr) {
+                        const val = String(value ?? '').trim();
+                        if (!val) {
+                            el._flatpickr.clear();
+                        } else {
+                            const parsed = parseLocalDateValue(val);
+                            const noPast = el.dataset.noPast === '1';
+                            const isPastDate = parsed instanceof Date && !Number.isNaN(parsed.getTime()) &&
+                                parsed < NO_PAST_CLIENT_TODAY;
+
+                            if (noPast && isPastDate) {
+                                el._flatpickr.clear();
+                            } else {
+                                el._flatpickr.setDate(val, false);
+                            }
+                        }
+                    } else {
+                        el.value = value;
+                    }
 
                     el.dispatchEvent(new Event('change', {
                         bubbles: true
@@ -1977,6 +2025,10 @@
                         if (!val) {
                             isValid = false;
                             displayTarget.classList.add('border-red-500', 'bg-red-50');
+                            if (displayTarget.name === 'planning_status') {
+                                displayTarget.style.backgroundColor = '#fef2f2';
+                                displayTarget.style.color = '#991b1b';
+                            }
                             if (!firstInvalidField) firstInvalidField = displayTarget;
                             const row = displayTarget.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row');
                             if (row) invalidRows.add(row);
@@ -1987,6 +2039,9 @@
                             }
                         } else {
                             displayTarget.classList.remove('border-red-500', 'bg-red-50');
+                            if (displayTarget.name === 'planning_status') {
+                                updateStatusColor(displayTarget);
+                            }
                         }
                     });
 
