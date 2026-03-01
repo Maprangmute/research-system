@@ -652,10 +652,6 @@
         }
 
         @media (min-width: 768px) {
-            .lux-chart-scroll {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
             .lux-summary-scroll {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
@@ -1200,12 +1196,6 @@
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
-            .lux-page .lux-chart-scroll {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 1rem;
-            }
-
             .lux-page .lux-chart-card canvas {
                 height: 240px !important;
             }
@@ -1405,6 +1395,26 @@
             height: var(--chart-height, 220px) !important;
             min-height: var(--chart-height, 220px) !important;
             max-height: var(--chart-height, 220px) !important;
+        }
+
+        @media (min-width: 900px) and (max-width: 1280px) {
+            .lux-page .lux-chart-scroll {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 1rem !important;
+                overflow: visible !important;
+            }
+
+            .lux-page .mobile-chart-group-body {
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+            }
+
+            .lux-page .lux-chart-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+            }
         }
 
         /* Phone: grouped layout for easier reading */
@@ -3080,6 +3090,90 @@
             }
             const yearLabelTH = ce => ce ? String(ce + 543) : '-';
 
+            function outputYearKey(o) {
+                const direct = normalizeOutputYear(o?.year ?? o?.export_year ?? o?.date ?? o?.created_at);
+                if (direct !== 'ไม่ระบุ') return direct;
+                const p = projectById.get(o?.project_id);
+                const pYear = yearCE(p?.start_year);
+                if (pYear) return String(pYear);
+                return 'ไม่ระบุ';
+            }
+
+            function outputYearLabelForKey(key) {
+                const text = String(key ?? '').trim();
+                if (/^\d+$/.test(text)) return yearLabelTH(Number(text));
+                if (text === 'ไม่ระบุ') return 'ไม่ระบุปี';
+                return text || 'ไม่ระบุปี';
+            }
+
+            function parseYearCEFromAny(raw) {
+                if (raw == null || raw === '') return null;
+                const y = yearCE(raw);
+                if (Number.isFinite(y)) return y;
+                const d = new Date(String(raw).trim());
+                if (!isNaN(d)) return d.getFullYear();
+                return null;
+            }
+
+            function projectLifecycleStatusKey(p) {
+                const statusRaw = [p?.planning_status, p?.closure_status, p?.execution_status]
+                    .map(v => String(v || '').trim())
+                    .find(v => v) || '';
+                const s = norm(statusRaw);
+                if (s.includes('ยกเลิก') || s.includes('cancel')) return 'cancelled';
+                if (s.includes('ปิดโปรเจค') || s.includes('closed') || s.includes('complete')) return 'completed';
+                return 'in_progress';
+            }
+
+            function projectLifecycleStartYearCE(p) {
+                const startYear = yearCE(p?.start_year);
+                if (Number.isFinite(startYear)) return startYear;
+                const byDate = parseYearCEFromAny(p?.start_date || p?.team_start_date || p?.created_at || p?.updated_at);
+                if (Number.isFinite(byDate)) return byDate;
+                return null;
+            }
+
+            function projectLifecycleEventYearCE(p) {
+                const byField = parseYearCEFromAny(getEndYear(p));
+                if (Number.isFinite(byField)) return byField;
+                const endDate = parseProjectDate(getEndDateRaw(p));
+                if (endDate && !isNaN(endDate)) return endDate.getFullYear();
+                const byUpdatedAt = parseYearCEFromAny(p?.updated_at);
+                if (Number.isFinite(byUpdatedAt)) return byUpdatedAt;
+                return projectLifecycleStartYearCE(p);
+            }
+
+            function projectLifecycleTerminalYearCE(p, horizonCE) {
+                const startY = projectLifecycleStartYearCE(p);
+                if (!Number.isFinite(startY)) return null;
+                const key = projectLifecycleStatusKey(p);
+                if (key === 'completed' || key === 'cancelled') {
+                    const eventY = projectLifecycleEventYearCE(p);
+                    return Number.isFinite(eventY) ? Math.max(startY, eventY) : startY;
+                }
+                const h = Number.isFinite(horizonCE) ? horizonCE : startY;
+                return Math.max(startY, h);
+            }
+
+            function projectExistsInYear(p, yCE, horizonCE) {
+                const startY = projectLifecycleStartYearCE(p);
+                const terminalY = projectLifecycleTerminalYearCE(p, horizonCE);
+                const Y = Number(yCE);
+                if (!(Number.isFinite(startY) && Number.isFinite(terminalY) && Number.isFinite(Y))) return false;
+                return startY <= Y && Y <= terminalY;
+            }
+
+            function projectIsInProgressInYear(p, yCE, horizonCE) {
+                const Y = Number(yCE);
+                const startY = projectLifecycleStartYearCE(p);
+                if (!Number.isFinite(startY) || Y <= startY) return false;
+                if (!projectExistsInYear(p, Y, horizonCE)) return false;
+                const key = projectLifecycleStatusKey(p);
+                if (key === 'in_progress') return true;
+                const terminalY = projectLifecycleTerminalYearCE(p, horizonCE);
+                return Y < terminalY;
+            }
+
             function matchYearLabel(p, label) {
                 const labelStr = String(label ?? '').trim();
                 if (!labelStr) return false;
@@ -3229,35 +3323,52 @@
                 if (!id) return null;
 
                 if (id === 'chartProjectsPerYear') {
+                    const labelText = String(label ?? '').trim();
+                    const Y = Number(yearCE(labelText) || toNumber(labelText));
+                    const startYears = projects
+                        .map(p => projectLifecycleStartYearCE(p))
+                        .filter(Number.isFinite);
+                    const horizonCE = startYears.length ? Math.max(...startYears) : (new Date().getFullYear());
                     return {
-                        title: `โครงการปี ${label}`,
-                        projects: projects.filter(p => matchYearLabel(p, label))
+                        title: `โครงการทั้งหมดสะสมถึงปี ${labelText}`,
+                        projects: projects.filter(p => {
+                            const startY = projectLifecycleStartYearCE(p);
+                            if (Number.isFinite(startY) && Number.isFinite(Y)) return startY <= Y;
+                            return Number.isFinite(Y) && Y === horizonCE;
+                        })
                     };
                 }
 
                 if (id === 'chartYearlyNewVsTotal') {
-                    const Y = toNumber(label);
-                    const type = datasetLabel || '';
-                    const isActiveInYear = (p, y) => {
-                        const s = toNumber(p.start_year);
-                        const e = toNumber(getEndYear(p)) || Infinity;
-                        const yr = toNumber(y);
-                        return s <= yr && yr <= e;
-                    };
+                    const labelText = String(label ?? '').trim();
+                    const type = String(datasetLabel || '').trim();
+                    const map = window.yearlyNewVsTotalLabelMap || {};
+                    const Y = Number(map[labelText] || yearCE(labelText) || toNumber(labelText));
+                    const horizonCE = Number(window.yearlyLifecycleHorizonCE) || new Date().getFullYear();
                     let list = [];
                     if (type === 'ทั้งหมด') {
-                        list = projects.filter(p => isActiveInYear(p, Y));
-                    } else if (type === 'ใหม่') {
-                        list = projects.filter(p => matchYearLabel(p, label));
-                    } else if (type === 'กำลังทำ') {
                         list = projects.filter(p => {
-                            const s = toNumber(p.start_year);
-                            const e = toNumber(getEndYear(p)) || Infinity;
-                            return s < Y && Y <= e;
+                            const startY = projectLifecycleStartYearCE(p);
+                            if (Number.isFinite(startY)) return startY <= Y;
+                            return Y === horizonCE;
                         });
+                    } else if (type === 'ใหม่') {
+                        list = projects.filter(p => projectLifecycleStartYearCE(p) === Y);
+                    } else if (type === 'กำลังทำ' || type === 'กำลังดำเนินการ') {
+                        list = projects.filter(p => projectIsInProgressInYear(p, Y, horizonCE));
+                    } else if (type === 'ปิดโปรเจค') {
+                        list = projects.filter(p =>
+                            projectLifecycleStatusKey(p) === 'completed' &&
+                            Number(projectLifecycleTerminalYearCE(p, horizonCE)) === Y
+                        );
+                    } else if (type === 'ยกเลิกโปรเจค') {
+                        list = projects.filter(p =>
+                            projectLifecycleStatusKey(p) === 'cancelled' &&
+                            Number(projectLifecycleTerminalYearCE(p, horizonCE)) === Y
+                        );
                     }
                     return {
-                        title: `โครงการ${type} ปี ${label}`,
+                        title: `โครงการ${type} ปี ${labelText}`,
                         projects: list
                     };
                 }
@@ -3343,11 +3454,13 @@
                 }
 
                 if (id === 'chartOutputStacked') {
-                    const year = String(label ?? '');
+                    const clickedLabel = String(label ?? '');
+                    const map = window.outputYearLabelKeyMap || {};
+                    const year = map[clickedLabel] || (clickedLabel === 'ไม่ระบุปี' ? 'ไม่ระบุ' : normalizeOutputYear(clickedLabel));
                     const type = String(datasetLabel ?? '');
                     return {
-                        title: `Outputs ${type} ปี ${year}`,
-                        projects: projectsFromOutputs(o => normalizeOutputYear(o.year ?? o.date ?? o.created_at) === year && outputType(o) === type)
+                        title: `Outputs ${type} ปี ${clickedLabel}`,
+                        projects: projectsFromOutputs(o => outputYearKey(o) === year && outputType(o) === type)
                     };
                 }
 
@@ -3549,20 +3662,22 @@
 
             /* ---------- 1) จำนวนโครงการรายปี (Bar + ตัวเลขบนแท่ง | กันเลขตกขอบ) ---------- */
             (function() {
-                // รวมจำนวนโครงการต่อปี
-                const counts = new Map();
-                projects.forEach(p => {
-                    const y = (getYear(p) ?? '').toString().trim() || 'ไม่ระบุ';
-                    counts.set(y, (counts.get(y) || 0) + 1);
-                });
+                const startYearsCE = projects
+                    .map(p => projectLifecycleStartYearCE(p))
+                    .filter(Number.isFinite)
+                    .sort((a, b) => a - b);
+                if (!startYearsCE.length) return;
 
-                // ปีตัวเลขก่อน แล้วค่อยหมวดอื่น
-                const isNumeric = (s) => /^\d+$/.test(s);
-                const numericYears = [...counts.keys()].filter(isNumeric).map(Number).sort((a, b) => a - b).map(String);
-                const otherYears = [...counts.keys()].filter(k => !isNumeric(k)).sort();
-                const labels = numericYears.concat(otherYears);
-
-                const data = labels.map(y => counts.get(y) ?? 0);
+                const yearsCE = Array.from(new Set(startYearsCE));
+                const maxYearCE = yearsCE[yearsCE.length - 1];
+                const labels = yearsCE.map(y => yearLabelTH(y));
+                const data = yearsCE.map(y =>
+                    projects.filter(p => {
+                        const startY = projectLifecycleStartYearCE(p);
+                        if (Number.isFinite(startY)) return startY <= y;
+                        return y === maxYearCE;
+                    }).length
+                );
                 const colors = labels.map((_, i) => `hsl(${(i * 37) % 360} 70% 60%)`);
 
                 // ทำลายกราฟเดิมถ้ามี
@@ -3574,7 +3689,6 @@
                 const barValuePlugin = {
                     id: 'barValuePlugin',
                     afterDatasetsDraw(chart) {
-                        if (isMobileView) return;
                         const {
                             ctx,
                             chartArea: {
@@ -3587,7 +3701,7 @@
                             }
                         } = chart;
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = isMobileView ? 'bold 10px sans-serif' : 'bold 11px sans-serif';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
                         ctx.fillStyle = '#374151';
@@ -3633,7 +3747,7 @@
                         responsive: true,
                         layout: {
                             padding: {
-                                top: isMobileView ? 6 : 14
+                                top: isMobileView ? 12 : 14
                             }
                         }, // เผื่อพื้นที่ด้านบนเพิ่ม
                         plugins: {
@@ -3667,7 +3781,7 @@
                                 },
                                 title: {
                                     display: true,
-                                    text: 'ปี'
+                                    text: 'ปี (พ.ศ.)'
                                 }
                             }
                         }
@@ -3755,7 +3869,6 @@
                 const barValuePlugin = {
                     id: 'barValueFunding',
                     afterDatasetsDraw(chart) {
-                        if (isMobileView) return;
                         const {
                             ctx,
                             chartArea: {
@@ -3764,7 +3877,7 @@
                             }
                         } = chart;
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = isMobileView ? 'bold 10px sans-serif' : 'bold 11px sans-serif';
                         ctx.fillStyle = '#111827';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
@@ -3812,7 +3925,7 @@
                         responsive: true,
                         layout: {
                             padding: {
-                                top: isMobileView ? 6 : 14
+                                top: isMobileView ? 12 : 14
                             }
                         }, // เผื่อพื้นที่ด้านบนให้ label
                         plugins: {
@@ -3892,7 +4005,6 @@
                 const budgetValueLabelPlugin = {
                     id: 'budgetValueLabel',
                     afterDatasetsDraw(chart) {
-                        if (isMobileView) return;
                         const {
                             ctx,
                             chartArea: {
@@ -3908,7 +4020,7 @@
                         if (!meta || !ds) return;
 
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = isMobileView ? 'bold 10px sans-serif' : 'bold 11px sans-serif';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
                         ctx.fillStyle = '#111827';
@@ -3954,7 +4066,7 @@
                         responsive: true,
                         layout: {
                             padding: {
-                                top: isMobileView ? 8 : 20
+                                top: isMobileView ? 12 : 20
                             }
                         }, // เผื่อพื้นที่ label ด้านบน
                         plugins: {
@@ -4008,43 +4120,38 @@
 
             /* ---------- 4) Output Stacked by Type / Year (กันเลขตกขอบ + เช็ค toggle legend) ---------- */
             (function() {
-                function safeYear(val) {
-                    if (!val) return 'ไม่ระบุ';
-                    const str = String(val).trim();
-                    if (/^\d{4}$/.test(str)) return str;
-                    const match = str.match(/(25\d{2}|20\d{2}|19\d{2})/);
-                    if (match) return match[1];
-                    const d = new Date(str);
-                    if (!isNaN(d)) return String(d.getFullYear());
-                    return 'ไม่ระบุ';
-                }
+                const rows = Array.isArray(outputs) ? outputs : [];
+                const types = [...new Set(rows.map(outputType).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+                const matrix = {};
 
-                const years = [...new Set(outputs.map(o => safeYear(o.year ?? o.date ?? o.created_at)))];
-                const isNum = s => /^\d+$/.test(s);
-                const sortedYears = years.filter(isNum).map(Number).sort((a, b) => a - b).map(String)
-                    .concat(years.filter(y => !isNum(y)));
+                rows.forEach((o) => {
+                    const y = outputYearKey(o);
+                    const t = outputType(o) || 'อื่นๆ';
+                    matrix[y] = matrix[y] || {};
+                    matrix[y][t] = (matrix[y][t] || 0) + 1;
+                });
 
-                const types = [...new Set(outputs.map(outputType))].sort();
-                const grid = {};
-                sortedYears.forEach(y => grid[y] = Object.fromEntries(types.map(t => [t, 0])));
+                const years = Object.keys(matrix);
+                const isNum = (s) => /^\d+$/.test(String(s || ''));
+                const sortedYears = years
+                    .filter(isNum).map(Number).sort((a, b) => a - b).map(String)
+                    .concat(years.filter((y) => !isNum(y)).sort((a, b) => String(a).localeCompare(String(b), 'th')));
+                const displayLabels = sortedYears.map((y) => outputYearLabelForKey(y));
 
-                outputs.forEach(o => {
-                    const y = safeYear(o.year ?? o.date ?? o.created_at);
-                    const t = outputType(o);
-                    if (!grid[y]) grid[y] = Object.fromEntries(types.map(tt => [tt, 0]));
-                    grid[y][t] += 1;
+                window.outputYearLabelKeyMap = {};
+                displayLabels.forEach((label, idx) => {
+                    window.outputYearLabelKeyMap[label] = sortedYears[idx];
                 });
 
                 const datasets = types.map((t, i) => ({
                     label: t,
-                    data: sortedYears.map(y => grid[y][t]),
-                    backgroundColor: `hsl(${(i*53)%360} 70% 60%)`,
+                    data: sortedYears.map((y) => Number(matrix[y]?.[t] || 0)),
+                    backgroundColor: `hsl(${(i * 53) % 360} 70% 60%)`,
                     stack: 'out'
                 }));
 
-                // ปลั๊กอินแสดงตัวเลขบนแท่ง + กันตกขอบบน/ขวา + เช็คซ่อนชุดข้อมูล
-                const dataLabelPlugin = {
-                    id: 'dataLabelPluginOutputs',
+                const totalLabelPlugin = {
+                    id: 'outputTotalLabel',
                     afterDatasetsDraw(chart) {
                         const {
                             ctx,
@@ -4054,34 +4161,32 @@
                             }
                         } = chart;
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = isMobileView ? '700 10px "IBM Plex Sans Thai", sans-serif' : '700 11px "IBM Plex Sans Thai", sans-serif';
+                        ctx.fillStyle = '#111827';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
-                        ctx.fillStyle = '#111';
 
-                        chart.data.datasets.forEach((ds, dsIndex) => {
-                            // ถ้าชุดนี้ถูกซ่อนจาก legend -> ข้าม
-                            if (!chart.isDatasetVisible(dsIndex)) return;
-
-                            const meta = chart.getDatasetMeta(dsIndex);
-                            meta.data.forEach((bar, i) => {
-                                if (!bar || bar.hidden) return;
-
-                                const v = Number(ds.data[i] || 0);
-                                if (!isFinite(v) || v <= 0) return;
-
-                                let drawX = bar.x;
-                                let drawY = bar.y - 3; // วางเหนือแท่งเล็กน้อย
-
-                                // clamp กันตกขอบบน
-                                const minY = top + 8;
-                                if (drawY < minY) drawY = minY;
-
-                                // กันชิดขอบขวา (เผื่อข้อความยาว)
-                                if (drawX > right - 2) drawX = right - 2;
-
-                                ctx.fillText(String(v), drawX, drawY);
+                        chart.data.labels.forEach((_, i) => {
+                            let sum = 0;
+                            chart.data.datasets.forEach((ds, dsIndex) => {
+                                if (!chart.isDatasetVisible(dsIndex)) return;
+                                sum += Number(ds.data?.[i] || 0);
                             });
+                            if (sum <= 0) return;
+
+                            let topBar = null;
+                            chart.data.datasets.forEach((ds, dsIndex) => {
+                                if (!chart.isDatasetVisible(dsIndex)) return;
+                                const el = chart.getDatasetMeta(dsIndex).data[i];
+                                if (el && (!topBar || el.y < topBar.y)) topBar = el;
+                            });
+                            if (!topBar) return;
+
+                            let { x, y } = topBar.tooltipPosition();
+                            y -= 4;
+                            if (y < top + 8) y = top + 8;
+                            if (x > right - 2) x = right - 2;
+                            ctx.fillText(String(sum), x, y);
                         });
 
                         ctx.restore();
@@ -4089,13 +4194,25 @@
                 };
 
                 const el = document.getElementById('chartOutputStacked');
+                if (!el) return;
                 const prev = Chart.getChart(el);
                 if (prev) prev.destroy();
+
+                if (!sortedYears.length || !datasets.length) {
+                    const c = el.getContext('2d');
+                    c.clearRect(0, 0, el.width, el.height);
+                    c.font = '14px sans-serif';
+                    c.fillStyle = '#6b7280';
+                    c.textAlign = 'center';
+                    c.textBaseline = 'middle';
+                    c.fillText('ไม่มีข้อมูล', el.width / 2, el.height / 2);
+                    return;
+                }
 
                 new Chart(el, {
                     type: 'bar',
                     data: {
-                        labels: sortedYears,
+                        labels: displayLabels,
                         datasets
                     },
                     options: {
@@ -4108,6 +4225,16 @@
                         plugins: {
                             legend: {
                                 position: 'bottom'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    footer: (items) => {
+                                        const total = (items || []).reduce((sum, it) => sum + (it.parsed?.y || 0), 0);
+                                        return `รวมปีนี้: ${total}`;
+                                    }
+                                }
                             }
                         },
                         scales: {
@@ -4115,7 +4242,7 @@
                                 stacked: true,
                                 title: {
                                     display: true,
-                                    text: 'ปี'
+                                    text: 'ปี (พ.ศ.)'
                                 }
                             },
                             y: {
@@ -4132,7 +4259,7 @@
                             }
                         }
                     },
-                    plugins: [dataLabelPlugin]
+                    plugins: [totalLabelPlugin]
                 });
             })();
 
@@ -4296,36 +4423,64 @@
 
             /* ---------- 7) IRB Expiry (6 เดือนข้างหน้า) ---------- */
             (function() {
-                const now = new Date();
-                const group = {};
-                irbs.forEach(irb => {
-                    const exp = new Date(irb.exp_date);
-                    const monthsAhead = (exp - now) / (1000 * 60 * 60 * 24 * 30);
-                    if (monthsAhead >= 0 && monthsAhead <= 6) {
-                        const key = `${exp.getMonth()+1}/${exp.getFullYear()}`;
-                        group[key] = (group[key] || 0) + 1;
+                const canvas = document.getElementById('chartIRBExpiry');
+                if (!canvas) return;
+
+                function drawIrbEmptyState() {
+                    Chart.getChart(canvas)?.destroy();
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.font = '14px sans-serif';
+                    ctx.fillStyle = '#6b7280';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('ไม่มีข้อมูล IRB', canvas.width / 2, canvas.height / 2);
+                }
+
+                function renderIrbExpiryChart(rows = projects) {
+                    const group = {};
+                    (rows || []).forEach((project) => {
+                        (project.irbs || []).forEach((irb) => {
+                            const expDate = parseProjectDate(irb.exp_date);
+                            if (!expDate) return;
+                            const monthsAhead = (expDate - new Date()) / (1000 * 60 * 60 * 24 * 30);
+                            if (monthsAhead >= 0 && monthsAhead <= 6) {
+                                const key = `${expDate.getMonth() + 1}/${expDate.getFullYear()}`;
+                                group[key] = (group[key] || 0) + 1;
+                            }
+                        });
+                    });
+
+                    const labels = Object.keys(group).sort((a, b) => new Date(a) - new Date(b));
+                    if (!labels.length) {
+                        drawIrbEmptyState();
+                        return;
                     }
-                });
-                const labels = Object.keys(group).sort((a, b) => new Date(a) - new Date(b));
-                new Chart(document.getElementById('chartIRBExpiry'), {
-                    type: 'bar',
-                    data: {
-                        labels,
-                        datasets: [{
-                            label: 'IRB ใกล้หมดอายุ',
-                            data: labels.map(l => group[l]),
-                            backgroundColor: '#ef4444'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'IRB ใกล้หมดอายุ',
+                                data: labels.map((label) => group[label]),
+                                backgroundColor: '#ef4444'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
+
+                window.renderDashboardIrbExpiryChart = renderIrbExpiryChart;
+                renderIrbExpiryChart(projects);
             })();
 
 
@@ -4644,24 +4799,37 @@
                 const valueLabelCenter = {
                     id: 'valueLabelCenterExt',
                     afterDatasetsDraw(chart) {
-                        if (isMobileView) return;
                         const {
-                            ctx
+                            ctx,
+                            chartArea: {
+                                right
+                            }
                         } = chart;
                         const meta = chart.getDatasetMeta(0);
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = isMobileView ? 'bold 10px sans-serif' : 'bold 11px sans-serif';
                         ctx.fillStyle = '#111827';
-                        ctx.textAlign = 'center';
+                        ctx.textAlign = isMobileView ? 'left' : 'center';
                         ctx.textBaseline = 'middle';
                         meta.data.forEach((el, i) => {
                             const c = counts[i];
                             const m = budgets[i];
                             if (!c) return;
-                            const {
+                            let {
                                 x,
                                 y
                             } = el.tooltipPosition();
+                            if (isMobileView) {
+                                x = Math.min(x + 6, right - 6);
+                                if (x >= right - 18) {
+                                    ctx.textAlign = 'right';
+                                    x = right - 4;
+                                } else {
+                                    ctx.textAlign = 'left';
+                                }
+                                ctx.fillText(String(c), x, y);
+                                return;
+                            }
                             ctx.fillText(`${c} (${formatThaiMoney(m)})`, x, y);
                         });
                         ctx.restore();
@@ -4689,6 +4857,11 @@
                     options: isMobileView ? {
                         indexAxis: 'y',
                         responsive: true,
+                        layout: {
+                            padding: {
+                                right: 22
+                            }
+                        },
                         plugins: {
                             legend: {
                                 display: false
@@ -4744,7 +4917,7 @@
                             }
                         }
                     },
-                    plugins: isMobileView ? [] : [valueLabelCenter]
+                    plugins: [valueLabelCenter]
                 });
                 if (isTabletLandscape) {
                     el.style.width = '100%';
@@ -4806,25 +4979,39 @@
                 const dataLabelPlugin = {
                     id: 'dataLabelPluginInternal',
                     afterDatasetsDraw(chart) {
-                        if (isMobileView) return;
                         const {
-                            ctx
+                            ctx,
+                            chartArea: {
+                                right
+                            }
                         } = chart;
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = isMobileView ? 'bold 10px sans-serif' : 'bold 11px sans-serif';
                         ctx.fillStyle = '#111827';
-                        ctx.textAlign = 'center';
+                        ctx.textAlign = isMobileView ? 'left' : 'center';
                         ctx.textBaseline = 'middle';
 
                         const meta = chart.getDatasetMeta(0);
                         meta.data.forEach((el, i) => {
                             const count = counts[i];
                             const money = budgets[i];
-                            if (!count || !money) return;
-                            const {
+                            if (!count) return;
+                            let {
                                 x,
                                 y
                             } = el.tooltipPosition();
+                            if (isMobileView) {
+                                x = Math.min(x + 6, right - 6);
+                                if (x >= right - 18) {
+                                    ctx.textAlign = 'right';
+                                    x = right - 4;
+                                } else {
+                                    ctx.textAlign = 'left';
+                                }
+                                ctx.fillText(String(count), x, y);
+                                return;
+                            }
+                            if (!money) return;
                             ctx.fillText(`${count} (${formatThaiMoney(money)})`, x, y);
                         });
                         ctx.restore();
@@ -4852,6 +5039,11 @@
                     options: isMobileView ? {
                         indexAxis: 'y',
                         responsive: true,
+                        layout: {
+                            padding: {
+                                right: 22
+                            }
+                        },
                         plugins: {
                             legend: {
                                 display: false
@@ -4907,7 +5099,7 @@
                             }
                         }
                     },
-                    plugins: isMobileView ? [] : [dataLabelPlugin]
+                    plugins: [dataLabelPlugin]
                 });
                 if (isTabletLandscape) {
                     el.style.width = '100%';
@@ -4940,7 +5132,6 @@
             const stackTotalLabelPlugin = {
                 id: 'stackTotalLabelPlugin',
                 afterDatasetsDraw(chart) {
-                    if (isMobileView) return;
                     const {
                         ctx,
                         chartArea: {
@@ -4949,7 +5140,7 @@
                         }
                     } = chart;
                     ctx.save();
-                    ctx.font = 'bold 11px sans-serif';
+                    ctx.font = isMobileView ? 'bold 10px sans-serif' : 'bold 11px sans-serif';
                     ctx.fillStyle = '#111';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'bottom';
@@ -5018,7 +5209,6 @@
                 const dataLabelPluginBudget = {
                     id: 'dataLabelPluginBudget',
                     afterDatasetsDraw(chart) {
-                        if (isMobileView) return;
                         const {
                             ctx,
                             chartArea: {
@@ -5027,7 +5217,7 @@
                             }
                         } = chart;
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = isMobileView ? 'bold 10px sans-serif' : 'bold 11px sans-serif';
                         ctx.fillStyle = '#111827';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
@@ -5121,6 +5311,11 @@
                         },
                         options: {
                             responsive: true,
+                            layout: {
+                                padding: {
+                                    top: isMobileView ? 12 : 16
+                                }
+                            },
                             plugins: {
                                 legend: {
                                     position: 'bottom',
@@ -5161,6 +5356,7 @@
                                 y: {
                                     stacked: true,
                                     beginAtZero: true,
+                                    grace: '12%',
                                     ticks: {
                                         callback: v => formatThaiMoney(v)
                                     }
@@ -5181,37 +5377,59 @@
 
             /* ---------- 11) โครงการทั้งหมด vs ใหม่ vs ค้างจากปีก่อน (ต่อปี) + Data Label + กันเลขตกขอบ ---------- */
             (function() {
-                const uniqYears = [...new Set(projects.map(getYear))]
-                    .filter(y => y != null && String(y).trim() !== '');
-                const years = uniqYears.map(Number).sort((a, b) => a - b).map(String);
+                const startYears = projects
+                    .map((project) => projectLifecycleStartYearCE(project))
+                    .filter(Number.isFinite);
+                if (!startYears.length) return;
 
-                function isActiveInYear(p, y) {
-                    const s = toNumber(p.start_year);
-                    const e = toNumber(getEndYear(p)) || Infinity;
-                    const Y = toNumber(y);
-                    return s <= Y && Y <= e;
-                }
+                const eventYears = projects
+                    .filter((project) => {
+                        const key = projectLifecycleStatusKey(project);
+                        return key === 'completed' || key === 'cancelled';
+                    })
+                    .map((project) => projectLifecycleEventYearCE(project))
+                    .filter(Number.isFinite);
+
+                const minYearCE = Math.min(...startYears);
+                const currentYearCE = new Date().getFullYear();
+                const maxYearCE = Math.max(...startYears, ...eventYears, currentYearCE);
+                window.yearlyLifecycleHorizonCE = maxYearCE;
+
+                const yearsCE = [];
+                for (let year = minYearCE; year <= maxYearCE; year += 1) yearsCE.push(year);
+                const yearLabels = yearsCE.map((year) => yearLabelTH(year));
+                window.yearlyNewVsTotalLabelMap = {};
+                yearLabels.forEach((label, index) => {
+                    window.yearlyNewVsTotalLabelMap[label] = yearsCE[index];
+                });
 
                 const totalPerYear = {};
                 const newPerYear = {};
-                const carryoverPerYear = {};
+                const inProgressPerYear = {};
+                const completedPerYear = {};
+                const cancelledPerYear = {};
 
-                years.forEach(y => {
-                    totalPerYear[y] = projects.filter(p => isActiveInYear(p, y)).length;
-                    newPerYear[y] = projects.filter(p => String(getYear(p)) === String(y)).length;
-                    carryoverPerYear[y] = projects.filter(p => {
-                        const s = toNumber(p.start_year);
-                        const e = toNumber(getEndYear(p)) || Infinity;
-                        const Y = toNumber(y);
-                        return s < Y && Y <= e; // เริ่มก่อนปีนี้และยัง active
+                yearsCE.forEach((year) => {
+                    totalPerYear[year] = projects.filter((project) => {
+                        const startYear = projectLifecycleStartYearCE(project);
+                        if (Number.isFinite(startYear)) return startYear <= year;
+                        return year === maxYearCE;
                     }).length;
+                    newPerYear[year] = projects.filter((project) => projectLifecycleStartYearCE(project) === year).length;
+                    inProgressPerYear[year] = projects.filter((project) => projectIsInProgressInYear(project, year, maxYearCE)).length;
+                    completedPerYear[year] = projects.filter((project) =>
+                        projectLifecycleStatusKey(project) === 'completed' &&
+                        Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
+                    ).length;
+                    cancelledPerYear[year] = projects.filter((project) =>
+                        projectLifecycleStatusKey(project) === 'cancelled' &&
+                        Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
+                    ).length;
                 });
 
-                // ปลั๊กอินโชว์เลข + เช็คการซ่อน + กันตกขอบบน/ขวา
                 const valueLabelBar = {
                     id: 'valueLabelBar',
                     afterDatasetsDraw(chart) {
-                        if (isMobileView) return;
                         const {
                             ctx,
                             chartArea: {
@@ -5220,34 +5438,25 @@
                             }
                         } = chart;
                         ctx.save();
-                        ctx.font = 'bold 11px sans-serif';
+                        ctx.font = isMobileView ? 'bold 10px sans-serif' : 'bold 11px sans-serif';
                         ctx.fillStyle = '#111827';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
 
-                        chart.data.datasets.forEach((dataset, dsIndex) => {
-                            // ถ้าชุดข้อมูลถูกซ่อนจาก legend ให้ข้าม
-                            if (!chart.isDatasetVisible(dsIndex)) return;
-
-                            const meta = chart.getDatasetMeta(dsIndex);
-                            meta.data.forEach((bar, index) => {
-                                if (!bar || bar.hidden) return;
-                                const val = dataset.data[index];
-                                if (!isFinite(val) || val <= 0) return;
-
-                                let drawX = bar.x;
-                                let drawY = bar.y - 2;
-
-                                // clamp กันตกขอบบน
-                                const minY = top + 8;
-                                if (drawY < minY) drawY = minY;
-
-                                // กันชิดขอบขวา (เผื่อข้อความ)
-                                if (drawX > right - 2) drawX = right - 2;
-
-                                ctx.fillText(val, drawX, drawY);
+                        const totalIndex = chart.data.datasets.findIndex((dataset) => String(dataset.label || '').trim() === 'ทั้งหมด');
+                        if (totalIndex >= 0 && chart.isDatasetVisible(totalIndex)) {
+                            const dataset = chart.data.datasets[totalIndex];
+                            const meta = chart.getDatasetMeta(totalIndex);
+                            meta.data.forEach((point, index) => {
+                                const value = Number(dataset.data[index] || 0);
+                                if (!(value > 0)) return;
+                                let x = point.x;
+                                let y = point.y - 10;
+                                if (y < top + 10) y = top + 10;
+                                if (x > right - 6) x = right - 6;
+                                ctx.fillText(String(value), x, y);
                             });
-                        });
+                        }
 
                         ctx.restore();
                     }
@@ -5261,34 +5470,80 @@
                 new Chart(el, {
                     type: 'bar',
                     data: {
-                        labels: years,
+                        labels: yearLabels,
                         datasets: [{
                                 label: 'ทั้งหมด',
-                                data: years.map(y => totalPerYear[y]),
-                                backgroundColor: '#93c5fd'
+                                data: yearsCE.map((year) => totalPerYear[year]),
+                                type: 'line',
+                                borderColor: '#60a5fa',
+                                backgroundColor: '#60a5fa',
+                                pointBackgroundColor: '#60a5fa',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 1.5,
+                                pointRadius: 4,
+                                pointHoverRadius: 7,
+                                borderWidth: 3,
+                                tension: 0.25,
+                                fill: false,
+                                order: 0,
+                                stack: 'totalLine'
                             },
                             {
                                 label: 'ใหม่',
-                                data: years.map(y => newPerYear[y]),
-                                backgroundColor: '#34d399'
+                                data: yearsCE.map((year) => newPerYear[year]),
+                                backgroundColor: '#34d399',
+                                stack: 'status',
+                                order: 1
                             },
                             {
-                                label: 'กำลังทำ',
-                                data: years.map(y => carryoverPerYear[y]),
-                                backgroundColor: '#fbbf24'
+                                label: 'กำลังดำเนินการ',
+                                data: yearsCE.map((year) => inProgressPerYear[year]),
+                                backgroundColor: '#fbbf24',
+                                stack: 'status',
+                                order: 1
+                            },
+                            {
+                                label: 'ปิดโปรเจค',
+                                data: yearsCE.map((year) => completedPerYear[year]),
+                                backgroundColor: '#ef4444',
+                                stack: 'status',
+                                order: 1
+                            },
+                            {
+                                label: 'ยกเลิกโปรเจค',
+                                data: yearsCE.map((year) => cancelledPerYear[year]),
+                                backgroundColor: '#f97316',
+                                stack: 'status',
+                                order: 1
                             }
                         ]
                     },
                     options: {
                         responsive: true,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        datasets: {
+                            bar: {
+                                barPercentage: 0.72,
+                                categoryPercentage: 0.74,
+                                maxBarThickness: 34
+                            }
+                        },
                         layout: {
                             padding: {
-                                top: isMobileView ? 8 : 16
+                                top: isMobileView ? 12 : 16,
+                                right: 16
                             }
                         }, // ← เผื่อพื้นที่ด้านบนให้ label
                         plugins: {
                             legend: {
-                                position: 'bottom'
+                                position: 'bottom',
+                                labels: {
+                                    padding: 18,
+                                    usePointStyle: true
+                                }
                             },
                             tooltip: {
                                 mode: 'index',
@@ -5298,6 +5553,7 @@
                         scales: {
                             y: {
                                 beginAtZero: true,
+                                stacked: true,
                                 grace: '12%', // ← headroom กันเลขชนขอบบน
                                 ticks: {
                                     precision: 0
@@ -5308,15 +5564,21 @@
                                 }
                             },
                             x: {
+                                stacked: true,
+                                offset: true,
+                                grid: {
+                                    drawBorder: false
+                                },
                                 ticks: {
                                     autoSkip: true,
                                     maxTicksLimit: isMobileView ? 4 : 10,
                                     maxRotation: 0,
-                                    minRotation: 0
+                                    minRotation: 0,
+                                    padding: 8
                                 },
                                 title: {
                                     display: true,
-                                    text: 'ปี'
+                                    text: 'ปี (พ.ศ.)'
                                 }
                             }
                         }
@@ -5645,7 +5907,7 @@
                         const diffMonths = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.4375);
                         if (diffMonths < 0 || diffMonths > maxMonths) return;
                         const members = coResearchMembers(p).filter(m => m.unitLabel === unit);
-                        total += members.length;
+                        if (members.length) total += 1;
                     });
                     return total;
                 };
@@ -5669,7 +5931,6 @@
                     const barValuePlugin = {
                         id: 'barValueCoResearch',
                         afterDatasetsDraw(chart) {
-                            if (isMobileView) return;
                             const {
                                 ctx,
                                 chartArea: {
@@ -5678,10 +5939,10 @@
                                 }
                             } = chart;
                             ctx.save();
-                            ctx.font = 'bold 11px sans-serif';
+                            ctx.font = isMobileView ? 'bold 10px sans-serif' : 'bold 11px sans-serif';
                             ctx.fillStyle = '#111827';
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'bottom';
+                            ctx.textAlign = isMobileView ? 'left' : 'center';
+                            ctx.textBaseline = isMobileView ? 'middle' : 'bottom';
                             chart.data.datasets.forEach((ds, dsIndex) => {
                                 if (!chart.isDatasetVisible(dsIndex)) return;
                                 const meta = chart.getDatasetMeta(dsIndex);
@@ -5690,6 +5951,18 @@
                                     if (!isFinite(v) || v <= 0) return;
                                     let x = bar.x;
                                     let y = bar.y - 3;
+                                    if (isMobileView) {
+                                        x = Math.min(bar.x + 6, right - 6);
+                                        y = bar.y;
+                                        if (x >= right - 18) {
+                                            ctx.textAlign = 'right';
+                                            x = right - 4;
+                                        } else {
+                                            ctx.textAlign = 'left';
+                                        }
+                                        ctx.fillText(String(v), x, y);
+                                        return;
+                                    }
                                     if (y < top + 8) y = top + 8;
                                     if (x > right - 2) x = right - 2;
                                     ctx.fillText(String(v), x, y);
@@ -5800,20 +6073,7 @@
                 const pageEl = document.getElementById('irbDashPagination');
                 const pageSize = 10;
                 let page = 1;
-
-                const rows = [];
-                projects.forEach(p => {
-                    const list = p.irbs || [];
-                    list.forEach(irb => {
-                        const expDate = parseProjectDate(irb.exp_date);
-                        rows.push({
-                            project: p,
-                            code: irb.code || '-',
-                            source: irb.source || '-',
-                            expDate
-                        });
-                    });
-                });
+                let scopedProjects = projects.slice();
 
                 function formatDate(d) {
                     return formatDateTH(d, '-');
@@ -5822,6 +6082,20 @@
                 function applyFilter() {
                     const mode = filterEl?.value || 'exp_3m';
                     const now = new Date();
+                    const rows = [];
+                    scopedProjects.forEach(p => {
+                        const list = p.irbs || [];
+                        list.forEach(irb => {
+                            const expDate = parseProjectDate(irb.exp_date);
+                            rows.push({
+                                project: p,
+                                code: irb.code || '-',
+                                source: irb.source || '-',
+                                expDate
+                            });
+                        });
+                    });
+
                     let filtered = rows.slice();
 
                     if (mode === 'exp_3m') {
@@ -5839,7 +6113,8 @@
                     return filtered;
                 }
 
-                function render() {
+                function render(rows = scopedProjects) {
+                    scopedProjects = Array.isArray(rows) ? rows.slice() : [];
                     if (!tbody) return;
                     const filtered = applyFilter();
                     const total = filtered.length;
@@ -5886,10 +6161,827 @@
                     render();
                 });
 
-                render();
+                window.renderDashboardIrbList = (rows) => {
+                    page = 1;
+                    render(rows);
+                };
+
+                render(projects);
             })();
 
             /* ---------- Export CSV/Excel (ตามตัวกรอง) ---------- */
+            const isCompactDashboardViewport = window.innerWidth <= 1024;
+
+            function drawDashboardMobileEmptyChart(canvas, text = 'ไม่มีข้อมูล') {
+                if (!canvas) return;
+                Chart.getChart(canvas)?.destroy();
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.font = '14px sans-serif';
+                ctx.fillStyle = '#6b7280';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+                ctx.restore();
+            }
+
+            function sortDashboardYearKeys(values) {
+                const isNum = (value) => /^\d+$/.test(String(value ?? '').trim());
+                const uniqueValues = Array.from(new Set((values || [])
+                    .map((value) => String(value ?? '').trim())
+                    .filter(Boolean)));
+                return uniqueValues
+                    .filter(isNum)
+                    .map(Number)
+                    .sort((a, b) => a - b)
+                    .map(String)
+                    .concat(uniqueValues.filter((value) => !isNum(value)).sort((a, b) => String(a).localeCompare(String(b), 'th')));
+            }
+
+            function createDashboardMobileBarValuePlugin(id, formatter = (value) => String(value), options = {}) {
+                const minValue = Number(options.minValue ?? 1);
+                return {
+                    id,
+                    afterDatasetsDraw(chart) {
+                        const {
+                            ctx,
+                            chartArea: {
+                                top,
+                                right,
+                                left
+                            }
+                        } = chart;
+                        ctx.save();
+                        ctx.font = isCompactDashboardViewport ? '700 10px sans-serif' : '700 11px sans-serif';
+                        ctx.fillStyle = '#111827';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+
+                        chart.data.datasets.forEach((dataset, datasetIndex) => {
+                            if (!chart.isDatasetVisible(datasetIndex)) return;
+                            const meta = chart.getDatasetMeta(datasetIndex);
+                            meta.data.forEach((bar, index) => {
+                                if (!bar || bar.hidden) return;
+                                const value = Number(dataset.data?.[index] ?? 0);
+                                if (!isFinite(value) || value < minValue) return;
+                                const label = typeof formatter === 'function' ? formatter(value) : String(value);
+                                let x = bar.x;
+                                let y = bar.y - 5;
+                                if (y < top + 9) y = top + 9;
+                                if (x > right - 3) x = right - 3;
+                                if (x < left + 3) x = left + 3;
+                                ctx.fillText(label, x, y);
+                            });
+                        });
+
+                        ctx.restore();
+                    }
+                };
+            }
+
+            function createDashboardMobileStackTotalPlugin(id, formatter = (value) => String(value)) {
+                return {
+                    id,
+                    afterDatasetsDraw(chart) {
+                        const {
+                            ctx,
+                            chartArea: {
+                                top,
+                                right,
+                                left
+                            }
+                        } = chart;
+                        ctx.save();
+                        ctx.font = isCompactDashboardViewport ? '700 10px sans-serif' : '700 11px sans-serif';
+                        ctx.fillStyle = '#111827';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+
+                        (chart.data.labels || []).forEach((_, index) => {
+                            let total = 0;
+                            let topElement = null;
+
+                            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                                if (!chart.isDatasetVisible(datasetIndex)) return;
+                                const value = Number(dataset.data?.[index] ?? 0);
+                                if (!isFinite(value) || value <= 0) return;
+                                total += value;
+                                const element = chart.getDatasetMeta(datasetIndex)?.data?.[index];
+                                if (element && (!topElement || element.y < topElement.y)) {
+                                    topElement = element;
+                                }
+                            });
+
+                            if (!(total > 0) || !topElement) return;
+
+                            const label = typeof formatter === 'function' ? formatter(total) : String(total);
+                            let x = topElement.x;
+                            let y = topElement.y - 6;
+                            if (y < top + 10) y = top + 10;
+                            if (x > right - 3) x = right - 3;
+                            if (x < left + 3) x = left + 3;
+                            ctx.fillText(label, x, y);
+                        });
+
+                        ctx.restore();
+                    }
+                };
+            }
+
+            function formatDashboardMobileMoney(value) {
+                const amount = Number(value) || 0;
+                return `${(amount / 1_000_000).toFixed(2).replace(/\.00$/, '')} ล้าน`;
+            }
+
+            function getDashboardRowsOutputs(rows) {
+                return (rows || []).flatMap((project) => Array.isArray(project?.outputs) ? project.outputs : []);
+            }
+
+            (function() {
+                function renderProjectsPerYear(rows = projects) {
+                    const canvas = document.getElementById('chartProjectsPerYear');
+                    if (!canvas) return;
+
+                    const startYearsCE = (rows || [])
+                        .map((project) => projectLifecycleStartYearCE(project))
+                        .filter(Number.isFinite)
+                        .sort((a, b) => a - b);
+
+                    if (!startYearsCE.length) {
+                        drawDashboardMobileEmptyChart(canvas);
+                        return;
+                    }
+
+                    const yearsCE = Array.from(new Set(startYearsCE));
+                    const maxYearCE = yearsCE[yearsCE.length - 1];
+                    const labels = yearsCE.map((year) => yearLabelTH(year));
+                    const data = yearsCE.map((year) =>
+                        rows.filter((project) => {
+                            const startYear = projectLifecycleStartYearCE(project);
+                            if (Number.isFinite(startYear)) return startYear <= year;
+                            return year === maxYearCE;
+                        }).length
+                    );
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'จำนวนโครงการ',
+                                data,
+                                backgroundColor: labels.map((_, index) => `hsl(${(index * 37) % 360} 70% 60%)`),
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 14
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${ctx.raw} โครงการ`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        autoSkip: true,
+                                        maxTicksLimit: isCompactDashboardViewport ? 4 : 8,
+                                        maxRotation: 0,
+                                        minRotation: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'ปี (พ.ศ.)'
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        precision: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'จำนวนโครงการ'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createDashboardMobileBarValuePlugin('mobileProjectsPerYearLabel')]
+                    });
+                }
+
+                function renderYearlyLifecycle(rows = projects) {
+                    const canvas = document.getElementById('chartYearlyNewVsTotal');
+                    if (!canvas) return;
+
+                    const startYears = (rows || [])
+                        .map((project) => projectLifecycleStartYearCE(project))
+                        .filter(Number.isFinite);
+
+                    if (!startYears.length) {
+                        drawDashboardMobileEmptyChart(canvas);
+                        return;
+                    }
+
+                    const eventYears = rows
+                        .filter((project) => {
+                            const key = projectLifecycleStatusKey(project);
+                            return key === 'completed' || key === 'cancelled';
+                        })
+                        .map((project) => projectLifecycleEventYearCE(project))
+                        .filter(Number.isFinite);
+
+                    const minYearCE = Math.min(...startYears);
+                    const currentYearCE = new Date().getFullYear();
+                    const maxYearCE = Math.max(...startYears, ...eventYears, currentYearCE);
+
+                    const yearsCE = [];
+                    for (let year = minYearCE; year <= maxYearCE; year += 1) yearsCE.push(year);
+                    const yearLabels = yearsCE.map((year) => yearLabelTH(year));
+                    window.yearlyNewVsTotalLabelMap = {};
+                    yearLabels.forEach((label, index) => {
+                        window.yearlyNewVsTotalLabelMap[label] = yearsCE[index];
+                    });
+
+                    const totalPerYear = {};
+                    const newPerYear = {};
+                    const inProgressPerYear = {};
+                    const completedPerYear = {};
+                    const cancelledPerYear = {};
+
+                    yearsCE.forEach((year) => {
+                        totalPerYear[year] = rows.filter((project) => {
+                            const startYear = projectLifecycleStartYearCE(project);
+                            if (Number.isFinite(startYear)) return startYear <= year;
+                            return year === maxYearCE;
+                        }).length;
+                        newPerYear[year] = rows.filter((project) => projectLifecycleStartYearCE(project) === year).length;
+                        inProgressPerYear[year] = rows.filter((project) => projectIsInProgressInYear(project, year, maxYearCE)).length;
+                        completedPerYear[year] = rows.filter((project) =>
+                            projectLifecycleStatusKey(project) === 'completed' &&
+                            Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
+                        ).length;
+                        cancelledPerYear[year] = rows.filter((project) =>
+                            projectLifecycleStatusKey(project) === 'cancelled' &&
+                            Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
+                        ).length;
+                    });
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: yearLabels,
+                            datasets: [{
+                                    label: 'ทั้งหมด',
+                                    data: yearsCE.map((year) => totalPerYear[year]),
+                                    type: 'line',
+                                    borderColor: '#60a5fa',
+                                    backgroundColor: '#60a5fa',
+                                    pointBackgroundColor: '#60a5fa',
+                                    pointBorderColor: '#ffffff',
+                                    pointBorderWidth: 1.5,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 7,
+                                    borderWidth: 3,
+                                    tension: 0.25,
+                                    fill: false,
+                                    order: 0,
+                                    stack: 'totalLine'
+                                },
+                                {
+                                    label: 'ใหม่',
+                                    data: yearsCE.map((year) => newPerYear[year]),
+                                    backgroundColor: '#34d399',
+                                    stack: 'status',
+                                    order: 1
+                                },
+                                {
+                                    label: 'กำลังดำเนินการ',
+                                    data: yearsCE.map((year) => inProgressPerYear[year]),
+                                    backgroundColor: '#fbbf24',
+                                    stack: 'status',
+                                    order: 1
+                                },
+                                {
+                                    label: 'ปิดโปรเจค',
+                                    data: yearsCE.map((year) => completedPerYear[year]),
+                                    backgroundColor: '#ef4444',
+                                    stack: 'status',
+                                    order: 1
+                                },
+                                {
+                                    label: 'ยกเลิกโปรเจค',
+                                    data: yearsCE.map((year) => cancelledPerYear[year]),
+                                    backgroundColor: '#f97316',
+                                    stack: 'status',
+                                    order: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            layout: {
+                                padding: {
+                                    top: 14,
+                                    right: 16
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 18,
+                                        usePointStyle: true
+                                    }
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    stacked: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        precision: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'จำนวนโครงการ'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createDashboardMobileBarValuePlugin('mobileLifecycleLabel')]
+                    });
+                }
+
+                function renderFundingSplit(rows = projects) {
+                    const canvas = document.getElementById('chartFundingSplit');
+                    if (!canvas) return;
+
+                    const years = sortDashboardYearKeys((rows || []).map((project) => getYear(project)));
+                    if (!years.length) {
+                        drawDashboardMobileEmptyChart(canvas);
+                        return;
+                    }
+
+                    const types = ['ภายใน', 'ภายนอก'];
+                    const matrix = {};
+                    years.forEach((year) => {
+                        matrix[year] = { 'ภายใน': 0, 'ภายนอก': 0 };
+                    });
+
+                    rows.forEach((project) => {
+                        const year = String(getYear(project) ?? '').trim() || 'ไม่ระบุ';
+                        const fundingType = getFundingType(project);
+                        if (!matrix[year] || !types.includes(fundingType)) return;
+                        matrix[year][fundingType] += 1;
+                    });
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: years,
+                            datasets: types.map((type) => ({
+                                label: type,
+                                data: years.map((year) => matrix[year][type]),
+                                backgroundColor: type === 'ภายใน' ? '#60a5fa' : '#34d399',
+                                stack: 'fund'
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 14
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        footer: (items) => {
+                                            const total = (items || []).reduce((sum, item) => sum + (Number(item.parsed?.y || 0)), 0);
+                                            return `รวม: ${total} โครงการ`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                    ticks: {
+                                        autoSkip: true,
+                                        maxTicksLimit: isCompactDashboardViewport ? 4 : 8,
+                                        maxRotation: 0,
+                                        minRotation: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'ปี'
+                                    }
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        precision: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'จำนวนโครงการ'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createDashboardMobileStackTotalPlugin('mobileFundingSplitTotal')]
+                    });
+                }
+
+                function renderBudgetPerYear(rows = projects) {
+                    const canvas = document.getElementById('chartBudgetPerYear');
+                    if (!canvas) return;
+
+                    const years = sortDashboardYearKeys((rows || []).map((project) => getYear(project)));
+                    if (!years.length) {
+                        drawDashboardMobileEmptyChart(canvas);
+                        return;
+                    }
+
+                    const data = years.map((year) => rows
+                        .filter((project) => String(getYear(project) ?? '').trim() === year)
+                        .reduce((sum, project) => sum + (Number(getBudget(project)) || 0), 0));
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: years,
+                            datasets: [{
+                                label: 'งบประมาณ (รวม)',
+                                data,
+                                backgroundColor: '#fbbf24',
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 14
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${formatDashboardMobileMoney(ctx.raw)}`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        autoSkip: true,
+                                        maxTicksLimit: isCompactDashboardViewport ? 4 : 8,
+                                        maxRotation: 0,
+                                        minRotation: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'ปี'
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        callback: (value) => formatDashboardMobileMoney(value)
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'งบประมาณ'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createDashboardMobileBarValuePlugin('mobileBudgetPerYearLabel', (value) => formatDashboardMobileMoney(value), { minValue: 0.01 })]
+                    });
+                }
+
+                function renderOutputStacked(rows = projects) {
+                    const canvas = document.getElementById('chartOutputStacked');
+                    if (!canvas) return;
+
+                    const outputRows = getDashboardRowsOutputs(rows);
+                    const types = [...new Set(outputRows.map(outputType).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+                    const matrix = {};
+
+                    outputRows.forEach((output) => {
+                        const yearKey = outputYearKey(output);
+                        const type = outputType(output) || 'อื่นๆ';
+                        matrix[yearKey] = matrix[yearKey] || {};
+                        matrix[yearKey][type] = (matrix[yearKey][type] || 0) + 1;
+                    });
+
+                    const sortedYears = sortDashboardYearKeys(Object.keys(matrix));
+                    if (!sortedYears.length || !types.length) {
+                        drawDashboardMobileEmptyChart(canvas);
+                        return;
+                    }
+
+                    const displayLabels = sortedYears.map((year) => outputYearLabelForKey(year));
+                    window.outputYearLabelKeyMap = {};
+                    displayLabels.forEach((label, index) => {
+                        window.outputYearLabelKeyMap[label] = sortedYears[index];
+                    });
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: displayLabels,
+                            datasets: types.map((type, index) => ({
+                                label: type,
+                                data: sortedYears.map((year) => Number(matrix[year]?.[type] || 0)),
+                                backgroundColor: `hsl(${(index * 53) % 360} 70% 60%)`,
+                                stack: 'out'
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 16
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        footer: (items) => {
+                                            const total = (items || []).reduce((sum, item) => sum + (Number(item.parsed?.y || 0)), 0);
+                                            return `รวมปีนี้: ${total}`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                    title: {
+                                        display: true,
+                                        text: 'ปี (พ.ศ.)'
+                                    }
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        precision: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'จำนวนผลงาน'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createDashboardMobileStackTotalPlugin('mobileOutputStackedTotal')]
+                    });
+                }
+
+                function renderStatusYear(rows = projects) {
+                    const canvas = document.getElementById('chartStatusYear');
+                    if (!canvas) return;
+
+                    const statuses = [
+                        'Project Planing (เริ่มต้น - submit IRB)',
+                        'เก็บข้อมูล',
+                        'วิเคราะห์ข้อมูล',
+                        'เขียนรายงานและpublication',
+                        'ปิดโปรเจค',
+                        'ยกเลิกโปรเจค'
+                    ];
+
+                    const statusData = {};
+                    rows.forEach((project) => {
+                        const year = String(getYear(project) ?? '').trim() || 'ไม่ระบุ';
+                        const status = project.planning_status || 'ไม่ระบุ';
+                        if (!statusData[year]) statusData[year] = Object.fromEntries(statuses.map((item) => [item, 0]));
+                        if (statuses.includes(status)) statusData[year][status] += 1;
+                    });
+
+                    const sortedYears = sortDashboardYearKeys(Object.keys(statusData));
+                    if (!sortedYears.length) {
+                        drawDashboardMobileEmptyChart(canvas);
+                        return;
+                    }
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: sortedYears,
+                            datasets: statuses.map((status, index) => ({
+                                label: status,
+                                data: sortedYears.map((year) => statusData[year]?.[status] ?? 0),
+                                backgroundColor: `hsl(${(index * 46) % 360} 70% 60%)`,
+                                stack: 'st'
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 18
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        footer: (items) => {
+                                            const total = (items || []).reduce((sum, item) => sum + (Number(item.parsed?.y || 0)), 0);
+                                            return `รวมปีนี้: ${total} โครงการ`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                    ticks: {
+                                        autoSkip: true,
+                                        maxTicksLimit: isCompactDashboardViewport ? 4 : 8,
+                                        maxRotation: 0,
+                                        minRotation: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'ปี'
+                                    }
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    grace: '14%',
+                                    ticks: {
+                                        precision: 0
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'จำนวนโครงการ'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createDashboardMobileStackTotalPlugin('mobileStatusYearTotal')]
+                    });
+                }
+
+                function renderIrbExpiry(rows = projects) {
+                    const canvas = document.getElementById('chartIRBExpiry');
+                    if (!canvas) return;
+
+                    const group = {};
+                    (rows || []).forEach((project) => {
+                        (project.irbs || []).forEach((irb) => {
+                            const expDate = parseProjectDate(irb.exp_date);
+                            if (!expDate) return;
+                            const monthsAhead = (expDate - new Date()) / (1000 * 60 * 60 * 24 * 30);
+                            if (monthsAhead >= 0 && monthsAhead <= 6) {
+                                const key = `${expDate.getMonth() + 1}/${expDate.getFullYear()}`;
+                                group[key] = (group[key] || 0) + 1;
+                            }
+                        });
+                    });
+
+                    const labels = Object.keys(group).sort((a, b) => new Date(a) - new Date(b));
+                    if (!labels.length) {
+                        drawDashboardMobileEmptyChart(canvas, 'ไม่มีข้อมูล IRB');
+                        return;
+                    }
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'IRB ใกล้หมดอายุ',
+                                data: labels.map((label) => group[label]),
+                                backgroundColor: '#ef4444',
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 14
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${ctx.raw} รายการ`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        autoSkip: true,
+                                        maxTicksLimit: isCompactDashboardViewport ? 4 : 6,
+                                        maxRotation: 0,
+                                        minRotation: 0
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createDashboardMobileBarValuePlugin('mobileIrbExpiryLabel')]
+                    });
+                }
+
+                function refreshRealtimeDashboardMobile(rows = getFilteredProjects()) {
+                    renderProjectsPerYear(rows);
+                    renderYearlyLifecycle(rows);
+                    renderFundingSplit(rows);
+                    renderBudgetPerYear(rows);
+                    renderOutputStacked(rows);
+                    renderStatusYear(rows);
+                    renderIrbExpiry(rows);
+                }
+
+                window.renderDashboardProjectsPerYearChart = renderProjectsPerYear;
+                window.renderDashboardYearlyLifecycleChart = renderYearlyLifecycle;
+                window.renderDashboardFundingSplitChart = renderFundingSplit;
+                window.renderDashboardBudgetPerYearChart = renderBudgetPerYear;
+                window.renderDashboardOutputStackedChart = renderOutputStacked;
+                window.renderDashboardStatusYearChart = renderStatusYear;
+                window.renderDashboardIrbExpiryChart = renderIrbExpiry;
+                window.refreshRealtimeDashboardMobile = refreshRealtimeDashboardMobile;
+            })();
+
             function csvEscape(val) {
                 if (val == null) return '';
                 const s = String(val).replace(/\r?\n/g, ' ').trim();
@@ -6396,6 +7488,8 @@
                     if (pageEl) pageEl.textContent = `หน้า ${currentPage} / ${totalPages}`;
                     if (prevBtn) prevBtn.disabled = currentPage <= 1;
                     if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+                    window.refreshRealtimeDashboardMobile?.(rows);
+                    window.renderDashboardIrbList?.(rows);
                     renderDashboardFilterState(total);
                     window.updateDashboardFabVisibility?.();
                 }

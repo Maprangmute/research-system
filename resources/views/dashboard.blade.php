@@ -591,6 +591,12 @@
             }
         }
 
+        @media (min-width: 900px) and (max-width: 1280px) {
+            .lux-chart-scroll {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
         .lux-chart-card {
             scroll-snap-align: start;
             height: auto;
@@ -1927,10 +1933,48 @@
             setTimeout(() => applyChartCanvasSizing(), 0);
             window.addEventListener('load', () => applyChartCanvasSizing());
 
+            function forceDashboardChartResize(root = document) {
+                root.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
+                    const chart = typeof Chart !== 'undefined' ? Chart.getChart(canvas) : null;
+                    if (chart) chart.resize();
+                });
+            }
+
+            let dashboardLayoutBucket = '';
+            function getDashboardLayoutBucket() {
+                const vw = window.innerWidth || document.documentElement.clientWidth || 1366;
+                if (vw <= 640) return 'phone';
+                if (vw <= 900) return 'compact';
+                if (vw <= 1280) return 'single';
+                if (vw <= 1535) return 'wide';
+                return 'xl';
+            }
+
+            function syncDashboardResponsiveLayout() {
+                const nextBucket = getDashboardLayoutBucket();
+                const bucketChanged = dashboardLayoutBucket && dashboardLayoutBucket !== nextBucket;
+                dashboardLayoutBucket = nextBucket;
+                applyChartCanvasSizing();
+                forceDashboardChartResize();
+                if (bucketChanged) {
+                    requestAnimationFrame(() => {
+                        applyChartCanvasSizing();
+                        forceDashboardChartResize();
+                    });
+                }
+            }
+
             let chartCanvasResizeTimer = null;
             window.addEventListener('resize', () => {
                 clearTimeout(chartCanvasResizeTimer);
-                chartCanvasResizeTimer = setTimeout(() => applyChartCanvasSizing(), 120);
+                chartCanvasResizeTimer = setTimeout(syncDashboardResponsiveLayout, 120);
+            });
+            window.addEventListener('orientationchange', () => {
+                setTimeout(syncDashboardResponsiveLayout, 180);
+            });
+            window.addEventListener('load', () => {
+                dashboardLayoutBucket = getDashboardLayoutBucket();
+                syncDashboardResponsiveLayout();
             });
 
             function uniqueProjects(list) {
