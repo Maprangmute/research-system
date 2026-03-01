@@ -77,48 +77,44 @@ public function index(Request $request)
     }
 
     // ========== FILTER ==========
+    $filterFrom = null;
+    $filterTo = null;
 
     // รายปี
     if ($mode === 'year' && $year) {
         $yearAD = $year > 2500 ? $year - 543 : $year;
-        $startOfYear = Carbon::createFromDate($yearAD, 1, 1)->startOfDay();
-        $endOfYear   = Carbon::createFromDate($yearAD, 12, 31)->endOfDay();
-
-        $fteQuery->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$endOfYear->format('Y-m-d H:i:s')])
-                 ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$startOfYear->format('Y-m-d H:i:s')]);
-
-        $backOfficeQuery
-            ->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$endOfYear->format('Y-m-d H:i:s')])
-            ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$startOfYear->format('Y-m-d H:i:s')]);
+        $filterFrom = Carbon::createFromDate($yearAD, 1, 1)->startOfDay();
+        $filterTo = Carbon::createFromDate($yearAD, 12, 31)->endOfDay();
     }
 
     // รายเดือน (เดือนนี้)
     if ($mode === 'month') {
         $now = now();
-        $mStart = $now->copy()->startOfMonth()->startOfDay();
-        $mEnd   = $now->copy()->endOfMonth()->endOfDay();
-
-        $fteQuery->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$mEnd->format('Y-m-d H:i:s')])
-                 ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$mStart->format('Y-m-d H:i:s')]);
-
-        $backOfficeQuery
-            ->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$mEnd->format('Y-m-d H:i:s')])
-            ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$mStart->format('Y-m-d H:i:s')]);
+        $filterFrom = $now->copy()->startOfMonth()->startOfDay();
+        $filterTo = $now->copy()->endOfMonth()->endOfDay();
     }
 
     // custom range
     if ($mode === 'custom' && $start && $end) {
-        try {
-            $from = Carbon::createFromFormat('d/m/Y', $start)->startOfDay();
-            $to   = Carbon::createFromFormat('d/m/Y', $end)->endOfDay();
+        [$customFrom, $customTo] = $this->parseDateRange($start, $end);
+        if ($customFrom && $customTo) {
+            $filterFrom = $customFrom;
+            $filterTo = $customTo;
+            $start = $customFrom->format('d-m-Y');
+            $end = $customTo->format('d-m-Y');
+        }
+    }
 
-            $fteQuery->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$to->format('Y-m-d H:i:s')])
-                     ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$from->format('Y-m-d H:i:s')]);
+    if ($filterFrom && $filterTo) {
+        $this->applyDateOverlapFilter($fteQuery, 'start_date', 'end_date', $filterFrom, $filterTo);
 
-            $backOfficeQuery
-                ->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$to->format('Y-m-d H:i:s')])
-                ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?",  [$from->format('Y-m-d H:i:s')]);
-        } catch (\Exception $e) {}
+        // ใช้วันที่จากรายการหรือวันที่ของงานหลัก (task) เพื่อไม่ตกหล่นข้อมูลที่ไม่ได้กรอกวันที่ใน entry
+        $backOfficeQuery->where(function ($q) use ($filterFrom, $filterTo) {
+            $this->applyDateOverlapFilter($q, 'start_date', 'end_date', $filterFrom, $filterTo);
+            $q->orWhereHas('task', function ($taskQ) use ($filterFrom, $filterTo) {
+                $this->applyDateOverlapFilter($taskQ, 'start_date', 'end_date', $filterFrom, $filterTo);
+            });
+        });
     }
 
     if ($person) {
@@ -165,7 +161,10 @@ public function index(Request $request)
     // Group by: name → month
     // ============================
 
-    $monthlyFTE = $fteRows->groupBy('name')->map(function ($rows) use ($mode, $year, $start, $end) {
+    $customFilterFrom = $mode === 'custom' ? $filterFrom : null;
+    $customFilterTo = $mode === 'custom' ? $filterTo : null;
+
+    $monthlyFTE = $fteRows->groupBy('name')->map(function ($rows) use ($mode, $year, $customFilterFrom, $customFilterTo) {
 
         $expanded = collect();
 
@@ -191,15 +190,10 @@ public function index(Request $request)
                 $effectiveEnd   = $endDate->copy();
 
                 // custom
-                if ($mode === 'custom' && $start && $end) {
-                    try {
-                        $from = Carbon::createFromFormat('d/m/Y', $start)->startOfDay();
-                        $to   = Carbon::createFromFormat('d/m/Y', $end)->endOfDay();
-
-                        if ($endDate < $from || $startDate > $to) continue;
-                        if ($effectiveStart < $from) $effectiveStart = $from;
-                        if ($effectiveEnd > $to)     $effectiveEnd = $to;
-                    } catch (\Exception $e) {}
+                if ($mode === 'custom' && $customFilterFrom && $customFilterTo) {
+                    if ($endDate < $customFilterFrom || $startDate > $customFilterTo) continue;
+                    if ($effectiveStart < $customFilterFrom) $effectiveStart = $customFilterFrom->copy();
+                    if ($effectiveEnd > $customFilterTo)     $effectiveEnd = $customFilterTo->copy();
                 }
 
                 // year filter
@@ -310,34 +304,26 @@ public function index(Request $request)
         ->sortDesc()
         ->map(fn($y) => (int)$y + 543);
 
-    $personList = FteRole::whereIn('project_id', $projectIds)
-        ->distinct()->orderBy('name')->pluck('name');
-
-    $backOfficePeopleQuery = BackOfficeEntry::query();
-    if ($user->role !== 'admin') {
-        $backOfficePeopleQuery->where(function ($q) use ($fullName, $user) {
-            $q->where('person_name', $fullName)
-                ->orWhereHas('task', function ($taskQ) use ($user) {
-                    $taskQ->where('created_by', $user->id);
-                });
-        });
-    }
-    $backOfficePeople = $backOfficePeopleQuery->distinct()->orderBy('person_name')->pluck('person_name');
-
-    $personList = $personList->merge($backOfficePeople)->filter()->unique()->values();
-
-    return view('fte.index', [
+    $viewData = [
         'fteSummary' => $fteSummary,
         'years'      => $years,
         'monthlyFTE' => $monthlyFTE,
-        'personList' => $personList,
         'profiles'   => $profiles,
         'mode'       => $mode,
         'year'       => $request->input('year'),
         'person'     => $person,
         'start'      => $start,
         'end'        => $end,
-    ]);
+    ];
+
+    if ($request->boolean('partial') || $request->ajax()) {
+        return response()->json([
+            'html' => view('fte.partials.index-table', $viewData)->render(),
+            'count' => $fteSummary->count(),
+        ]);
+    }
+
+    return view('fte.index', $viewData);
 }
 
 public function projectIndex(Request $request)
@@ -421,38 +407,42 @@ public function projectIndex(Request $request)
         $fteQuery->where('project_id', $projectId);
     }
 
+    $filterFrom = null;
+    $filterTo = null;
+
     if ($mode === 'year' && $year) {
         $yearAD = $year > 2500 ? $year - 543 : $year;
-        $startOfYear = Carbon::createFromDate($yearAD, 1, 1)->startOfDay();
-        $endOfYear = Carbon::createFromDate($yearAD, 12, 31)->endOfDay();
-
-        $fteQuery->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$endOfYear->format('Y-m-d H:i:s')])
-            ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?", [$startOfYear->format('Y-m-d H:i:s')]);
+        $filterFrom = Carbon::createFromDate($yearAD, 1, 1)->startOfDay();
+        $filterTo = Carbon::createFromDate($yearAD, 12, 31)->endOfDay();
     }
 
     if ($mode === 'month') {
         $now = now();
-        $mStart = $now->copy()->startOfMonth()->startOfDay();
-        $mEnd = $now->copy()->endOfMonth()->endOfDay();
-
-        $fteQuery->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$mEnd->format('Y-m-d H:i:s')])
-            ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?", [$mStart->format('Y-m-d H:i:s')]);
+        $filterFrom = $now->copy()->startOfMonth()->startOfDay();
+        $filterTo = $now->copy()->endOfMonth()->endOfDay();
     }
 
     if ($mode === 'custom' && $start && $end) {
-        try {
-            $from = Carbon::createFromFormat('d/m/Y', $start)->startOfDay();
-            $to = Carbon::createFromFormat('d/m/Y', $end)->endOfDay();
+        [$customFrom, $customTo] = $this->parseDateRange($start, $end);
+        if ($customFrom && $customTo) {
+            $filterFrom = $customFrom;
+            $filterTo = $customTo;
+            $start = $customFrom->format('d-m-Y');
+            $end = $customTo->format('d-m-Y');
+        }
+    }
 
-            $fteQuery->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$to->format('Y-m-d H:i:s')])
-                ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?", [$from->format('Y-m-d H:i:s')]);
-        } catch (\Exception $e) {}
+    if ($filterFrom && $filterTo) {
+        $this->applyDateOverlapFilter($fteQuery, 'start_date', 'end_date', $filterFrom, $filterTo);
     }
 
     $fteRows = $fteQuery->with(['project:id,project_name_th,start_year'])->get();
     $projectMap = $projectList->keyBy('id');
 
-    $monthlyFTE = $fteRows->groupBy('project_id')->map(function ($rows) use ($mode, $year, $start, $end) {
+    $customFilterFrom = $mode === 'custom' ? $filterFrom : null;
+    $customFilterTo = $mode === 'custom' ? $filterTo : null;
+
+    $monthlyFTE = $fteRows->groupBy('project_id')->map(function ($rows) use ($mode, $year, $customFilterFrom, $customFilterTo) {
         $expanded = collect();
 
         foreach ($rows as $item) {
@@ -476,15 +466,10 @@ public function projectIndex(Request $request)
                 $effectiveStart = $startDate->copy();
                 $effectiveEnd = $endDate->copy();
 
-                if ($mode === 'custom' && $start && $end) {
-                    try {
-                        $from = Carbon::createFromFormat('d/m/Y', $start)->startOfDay();
-                        $to = Carbon::createFromFormat('d/m/Y', $end)->endOfDay();
-
-                        if ($endDate < $from || $startDate > $to) continue;
-                        if ($effectiveStart < $from) $effectiveStart = $from;
-                        if ($effectiveEnd > $to) $effectiveEnd = $to;
-                    } catch (\Exception $e) {}
+                if ($mode === 'custom' && $customFilterFrom && $customFilterTo) {
+                    if ($endDate < $customFilterFrom || $startDate > $customFilterTo) continue;
+                    if ($effectiveStart < $customFilterFrom) $effectiveStart = $customFilterFrom->copy();
+                    if ($effectiveEnd > $customFilterTo) $effectiveEnd = $customFilterTo->copy();
                 }
 
                 if ($mode === 'year' && $year) {
@@ -568,32 +553,21 @@ public function projectIndex(Request $request)
         ];
     })->sortByDesc('total_fte')->values();
 
-    $summaryTotalFte = array_sum($totalFteMap);
+    $summaryTotalFte = $fteSummary->sum('total_fte');
+    $summaryFilteredFte = $fteSummary->sum('filtered_fte');
     $summaryMonthFte = $fteSummary->sum('fte_this_month');
-
-    $perPage = 10;
-    $page = LengthAwarePaginator::resolveCurrentPage();
-    $fteSummaryPage = new LengthAwarePaginator(
-        $fteSummary->forPage($page, $perPage)->values(),
-        $fteSummary->count(),
-        $perPage,
-        $page,
-        [
-            'path' => LengthAwarePaginator::resolveCurrentPath(),
-            'query' => $request->query(),
-        ]
-    );
 
     $years = FteRole::selectRaw('DISTINCT RIGHT(start_date,4) AS year')
         ->orderByDesc('year')
         ->pluck('year')
         ->map(fn($y) => (int)$y + 543);
 
-    return view('fte.project-index', [
-        'fteSummary' => $fteSummaryPage,
+    $viewData = [
+        'fteSummary' => $fteSummary,
         'monthlyFTE' => $monthlyFTE,
         'projects' => $projectOptions,
         'summaryTotalFte' => $summaryTotalFte,
+        'summaryFilteredFte' => $summaryFilteredFte,
         'summaryMonthFte' => $summaryMonthFte,
         'years' => $years,
         'mode' => $mode,
@@ -601,7 +575,16 @@ public function projectIndex(Request $request)
         'projectId' => $projectId,
         'start' => $start,
         'end' => $end,
-    ]);
+    ];
+
+    if ($request->boolean('partial') || $request->ajax()) {
+        return response()->json([
+            'html' => view('fte.partials.project-index-table', $viewData)->render(),
+            'count' => $fteSummary->count(),
+        ]);
+    }
+
+    return view('fte.project-index', $viewData);
 }
 
 
@@ -675,9 +658,20 @@ public function projectPdf(Project $project)
     return $pdf->stream($filename);
 }
 
-public function exportPdf($person)
+public function exportPdf(Request $request, $person)
 {
-    $data = $this->buildFteDetailData($person);
+    $mode = $request->input('mode', 'all');
+    $year = $request->input('year');
+    $start = $request->input('start');
+    $end = $request->input('end');
+
+    $data = $this->buildFteDetailData($person, [
+        'mode' => $mode,
+        'year' => $year,
+        'start' => $start,
+        'end' => $end,
+    ]);
+
     $user = auth()->user();
     $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
     $filename = "FTE_{$dateStr}_{$data['person']}.pdf";
@@ -689,8 +683,51 @@ public function exportPdf($person)
     return $pdf->stream($filename);
 }
 
-private function buildFteDetailData(string $person): array
+private function buildFteDetailData(string $person, array $filter = []): array
 {
+    $mode = strtolower((string) ($filter['mode'] ?? 'all'));
+    if (!in_array($mode, ['all', 'year', 'custom'], true)) {
+        $mode = 'all';
+    }
+
+    $year = isset($filter['year']) && $filter['year'] !== '' ? (int) $filter['year'] : null;
+    $startInput = isset($filter['start']) ? trim((string) $filter['start']) : null;
+    $endInput = isset($filter['end']) ? trim((string) $filter['end']) : null;
+
+    $filterFrom = null;
+    $filterTo = null;
+    $filterLabel = 'ทั้งหมด';
+
+    if ($mode === 'year' && $year) {
+        $yearAD = $year > 2500 ? $year - 543 : $year;
+        if ($yearAD > 1900 && $yearAD < 2600) {
+            $filterFrom = Carbon::createFromDate($yearAD, 1, 1)->startOfDay();
+            $filterTo = Carbon::createFromDate($yearAD, 12, 31)->endOfDay();
+            $filterLabel = 'ปี ' . ($yearAD + 543);
+        } else {
+            $mode = 'all';
+        }
+    } elseif ($mode === 'custom') {
+        [$customFrom, $customTo] = $this->parseDateRange($startInput, $endInput);
+        if ($customFrom && $customTo) {
+            $filterFrom = $customFrom;
+            $filterTo = $customTo;
+            $filterLabel = 'ช่วงวันที่ ' . $customFrom->format('d-m-Y') . ' ถึง ' . $customTo->format('d-m-Y');
+        } else {
+            $mode = 'all';
+            $startInput = null;
+            $endInput = null;
+        }
+    }
+
+    $pdfFilter = [
+        'mode' => $mode,
+        'year' => $year ? ($year > 2500 ? $year : $year + 543) : null,
+        'start' => $filterFrom?->format('d-m-Y'),
+        'end' => $filterTo?->format('d-m-Y'),
+        'label' => $filterLabel,
+    ];
+
     $profile = \App\Models\User::whereRaw("CONCAT(TRIM(prefix),' ',TRIM(name)) = ?", [$person])->first();
 
     $raw = FteRole::with('project')
@@ -708,12 +745,23 @@ private function buildFteDetailData(string $person): array
             $formatStart = strpos($item->start_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
             $formatEnd   = strpos($item->end_date,   '/') !== false ? 'd/m/Y' : 'd-m-Y';
 
-            $start = Carbon::createFromFormat($formatStart, $item->start_date)->startOfDay();
-            $end   = Carbon::createFromFormat($formatEnd,   $item->end_date)->endOfDay();
+            $entryStart = Carbon::createFromFormat($formatStart, $item->start_date)->startOfDay();
+            $entryEnd   = Carbon::createFromFormat($formatEnd,   $item->end_date)->endOfDay();
 
-            if ($start->gt($end)) continue;
+            if ($entryStart->gt($entryEnd)) continue;
 
-            $totalDays  = $start->diffInDays($end) + 1;
+            $effectiveStart = $entryStart->copy();
+            $effectiveEnd = $entryEnd->copy();
+
+            if ($filterFrom && $filterTo) {
+                if ($entryEnd < $filterFrom || $entryStart > $filterTo) continue;
+                if ($effectiveStart < $filterFrom) $effectiveStart = $filterFrom->copy();
+                if ($effectiveEnd > $filterTo) $effectiveEnd = $filterTo->copy();
+            }
+
+            if ($effectiveStart->gt($effectiveEnd)) continue;
+
+            $totalDays  = $entryStart->diffInDays($entryEnd) + 1;
             if ($totalDays <= 0) continue;
 
             $ftePerDay = $item->fte_value / $totalDays;
@@ -722,14 +770,14 @@ private function buildFteDetailData(string $person): array
                 : 0;
 
             // แตกช่วงรายเดือน
-            $cursor = $start->copy()->startOfMonth();
-            while ($cursor <= $end) {
+            $cursor = $effectiveStart->copy()->startOfMonth();
+            while ($cursor <= $effectiveEnd) {
 
                 $mStart = $cursor->copy()->startOfMonth();
                 $mEnd   = $cursor->copy()->endOfMonth();
 
-                $overlapStart = $start->copy()->max($mStart);
-                $overlapEnd   = $end->copy()->min($mEnd);
+                $overlapStart = $effectiveStart->copy()->max($mStart);
+                $overlapEnd   = $effectiveEnd->copy()->min($mEnd);
 
                 if ($overlapStart->lte($overlapEnd)) {
 
@@ -775,12 +823,23 @@ private function buildFteDetailData(string $person): array
             $formatStart = strpos($startRaw, '/') !== false ? 'd/m/Y' : 'd-m-Y';
             $formatEnd   = strpos($endRaw,   '/') !== false ? 'd/m/Y' : 'd-m-Y';
 
-            $start = Carbon::createFromFormat($formatStart, $startRaw)->startOfDay();
-            $end   = Carbon::createFromFormat($formatEnd,   $endRaw)->endOfDay();
+            $entryStart = Carbon::createFromFormat($formatStart, $startRaw)->startOfDay();
+            $entryEnd   = Carbon::createFromFormat($formatEnd,   $endRaw)->endOfDay();
 
-            if ($start->gt($end)) continue;
+            if ($entryStart->gt($entryEnd)) continue;
 
-            $totalDays  = $start->diffInDays($end) + 1;
+            $effectiveStart = $entryStart->copy();
+            $effectiveEnd = $entryEnd->copy();
+
+            if ($filterFrom && $filterTo) {
+                if ($entryEnd < $filterFrom || $entryStart > $filterTo) continue;
+                if ($effectiveStart < $filterFrom) $effectiveStart = $filterFrom->copy();
+                if ($effectiveEnd > $filterTo) $effectiveEnd = $filterTo->copy();
+            }
+
+            if ($effectiveStart->gt($effectiveEnd)) continue;
+
+            $totalDays  = $entryStart->diffInDays($entryEnd) + 1;
             if ($totalDays <= 0) continue;
 
             $ftePerDay = $entry->fte_value / $totalDays;
@@ -788,14 +847,14 @@ private function buildFteDetailData(string $person): array
                 ? ((float) $entry->hours / $totalDays)
                 : 0;
 
-            $cursor = $start->copy()->startOfMonth();
-            while ($cursor <= $end) {
+            $cursor = $effectiveStart->copy()->startOfMonth();
+            while ($cursor <= $effectiveEnd) {
 
                 $mStart = $cursor->copy()->startOfMonth();
                 $mEnd   = $cursor->copy()->endOfMonth();
 
-                $overlapStart = $start->copy()->max($mStart);
-                $overlapEnd   = $end->copy()->min($mEnd);
+                $overlapStart = $effectiveStart->copy()->max($mStart);
+                $overlapEnd   = $effectiveEnd->copy()->min($mEnd);
 
                 if ($overlapStart->lte($overlapEnd)) {
 
@@ -841,6 +900,7 @@ private function buildFteDetailData(string $person): array
         'monthlyFTE',
         'chartLabels',
         'chartData',
+        'pdfFilter'
     );
 }
 
@@ -1013,6 +1073,105 @@ private function buildFteProjectData(Project $project): array
             'labels' => $labels->values(),
             'data'   => $chartData,
         ]);
+    }
+
+    private function parseDateRange(?string $start, ?string $end): array
+    {
+        $from = $this->parseInputDate($start);
+        $to = $this->parseInputDate($end);
+
+        if (!$from || !$to) {
+            return [null, null];
+        }
+
+        if ($from->gt($to)) {
+            [$from, $to] = [$to, $from];
+        }
+
+        return [$from->copy()->startOfDay(), $to->copy()->endOfDay()];
+    }
+
+    private function parseInputDate(?string $value): ?Carbon
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        $formats = ['d-m-Y', 'd/m/Y', 'Y-m-d', 'j-n-Y', 'j/n/Y'];
+        foreach ($formats as $format) {
+            try {
+                $date = Carbon::createFromFormat($format, $value);
+                if (!$date) {
+                    continue;
+                }
+                if ((int) $date->format('Y') > 2400) {
+                    $date->subYears(543);
+                }
+                return $date;
+            } catch (\Exception $e) {
+            }
+        }
+
+        if (preg_match('/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/u', $value, $matches)) {
+            $monthToken = str_replace('.', '', trim($matches[2]));
+            $monthMap = [
+                'มกราคม' => 1,
+                'มค' => 1,
+                'กุมภาพันธ์' => 2,
+                'กพ' => 2,
+                'มีนาคม' => 3,
+                'มีค' => 3,
+                'เมษายน' => 4,
+                'เมย' => 4,
+                'พฤษภาคม' => 5,
+                'พค' => 5,
+                'มิถุนายน' => 6,
+                'มิย' => 6,
+                'กรกฎาคม' => 7,
+                'กค' => 7,
+                'สิงหาคม' => 8,
+                'สค' => 8,
+                'กันยายน' => 9,
+                'กย' => 9,
+                'ตุลาคม' => 10,
+                'ตค' => 10,
+                'พฤศจิกายน' => 11,
+                'พย' => 11,
+                'ธันวาคม' => 12,
+                'ธค' => 12,
+            ];
+
+            if (isset($monthMap[$monthToken])) {
+                $year = (int) $matches[3];
+                if ($year > 2400) {
+                    $year -= 543;
+                }
+                return Carbon::createFromDate($year, $monthMap[$monthToken], (int) $matches[1]);
+            }
+        }
+
+        return null;
+    }
+
+    private function applyDateOverlapFilter($query, string $startColumn, string $endColumn, Carbon $from, Carbon $to): void
+    {
+        $startExpr = $this->parsedDateExpression($startColumn);
+        $endExpr = $this->parsedDateExpression($endColumn);
+
+        $query->whereRaw("{$startExpr} IS NOT NULL")
+            ->whereRaw("{$endExpr} IS NOT NULL")
+            ->whereRaw("{$startExpr} <= ?", [$to->format('Y-m-d H:i:s')])
+            ->whereRaw("{$endExpr} >= ?", [$from->format('Y-m-d H:i:s')]);
+    }
+
+    private function parsedDateExpression(string $column): string
+    {
+        if (!preg_match('/^[A-Za-z0-9_.]+$/', $column)) {
+            throw new \InvalidArgumentException('Invalid date column');
+        }
+
+        return "STR_TO_DATE(REPLACE({$column}, '/', '-'), '%d-%m-%Y')";
     }
 
     private function backOfficeCategoryLabel(?string $category): string

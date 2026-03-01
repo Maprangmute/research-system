@@ -40,3 +40,6 @@ resources/views/.DS_Store
 .DS_Store
 .history/
 **/.DS_Store
+app/Actions/.DS_Store
+app/.DS_Store
+resources/views/.DS_Store

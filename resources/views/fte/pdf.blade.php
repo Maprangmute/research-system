@@ -51,11 +51,12 @@
         $position = $profile->position ?? '-';
         $reporter = $user ? trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) : 'ผู้ใช้ระบบ';
         $reportDate = now()->setTimezone('Asia/Bangkok')->locale('th')->translatedFormat('j F Y เวลา H:i');
+        $filterLabel = $pdfFilter['label'] ?? 'ทั้งหมด';
     @endphp
 
     <h1>รายงาน FTE: {{ $person }} ตำแหน่ง {{ $position }}</h1>
     <div class="muted small">
-        วันที่ออกรายงาน: {{ $reportDate }} • ผู้สร้างรายงาน: {{ $reporter }}
+        วันที่ออกรายงาน: {{ $reportDate }} • ผู้สร้างรายงาน: {{ $reporter }} • ช่วงข้อมูล: {{ $filterLabel }}
     </div>
 
     <htmlpagefooter name="Footer">

@@ -78,139 +78,276 @@
             cursor: pointer;
         }
 
-        #aiChatPanel {
+        #dashboardFabStack {
             position: fixed;
-            inset: 0 0 0 auto;
-            width: min(94vw, 560px);
-            height: 100dvh;
-            transform: translateX(100%);
-            transition: transform 0.25s ease;
-            border-left: 1px solid #e5e7eb;
-            background: #ffffff;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 55;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: opacity 0.22s ease, transform 0.22s ease;
         }
 
-        #aiChatPanel.is-open {
-            transform: translateX(0);
+        #dashboardFabStack.is-hidden-by-chat,
+        #dashboardFabStack.is-hidden-by-pagination {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-50%) translateX(-18px);
         }
 
-        #aiChatOverlay {
+        .dashboard-fab-btn {
+            width: 88px;
+            border: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.94);
+            border-radius: 24px;
+            padding: 0.85rem 0.7rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.45rem;
+            color: #0f172a;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+            backdrop-filter: blur(14px);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .dashboard-fab-btn:hover {
+            transform: translateY(-2px);
+            border-color: #67e8f9;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.16);
+        }
+
+        .dashboard-fab-btn__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 18px;
+            color: #fff;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        }
+
+        .dashboard-fab-btn__icon--filter {
+            background: linear-gradient(135deg, #0f172a 0%, #155e75 100%);
+        }
+
+        .dashboard-fab-btn__icon--export {
+            background: linear-gradient(135deg, #0f766e 0%, #0891b2 100%);
+        }
+
+        .dashboard-fab-btn__title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .dashboard-fab-btn__meta {
+            font-size: 0.66rem;
+            color: #64748b;
+            line-height: 1.15;
+        }
+
+        .dashboard-fab-btn__badge {
+            position: absolute;
+            top: -0.35rem;
+            right: -0.35rem;
+            min-width: 1.5rem;
+            height: 1.5rem;
+            padding: 0 0.35rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            line-height: 1;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .dashboard-fab-btn__badge.is-show {
+            display: inline-flex;
+        }
+
+        #filterDrawerOverlay,
+        #exportPopupOverlay {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.25);
+            background: rgba(15, 23, 42, 0.08);
             backdrop-filter: blur(2px);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.25s ease;
-            z-index: 40;
+            z-index: 56;
         }
 
-        #aiChatOverlay.is-open {
+        #filterDrawerOverlay.is-open {
             opacity: 1;
             pointer-events: auto;
         }
 
-        #aiChatForm {
-            position: sticky;
-            bottom: 0;
-            background: #ffffff;
-        }
-
-        #aiChatPanel .ai-suggest {
-            white-space: nowrap;
-        }
-
-        #aiChatPrompt {
-            position: sticky;
-            top: 0;
-            margin: 12px;
-            padding: 8px 12px;
-            border-radius: 12px;
-            background: rgba(15, 118, 110, 0.08);
-            color: #0f766e;
-            font-size: 12px;
-            font-weight: 600;
-            opacity: 0;
-            transform: translateY(-6px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            z-index: 1;
-        }
-
-        #aiChatPrompt.is-show {
+        #exportPopupOverlay.is-open {
             opacity: 1;
-            transform: translateY(0);
+            pointer-events: auto;
         }
 
-        #aiChatFabWrap {
+        #filterDrawer {
             position: fixed;
-            right: 1.5rem;
-            bottom: 1.5rem;
-            z-index: 50;
+            inset: 0 auto 0 0;
+            width: min(92vw, 380px);
+            height: 100dvh;
+            transform: translateX(-105%);
+            transition: transform 0.25s ease;
+            z-index: 57;
         }
 
-        #aiChatBubble {
-            position: absolute;
-            right: 56px;
-            bottom: 4px;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: #0f766e;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-            display: none;
+        #filterDrawer.is-open {
+            transform: translateX(0);
+        }
+
+        #exportPopup {
+            position: fixed;
+            left: 6.75rem;
+            top: 50%;
+            width: min(92vw, 400px);
+            transform: translate(-16px, -50%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s ease;
+            z-index: 57;
+        }
+
+        #exportPopup.is-open {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(0, -50%);
+        }
+
+        .dashboard-status-pill {
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-        }
-
-        #aiChatBubble.is-show {
-            display: flex;
-        }
-
-        #aiChatBubble button {
-            border: none;
-            background: transparent;
-            color: #9ca3af;
-            font-size: 14px;
+            border-radius: 999px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 700;
             line-height: 1;
-            cursor: pointer;
+            border: 1px solid transparent;
         }
 
-        @media (max-width: 1024px) {
-            #aiChatPanel {
-                width: min(94vw, 480px);
+        .dashboard-status-pill.is-active {
+            background: #ecfeff;
+            border-color: #a5f3fc;
+            color: #155e75;
+        }
+
+        .dashboard-status-pill.is-idle {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #475569;
+        }
+
+        .dashboard-filter-pill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .dashboard-filter-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            padding: 0.38rem 0.72rem;
+            font-size: 0.75rem;
+            color: #334155;
+            line-height: 1.1;
+        }
+
+        .dashboard-filter-pill__label {
+            color: #0891b2;
+            font-weight: 700;
+        }
+
+        .dashboard-filter-empty {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            border: 1px dashed #cbd5e1;
+            background: #f8fafc;
+            padding: 0.38rem 0.72rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            line-height: 1.1;
+        }
+
+        @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+            #dashboardFabStack {
+                left: 0.75rem;
+                top: auto;
+                bottom: calc(0.75rem + env(safe-area-inset-bottom));
+                transform: none;
+                gap: 0.5rem;
+            }
+
+            #dashboardFabStack.is-hidden-by-chat,
+            #dashboardFabStack.is-hidden-by-pagination {
+                transform: translateY(14px);
+            }
+
+            .dashboard-fab-btn {
+                width: 3.4rem;
+                height: 3.4rem;
+                padding: 0;
+                border-radius: 999px;
+                justify-content: center;
+                gap: 0;
+            }
+
+            .dashboard-fab-btn__icon {
+                width: 2.35rem;
+                height: 2.35rem;
+                border-radius: 0.95rem;
+            }
+
+            .dashboard-fab-btn__title,
+            .dashboard-fab-btn__meta {
+                display: none;
+            }
+
+            .dashboard-fab-btn__badge {
+                top: -0.2rem;
+                right: -0.2rem;
+                min-width: 1.35rem;
+                height: 1.35rem;
+                font-size: 0.68rem;
+            }
+
+            #filterDrawer {
+                width: min(94vw, 360px);
+            }
+
+            #exportPopup {
+                left: 50%;
+                top: auto;
+                bottom: calc(1rem + env(safe-area-inset-bottom));
+                width: min(94vw, 360px);
+                transform: translate(-50%, 18px);
+            }
+
+            #exportPopup.is-open {
+                transform: translate(-50%, 0);
             }
         }
 
         @media (max-width: 640px) {
-            #aiChatPanel {
-                width: 100vw;
-                height: 100dvh;
-                border-left: none;
-                border-top: 1px solid #e5e7eb;
-                border-radius: 16px 16px 0 0;
-            }
-
-            #aiChatPanel .ai-suggest {
-                font-size: 11px;
-                white-space: normal;
-                line-height: 1.3;
-            }
-
-            #aiChatBody {
-                padding-bottom: 12px;
-            }
-
-            #aiChatForm {
-                padding-bottom: calc(8px + env(safe-area-inset-bottom));
-            }
-
-            #aiChatFabWrap {
-                right: 1rem;
-                bottom: calc(1rem + env(safe-area-inset-bottom));
-            }
-
             .lux-chart-scroll {
                 display: flex;
                 overflow-x: auto;
@@ -274,6 +411,24 @@
                 font-size: 11px;
                 text-transform: uppercase;
                 color: #94a3b8;
+            }
+
+            #chartModal .chart-modal-header {
+                align-items: flex-start;
+            }
+
+            #chartModal .chart-modal-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            #chartModal .chart-modal-sort {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            #chartModal .chart-modal-sort select {
+                max-width: 100%;
             }
 
             .lux-mobile-table thead {
@@ -541,6 +696,76 @@
             padding: 8px;
         }
 
+        #chartModal .chart-modal-panel {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: min(92vw, 80rem);
+            max-height: 80vh;
+            overflow: auto;
+            transform: translate(-50%, -50%);
+            border-radius: 1rem;
+            background: #ffffff;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24);
+        }
+
+        #chartModal .chart-modal-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.9rem 1rem;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        #chartModal .chart-modal-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        #chartModal .chart-modal-sort {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        #chartModal .chart-modal-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #475569;
+            font-size: 1.35rem;
+            line-height: 1;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        #chartModal .chart-modal-close:hover {
+            background: #f8fafc;
+            color: #dc2626;
+            transform: rotate(90deg);
+        }
+
+        #chartModal .chart-modal-close:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
+        }
+
         .lux-mobile-table {
             width: 100%;
             border-collapse: collapse;
@@ -585,6 +810,82 @@
             to {
                 opacity: 1;
                 transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+            #chartModalBody .lux-modal-table thead {
+                display: none;
+            }
+
+            #chartModalBody .lux-modal-table,
+            #chartModalBody .lux-modal-table tbody,
+            #chartModalBody .lux-modal-table tr,
+            #chartModalBody .lux-modal-table td {
+                display: block;
+                width: 100%;
+            }
+
+            #chartModalBody .lux-modal-table tr {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+                background: #ffffff;
+            }
+
+            #chartModalBody .lux-modal-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 6px 0;
+                align-items: flex-start;
+                flex-wrap: wrap;
+                word-break: break-word;
+            }
+
+            #chartModalBody .lux-modal-table td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #94a3b8;
+            }
+
+            .lux-mobile-table thead {
+                display: none;
+            }
+
+            .lux-mobile-table,
+            .lux-mobile-table tbody,
+            .lux-mobile-table tr,
+            .lux-mobile-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .lux-mobile-table tr {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 8px 10px;
+                margin-bottom: 10px;
+                background: #ffffff;
+            }
+
+            .lux-mobile-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 4px 0;
+                align-items: flex-start;
+                flex-wrap: wrap;
+                word-break: break-word;
+            }
+
+            .lux-mobile-table td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #94a3b8;
             }
         }
 
@@ -1279,146 +1580,183 @@
                 </div>
             </div>
 
-        <!-- 2) กรอง + Export -->
-        <div class="lux-card p-4 md:p-5" id="section-filters">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-                <div>
-                    <h3 class="text-lg font-semibold text-slate-800">สร้างเอกสารสรุปข้อมูลทั้งหมด</h3>
-                    <p class="text-xs text-slate-500">คัดกรองข้อมูลให้ตรงกับช่วงเวลาหรือธีมที่ต้องการ</p>
+        <div id="dashboardFabStack">
+            <button id="filterDrawerOpen" type="button" aria-label="เปิดฟิลเตอร์" class="dashboard-fab-btn focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                <span id="filterFabBadge" class="dashboard-fab-btn__badge" aria-hidden="true"></span>
+                <span class="dashboard-fab-btn__icon dashboard-fab-btn__icon--filter">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </span>
+                <span class="dashboard-fab-btn__title">ฟิลเตอร์</span>
+                <span class="dashboard-fab-btn__meta">ตั้งค่าเงื่อนไข</span>
+            </button>
+
+            <button id="exportPopupOpen" type="button" aria-label="เปิดเมนูดาวน์โหลด" class="dashboard-fab-btn focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                <span class="dashboard-fab-btn__icon dashboard-fab-btn__icon--export">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 4v9m0 0 4-4m-4 4-4-4M5 18h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </span>
+                <span class="dashboard-fab-btn__title">ดาวน์โหลด</span>
+                <span class="dashboard-fab-btn__meta">Excel หรือ CSV</span>
+            </button>
+        </div>
+
+        <div id="filterDrawerOverlay"></div>
+        <div id="exportPopupOverlay"></div>
+
+        <aside id="filterDrawer">
+            <div class="flex h-full flex-col border-r border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900">คัดกรองข้อมูล</h3>
+                        <p class="mt-1 text-xs text-slate-500">ปรับฟิลเตอร์แล้วข้อมูลบนหน้า dashboard จะอัปเดตทันที</p>
+                    </div>
+                    <button id="filterDrawerClose" type="button"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
+                        <span class="sr-only">ปิดฟิลเตอร์</span>
+                        <span aria-hidden="true" class="text-xl leading-none">&times;</span>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto px-4 py-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="inline-flex items-center rounded-full bg-cyan-50 border border-cyan-200 px-3 py-1 text-xs font-semibold text-cyan-700">
+                            ฟิลเตอร์เปลี่ยนแล้วข้อมูลจะอัปเดตทันที
+                        </span>
+                        <button id="filterReset" type="button"
+                            class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                            ล้างฟิลเตอร์
+                        </button>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 gap-3 lux-filter-grid">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">ปีเริ่มต้น</label>
+                            <select id="filterYear" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @for ($y = now()->year + 543; $y >= 2557; $y--)
+                                    <option value="{{ $y }}">{{ $y }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">Theme</label>
+                            <select id="filterTheme" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($themes as $theme)
+                                    <option value="{{ $theme }}">{{ $theme }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">ประเภททุน</label>
+                            <select id="filterFunding" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                <option value="ภายใน">ภายใน</option>
+                                <option value="ภายนอก">ภายนอก</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">ประเภทโครงการ</label>
+                            <select id="filterType" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($typeOptions as $type)
+                                    <option value="{{ $type }}">{{ $type }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">สถานะโครงการ</label>
+                            <select id="filterStatus" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($statusOptions as $status)
+                                    <option value="{{ $status }}">{{ $status }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">แหล่งทุน</label>
+                            <select id="filterSource" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($fundingSources as $source)
+                                    <option value="{{ $source }}">{{ $source }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">ค้นหาโครงการ</label>
+                            <input type="text" id="filterName" list="filterNameSuggestions" class="w-full border rounded px-2 py-1 text-sm"
+                                placeholder="ชื่อโครงการ">
+                        </div>
+                    </div>
+
+                    <datalist id="filterNameSuggestions"></datalist>
+                    <datalist id="tableSearchSuggestions"></datalist>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-6 gap-3 lux-filter-grid">
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">ปีเริ่มต้น</label>
-                    <select id="filterYear" class="w-full border rounded px-2 py-1 text-sm">
-                        <option value="">ทั้งหมด</option>
-                        @for ($y = now()->year + 543; $y >= 2557; $y--)
-                            <option value="{{ $y }}">{{ $y }}</option>
-                        @endfor
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">Theme</label>
-                    <select id="filterTheme" class="w-full border rounded px-2 py-1 text-sm">
-                        <option value="">ทั้งหมด</option>
-                        @foreach ($themes as $theme)
-                            <option value="{{ $theme }}">{{ $theme }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">ประเภททุน</label>
-                    <select id="filterFunding" class="w-full border rounded px-2 py-1 text-sm">
-                        <option value="">ทั้งหมด</option>
-                        <option value="ภายใน">ภายใน</option>
-                        <option value="ภายนอก">ภายนอก</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">ค้นหาโครงการ</label>
-                    <input type="text" id="filterName" class="w-full border rounded px-2 py-1 text-sm"
-                        placeholder="ชื่อโครงการ">
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">ค้นหา PI</label>
-                    <input type="text" id="filterPI" class="w-full border rounded px-2 py-1 text-sm"
-                        placeholder="ชื่อ PI">
-                </div>
-                <div class="flex items-end gap-2 lux-filter-actions">
-                    <button id="exportCSV"
-                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-sm rounded shadow">
-                        ⬇ Export CSV
+        </aside>
+
+        <div id="exportPopup" aria-hidden="true">
+            <div class="rounded-[28px] border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/15">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900">ดาวน์โหลดข้อมูล</h3>
+                        <p class="mt-1 text-xs text-slate-500">ส่งออกข้อมูลตามฟิลเตอร์ที่กำลังใช้อยู่</p>
+                    </div>
+                    <button id="exportPopupClose" type="button"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
+                        <span class="sr-only">ปิดหน้าต่างดาวน์โหลด</span>
+                        <span aria-hidden="true" class="text-xl leading-none">&times;</span>
                     </button>
-                    <button id="exportExcel"
-                        class="w-full bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 text-sm rounded shadow">
-                        ⬇ Export Excel
+                </div>
+
+                <div class="mt-4 rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50 to-white p-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span id="exportPopupState" class="dashboard-status-pill is-idle">ยังไม่ได้ใช้ฟิลเตอร์</span>
+                        <span id="exportPopupCount" class="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">0 โครงการ</span>
+                    </div>
+                    <p id="exportPopupSummary" class="mt-2 text-xs text-slate-600">ระบบจะดาวน์โหลดข้อมูลทั้งหมดในระบบ</p>
+                    <div id="exportPopupFilterList" class="dashboard-filter-pill-list mt-3"></div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 gap-2">
+                    <button id="exportExcelAction" type="button"
+                        class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200">
+                        Excel (.xlsx)
                     </button>
+                    <button id="exportCsvAction" type="button"
+                        class="inline-flex items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-900 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-100 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        CSV (.csv)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2) Filter Status -->
+        <div class="lux-card p-4 md:p-5" id="section-filters">
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-base font-semibold text-slate-800">ฟิลเตอร์ข้อมูล</h3>
+                        <p class="text-xs text-slate-500">เปิดจากปุ่มลอยด้านซ้ายเพื่อคัดกรองหรือดาวน์โหลด</p>
+                    </div>
+                    <span id="filterResultBadge"
+                        class="inline-flex items-center rounded-full bg-cyan-50 border border-cyan-200 px-3 py-1 text-xs font-semibold text-cyan-700">0 โครงการ</span>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                    <div class="flex flex-col gap-2">
+                        <span id="dashboardFilterState" class="dashboard-status-pill is-idle">ยังไม่ได้ใช้ฟิลเตอร์</span>
+                        <p id="dashboardFilterDetail" class="text-xs text-slate-500">กำลังแสดงข้อมูลทั้งหมดในระบบ</p>
+                    </div>
+                    <div id="dashboardFilterList" class="dashboard-filter-pill-list mt-3"></div>
                 </div>
             </div>
         </div>
 
         <!-- 🗨️ Floating Chat Agent (ADD-ON) -->
-        <div id="aiChatFabWrap">
-            <div id="aiChatBubble">
-                <span>ถามได้เลย</span>
-                <button type="button" id="aiChatBubbleClose" aria-label="close">✕</button>
-            </div>
-            <button id="aiChatFab"
-                class="rounded-full shadow-lg w-12 h-12 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center">
-                💬
-            </button>
-        </div>
-
-        <div id="aiChatOverlay"></div>
-
-        <div id="aiChatPanel"
-            class="fixed z-50 bg-white shadow-2xl flex flex-col">
-            <div class="flex items-center justify-between px-4 py-3 border-b">
-                <div class="font-semibold text-gray-800">AI Research Assistant</div>
-                <button class="text-gray-400 hover:text-red-500" onclick="toggleAiChat(false)">✕</button>
-            </div>
-
-            <!-- suggested prompts -->
-            <div class="px-3 pt-3 pb-0 text-xs text-gray-500">ตัวอย่างที่ถามได้</div>
-            <div class="px-3 pb-2 flex flex-wrap gap-2">
-
-                <!-- งบประมาณ -->
-                <button
-                    class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">งบประมาณรวมต่อปี
-                    2568</button>
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">งบประมาณ 5 ปี
-                    ล่าสุด</button>
-                <button
-                    class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">แหล่งทุนที่เด่นที่สุดปีนี้คืออะไร</button>
-
-                <!-- FTE -->
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">สรุป FTE ต่อคน
-                    ปี 2568</button>
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">FTE ปี 2567
-                    เกิน 1</button>
-
-                <!-- สถานะ / โครงการ -->
-                <button
-                    class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">สถานะโครงการในปี
-                    2566</button>
-
-                <!-- Outputs -->
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">จำนวน Outputs
-                    ปี 2567 แยกประเภท</button>
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">Outputs ปีนี้
-                    แยกประเภท</button>
-
-                <!-- IRB -->
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">IRB
-                    ใกล้หมดอายุ 30 วัน</button>
-
-                <!-- แหล่งทุน/ประเภท -->
-                <button
-                    class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">แหล่งทุนที่เด่น ปี
-                    2568</button>
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">งบภายใน-ภายนอก
-                    ปี 2566 เทียบกัน</button>
-
-
-            </div>
-
-
-            <!-- messages -->
-            <div id="aiChatBody" class="flex-1 overflow-y-auto p-3 space-y-3">
-                <div class="text-xs text-gray-500">เริ่มพิมพ์คำถามเกี่ยวกับโครงการ/FTE/Outputs ได้เลยครับ</div>
-            </div>
-
-            <!-- input -->
-            <form id="aiChatForm" class="border-t p-2 flex items-end gap-2">
-                @csrf
-                <textarea id="aiChatInput" rows="1"
-                    class="flex-1 border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none"
-                    placeholder="พิมพ์คำถาม เช่น 'FTE ต่อคน ปี 2568' ..."></textarea>
-                <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-2 rounded-lg">ส่ง</button>
-            </form>
-        </div>
-
-
 
         <!-- 3) Charts -->
         <div id="section-charts">
@@ -1721,7 +2059,8 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <label class="text-xs text-gray-500">ค้นหาในตาราง:
                             <input id="tableSearch" type="text"
-                                class="ml-1 border rounded px-2 py-1 text-sm" placeholder="ชื่อโครงการ หรือ PI">
+                                list="tableSearchSuggestions"
+                                class="ml-1 border rounded px-2 py-1 text-sm" placeholder="ชื่อโครงการ / PI / รหัสโครงการ">
                         </label>
                     </div>
                 </div>
@@ -1746,7 +2085,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="flex items-center justify-between mt-4 text-xs text-gray-600">
+                <div id="projectTablePaginationWrap" class="flex items-center justify-between mt-4 text-xs text-gray-600">
                     <button id="tablePrev"
                         class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
                     <div id="tablePagination">หน้า 1 / 1</div>
@@ -1760,12 +2099,11 @@
         <!-- Modal สำหรับ Drill-down -->
         <div id="chartModal" class="fixed inset-0 z-50 hidden">
             <div class="absolute inset-0 bg-black/40" onclick="closeModal()"></div>
-            <div
-                class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl w-[92vw] max-w-5xl max-h-[80vh] overflow-auto">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b px-4 py-3 gap-2">
+            <div class="chart-modal-panel">
+                <div class="chart-modal-header">
                     <h3 id="chartModalTitle" class="font-semibold text-gray-800">รายละเอียด</h3>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-gray-500">Sort:
+                    <div class="chart-modal-actions">
+                        <label class="chart-modal-sort">Sort:
                             <select id="chartModalSort" class="ml-1 border rounded px-2 py-1 text-xs">
                                 <option value="name_asc">ชื่อ (ก-ฮ)</option>
                                 <option value="name_desc">ชื่อ (ฮ-ก)</option>
@@ -1779,7 +2117,7 @@
                                 <option value="budget_asc">งบ (น้อย→มาก)</option>
                             </select>
                         </label>
-                        <button class="text-gray-500 hover:text-red-500 text-xl" onclick="closeModal()">&times;</button>
+                        <button type="button" class="chart-modal-close" aria-label="ปิดหน้าต่าง" onclick="closeModal()">&times;</button>
                     </div>
                 </div>
                 <div id="chartModalBody" class="p-4 text-sm"></div>
@@ -1815,10 +2153,6 @@
         <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-        <script>
-            // ให้สคริปต์ด้านล่างใช้ window.outputs ได้เลย
-            window.outputs = @json($outputsForJs);
-        </script>
         <script>
             function ensureChartBaseHeights(root = document) {
                 root.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
@@ -1948,12 +2282,13 @@
         <script>
             /* ---------- Data from backend ---------- */
 
-            const projects = @json($projects);
-            const outputs = @json($outputsForJs); // ใช้ตัวที่ map จาก Controller
-            const ftes = @json($fteRoles);
-            const irbs = @json($irbs);
-            const progressReports = @json($progressReports);
+            const projects = @json($dashboardProjectsJs);
+            const flatProjectRelation = (key) => projects.flatMap((project) => (project && Array.isArray(project[key])) ? project[key] : []);
+            const outputs = flatProjectRelation('outputs');
+            const ftes = flatProjectRelation('fte_roles');
+            const irbs = flatProjectRelation('irbs');
             const copisSummary = @json($copiRows);
+            window.outputs = outputs;
             const isMobileView = window.innerWidth <= 640;
             const isTabletLandscape = window.matchMedia(
                 '(min-width: 900px) and (max-width: 1180px) and (orientation: landscape)'
@@ -2153,29 +2488,6 @@
             };
 
 
-            @php
-                // ดึง outputs ที่ติด authors (จากความสัมพันธ์ outputs->authors)
-                $outputsForJs = $projects->flatMap->outputs
-                    ->map(function ($o) {
-                        return [
-                            'id' => $o->id,
-                            'type' => $o->type,
-                            'title' => $o->title,
-                            'year' => $o->year,
-                            'authors' => $o->authors
-                                ->map(
-                                    fn($a) => [
-                                        'name' => $a->name,
-                                        'role' => $a->role, // 'first' | 'co' | 'corresponding'
-                                    ],
-                                )
-                                ->values(),
-                        ];
-                    })
-                    ->values();
-            @endphp
-
-
 
             /* ---------- Helpers ---------- */
             const toNumber = v => isNaN(+v) ? 0 : +v;
@@ -2229,7 +2541,177 @@
                 fallback;
 
             const norm = (v) => String(v ?? '').toLowerCase().trim();
+            const cleanText = (v) => String(v ?? '').trim();
             const projectById = new Map(projects.map(p => [p.id, p]));
+
+            function fillDatalist(id, values, limit = 250) {
+                const datalist = document.getElementById(id);
+                if (!datalist) return;
+
+                const escapeAttr = (value) => String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+
+                const uniqueValues = Array.from(new Map(
+                    values
+                        .map(cleanText)
+                        .filter(Boolean)
+                        .map((value) => [value.toLowerCase(), value])
+                ).values())
+                    .sort((a, b) => a.localeCompare(b, 'th'))
+                    .slice(0, limit);
+
+                datalist.innerHTML = uniqueValues
+                    .map((value) => `<option value="${escapeAttr(value)}"></option>`)
+                    .join('');
+            }
+
+            function projectSearchIndex(p) {
+                return [
+                    p?.project_code,
+                    p?.project_name_th,
+                    p?.project_name_en,
+                    p?.pi_name,
+                    p?.pi_affiliation,
+                    p?.theme,
+                    p?.project_type,
+                    p?.project_list,
+                    p?.funding_type,
+                    p?.funding_source,
+                    p?.planning_status,
+                    p?.execution_status,
+                    p?.review_status,
+                    p?.closure_status,
+                    p?.start_year,
+                ].map(norm).filter(Boolean).join(' ');
+            }
+
+            function initializeFilterSuggestions() {
+                fillDatalist('filterNameSuggestions', projects.map((p) => p?.project_name_th));
+                fillDatalist('tableSearchSuggestions', projects.flatMap((p) => ([
+                    p?.project_code,
+                    p?.project_name_th,
+                    p?.project_name_en,
+                    p?.pi_name,
+                    p?.theme,
+                    p?.project_type,
+                    p?.project_list,
+                    p?.funding_source,
+                    p?.planning_status,
+                ])));
+            }
+
+            initializeFilterSuggestions();
+
+            const dashboardFilterFields = [
+                { id: 'filterYear', label: 'ปีเริ่มต้น' },
+                { id: 'filterTheme', label: 'Theme' },
+                { id: 'filterFunding', label: 'ประเภททุน' },
+                { id: 'filterType', label: 'ประเภทโครงการ' },
+                { id: 'filterStatus', label: 'สถานะโครงการ' },
+                { id: 'filterSource', label: 'แหล่งทุน' },
+                { id: 'filterName', label: 'ชื่อโครงการ' },
+                { id: 'tableSearch', label: 'ค้นหาในตาราง' },
+            ];
+
+            function escapeHtmlText(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function getActiveFilterEntries() {
+                return dashboardFilterFields
+                    .map(({ id, label }) => {
+                        const value = cleanText(document.getElementById(id)?.value);
+                        return value ? { id, label, value } : null;
+                    })
+                    .filter(Boolean);
+            }
+
+            function renderFilterPills(container, entries, emptyText) {
+                if (!container) return;
+
+                if (!entries.length) {
+                    container.innerHTML = `<span class="dashboard-filter-empty">${escapeHtmlText(emptyText)}</span>`;
+                    return;
+                }
+
+                container.innerHTML = entries.map((entry) => `
+                    <span class="dashboard-filter-pill">
+                        <span class="dashboard-filter-pill__label">${escapeHtmlText(entry.label)}</span>
+                        <span>${escapeHtmlText(entry.value)}</span>
+                    </span>
+                `).join('');
+            }
+
+            function renderDashboardFilterState(totalCount = null) {
+                const activeFilters = getActiveFilterEntries();
+                const allCount = Array.isArray(projects) ? projects.length : 0;
+                const filteredCount = typeof totalCount === 'number'
+                    ? totalCount
+                    : (typeof getFilteredProjects === 'function' ? getFilteredProjects().length : allCount);
+                const isActive = activeFilters.length > 0;
+                const stateText = isActive ? `กำลังใช้ ${activeFilters.length} ฟิลเตอร์` : 'ยังไม่ได้ใช้ฟิลเตอร์';
+                const detailText = isActive
+                    ? `กรองแล้ว ${filteredCount.toLocaleString('th-TH')} / ${allCount.toLocaleString('th-TH')} โครงการ`
+                    : `กำลังแสดงข้อมูลทั้งหมด ${allCount.toLocaleString('th-TH')} โครงการ`;
+                const fabBadgeEl = document.getElementById('filterFabBadge');
+
+                if (fabBadgeEl) {
+                    if (isActive) {
+                        fabBadgeEl.textContent = String(activeFilters.length);
+                        fabBadgeEl.classList.add('is-show');
+                        fabBadgeEl.setAttribute('aria-hidden', 'false');
+                    } else {
+                        fabBadgeEl.textContent = '';
+                        fabBadgeEl.classList.remove('is-show');
+                        fabBadgeEl.setAttribute('aria-hidden', 'true');
+                    }
+                }
+
+                const stateEl = document.getElementById('dashboardFilterState');
+                if (stateEl) {
+                    stateEl.textContent = stateText;
+                    stateEl.className = `dashboard-status-pill ${isActive ? 'is-active' : 'is-idle'}`;
+                }
+
+                const detailEl = document.getElementById('dashboardFilterDetail');
+                if (detailEl) detailEl.textContent = detailText;
+
+                renderFilterPills(
+                    document.getElementById('dashboardFilterList'),
+                    activeFilters,
+                    'กำลังแสดงข้อมูลทั้งหมด'
+                );
+
+                const exportStateEl = document.getElementById('exportPopupState');
+                if (exportStateEl) {
+                    exportStateEl.textContent = stateText;
+                    exportStateEl.className = `dashboard-status-pill ${isActive ? 'is-active' : 'is-idle'}`;
+                }
+
+                const exportCountEl = document.getElementById('exportPopupCount');
+                if (exportCountEl) exportCountEl.textContent = `${filteredCount.toLocaleString('th-TH')} โครงการ`;
+
+                const exportSummaryEl = document.getElementById('exportPopupSummary');
+                if (exportSummaryEl) {
+                    exportSummaryEl.textContent = isActive
+                        ? `จะดาวน์โหลด ${filteredCount.toLocaleString('th-TH')} จาก ${allCount.toLocaleString('th-TH')} โครงการตามฟิลเตอร์ปัจจุบัน`
+                        : `จะดาวน์โหลดข้อมูลทั้งหมด ${allCount.toLocaleString('th-TH')} โครงการ`;
+                }
+
+                renderFilterPills(
+                    document.getElementById('exportPopupFilterList'),
+                    activeFilters,
+                    'ดาวน์โหลดข้อมูลทั้งหมด'
+                );
+            }
 
             function uniqueProjects(list) {
                 const seen = new Map();
@@ -2612,23 +3094,31 @@
                 const y = norm(document.getElementById('filterYear')?.value);
                 const t = norm(document.getElementById('filterTheme')?.value);
                 const f = norm(document.getElementById('filterFunding')?.value);
+                const type = norm(document.getElementById('filterType')?.value);
+                const status = norm(document.getElementById('filterStatus')?.value);
+                const source = norm(document.getElementById('filterSource')?.value);
                 const name = norm(document.getElementById('filterName')?.value);
-                const pi = norm(document.getElementById('filterPI')?.value);
                 const search = norm(document.getElementById('tableSearch')?.value);
 
                 return projects.filter(p => {
                     const year = norm(p.start_year);
                     const theme = norm(p.theme);
                     const funding = norm(p.funding_type);
+                    const projectType = norm(p.project_type);
+                    const projectStatus = norm(p.planning_status);
+                    const fundingSource = norm(p.funding_source);
                     const nameTh = norm(p.project_name_th);
                     const piName = norm(p.pi_name);
+                    const searchIndex = projectSearchIndex(p);
 
                     if (y && year !== y) return false;
                     if (t && theme !== t) return false;
                     if (f && funding !== f) return false;
+                    if (type && projectType !== type) return false;
+                    if (status && projectStatus !== status) return false;
+                    if (source && fundingSource !== source) return false;
                     if (name && !nameTh.includes(name)) return false;
-                    if (pi && !piName.includes(pi)) return false;
-                    if (search && !(`${nameTh} ${piName}`.includes(search))) return false;
+                    if (search && !searchIndex.includes(search)) return false;
                     return true;
                 });
             }
@@ -2656,8 +3146,10 @@
                     document.getElementById('filterYear')?.value,
                     document.getElementById('filterTheme')?.value,
                     document.getElementById('filterFunding')?.value,
+                    document.getElementById('filterType')?.value,
+                    document.getElementById('filterStatus')?.value,
+                    document.getElementById('filterSource')?.value,
                     document.getElementById('filterName')?.value,
-                    document.getElementById('filterPI')?.value,
                     document.getElementById('tableSearch')?.value
                 ]
                     .map(v => sanitizeFileName(v))
@@ -3014,11 +3506,21 @@
             }
 
             function handleChartClick(evt, chart) {
-                const points = chart.getElementsAtEventForMode(evt, 'nearest', {
-                    intersect: true
+                let points = chart.getElementsAtEventForMode(evt, 'nearest', {
+                    intersect: true,
+                    axis: 'xy'
                 }, true);
                 if (!points || !points.length) return;
-                const result = resolveProjectsForChart(chart, points[0]);
+                const picked = points[0];
+                const hitKey = `${chart?.canvas?.id || 'chart'}:${picked.datasetIndex}:${picked.index}`;
+                const lastHit = window.__dashboardChartLastHit;
+                const nowTs = Date.now();
+                if (lastHit && lastHit.key === hitKey && (nowTs - lastHit.at) < 180) return;
+                window.__dashboardChartLastHit = {
+                    key: hitKey,
+                    at: nowTs
+                };
+                const result = resolveProjectsForChart(chart, picked);
                 if (result) showProjectList(result.title, result.projects, {
                     includeFunding: result.includeFunding,
                     modalType: result.modalType,
@@ -3027,14 +3529,23 @@
                 });
             }
 
-            document.addEventListener('click', (evt) => {
+            if (window.Chart) {
+                Chart.defaults.onClick = (evt, _elements, chart) => {
+                    if (!chart?.canvas?.id || !chart.canvas.id.startsWith('chart')) return;
+                    handleChartClick(evt?.native || evt, chart);
+                };
+            }
+
+            function forwardDashboardChartEvent(evt) {
                 const canvas = evt.target;
                 if (!canvas || canvas.tagName !== 'CANVAS') return;
                 if (!canvas.id || !canvas.id.startsWith('chart')) return;
-                const chart = Chart.getChart(canvas);
+                const chart = window.Chart?.getChart(canvas);
                 if (!chart) return;
                 handleChartClick(evt, chart);
-            });
+            }
+
+            document.addEventListener('click', forwardDashboardChartEvent);
 
             /* ---------- 1) จำนวนโครงการรายปี (Bar + ตัวเลขบนแท่ง | กันเลขตกขอบ) ---------- */
             (function() {
@@ -5401,7 +5912,6 @@
             function buildBaseKeyOrder(list) {
                 const keys = collectBaseKeys(list);
                 const preferred = [
-                    'id',
                     'project_name_th',
                     'project_type',
                     'project_code',
@@ -5420,7 +5930,7 @@
                     'funding_source'
                 ];
                 const strategyKeys = keys.filter(k => k.startsWith('strategy_')).sort();
-                const core = keys.filter(k => !k.startsWith('strategy_'));
+                const core = keys.filter(k => !k.startsWith('strategy_') && k !== 'id' && k !== 'project_id' && k !== 'project_code');
                 const ordered = [];
 
                 preferred.forEach(k => {
@@ -5429,11 +5939,12 @@
                 core.sort().forEach(k => {
                     if (!ordered.includes(k)) ordered.push(k);
                 });
-                return [...ordered, ...strategyKeys];
+                return ['project_code', ...ordered, ...strategyKeys];
             }
 
             const detailColumns = {
                 irb: ['irb_id', 'irb_code', 'irb_exp_date', 'irb_source'],
+                copi: ['copi_id', 'copi_name', 'copi_affiliation'],
                 coresearch: ['coresearch_id', 'coresearch_name', 'coresearch_unit_status', 'coresearch_affiliation'],
                 fte: ['fte_id', 'fte_name', 'fte_role_group', 'fte_job_detail', 'fte_value', 'fte_hours',
                     'fte_task_detail', 'fte_start_date', 'fte_end_date'
@@ -5445,6 +5956,7 @@
                 const baseKeys = buildBaseKeyOrder(list);
                 const detailHeaders = [
                     ...detailColumns.irb,
+                    ...detailColumns.copi,
                     ...detailColumns.coresearch,
                     ...detailColumns.fte,
                     ...detailColumns.output
@@ -5453,9 +5965,10 @@
                 const rows = [header];
 
                 list.forEach(p => {
-                    const base = baseKeys.map(k => p[k] ?? '');
+                    const base = baseKeys.map(k => (k === 'project_code' ? (p.project_code ?? '') : (p[k] ?? '')));
                     let baseWritten = false;
                     const irbs = p.irbs || [];
+                    const copis = p.copis || [];
                     const coResearches = p.co_researches || p.coResearches || [];
                     const fteRoles = p.fte_roles || p.fteRoles || [];
                     const outputsList = p.outputs || [];
@@ -5469,13 +5982,21 @@
                     irbs.forEach(irb => {
                         pushDetail('irb', [
                             irb.id ?? '', irb.code ?? '', irb.exp_date ?? '', irb.source ?? '',
+                            ...Array(detailColumns.copi.length + detailColumns.coresearch.length + detailColumns.fte.length + detailColumns.output.length).fill('')
+                        ]);
+                    });
+
+                    copis.forEach(copi => {
+                        pushDetail('copi', [
+                            ...Array(detailColumns.irb.length).fill(''),
+                            copi.id ?? '', copi.name ?? '', copi.affiliation ?? '',
                             ...Array(detailColumns.coresearch.length + detailColumns.fte.length + detailColumns.output.length).fill('')
                         ]);
                     });
 
                     coResearches.forEach(cr => {
                         pushDetail('coresearch', [
-                            ...Array(detailColumns.irb.length).fill(''),
+                            ...Array(detailColumns.irb.length + detailColumns.copi.length).fill(''),
                             cr.id ?? '', cr.name ?? '', cr.unit_status ?? '', cr.affiliation ?? '',
                             ...Array(detailColumns.fte.length + detailColumns.output.length).fill('')
                         ]);
@@ -5483,7 +6004,7 @@
 
                     fteRoles.forEach(f => {
                         pushDetail('fte', [
-                            ...Array(detailColumns.irb.length + detailColumns.coresearch.length).fill(''),
+                            ...Array(detailColumns.irb.length + detailColumns.copi.length + detailColumns.coresearch.length).fill(''),
                             f.id ?? '', f.name ?? '', f.role_group ?? '', f.job_detail ?? '', f.fte_value ?? '',
                             f.hours ?? '', f.task_detail ?? '', f.start_date ?? '', f.end_date ?? '',
                             ...Array(detailColumns.output.length).fill('')
@@ -5492,7 +6013,7 @@
 
                     outputsList.forEach(o => {
                         pushDetail('output', [
-                            ...Array(detailColumns.irb.length + detailColumns.coresearch.length + detailColumns.fte.length).fill(''),
+                            ...Array(detailColumns.irb.length + detailColumns.copi.length + detailColumns.coresearch.length + detailColumns.fte.length).fill(''),
                             o.id ?? '', o.type ?? '', o.title ?? '', o.year ?? ''
                         ]);
                     });
@@ -5523,13 +6044,13 @@
                 document.body.removeChild(link);
             }
 
-            document.getElementById('exportCSV')?.addEventListener('click', () => {
+            function exportProjectsAsCsv() {
                 const filtered = getFilteredProjects();
                 const rows = buildCsvRows(filtered);
                 downloadCsv(rows, `${exportBaseName()}_projects.csv`);
-            });
+            }
 
-            document.getElementById('exportExcel')?.addEventListener('click', () => {
+            function exportProjectsAsExcel() {
                 if (typeof XLSX === 'undefined') {
                     alert('ไม่พบโมดูลสำหรับสร้างไฟล์ Excel');
                     return;
@@ -5541,9 +6062,10 @@
                 const projectSheetRows = filtered.map(p => {
                     const row = {};
                     baseKeys.forEach(k => {
-                        row[k] = p[k] ?? '';
+                        row[k] = k === 'project_code' ? (p.project_code ?? '') : (p[k] ?? '');
                     });
                     row.irb_count = (p.irbs || []).length;
+                    row.copi_count = (p.copis || []).length;
                     row.coresearch_count = (p.co_researches || p.coResearches || []).length;
                     row.fte_count = (p.fte_roles || p.fteRoles || []).length;
                     row.output_count = (p.outputs || []).length;
@@ -5551,7 +6073,7 @@
                 });
 
                 const irbRows = filtered.flatMap(p => (p.irbs || []).map(irb => ({
-                    project_id: p.id,
+                    project_code: p.project_code ?? '',
                     project_name_th: p.project_name_th,
                     pi_name: p.pi_name,
                     start_year: p.start_year,
@@ -5561,7 +6083,7 @@
                 })));
 
                 const coResearchRows = filtered.flatMap(p => (p.co_researches || p.coResearches || []).map(cr => ({
-                    project_id: p.id,
+                    project_code: p.project_code ?? '',
                     project_name_th: p.project_name_th,
                     pi_name: p.pi_name,
                     start_year: p.start_year,
@@ -5570,8 +6092,17 @@
                     affiliation: cr.affiliation ?? ''
                 })));
 
+                const copiRows = filtered.flatMap(p => (p.copis || []).map(copi => ({
+                    project_code: p.project_code ?? '',
+                    project_name_th: p.project_name_th,
+                    pi_name: p.pi_name,
+                    start_year: p.start_year,
+                    copi_name: copi.name ?? '',
+                    copi_affiliation: copi.affiliation ?? ''
+                })));
+
                 const fteRows = filtered.flatMap(p => (p.fte_roles || p.fteRoles || []).map(f => ({
-                    project_id: p.id,
+                    project_code: p.project_code ?? '',
                     project_name_th: p.project_name_th,
                     pi_name: p.pi_name,
                     start_year: p.start_year,
@@ -5586,7 +6117,7 @@
                 })));
 
                 const outputRows = filtered.flatMap(p => (p.outputs || []).map(o => ({
-                    project_id: p.id,
+                    project_code: p.project_code ?? '',
                     project_name_th: p.project_name_th,
                     pi_name: p.pi_name,
                     start_year: p.start_year,
@@ -5595,15 +6126,194 @@
                     output_year: o.year ?? ''
                 })));
 
+                const projectSheetProjectIds = filtered.map(p => p.id ?? null);
+                const irbProjectIds = filtered.flatMap(p => (p.irbs || []).map(() => p.id ?? null));
+                const copiProjectIds = filtered.flatMap(p => (p.copis || []).map(() => p.id ?? null));
+                const coResearchProjectIds = filtered.flatMap(p => (p.co_researches || p.coResearches || []).map(() => p.id ?? null));
+                const fteProjectIds = filtered.flatMap(p => (p.fte_roles || p.fteRoles || []).map(() => p.id ?? null));
+                const outputProjectIds = filtered.flatMap(p => (p.outputs || []).map(() => p.id ?? null));
+
+                function toLinkedSheet(rows, projectIds) {
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    if (!rows.length) return ws;
+
+                    const headers = Object.keys(rows[0] || {});
+                    const codeCol = headers.indexOf('project_code');
+                    if (codeCol === -1) return ws;
+
+                    rows.forEach((_, idx) => {
+                        const projectId = projectIds[idx];
+                        if (!projectId) return;
+                        const cellAddr = XLSX.utils.encode_cell({
+                            c: codeCol,
+                            r: idx + 1
+                        });
+                        const cell = ws[cellAddr];
+                        if (!cell || !cell.v) return;
+                        cell.l = {
+                            Target: `${window.location.origin}/rm/projects/${projectId}`,
+                            Tooltip: 'เปิดหน้าโครงการ'
+                        };
+                    });
+
+                    return ws;
+                }
+
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projectSheetRows), 'Projects');
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(irbRows), 'IRB');
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(coResearchRows), 'CoResearch');
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fteRows), 'FTE');
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(outputRows), 'Outputs');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(projectSheetRows, projectSheetProjectIds), 'Projects');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(irbRows, irbProjectIds), 'IRB');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(copiRows, copiProjectIds), 'COPI');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(coResearchRows, coResearchProjectIds), 'CoResearch');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(fteRows, fteProjectIds), 'FTE');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(outputRows, outputProjectIds), 'Outputs');
 
                 XLSX.writeFile(wb, `${exportBaseName()}_projects.xlsx`);
-            });
+            }
+
+            (function() {
+                const drawerOpenBtn = document.getElementById('filterDrawerOpen');
+                const drawerCloseBtn = document.getElementById('filterDrawerClose');
+                const drawerOverlay = document.getElementById('filterDrawerOverlay');
+                const drawer = document.getElementById('filterDrawer');
+                const exportOpenBtn = document.getElementById('exportPopupOpen');
+                const exportCloseBtn = document.getElementById('exportPopupClose');
+                const exportOverlay = document.getElementById('exportPopupOverlay');
+                const exportPopup = document.getElementById('exportPopup');
+                const exportExcelAction = document.getElementById('exportExcelAction');
+                const exportCsvAction = document.getElementById('exportCsvAction');
+                const fabStack = document.getElementById('dashboardFabStack');
+                const paginationWrap = document.getElementById('projectTablePaginationWrap');
+                let scrollLockY = 0;
+                let scrollLocked = false;
+                let fabVisibilityFrame = null;
+                const desktopMedia = window.matchMedia('(min-width: 1025px)');
+                const shouldLockPageScroll = () => !desktopMedia.matches;
+
+                const lockPageScroll = () => {
+                    if (scrollLocked) return;
+                    scrollLockY = window.scrollY || window.pageYOffset || 0;
+                    const scrollbarWidth = Math.max(window.innerWidth - document.documentElement.clientWidth, 0);
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.style.overflow = 'hidden';
+                    document.body.style.position = 'fixed';
+                    document.body.style.top = `-${scrollLockY}px`;
+                    document.body.style.left = '0';
+                    document.body.style.right = '0';
+                    document.body.style.width = '100%';
+                    if (scrollbarWidth > 0) {
+                        document.body.style.paddingRight = `${scrollbarWidth}px`;
+                    }
+                    scrollLocked = true;
+                };
+
+                const unlockPageScroll = () => {
+                    if (!scrollLocked) return;
+                    document.documentElement.style.overflow = '';
+                    document.body.style.overflow = '';
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.left = '';
+                    document.body.style.right = '';
+                    document.body.style.width = '';
+                    document.body.style.paddingRight = '';
+                    window.scrollTo(0, scrollLockY);
+                    scrollLocked = false;
+                };
+
+                const syncScrollLock = () => {
+                    const shouldLock = drawer?.classList.contains('is-open') || exportPopup?.classList.contains('is-open');
+                    if (!shouldLockPageScroll()) {
+                        unlockPageScroll();
+                        return;
+                    }
+                    if (shouldLock) {
+                        lockPageScroll();
+                    } else {
+                        unlockPageScroll();
+                    }
+                };
+
+                desktopMedia.addEventListener?.('change', syncScrollLock);
+
+                const syncFabVisibility = () => {
+                    fabVisibilityFrame = null;
+                    if (!fabStack) return;
+                    const paginationVisible = (() => {
+                        if (!paginationWrap) return false;
+                        const rect = paginationWrap.getBoundingClientRect();
+                        return rect.top < window.innerHeight - 110 && rect.bottom > 0;
+                    })();
+                    fabStack.classList.toggle('is-hidden-by-pagination', paginationVisible);
+                };
+
+                const queueFabVisibilitySync = () => {
+                    if (fabVisibilityFrame !== null) return;
+                    fabVisibilityFrame = window.requestAnimationFrame(syncFabVisibility);
+                };
+
+                window.updateDashboardFabVisibility = queueFabVisibilitySync;
+
+                window.addEventListener('scroll', queueFabVisibilitySync, { passive: true });
+                window.addEventListener('resize', queueFabVisibilitySync);
+                window.addEventListener('orientationchange', queueFabVisibilitySync);
+
+                const toggleDrawer = (open) => {
+                    if (!drawer || !drawerOverlay) return;
+                    drawerOverlay.classList.toggle('is-open', open);
+                    drawer.classList.toggle('is-open', open);
+                    if (open) {
+                        exportOverlay?.classList.remove('is-open');
+                        exportPopup?.classList.remove('is-open');
+                        exportPopup?.setAttribute('aria-hidden', 'true');
+                    }
+                    syncScrollLock();
+                };
+
+                const toggleExportPopup = (open) => {
+                    if (!exportPopup || !exportOverlay) return;
+                    exportOverlay.classList.toggle('is-open', open);
+                    exportPopup.classList.toggle('is-open', open);
+                    exportPopup.setAttribute('aria-hidden', open ? 'false' : 'true');
+                    if (open) {
+                        drawerOverlay?.classList.remove('is-open');
+                        drawer?.classList.remove('is-open');
+                        renderDashboardFilterState(typeof getFilteredProjects === 'function' ? getFilteredProjects().length : projects.length);
+                    }
+                    syncScrollLock();
+                };
+
+                window.closeDashboardFloatingPanels = () => {
+                    toggleDrawer(false);
+                    toggleExportPopup(false);
+                };
+
+                drawerOpenBtn?.addEventListener('click', () => toggleDrawer(true));
+                drawerCloseBtn?.addEventListener('click', () => toggleDrawer(false));
+                drawerOverlay?.addEventListener('click', () => toggleDrawer(false));
+
+                exportOpenBtn?.addEventListener('click', () => toggleExportPopup(true));
+                exportCloseBtn?.addEventListener('click', () => toggleExportPopup(false));
+                exportOverlay?.addEventListener('click', () => toggleExportPopup(false));
+
+                exportExcelAction?.addEventListener('click', () => {
+                    toggleExportPopup(false);
+                    exportProjectsAsExcel();
+                });
+
+                exportCsvAction?.addEventListener('click', () => {
+                    toggleExportPopup(false);
+                    exportProjectsAsCsv();
+                });
+
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        toggleDrawer(false);
+                        toggleExportPopup(false);
+                    }
+                });
+
+                queueFabVisibilitySync();
+            })();
 
             /* ---------- Project Table: pagination + filter + search ---------- */
             (function() {
@@ -5619,9 +6329,13 @@
                 const filterYear = document.getElementById('filterYear');
                 const filterTheme = document.getElementById('filterTheme');
                 const filterFunding = document.getElementById('filterFunding');
+                const filterType = document.getElementById('filterType');
+                const filterStatus = document.getElementById('filterStatus');
+                const filterSource = document.getElementById('filterSource');
                 const filterName = document.getElementById('filterName');
-                const filterPI = document.getElementById('filterPI');
                 const tableSearch = document.getElementById('tableSearch');
+                const filterReset = document.getElementById('filterReset');
+                const filterResultBadge = document.getElementById('filterResultBadge');
 
                 function getLatestIrbDate(p) {
                     const list = p.irbs || [];
@@ -5678,9 +6392,12 @@
                     }
 
                     if (countEl) countEl.textContent = `รวม ${total.toLocaleString('th-TH')} รายการ`;
+                    if (filterResultBadge) filterResultBadge.textContent = `${total.toLocaleString('th-TH')} โครงการ`;
                     if (pageEl) pageEl.textContent = `หน้า ${currentPage} / ${totalPages}`;
                     if (prevBtn) prevBtn.disabled = currentPage <= 1;
                     if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+                    renderDashboardFilterState(total);
+                    window.updateDashboardFabVisibility?.();
                 }
 
                 function resetAndRender() {
@@ -5697,17 +6414,23 @@
                     renderTable();
                 });
 
-                [filterYear, filterTheme, filterFunding].forEach(el => el?.addEventListener('change', resetAndRender));
-                [filterName, filterPI, tableSearch].forEach(el => el?.addEventListener('input', resetAndRender));
+                [filterYear, filterTheme, filterFunding, filterType, filterStatus, filterSource].forEach(el => el?.addEventListener('change', resetAndRender));
+                [filterName, tableSearch].forEach(el => el?.addEventListener('input', resetAndRender));
+                filterReset?.addEventListener('click', () => {
+                    if (filterYear) filterYear.value = '';
+                    if (filterTheme) filterTheme.value = '';
+                    if (filterFunding) filterFunding.value = '';
+                    if (filterType) filterType.value = '';
+                    if (filterStatus) filterStatus.value = '';
+                    if (filterSource) filterSource.value = '';
+                    if (filterName) filterName.value = '';
+                    if (tableSearch) tableSearch.value = '';
+                    resetAndRender();
+                });
 
                 renderTable();
             })();
         </script>
-
-        <script>
-            console.log('sample', (@json($projects))[0]);
-        </script>
-
 
         <script>
             /* ========= Helpers ========= */
@@ -6053,486 +6776,7 @@
                     }
                 });
             })();
-
-            const aiFab = document.getElementById('aiChatFab');
-            const aiPanel = document.getElementById('aiChatPanel');
-            const aiOverlay = document.getElementById('aiChatOverlay');
-            const aiForm = document.getElementById('aiChatForm');
-            const aiInput = document.getElementById('aiChatInput');
-            const aiBody = document.getElementById('aiChatBody');
-            const aiBubble = document.getElementById('aiChatBubble');
-            const aiBubbleClose = document.getElementById('aiChatBubbleClose');
-
-            function toggleAiChat(show = null) {
-                if (show === null) show = !aiPanel.classList.contains('is-open');
-                aiPanel.classList.toggle('is-open', show);
-                aiOverlay.classList.toggle('is-open', show);
-                if (show) setTimeout(() => aiInput?.focus(), 50);
-            }
-            aiFab?.addEventListener('click', () => toggleAiChat());
-            aiOverlay?.addEventListener('click', () => toggleAiChat(false));
-
-            if (aiBubble) {
-                aiBubble.classList.add('is-show');
-            }
-            aiBubbleClose?.addEventListener('click', () => {
-                aiBubble?.classList.remove('is-show');
-            });
-            document.querySelectorAll('.ai-suggest').forEach(b => {
-                b.addEventListener('click', () => {
-                    aiInput.value = b.textContent.trim();
-                    aiInput.dispatchEvent(new Event('input'));
-                    aiForm.requestSubmit();
-                });
-            });
-
-            // autosize
-            aiInput?.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-            });
-
-            // 💡 NEW FEATURE: ส่งข้อความเมื่อกด Enter
-            aiInput?.addEventListener('keydown', function(e) {
-                // ตรวจสอบว่ากดปุ่ม Enter (keyCode 13)
-                if (e.key === 'Enter') {
-                    // ถ้าเป็น Shift+Enter หรือ Ctrl+Enter ให้ขึ้นบรรทัดใหม่ตามปกติ
-                    if (e.shiftKey || e.ctrlKey) {
-                        return;
-                    }
-
-                    // ถ้าเป็น Enter ธรรมดา ให้หยุดการทำงานปกติ (หยุดการขึ้นบรรทัดใหม่)
-                    e.preventDefault();
-
-                    // เรียกส่งฟอร์ม
-                    aiForm.requestSubmit();
-                }
-            });
-
-            /* ---------- PDF Export (mobile) ---------- */
-            document.addEventListener('DOMContentLoaded', () => {
-                const btn = document.getElementById('btnExportPdfMobile');
-                const overlay = document.getElementById('pdfExportOverlay');
-                const container = document.getElementById('pdfExportContainer');
-                if (!btn || !container) return;
-
-                const chartTitles = (window.chartTitles = window.chartTitles || {
-                    chartRedZoneTimeline: 'RED ZONE: โครงการใกล้สิ้นสุด / เกินกำหนด',
-                    chartOverdueProjects: 'โครงการที่เกินกำหนด (โดนัท)',
-                    chartCoResearchByUnitWindow: 'Co-Research ตามหน่วยงาน (3/6/12 เดือน)',
-                    chartProjectsPerYear: 'จำนวนโครงการรายปี',
-                    chartYearlyNewVsTotal: 'โครงการทั้งหมด/ใหม่/ดำเนินการ (รายปี)',
-                    chartFundingSplit: 'สัดส่วนทุน ภายใน/ภายนอก (รายปี)',
-                    chartBudgetPerYear: 'งบประมาณรวม (รายปี)',
-                    chartExternalBySource: 'ทุนภายนอก ตามแหล่งทุน (Top 8)',
-                    chartInternalBySource: 'ทุนภายใน ตามแหล่งทุน (Top 8)',
-                    chartExternalBySourceYear: 'ทุนภายนอก แยกตามปี (Top 8)',
-                    chartInternalBySourceYear: 'ทุนภายใน แยกตามปี (Top 8)',
-                    chartOutputStacked: 'Output แยกประเภท (รายปี)',
-                    chartPublicationPerYear: 'Publication รายปี',
-                    chartAuthorRolePerYear: 'บทบาทผู้เขียน (First/Co/Corresponding) รายปี + Top N',
-                    chartStatusYear: 'สถานะโครงการ (รายปี)',
-                    chartCollabBreakdown: 'ความร่วมมือ (นอกคณะ/ในคณะ/ในหน่วย)',
-                    chartPIsPerUnit: 'จำนวนงานของ PI ตามหน่วยงาน',
-                    chartFteSummary: 'Bubble FTE รวมต่อคน',
-                    chartIRBExpiry: 'IRB ใกล้หมดอายุ (6 เดือน)'});
-
-                const chartOrder = (window.chartOrder = window.chartOrder || [
-                    'chartRedZoneTimeline', 'chartOverdueProjects',
-                    'chartCoResearchByUnitWindow', 'chartProjectsPerYear',
-                    'chartYearlyNewVsTotal', 'chartFundingSplit',
-                    'chartBudgetPerYear', 'chartExternalBySource',
-                    'chartInternalBySource', 'chartExternalBySourceYear',
-                    'chartInternalBySourceYear', 'chartOutputStacked',
-                    'chartPublicationPerYear', 'chartAuthorRolePerYear',
-                    'chartStatusYear', 'chartCollabBreakdown',
-                    'chartPIsPerUnit', 'chartFteSummary',
-                    'chartIRBExpiry'
-                ]);
-
-                const safe = (v, fb = '-') => (v ?? '').toString().trim() || fb;
-
-                const buildOverdueRows = () => {
-                    const now = new Date();
-                    return projects
-                        .map(p => {
-                            const endDate = parseProjectDate(getEndDateRaw(p));
-                            if (!endDate) return null;
-                            const diffDays = (endDate - now) / (1000 * 60 * 60 * 24);
-                            if (diffDays >= 0) return null;
-                            return {
-                                project: p.project_name_th || '-',
-                                endDate,
-                                endDateStr: formatDateTH(endDate, '-'),
-                                overdueDays: Math.abs(Math.ceil(diffDays)),
-                                pi: p.pi_name || '-'
-                            };
-                        })
-                        .filter(Boolean)
-                        .sort((a, b) => a.endDate - b.endDate);
-                };
-
-                const buildIrbRows = () => {
-                    return (Array.isArray(irbs) ? irbs : []).map(irb => {
-                        const project = projects.find(p => p.id === irb.project_id) || {};
-                        const expDate = parseProjectDate(irb.exp_date);
-                        return {
-                            project: project.project_name_th || '-',
-                            code: irb.code || '-',
-                            source: irb.source || irb.irb_source || '-',
-                            expDate,
-                            expDateStr: formatDateTH(expDate, irb.exp_date || '-')
-                        };
-                    }).sort((a, b) => (a.expDate?.getTime?.() || 0) - (b.expDate?.getTime?.() || 0));
-                };
-
-                const buildCopiRows = () => {
-                    const list = Array.isArray(copisSummary) ? copisSummary : [];
-                    return list.map(r => ({
-                        name: safe(r.name),
-                        affiliation: safe(r.affiliation),
-                        project_count: r.project_count || 0
-                    })).sort((a, b) => b.project_count - a.project_count);
-                };
-
-                const buildProjectRows = () => {
-                    const list = projects || [];
-                    const num = v => Number(v || 0) || 0;
-                    const latestIrb = (p) => {
-                        const list = p.irbs || [];
-                        if (!list.length) return '-';
-                        const sorted = [...list].sort((a, b) => (parseProjectDate(b.exp_date)?.getTime?.() || 0) - (parseProjectDate(a.exp_date)?.getTime?.() || 0));
-                        return formatDateTH(parseProjectDate(sorted[0].exp_date), sorted[0].exp_date || '-');
-                    };
-                    return list.map(p => ({
-                        project: p.project_name_th || '-',
-                        year: p.start_year || '-',
-                        pi: p.pi_name || '-',
-                        copis: (p.copis || []).length,
-                        coResearch: (p.co_researches || p.coResearches || []).length,
-                        fte: (p.fte_roles || p.fteRoles || []).reduce((s, r) => s + num(r.fte_value || r.fte), 0).toFixed(2),
-                        outputs: (p.outputs || []).length,
-                        irb: latestIrb(p)
-                    }));
-                };
-
-                function downscaleChart(ch) {
-                    try {
-                        const src = ch.canvas;
-                        const maxW = 1100;
-                        const scale = Math.min(1, maxW / src.width);
-                        if (scale >= 0.999) return ch.toBase64Image();
-                        const dest = document.createElement('canvas');
-                        dest.width = Math.round(src.width * scale);
-                        dest.height = Math.round(src.height * scale);
-                        dest.getContext('2d').drawImage(src, 0, 0, dest.width, dest.height);
-                        return dest.toDataURL('image/png', 0.9);
-                    } catch {
-                        return ch.toBase64Image();
-                    }
-                }
-
-                btn.addEventListener('click', async () => {
-                    const generatedAt = new Date();
-                    const generatedText = generatedAt.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', hour12: false });
-                    const generatedBy = window.currentUserName || 'ผู้ใช้ไม่ระบุ';
-                    const docTitle = 'Siriraj Health Policy Database Research';
-                    const docSubtitle = 'Dashboard Export: กราฟและตารางสถานะโครงการ';
-                    overlay?.classList.remove('hidden');
-                    container.classList.remove('hidden');
-                    container.innerHTML = '';
-                    try {
-                        // cover
-                        const cover = document.createElement('div');
-                        cover.className = 'pdf-page';
-                        cover.innerHTML = `
-                            <div class=\"pdf-header\">
-                                <div class=\"pdf-title\">${docTitle}</div>
-                                <div class=\"pdf-subtitle\">${docSubtitle} • สร้างเมื่อ ${generatedText}</div>
-                            </div>
-                            <div class=\"pdf-meta\">
-                                <span>ผู้สร้าง: <strong>${generatedBy}</strong></span>
-                                <span>เวลารัน: ${generatedText}</span>
-                                <span>กราฟทั้งหมด: ${chartOrder.length} รายการ</span>
-                            </div>
-                        `;
-                        container.appendChild(cover);
-
-                        // charts 2 per page
-                        for (let i = 0; i < chartOrder.length; i += 2) {
-                            const page = document.createElement('div');
-                            page.className = 'pdf-page';
-                            const grid = document.createElement('div');
-                            grid.className = 'pdf-grid-2';
-                            chartOrder.slice(i, i + 2).forEach(id => {
-                                const card = document.createElement('div');
-                                card.className = 'pdf-chart-card';
-                                const title = document.createElement('div');
-                                title.className = 'pdf-chart-title';
-                                title.textContent = chartTitles[id] || id;
-                                card.appendChild(title);
-                                const el = document.getElementById(id);
-                                const ch = el ? Chart.getChart(el) : null;
-                                if (ch) {
-                                    const img = document.createElement('img');
-                                    img.src = downscaleChart(ch);
-                                    card.appendChild(img);
-                                } else {
-                                    const t = document.createElement('div');
-                                    t.className = 'text-sm text-slate-500';
-                                    t.textContent = 'ไม่มีข้อมูล';
-                                    card.appendChild(t);
-                                }
-                                grid.appendChild(card);
-                            });
-                            page.appendChild(grid);
-                            container.appendChild(page);
-                        }
-
-                        // tables
-                        const tables = [
-                            { title: 'ตารางโครงการเกินกำหนด', rows: buildOverdueRows(), perPage: 12, columns: ['project','endDateStr','overdueDays','pi'] },
-                            { title: 'ตาราง IRB', rows: buildIrbRows(), perPage: 12, columns: ['project','code','source','expDateStr'] },
-                            { title: 'Co-PI / ผู้วิจัยร่วม', rows: buildCopiRows(), perPage: 15, columns: ['name','affiliation','project_count'] },
-                            { title: 'โครงการทั้งหมด (ตามตัวกรองปัจจุบัน)', rows: buildProjectRows(), perPage: 8, columns: ['project','year','pi','copis','coResearch','fte','outputs','irb'] },
-                        ];
-
-                        const renderTablePage = (setRows, setTitle, setColumns) => {
-                            const page = document.createElement('div');
-                            page.className = 'pdf-page';
-                            const card = document.createElement('div');
-                            card.className = 'pdf-table-card';
-                            const head = document.createElement('div');
-                            head.className = 'pdf-table-title';
-                            head.textContent = setTitle;
-                            card.appendChild(head);
-                            const table = document.createElement('table');
-                            const thead = document.createElement('thead');
-                            const trh = document.createElement('tr');
-                            setColumns.forEach(c => {
-                                const th = document.createElement('th');
-                                th.textContent = c;
-                                trh.appendChild(th);
-                            });
-                            thead.appendChild(trh);
-                            table.appendChild(thead);
-                            const tbody = document.createElement('tbody');
-                            if (!setRows.length) {
-                                const tr = document.createElement('tr');
-                                const td = document.createElement('td');
-                                td.colSpan = setColumns.length;
-                                td.className = 'text-center text-slate-500';
-                                td.textContent = 'ไม่มีข้อมูล';
-                                tr.appendChild(td);
-                                tbody.appendChild(tr);
-                            } else {
-                                setRows.forEach(r => {
-                                    const tr = document.createElement('tr');
-                                    setColumns.forEach(c => {
-                                        const td = document.createElement('td');
-                                        td.textContent = safe(r[c]);
-                                        tr.appendChild(td);
-                                    });
-                                    tbody.appendChild(tr);
-                                });
-                            }
-                            table.appendChild(tbody);
-                            card.appendChild(table);
-                            page.appendChild(card);
-                            container.appendChild(page);
-                        };
-
-                        tables.forEach(set => {
-                            const per = set.perPage || set.rows.length || 1;
-                            for (let i = 0; i < set.rows.length; i += per) {
-                                renderTablePage(set.rows.slice(i, i + per), set.title, set.columns);
-                            }
-                            if (!set.rows.length) renderTablePage([], set.title, set.columns);
-                        });
-
-                        await new Promise(res => setTimeout(res, 80));
-                        const pages = Array.from(container.querySelectorAll('.pdf-page'));
-                        const { jsPDF } = window.jspdf;
-                        const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
-                        for (let i = 0; i < pages.length; i++) {
-                            const cv = await html2canvas(pages[i], { scale: 1.1, useCORS: true, allowTaint: true });
-                            const img = cv.toDataURL('image/png', 0.9);
-                            const pw = pdf.internal.pageSize.getWidth();
-                            const ph = pdf.internal.pageSize.getHeight();
-                            const ratio = Math.min(pw / cv.width, ph / cv.height);
-                            pdf.addImage(img, 'PNG', 0, 0, cv.width * ratio, cv.height * ratio);
-                            // footer (เหมือน desktop)
-                            pdf.setFontSize(10);
-                            pdf.text(`ผู้สร้าง: ${generatedBy} • ${generatedText}`, 18, ph - 12, { align: 'left' });
-                            pdf.text(`หน้า ${i + 1} / ${pages.length}`, pw - 18, ph - 12, { align: 'right' });
-                            if (i < pages.length - 1) pdf.addPage('a4', 'landscape');
-                        }
-                        const now = new Date();
-                        const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
-                        const name = `SiHealthpolicy_overview_${generatedBy.replace(/\\s+/g,'')}_${stamp}.pdf`;
-                        const url = pdf.output('bloburl');
-                        window.open(url, '_blank');
-                    } catch (err) {
-                        console.error(err);
-                        alert('สร้าง PDF ไม่สำเร็จ กรุณาลองอีกครั้ง');
-                    } finally {
-                        container.classList.add('hidden');
-                        container.innerHTML = '';
-                        overlay?.classList.add('hidden');
-                    }
-                });
-            });
-
-            function bubble(role, html) {
-                const wrap = document.createElement('div');
-                const base = role === 'user' ?
-                    'bg-emerald-50 border-emerald-200 ml-12' :
-                    'bg-white border-gray-200 mr-12';
-                wrap.className = `border rounded-xl p-3 text-sm ${base}`;
-                wrap.innerHTML = html;
-                aiBody.appendChild(wrap);
-                aiBody.scrollTop = aiBody.scrollHeight;
-                return wrap;
-            }
-
-            // สร้าง canvas chart ภายในบับเบิลคำตอบ
-            function renderInlineChart(container, spec) {
-                const canvas = document.createElement('canvas');
-                canvas.height = 220;
-                container.appendChild(canvas);
-                try {
-                    const cfg = {
-                        type: spec.type || 'bar',
-                        data: {
-                            labels: spec.labels || [],
-                            datasets: spec.datasets || []
-                        },
-                        options: spec.options || {}
-                    };
-                    new Chart(canvas, cfg);
-                } catch (e) {
-                    const err = document.createElement('div');
-                    err.className = 'text-xs text-red-500';
-                    err.textContent = 'แสดงกราฟไม่สำเร็จ';
-                    container.appendChild(err);
-                }
-            }
-
-            aiForm?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const q = (aiInput.value || '').trim();
-                if (!q) return;
-                bubble('user', q);
-                aiInput.value = '';
-                aiInput.dispatchEvent(new Event('input'));
-
-                const thinking = bubble('bot', '<div class="text-gray-500 text-sm">กำลังวิเคราะห์…</div>');
-
-                try {
-                    const resp = await fetch("{{ url('/rm/agent/ask') }}", {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('input[name=_token]')?.value ||
-                                '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            prompt: q
-                        })
-                    });
-                    const data = await resp.json();
-
-                    // แทนที่บับเบิลกำลังคิด
-                    thinking.innerHTML = '';
-                    if (data.reply) {
-                        thinking.innerHTML = `<div class="prose prose-sm max-w-none">${data.reply}</div>`;
-                    } else {
-                        thinking.innerHTML = '<div class="text-gray-500">ไม่มีข้อความตอบกลับ</div>';
-                    }
-
-                    // ถ้ามีตาราง
-                    // ถ้ามีตาราง
-
-                    if (data.table && Array.isArray(data.table.rows)) {
-
-                        // ✅ FIX 1.1: สร้าง wrapper เพื่อให้ตาราง Scroll ได้แนวนอน (ยังคงจำเป็นเผื่อตารางกว้าง)
-                        const tableWrapper = document.createElement('div');
-                        tableWrapper.className = 'overflow-x-auto mt-2';
-
-                        const tbl = document.createElement('table');
-                        // ✅ FIX: ลบ whitespace-nowrap ออก เพื่อให้ข้อความตัดบรรทัดได้
-                        tbl.className = 'min-w-full text-xs border';
-
-                        const thead = document.createElement('thead');
-                        thead.className = 'bg-gray-50';
-                        thead.innerHTML =
-                            `<tr>${(data.table.headers||[]).map(h=>`<th class="p-2 text-left">${h}</th>`).join('')}</tr>`;
-                        tbl.appendChild(thead);
-
-                        const tbody = document.createElement('tbody');
-                        (data.table.rows || []).forEach(r => {
-                            const tr = document.createElement('tr');
-                            tr.className = 'border-t';
-
-                            tr.innerHTML = (data.table.fields || []).map(f => {
-                                let content = r[f] ?? '-';
-
-                                // ✅ FIX 2.1: ตัดข้อความสำหรับคอลัมน์ Project Name ที่ยาวเกินไป
-                                if (f === 'project' || f === 'project_name') {
-                                    const MAX_LENGTH = 50;
-                                    if (content.length > MAX_LENGTH) {
-                                        content = content.substring(0, MAX_LENGTH) + '...';
-                                    }
-                                }
-
-                                // ✅ FIX 1.2: สร้าง Hyperlink ให้ชื่อโครงการ หากมี URL
-                                if ((f === 'project' || f === 'project_name') && r.href && r
-                                    .href !== '#') {
-                                    content =
-                                        `<a href="${r.href}" target="_blank" class="text-blue-600 hover:underline">${content}</a>`;
-                                } else if (f === 'href') {
-                                    // ถ้าเป็นคอลัมน์ href โดยตรง ให้แสดงเป็นไอคอน Link แทน
-                                    content =
-                                        `<a href="${r.href}" target="_blank" class="text-blue-600 hover:underline">🔗</a>`;
-                                }
-
-                                // ✅ FIX 2.2: กำหนดความกว้างขั้นต่ำ (min-width) ให้คอลัมน์ชื่อโครงการ
-                                // เพื่อให้คอลัมน์ไม่หดตัวจนเล็กเกินไปเมื่อตัดบรรทัด
-                                const style = (f === 'project' || f === 'project_name') ?
-                                    'style="min-width: 150px;"' : '';
-
-                                return `<td class="p-2" ${style}>${content}</td>`;
-
-                            }).join('');
-                            tbody.appendChild(tr);
-                        });
-                        tbl.appendChild(tbody);
-                        tableWrapper.appendChild(tbl);
-                        thinking.appendChild(tableWrapper); // เปลี่ยนมา append tableWrapper แทน
-                    }
-                    // ถ้ามีกราฟ
-                    if (data.chart) {
-                        const box = document.createElement('div');
-                        box.className = 'mt-3';
-                        thinking.appendChild(box);
-                        renderInlineChart(box, data.chart);
-                    }
-
-                    // ถ้ามีกราฟที่สอง (เช่น donut แหล่งทุน)
-                    if (data.chart2) {
-                        const box2 = document.createElement('div');
-                        box2.className = 'mt-3';
-                        thinking.appendChild(box2);
-                        renderInlineChart(box2, data.chart2);
-                    }
-
-
-                } catch (err) {
-                    thinking.innerHTML = `<div class="text-red-600">เกิดข้อผิดพลาดในการเรียกผู้ช่วย</div>`;
-                }
-            });
         </script>
-
         <script>
             // Hide chart scroll hint once user scrolls
             document.addEventListener('DOMContentLoaded', () => {

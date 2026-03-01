@@ -36,6 +36,67 @@
             min-height: 320px;
         }
 
+        .overview-chart canvas {
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        #overviewChartModalBody .overview-modal-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #overviewChartModalBody .overview-modal-table th,
+        #overviewChartModalBody .overview-modal-table td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+
+        #overviewChartModalBody .overview-modal-table thead {
+            background: #f8fafc;
+        }
+
+        @media (max-width: 768px) {
+            #overviewChartModalBody .overview-modal-table thead {
+                display: none;
+            }
+
+            #overviewChartModalBody .overview-modal-table,
+            #overviewChartModalBody .overview-modal-table tbody,
+            #overviewChartModalBody .overview-modal-table tr,
+            #overviewChartModalBody .overview-modal-table td {
+                display: block;
+                width: 100%;
+            }
+
+            #overviewChartModalBody .overview-modal-table tr {
+                border: 1px solid #e2e8f0;
+                border-radius: 14px;
+                margin-bottom: 12px;
+                overflow: hidden;
+                background: #ffffff;
+            }
+
+            #overviewChartModalBody .overview-modal-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                text-align: left;
+                padding: 0.8rem 0.9rem;
+            }
+
+            #overviewChartModalBody .overview-modal-table td::before {
+                content: attr(data-label);
+                flex: 0 0 104px;
+                font-size: 0.72rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: #64748b;
+            }
+        }
+
         .overview-label {
             color: var(--ov-muted);
             font-size: 0.82rem;
@@ -204,21 +265,30 @@
 
     <section class="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <article class="overview-panel p-4">
-            <h3 class="text-base font-bold text-slate-800 mb-2">จำนวนโครงการตามปี</h3>
+            <div class="flex items-start justify-between gap-3 mb-2">
+                <h3 class="text-base font-bold text-slate-800">จำนวนโครงการตามปี</h3>
+                <span class="text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-100 rounded-full px-2.5 py-1">แตะหรือคลิกกราฟเพื่อดูข้อมูล</span>
+            </div>
             <div class="overview-chart">
                 <canvas id="yearChart"></canvas>
             </div>
         </article>
 
         <article class="overview-panel p-4">
-            <h3 class="text-base font-bold text-slate-800 mb-2">สัดส่วนประเภทโครงการ</h3>
+            <div class="flex items-start justify-between gap-3 mb-2">
+                <h3 class="text-base font-bold text-slate-800">สัดส่วนประเภทโครงการ</h3>
+                <span class="text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-100 rounded-full px-2.5 py-1">แตะหรือคลิกกราฟเพื่อดูข้อมูล</span>
+            </div>
             <div class="overview-chart">
                 <canvas id="typeChart"></canvas>
             </div>
         </article>
 
         <article class="overview-panel p-4">
-            <h3 class="text-base font-bold text-slate-800 mb-2">งบประมาณรวมตามปี</h3>
+            <div class="flex items-start justify-between gap-3 mb-2">
+                <h3 class="text-base font-bold text-slate-800">งบประมาณรวมตามปี</h3>
+                <span class="text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-100 rounded-full px-2.5 py-1">แตะหรือคลิกกราฟเพื่อดูข้อมูล</span>
+            </div>
             <div class="overview-chart">
                 <canvas id="budgetChart"></canvas>
             </div>
@@ -249,6 +319,41 @@
             </table>
         </div>
     </section>
+
+    <div id="overviewChartModal" class="fixed inset-0 z-[70] hidden">
+        <div id="overviewChartModalOverlay" class="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"></div>
+        <div class="relative z-10 min-h-full flex items-center justify-center p-3 sm:p-6">
+            <div class="w-full max-w-6xl max-h-[86vh] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-4 py-4 sm:px-5">
+                    <div>
+                        <h3 id="overviewChartModalTitle" class="text-lg font-bold text-slate-900">รายละเอียดจากกราฟ</h3>
+                        <p id="overviewChartModalMeta" class="mt-1 text-sm text-slate-500">0 รายการ</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-slate-500">Sort:
+                            <select id="overviewChartModalSort" class="ml-1 rounded-lg border border-slate-300 px-2 py-1 text-xs">
+                                <option value="name_asc">ชื่อ (ก-ฮ)</option>
+                                <option value="name_desc">ชื่อ (ฮ-ก)</option>
+                                <option value="pi_asc">PI (ก-ฮ)</option>
+                                <option value="pi_desc">PI (ฮ-ก)</option>
+                                <option value="year_desc">ปี (ใหม่→เก่า)</option>
+                                <option value="year_asc">ปี (เก่า→ใหม่)</option>
+                                <option value="budget_desc">งบ (มาก→น้อย)</option>
+                                <option value="budget_asc">งบ (น้อย→มาก)</option>
+                            </select>
+                        </label>
+                        <button id="overviewChartModalClose" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700">
+                            <span class="sr-only">ปิด</span>
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6l-12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="overviewChartModalBody" class="max-h-[calc(86vh-84px)] overflow-auto p-4 sm:p-5 text-sm"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -257,6 +362,7 @@
     'use strict';
 
     const sourceRows = @json($projectsData, JSON_UNESCAPED_UNICODE);
+    const projectShowBaseUrl = @json(url('/rm/projects'));
 
     const palette = [
         '#0ea5e9', '#22c55e', '#f59e0b', '#f97316', '#3b82f6',
@@ -282,6 +388,13 @@
         reportRows: document.getElementById('reportTypeRows'),
         filteredCount: document.getElementById('filteredCount'),
         projectRows: document.getElementById('projectRows'),
+        modal: document.getElementById('overviewChartModal'),
+        modalOverlay: document.getElementById('overviewChartModalOverlay'),
+        modalClose: document.getElementById('overviewChartModalClose'),
+        modalTitle: document.getElementById('overviewChartModalTitle'),
+        modalMeta: document.getElementById('overviewChartModalMeta'),
+        modalBody: document.getElementById('overviewChartModalBody'),
+        modalSort: document.getElementById('overviewChartModalSort'),
     };
 
     const formatNumber = new Intl.NumberFormat('th-TH');
@@ -323,6 +436,190 @@
         year: null,
         type: null,
         budget: null,
+    };
+
+    const getHitPoint = (event, chart) => {
+        if (!chart) return null;
+        const points = chart.getElementsAtEventForMode(event, 'nearest', {
+            intersect: true,
+        }, true);
+        return points.length > 0 ? points[0] : null;
+    };
+
+    const applyOverviewProjectSort = (rows, mode = 'name_asc') => {
+        const list = [...rows];
+        const compareText = (a, b) => String(a || '').localeCompare(String(b || ''), 'th');
+
+        list.sort((a, b) => {
+            switch (mode) {
+                case 'name_desc':
+                    return compareText(b.name, a.name);
+                case 'pi_asc':
+                    return compareText(a.piName, b.piName);
+                case 'pi_desc':
+                    return compareText(b.piName, a.piName);
+                case 'year_desc':
+                    return compareText(b.year, a.year);
+                case 'year_asc':
+                    return compareText(a.year, b.year);
+                case 'budget_desc':
+                    return (b.budget || 0) - (a.budget || 0);
+                case 'budget_asc':
+                    return (a.budget || 0) - (b.budget || 0);
+                case 'name_asc':
+                default:
+                    return compareText(a.name, b.name);
+            }
+        });
+
+        return list;
+    };
+
+    const openOverviewChartModal = (title, rows) => {
+        const sortMode = elements.modalSort?.value || 'name_asc';
+        const projectsForModal = applyOverviewProjectSort(rows, sortMode);
+        window.overviewChartModalState = {
+            title,
+            rows: [...rows],
+        };
+
+        elements.modalTitle.textContent = title;
+        elements.modalMeta.textContent = `${formatNumber.format(projectsForModal.length)} รายการ`;
+
+        if (!projectsForModal.length) {
+            elements.modalBody.innerHTML = '<div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-slate-500">ไม่พบข้อมูลที่ตรงกับจุดที่เลือก</div>';
+            elements.modal.classList.remove('hidden');
+            return;
+        }
+
+        const rowsHtml = projectsForModal.map((project, index) => `
+            <tr>
+                <td data-label="#"><span class="font-semibold text-slate-500">${index + 1}</span></td>
+                <td data-label="รหัส">${escapeHtml(project.code)}</td>
+                <td data-label="ชื่อโครงการ">
+                    <a href="${projectShowBaseUrl}/${project.id}" class="font-semibold text-sky-700 underline underline-offset-2">
+                        ${escapeHtml(project.name)}
+                    </a>
+                </td>
+                <td data-label="ปีเริ่ม">${escapeHtml(project.year)}</td>
+                <td data-label="ประเภท">${escapeHtml(project.type)}</td>
+                <td data-label="ประเภททุน">${escapeHtml(project.fundingType)}</td>
+                <td data-label="สถานะ">${escapeHtml(project.status)}</td>
+                <td data-label="PI">${escapeHtml(project.piName)}</td>
+                <td data-label="งบประมาณ"><span class="font-semibold text-slate-800">${formatBudget(project.budget)}</span></td>
+            </tr>
+        `).join('');
+
+        elements.modalBody.innerHTML = `
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="overview-modal-table min-w-full text-left">
+                    <thead>
+                        <tr>
+                            <th class="text-xs font-bold uppercase tracking-wide text-slate-600">#</th>
+                            <th class="text-xs font-bold uppercase tracking-wide text-slate-600">รหัส</th>
+                            <th class="text-xs font-bold uppercase tracking-wide text-slate-600">ชื่อโครงการ</th>
+                            <th class="text-xs font-bold uppercase tracking-wide text-slate-600">ปีเริ่ม</th>
+                            <th class="text-xs font-bold uppercase tracking-wide text-slate-600">ประเภท</th>
+                            <th class="text-xs font-bold uppercase tracking-wide text-slate-600">ประเภททุน</th>
+                            <th class="text-xs font-bold uppercase tracking-wide text-slate-600">สถานะ</th>
+                            <th class="text-xs font-bold uppercase tracking-wide text-slate-600">PI</th>
+                            <th class="text-xs font-bold uppercase tracking-wide text-slate-600">งบประมาณ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white">${rowsHtml}</tbody>
+                </table>
+            </div>
+        `;
+
+        elements.modal.classList.remove('hidden');
+    };
+
+    const closeOverviewChartModal = () => {
+        window.overviewChartModalState = null;
+        elements.modal.classList.add('hidden');
+    };
+
+    const bindChartHover = (chart) => {
+        if (!chart) return;
+
+        chart.options.onHover = (event, activeElements) => {
+            const canvas = event?.native?.target || chart.canvas;
+            if (!canvas) return;
+            canvas.style.cursor = activeElements?.length ? 'pointer' : 'default';
+        };
+    };
+
+    const bindOverviewChartNativeEvents = (chart) => {
+        if (!chart?.canvas || chart.canvas.dataset.overviewBound === 'true') return;
+        chart.canvas.dataset.overviewBound = 'true';
+
+        let lastPointerUpAt = 0;
+        chart.canvas.addEventListener('pointerup', (event) => {
+            lastPointerUpAt = Date.now();
+            handleOverviewChartClick(event, chart);
+        }, {
+            passive: true,
+        });
+
+        chart.canvas.addEventListener('click', (event) => {
+            if (Date.now() - lastPointerUpAt < 220) return;
+            handleOverviewChartClick(event, chart);
+        });
+    };
+
+    const resolveOverviewChartSelection = (chart, point) => {
+        const currentRows = getFilteredProjects();
+        const chartId = chart?.canvas?.id;
+        const label = chart?.data?.labels?.[point.index];
+
+        if (!chartId || !label || label === 'ไม่มีข้อมูล') return null;
+
+        if (chartId === 'yearChart') {
+            return {
+                title: `โครงการปี ${label}`,
+                projects: currentRows.filter((project) => project.year === label),
+            };
+        }
+
+        if (chartId === 'typeChart') {
+            return {
+                title: `โครงการประเภท ${label}`,
+                projects: currentRows.filter((project) => project.type === label),
+            };
+        }
+
+        if (chartId === 'budgetChart') {
+            return {
+                title: `งบประมาณโครงการปี ${label}`,
+                projects: currentRows.filter((project) => project.year === label),
+            };
+        }
+
+        return null;
+    };
+
+    const handleOverviewChartClick = (event, chart) => {
+        let hit = getHitPoint(event, chart);
+        if (!hit && chart?.canvas?.id === 'budgetChart') {
+            const points = chart.getElementsAtEventForMode(event, 'index', {
+                intersect: false,
+                axis: 'x',
+            }, true);
+            hit = points?.[0] || null;
+        }
+        if (!hit && chart?.canvas?.id === 'yearChart') {
+            const points = chart.getElementsAtEventForMode(event, 'index', {
+                intersect: false,
+                axis: 'x',
+            }, true);
+            hit = points?.[0] || null;
+        }
+        if (!hit) return;
+
+        const result = resolveOverviewChartSelection(chart, hit);
+        if (!result) return;
+
+        openOverviewChartModal(result.title, result.projects || []);
     };
 
     const sortYearLabel = (a, b) => {
@@ -413,6 +710,9 @@
                     },
                 },
             });
+
+            bindChartHover(charts.year);
+            bindOverviewChartNativeEvents(charts.year);
         }
 
         if (!charts.type) {
@@ -452,6 +752,9 @@
                     },
                 },
             });
+
+            bindChartHover(charts.type);
+            bindOverviewChartNativeEvents(charts.type);
         }
 
         if (!charts.budget) {
@@ -496,6 +799,9 @@
                     },
                 },
             });
+
+            bindChartHover(charts.budget);
+            bindOverviewChartNativeEvents(charts.budget);
         }
     };
 
@@ -674,6 +980,18 @@
         elements.fundingType.value = '';
         elements.status.value = '';
         render();
+    });
+
+    elements.modalClose?.addEventListener('click', closeOverviewChartModal);
+    elements.modalOverlay?.addEventListener('click', closeOverviewChartModal);
+    elements.modalSort?.addEventListener('change', () => {
+        if (!window.overviewChartModalState) return;
+        openOverviewChartModal(window.overviewChartModalState.title, window.overviewChartModalState.rows);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !elements.modal.classList.contains('hidden')) {
+            closeOverviewChartModal();
+        }
     });
 
     render();

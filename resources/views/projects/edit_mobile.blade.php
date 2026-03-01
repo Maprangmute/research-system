@@ -2658,21 +2658,27 @@ console.log('[FTE AUTO] after=', fteField.value);
             const updaterKey = `__thaiDateRangeUpdater_${key}`;
             if (!endInput[updaterKey]) {
                 endInput[updaterKey] = () => {
+                    const fpStart = startInput._flatpickr;
                     const fpEnd = endInput._flatpickr;
-                    if (!fpEnd) return;
+                    if (!fpStart || !fpEnd) return;
 
-                    const startDate = startInput._flatpickr?.selectedDates?.[0] ||
+                    const startDate = fpStart.selectedDates?.[0] ||
                         parseLocalDateInput(startInput.value) ||
-                        parseLocalDateInput(startInput._flatpickr?.altInput?.value);
+                        parseLocalDateInput(fpStart.altInput?.value);
                     const minDate = startDate
                         ? normalizeDateOnly(startDate)
                         : (endInput.dataset.noPast === '1' ? getClientTodayLocal() : null);
 
                     fpEnd.set('minDate', minDate || null);
+                    fpEnd.set('disable', minDate ? [date => normalizeDateOnly(date) < minDate] : []);
 
                     const endDate = fpEnd.selectedDates?.[0] ||
                         parseLocalDateInput(endInput.value) ||
                         parseLocalDateInput(fpEnd.altInput?.value);
+                    const maxDate = endDate ? normalizeDateOnly(endDate) : null;
+                    fpStart.set('maxDate', maxDate || null);
+                    fpStart.set('disable', maxDate ? [date => normalizeDateOnly(date) > maxDate] : []);
+
                     if (endDate && minDate && normalizeDateOnly(endDate) < minDate) {
                         fpEnd.clear();
                         endInput.dispatchEvent(new Event('change', {
@@ -2683,6 +2689,8 @@ console.log('[FTE AUTO] after=', fteField.value);
 
                 startInput.addEventListener('change', endInput[updaterKey]);
                 startInput.addEventListener('input', endInput[updaterKey]);
+                endInput.addEventListener('change', endInput[updaterKey]);
+                endInput.addEventListener('input', endInput[updaterKey]);
             }
 
             const hookKey = `${updaterKey}_hooked`;
@@ -2696,6 +2704,8 @@ console.log('[FTE AUTO] after=', fteField.value);
                 const fpEnd = endInput._flatpickr;
                 if (fpEnd) {
                     appendFlatpickrHook(fpEnd, 'onOpen', endInput[updaterKey]);
+                    appendFlatpickrHook(fpEnd, 'onChange', endInput[updaterKey]);
+                    appendFlatpickrHook(fpEnd, 'onValueUpdate', endInput[updaterKey]);
                     fpEnd.altInput?.addEventListener('focus', endInput[updaterKey]);
                     fpEnd.altInput?.addEventListener('click', endInput[updaterKey]);
                 }

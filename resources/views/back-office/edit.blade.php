@@ -1,18 +1,207 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="max-w-6xl mx-auto p-4 space-y-6">
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-                <a href="{{ route('back_office.show', $task->id) }}" class="text-blue-700 text-sm hover:underline">← กลับไปหน้ารายละเอียด</a>
-                <h2 class="text-2xl font-semibold text-slate-900 mt-2">แก้ไขงานนอกโครงการ</h2>
-                <p class="text-sm text-slate-500">ปรับรายละเอียดงานหลักและภาระงานย่อยได้จากหน้านี้</p>
+    <style>
+        .bo-editor-shell {
+            background: transparent;
+        }
+
+        .bo-editor-panel {
+            border: 1px solid #e2e8f0;
+            border-radius: 28px;
+            background: #ffffff;
+            box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+        }
+
+        .bo-editor-hero {
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bo-editor-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.14), transparent 30%),
+                radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.12), transparent 24%);
+            pointer-events: none;
+        }
+
+        .bo-editor-shell input:not([type='checkbox']):not([type='radio']),
+        .bo-editor-shell select,
+        .bo-editor-shell textarea {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 16px;
+            padding: 0.82rem 0.95rem;
+            font-size: 0.95rem;
+            color: #0f172a;
+            background: #ffffff;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        .bo-editor-shell input:not([type='checkbox']):not([type='radio']):focus,
+        .bo-editor-shell select:focus,
+        .bo-editor-shell textarea:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.25);
+        }
+
+        .bo-editor-step {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 2.75rem;
+            width: 2.75rem;
+            border-radius: 999px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14);
+        }
+
+        .bo-editor-step.is-dark {
+            background: linear-gradient(135deg, #0f172a 0%, #155e75 100%);
+        }
+
+        .bo-editor-step.is-blue {
+            background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+        }
+
+        .bo-editor-step.is-green {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+
+        .bo-editor-subpanel {
+            border: 1px solid #e2e8f0;
+            border-radius: 22px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        .bo-editor-helper {
+            border: 1px solid #dbeafe;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+            padding: 0.95rem 1rem;
+        }
+
+        .leader-stack {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .leader-row {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto auto;
+            gap: 0.6rem;
+            align-items: center;
+            border: 1px solid #dbe5f0;
+            border-radius: 18px;
+            background: #f8fafc;
+            padding: 0.65rem;
+        }
+
+        .leader-row__index {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 999px;
+            background: #0f172a;
+            color: #ffffff;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .leader-row__append,
+        .leader-row__remove {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            padding: 0.72rem 0.9rem;
+            font-size: 0.82rem;
+            font-weight: 700;
+            line-height: 1;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        .leader-row__append {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .leader-row__append:hover {
+            background: #bbf7d0;
+        }
+
+        .leader-row__remove {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .leader-row__remove:hover {
+            background: #fecaca;
+        }
+
+        .leader-row__remove.is-disabled {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        .entry-card {
+            border-radius: 24px;
+            border: 1px solid #dbe5f0;
+            background: #f8fafc;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        }
+
+        @media (max-width: 768px) {
+            .bo-editor-panel,
+            .bo-editor-subpanel,
+            .entry-card {
+                border-radius: 20px;
+            }
+
+            .leader-row {
+                grid-template-columns: 1fr;
+            }
+
+            .leader-row__index {
+                display: none;
+            }
+        }
+    </style>
+
+    <div class="bo-editor-shell mx-auto max-w-6xl space-y-6 p-4">
+        <section class="bo-editor-panel bo-editor-hero">
+            <div class="relative flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
+                <div class="max-w-3xl">
+                    <a href="{{ route('back_office.show', $task->id) }}" class="text-sm text-sky-700 hover:underline">← กลับไปหน้ารายละเอียด</a>
+                    <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">แก้ไขงานนอกโครงการ</h1>
+                    <p class="mt-3 text-sm leading-6 text-slate-600 md:text-[15px]">
+                        ปรับข้อมูลงานหลัก ภาระงาน ผู้รับผิดชอบ และผลงานประกอบในหน้าเดียว โดยคงโครงสร้างเดิมของงานไว้
+                    </p>
+                </div>
+                <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+                    <a href="{{ route('back_office.index') }}"
+                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        กลับไปรายการงาน
+                    </a>
+                    <a href="{{ route('back_office.show', $task->id) }}"
+                        class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
+                        ดูรายละเอียด
+                    </a>
+                </div>
             </div>
-            <a href="{{ route('back_office.index') }}" class="text-sm text-slate-600 hover:underline">กลับไปรายการงาน</a>
-        </div>
+        </section>
 
         @if ($errors->any())
-            <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
+            <div class="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 shadow-sm">
                 <ul class="list-disc pl-5 space-y-1">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -25,9 +214,9 @@
             @csrf
             @method('PUT')
 
-            <div class="bg-white border rounded-2xl p-6 shadow-sm">
+            <div class="bo-editor-panel p-6">
                 <div class="flex items-center gap-2 mb-4">
-                    <div class="h-10 w-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-lg">1</div>
+                    <div class="bo-editor-step is-dark">1</div>
                     <div>
                         <h3 class="text-lg font-semibold text-slate-800">ข้อมูลงานหลัก</h3>
                         <p class="text-sm text-slate-500">กำหนดชื่องานและช่วงเวลาโดยรวม</p>
@@ -66,18 +255,26 @@
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-semibold text-slate-600">หัวหน้างานผู้รับผิดชอบ (เพิ่มได้หลายคน)</span>
                             <button type="button" id="add-leader"
-                                class="text-emerald-600 text-xs hover:underline">เพิ่มหัวหน้างาน</button>
+                                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
+                                เพิ่มอีกคน
+                            </button>
                         </div>
-                        <div id="leaders-body" class="mt-2 space-y-2"></div>
-                        <div class="text-xs text-slate-500 mt-1">พิมพ์ชื่อแล้วกดเพิ่มได้หลายคน</div>
+                        <div class="bo-editor-helper mt-3">
+                            <div class="text-sm font-semibold text-slate-800">วิธีเพิ่มหลายคน</div>
+                            <div class="mt-1 text-xs leading-5 text-slate-600">
+                                พิมพ์ชื่อหัวหน้างานคนแรกในช่องด้านล่าง แล้วกด `เพิ่มถัดไป` หรือกด `Enter`
+                                ระบบจะสร้างช่องใหม่ให้ใส่คนถัดไปทันที
+                            </div>
+                        </div>
+                        <div id="leaders-body" class="leader-stack mt-3"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white border rounded-2xl p-6 shadow-sm">
+            <div class="bo-editor-panel p-6">
                 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
                     <div class="flex items-center gap-2">
-                        <div class="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg">2</div>
+                        <div class="bo-editor-step is-blue">2</div>
                         <div>
                             <h3 class="text-lg font-semibold text-slate-800">ภาระงานและผู้รับผิดชอบ</h3>
                             <p class="text-sm text-slate-500">ใส่รายละเอียดแต่ละภาระงานแบบแยกการ์ด ไม่อึดอัด</p>
@@ -90,10 +287,10 @@
                 <div id="entries-body" class="space-y-4"></div>
             </div>
 
-            <div class="bg-white border rounded-2xl p-6 shadow-sm">
+            <div class="bo-editor-panel p-6">
                 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
                     <div class="flex items-center gap-2">
-                        <div class="h-10 w-10 rounded-full bg-emerald-600 text-white flex items-center justify-center text-lg">3</div>
+                        <div class="bo-editor-step is-green">3</div>
                         <div>
                             <h3 class="text-lg font-semibold text-slate-800">ผลงานของงานนอกโครงการ</h3>
                             <p class="text-sm text-slate-500">เพิ่มผลงานได้หลายรายการ</p>
@@ -209,10 +406,11 @@
     </template>
 
     <template id="leader-template">
-        <div class="flex items-center gap-2" data-leader-row>
-            <input name="leaders[]" list="person-list"
-                class="w-full border border-slate-200 rounded-lg p-2" placeholder="ชื่อหัวหน้างาน">
-            <button type="button" class="text-red-500 text-xs hover:underline remove-leader">ลบ</button>
+        <div class="leader-row" data-leader-row>
+            <span class="leader-row__index">1</span>
+            <input name="leaders[]" list="person-list" placeholder="ชื่อหัวหน้างาน / เลือกจากรายการ">
+            <button type="button" class="leader-row__append append-leader">เพิ่มถัดไป</button>
+            <button type="button" class="leader-row__remove remove-leader">ลบ</button>
         </div>
     </template>
 
@@ -630,7 +828,7 @@
 
         addEntryBtn?.addEventListener('click', () => addEntry());
         addTaskOutputBtn?.addEventListener('click', () => addTaskOutput());
-        addLeaderBtn?.addEventListener('click', () => addLeader());
+        addLeaderBtn?.addEventListener('click', () => addLeader('', true));
 
         if (Array.isArray(initialEntries) && initialEntries.length) {
             initialEntries.forEach(entry => addEntry(entry));
@@ -642,21 +840,59 @@
             initialTaskOutputs.forEach(output => addTaskOutput(output));
         }
 
-        function addLeader(value = '') {
-            if (!leadersBody || !leaderTemplate) return;
+        function updateLeaderRows() {
+            if (!leadersBody) return;
+            const rows = Array.from(leadersBody.querySelectorAll('[data-leader-row]'));
+            rows.forEach((row, idx) => {
+                const indexEl = row.querySelector('.leader-row__index');
+                const removeBtn = row.querySelector('.remove-leader');
+                if (indexEl) indexEl.textContent = String(idx + 1);
+                if (removeBtn) {
+                    const disable = rows.length === 1;
+                    removeBtn.classList.toggle('is-disabled', disable);
+                    removeBtn.disabled = disable;
+                }
+            });
+        }
+
+        function bindLeaderRow(row) {
+            const input = row.querySelector('input[name="leaders[]"]');
+            const removeBtn = row.querySelector('.remove-leader');
+            const appendBtn = row.querySelector('.append-leader');
+
+            appendBtn?.addEventListener('click', () => addLeader('', true));
+            removeBtn?.addEventListener('click', () => {
+                if (leadersBody.querySelectorAll('[data-leader-row]').length <= 1) return;
+                row.remove();
+                updateLeaderRows();
+            });
+            input?.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                addLeader('', true);
+            });
+        }
+
+        function addLeader(value = '', focusInput = false) {
+            if (!leadersBody || !leaderTemplate) return null;
             const wrapper = document.createElement('div');
             wrapper.innerHTML = leaderTemplate.innerHTML.trim();
             const row = wrapper.firstElementChild;
             const input = row.querySelector('input[name="leaders[]"]');
             if (input) input.value = value;
-            row.querySelector('.remove-leader')?.addEventListener('click', () => row.remove());
+            bindLeaderRow(row);
             leadersBody.appendChild(row);
+            updateLeaderRows();
+            if (focusInput && input) {
+                window.setTimeout(() => input.focus(), 0);
+            }
+            return row;
         }
 
         if (Array.isArray(initialLeaders) && initialLeaders.length) {
             initialLeaders.forEach(name => addLeader(name));
         } else {
-            addLeader();
+            addLeader('', true);
         }
 
         function isCollapsed(entry) {

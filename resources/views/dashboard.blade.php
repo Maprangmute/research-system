@@ -86,119 +86,276 @@
             max-height: var(--chart-height, 240px) !important;
         }
 
-        #aiChatPanel {
+        #dashboardFabStack {
             position: fixed;
-            inset: 0 0 0 auto;
-            width: min(94vw, 560px);
-            height: 100dvh;
-            transform: translateX(100%);
-            transition: transform 0.25s ease;
-            border-left: 1px solid #e5e7eb;
-            background: #ffffff;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 55;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
 
-        #aiChatPanel.is-open {
-            transform: translateX(0);
+        #dashboardFabStack.is-hidden-by-chat,
+        #dashboardFabStack.is-hidden-by-pagination {
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-18px, -50%);
         }
 
-        #aiChatOverlay {
+        .dashboard-fab-btn {
+            width: 88px;
+            border: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.94);
+            border-radius: 24px;
+            padding: 0.85rem 0.7rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.45rem;
+            color: #0f172a;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+            backdrop-filter: blur(14px);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .dashboard-fab-btn:hover {
+            transform: translateY(-2px);
+            border-color: #67e8f9;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.16);
+        }
+
+        .dashboard-fab-btn__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 18px;
+            color: #fff;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        }
+
+        .dashboard-fab-btn__icon--filter {
+            background: linear-gradient(135deg, #0f172a 0%, #155e75 100%);
+        }
+
+        .dashboard-fab-btn__icon--export {
+            background: linear-gradient(135deg, #0f766e 0%, #0891b2 100%);
+        }
+
+        .dashboard-fab-btn__title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .dashboard-fab-btn__meta {
+            font-size: 0.66rem;
+            color: #64748b;
+            line-height: 1.15;
+        }
+
+        .dashboard-fab-btn__badge {
+            position: absolute;
+            top: -0.35rem;
+            right: -0.35rem;
+            min-width: 1.5rem;
+            height: 1.5rem;
+            padding: 0 0.35rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            line-height: 1;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .dashboard-fab-btn__badge.is-show {
+            display: inline-flex;
+        }
+
+        #filterDrawerOverlay,
+        #exportPopupOverlay {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.25);
+            background: rgba(15, 23, 42, 0.08);
             backdrop-filter: blur(2px);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.25s ease;
-            z-index: 40;
+            z-index: 56;
         }
 
-        #aiChatOverlay.is-open {
+        #filterDrawerOverlay.is-open {
             opacity: 1;
             pointer-events: auto;
         }
 
-        #aiChatForm {
-            position: sticky;
-            bottom: 0;
-            background: #ffffff;
-        }
-
-        #aiChatPanel .ai-suggest {
-            white-space: nowrap;
-        }
-
-        #aiChatPrompt {
-            position: sticky;
-            top: 0;
-            margin: 12px;
-            padding: 8px 12px;
-            border-radius: 12px;
-            background: rgba(15, 118, 110, 0.08);
-            color: #0f766e;
-            font-size: 12px;
-            font-weight: 600;
-            opacity: 0;
-            transform: translateY(-6px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            z-index: 1;
-        }
-
-        #aiChatPrompt.is-show {
+        #exportPopupOverlay.is-open {
             opacity: 1;
-            transform: translateY(0);
+            pointer-events: auto;
         }
 
-        #aiChatFabWrap {
+        #filterDrawer {
             position: fixed;
-            right: 1.5rem;
-            bottom: 1.5rem;
-            z-index: 50;
+            inset: 0 auto 0 0;
+            width: min(92vw, 380px);
+            height: 100dvh;
+            transform: translateX(-105%);
+            transition: transform 0.25s ease;
+            z-index: 57;
         }
 
-        #aiChatBubble {
-            position: absolute;
-            right: 56px;
-            bottom: 4px;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: #0f766e;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-            display: none;
+        #filterDrawer.is-open {
+            transform: translateX(0);
+        }
+
+        #exportPopup {
+            position: fixed;
+            left: 6.75rem;
+            top: 50%;
+            width: min(92vw, 400px);
+            transform: translate(-16px, -50%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s ease;
+            z-index: 57;
+        }
+
+        #exportPopup.is-open {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(0, -50%);
+        }
+
+        .dashboard-status-pill {
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-        }
-
-        #aiChatBubble.is-show {
-            display: flex;
-        }
-
-        #aiChatBubble button {
-            border: none;
-            background: transparent;
-            color: #9ca3af;
-            font-size: 14px;
+            border-radius: 999px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 700;
             line-height: 1;
-            cursor: pointer;
+            border: 1px solid transparent;
         }
 
-        @media (max-width: 1024px) {
-            #aiChatPanel {
-                width: min(94vw, 480px);
+        .dashboard-status-pill.is-active {
+            background: #ecfeff;
+            border-color: #a5f3fc;
+            color: #155e75;
+        }
+
+        .dashboard-status-pill.is-idle {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #475569;
+        }
+
+        .dashboard-filter-pill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .dashboard-filter-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            padding: 0.38rem 0.72rem;
+            font-size: 0.75rem;
+            color: #334155;
+            line-height: 1.1;
+        }
+
+        .dashboard-filter-pill__label {
+            color: #0891b2;
+            font-weight: 700;
+        }
+
+        .dashboard-filter-empty {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            border: 1px dashed #cbd5e1;
+            background: #f8fafc;
+            padding: 0.38rem 0.72rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            line-height: 1.1;
+        }
+
+        @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+            #dashboardFabStack {
+                left: 0.75rem;
+                top: auto;
+                bottom: calc(0.75rem + env(safe-area-inset-bottom));
+                transform: none;
+                gap: 0.5rem;
+            }
+
+            #dashboardFabStack.is-hidden-by-chat,
+            #dashboardFabStack.is-hidden-by-pagination {
+                transform: translateY(14px);
+            }
+
+            .dashboard-fab-btn {
+                width: 3.4rem;
+                height: 3.4rem;
+                padding: 0;
+                border-radius: 999px;
+                justify-content: center;
+                gap: 0;
+            }
+
+            .dashboard-fab-btn__icon {
+                width: 2.35rem;
+                height: 2.35rem;
+                border-radius: 0.95rem;
+            }
+
+            .dashboard-fab-btn__title,
+            .dashboard-fab-btn__meta {
+                display: none;
+            }
+
+            .dashboard-fab-btn__badge {
+                top: -0.2rem;
+                right: -0.2rem;
+                min-width: 1.35rem;
+                height: 1.35rem;
+                font-size: 0.68rem;
+            }
+
+            #filterDrawer {
+                width: min(94vw, 360px);
+            }
+
+            #exportPopup {
+                left: 50%;
+                top: auto;
+                bottom: calc(1rem + env(safe-area-inset-bottom));
+                width: min(94vw, 360px);
+                transform: translate(-50%, 18px);
+            }
+
+            #exportPopup.is-open {
+                transform: translate(-50%, 0);
             }
         }
 
         @media (max-width: 640px) {
-            #aiChatPanel {
-                width: 100vw;
-                height: 100dvh;
-                border-left: none;
-                border-top: 1px solid #e5e7eb;
-            }
-
             .lux-chart-scroll {
                 display: flex;
                 overflow-x: auto;
@@ -261,6 +418,24 @@
                 font-size: 11px;
                 text-transform: uppercase;
                 color: #94a3b8;
+            }
+
+            #chartModal .chart-modal-header {
+                align-items: flex-start;
+            }
+
+            #chartModal .chart-modal-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            #chartModal .chart-modal-sort {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            #chartModal .chart-modal-sort select {
+                max-width: 100%;
             }
 
             .lux-mobile-table thead {
@@ -452,6 +627,76 @@
             padding: 8px;
         }
 
+        #chartModal .chart-modal-panel {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: min(92vw, 80rem);
+            max-height: 80vh;
+            overflow: auto;
+            transform: translate(-50%, -50%);
+            border-radius: 1rem;
+            background: #ffffff;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24);
+        }
+
+        #chartModal .chart-modal-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.9rem 1rem;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        #chartModal .chart-modal-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        #chartModal .chart-modal-sort {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        #chartModal .chart-modal-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #475569;
+            font-size: 1.35rem;
+            line-height: 1;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        #chartModal .chart-modal-close:hover {
+            background: #f8fafc;
+            color: #dc2626;
+            transform: rotate(90deg);
+        }
+
+        #chartModal .chart-modal-close:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
+        }
+
         .lux-mobile-table {
             width: 100%;
             border-collapse: collapse;
@@ -593,76 +838,182 @@
                 </div>
             </div>
 
-        <!-- 2) กรอง + Export -->
-        <div class="lux-card p-4 md:p-5" id="section-filters">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
-                <div>
-                    <h3 class="text-lg font-semibold text-slate-800">สร้างเอกสารสรุปข้อมูลทั้งหมด</h3>
-                    <p class="text-xs text-slate-500">คัดกรองข้อมูลให้ตรงกับช่วงเวลาหรือธีมที่ต้องการ (Realtime)</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span id="rtFilterBadge" class="inline-flex items-center rounded-full bg-cyan-50 border border-cyan-200 px-3 py-1 text-xs font-semibold text-cyan-700">0 โครงการ</span>
-                    <button id="filterReset" type="button" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                        ล้างฟิลเตอร์
-                    </button>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">ปีเริ่มต้น</label>
-                    <select id="filterYear" class="w-full border rounded px-2 py-1 text-sm">
-                        <option value="">ทั้งหมด</option>
-                        @for ($y = now()->year + 543; $y >= 2557; $y--)
-                            <option value="{{ $y }}">{{ $y }}</option>
-                        @endfor
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">Theme</label>
-                    <select id="filterTheme" class="w-full border rounded px-2 py-1 text-sm">
-                        <option value="">ทั้งหมด</option>
-                        @foreach ($themes as $theme)
-                            <option value="{{ $theme }}">{{ $theme }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">ประเภททุน</label>
-                    <select id="filterFunding" class="w-full border rounded px-2 py-1 text-sm">
-                        <option value="">ทั้งหมด</option>
-                        <option value="ภายใน">ภายใน</option>
-                        <option value="ภายนอก">ภายนอก</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">ค้นหาโครงการ</label>
-                    <input type="text" id="filterName" class="w-full border rounded px-2 py-1 text-sm"
-                        placeholder="ชื่อโครงการ">
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-700 block">ค้นหา PI</label>
-                    <input type="text" id="filterPI" class="w-full border rounded px-2 py-1 text-sm"
-                        placeholder="ชื่อ PI">
-                </div>
-                <div class="flex flex-col sm:flex-row xl:flex-col 2xl:flex-row items-end gap-2 sm:col-span-2 xl:col-span-1">
-                    <button id="exportCSV"
-                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-sm rounded shadow">
-                        ⬇ Export CSV
-                    </button>
-                    <button id="exportExcel"
-                        class="w-full bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 text-sm rounded shadow">
-                        ⬇ Export Excel
-                    </button>
-                </div>
-            </div>
+        <div id="dashboardFabStack">
+            <button id="filterDrawerOpen" type="button" aria-label="เปิดฟิลเตอร์" class="dashboard-fab-btn focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                <span id="filterFabBadge" class="dashboard-fab-btn__badge" aria-hidden="true"></span>
+                <span class="dashboard-fab-btn__icon dashboard-fab-btn__icon--filter">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </span>
+                <span class="dashboard-fab-btn__title">ฟิลเตอร์</span>
+                <span class="dashboard-fab-btn__meta">ตั้งค่าเงื่อนไข</span>
+            </button>
 
-            <div class="mt-4 rounded-xl border border-cyan-100 bg-gradient-to-br from-cyan-50 to-white p-4">
+            <button id="exportPopupOpen" type="button" aria-label="เปิดเมนูดาวน์โหลด" class="dashboard-fab-btn focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                <span class="dashboard-fab-btn__icon dashboard-fab-btn__icon--export">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 4v9m0 0 4-4m-4 4-4-4M5 18h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </span>
+                <span class="dashboard-fab-btn__title">ดาวน์โหลด</span>
+                <span class="dashboard-fab-btn__meta">Excel หรือ CSV</span>
+            </button>
+        </div>
+
+        <div id="filterDrawerOverlay"></div>
+        <div id="exportPopupOverlay"></div>
+
+        <aside id="filterDrawer">
+            <div class="flex h-full flex-col border-r border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900">คัดกรองข้อมูล</h3>
+                        <p class="mt-1 text-xs text-slate-500">ปรับฟิลเตอร์แล้วข้อมูลบนหน้า dashboard จะอัปเดตทันที</p>
+                    </div>
+                    <button id="filterDrawerClose" type="button"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
+                        <span class="sr-only">ปิดฟิลเตอร์</span>
+                        <span aria-hidden="true" class="text-xl leading-none">&times;</span>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto px-4 py-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="inline-flex items-center rounded-full bg-cyan-50 border border-cyan-200 px-3 py-1 text-xs font-semibold text-cyan-700">
+                            ปรับฟิลเตอร์แล้วผลจะอัปเดตทันที
+                        </span>
+                        <button id="filterReset" type="button" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                            ล้างฟิลเตอร์
+                        </button>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">ปีเริ่มต้น</label>
+                            <select id="filterYear" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @for ($y = now()->year + 543; $y >= 2557; $y--)
+                                    <option value="{{ $y }}">{{ $y }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">Theme</label>
+                            <select id="filterTheme" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($themes as $theme)
+                                    <option value="{{ $theme }}">{{ $theme }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">ประเภททุน</label>
+                            <select id="filterFunding" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                <option value="ภายใน">ภายใน</option>
+                                <option value="ภายนอก">ภายนอก</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">ประเภทโครงการ</label>
+                            <select id="filterType" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($typeOptions as $type)
+                                    <option value="{{ $type }}">{{ $type }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">สถานะโครงการ</label>
+                            <select id="filterStatus" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($statusOptions as $status)
+                                    <option value="{{ $status }}">{{ $status }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">แหล่งทุน</label>
+                            <select id="filterSource" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($fundingSources as $source)
+                                    <option value="{{ $source }}">{{ $source }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">ค้นหาโครงการ</label>
+                            <input type="text" id="filterName" list="filterNameSuggestions" class="w-full border rounded px-2 py-1 text-sm"
+                                placeholder="ชื่อโครงการ">
+                        </div>
+                    </div>
+
+                    <datalist id="filterNameSuggestions"></datalist>
+                    <datalist id="tableSearchSuggestions"></datalist>
+                </div>
+            </div>
+        </aside>
+
+        <div id="exportPopup" aria-hidden="true">
+            <div class="rounded-[28px] border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/15">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900">ดาวน์โหลดข้อมูล</h3>
+                        <p class="mt-1 text-xs text-slate-500">ส่งออกข้อมูลตามฟิลเตอร์ที่กำลังใช้อยู่</p>
+                    </div>
+                    <button id="exportPopupClose" type="button"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
+                        <span class="sr-only">ปิดหน้าต่างดาวน์โหลด</span>
+                        <span aria-hidden="true" class="text-xl leading-none">&times;</span>
+                    </button>
+                </div>
+
+                <div class="mt-4 rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50 to-white p-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span id="exportPopupState" class="dashboard-status-pill is-idle">ยังไม่ได้ใช้ฟิลเตอร์</span>
+                        <span id="exportPopupCount" class="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">0 โครงการ</span>
+                    </div>
+                    <p id="exportPopupSummary" class="mt-2 text-xs text-slate-600">ระบบจะดาวน์โหลดข้อมูลทั้งหมดในระบบ</p>
+                    <div id="exportPopupFilterList" class="dashboard-filter-pill-list mt-3"></div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <button id="exportExcelAction" type="button"
+                        class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200">
+                        Excel (.xlsx)
+                    </button>
+                    <button id="exportCsvAction" type="button"
+                        class="inline-flex items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-900 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-100 focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                        CSV (.csv)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2) Realtime Summary -->
+        <div class="lux-card p-4 md:p-5" id="section-filters">
+            <div class="rounded-xl border border-cyan-100 bg-gradient-to-br from-cyan-50 to-white p-4">
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
                     <div>
                         <h4 class="text-sm font-bold text-slate-800">เอกสารสรุปข้อมูลทั้งหมด (Realtime)</h4>
                         <p id="rtSummaryCaption" class="text-xs text-slate-500">สรุปตามฟิลเตอร์ปัจจุบัน</p>
                     </div>
-                    <div class="text-xs text-slate-500">กราฟที่ผูก realtime: จำนวนโครงการรายปี / สัดส่วนทุน / งบประมาณรายปี</div>
+                    <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <span id="rtFilterBadge" class="inline-flex items-center rounded-full bg-cyan-50 border border-cyan-200 px-3 py-1 text-xs font-semibold text-cyan-700">0 โครงการ</span>
+                        <span class="text-xs text-slate-500">เปิดฟิลเตอร์จากปุ่มด้านซ้ายเพื่อปรับเงื่อนไข</span>
+                    </div>
+                </div>
+
+                <div class="mt-3 rounded-2xl border border-slate-200 bg-white/90 p-3">
+                    <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex flex-col gap-2 lg:flex-row lg:items-center">
+                            <span id="dashboardFilterState" class="dashboard-status-pill is-idle">ยังไม่ได้ใช้ฟิลเตอร์</span>
+                            <p id="dashboardFilterDetail" class="text-xs text-slate-500">กำลังแสดงข้อมูลทั้งหมดในระบบ</p>
+                        </div>
+                        <span class="text-xs text-slate-500">ปุ่มลอยด้านซ้ายใช้สำหรับเปิดฟิลเตอร์หรือดาวน์โหลดข้อมูล</span>
+                    </div>
+                    <div id="dashboardFilterList" class="dashboard-filter-pill-list mt-3"></div>
                 </div>
 
                 <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-3">
@@ -699,89 +1050,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- 🗨️ Floating Chat Agent (ADD-ON) -->
-        <div id="aiChatFabWrap">
-            <div id="aiChatBubble">
-                <span>ถามได้เลย</span>
-                <button type="button" id="aiChatBubbleClose" aria-label="close">✕</button>
-            </div>
-            <button id="aiChatFab"
-                class="rounded-full shadow-lg w-12 h-12 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center">
-                💬
-            </button>
-        </div>
-
-        <div id="aiChatOverlay"></div>
-
-        <div id="aiChatPanel"
-            class="fixed z-50 bg-white shadow-2xl flex flex-col">
-            <div class="flex items-center justify-between px-4 py-3 border-b">
-                <div class="font-semibold text-gray-800">AI Research Assistant</div>
-                <button class="text-gray-400 hover:text-red-500" onclick="toggleAiChat(false)">✕</button>
-            </div>
-
-            <!-- suggested prompts -->
-            <div class="px-3 pt-3 pb-0 text-xs text-gray-500">ตัวอย่างที่ถามได้</div>
-            <div class="px-3 pb-2 flex flex-wrap gap-2">
-
-                <!-- งบประมาณ -->
-                <button
-                    class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">งบประมาณรวมต่อปี
-                    2568</button>
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">งบประมาณ 5 ปี
-                    ล่าสุด</button>
-                <button
-                    class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">แหล่งทุนที่เด่นที่สุดปีนี้คืออะไร</button>
-
-                <!-- FTE -->
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">สรุป FTE ต่อคน
-                    ปี 2568</button>
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">FTE ปี 2567
-                    เกิน 1</button>
-
-                <!-- สถานะ / โครงการ -->
-                <button
-                    class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">สถานะโครงการในปี
-                    2566</button>
-
-                <!-- Outputs -->
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">จำนวน Outputs
-                    ปี 2567 แยกประเภท</button>
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">Outputs ปีนี้
-                    แยกประเภท</button>
-
-                <!-- IRB -->
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">IRB
-                    ใกล้หมดอายุ 30 วัน</button>
-
-                <!-- แหล่งทุน/ประเภท -->
-                <button
-                    class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">แหล่งทุนที่เด่น ปี
-                    2568</button>
-                <button class="ai-suggest px-2 py-1 rounded-full border text-xs bg-gray-50 hover:bg-gray-100">งบภายใน-ภายนอก
-                    ปี 2566 เทียบกัน</button>
-
-
-            </div>
-
-
-            <!-- messages -->
-            <div id="aiChatBody" class="flex-1 overflow-y-auto p-3 space-y-3">
-                <div class="text-xs text-gray-500">เริ่มพิมพ์คำถามเกี่ยวกับโครงการ/FTE/Outputs ได้เลยครับ</div>
-            </div>
-
-            <!-- input -->
-            <form id="aiChatForm" class="border-t p-2 flex items-end gap-2">
-                @csrf
-                <textarea id="aiChatInput" rows="1"
-                    class="flex-1 border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none"
-                    placeholder="พิมพ์คำถาม เช่น 'FTE ต่อคน ปี 2568' ..."></textarea>
-                <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-2 rounded-lg">ส่ง</button>
-            </form>
-        </div>
-
-
 
         <!-- 3) Charts -->
         <div id="section-charts">
@@ -1080,7 +1348,8 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <label class="text-xs text-gray-500">ค้นหาในตาราง:
                             <input id="tableSearch" type="text"
-                                class="ml-1 border rounded px-2 py-1 text-sm" placeholder="ชื่อโครงการ หรือ PI">
+                                list="tableSearchSuggestions"
+                                class="ml-1 border rounded px-2 py-1 text-sm" placeholder="ชื่อโครงการ / PI / รหัสโครงการ">
                         </label>
                     </div>
                 </div>
@@ -1105,7 +1374,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="flex items-center justify-between mt-4 text-xs text-gray-600">
+                <div id="projectTablePaginationWrap" class="flex items-center justify-between mt-4 text-xs text-gray-600">
                     <button id="tablePrev"
                         class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
                     <div id="tablePagination">หน้า 1 / 1</div>
@@ -1119,12 +1388,11 @@
         <!-- Modal สำหรับ Drill-down -->
         <div id="chartModal" class="fixed inset-0 z-50 hidden">
             <div class="absolute inset-0 bg-black/40" onclick="closeModal()"></div>
-            <div
-                class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl w-[92vw] max-w-5xl max-h-[80vh] overflow-auto">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b px-4 py-3 gap-2">
+            <div class="chart-modal-panel">
+                <div class="chart-modal-header">
                     <h3 id="chartModalTitle" class="font-semibold text-gray-800">รายละเอียด</h3>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-gray-500">Sort:
+                    <div class="chart-modal-actions">
+                        <label class="chart-modal-sort">Sort:
                             <select id="chartModalSort" class="ml-1 border rounded px-2 py-1 text-xs">
                                 <option value="name_asc">ชื่อ (ก-ฮ)</option>
                                 <option value="name_desc">ชื่อ (ฮ-ก)</option>
@@ -1138,7 +1406,7 @@
                                 <option value="budget_asc">งบ (น้อย→มาก)</option>
                             </select>
                         </label>
-                        <button class="text-gray-500 hover:text-red-500 text-xl" onclick="closeModal()">&times;</button>
+                        <button type="button" class="chart-modal-close" aria-label="ปิดหน้าต่าง" onclick="closeModal()">&times;</button>
                     </div>
                 </div>
                 <div id="chartModalBody" class="p-4 text-sm"></div>
@@ -1287,8 +1555,6 @@
         <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
         <script>
-            // ให้สคริปต์ด้านล่างใช้ window.outputs ได้เลย
-            window.outputs = @json($outputsForJs);
             window.currentUserName = @json(auth()->user()->name ?? 'ไม่ระบุ');
             window.loginLogoUrl = @json(asset('images/sihp-logo.png'));
         </script>
@@ -1366,35 +1632,13 @@
         <script>
             /* ---------- Data from backend ---------- */
 
-            const projects = @json($projects);
-            const outputs = @json($outputsForJs); // ใช้ตัวที่ map จาก Controller
-            const ftes = @json($fteRoles);
-            const irbs = @json($irbs);
-            const progressReports = @json($progressReports);
+            const projects = @json($dashboardProjectsJs);
+            const flatProjectRelation = (key) => projects.flatMap((project) => (project && Array.isArray(project[key])) ? project[key] : []);
+            const outputs = flatProjectRelation('outputs');
+            const ftes = flatProjectRelation('fte_roles');
+            const irbs = flatProjectRelation('irbs');
             const copisSummary = @json($copiRows);
-
-
-            @php
-                // ดึง outputs ที่ติด authors (จากความสัมพันธ์ outputs->authors)
-                $outputsForJs = $projects->flatMap->outputs
-                    ->map(function ($o) {
-                        return [
-                            'id' => $o->id,
-                            'type' => $o->type,
-                            'title' => $o->title,
-                            'year' => $o->year,
-                            'authors' => $o->authors
-                                ->map(
-                                    fn($a) => [
-                                        'name' => $a->name,
-                                        'role' => $a->role, // 'first' | 'co' | 'corresponding'
-                                    ],
-                                )
-                                ->values(),
-                        ];
-                    })
-                    ->values();
-            @endphp
+            window.outputs = outputs;
 
 
 
@@ -1450,7 +1694,177 @@
                 fallback;
 
             const norm = (v) => String(v ?? '').toLowerCase().trim();
+            const cleanText = (v) => String(v ?? '').trim();
             const projectById = new Map(projects.map(p => [p.id, p]));
+
+            function fillDatalist(id, values, limit = 250) {
+                const datalist = document.getElementById(id);
+                if (!datalist) return;
+
+                const escapeAttr = (value) => String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+
+                const uniqueValues = Array.from(new Map(
+                    values
+                        .map(cleanText)
+                        .filter(Boolean)
+                        .map((value) => [value.toLowerCase(), value])
+                ).values())
+                    .sort((a, b) => a.localeCompare(b, 'th'))
+                    .slice(0, limit);
+
+                datalist.innerHTML = uniqueValues
+                    .map((value) => `<option value="${escapeAttr(value)}"></option>`)
+                    .join('');
+            }
+
+            function projectSearchIndex(p) {
+                return [
+                    p?.project_code,
+                    p?.project_name_th,
+                    p?.project_name_en,
+                    p?.pi_name,
+                    p?.pi_affiliation,
+                    p?.theme,
+                    p?.project_type,
+                    p?.project_list,
+                    p?.funding_type,
+                    p?.funding_source,
+                    p?.planning_status,
+                    p?.execution_status,
+                    p?.review_status,
+                    p?.closure_status,
+                    p?.start_year,
+                ].map(norm).filter(Boolean).join(' ');
+            }
+
+            function initializeFilterSuggestions() {
+                fillDatalist('filterNameSuggestions', projects.map((p) => p?.project_name_th));
+                fillDatalist('tableSearchSuggestions', projects.flatMap((p) => ([
+                    p?.project_code,
+                    p?.project_name_th,
+                    p?.project_name_en,
+                    p?.pi_name,
+                    p?.theme,
+                    p?.project_type,
+                    p?.project_list,
+                    p?.funding_source,
+                    p?.planning_status,
+                ])));
+            }
+
+            initializeFilterSuggestions();
+
+            const dashboardFilterFields = [
+                { id: 'filterYear', label: 'ปีเริ่มต้น' },
+                { id: 'filterTheme', label: 'Theme' },
+                { id: 'filterFunding', label: 'ประเภททุน' },
+                { id: 'filterType', label: 'ประเภทโครงการ' },
+                { id: 'filterStatus', label: 'สถานะโครงการ' },
+                { id: 'filterSource', label: 'แหล่งทุน' },
+                { id: 'filterName', label: 'ชื่อโครงการ' },
+                { id: 'tableSearch', label: 'ค้นหาในตาราง' },
+            ];
+
+            function escapeHtmlText(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function getActiveFilterEntries() {
+                return dashboardFilterFields
+                    .map(({ id, label }) => {
+                        const value = cleanText(document.getElementById(id)?.value);
+                        return value ? { id, label, value } : null;
+                    })
+                    .filter(Boolean);
+            }
+
+            function renderFilterPills(container, entries, emptyText) {
+                if (!container) return;
+
+                if (!entries.length) {
+                    container.innerHTML = `<span class="dashboard-filter-empty">${escapeHtmlText(emptyText)}</span>`;
+                    return;
+                }
+
+                container.innerHTML = entries.map((entry) => `
+                    <span class="dashboard-filter-pill">
+                        <span class="dashboard-filter-pill__label">${escapeHtmlText(entry.label)}</span>
+                        <span>${escapeHtmlText(entry.value)}</span>
+                    </span>
+                `).join('');
+            }
+
+            function renderDashboardFilterState(totalCount = null) {
+                const activeFilters = getActiveFilterEntries();
+                const allCount = Array.isArray(projects) ? projects.length : 0;
+                const filteredCount = typeof totalCount === 'number'
+                    ? totalCount
+                    : (typeof getFilteredProjects === 'function' ? getFilteredProjects().length : allCount);
+                const isActive = activeFilters.length > 0;
+                const stateText = isActive ? `กำลังใช้ ${activeFilters.length} ฟิลเตอร์` : 'ยังไม่ได้ใช้ฟิลเตอร์';
+                const detailText = isActive
+                    ? `กรองแล้ว ${filteredCount.toLocaleString('th-TH')} / ${allCount.toLocaleString('th-TH')} โครงการ`
+                    : `กำลังแสดงข้อมูลทั้งหมด ${allCount.toLocaleString('th-TH')} โครงการ`;
+                const fabBadgeEl = document.getElementById('filterFabBadge');
+
+                if (fabBadgeEl) {
+                    if (isActive) {
+                        fabBadgeEl.textContent = String(activeFilters.length);
+                        fabBadgeEl.classList.add('is-show');
+                        fabBadgeEl.setAttribute('aria-hidden', 'false');
+                    } else {
+                        fabBadgeEl.textContent = '';
+                        fabBadgeEl.classList.remove('is-show');
+                        fabBadgeEl.setAttribute('aria-hidden', 'true');
+                    }
+                }
+
+                const stateEl = document.getElementById('dashboardFilterState');
+                if (stateEl) {
+                    stateEl.textContent = stateText;
+                    stateEl.className = `dashboard-status-pill ${isActive ? 'is-active' : 'is-idle'}`;
+                }
+
+                const detailEl = document.getElementById('dashboardFilterDetail');
+                if (detailEl) detailEl.textContent = detailText;
+
+                renderFilterPills(
+                    document.getElementById('dashboardFilterList'),
+                    activeFilters,
+                    'กำลังแสดงข้อมูลทั้งหมด'
+                );
+
+                const exportStateEl = document.getElementById('exportPopupState');
+                if (exportStateEl) {
+                    exportStateEl.textContent = stateText;
+                    exportStateEl.className = `dashboard-status-pill ${isActive ? 'is-active' : 'is-idle'}`;
+                }
+
+                const exportCountEl = document.getElementById('exportPopupCount');
+                if (exportCountEl) exportCountEl.textContent = `${filteredCount.toLocaleString('th-TH')} โครงการ`;
+
+                const exportSummaryEl = document.getElementById('exportPopupSummary');
+                if (exportSummaryEl) {
+                    exportSummaryEl.textContent = isActive
+                        ? `จะดาวน์โหลด ${filteredCount.toLocaleString('th-TH')} จาก ${allCount.toLocaleString('th-TH')} โครงการตามฟิลเตอร์ปัจจุบัน`
+                        : `จะดาวน์โหลดข้อมูลทั้งหมด ${allCount.toLocaleString('th-TH')} โครงการ`;
+                }
+
+                renderFilterPills(
+                    document.getElementById('exportPopupFilterList'),
+                    activeFilters,
+                    'ดาวน์โหลดข้อมูลทั้งหมด'
+                );
+            }
 
             if (window.Chart) {
                 // บังคับพฤติกรรมเดียวกันทุกกราฟตอน responsive
@@ -1999,23 +2413,31 @@
                 const y = norm(document.getElementById('filterYear')?.value);
                 const t = norm(document.getElementById('filterTheme')?.value);
                 const f = norm(document.getElementById('filterFunding')?.value);
+                const type = norm(document.getElementById('filterType')?.value);
+                const status = norm(document.getElementById('filterStatus')?.value);
+                const source = norm(document.getElementById('filterSource')?.value);
                 const name = norm(document.getElementById('filterName')?.value);
-                const pi = norm(document.getElementById('filterPI')?.value);
                 const search = norm(document.getElementById('tableSearch')?.value);
 
                 return projects.filter(p => {
                     const year = norm(p.start_year);
                     const theme = norm(p.theme);
                     const funding = norm(p.funding_type);
+                    const projectType = norm(p.project_type);
+                    const projectStatus = norm(p.planning_status);
+                    const fundingSource = norm(p.funding_source);
                     const nameTh = norm(p.project_name_th);
                     const piName = norm(p.pi_name);
+                    const searchIndex = projectSearchIndex(p);
 
                     if (y && year !== y) return false;
                     if (t && theme !== t) return false;
                     if (f && funding !== f) return false;
+                    if (type && projectType !== type) return false;
+                    if (status && projectStatus !== status) return false;
+                    if (source && fundingSource !== source) return false;
                     if (name && !nameTh.includes(name)) return false;
-                    if (pi && !piName.includes(pi)) return false;
-                    if (search && !(`${nameTh} ${piName}`.includes(search))) return false;
+                    if (search && !searchIndex.includes(search)) return false;
                     return true;
                 });
             }
@@ -2043,8 +2465,10 @@
                     document.getElementById('filterYear')?.value,
                     document.getElementById('filterTheme')?.value,
                     document.getElementById('filterFunding')?.value,
+                    document.getElementById('filterType')?.value,
+                    document.getElementById('filterStatus')?.value,
+                    document.getElementById('filterSource')?.value,
                     document.getElementById('filterName')?.value,
-                    document.getElementById('filterPI')?.value,
                     document.getElementById('tableSearch')?.value
                 ]
                     .map(v => sanitizeFileName(v))
@@ -2461,6 +2885,14 @@
                         });
                     }
                 }
+                const hitKey = `${chart?.canvas?.id || 'chart'}:${picked.datasetIndex}:${picked.index}`;
+                const lastHit = window.__dashboardChartLastHit;
+                const nowTs = Date.now();
+                if (lastHit && lastHit.key === hitKey && (nowTs - lastHit.at) < 180) return;
+                window.__dashboardChartLastHit = {
+                    key: hitKey,
+                    at: nowTs
+                };
                 const result = resolveProjectsForChart(chart, picked);
                 if (result) showProjectList(result.title, result.projects, {
                     includeFunding: result.includeFunding,
@@ -2470,14 +2902,23 @@
                 });
             }
 
-            document.addEventListener('click', (evt) => {
+            if (window.Chart) {
+                Chart.defaults.onClick = (evt, _elements, chart) => {
+                    if (!chart?.canvas?.id || !chart.canvas.id.startsWith('chart')) return;
+                    handleChartClick(evt?.native || evt, chart);
+                };
+            }
+
+            function forwardDashboardChartEvent(evt) {
                 const canvas = evt.target;
                 if (!canvas || canvas.tagName !== 'CANVAS') return;
                 if (!canvas.id || !canvas.id.startsWith('chart')) return;
-                const chart = Chart.getChart(canvas);
+                const chart = window.Chart?.getChart(canvas);
                 if (!chart) return;
                 handleChartClick(evt, chart);
-            });
+            }
+
+            document.addEventListener('click', forwardDashboardChartEvent);
 
             /* ---------- 1) จำนวนโครงการรายปี (Bar + ตัวเลขบนแท่ง | กันเลขตกขอบ) ---------- */
             (function() {
@@ -4851,7 +5292,6 @@
             function buildBaseKeyOrder(list) {
                 const keys = collectBaseKeys(list);
                 const preferred = [
-                    'id',
                     'project_name_th',
                     'project_type',
                     'project_code',
@@ -4870,7 +5310,7 @@
                     'funding_source'
                 ];
                 const strategyKeys = keys.filter(k => k.startsWith('strategy_')).sort();
-                const core = keys.filter(k => !k.startsWith('strategy_'));
+                const core = keys.filter(k => !k.startsWith('strategy_') && k !== 'id' && k !== 'project_id' && k !== 'project_code');
                 const ordered = [];
 
                 preferred.forEach(k => {
@@ -4879,11 +5319,12 @@
                 core.sort().forEach(k => {
                     if (!ordered.includes(k)) ordered.push(k);
                 });
-                return [...ordered, ...strategyKeys];
+                return ['project_code', ...ordered, ...strategyKeys];
             }
 
             const detailColumns = {
                 irb: ['irb_id', 'irb_code', 'irb_exp_date', 'irb_source'],
+                copi: ['copi_id', 'copi_name', 'copi_affiliation'],
                 coresearch: ['coresearch_id', 'coresearch_name', 'coresearch_unit_status', 'coresearch_affiliation'],
                 fte: ['fte_id', 'fte_name', 'fte_role_group', 'fte_job_detail', 'fte_value', 'fte_hours',
                     'fte_task_detail', 'fte_start_date', 'fte_end_date'
@@ -4895,6 +5336,7 @@
                 const baseKeys = buildBaseKeyOrder(list);
                 const detailHeaders = [
                     ...detailColumns.irb,
+                    ...detailColumns.copi,
                     ...detailColumns.coresearch,
                     ...detailColumns.fte,
                     ...detailColumns.output
@@ -4903,9 +5345,10 @@
                 const rows = [header];
 
                 list.forEach(p => {
-                    const base = baseKeys.map(k => p[k] ?? '');
+                    const base = baseKeys.map(k => (k === 'project_code' ? (p.project_code ?? '') : (p[k] ?? '')));
                     let baseWritten = false;
                     const irbs = p.irbs || [];
+                    const copis = p.copis || [];
                     const coResearches = p.co_researches || p.coResearches || [];
                     const fteRoles = p.fte_roles || p.fteRoles || [];
                     const outputsList = p.outputs || [];
@@ -4919,13 +5362,21 @@
                     irbs.forEach(irb => {
                         pushDetail('irb', [
                             irb.id ?? '', irb.code ?? '', irb.exp_date ?? '', irb.source ?? '',
+                            ...Array(detailColumns.copi.length + detailColumns.coresearch.length + detailColumns.fte.length + detailColumns.output.length).fill('')
+                        ]);
+                    });
+
+                    copis.forEach(copi => {
+                        pushDetail('copi', [
+                            ...Array(detailColumns.irb.length).fill(''),
+                            copi.id ?? '', copi.name ?? '', copi.affiliation ?? '',
                             ...Array(detailColumns.coresearch.length + detailColumns.fte.length + detailColumns.output.length).fill('')
                         ]);
                     });
 
                     coResearches.forEach(cr => {
                         pushDetail('coresearch', [
-                            ...Array(detailColumns.irb.length).fill(''),
+                            ...Array(detailColumns.irb.length + detailColumns.copi.length).fill(''),
                             cr.id ?? '', cr.name ?? '', cr.unit_status ?? '', cr.affiliation ?? '',
                             ...Array(detailColumns.fte.length + detailColumns.output.length).fill('')
                         ]);
@@ -4933,7 +5384,7 @@
 
                     fteRoles.forEach(f => {
                         pushDetail('fte', [
-                            ...Array(detailColumns.irb.length + detailColumns.coresearch.length).fill(''),
+                            ...Array(detailColumns.irb.length + detailColumns.copi.length + detailColumns.coresearch.length).fill(''),
                             f.id ?? '', f.name ?? '', f.role_group ?? '', f.job_detail ?? '', f.fte_value ?? '',
                             f.hours ?? '', f.task_detail ?? '', f.start_date ?? '', f.end_date ?? '',
                             ...Array(detailColumns.output.length).fill('')
@@ -4942,7 +5393,7 @@
 
                     outputsList.forEach(o => {
                         pushDetail('output', [
-                            ...Array(detailColumns.irb.length + detailColumns.coresearch.length + detailColumns.fte.length).fill(''),
+                            ...Array(detailColumns.irb.length + detailColumns.copi.length + detailColumns.coresearch.length + detailColumns.fte.length).fill(''),
                             o.id ?? '', o.type ?? '', o.title ?? '', o.year ?? ''
                         ]);
                     });
@@ -4973,13 +5424,13 @@
                 document.body.removeChild(link);
             }
 
-            document.getElementById('exportCSV')?.addEventListener('click', () => {
+            function exportProjectsAsCsv() {
                 const filtered = getFilteredProjects();
                 const rows = buildCsvRows(filtered);
                 downloadCsv(rows, `${exportBaseName()}_projects.csv`);
-            });
+            }
 
-            document.getElementById('exportExcel')?.addEventListener('click', () => {
+            function exportProjectsAsExcel() {
                 if (typeof XLSX === 'undefined') {
                     alert('ไม่พบโมดูลสำหรับสร้างไฟล์ Excel');
                     return;
@@ -4991,9 +5442,10 @@
                 const projectSheetRows = filtered.map(p => {
                     const row = {};
                     baseKeys.forEach(k => {
-                        row[k] = p[k] ?? '';
+                        row[k] = k === 'project_code' ? (p.project_code ?? '') : (p[k] ?? '');
                     });
                     row.irb_count = (p.irbs || []).length;
+                    row.copi_count = (p.copis || []).length;
                     row.coresearch_count = (p.co_researches || p.coResearches || []).length;
                     row.fte_count = (p.fte_roles || p.fteRoles || []).length;
                     row.output_count = (p.outputs || []).length;
@@ -5001,7 +5453,7 @@
                 });
 
                 const irbRows = filtered.flatMap(p => (p.irbs || []).map(irb => ({
-                    project_id: p.id,
+                    project_code: p.project_code ?? '',
                     project_name_th: p.project_name_th,
                     pi_name: p.pi_name,
                     start_year: p.start_year,
@@ -5011,7 +5463,7 @@
                 })));
 
                 const coResearchRows = filtered.flatMap(p => (p.co_researches || p.coResearches || []).map(cr => ({
-                    project_id: p.id,
+                    project_code: p.project_code ?? '',
                     project_name_th: p.project_name_th,
                     pi_name: p.pi_name,
                     start_year: p.start_year,
@@ -5020,8 +5472,17 @@
                     affiliation: cr.affiliation ?? ''
                 })));
 
+                const copiRows = filtered.flatMap(p => (p.copis || []).map(copi => ({
+                    project_code: p.project_code ?? '',
+                    project_name_th: p.project_name_th,
+                    pi_name: p.pi_name,
+                    start_year: p.start_year,
+                    copi_name: copi.name ?? '',
+                    copi_affiliation: copi.affiliation ?? ''
+                })));
+
                 const fteRows = filtered.flatMap(p => (p.fte_roles || p.fteRoles || []).map(f => ({
-                    project_id: p.id,
+                    project_code: p.project_code ?? '',
                     project_name_th: p.project_name_th,
                     pi_name: p.pi_name,
                     start_year: p.start_year,
@@ -5036,7 +5497,7 @@
                 })));
 
                 const outputRows = filtered.flatMap(p => (p.outputs || []).map(o => ({
-                    project_id: p.id,
+                    project_code: p.project_code ?? '',
                     project_name_th: p.project_name_th,
                     pi_name: p.pi_name,
                     start_year: p.start_year,
@@ -5045,15 +5506,194 @@
                     output_year: o.year ?? ''
                 })));
 
+                const projectSheetProjectIds = filtered.map(p => p.id ?? null);
+                const irbProjectIds = filtered.flatMap(p => (p.irbs || []).map(() => p.id ?? null));
+                const copiProjectIds = filtered.flatMap(p => (p.copis || []).map(() => p.id ?? null));
+                const coResearchProjectIds = filtered.flatMap(p => (p.co_researches || p.coResearches || []).map(() => p.id ?? null));
+                const fteProjectIds = filtered.flatMap(p => (p.fte_roles || p.fteRoles || []).map(() => p.id ?? null));
+                const outputProjectIds = filtered.flatMap(p => (p.outputs || []).map(() => p.id ?? null));
+
+                function toLinkedSheet(rows, projectIds) {
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    if (!rows.length) return ws;
+
+                    const headers = Object.keys(rows[0] || {});
+                    const codeCol = headers.indexOf('project_code');
+                    if (codeCol === -1) return ws;
+
+                    rows.forEach((_, idx) => {
+                        const projectId = projectIds[idx];
+                        if (!projectId) return;
+                        const cellAddr = XLSX.utils.encode_cell({
+                            c: codeCol,
+                            r: idx + 1
+                        });
+                        const cell = ws[cellAddr];
+                        if (!cell || !cell.v) return;
+                        cell.l = {
+                            Target: `${window.location.origin}/rm/projects/${projectId}`,
+                            Tooltip: 'เปิดหน้าโครงการ'
+                        };
+                    });
+
+                    return ws;
+                }
+
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projectSheetRows), 'Projects');
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(irbRows), 'IRB');
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(coResearchRows), 'CoResearch');
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fteRows), 'FTE');
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(outputRows), 'Outputs');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(projectSheetRows, projectSheetProjectIds), 'Projects');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(irbRows, irbProjectIds), 'IRB');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(copiRows, copiProjectIds), 'COPI');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(coResearchRows, coResearchProjectIds), 'CoResearch');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(fteRows, fteProjectIds), 'FTE');
+                XLSX.utils.book_append_sheet(wb, toLinkedSheet(outputRows, outputProjectIds), 'Outputs');
 
                 XLSX.writeFile(wb, `${exportBaseName()}_projects.xlsx`);
-            });
+            }
+
+            (function() {
+                const drawerOpenBtn = document.getElementById('filterDrawerOpen');
+                const drawerCloseBtn = document.getElementById('filterDrawerClose');
+                const drawerOverlay = document.getElementById('filterDrawerOverlay');
+                const drawer = document.getElementById('filterDrawer');
+                const exportOpenBtn = document.getElementById('exportPopupOpen');
+                const exportCloseBtn = document.getElementById('exportPopupClose');
+                const exportOverlay = document.getElementById('exportPopupOverlay');
+                const exportPopup = document.getElementById('exportPopup');
+                const exportExcelAction = document.getElementById('exportExcelAction');
+                const exportCsvAction = document.getElementById('exportCsvAction');
+                const fabStack = document.getElementById('dashboardFabStack');
+                const paginationWrap = document.getElementById('projectTablePaginationWrap');
+                let scrollLockY = 0;
+                let scrollLocked = false;
+                let fabVisibilityFrame = null;
+                const desktopMedia = window.matchMedia('(min-width: 1025px)');
+                const shouldLockPageScroll = () => !desktopMedia.matches;
+
+                const lockPageScroll = () => {
+                    if (scrollLocked) return;
+                    scrollLockY = window.scrollY || window.pageYOffset || 0;
+                    const scrollbarWidth = Math.max(window.innerWidth - document.documentElement.clientWidth, 0);
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.style.overflow = 'hidden';
+                    document.body.style.position = 'fixed';
+                    document.body.style.top = `-${scrollLockY}px`;
+                    document.body.style.left = '0';
+                    document.body.style.right = '0';
+                    document.body.style.width = '100%';
+                    if (scrollbarWidth > 0) {
+                        document.body.style.paddingRight = `${scrollbarWidth}px`;
+                    }
+                    scrollLocked = true;
+                };
+
+                const unlockPageScroll = () => {
+                    if (!scrollLocked) return;
+                    document.documentElement.style.overflow = '';
+                    document.body.style.overflow = '';
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.left = '';
+                    document.body.style.right = '';
+                    document.body.style.width = '';
+                    document.body.style.paddingRight = '';
+                    window.scrollTo(0, scrollLockY);
+                    scrollLocked = false;
+                };
+
+                const syncScrollLock = () => {
+                    const shouldLock = drawer?.classList.contains('is-open') || exportPopup?.classList.contains('is-open');
+                    if (!shouldLockPageScroll()) {
+                        unlockPageScroll();
+                        return;
+                    }
+                    if (shouldLock) {
+                        lockPageScroll();
+                    } else {
+                        unlockPageScroll();
+                    }
+                };
+
+                desktopMedia.addEventListener?.('change', syncScrollLock);
+
+                const syncFabVisibility = () => {
+                    fabVisibilityFrame = null;
+                    if (!fabStack) return;
+                    const paginationVisible = (() => {
+                        if (!paginationWrap) return false;
+                        const rect = paginationWrap.getBoundingClientRect();
+                        return rect.top < window.innerHeight - 110 && rect.bottom > 0;
+                    })();
+                    fabStack.classList.toggle('is-hidden-by-pagination', paginationVisible);
+                };
+
+                const queueFabVisibilitySync = () => {
+                    if (fabVisibilityFrame !== null) return;
+                    fabVisibilityFrame = window.requestAnimationFrame(syncFabVisibility);
+                };
+
+                window.updateDashboardFabVisibility = queueFabVisibilitySync;
+
+                window.addEventListener('scroll', queueFabVisibilitySync, { passive: true });
+                window.addEventListener('resize', queueFabVisibilitySync);
+                window.addEventListener('orientationchange', queueFabVisibilitySync);
+
+                const toggleDrawer = (open) => {
+                    if (!drawer || !drawerOverlay) return;
+                    drawerOverlay.classList.toggle('is-open', open);
+                    drawer.classList.toggle('is-open', open);
+                    if (open) {
+                        exportOverlay?.classList.remove('is-open');
+                        exportPopup?.classList.remove('is-open');
+                        exportPopup?.setAttribute('aria-hidden', 'true');
+                    }
+                    syncScrollLock();
+                };
+
+                const toggleExportPopup = (open) => {
+                    if (!exportPopup || !exportOverlay) return;
+                    exportOverlay.classList.toggle('is-open', open);
+                    exportPopup.classList.toggle('is-open', open);
+                    exportPopup.setAttribute('aria-hidden', open ? 'false' : 'true');
+                    if (open) {
+                        drawerOverlay?.classList.remove('is-open');
+                        drawer?.classList.remove('is-open');
+                        renderDashboardFilterState(typeof getFilteredProjects === 'function' ? getFilteredProjects().length : projects.length);
+                    }
+                    syncScrollLock();
+                };
+
+                window.closeDashboardFloatingPanels = () => {
+                    toggleDrawer(false);
+                    toggleExportPopup(false);
+                };
+
+                drawerOpenBtn?.addEventListener('click', () => toggleDrawer(true));
+                drawerCloseBtn?.addEventListener('click', () => toggleDrawer(false));
+                drawerOverlay?.addEventListener('click', () => toggleDrawer(false));
+
+                exportOpenBtn?.addEventListener('click', () => toggleExportPopup(true));
+                exportCloseBtn?.addEventListener('click', () => toggleExportPopup(false));
+                exportOverlay?.addEventListener('click', () => toggleExportPopup(false));
+
+                exportExcelAction?.addEventListener('click', () => {
+                    toggleExportPopup(false);
+                    exportProjectsAsExcel();
+                });
+
+                exportCsvAction?.addEventListener('click', () => {
+                    toggleExportPopup(false);
+                    exportProjectsAsCsv();
+                });
+
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        toggleDrawer(false);
+                        toggleExportPopup(false);
+                    }
+                });
+
+                queueFabVisibilitySync();
+            })();
 
             /* ---------- Project Table: pagination + filter + search ---------- */
             (function() {
@@ -5069,8 +5709,10 @@
                 const filterYear = document.getElementById('filterYear');
                 const filterTheme = document.getElementById('filterTheme');
                 const filterFunding = document.getElementById('filterFunding');
+                const filterType = document.getElementById('filterType');
+                const filterStatus = document.getElementById('filterStatus');
+                const filterSource = document.getElementById('filterSource');
                 const filterName = document.getElementById('filterName');
-                const filterPI = document.getElementById('filterPI');
                 const tableSearch = document.getElementById('tableSearch');
 
                 function getLatestIrbDate(p) {
@@ -5131,6 +5773,7 @@
                     if (pageEl) pageEl.textContent = `หน้า ${currentPage} / ${totalPages}`;
                     if (prevBtn) prevBtn.disabled = currentPage <= 1;
                     if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+                    window.updateDashboardFabVisibility?.();
                 }
 
                 function resetAndRender() {
@@ -5147,17 +5790,12 @@
                     renderTable();
                 });
 
-                [filterYear, filterTheme, filterFunding].forEach(el => el?.addEventListener('change', resetAndRender));
-                [filterName, filterPI, tableSearch].forEach(el => el?.addEventListener('input', resetAndRender));
+                [filterYear, filterTheme, filterFunding, filterType, filterStatus, filterSource].forEach(el => el?.addEventListener('change', resetAndRender));
+                [filterName, tableSearch].forEach(el => el?.addEventListener('input', resetAndRender));
 
                 renderTable();
             })();
         </script>
-
-        <script>
-            console.log('sample', (@json($projects))[0]);
-        </script>
-
 
         <script>
             /* ========= Helpers ========= */
@@ -5994,210 +6632,6 @@
 
                 btn.addEventListener('click', renderAndDownload);
             })();
-
-            const aiFab = document.getElementById('aiChatFab');
-            const aiPanel = document.getElementById('aiChatPanel');
-            const aiOverlay = document.getElementById('aiChatOverlay');
-            const aiForm = document.getElementById('aiChatForm');
-            const aiInput = document.getElementById('aiChatInput');
-            const aiBody = document.getElementById('aiChatBody');
-            const aiBubble = document.getElementById('aiChatBubble');
-            const aiBubbleClose = document.getElementById('aiChatBubbleClose');
-
-            function toggleAiChat(show = null) {
-                if (show === null) show = !aiPanel.classList.contains('is-open');
-                aiPanel.classList.toggle('is-open', show);
-                aiOverlay.classList.toggle('is-open', show);
-                if (show) setTimeout(() => aiInput?.focus(), 50);
-            }
-            aiFab?.addEventListener('click', () => toggleAiChat());
-            aiOverlay?.addEventListener('click', () => toggleAiChat(false));
-
-            if (aiBubble) {
-                aiBubble.classList.add('is-show');
-            }
-            aiBubbleClose?.addEventListener('click', () => {
-                aiBubble?.classList.remove('is-show');
-            });
-            document.querySelectorAll('.ai-suggest').forEach(b => {
-                b.addEventListener('click', () => {
-                    aiInput.value = b.textContent.trim();
-                    aiInput.dispatchEvent(new Event('input'));
-                    aiForm.requestSubmit();
-                });
-            });
-
-            // autosize
-            aiInput?.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-            });
-
-            // 💡 NEW FEATURE: ส่งข้อความเมื่อกด Enter
-            aiInput?.addEventListener('keydown', function(e) {
-                // ตรวจสอบว่ากดปุ่ม Enter (keyCode 13)
-                if (e.key === 'Enter') {
-                    // ถ้าเป็น Shift+Enter หรือ Ctrl+Enter ให้ขึ้นบรรทัดใหม่ตามปกติ
-                    if (e.shiftKey || e.ctrlKey) {
-                        return;
-                    }
-
-                    // ถ้าเป็น Enter ธรรมดา ให้หยุดการทำงานปกติ (หยุดการขึ้นบรรทัดใหม่)
-                    e.preventDefault();
-
-                    // เรียกส่งฟอร์ม
-                    aiForm.requestSubmit();
-                }
-            });
-
-            function bubble(role, html) {
-                const wrap = document.createElement('div');
-                const base = role === 'user' ?
-                    'bg-emerald-50 border-emerald-200 ml-12' :
-                    'bg-white border-gray-200 mr-12';
-                wrap.className = `border rounded-xl p-3 text-sm ${base}`;
-                wrap.innerHTML = html;
-                aiBody.appendChild(wrap);
-                aiBody.scrollTop = aiBody.scrollHeight;
-                return wrap;
-            }
-
-            // สร้าง canvas chart ภายในบับเบิลคำตอบ
-            function renderInlineChart(container, spec) {
-                const canvas = document.createElement('canvas');
-                canvas.height = 220;
-                container.appendChild(canvas);
-                try {
-                    const cfg = {
-                        type: spec.type || 'bar',
-                        data: {
-                            labels: spec.labels || [],
-                            datasets: spec.datasets || []
-                        },
-                        options: spec.options || {}
-                    };
-                    new Chart(canvas, cfg);
-                } catch (e) {
-                    const err = document.createElement('div');
-                    err.className = 'text-xs text-red-500';
-                    err.textContent = 'แสดงกราฟไม่สำเร็จ';
-                    container.appendChild(err);
-                }
-            }
-
-            aiForm?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const q = (aiInput.value || '').trim();
-                if (!q) return;
-                bubble('user', q);
-                aiInput.value = '';
-                aiInput.dispatchEvent(new Event('input'));
-
-                const thinking = bubble('bot', '<div class="text-gray-500 text-sm">กำลังวิเคราะห์…</div>');
-
-                try {
-                    const resp = await fetch("{{ url('/rm/agent/ask') }}", {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('input[name=_token]')?.value ||
-                                '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            prompt: q
-                        })
-                    });
-                    const data = await resp.json();
-
-                    // แทนที่บับเบิลกำลังคิด
-                    thinking.innerHTML = '';
-                    if (data.reply) {
-                        thinking.innerHTML = `<div class="prose prose-sm max-w-none">${data.reply}</div>`;
-                    } else {
-                        thinking.innerHTML = '<div class="text-gray-500">ไม่มีข้อความตอบกลับ</div>';
-                    }
-
-                    // ถ้ามีตาราง
-                    // ถ้ามีตาราง
-
-                    if (data.table && Array.isArray(data.table.rows)) {
-
-                        // ✅ FIX 1.1: สร้าง wrapper เพื่อให้ตาราง Scroll ได้แนวนอน (ยังคงจำเป็นเผื่อตารางกว้าง)
-                        const tableWrapper = document.createElement('div');
-                        tableWrapper.className = 'overflow-x-auto mt-2';
-
-                        const tbl = document.createElement('table');
-                        // ✅ FIX: ลบ whitespace-nowrap ออก เพื่อให้ข้อความตัดบรรทัดได้
-                        tbl.className = 'min-w-full text-xs border';
-
-                        const thead = document.createElement('thead');
-                        thead.className = 'bg-gray-50';
-                        thead.innerHTML =
-                            `<tr>${(data.table.headers||[]).map(h=>`<th class="p-2 text-left">${h}</th>`).join('')}</tr>`;
-                        tbl.appendChild(thead);
-
-                        const tbody = document.createElement('tbody');
-                        (data.table.rows || []).forEach(r => {
-                            const tr = document.createElement('tr');
-                            tr.className = 'border-t';
-
-                            tr.innerHTML = (data.table.fields || []).map(f => {
-                                let content = r[f] ?? '-';
-
-                                // ✅ FIX 2.1: ตัดข้อความสำหรับคอลัมน์ Project Name ที่ยาวเกินไป
-                                if (f === 'project' || f === 'project_name') {
-                                    const MAX_LENGTH = 50;
-                                    if (content.length > MAX_LENGTH) {
-                                        content = content.substring(0, MAX_LENGTH) + '...';
-                                    }
-                                }
-
-                                // ✅ FIX 1.2: สร้าง Hyperlink ให้ชื่อโครงการ หากมี URL
-                                if ((f === 'project' || f === 'project_name') && r.href && r
-                                    .href !== '#') {
-                                    content =
-                                        `<a href="${r.href}" target="_blank" class="text-blue-600 hover:underline">${content}</a>`;
-                                } else if (f === 'href') {
-                                    // ถ้าเป็นคอลัมน์ href โดยตรง ให้แสดงเป็นไอคอน Link แทน
-                                    content =
-                                        `<a href="${r.href}" target="_blank" class="text-blue-600 hover:underline">🔗</a>`;
-                                }
-
-                                // ✅ FIX 2.2: กำหนดความกว้างขั้นต่ำ (min-width) ให้คอลัมน์ชื่อโครงการ
-                                // เพื่อให้คอลัมน์ไม่หดตัวจนเล็กเกินไปเมื่อตัดบรรทัด
-                                const style = (f === 'project' || f === 'project_name') ?
-                                    'style="min-width: 150px;"' : '';
-
-                                return `<td class="p-2" ${style}>${content}</td>`;
-
-                            }).join('');
-                            tbody.appendChild(tr);
-                        });
-                        tbl.appendChild(tbody);
-                        tableWrapper.appendChild(tbl);
-                        thinking.appendChild(tableWrapper); // เปลี่ยนมา append tableWrapper แทน
-                    }
-                    // ถ้ามีกราฟ
-                    if (data.chart) {
-                        const box = document.createElement('div');
-                        box.className = 'mt-3';
-                        thinking.appendChild(box);
-                        renderInlineChart(box, data.chart);
-                    }
-
-                    // ถ้ามีกราฟที่สอง (เช่น donut แหล่งทุน)
-                    if (data.chart2) {
-                        const box2 = document.createElement('div');
-                        box2.className = 'mt-3';
-                        thinking.appendChild(box2);
-                        renderInlineChart(box2, data.chart2);
-                    }
-
-
-                } catch (err) {
-                    thinking.innerHTML = `<div class="text-red-600">เกิดข้อผิดพลาดในการเรียกผู้ช่วย</div>`;
-                }
-            });
         </script>
         <script>
             (function() {
@@ -6214,8 +6648,10 @@
                     filterYear: document.getElementById('filterYear'),
                     filterTheme: document.getElementById('filterTheme'),
                     filterFunding: document.getElementById('filterFunding'),
+                    filterType: document.getElementById('filterType'),
+                    filterStatus: document.getElementById('filterStatus'),
+                    filterSource: document.getElementById('filterSource'),
                     filterName: document.getElementById('filterName'),
-                    filterPI: document.getElementById('filterPI'),
                     tableSearch: document.getElementById('tableSearch'),
                     filterReset: document.getElementById('filterReset'),
                     badge: document.getElementById('rtFilterBadge'),
@@ -6301,6 +6737,7 @@
                     if (el.totalPi) el.totalPi.textContent = fmtNum.format(uniquePi);
                     if (el.totalBudget) el.totalBudget.textContent = `${fmtMoney.format(totalBudget)} บ.`;
                     if (el.avgBudget) el.avgBudget.textContent = `${fmtMoney.format(avgBudget)} บ.`;
+                    renderDashboardFilterState(total);
                 }
 
                 function updateTypeTable(rows) {
@@ -6691,6 +7128,1284 @@
                     });
                 }
 
+                function getProjectIdSet(rows) {
+                    return new Set((Array.isArray(rows) ? rows : [])
+                        .map((project) => project?.id)
+                        .filter((id) => id !== null && id !== undefined));
+                }
+
+                function getRelatedOutputs(rows) {
+                    const projectIds = getProjectIdSet(rows);
+                    return (Array.isArray(outputs) ? outputs : []).filter((item) => projectIds.has(item?.project_id));
+                }
+
+                function getRelatedFtes(rows) {
+                    const projectIds = getProjectIdSet(rows);
+                    return (Array.isArray(ftes) ? ftes : []).filter((item) => projectIds.has(item?.project_id));
+                }
+
+                function getRelatedIrbs(rows) {
+                    const projectIds = getProjectIdSet(rows);
+                    return (Array.isArray(irbs) ? irbs : []).filter((item) => projectIds.has(item?.project_id));
+                }
+
+                function drawEmptyChart(canvas, text = 'ไม่มีข้อมูล') {
+                    if (!canvas) return;
+                    Chart.getChart(canvas)?.destroy();
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.save();
+                    ctx.font = '14px sans-serif';
+                    ctx.fillStyle = '#64748b';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+                    ctx.restore();
+                }
+
+                function renderOutputStackedFiltered(rows) {
+                    const outputRows = getRelatedOutputs(rows);
+                    const types = [...new Set(outputRows.map(outputType).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
+                    const matrix = {};
+
+                    outputRows.forEach((item) => {
+                        const yearKey = outputYearKey(item);
+                        const typeKey = outputType(item) || 'อื่นๆ';
+                        matrix[yearKey] = matrix[yearKey] || {};
+                        matrix[yearKey][typeKey] = (matrix[yearKey][typeKey] || 0) + 1;
+                    });
+
+                    const yearKeys = Object.keys(matrix);
+                    const isNum = (value) => /^\d+$/.test(String(value || ''));
+                    const sortedYears = yearKeys
+                        .filter(isNum).map(Number).sort((a, b) => a - b).map(String)
+                        .concat(yearKeys.filter((value) => !isNum(value)).sort((a, b) => String(a).localeCompare(String(b), 'th')));
+                    const displayLabels = sortedYears.map((key) => outputYearLabelForKey(key));
+
+                    window.outputYearLabelKeyMap = {};
+                    displayLabels.forEach((label, index) => {
+                        window.outputYearLabelKeyMap[label] = sortedYears[index];
+                    });
+
+                    const canvas = document.getElementById('chartOutputStacked');
+                    if (!canvas) return;
+
+                    if (!sortedYears.length || !types.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    const totalLabelPlugin = {
+                        id: `outputTotal_${sortedYears.join('_')}`.slice(0, 48),
+                        afterDatasetsDraw(chart) {
+                            const { ctx, chartArea: { top, right } } = chart;
+                            ctx.save();
+                            ctx.font = '700 11px sans-serif';
+                            ctx.fillStyle = '#111827';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+
+                            chart.data.labels.forEach((_, index) => {
+                                let total = 0;
+                                let topBar = null;
+
+                                chart.data.datasets.forEach((dataset, dsIndex) => {
+                                    if (!chart.isDatasetVisible(dsIndex)) return;
+                                    total += Number(dataset.data?.[index] || 0);
+                                    const bar = chart.getDatasetMeta(dsIndex)?.data?.[index];
+                                    if (bar && (!topBar || bar.y < topBar.y)) topBar = bar;
+                                });
+
+                                if (!(total > 0) || !topBar) return;
+                                let { x, y } = topBar.tooltipPosition();
+                                y -= 4;
+                                if (y < top + 8) y = top + 8;
+                                if (x > right - 2) x = right - 2;
+                                ctx.fillText(String(total), x, y);
+                            });
+
+                            ctx.restore();
+                        }
+                    };
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: displayLabels,
+                            datasets: types.map((type, index) => ({
+                                label: type,
+                                data: sortedYears.map((year) => Number(matrix[year]?.[type] || 0)),
+                                backgroundColor: `hsl(${(index * 53) % 360} 70% 60%)`,
+                                stack: 'output'
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [totalLabelPlugin]
+                    });
+                }
+
+                function renderFundingSourceYearChartsFiltered(rows) {
+                    const agg = { external: {}, internal: {} };
+
+                    rows.forEach((project) => {
+                        const type = (getFundingType(project) || '').trim();
+                        const source = (getFundingSource(project) || 'ไม่ระบุ').trim();
+                        const amount = Number(getBudget(project)) || 0;
+                        const year = yearCE(project.start_year ?? project.year ?? project.funding_year);
+                        if (!year) return;
+
+                        const bucket = type === 'ภายนอก' ? agg.external : (type === 'ภายใน' ? agg.internal : null);
+                        if (!bucket) return;
+                        bucket[year] ??= {};
+                        bucket[year][source] ??= { budget: 0 };
+                        bucket[year][source].budget += amount;
+                    });
+
+                    const buildStacked = (canvasId, dataByYear) => {
+                        const canvas = document.getElementById(canvasId);
+                        if (!canvas) return;
+
+                        const years = Object.keys(dataByYear).map(Number).sort((a, b) => a - b);
+                        if (!years.length) {
+                            drawEmptyChart(canvas);
+                            return;
+                        }
+
+                        const allSources = Array.from(new Set(years.flatMap((year) => Object.keys(dataByYear[year] || {}))));
+                        const totals = allSources.map((source) => ({
+                            src: source,
+                            total: years.reduce((sum, year) => sum + (dataByYear[year]?.[source]?.budget || 0), 0)
+                        })).sort((a, b) => b.total - a.total);
+
+                        const topSources = totals.slice(0, 8).map((item) => item.src);
+                        const otherSources = totals.slice(8).map((item) => item.src);
+                        const datasets = topSources.map((source) => ({
+                            label: source,
+                            data: years.map((year) => dataByYear[year]?.[source]?.budget || 0),
+                            backgroundColor: colorForKey(source),
+                            stack: 'budget'
+                        }));
+
+                        if (otherSources.length) {
+                            datasets.push({
+                                label: 'อื่นๆ',
+                                data: years.map((year) => otherSources.reduce((sum, source) => sum + (dataByYear[year]?.[source]?.budget || 0), 0)),
+                                backgroundColor: '#94a3b8',
+                                stack: 'budget'
+                            });
+                        }
+
+                        window.fundingSourceYearGroups = window.fundingSourceYearGroups || {};
+                        window.fundingSourceYearGroups[canvasId] = { top: topSources, others: otherSources };
+
+                        Chart.getChart(canvas)?.destroy();
+                        new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: years.map(yearLabelTH),
+                                datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom'
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        stacked: true
+                                    },
+                                    y: {
+                                        stacked: true,
+                                        beginAtZero: true,
+                                        ticks: {
+                                            callback: (value) => formatThaiMoney(value)
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: [stackTotalLabelPlugin]
+                        });
+                    };
+
+                    buildStacked('chartExternalBySourceYear', agg.external);
+                    buildStacked('chartInternalBySourceYear', agg.internal);
+                }
+
+                function renderPublicationPerYearFiltered(rows) {
+                    const canvas = document.getElementById('chartPublicationPerYear');
+                    if (!canvas) return;
+
+                    const publicationRows = getRelatedOutputs(rows).filter((item) => isPublicationType(item.type));
+                    const byYearCE = {};
+                    publicationRows.forEach((item) => {
+                        const year = normalizeYear(item.year) || 'ไม่ทราบปี';
+                        byYearCE[year] = (byYearCE[year] || 0) + 1;
+                    });
+
+                    const knownYears = Object.keys(byYearCE).filter((year) => year !== 'ไม่ทราบปี')
+                        .map(Number).sort((a, b) => a - b).map(String);
+                    const yearKeys = byYearCE['ไม่ทราบปี'] ? [...knownYears, 'ไม่ทราบปี'] : knownYears;
+
+                    if (!yearKeys.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    const labels = yearKeys.map((year) => year === 'ไม่ทราบปี' ? year : toBE(year));
+                    const data = yearKeys.map((year) => byYearCE[year] || 0);
+                    const maxValue = Math.max(0, ...data);
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'Publications',
+                                data,
+                                backgroundColor: labels.map((_, index) => `hsl(${(index * 33) % 360} 70% 60%)`),
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 36
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grace: '20%',
+                                    suggestedMax: maxValue > 0 ? Math.ceil(maxValue * 1.2) : undefined,
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [labelOutsideTop]
+                    });
+                }
+
+                function renderAuthorRolePerYearFiltered(rows) {
+                    const canvas = document.getElementById('chartAuthorRolePerYear');
+                    const yearSelect = document.getElementById('yearFilter');
+                    const prevButton = document.getElementById('btnPrevYear');
+                    const nextButton = document.getElementById('btnNextYear');
+                    const searchInput = document.getElementById('authorSearch');
+                    const topNSelect = document.getElementById('topN');
+                    if (!canvas) return;
+
+                    if (!canvas.dataset.filteredBound) {
+                        [yearSelect, topNSelect].forEach((node) => node?.addEventListener('change', () => {
+                            window.setTimeout(() => renderAuthorRolePerYearFiltered(getRows()), 0);
+                        }));
+                        searchInput?.addEventListener('input', () => {
+                            window.setTimeout(() => renderAuthorRolePerYearFiltered(getRows()), 0);
+                        });
+                        prevButton?.addEventListener('click', () => {
+                            window.setTimeout(() => renderAuthorRolePerYearFiltered(getRows()), 0);
+                        });
+                        nextButton?.addEventListener('click', () => {
+                            window.setTimeout(() => renderAuthorRolePerYearFiltered(getRows()), 0);
+                        });
+                        canvas.dataset.filteredBound = '1';
+                    }
+
+                    const publicationRows = getRelatedOutputs(rows).filter((item) => isPublicationType(item.type));
+                    const authorRoleByYear = {};
+                    const yearSetCE = new Set();
+
+                    publicationRows.forEach((item) => {
+                        const year = normalizeYear(item.year);
+                        if (!year) return;
+                        yearSetCE.add(year);
+                        const authors = Array.isArray(item.authors) ? item.authors : [];
+                        authorRoleByYear[year] = authorRoleByYear[year] || {};
+                        authors.forEach((author) => {
+                            const name = (author.name || '').trim();
+                            const role = (author.role || '').toLowerCase().trim();
+                            if (!name || !ROLES.includes(role)) return;
+                            authorRoleByYear[year][name] = authorRoleByYear[year][name] || { first: 0, co: 0, corresponding: 0 };
+                            authorRoleByYear[year][name][role] += 1;
+                        });
+                    });
+
+                    const yearsCE = Array.from(yearSetCE).map(Number).sort((a, b) => a - b).map(String);
+                    const previousValue = yearSelect?.value || '';
+
+                    if (yearSelect) {
+                        yearSelect.innerHTML = '';
+                        yearsCE.forEach((year) => {
+                            const option = document.createElement('option');
+                            option.value = year;
+                            option.textContent = toBE(year);
+                            yearSelect.appendChild(option);
+                        });
+                        yearSelect.value = yearsCE.includes(previousValue) ? previousValue : (yearsCE[yearsCE.length - 1] || '');
+                    }
+
+                    if (!yearsCE.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    const selectedYear = yearSelect?.value || yearsCE[yearsCE.length - 1];
+                    const searchTerm = String(searchInput?.value || '').trim().toLowerCase();
+                    const topN = parseInt(topNSelect?.value || '12', 10);
+                    const source = authorRoleByYear[selectedYear] || {};
+
+                    let authorRows = Object.entries(source).map(([name, roles]) => ({
+                        name,
+                        ...roles,
+                        total: (roles.first || 0) + (roles.co || 0) + (roles.corresponding || 0)
+                    }));
+
+                    if (searchTerm) {
+                        authorRows = authorRows.filter((item) => item.name.toLowerCase().includes(searchTerm));
+                    }
+
+                    authorRows.sort((a, b) => b.total - a.total);
+                    const topRows = authorRows.slice(0, topN);
+
+                    if (!topRows.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    canvas.height = Math.min(Math.max(280, topRows.length * 20), 420);
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: topRows.map((item) => item.name),
+                            datasets: [
+                                { key: 'first', label: 'First-author' },
+                                { key: 'co', label: 'Co-author' },
+                                { key: 'corresponding', label: 'Corresponding' }
+                            ].map((config, index) => ({
+                                label: config.label,
+                                data: topRows.map((item) => item[config.key] || 0),
+                                backgroundColor: `hsl(${(index * 48) % 360} 70% 60%)`,
+                                stack: 'roles',
+                                borderWidth: 1
+                            }))
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            layout: {
+                                padding: {
+                                    right: 36
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                title: {
+                                    display: true,
+                                    text: `ปี ${toBE(selectedYear)} (พ.ศ.)`
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    grace: '15%',
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                },
+                                y: {
+                                    stacked: true
+                                }
+                            }
+                        },
+                        plugins: [stackedTotalRight]
+                    });
+                }
+
+                function renderStatusYearFiltered(rows) {
+                    const canvas = document.getElementById('chartStatusYear');
+                    if (!canvas) return;
+
+                    const statuses = [
+                        'Project Planing (เริ่มต้น - submit IRB)',
+                        'เก็บข้อมูล',
+                        'วิเคราะห์ข้อมูล',
+                        'เขียนรายงานและpublication',
+                        'ปิดโปรเจค',
+                        'ยกเลิกโปรเจค'
+                    ];
+
+                    const statusData = {};
+                    rows.forEach((project) => {
+                        const year = getYearLabel(project);
+                        const status = project.planning_status || 'ไม่ระบุ';
+                        if (!statuses.includes(status)) return;
+                        statusData[year] = statusData[year] || Object.fromEntries(statuses.map((item) => [item, 0]));
+                        statusData[year][status] += 1;
+                    });
+
+                    const years = sortYearLabels(Object.keys(statusData));
+                    if (!years.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    const dataLabelPlugin = {
+                        id: `statusLabel_${years.join('_')}`.slice(0, 48),
+                        afterDatasetsDraw(chart) {
+                            const { ctx, chartArea: { top, right } } = chart;
+                            ctx.save();
+                            ctx.font = 'bold 11px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillStyle = '#111';
+
+                            chart.data.datasets.forEach((dataset, dsIndex) => {
+                                if (!chart.isDatasetVisible(dsIndex)) return;
+                                const meta = chart.getDatasetMeta(dsIndex);
+                                meta.data.forEach((bar, index) => {
+                                    const value = Number(dataset.data[index] || 0);
+                                    if (!(value > 0)) return;
+                                    let drawX = bar.x;
+                                    let drawY = bar.y - 3;
+                                    if (drawY < top + 8) drawY = top + 8;
+                                    if (drawX > right - 2) drawX = right - 2;
+                                    ctx.fillText(String(value), drawX, drawY);
+                                });
+                            });
+
+                            ctx.restore();
+                        }
+                    };
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: years,
+                            datasets: statuses.map((status, index) => ({
+                                label: status,
+                                data: years.map((year) => statusData[year]?.[status] ?? 0),
+                                backgroundColor: `hsl(${(index * 46) % 360} 70% 60%)`,
+                                stack: 'status'
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 16
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [dataLabelPlugin]
+                    });
+                }
+
+                function renderCollabBreakdownFiltered(rows) {
+                    const canvas = document.getElementById('chartCollabBreakdown');
+                    if (!canvas) return;
+
+                    const categories = [
+                        'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ',
+                        'โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ',
+                        'โครงการวิจัยนอกคณะ'
+                    ];
+                    const normalizeUnitStatus = (raw) => {
+                        const text = (raw ?? '').toString().trim();
+                        if (!text) return null;
+                        if (text.includes('ภายในหน่วยวิจัย') && text.includes('สุขภา')) return categories[0];
+                        if (text.includes('นอกหน่วย') && text.includes('คณะ')) return categories[1];
+                        if (text.includes('วิจัยนอกคณะ')) return categories[2];
+                        return null;
+                    };
+
+                    const years = sortYearLabels(Array.from(new Set(rows.map(getYearLabel))));
+                    if (!years.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    const byYearCategory = {};
+                    years.forEach((year) => {
+                        byYearCategory[year] = Object.fromEntries(categories.map((category) => [category, 0]));
+                    });
+
+                    rows.forEach((project) => {
+                        const year = getYearLabel(project);
+                        const category = normalizeUnitStatus(project.project_list);
+                        if (!category) return;
+                        byYearCategory[year] = byYearCategory[year] || Object.fromEntries(categories.map((item) => [item, 0]));
+                        byYearCategory[year][category] += 1;
+                    });
+
+                    const dataLabelPlugin = {
+                        id: `collabLabel_${years.join('_')}`.slice(0, 48),
+                        afterDatasetsDraw(chart) {
+                            const { ctx, chartArea: { top, right } } = chart;
+                            ctx.save();
+                            ctx.font = 'bold 11px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillStyle = '#111827';
+
+                            chart.data.datasets.forEach((dataset, dsIndex) => {
+                                if (!chart.isDatasetVisible(dsIndex)) return;
+                                const meta = chart.getDatasetMeta(dsIndex);
+                                meta.data.forEach((bar, index) => {
+                                    const value = Number(dataset.data[index] || 0);
+                                    if (!(value > 0)) return;
+                                    let x = bar.x;
+                                    let y = bar.y - 3;
+                                    if (y < top + 8) y = top + 8;
+                                    if (x > right - 2) x = right - 2;
+                                    ctx.fillText(String(value), x, y);
+                                });
+                            });
+
+                            ctx.restore();
+                        }
+                    };
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: years,
+                            datasets: categories.map((category, index) => ({
+                                label: category,
+                                data: years.map((year) => byYearCategory[year]?.[category] ?? 0),
+                                backgroundColor: `hsl(${(index * 60) % 360} 70% 60%)`,
+                                stack: 'collab'
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 16
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [dataLabelPlugin]
+                    });
+                }
+
+                function renderYearlyLifecycleFiltered(rows) {
+                    const canvas = document.getElementById('chartYearlyNewVsTotal');
+                    if (!canvas) return;
+
+                    const startYears = rows.map((project) => projectLifecycleStartYearCE(project)).filter(Number.isFinite);
+                    if (!startYears.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    const eventYears = rows
+                        .filter((project) => {
+                            const key = projectLifecycleStatusKey(project);
+                            return key === 'completed' || key === 'cancelled';
+                        })
+                        .map((project) => projectLifecycleEventYearCE(project))
+                        .filter(Number.isFinite);
+
+                    const minYearCE = Math.min(...startYears);
+                    const currentYearCE = new Date().getFullYear();
+                    const maxYearCE = Math.max(...startYears, ...eventYears, currentYearCE);
+                    window.yearlyLifecycleHorizonCE = maxYearCE;
+
+                    const yearsCE = [];
+                    for (let year = minYearCE; year <= maxYearCE; year += 1) yearsCE.push(year);
+                    const yearLabels = yearsCE.map((year) => yearLabelTH(year));
+                    window.yearlyNewVsTotalLabelMap = {};
+                    yearLabels.forEach((label, index) => {
+                        window.yearlyNewVsTotalLabelMap[label] = yearsCE[index];
+                    });
+
+                    const totalPerYear = {};
+                    const newPerYear = {};
+                    const inProgressPerYear = {};
+                    const completedPerYear = {};
+                    const cancelledPerYear = {};
+
+                    yearsCE.forEach((year) => {
+                        totalPerYear[year] = rows.filter((project) => {
+                            const startYear = projectLifecycleStartYearCE(project);
+                            if (Number.isFinite(startYear)) return startYear <= year;
+                            return year === maxYearCE;
+                        }).length;
+                        newPerYear[year] = rows.filter((project) => projectLifecycleStartYearCE(project) === year).length;
+                        inProgressPerYear[year] = rows.filter((project) => projectIsInProgressInYear(project, year, maxYearCE)).length;
+                        completedPerYear[year] = rows.filter((project) =>
+                            projectLifecycleStatusKey(project) === 'completed' &&
+                            Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
+                        ).length;
+                        cancelledPerYear[year] = rows.filter((project) =>
+                            projectLifecycleStatusKey(project) === 'cancelled' &&
+                            Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
+                        ).length;
+                    });
+
+                    const valueLabelPlugin = {
+                        id: `lifecycleLabel_${yearsCE.join('_')}`.slice(0, 48),
+                        afterDatasetsDraw(chart) {
+                            const { ctx, chartArea: { top, right } } = chart;
+                            ctx.save();
+                            ctx.font = 'bold 11px sans-serif';
+                            ctx.fillStyle = '#111827';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+
+                            const totalIndex = chart.data.datasets.findIndex((dataset) => String(dataset.label || '').trim() === 'ทั้งหมด');
+                            if (totalIndex >= 0 && chart.isDatasetVisible(totalIndex)) {
+                                const dataset = chart.data.datasets[totalIndex];
+                                const meta = chart.getDatasetMeta(totalIndex);
+                                meta.data.forEach((point, index) => {
+                                    const value = Number(dataset.data[index] || 0);
+                                    if (!(value > 0)) return;
+                                    let x = point.x;
+                                    let y = point.y - 10;
+                                    if (y < top + 10) y = top + 10;
+                                    if (x > right - 6) x = right - 6;
+                                    ctx.fillText(String(value), x, y);
+                                });
+                            }
+
+                            ctx.restore();
+                        }
+                    };
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: yearLabels,
+                            datasets: [
+                                {
+                                    label: 'ทั้งหมด',
+                                    data: yearsCE.map((year) => totalPerYear[year]),
+                                    type: 'line',
+                                    borderColor: '#60a5fa',
+                                    backgroundColor: '#60a5fa',
+                                    pointBackgroundColor: '#60a5fa',
+                                    pointBorderColor: '#ffffff',
+                                    pointBorderWidth: 1.5,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 7,
+                                    borderWidth: 3,
+                                    tension: 0.25,
+                                    fill: false,
+                                    order: 0,
+                                    stack: 'totalLine'
+                                },
+                                {
+                                    label: 'ใหม่',
+                                    data: yearsCE.map((year) => newPerYear[year]),
+                                    backgroundColor: '#34d399',
+                                    stack: 'status',
+                                    order: 1
+                                },
+                                {
+                                    label: 'กำลังดำเนินการ',
+                                    data: yearsCE.map((year) => inProgressPerYear[year]),
+                                    backgroundColor: '#fbbf24',
+                                    stack: 'status',
+                                    order: 1
+                                },
+                                {
+                                    label: 'ปิดโปรเจค',
+                                    data: yearsCE.map((year) => completedPerYear[year]),
+                                    backgroundColor: '#ef4444',
+                                    stack: 'status',
+                                    order: 1
+                                },
+                                {
+                                    label: 'ยกเลิกโปรเจค',
+                                    data: yearsCE.map((year) => cancelledPerYear[year]),
+                                    backgroundColor: '#f97316',
+                                    stack: 'status',
+                                    order: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            layout: {
+                                padding: {
+                                    top: 16,
+                                    right: 16
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [valueLabelPlugin]
+                    });
+                }
+
+                function renderFteSummaryFiltered(rows) {
+                    const canvas = document.getElementById('chartFteSummary');
+                    if (!canvas) return;
+
+                    const fteRows = getRelatedFtes(rows);
+                    const fteData = {};
+                    fteRows.forEach((item) => {
+                        const name = item.name || 'ไม่ระบุ';
+                        fteData[name] = fteData[name] || { fte: 0, projectSet: new Set() };
+                        fteData[name].fte += toNumber(item.fte_value || item.fte || 0);
+                        if (item.project_id !== null && item.project_id !== undefined) {
+                            fteData[name].projectSet.add(item.project_id);
+                        }
+                    });
+
+                    const datasets = Object.entries(fteData).map(([name, data]) => ({
+                        label: name,
+                        data: [{
+                            x: data.projectSet.size,
+                            y: data.fte,
+                            r: Math.max(6, Math.min(28, data.fte * 8))
+                        }]
+                    }));
+
+                    if (!datasets.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bubble',
+                        data: {
+                            datasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => `${ctx.dataset.label}: โครงการ ${ctx.raw.x} / FTE ${Number(ctx.raw.y || 0).toFixed(2)}`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true
+                                },
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+
+                function renderRedZoneAndOverdueFiltered(rows) {
+                    const now = new Date();
+                    const overdueProjects = [];
+                    const dueSoon = { '3': 0, '6': 0, '9': 0 };
+
+                    rows.forEach((project) => {
+                        const endDate = parseProjectDate(getEndDateRaw(project));
+                        if (!endDate) return;
+                        const diffDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+                        const diffMonths = diffDays / 30.4375;
+
+                        if (diffDays < 0) {
+                            overdueProjects.push({ project, endDate, diffDays });
+                        } else if (diffMonths <= 3) {
+                            dueSoon['3'] += 1;
+                        } else if (diffMonths <= 6) {
+                            dueSoon['6'] += 1;
+                        } else if (diffMonths <= 9) {
+                            dueSoon['9'] += 1;
+                        }
+                    });
+
+                    const timelineCanvas = document.getElementById('chartRedZoneTimeline');
+                    if (timelineCanvas) {
+                        Chart.getChart(timelineCanvas)?.destroy();
+                        const barValuePlugin = {
+                            id: 'barValueRedZoneFiltered',
+                            afterDatasetsDraw(chart) {
+                                const {
+                                    ctx,
+                                    chartArea: {
+                                        top,
+                                        right
+                                    }
+                                } = chart;
+                                const meta = chart.getDatasetMeta(0);
+                                const ds = chart.data.datasets[0];
+                                if (!meta || !ds) return;
+                                ctx.save();
+                                ctx.font = 'bold 11px sans-serif';
+                                ctx.fillStyle = '#111827';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'bottom';
+                                meta.data.forEach((bar, i) => {
+                                    const v = Number(ds.data[i] || 0);
+                                    if (!isFinite(v) || v <= 0) return;
+                                    let x = bar.x;
+                                    let y = bar.y - 4;
+                                    if (y < top + 8) y = top + 8;
+                                    if (x > right - 2) x = right - 2;
+                                    ctx.fillText(String(v), x, y);
+                                });
+                                ctx.restore();
+                            }
+                        };
+                        new Chart(timelineCanvas, {
+                            type: 'bar',
+                            data: {
+                                labels: ['เกินกำหนด', '3 เดือน', '6 เดือน', '9 เดือน'],
+                                datasets: [{
+                                    label: 'จำนวนโครงการ',
+                                    data: [overdueProjects.length, dueSoon['3'], dueSoon['6'], dueSoon['9']],
+                                    backgroundColor: ['#b91c1c', '#d97706', '#f59e0b', '#fcd34d']
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            precision: 0
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: [barValuePlugin]
+                        });
+                    }
+
+                    const overdueCanvas = document.getElementById('chartOverdueProjects');
+                    if (overdueCanvas) {
+                        const projectsWithEndDate = rows.filter((project) => parseProjectDate(getEndDateRaw(project)));
+                        const totalProjects = projectsWithEndDate.length;
+                        Chart.getChart(overdueCanvas)?.destroy();
+                        const overdueCalloutPlugin = {
+                            id: 'doughnutCalloutOverdueFiltered',
+                            afterDatasetsDraw(chart) {
+                                const {
+                                    ctx,
+                                    chartArea: {
+                                        left,
+                                        right,
+                                        top,
+                                        bottom
+                                    }
+                                } = chart;
+                                const meta = chart.getDatasetMeta(0);
+                                const ds = chart.data.datasets?.[0];
+                                if (!meta || !ds) return;
+
+                                const total = (Array.isArray(ds.data) ? ds.data : [])
+                                    .reduce((sum, v) => sum + (Number(v) || 0), 0) || 1;
+
+                                ctx.save();
+                                ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
+                                ctx.textBaseline = 'middle';
+                                ctx.lineWidth = 1.2;
+
+                                meta.data.forEach((arc, i) => {
+                                    const v = Number(ds.data[i] || 0);
+                                    if (!isFinite(v) || v <= 0) return;
+
+                                    const angle = (arc.startAngle + arc.endAngle) / 2;
+                                    const cos = Math.cos(angle);
+                                    const sin = Math.sin(angle);
+
+                                    const sx = arc.x + cos * (arc.outerRadius - 1);
+                                    const sy = arc.y + sin * (arc.outerRadius - 1);
+                                    const mx = arc.x + cos * (arc.outerRadius + 12);
+                                    let my = arc.y + sin * (arc.outerRadius + 12);
+
+                                    const pct = ((v / total) * 100).toFixed(1);
+                                    const label = `${v} โครงการ (${pct}%)`;
+                                    const textWidth = ctx.measureText(label).width;
+                                    let tx = mx + (cos >= 0 ? 16 : -16);
+
+                                    if (cos >= 0) {
+                                        const maxX = right - textWidth - 4;
+                                        if (tx > maxX) tx = maxX;
+                                        if (tx < left + 4) tx = left + 4;
+                                        ctx.textAlign = 'left';
+                                    } else {
+                                        const minX = left + textWidth + 4;
+                                        if (tx < minX) tx = minX;
+                                        if (tx > right - 4) tx = right - 4;
+                                        ctx.textAlign = 'right';
+                                    }
+
+                                    if (my < top + 10) my = top + 10;
+                                    if (my > bottom - 10) my = bottom - 10;
+
+                                    const segColor = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : '#64748b';
+                                    ctx.strokeStyle = segColor || '#64748b';
+                                    ctx.fillStyle = '#0f172a';
+
+                                    ctx.beginPath();
+                                    ctx.moveTo(sx, sy);
+                                    ctx.lineTo(mx, my);
+                                    ctx.lineTo(tx + (cos >= 0 ? -4 : 4), my);
+                                    ctx.stroke();
+
+                                    ctx.fillText(label, tx, my);
+                                });
+                                ctx.restore();
+                            }
+                        };
+                        new Chart(overdueCanvas, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['เกินกำหนดแล้ว', 'โครงการที่ยังดำเนินการ'],
+                                datasets: [{
+                                    data: totalProjects ? [overdueProjects.length, Math.max(totalProjects - overdueProjects.length, 0)] : [1],
+                                    backgroundColor: totalProjects ? ['#ef4444', '#38bdf8'] : ['#e5e7eb'],
+                                    borderColor: '#ffffff',
+                                    borderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '64%',
+                                layout: {
+                                    padding: {
+                                        left: 26,
+                                        right: 26,
+                                        top: 14,
+                                        bottom: 14
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom'
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: (ctx) => totalProjects ? ` ${ctx.label}: ${ctx.parsed || 0} โครงการ` : ' ไม่มีข้อมูล'
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: [overdueCalloutPlugin]
+                        });
+                    }
+
+                    const overdueBadge = document.getElementById('overdueCountBadge');
+                    if (overdueBadge) overdueBadge.textContent = `${overdueProjects.length} โครงการ`;
+
+                    const state = window.filteredOverdueTableState || { page: 1, pageSize: 10, bound: false };
+                    state.rows = overdueProjects.slice().sort((a, b) => a.endDate - b.endDate);
+                    window.filteredOverdueTableState = state;
+
+                    const tbody = document.getElementById('overdueTableBody');
+                    const prevButton = document.getElementById('overduePrev');
+                    const nextButton = document.getElementById('overdueNext');
+                    const pagination = document.getElementById('overduePagination');
+
+                    const renderOverdueTable = () => {
+                        if (!tbody) return;
+                        const totalPages = Math.max(Math.ceil(state.rows.length / state.pageSize), 1);
+                        state.page = Math.min(Math.max(state.page, 1), totalPages);
+                        const start = (state.page - 1) * state.pageSize;
+                        const pageRows = state.rows.slice(start, start + state.pageSize);
+
+                        tbody.innerHTML = '';
+                        if (!pageRows.length) {
+                            tbody.innerHTML = `<tr class="border-t"><td colspan="4" class="p-3 text-center text-gray-500">ไม่มีโครงการที่เกินกำหนด</td></tr>`;
+                        } else {
+                            pageRows.forEach((item) => {
+                                const overdueDays = Math.ceil(Math.abs(item.diffDays));
+                                const row = document.createElement('tr');
+                                row.className = 'border-t';
+                                row.innerHTML = `
+                                    <td class="p-2 text-left text-blue-700 hover:underline" data-label="โครงการ">
+                                        <a href="/rm/projects/${item.project.id}" target="_blank" rel="noopener">${escapeHtml(item.project.project_name_th || '-')}</a>
+                                    </td>
+                                    <td class="p-2 text-center" data-label="วันสิ้นสุด">${escapeHtml(formatDateTH(item.endDate, item.project.end_date || '-'))}</td>
+                                    <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนด (วัน)">${overdueDays}</td>
+                                    <td class="p-2 text-center" data-label="PI">${escapeHtml(item.project.pi_name || '-')}</td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+                        }
+
+                        if (pagination) pagination.textContent = `หน้า ${state.page} / ${totalPages}`;
+                        if (prevButton) prevButton.disabled = state.page <= 1;
+                        if (nextButton) nextButton.disabled = state.page >= totalPages;
+                    };
+
+                    if (!state.bound) {
+                        prevButton?.addEventListener('click', () => {
+                            state.page = Math.max(state.page - 1, 1);
+                            renderOverdueTable();
+                        });
+                        nextButton?.addEventListener('click', () => {
+                            state.page += 1;
+                            renderOverdueTable();
+                        });
+                        state.bound = true;
+                    }
+
+                    renderOverdueTable();
+
+                    const coResearchCanvas = document.getElementById('chartCoResearchByUnitWindow');
+                    if (coResearchCanvas) {
+                        const unitLabels = new Set();
+                        rows.forEach((project) => {
+                            const endDate = parseProjectDate(getEndDateRaw(project));
+                            if (!endDate) return;
+                            const diffMonths = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.4375);
+                            if (diffMonths < 0 || diffMonths > 12) return;
+                            uniqueCoResearch(getCoResearchList(project)).forEach((member) => {
+                                unitLabels.add(coResearchUnitLabel(member));
+                            });
+                        });
+
+                        const unitList = [...unitLabels].sort((a, b) => a.localeCompare(b, 'th'));
+                        if (!unitList.length) {
+                            drawEmptyChart(coResearchCanvas);
+                            return;
+                        }
+
+                        const countByUnitWithin = (unit, maxMonths) => rows.reduce((total, project) => {
+                            const endDate = parseProjectDate(getEndDateRaw(project));
+                            if (!endDate) return total;
+                            const diffMonths = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.4375);
+                            if (diffMonths < 0 || diffMonths > maxMonths) return total;
+                            const members = coResearchMembers(project).filter((member) => member.unitLabel === unit);
+                            return total + (members.length ? 1 : 0);
+                        }, 0);
+
+                        Chart.getChart(coResearchCanvas)?.destroy();
+                        const barValuePlugin = {
+                            id: 'barValueCoResearchFiltered',
+                            afterDatasetsDraw(chart) {
+                                const {
+                                    ctx,
+                                    chartArea: {
+                                        top,
+                                        right
+                                    }
+                                } = chart;
+                                ctx.save();
+                                ctx.font = 'bold 11px sans-serif';
+                                ctx.fillStyle = '#111827';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'bottom';
+                                chart.data.datasets.forEach((ds, dsIndex) => {
+                                    if (!chart.isDatasetVisible(dsIndex)) return;
+                                    const meta = chart.getDatasetMeta(dsIndex);
+                                    meta.data.forEach((bar, i) => {
+                                        const v = Number(ds.data[i] || 0);
+                                        if (!isFinite(v) || v <= 0) return;
+                                        let x = bar.x;
+                                        let y = bar.y - 3;
+                                        if (y < top + 8) y = top + 8;
+                                        if (x > right - 2) x = right - 2;
+                                        ctx.fillText(String(v), x, y);
+                                    });
+                                });
+                                ctx.restore();
+                            }
+                        };
+                        new Chart(coResearchCanvas, {
+                            type: 'bar',
+                            data: {
+                                labels: unitList,
+                                datasets: [
+                                    { label: 'ภายใน 3 เดือน', data: unitList.map((unit) => countByUnitWithin(unit, 3)), backgroundColor: '#0f766e' },
+                                    { label: 'ภายใน 6 เดือน', data: unitList.map((unit) => countByUnitWithin(unit, 6)), backgroundColor: '#c0841a' },
+                                    { label: 'ภายใน 1 ปี', data: unitList.map((unit) => countByUnitWithin(unit, 12)), backgroundColor: '#475569' }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom'
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            precision: 0
+                                        }
+                                    },
+                                    x: {
+                                        ticks: {
+                                            autoSkip: false
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: [barValuePlugin]
+                        });
+                    }
+                }
+
+                function renderIrbExpiryFiltered(rows) {
+                    const canvas = document.getElementById('chartIRBExpiry');
+                    if (!canvas) return;
+
+                    const group = {};
+                    getRelatedIrbs(rows).forEach((irbItem) => {
+                        const expDate = parseProjectDate(irbItem.exp_date);
+                        if (!expDate) return;
+                        const monthsAhead = (expDate - new Date()) / (1000 * 60 * 60 * 24 * 30);
+                        if (monthsAhead >= 0 && monthsAhead <= 6) {
+                            const key = `${expDate.getMonth() + 1}/${expDate.getFullYear()}`;
+                            group[key] = (group[key] || 0) + 1;
+                        }
+                    });
+
+                    const labels = Object.keys(group).sort((a, b) => new Date(a) - new Date(b));
+                    if (!labels.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    Chart.getChart(canvas)?.destroy();
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'IRB ใกล้หมดอายุ',
+                                data: labels.map((label) => group[label]),
+                                backgroundColor: '#ef4444'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+
                 function refreshRealtimeDashboard() {
                     const rows = getRows();
                     updateSummary(rows);
@@ -6698,6 +8413,16 @@
                     renderProjectsPerYear(rows);
                     renderFundingSplit(rows);
                     renderBudgetPerYear(rows);
+                    renderOutputStackedFiltered(rows);
+                    renderFundingSourceYearChartsFiltered(rows);
+                    renderPublicationPerYearFiltered(rows);
+                    renderAuthorRolePerYearFiltered(rows);
+                    renderStatusYearFiltered(rows);
+                    renderCollabBreakdownFiltered(rows);
+                    renderYearlyLifecycleFiltered(rows);
+                    renderFteSummaryFiltered(rows);
+                    renderRedZoneAndOverdueFiltered(rows);
+                    renderIrbExpiryFiltered(rows);
                     window.renderFundingSourceCharts?.(rows);
                     window.renderPiByUnitChart?.(rows);
                     window.applyChartCanvasSizing?.();
@@ -6709,10 +8434,10 @@
                     debounceTimer = setTimeout(refreshRealtimeDashboard, 120);
                 };
 
-                [el.filterYear, el.filterTheme, el.filterFunding].forEach((node) => {
+                [el.filterYear, el.filterTheme, el.filterFunding, el.filterType, el.filterStatus, el.filterSource].forEach((node) => {
                     node?.addEventListener('change', refreshRealtimeDashboard);
                 });
-                [el.filterName, el.filterPI, el.tableSearch].forEach((node) => {
+                [el.filterName, el.tableSearch].forEach((node) => {
                     node?.addEventListener('input', refreshDebounced);
                 });
 
@@ -6720,8 +8445,10 @@
                     if (el.filterYear) el.filterYear.value = '';
                     if (el.filterTheme) el.filterTheme.value = '';
                     if (el.filterFunding) el.filterFunding.value = '';
+                    if (el.filterType) el.filterType.value = '';
+                    if (el.filterStatus) el.filterStatus.value = '';
+                    if (el.filterSource) el.filterSource.value = '';
                     if (el.filterName) el.filterName.value = '';
-                    if (el.filterPI) el.filterPI.value = '';
                     if (el.tableSearch) el.tableSearch.value = '';
 
                     el.filterYear?.dispatchEvent(new Event('change', {
@@ -6733,10 +8460,16 @@
                     el.filterFunding?.dispatchEvent(new Event('change', {
                         bubbles: true
                     }));
-                    el.filterName?.dispatchEvent(new Event('input', {
+                    el.filterType?.dispatchEvent(new Event('change', {
                         bubbles: true
                     }));
-                    el.filterPI?.dispatchEvent(new Event('input', {
+                    el.filterStatus?.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                    el.filterSource?.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                    el.filterName?.dispatchEvent(new Event('input', {
                         bubbles: true
                     }));
                     el.tableSearch?.dispatchEvent(new Event('input', {
@@ -6747,7 +8480,10 @@
                 });
 
                 window.refreshRealtimeDashboard = refreshRealtimeDashboard;
-                refreshRealtimeDashboard();
+                const initialRows = getRows();
+                updateSummary(initialRows);
+                updateTypeTable(initialRows);
+                window.applyChartCanvasSizing?.();
             })();
         </script>
     </div>

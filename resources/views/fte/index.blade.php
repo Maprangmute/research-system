@@ -2,7 +2,27 @@
 
 @section('content')
     <style>
-        @media (max-width: 768px) {
+        .mode-option {
+            transition: all .16s ease;
+        }
+
+        .mode-option.is-active {
+            background: #0284c7;
+            border-color: #0284c7;
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(2, 132, 199, .22);
+        }
+
+        .fte-table-wrap,
+        .fte-detail-table-wrap {
+            width: 100%;
+        }
+
+        @media (max-width: 1024px) {
+            .fte-table-wrap,
+            .fte-detail-table-wrap {
+                overflow-x: visible;
+            }
 
             .fte-index-table thead {
                 display: none;
@@ -27,6 +47,8 @@
             .fte-index-table td {
                 display: flex;
                 justify-content: space-between;
+                align-items: flex-start;
+                flex-wrap: wrap;
                 gap: 12px;
                 padding: 6px 0;
                 text-align: left;
@@ -37,6 +59,7 @@
                 font-size: 11px;
                 text-transform: uppercase;
                 color: #94a3b8;
+                flex: 0 0 120px;
             }
 
             .fte-index-table .fte-detail-row td {
@@ -70,6 +93,8 @@
             .fte-detail-table td {
                 display: flex;
                 justify-content: space-between;
+                align-items: flex-start;
+                flex-wrap: wrap;
                 gap: 12px;
                 padding: 6px 0;
                 text-align: left;
@@ -80,11 +105,267 @@
                 font-size: 11px;
                 text-transform: uppercase;
                 color: #94a3b8;
+                flex: 0 0 120px;
+            }
+
+            .fte-index-table,
+            .fte-detail-table {
+                min-width: 0 !important;
+                width: 100% !important;
+                table-layout: fixed;
+            }
+
+            .fte-index-table td>*,
+            .fte-detail-table td>* {
+                max-width: 100%;
+            }
+
+            .fte-index-table td[data-label="รายละเอียด"] button {
+                width: 100%;
+            }
+
+            .fte-index-table tr.fte-detail-row,
+            .fte-detail-table tr {
+                box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+            }
+
+            .fte-index-table tr.fte-detail-row {
+                border: none;
+                background: transparent;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            .fte-index-table tr.fte-detail-row td {
+                padding: 0;
+            }
+
+            .fte-index-table tr.fte-detail-row.is-open {
+                display: block;
+            }
+        }
+
+        .fte-index-table tr.fte-detail-row {
+            display: none;
+        }
+
+        .fte-index-table tr.fte-detail-row.is-open {
+            display: table-row;
+        }
+
+        @media (max-width: 1024px) {
+            .fte-index-table tr.fte-detail-row.is-open {
+                display: block;
+            }
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.35s ease;
+        }
+
+        .fte-filter-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 48;
+            background: rgba(15, 23, 42, .08);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .25s ease;
+        }
+
+        .fte-filter-drawer-overlay.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .fte-filter-drawer {
+            position: fixed;
+            inset: 0 auto 0 0;
+            z-index: 49;
+            width: min(92vw, 380px);
+            height: 100dvh;
+            transform: translateX(-105%);
+            transition: transform .25s ease;
+        }
+
+        .fte-filter-drawer.is-open {
+            transform: translateX(0);
+        }
+
+        .fte-filter-fab {
+            position: fixed;
+            left: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            z-index: 35;
+            width: 76px;
+            min-height: 84px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: .35rem;
+            padding: .75rem .55rem;
+            border-radius: 22px;
+            border: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, .95);
+            color: #0f172a;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, .12);
+            backdrop-filter: blur(14px);
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: opacity .2s ease, transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+        }
+
+        .fte-filter-fab.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .fte-filter-fab.is-visible:hover {
+            transform: translateY(-2px);
+            border-color: #67e8f9;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, .16);
+        }
+
+        .fte-filter-fab:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(34, 211, 238, .18), 0 20px 40px rgba(15, 23, 42, .16);
+        }
+
+        .fte-filter-fab__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #0f172a 0%, #155e75 100%);
+            color: #f8fafc;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
+        }
+
+        .fte-filter-fab__title {
+            font-size: .74rem;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .fte-filter-fab__meta {
+            font-size: .61rem;
+            color: #64748b;
+            line-height: 1.1;
+            text-align: center;
+        }
+
+        .fte-filter-fab__badge {
+            position: absolute;
+            top: -0.35rem;
+            right: -0.35rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.45rem;
+            height: 1.45rem;
+            padding: 0 .32rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: .68rem;
+            font-weight: 800;
+            line-height: 1;
+            box-shadow: 0 10px 20px rgba(239, 68, 68, .3);
+        }
+
+        .fte-filter-fab__badge.hidden {
+            display: none;
+        }
+
+        .fte-filter-pill {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            border: 1px solid #bae6fd;
+            background: #ecfeff;
+            color: #155e75;
+            padding: .4rem .8rem;
+            font-size: .75rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        @media (max-width: 1024px) {
+            .fte-filter-fab {
+                width: 68px;
+                min-height: 76px;
+                padding: .65rem .45rem;
+                border-radius: 20px;
+            }
+
+            .fte-filter-fab__icon {
+                width: 36px;
+                height: 36px;
+                border-radius: 15px;
+            }
+
+            .fte-filter-fab__title {
+                font-size: .68rem;
+            }
+
+            .fte-filter-fab__meta {
+                font-size: .58rem;
+            }
+
+            .fte-filter-fab__badge {
+                top: -0.3rem;
+                right: -0.3rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .fte-filter-fab {
+                width: 58px;
+                min-height: 58px;
+                padding: 8px;
+                border-radius: 18px;
+                gap: 0;
+            }
+
+            .fte-filter-fab__icon {
+                width: 34px;
+                height: 34px;
+                border-radius: 14px;
+            }
+
+            .fte-filter-fab__title,
+            .fte-filter-fab__meta {
+                display: none;
+            }
+
+            .fte-filter-fab__badge {
+                min-width: 1.25rem;
+                height: 1.25rem;
+                font-size: .62rem;
             }
         }
     </style>
-    <div class="max-w-6xl mx-auto p-4">
 
+    <div class="max-w-[92rem] mx-auto p-4">
         <div class="mb-5 flex items-center gap-4">
             <a href="javascript:history.back()" class="text-blue-600 hover:underline flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -96,41 +377,183 @@
 
         <h2 class="text-xl mb-2 md:text-2xl font-bold">📊 สรุป FTE รายบุคคล</h2>
 
-        <!-- Filter Section -->
-        <div class="bg-gradient-to-r from-blue-50 to-white border border-blue-100 rounded-xl shadow mb-6 px-4 py-6">
-            <form method="GET" id="filter-form" autocomplete="off"
-                class="flex flex-wrap gap-x-4 gap-y-3 items-end w-full">
-
-                {{-- Mode --}}
-                <div class="flex flex-col flex-1 min-w-[130px] max-w-xs">
-                    <label class="text-gray-800 font-semibold mb-1">ดูข้อมูล</label>
-                    <select name="mode" id="mode"
-                        class="rounded-lg border-gray-300 p-2 focus:ring-2 focus:ring-blue-300 transition w-full"
-                        onchange="resetOtherFilters(); this.form.submit();">
+        <div id="fte-filter-card" class="bg-gradient-to-r from-sky-50 via-white to-cyan-50 border border-sky-100 rounded-2xl shadow-sm mb-6 px-4 py-6">
+            <form method="GET" id="filter-form" autocomplete="off" class="space-y-4">
+                <div class="flex flex-col">
+                    <label class="text-slate-700 font-semibold mb-2">ดูข้อมูล</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button type="button" data-mode-value="year"
+                            class="mode-option w-full rounded-xl border px-4 py-2.5 text-sm font-semibold transition">
+                            รายปี
+                        </button>
+                        <button type="button" data-mode-value="month"
+                            class="mode-option w-full rounded-xl border px-4 py-2.5 text-sm font-semibold transition">
+                            เดือนนี้
+                        </button>
+                        <button type="button" data-mode-value="custom"
+                            class="mode-option w-full rounded-xl border px-4 py-2.5 text-sm font-semibold transition">
+                            เลือกช่วงวันที่
+                        </button>
+                    </div>
+                    <select name="mode" id="mode" class="sr-only">
                         <option value="year" {{ $mode == 'year' ? 'selected' : '' }}>รายปี</option>
                         <option value="month" {{ $mode == 'month' ? 'selected' : '' }}>เดือนนี้</option>
                         <option value="custom" {{ $mode == 'custom' ? 'selected' : '' }}>เลือกช่วงวันที่</option>
                     </select>
                 </div>
 
-                {{-- Year --}}
-                <div id="filter-year"
-                    class="flex flex-col flex-1 min-w-[110px] max-w-xs {{ $mode === 'year' ? '' : 'hidden' }}">
-                    <label class="text-gray-800 mb-1">ปี (พ.ศ.)</label>
-                    <select name="year" id="yearSelect" class="rounded-lg border-gray-300 p-2 w-full"
-                        onchange="this.form.submit();">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-end">
+                    <div class="lg:col-span-9">
+                        <div id="filter-year" class="flex flex-col {{ $mode === 'year' ? '' : 'hidden' }}">
+                            <label class="text-slate-700 mb-1">ปี (พ.ศ.)</label>
+                            <select name="year" id="yearSelect" class="rounded-xl border-slate-200 bg-white p-2.5 focus:ring-2 focus:ring-sky-200 w-full">
+                                @foreach ($years as $y)
+                                    <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div id="filter-month" class="flex flex-col {{ $mode === 'month' ? '' : 'hidden' }}">
+                            <label class="text-slate-700 mb-1">เดือน</label>
+                            <div class="rounded-xl border border-slate-200 bg-white p-2.5 px-3 text-base font-semibold text-slate-800 w-full">
+                                @php
+                                    $now = \Carbon\Carbon::now();
+                                    $monthLabel = $now->locale('th')->translatedFormat('F');
+                                    $yearLabel = $now->year + 543;
+                                @endphp
+                                {{ $monthLabel }} {{ $yearLabel }}
+                            </div>
+                        </div>
+
+                        <div id="filter-custom" class="flex flex-col {{ $mode === 'custom' ? '' : 'hidden' }}">
+                            <label class="text-slate-700 mb-1">ช่วงวันที่</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-2 items-end w-full">
+                                <div class="relative min-w-0">
+                                    <input name="start" id="dateStart"
+                                        class="js-date-be rounded-xl border-slate-200 bg-white p-2.5 w-full pl-9 focus:ring-2 focus:ring-sky-200"
+                                        placeholder="วันเริ่มต้น" value="{{ $start ?? '' }}" autocomplete="off">
+                                    <span class="absolute left-2 top-2.5 text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                    </span>
+                                </div>
+                                <span class="text-gray-500 pb-2">ถึง</span>
+                                <div class="relative min-w-0">
+                                    <input name="end" id="dateEnd"
+                                        class="js-date-be rounded-xl border-slate-200 bg-white p-2.5 w-full pl-9 focus:ring-2 focus:ring-sky-200"
+                                        placeholder="วันสิ้นสุด" value="{{ $end ?? '' }}" autocomplete="off">
+                                    <span class="absolute left-2 top-2.5 text-gray-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col lg:col-span-3">
+                        <label class="text-slate-700 mb-1">เรียงลำดับ</label>
+                        <select id="personSortSelect" class="rounded-xl border-slate-200 bg-white p-2.5 w-full focus:ring-2 focus:ring-sky-200">
+                            <option value="total_desc">FTE สะสม: มาก → น้อย</option>
+                            <option value="total_asc">FTE สะสม: น้อย → มาก</option>
+                            <option value="month_desc">FTE เดือนนี้: มาก → น้อย</option>
+                            <option value="month_asc">FTE เดือนนี้: น้อย → มาก</option>
+                            <option value="name_asc">ชื่อ: ก → ฮ</option>
+                            <option value="name_desc">ชื่อ: ฮ → ก</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col lg:col-span-10">
+                        <label class="text-slate-700 mb-1">ค้นหาบุคคลในตาราง</label>
+                        <input type="search" id="personSearchInput"
+                            class="rounded-xl border-slate-200 bg-white p-2.5 w-full focus:ring-2 focus:ring-sky-200"
+                            placeholder="พิมพ์ชื่อบุคคลเพื่อค้นหา">
+                    </div>
+
+                    <div class="flex flex-col lg:col-span-2">
+                        <label class="invisible mb-1">ล้างตัวกรอง</label>
+                        <button type="button" id="clearFiltersBtn"
+                            class="w-full px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 text-center">
+                            ล้างตัวกรอง
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="fte-results">
+            @include('fte.partials.index-table', [
+                'fteSummary' => $fteSummary,
+                'monthlyFTE' => $monthlyFTE,
+                'profiles' => $profiles,
+            ])
+        </div>
+    </div>
+
+    <div id="fte-filter-drawer-overlay" class="fte-filter-drawer-overlay"></div>
+    <aside id="fte-filter-drawer" class="fte-filter-drawer" aria-hidden="true">
+        <div class="flex h-full flex-col border-r border-slate-200 bg-white shadow-2xl">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">คัดกรองข้อมูล</h3>
+                    <p class="mt-1 text-xs text-slate-500">ค่าฟิลเตอร์ชุดนี้ sync กับฟิลเตอร์ด้านบนตาราง</p>
+                </div>
+                <button id="fte-filter-drawer-close" type="button"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
+                    <span class="sr-only">ปิดฟิลเตอร์</span>
+                    <span aria-hidden="true" class="text-xl leading-none">&times;</span>
+                </button>
+            </div>
+
+            <div class="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="fte-filter-pill">
+                        ปรับฟิลเตอร์แล้วผลจะอัปเดตทันที
+                    </span>
+                    <button type="button" id="drawerClearFiltersBtn"
+                        class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                        ล้างฟิลเตอร์
+                    </button>
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="text-slate-700 font-semibold mb-2">ดูข้อมูล</label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button type="button" data-drawer-mode-value="year"
+                            class="mode-option w-full rounded-xl border px-4 py-2.5 text-sm font-semibold transition">
+                            รายปี
+                        </button>
+                        <button type="button" data-drawer-mode-value="month"
+                            class="mode-option w-full rounded-xl border px-4 py-2.5 text-sm font-semibold transition">
+                            เดือนนี้
+                        </button>
+                        <button type="button" data-drawer-mode-value="custom"
+                            class="mode-option w-full rounded-xl border px-4 py-2.5 text-sm font-semibold transition">
+                            เลือกช่วงวันที่
+                        </button>
+                    </div>
+                </div>
+
+                <div id="drawer-filter-year" class="flex flex-col {{ $mode === 'year' ? '' : 'hidden' }}">
+                    <label class="text-slate-700 mb-1">ปี (พ.ศ.)</label>
+                    <select id="drawerYearSelect" class="rounded-xl border-slate-200 bg-white p-2.5 focus:ring-2 focus:ring-sky-200 w-full">
                         @foreach ($years as $y)
                             <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
                         @endforeach
                     </select>
                 </div>
 
-                {{-- Month --}}
-                <div id="filter-month"
-                    class="flex flex-col flex-1 min-w-[130px] max-w-xs {{ $mode === 'month' ? '' : 'hidden' }}">
-                    <label class="text-gray-800 mb-1">เดือน</label>
-                    <div
-                        class="rounded-lg border border-gray-200 bg-white p-2 px-3 text-base font-semibold text-blue-800 w-full">
+                <div id="drawer-filter-month" class="flex flex-col {{ $mode === 'month' ? '' : 'hidden' }}">
+                    <label class="text-slate-700 mb-1">เดือน</label>
+                    <div class="rounded-xl border border-slate-200 bg-white p-2.5 px-3 text-base font-semibold text-slate-800 w-full">
                         @php
                             $now = \Carbon\Carbon::now();
                             $monthLabel = $now->locale('th')->translatedFormat('F');
@@ -140,18 +563,15 @@
                     </div>
                 </div>
 
-                {{-- Custom Date --}}
-                <div id="filter-custom"
-                    class="flex flex-col flex-1 min-w-[220px] max-w-sm {{ $mode === 'custom' ? '' : 'hidden' }}">
-                    <label class="text-gray-800 mb-1">ช่วงวันที่</label>
-                    <div class="flex gap-2 items-end w-full">
-                        <div class="relative w-[130px]">
-                            <input name="start" id="dateStart"
-                                class="js-date-be rounded-lg border-gray-300 p-2 w-full pl-9 focus:ring-2 focus:ring-blue-200"
+                <div id="drawer-filter-custom" class="flex flex-col {{ $mode === 'custom' ? '' : 'hidden' }}">
+                    <label class="text-slate-700 mb-1">ช่วงวันที่</label>
+                    <div class="grid grid-cols-1 gap-2 items-end w-full">
+                        <div class="relative min-w-0">
+                            <input id="drawerDateStart"
+                                class="js-date-be rounded-xl border-slate-200 bg-white p-2.5 w-full pl-9 focus:ring-2 focus:ring-sky-200"
                                 placeholder="วันเริ่มต้น" value="{{ $start ?? '' }}" autocomplete="off">
                             <span class="absolute left-2 top-2.5 text-gray-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                                     <line x1="16" y1="2" x2="16" y2="6"></line>
                                     <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -159,14 +579,12 @@
                                 </svg>
                             </span>
                         </div>
-                        <span class="text-gray-500 mb-1">-</span>
-                        <div class="relative w-[130px]">
-                            <input name="end" id="dateEnd"
-                                class="js-date-be rounded-lg border-gray-300 p-2 w-full pl-9 focus:ring-2 focus:ring-blue-200"
+                        <div class="relative min-w-0">
+                            <input id="drawerDateEnd"
+                                class="js-date-be rounded-xl border-slate-200 bg-white p-2.5 w-full pl-9 focus:ring-2 focus:ring-sky-200"
                                 placeholder="วันสิ้นสุด" value="{{ $end ?? '' }}" autocomplete="off">
                             <span class="absolute left-2 top-2.5 text-gray-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                                     <line x1="16" y1="2" x2="16" y2="6"></line>
                                     <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -177,217 +595,53 @@
                     </div>
                 </div>
 
-                {{-- Person --}}
-                <div class="flex flex-col flex-1 min-w-[130px] max-w-xs">
-                    <label for="person" class="text-gray-800 mb-1">บุคคล</label>
-                    <select name="person" id="person" class="rounded-lg border-gray-300 p-2 w-full"
-                        onchange="this.form.submit();">
-                        <option value="">ทั้งหมด</option>
-                        @foreach ($personList as $name)
-                            <option value="{{ $name }}" {{ $person == $name ? 'selected' : '' }}>
-                                {{ $name }}</option>
-                        @endforeach
+                <div class="flex flex-col">
+                    <label class="text-slate-700 mb-1">เรียงลำดับ</label>
+                    <select id="drawerPersonSortSelect" class="rounded-xl border-slate-200 bg-white p-2.5 w-full focus:ring-2 focus:ring-sky-200">
+                        <option value="total_desc">FTE สะสม: มาก → น้อย</option>
+                        <option value="total_asc">FTE สะสม: น้อย → มาก</option>
+                        <option value="month_desc">FTE เดือนนี้: มาก → น้อย</option>
+                        <option value="month_asc">FTE เดือนนี้: น้อย → มาก</option>
+                        <option value="name_asc">ชื่อ: ก → ฮ</option>
+                        <option value="name_desc">ชื่อ: ฮ → ก</option>
                     </select>
                 </div>
 
-                {{-- Reset --}}
-                @if (request()->has('year') || request()->has('person') || request('mode') || request('start'))
-                    <div class="flex flex-col min-w-[110px] max-w-xs">
-                        <label class="invisible mb-1">ล้างตัวกรอง</label>
-                        <a href="{{ route('fte.index', ['mode' => 'month']) }}"
-                            class="w-full px-4 py-2 rounded-lg bg-gray-100 text-blue-700 font-bold shadow hover:bg-blue-200 text-center">
-                            ล้างตัวกรอง
-                        </a>
-                    </div>
-                @endif
-            </form>
+                <div class="flex flex-col">
+                    <label class="text-slate-700 mb-1">ค้นหาบุคคลในตาราง</label>
+                    <input type="search" id="drawerPersonSearchInput"
+                        class="rounded-xl border-slate-200 bg-white p-2.5 w-full focus:ring-2 focus:ring-sky-200"
+                        placeholder="พิมพ์ชื่อบุคคลเพื่อค้นหา">
+                </div>
+            </div>
         </div>
+    </aside>
 
-        <!-- Main Table -->
-        <div class="overflow-x-auto bg-white rounded-xl shadow border">
-            <table class="fte-index-table min-w-full table-auto text-sm">
-                <thead class="bg-gray-100 text-gray-800">
-                    <tr>
-                        <th class="px-4 py-3 text-left">ชื่อ</th>
-                        <th class="px-4 py-3 text-right">FTE สะสม</th>
-                        <th class="px-4 py-3 text-right">FTE เดือนนี้</th>
-                        <th class="px-4 py-3 text-center">รายละเอียด</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($fteSummary as $row)
-                        <tr class="border-t group hover:bg-blue-50 transition">
-                            <td class="px-4 py-2 font-medium flex items-center gap-2" data-label="ชื่อ">
-                                @php
-                                    $profileImage = $profiles[$row->name] ?? null;
-                                @endphp
-                                @if ($profileImage)
-                                    <img src="{{ asset('storage/' . $profileImage) }}?v={{ time() }}"
-                                        onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'"
-                                        class="w-8 h-8 rounded-full border shadow object-cover" alt="avatar">
-                                @else
-                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($row->name) }}&background=random&size=64"
-                                        class="w-8 h-8 rounded-full border shadow object-cover" alt="avatar">
-                                @endif
-
-                                <a href="{{ route('fte.detail', ['person' => $row->name]) }}"
-                                    class="text-blue-800 hover:underline font-bold">
-                                    {{ $row->name }}
-                                </a>
-                            </td>
-                            <td class="px-4 py-2 text-right font-semibold text-green-600" data-label="FTE สะสม">
-                                {{ number_format($row->total_fte, 7) }}
-                            </td>
-                            <td class="px-4 py-2 text-right" data-label="FTE เดือนนี้">
-                                {{ number_format($row->fte_this_month ?? 0, 7) }}
-                            </td>
-                            <td class="px-4 py-2 text-center" data-label="รายละเอียด">
-                                <button type="button"
-                                    class="px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 font-bold"
-                                    onclick="toggleDetail('{{ $loop->index }}')"
-                                    data-detail="{{ $loop->index }}">ดูรายละเอียด</button>
-                            </td>
-                        </tr>
-
-                        {{-- Detail Row --}}
-                        <tr id="detail-row-{{ $loop->index }}" class="fte-detail-row bg-blue-50 animate-fade-in">
-                            <td colspan="4" class="px-6 py-4">
-                                @if (isset($monthlyFTE[$row->name]))
-                                    @foreach ($monthlyFTE[$row->name] as $month => $items)
-                                        @php
-                                            $thaiMonth = '-';
-                                            $thaiYear = '-';
-                                            if (preg_match('/^\d{4}-\d{2}$/', $month)) {
-                                                $carbon = \Carbon\Carbon::createFromFormat('Y-m-d', $month . '-01');
-                                                $thaiYear = $carbon->year + 543;
-                                                $thaiMonth = $carbon->locale('th')->translatedFormat('F');
-                                            }
-                                            $sum = collect($items)->sum('fte_month');
-                                        @endphp
-
-                                        <div class="mb-4 rounded-xl border border-blue-100 bg-blue-50">
-                                            <div class="flex items-center gap-2 px-4 py-3 border-b border-blue-100 bg-blue-100 rounded-t-xl font-semibold text-base md:text-lg">
-                                                {{ $thaiMonth }} {{ $thaiYear }}
-                                                <span class="ml-auto text-green-600 font-bold">
-                                                    FTE: {{ number_format($sum, 2) }}
-                                                </span>
-                                            </div>
-                                            <div class="p-2">
-                                                <table class="fte-detail-table w-full table-auto text-sm border border-slate-200 rounded-lg overflow-hidden">
-<thead class="bg-gray-100">
-    <tr>
-        <th class="p-3 text-left font-semibold text-slate-700 min-w-[260px]">ชื่อโปรเจค / งานนอกโครงการ</th>
-        <th class="p-3 text-left font-semibold text-slate-700 min-w-[120px]">กลุ่ม</th>
-        <th class="p-3 text-left font-semibold text-slate-700 min-w-[240px]">รายละเอียดงาน</th>
-        <th class="p-3 text-center font-semibold text-slate-700 min-w-[110px]">จำนวนวันทำงาน</th>
-        <th class="p-3 text-right font-semibold text-slate-700 min-w-[90px]">FTE</th>
-    </tr>
-</thead>
-<tbody>
-    @foreach ($items as $item)
-        <tr class="{{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
-            <td class="p-3 break-words whitespace-normal align-top" data-label="โปรเจค/งาน">
-                @if ($item->project?->id)
-                    <a href="{{ route('projects.show', $item->project) }}" class="text-blue-700 underline">
-                        {{ $item->project->project_name_th ?? '-' }}
-                    </a>
-                @else
-                    @php
-                        $backOfficeTitle = $item->task_detail ?? '-';
-                    @endphp
-                                            @php
-                                                $backOfficeId = $item->task_id ?? ($item->task?->id ?? null);
-                                            @endphp
-                                            @if (!is_null($backOfficeId))
-                                                <a href="{{ route('back_office.show', $backOfficeId) }}"
-                                                    class="text-blue-700 underline relative z-20 pointer-events-auto"
-                                                    onclick="event.stopPropagation();">
-                                                    {{ $backOfficeTitle }}
-                                                </a>
-                    @else
-                        <span class="text-slate-800">{{ $backOfficeTitle }}</span>
-                    @endif
-                    <div class="text-gray-400 text-xs">งานนอกโครงการ</div>
-                @endif
-            </td>
-
-            <td class="p-3 break-words whitespace-normal align-top" data-label="กลุ่ม">
-                {{ trim((string) ($item->role_group ?? '')) !== '' ? $item->role_group : '-' }}
-            </td>
-
-            <td class="p-3 break-words whitespace-normal align-top" data-label="รายละเอียดงาน">
-                @php
-                    $jobDetail = trim((string) ($item->job_detail ?? ''));
-                    $taskDetail = trim((string) ($item->task_detail ?? ''));
-                    $hasJob = $jobDetail !== '';
-                    $hasTask = $taskDetail !== '';
-                @endphp
-                <div class="text-slate-700">{{ $hasJob ? $jobDetail : '-' }}</div>
-                @if ($hasTask)
-                    <div class="text-slate-500 text-sm mt-0.5">{{ $taskDetail }}</div>
-                @endif
-            </td>
-
-            {{-- ⭐ จำนวนวันทำงาน (days_in_month) --}}
-            <td class="p-3 text-center font-semibold text-slate-700 align-top" data-label="วันทำงาน">
-                {{ $item->days_in_month }} วัน
-            </td>
-
-            {{-- ⭐ FTE --}}
-            <td class="p-3 text-right font-semibold align-top" data-label="FTE">
-                {{ number_format($item->fte_month, 7) }}
-                {{-- <div class="text-xs text-gray-400">
-                   {{ number_format($item->fte_per_day, 2) }}  FTE / วัน
-                </div> --}}
-            </td>
-        </tr>
-    @endforeach
-</tbody>
-
-                                                </table>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                @else
-                                    <div class="text-gray-400 italic text-center py-6">ไม่มีข้อมูล FTE สำหรับบุคคลนี้</div>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="p-8 text-center text-gray-400">ไม่พบข้อมูล</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <button id="fte-filter-fab" type="button" class="fte-filter-fab" aria-label="เปิดฟิลเตอร์">
+        <span class="fte-filter-fab__icon" aria-hidden="true">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </span>
+        <span class="fte-filter-fab__title">ฟิลเตอร์</span>
+        <span class="fte-filter-fab__meta">เปิดแผง</span>
+        <span id="fte-filter-fab-badge" class="fte-filter-fab__badge hidden">0</span>
+    </button>
 
     <script>
-        function resetOtherFilters() {
-            let mode = document.getElementById('mode').value;
-            if (mode === 'year' || mode === 'month') {
-                const s = document.getElementById('dateStart');
-                const e = document.getElementById('dateEnd');
-                if (s) s.value = '';
-                if (e) e.value = '';
-            }
-            if (mode === 'month' || mode === 'custom') {
-                if (document.getElementById('yearSelect')) document.getElementById('yearSelect').value = '';
-            }
-        }
-
         function toggleDetail(idx) {
             const all = document.querySelectorAll('.fte-detail-row');
             const row = document.getElementById('detail-row-' + idx);
             const buttons = document.querySelectorAll('button[data-detail]');
-            const willShow = !row.classList.contains('is-open');
+            if (!row) return;
 
-            all.forEach(el => el.classList.remove('is-open'));
-            buttons.forEach(btn => {
+            const willShow = !row.classList.contains('is-open');
+            all.forEach((el) => el.classList.remove('is-open'));
+            buttons.forEach((btn) => {
                 btn.textContent = 'ดูรายละเอียด';
                 btn.setAttribute('aria-expanded', 'false');
             });
+
             if (willShow) {
                 row.classList.add('is-open');
                 const btn = document.querySelector(`button[data-detail="${idx}"]`);
@@ -398,10 +652,9 @@
             }
         }
 
-        // ปิดลิ้นชักเมื่อคลิกนอกกรอบ
-        document.addEventListener('click', function (e) {
+        document.addEventListener('click', function(e) {
             const rows = document.querySelectorAll('[id^="detail-row-"]');
-            rows.forEach(row => {
+            rows.forEach((row) => {
                 if (!row.classList.contains('is-open')) return;
                 const idx = row.id.replace('detail-row-', '');
                 const btn = document.querySelector('button[data-detail="' + idx + '"]');
@@ -416,40 +669,513 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            function updateFilter() {
-                let mode = document.getElementById('mode').value;
-                document.getElementById('filter-year').classList.toggle('hidden', mode !== 'year');
-                document.getElementById('filter-month').classList.toggle('hidden', mode !== 'month');
-                document.getElementById('filter-custom').classList.toggle('hidden', mode !== 'custom');
+            const routeIndex = @json(route('fte.index'));
+            const filterForm = document.getElementById('filter-form');
+            const modeSelect = document.getElementById('mode');
+            const yearSelect = document.getElementById('yearSelect');
+            const startInput = document.getElementById('dateStart');
+            const endInput = document.getElementById('dateEnd');
+            const personSearchInput = document.getElementById('personSearchInput');
+            const personSortSelect = document.getElementById('personSortSelect');
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            const resultsEl = document.getElementById('fte-results');
+            const filterCard = document.getElementById('fte-filter-card');
+            const drawer = document.getElementById('fte-filter-drawer');
+            const drawerOverlay = document.getElementById('fte-filter-drawer-overlay');
+            const drawerCloseBtn = document.getElementById('fte-filter-drawer-close');
+            const drawerYearSelect = document.getElementById('drawerYearSelect');
+            const drawerDateStart = document.getElementById('drawerDateStart');
+            const drawerDateEnd = document.getElementById('drawerDateEnd');
+            const drawerPersonSearchInput = document.getElementById('drawerPersonSearchInput');
+            const drawerPersonSortSelect = document.getElementById('drawerPersonSortSelect');
+            const drawerClearFiltersBtn = document.getElementById('drawerClearFiltersBtn');
+            const filterFab = document.getElementById('fte-filter-fab');
+            const filterFabBadge = document.getElementById('fte-filter-fab-badge');
+
+            const filterYear = document.getElementById('filter-year');
+            const filterMonth = document.getElementById('filter-month');
+            const filterCustom = document.getElementById('filter-custom');
+            const modeButtons = Array.from(filterForm.querySelectorAll('[data-mode-value]'));
+            const drawerFilterYear = document.getElementById('drawer-filter-year');
+            const drawerFilterMonth = document.getElementById('drawer-filter-month');
+            const drawerFilterCustom = document.getElementById('drawer-filter-custom');
+            const drawerModeButtons = Array.from(document.querySelectorAll('[data-drawer-mode-value]'));
+
+            let pendingController = null;
+            let debounceTimer = null;
+            let tableDebounceTimer = null;
+            let drawerOpen = false;
+            let previousBodyOverflow = '';
+
+            const normalizeText = (value) => String(value || '')
+                .toLowerCase()
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/\s+/g, '');
+
+            const fuzzyScore = (query, target) => {
+                const q = normalizeText(query);
+                const t = normalizeText(target);
+
+                if (!q) return 0;
+                if (!t) return -1;
+
+                const includeIdx = t.indexOf(q);
+                if (includeIdx !== -1) {
+                    return 2000 - includeIdx * 2 - (t.length - q.length);
+                }
+
+                let qi = 0;
+                let score = 0;
+                let streak = 0;
+
+                for (let i = 0; i < t.length && qi < q.length; i++) {
+                    if (t[i] === q[qi]) {
+                        qi++;
+                        streak++;
+                        score += 20 + streak * 3;
+                    } else {
+                        streak = 0;
+                    }
+                }
+
+                if (qi < q.length) return -1;
+                return score - t.length;
+            };
+
+            function updateModeButtonGroup(buttons, mode, key = 'modeValue') {
+                buttons.forEach((button) => {
+                    const buttonMode = key === 'drawerModeValue' ? button.dataset.drawerModeValue : button.dataset.modeValue;
+                    const active = button.dataset.modeValue === mode;
+                    if (key === 'drawerModeValue') {
+                        button.setAttribute('aria-pressed', buttonMode === mode ? 'true' : 'false');
+                        button.classList.toggle('is-active', buttonMode === mode);
+                        return;
+                    }
+                    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    button.classList.toggle('is-active', active);
+                });
             }
-            document.querySelectorAll('.fte-detail-row').forEach(row => row.classList.remove('is-open'));
-            document.querySelectorAll('button[data-detail]').forEach(btn => {
-                btn.textContent = 'ดูรายละเอียด';
-                btn.setAttribute('aria-expanded', 'false');
+
+            function updateModeButtons() {
+                const mode = modeSelect.value;
+                updateModeButtonGroup(modeButtons, mode, 'modeValue');
+                updateModeButtonGroup(drawerModeButtons, mode, 'drawerModeValue');
+            }
+
+            function updateFilterVisibility() {
+                const mode = modeSelect.value;
+                filterYear.classList.toggle('hidden', mode !== 'year');
+                filterMonth.classList.toggle('hidden', mode !== 'month');
+                filterCustom.classList.toggle('hidden', mode !== 'custom');
+                if (drawerFilterYear) drawerFilterYear.classList.toggle('hidden', mode !== 'year');
+                if (drawerFilterMonth) drawerFilterMonth.classList.toggle('hidden', mode !== 'month');
+                if (drawerFilterCustom) drawerFilterCustom.classList.toggle('hidden', mode !== 'custom');
+                updateModeButtons();
+            }
+
+            function getActiveFilterCount() {
+                let count = 0;
+                if (modeSelect.value !== 'month') count++;
+                if (modeSelect.value === 'year' && yearSelect?.value) count++;
+                if (modeSelect.value === 'custom' && startInput.value.trim()) count++;
+                if (modeSelect.value === 'custom' && endInput.value.trim()) count++;
+                if ((personSearchInput?.value || '').trim()) count++;
+                if ((personSortSelect?.value || 'total_desc') !== 'total_desc') count++;
+                return count;
+            }
+
+            function updateFilterFab() {
+                if (!filterFab || !filterCard) return;
+                const rect = filterCard.getBoundingClientRect();
+                filterFab.classList.toggle('is-visible', rect.bottom < 36);
+
+                const count = getActiveFilterCount();
+                if (filterFabBadge) {
+                    filterFabBadge.textContent = String(count);
+                    filterFabBadge.classList.toggle('hidden', count === 0);
+                }
+            }
+
+            function syncDrawerFromPrimary() {
+                if (drawerYearSelect && yearSelect) drawerYearSelect.value = yearSelect.value;
+                if (drawerDateStart) drawerDateStart.value = startInput.value;
+                if (drawerDateEnd) drawerDateEnd.value = endInput.value;
+                if (drawerPersonSearchInput && personSearchInput) drawerPersonSearchInput.value = personSearchInput.value;
+                if (drawerPersonSortSelect && personSortSelect) drawerPersonSortSelect.value = personSortSelect.value;
+                updateFilterVisibility();
+                updateFilterFab();
+            }
+
+            function lockBodyScroll(lock) {
+                if (lock) {
+                    previousBodyOverflow = document.body.style.overflow;
+                    document.body.style.overflow = 'hidden';
+                    return;
+                }
+                document.body.style.overflow = previousBodyOverflow;
+            }
+
+            function openFilterDrawer() {
+                if (!drawer || !drawerOverlay) return;
+                syncDrawerFromPrimary();
+                drawer.classList.add('is-open');
+                drawerOverlay.classList.add('is-open');
+                drawer.setAttribute('aria-hidden', 'false');
+                drawerOpen = true;
+                lockBodyScroll(true);
+            }
+
+            function closeFilterDrawer() {
+                if (!drawer || !drawerOverlay) return;
+                drawer.classList.remove('is-open');
+                drawerOverlay.classList.remove('is-open');
+                drawer.setAttribute('aria-hidden', 'true');
+                drawerOpen = false;
+                lockBodyScroll(false);
+            }
+
+            function resetIrrelevantInputsForMode() {
+                const mode = modeSelect.value;
+
+                if (mode === 'year' || mode === 'month') {
+                    startInput.value = '';
+                    endInput.value = '';
+                }
+
+                if (mode === 'month' || mode === 'custom') {
+                    if (yearSelect) yearSelect.value = '';
+                }
+
+                if (mode === 'year' && yearSelect && !yearSelect.value && yearSelect.options.length > 0) {
+                    yearSelect.value = yearSelect.options[0].value;
+                }
+            }
+
+            function buildQueryParams() {
+                const mode = modeSelect.value || 'month';
+                const params = new URLSearchParams();
+                params.set('mode', mode);
+
+                if (mode === 'year' && yearSelect && yearSelect.value) {
+                    params.set('year', yearSelect.value);
+                }
+
+                if (mode === 'custom') {
+                    if (startInput.value.trim()) params.set('start', startInput.value.trim());
+                    if (endInput.value.trim()) params.set('end', endInput.value.trim());
+                }
+
+                return params;
+            }
+
+            function applyTableSearchAndSort() {
+                const tbody = resultsEl.querySelector('table.fte-index-table tbody');
+                if (!tbody) return;
+
+                const query = (personSearchInput?.value || '').trim();
+                const sortMode = personSortSelect?.value || 'total_desc';
+                const emptyRowId = 'client-filter-empty-row';
+
+                const oldEmptyRow = document.getElementById(emptyRowId);
+                if (oldEmptyRow) oldEmptyRow.remove();
+
+                const mainRows = Array.from(tbody.querySelectorAll('tr.fte-main-row'));
+                const pairs = mainRows.map((main) => {
+                    const detail = main.nextElementSibling && main.nextElementSibling.classList.contains('fte-detail-row')
+                        ? main.nextElementSibling
+                        : null;
+
+                    const name = main.dataset.personName || '';
+                    const total = Number(main.dataset.totalFte || 0);
+                    const month = Number(main.dataset.monthFte || 0);
+                    const score = query ? fuzzyScore(query, name) : 0;
+                    const matched = !query || score >= 0;
+
+                    return {
+                        main,
+                        detail,
+                        name,
+                        total,
+                        month,
+                        score,
+                        matched,
+                    };
+                });
+
+                const nameAsc = (a, b) => a.name.localeCompare(b.name, 'th');
+                const sortByMode = (a, b) => {
+                    switch (sortMode) {
+                        case 'total_asc':
+                            return a.total - b.total;
+                        case 'month_desc':
+                            return b.month - a.month;
+                        case 'month_asc':
+                            return a.month - b.month;
+                        case 'name_desc':
+                            return nameAsc(b, a);
+                        case 'name_asc':
+                            return nameAsc(a, b);
+                        case 'total_desc':
+                        default:
+                            return b.total - a.total;
+                    }
+                };
+
+                pairs.sort((a, b) => {
+                    if (a.matched !== b.matched) return a.matched ? -1 : 1;
+                    const byMode = sortByMode(a, b);
+                    if (byMode !== 0) return byMode;
+                    if (query) {
+                        const byScore = b.score - a.score;
+                        if (byScore !== 0) return byScore;
+                    }
+                    return nameAsc(a, b);
+                });
+
+                pairs.forEach((pair) => {
+                    tbody.appendChild(pair.main);
+                    if (pair.detail) tbody.appendChild(pair.detail);
+
+                    pair.main.style.display = pair.matched ? '' : 'none';
+                    if (pair.detail) {
+                        if (!pair.matched) {
+                            pair.detail.classList.remove('is-open');
+                            pair.detail.style.display = 'none';
+                        } else {
+                            pair.detail.style.display = '';
+                        }
+                    }
+                });
+
+                const visibleCount = pairs.filter((pair) => pair.matched).length;
+                const countEl = resultsEl.querySelector('#fte-visible-count');
+                if (countEl) {
+                    countEl.textContent = String(visibleCount);
+                }
+
+                if (visibleCount === 0) {
+                    const tr = document.createElement('tr');
+                    tr.id = emptyRowId;
+                    tr.innerHTML = '<td colspan="4" class="p-8 text-center text-gray-400">ไม่พบข้อมูลตามคำค้นหา</td>';
+                    tbody.appendChild(tr);
+                }
+
+                pairs.forEach((pair) => {
+                    const btn = pair.main.querySelector('button[data-detail]');
+                    if (!btn || !pair.detail) return;
+                    if (pair.detail.classList.contains('is-open')) {
+                        btn.textContent = 'ซ่อนรายละเอียด';
+                        btn.setAttribute('aria-expanded', 'true');
+                    } else {
+                        btn.textContent = 'ดูรายละเอียด';
+                        btn.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            }
+
+            async function loadResults() {
+                const params = buildQueryParams();
+                const fetchParams = new URLSearchParams(params);
+                fetchParams.set('partial', '1');
+
+                if (pendingController) {
+                    pendingController.abort();
+                }
+
+                pendingController = new AbortController();
+
+                try {
+                    const response = await fetch(`${routeIndex}?${fetchParams.toString()}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                        signal: pendingController.signal,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load data');
+                    }
+
+                    const data = await response.json();
+                    resultsEl.innerHTML = data.html || '';
+                    applyTableSearchAndSort();
+
+                    const query = params.toString();
+                    const nextUrl = query ? `${routeIndex}?${query}` : routeIndex;
+                    history.replaceState(null, '', nextUrl);
+                } catch (error) {
+                    if (error.name === 'AbortError') return;
+                    resultsEl.innerHTML =
+                        '<div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</div>';
+                }
+            }
+
+            function scheduleLoad(delay = 250) {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(loadResults, delay);
+            }
+
+            filterForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                loadResults();
             });
-            document.getElementById('mode').addEventListener('change', updateFilter);
-            updateFilter();
+
+            modeButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const nextMode = button.dataset.modeValue;
+                    if (!nextMode || nextMode === modeSelect.value) return;
+                    modeSelect.value = nextMode;
+                    modeSelect.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                });
+            });
+
+            drawerModeButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const nextMode = button.dataset.drawerModeValue;
+                    if (!nextMode || nextMode === modeSelect.value) return;
+                    modeSelect.value = nextMode;
+                    modeSelect.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                });
+            });
+
+            modeSelect.addEventListener('change', () => {
+                resetIrrelevantInputsForMode();
+                updateFilterVisibility();
+                syncDrawerFromPrimary();
+                loadResults();
+            });
+
+            if (yearSelect) {
+                yearSelect.addEventListener('change', () => {
+                    syncDrawerFromPrimary();
+                    loadResults();
+                });
+            }
+
+            if (drawerYearSelect) {
+                drawerYearSelect.addEventListener('change', () => {
+                    if (yearSelect) yearSelect.value = drawerYearSelect.value;
+                    syncDrawerFromPrimary();
+                    loadResults();
+                });
+            }
+
+            [startInput, endInput].forEach((input) => {
+                input.addEventListener('input', () => {
+                    syncDrawerFromPrimary();
+                    scheduleLoad(350);
+                });
+                input.addEventListener('change', () => {
+                    syncDrawerFromPrimary();
+                    scheduleLoad(120);
+                });
+            });
+
+            [
+                [drawerDateStart, startInput],
+                [drawerDateEnd, endInput],
+            ].forEach(([drawerInput, primaryInput]) => {
+                if (!drawerInput || !primaryInput) return;
+                drawerInput.addEventListener('input', () => {
+                    primaryInput.value = drawerInput.value;
+                    syncDrawerFromPrimary();
+                    scheduleLoad(350);
+                });
+                drawerInput.addEventListener('change', () => {
+                    primaryInput.value = drawerInput.value;
+                    syncDrawerFromPrimary();
+                    scheduleLoad(120);
+                });
+            });
+
+            if (personSearchInput) {
+                personSearchInput.addEventListener('input', () => {
+                    syncDrawerFromPrimary();
+                    clearTimeout(tableDebounceTimer);
+                    tableDebounceTimer = setTimeout(applyTableSearchAndSort, 120);
+                });
+            }
+
+            if (drawerPersonSearchInput) {
+                drawerPersonSearchInput.addEventListener('input', () => {
+                    if (personSearchInput) personSearchInput.value = drawerPersonSearchInput.value;
+                    syncDrawerFromPrimary();
+                    clearTimeout(tableDebounceTimer);
+                    tableDebounceTimer = setTimeout(applyTableSearchAndSort, 120);
+                });
+            }
+
+            if (personSortSelect) {
+                personSortSelect.addEventListener('change', () => {
+                    syncDrawerFromPrimary();
+                    applyTableSearchAndSort();
+                });
+            }
+
+            if (drawerPersonSortSelect) {
+                drawerPersonSortSelect.addEventListener('change', () => {
+                    if (personSortSelect) personSortSelect.value = drawerPersonSortSelect.value;
+                    syncDrawerFromPrimary();
+                    applyTableSearchAndSort();
+                });
+            }
+
+            function resetAllFilters() {
+                modeSelect.value = 'month';
+                if (yearSelect) yearSelect.value = '';
+                startInput.value = '';
+                endInput.value = '';
+                if (personSearchInput) personSearchInput.value = '';
+                if (personSortSelect) personSortSelect.value = 'total_desc';
+                if (drawerPersonSearchInput) drawerPersonSearchInput.value = '';
+                if (drawerPersonSortSelect) drawerPersonSortSelect.value = 'total_desc';
+                updateFilterVisibility();
+                syncDrawerFromPrimary();
+                loadResults();
+            }
+
+            clearFiltersBtn.addEventListener('click', resetAllFilters);
+            if (drawerClearFiltersBtn) {
+                drawerClearFiltersBtn.addEventListener('click', resetAllFilters);
+            }
+
+            if (filterFab) {
+                filterFab.addEventListener('click', openFilterDrawer);
+            }
+
+            if (drawerCloseBtn) {
+                drawerCloseBtn.addEventListener('click', closeFilterDrawer);
+            }
+
+            if (drawerOverlay) {
+                drawerOverlay.addEventListener('click', closeFilterDrawer);
+            }
+
+            window.addEventListener('scroll', updateFilterFab, {
+                passive: true
+            });
+            window.addEventListener('resize', updateFilterFab);
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && drawerOpen) {
+                    closeFilterDrawer();
+                }
+            });
+
+            updateFilterVisibility();
+            syncDrawerFromPrimary();
+            const initialParams = new URLSearchParams(window.location.search);
+            if (initialParams.has('person')) {
+                loadResults();
+            } else {
+                applyTableSearchAndSort();
+            }
         });
     </script>
-    <style>
-        .fte-index-table tr.fte-detail-row {
-            display: none;
-        }
-
-        .fte-index-table tr.fte-detail-row.is-open {
-            display: table-row;
-        }
-
-        @media (max-width: 768px) {
-            .fte-index-table tr.fte-detail-row.is-open {
-                display: block;
-            }
-        }
-
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in { animation: fade-in 0.35s ease; }
-    </style>
 @endsection

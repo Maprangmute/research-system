@@ -44,11 +44,11 @@
             </div>
             <div class="bg-white border rounded-xl p-4">
                 <div class="text-xs text-slate-500">FTE เดือนนี้</div>
-                <div class="text-2xl font-semibold text-slate-900">{{ number_format($currentMonthFte, 4) }}</div>
+                <div class="text-2xl font-semibold text-slate-900">{{ number_format($currentMonthFte, 7) }}</div>
             </div>
             <div class="bg-white border rounded-xl p-4">
                 <div class="text-xs text-slate-500">FTE รวมทั้งหมด</div>
-                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totalFte, 4) }}</div>
+                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totalFte, 7) }}</div>
             </div>
             <div class="bg-white border rounded-xl p-4">
                 <div class="text-xs text-slate-500">ชั่วโมงรวมทั้งหมด</div>
@@ -230,7 +230,7 @@
                         </div>
                         <div class="text-xs text-slate-500">
                             {{ $rows->count() }} รายการ •
-                            FTE {{ number_format($sumFTE, 4) }} •
+                            FTE {{ number_format($sumFTE, 7) }} •
                             ชั่วโมง {{ number_format($sumHours, 2) }}
                         </div>
                     </summary>
@@ -274,7 +274,7 @@
                                         <span>ชั่วโมง: {{ number_format($item->hours_in_month, 2) }}</span>
                                         <span>วัน: {{ $item->days_in_month }}</span>
                                         <span>FTE/วัน: {{ number_format($item->fte_per_day, 10) }}</span>
-                                        <span>FTE เดือนนี้: {{ number_format($item->fte_value, 6) }}</span>
+                                        <span>FTE เดือนนี้: {{ number_format($item->fte_value, 7) }}</span>
                                     </div>
                                 </div>
                             @endforeach
@@ -305,7 +305,7 @@
                         </div>
                         <div class="text-xs text-slate-500">
                             {{ $rows->count() }} รายการ •
-                            FTE {{ number_format($sumFTE, 4) }} •
+                            FTE {{ number_format($sumFTE, 7) }} •
                             ชั่วโมง {{ number_format($sumHours, 2) }}
                         </div>
                     </summary>
@@ -362,7 +362,7 @@
                                             <td class="p-2 text-center">{{ intval($item->days_in_month) }}</td>
                                             <td class="p-2 text-center">{{ number_format($item->fte_per_day, 10) }}</td>
                                             <td class="p-2 text-center font-semibold">
-                                                {{ number_format($item->fte_value, 6) }}
+                                                {{ number_format($item->fte_value, 7) }}
                                             </td>
                                         </tr>
                                     @endforeach

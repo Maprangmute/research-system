@@ -5,27 +5,82 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Project;
+use Illuminate\Support\Facades\Schema;
 use PDF;
 
 class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $projects = Project::with([
-            // ดึงเฉพาะฟิลด์ที่ต้องใช้จาก coResearches
-            'coResearches:id,project_id,name,unit_status,affiliation',
+        $projectColumns = [
+            'id',
+            'project_name_th',
+            'project_code',
+            'project_type',
+            'theme',
+            'funding_type',
+            'funding_source',
+            'funding_year',
+            'planning_status',
+            'start_year',
+            'start_date',
+            'team_start_date',
+            'end_year',
+            'end_date',
+            'finish_year',
+            'finish_date',
+            'team_end_date',
+            'total_budget',
+            'budget',
+            'pi_name',
+            'pi_affiliation',
+            'project_list',
+            'collab_type',
+            'unit_name',
+            'department',
+            'created_at',
+            'updated_at',
+        ];
 
-            // Eager load อื่น ๆ
-            'copis',
-            'fteRoles',
-            'irbs',
-            'progressReports',
+        $existingColumns = static function (string $table, array $desired): array {
+            static $cache = [];
 
-            // สำคัญ: outputs + authors + project สำหรับฝั่ง JS
-            'outputs.authors:id,output_id,name,role',
-            'outputs.project:id,project_name_th', // ถ้าจะใช้ชื่อโครงการตอน drill-down
-        ])
-        ->get();
+            if (!array_key_exists($table, $cache)) {
+                $cache[$table] = Schema::getColumnListing($table);
+            }
+
+            $selected = array_values(array_intersect($desired, $cache[$table]));
+
+            return $selected ?: ['*'];
+        };
+
+        $projects = Project::query()
+            ->select($existingColumns('projects', $projectColumns))
+            ->with([
+                'coResearches' => fn($query) => $query->select($existingColumns('co_research', [
+                    'id', 'project_id', 'name', 'unit_status', 'affiliation',
+                ])),
+                'copis' => fn($query) => $query->select($existingColumns('copis', [
+                    'id', 'project_id', 'name', 'affiliation',
+                ])),
+                'fteRoles' => fn($query) => $query->select($existingColumns('fte_roles', [
+                    'id', 'project_id', 'name', 'role_group', 'fte_value', 'fte', 'hours',
+                    'job_detail', 'task_detail', 'start_date', 'end_date',
+                ])),
+                'irbs' => fn($query) => $query->select($existingColumns('irbs', [
+                    'id', 'project_id', 'code', 'source', 'exp_date',
+                ])),
+                'outputs' => fn($query) => $query
+                    ->select($existingColumns('outputs', [
+                        'id', 'project_id', 'type', 'title', 'year', 'created_at',
+                    ]))
+                    ->with([
+                        'authors' => fn($authorQuery) => $authorQuery->select($existingColumns('output_authors', [
+                            'id', 'output_id', 'name', 'role',
+                        ])),
+                    ]),
+            ])
+            ->get();
 
         // collections เดิม (ยังเก็บไว้ใช้กับ Blade ส่วนอื่น ๆ ได้)
         $copis           = $projects->flatMap->copis;
@@ -33,25 +88,117 @@ class DashboardController extends Controller
         $fteRoles        = $projects->flatMap->fteRoles;
         $outputs         = $projects->flatMap->outputs;
         $irbs            = $projects->flatMap->irbs;
-        $progressReports = $projects->flatMap->progressReports;
 
-        // จัดรูป outputs สำหรับฝั่ง JS (แนวทาง A)
-        $outputsForJs = $outputs->map(function ($o) {
+        $dashboardProjectsJs = $projects->map(function ($project) {
             return [
-                'id'           => $o->id,
-                'project_id'   => $o->project_id,
-                'project_name' => optional($o->project)->project_name_th,
-                'type'         => $o->type,
-                'title'        => $o->title,
-                'year'         => $o->year,
-                'authors'      => $o->authors->map(fn($a) => [
-                    'name' => $a->name,
-                    'role' => $a->role, // 'first' | 'co' | 'corresponding'
+                'id' => $project->id,
+                'project_name_th' => $project->project_name_th,
+                'project_code' => $project->project_code,
+                'project_type' => $project->project_type,
+                'theme' => $project->theme,
+                'funding_type' => $project->funding_type,
+                'funding_source' => $project->funding_source,
+                'funding_year' => $project->funding_year,
+                'planning_status' => $project->planning_status,
+                'start_year' => $project->start_year,
+                'start_date' => $project->start_date,
+                'team_start_date' => $project->team_start_date,
+                'end_year' => $project->end_year,
+                'end_date' => $project->end_date,
+                'finish_year' => $project->finish_year,
+                'finish_date' => $project->finish_date,
+                'team_end_date' => $project->team_end_date,
+                'total_budget' => $project->total_budget,
+                'budget' => $project->budget,
+                'pi_name' => $project->pi_name,
+                'pi_affiliation' => $project->pi_affiliation,
+                'project_list' => $project->project_list,
+                'collab_type' => $project->collab_type,
+                'unit_name' => $project->unit_name,
+                'department' => $project->department,
+                'created_at' => optional($project->created_at)->toDateTimeString(),
+                'updated_at' => optional($project->updated_at)->toDateTimeString(),
+                'copis' => $project->copis->map(fn($copi) => [
+                    'id' => $copi->id,
+                    'project_id' => $copi->project_id,
+                    'name' => $copi->name,
+                    'affiliation' => $copi->affiliation,
+                ])->values(),
+                'co_researches' => $project->coResearches->map(fn($coResearch) => [
+                    'id' => $coResearch->id,
+                    'project_id' => $coResearch->project_id,
+                    'name' => $coResearch->name,
+                    'unit_status' => $coResearch->unit_status,
+                    'affiliation' => $coResearch->affiliation,
+                ])->values(),
+                'fte_roles' => $project->fteRoles->map(fn($fteRole) => [
+                    'id' => $fteRole->id,
+                    'project_id' => $fteRole->project_id,
+                    'name' => $fteRole->name,
+                    'role_group' => $fteRole->role_group,
+                    'fte_value' => $fteRole->fte_value,
+                    'fte' => $fteRole->fte,
+                    'hours' => $fteRole->hours,
+                    'job_detail' => $fteRole->job_detail,
+                    'task_detail' => $fteRole->task_detail,
+                    'start_date' => $fteRole->start_date,
+                    'end_date' => $fteRole->end_date,
+                ])->values(),
+                'irbs' => $project->irbs->map(fn($irb) => [
+                    'id' => $irb->id,
+                    'project_id' => $irb->project_id,
+                    'code' => $irb->code,
+                    'source' => $irb->source,
+                    'irb_source' => $irb->source,
+                    'exp_date' => $irb->exp_date,
+                ])->values(),
+                'outputs' => $project->outputs->map(fn($output) => [
+                    'id' => $output->id,
+                    'project_id' => $output->project_id,
+                    'project_name' => $project->project_name_th,
+                    'type' => $output->type,
+                    'title' => $output->title,
+                    'year' => $output->year,
+                    'created_at' => optional($output->created_at)->toDateTimeString(),
+                    'authors' => $output->authors->map(fn($author) => [
+                        'name' => $author->name,
+                        'role' => $author->role,
+                    ])->values(),
                 ])->values(),
             ];
         })->values();
 
-        $themes = Project::select('theme')->distinct()->pluck('theme');
+        $themes = Project::query()
+            ->selectRaw('LOWER(TRIM(theme)) as theme_key, MIN(TRIM(theme)) as theme')
+            ->whereNotNull('theme')
+            ->whereRaw("TRIM(theme) <> ''")
+            ->groupBy('theme_key')
+            ->orderBy('theme')
+            ->pluck('theme');
+
+        $typeOptions = Project::query()
+            ->selectRaw('LOWER(TRIM(project_type)) as type_key, MIN(TRIM(project_type)) as project_type')
+            ->whereNotNull('project_type')
+            ->whereRaw("TRIM(project_type) <> ''")
+            ->groupBy('type_key')
+            ->orderBy('project_type')
+            ->pluck('project_type');
+
+        $statusOptions = Project::query()
+            ->selectRaw('LOWER(TRIM(planning_status)) as status_key, MIN(TRIM(planning_status)) as planning_status')
+            ->whereNotNull('planning_status')
+            ->whereRaw("TRIM(planning_status) <> ''")
+            ->groupBy('status_key')
+            ->orderBy('planning_status')
+            ->pluck('planning_status');
+
+        $fundingSources = Project::query()
+            ->selectRaw('LOWER(TRIM(funding_source)) as source_key, MIN(TRIM(funding_source)) as funding_source')
+            ->whereNotNull('funding_source')
+            ->whereRaw("TRIM(funding_source) <> ''")
+            ->groupBy('source_key')
+            ->orderBy('funding_source')
+            ->pluck('funding_source');
 
         $view = 'dashboard';
         $forceView = $request->query('view');
@@ -59,25 +206,27 @@ class DashboardController extends Controller
             $view = 'dashboard_mobile';
         } elseif ($forceView !== 'desktop') {
             $ua = (string) $request->header('User-Agent', '');
-            $isMobile = (bool) preg_match(
-                '/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i',
+            $isMobileOrTablet = (bool) preg_match(
+                '/Android|webOS|iPhone|iPod|iPad|Tablet|PlayBook|Silk|Kindle|BlackBerry|IEMobile|Opera Mini|Macintosh.*Mobile/i',
                 $ua
             );
-            if ($isMobile) {
+            if ($isMobileOrTablet) {
                 $view = 'dashboard_mobile';
             }
         }
 
         return view($view, compact(
             'projects',
+            'dashboardProjectsJs',
             'copis',
             'coResearches',
             'fteRoles',
-            'outputs',          // ยังส่งตัวเดิมไปได้ (เช่นไว้ใช้ count())
-            'outputsForJs',     // << เพิ่มตัวนี้สำหรับฝั่ง JS
+            'outputs',
             'irbs',
-            'progressReports',
-            'themes'
+            'themes',
+            'typeOptions',
+            'statusOptions',
+            'fundingSources'
         ));
     }
 

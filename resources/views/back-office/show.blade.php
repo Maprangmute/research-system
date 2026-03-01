@@ -19,216 +19,141 @@
             }
         };
     @endphp
-    <div class="max-w-6xl mx-auto p-4 space-y-6">
-        <div class="bg-white border rounded-2xl p-6 shadow-sm">
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <a href="{{ route('back_office.index') }}" class="text-blue-700 text-sm hover:underline">← กลับไปยังรายการงาน</a>
-                    <h2 class="text-2xl font-semibold text-slate-900 mt-2">{{ $task->title }}</h2>
-                    <div class="text-sm text-slate-500">ช่วงเวลา {{ $formatDateBE($task->start_date) }} ถึง {{ $formatDateBE($task->end_date) }}</div>
-                    @if ($task->description)
-                        <div class="text-sm text-slate-500 mt-1">{{ $task->description }}</div>
-                    @endif
-                    @if ($task->purpose)
-                        <div class="text-sm text-slate-600 mt-2">
-                            <span class="font-semibold text-slate-700">จุดประสงค์:</span> {{ $task->purpose }}
+
+    <style>
+        .back-office-shell {
+            background: transparent;
+        }
+
+        .back-office-panel {
+            border: 1px solid #e2e8f0;
+            border-radius: 28px;
+            background: #ffffff;
+            box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+        }
+
+        .back-office-hero {
+            overflow: hidden;
+            position: relative;
+        }
+
+        .back-office-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.14), transparent 30%),
+                radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.12), transparent 24%);
+            pointer-events: none;
+        }
+
+        .back-office-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+
+        .back-office-action:hover {
+            transform: translateY(-1px);
+        }
+
+        .back-office-action--edit {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .back-office-action--edit:hover {
+            background: #fde68a;
+        }
+
+        .back-office-action--pdf {
+            gap: 0.55rem;
+            border: 1px solid #86efac;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            color: #065f46;
+            box-shadow: 0 10px 22px rgba(16, 185, 129, 0.16);
+        }
+
+        .back-office-action--pdf:hover {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border-color: #4ade80;
+        }
+
+        .back-office-action__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.9rem;
+            height: 1.9rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72);
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 768px) {
+            .back-office-panel {
+                border-radius: 20px;
+            }
+        }
+    </style>
+
+    <div class="back-office-shell min-h-screen">
+        <div class="mx-auto mt-11 max-w-6xl space-y-6 px-4 pb-8">
+            <section class="back-office-panel back-office-hero">
+                <div class="relative flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="max-w-4xl">
+                        <a href="{{ route('back_office.index') }}" class="text-sm text-sky-700 hover:underline">← กลับไปยังรายการงาน</a>
+                        <p class="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Back Office Detail</p>
+                        <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">{{ $task->title }}</h1>
+                        <p class="mt-3 text-sm leading-6 text-slate-600 md:text-[15px]">
+                            ช่วงเวลา {{ $formatDateBE($task->start_date) }} ถึง {{ $formatDateBE($task->end_date) }}
+                        </p>
+
+                        @if ($task->description)
+                            <p class="mt-2 text-sm leading-6 text-slate-600">{{ $task->description }}</p>
+                        @endif
+
+                        @if ($task->purpose)
+                            <div class="mt-4 text-sm text-slate-600">
+                                <span class="font-semibold text-slate-700">จุดประสงค์:</span> {{ $task->purpose }}
+                            </div>
+                        @endif
+
+                        <div class="mt-2 text-sm text-slate-600">
+                            <span class="font-semibold text-slate-700">ผู้บันทึก:</span>
+                            {{ $task->creator?->name ?? '-' }}
                         </div>
-                    @endif
-                    <div class="text-sm text-slate-600 mt-1">
-                        <span class="font-semibold text-slate-700">หัวหน้างานผู้รับผิดชอบ:</span>
-                        {{ !empty($task->leaders) ? implode(', ', $task->leaders) : '-' }}
-                    </div>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('back_office.edit', $task->id) }}"
-                        class="px-4 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm">แก้ไข</a>
-                    <a href="{{ route('back_office.pdf', $task->id) }}" target="_blank" rel="noopener"
-                        class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm">🖨️ PDF</a>
-                </div>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-white border rounded-xl p-4">
-                <div class="text-xs text-slate-500">จำนวนภาระงาน</div>
-                <div class="text-2xl font-semibold text-slate-900">{{ number_format($summary['entries']) }}</div>
-            </div>
-            <div class="bg-white border rounded-xl p-4">
-                <div class="text-xs text-slate-500">ชั่วโมงรวม</div>
-                <div class="text-2xl font-semibold text-slate-900">{{ number_format($summary['hours'], 2) }}</div>
-            </div>
-            <div class="bg-white border rounded-xl p-4">
-                <div class="text-xs text-slate-500">FTE รวม</div>
-                <div class="text-2xl font-semibold text-slate-900">{{ number_format($summary['fte'], 6) }}</div>
-            </div>
-            <div class="bg-white border rounded-xl p-4">
-                <div class="text-xs text-slate-500">ผู้บันทึก</div>
-                <div class="text-2xl font-semibold text-slate-900">{{ $task->creator?->name ?? '-' }}</div>
-            </div>
-        </div>
-
-        <div class="space-y-4">
-            @if ($task->outputs->count())
-                <div class="bg-white border rounded-2xl p-5 shadow-sm">
-                    <div class="text-sm font-semibold text-slate-800 mb-2">ผลงานของงานนอกโครงการ</div>
-                    <div class="space-y-2 text-sm">
-                        @foreach ($task->outputs as $output)
-                            <div class="border rounded-xl p-3 bg-slate-50">
-                                <div class="font-semibold text-slate-800">{{ $output->title }}</div>
-                                @if ($output->type)
-                                    <div class="text-slate-500">ประเภท: {{ $output->type }}</div>
-                                @endif
-                                <div class="text-slate-600">
-                                    วันที่จัดส่ง: {{ $output->delivered_at ? $formatDateBE($output->delivered_at) : '-' }}
-                                </div>
-                                @if ($output->year)
-                                    <div class="text-slate-600">วันที่เผยแพร่: {{ $output->year }}</div>
-                                @endif
-                                @if ($output->project_output)
-                                    <div class="text-slate-600">รายละเอียด/ลิงก์: {{ $output->project_output }}</div>
-                                @endif
-                                @if ($output->description)
-                                    <div class="text-slate-600">รายละเอียดเพิ่มเติม: {{ $output->description }}</div>
-                                @endif
-                                @if ($output->document_link)
-                                    <div class="text-slate-600">
-                                        ลิงก์เอกสาร:
-                                        <a href="{{ $output->document_link }}" class="text-blue-700 underline" target="_blank" rel="noopener">
-                                            {{ $output->document_link }}
-                                        </a>
-                                    </div>
-                                @endif
-
-                                @php
-                                    $isEA101 = str_starts_with((string) ($output->type ?? ''), 'EA101');
-                                    $isEA103 = str_starts_with((string) ($output->type ?? ''), 'EA103');
-                                    $authors = collect($output->authors ?? []);
-                                    $confs = collect($output->conferences ?? []);
-                                @endphp
-
-                                @if ($isEA101)
-                                    <div class="mt-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs">
-                                        <div class="text-slate-700">Journal: {{ $output->journal ?? '-' }}</div>
-                                        <div class="text-slate-700">Quartile: {{ $output->quartile ?? '-' }}</div>
-                                        <div class="text-slate-700">Impact Factor: {{ $output->impact_factor ?? '-' }}</div>
-                                        @if ($authors->count())
-                                            <div class="mt-2 text-slate-800 font-semibold">Authors</div>
-                                            <ul class="list-disc list-inside text-slate-700">
-                                                @foreach ($authors as $author)
-                                                    <li>{{ $author['name'] ?? '-' }} {{ !empty($author['role']) ? '(' . $author['role'] . ')' : '' }}</li>
-                                                @endforeach
-                                            </ul>
-                                        @endif
-                                    </div>
-                                @endif
-
-                                @if ($isEA103)
-                                    <div class="mt-2 rounded-lg border border-amber-100 bg-amber-50 p-3 text-xs">
-                                        <div class="text-slate-800 font-semibold">Conferences</div>
-                                        @if ($confs->count())
-                                            <ul class="list-disc list-inside text-slate-700">
-                                                @foreach ($confs as $conf)
-                                                    <li>
-                                                        {{ $conf['name'] ?? '-' }}
-                                                        @if (!empty($conf['presentation_type'])) • {{ $conf['presentation_type'] }} @endif
-                                                        @if (!empty($conf['location'])) • {{ $conf['location'] }} @endif
-                                                        @if (!empty($conf['note'])) • {{ $conf['note'] }} @endif
-                                                    </li>
-                                                @endforeach
-                                            </ul>
-                                        @else
-                                            <div class="text-slate-600">- ไม่มีรายการ Conference -</div>
-                                        @endif
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-            @forelse ($task->entries as $entry)
-                <div class="bg-white border rounded-2xl p-5 shadow-sm">
-                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <div class="text-sm text-slate-500">ผู้รับผิดชอบ</div>
-                            <div class="text-lg font-semibold text-slate-900">{{ $entry->person_name }}</div>
-                            <div class="text-sm text-slate-500">ประเภท: {{ $entry->category }}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 text-sm">
-                            <div class="rounded-xl bg-slate-50 p-3 text-center">
-                                <div class="text-xs text-slate-500">ชั่วโมง</div>
-                                <div class="text-lg font-semibold text-slate-900">{{ number_format($entry->hours, 2) }}</div>
-                            </div>
-                            <div class="rounded-xl bg-slate-50 p-3 text-center">
-                                <div class="text-xs text-slate-500">FTE</div>
-                                <div class="text-lg font-semibold text-slate-900">{{ number_format($entry->fte_value, 8) }}</div>
-                            </div>
+                        <div class="mt-2 text-sm text-slate-600">
+                            <span class="font-semibold text-slate-700">หัวหน้างานผู้รับผิดชอบ:</span>
+                            {{ !empty($task->leaders) ? implode(', ', $task->leaders) : '-' }}
                         </div>
                     </div>
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <div class="text-xs font-semibold text-slate-500">รายละเอียดงาน</div>
-                            <div class="text-slate-800 whitespace-pre-wrap">{{ $entry->job_detail }}</div>
-                        </div>
-                        <div class="space-y-2">
-                            <div>
-                                <div class="text-xs font-semibold text-slate-500">ลิงก์เอกสาร</div>
-                                @if ($entry->document_link)
-                                    <a href="{{ $entry->document_link }}" class="text-blue-700 underline" target="_blank" rel="noopener">
-                                        {{ $entry->document_link }}
-                                    </a>
-                                @else
-                                    <div class="text-slate-400">-</div>
-                                @endif
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <div class="text-xs font-semibold text-slate-500">วันที่เริ่ม</div>
-                                    <div class="text-slate-800">{{ $formatDateBE($entry->start_date) }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs font-semibold text-slate-500">วันที่สิ้นสุด</div>
-                                    <div class="text-slate-800">{{ $formatDateBE($entry->end_date) }}</div>
-                                </div>
-                            </div>
-                        </div>
+
+                    <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+                        <a href="{{ route('back_office.edit', $task->id) }}"
+                            class="back-office-action back-office-action--edit">
+                            แก้ไข
+                        </a>
+                        <a href="{{ route('back_office.pdf', $task->id) }}" target="_blank" rel="noopener"
+                            class="back-office-action back-office-action--pdf">
+                            <span class="back-office-action__icon" aria-hidden="true">🖨️</span>
+                            <span>ดาวน์โหลด PDF</span>
+                        </a>
                     </div>
-                    @if ($entry->outputs->count())
-                        <div class="mt-4 border-t pt-3 text-sm">
-                            <div class="text-xs font-semibold text-slate-500">ผลงานของภาระงาน</div>
-                            <div class="space-y-2 mt-2">
-                                @foreach ($entry->outputs as $output)
-                                    <div class="rounded-xl bg-slate-50 p-3">
-                                        <div class="font-semibold text-slate-800">{{ $output->title }}</div>
-                                        <div class="text-slate-600">
-                                            วันที่จัดส่ง: {{ $output->delivered_at ? $formatDateBE($output->delivered_at) : '-' }}
-                                        </div>
-                                        @if ($output->year)
-                                            <div class="text-slate-600">วันที่เผยแพร่: {{ $output->year }}</div>
-                                        @endif
-                                        @if ($output->project_output)
-                                            <div class="text-slate-600">รายละเอียด/ลิงก์: {{ $output->project_output }}</div>
-                                        @endif
-                                        @if ($output->description)
-                                            <div class="text-slate-600">รายละเอียดเพิ่มเติม: {{ $output->description }}</div>
-                                        @endif
-                                        @if ($output->document_link)
-                                            <div class="text-slate-600">
-                                                ลิงก์เอกสาร:
-                                                <a href="{{ $output->document_link }}" class="text-blue-700 underline" target="_blank" rel="noopener">
-                                                    {{ $output->document_link }}
-                                                </a>
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
                 </div>
-            @empty
-                <div class="bg-white border rounded-2xl p-8 text-center text-slate-400">ไม่มีข้อมูลภาระงาน</div>
-            @endforelse
+            </section>
+
+            @include('back-office.partials.detail-content', [
+                'task' => $task,
+                'summary' => $summary,
+                'drawerMode' => false,
+            ])
         </div>
     </div>
 @endsection

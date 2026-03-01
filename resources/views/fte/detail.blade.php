@@ -83,10 +83,81 @@
                         class="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-slate-50">
                         ย้อนกลับ
                     </a>
-                    <a href="{{ route('fte.pdf', $person) }}" target="_blank" rel="noopener"
+                    <button type="button" id="openPdfFilterModal"
                         class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
                         ดาวน์โหลด PDF
-                    </a>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pdfFilterModal" class="hidden fixed inset-0 z-[1000] bg-slate-900/50 px-4">
+            <div class="h-full w-full flex items-center justify-center">
+                <div class="w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-slate-200">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                        <h2 class="text-lg font-semibold text-slate-900">เลือกช่วงข้อมูลสำหรับ PDF</h2>
+                        <button type="button" id="closePdfFilterModal"
+                            class="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50">✕</button>
+                    </div>
+
+                    <form id="pdfFilterForm" action="{{ route('fte.pdf', $person) }}" method="GET" target="_blank" class="px-5 py-4 space-y-4">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">รูปแบบช่วงข้อมูล</span>
+                            <select id="pdfMode" name="mode" class="mt-1 w-full border border-slate-200 rounded-lg p-2 text-sm">
+                                <option value="all">ทั้งหมด</option>
+                                <option value="year">เฉพาะปี</option>
+                                <option value="custom">กำหนดช่วงวัน</option>
+                            </select>
+                        </label>
+
+                        <label id="pdfYearWrap" class="hidden block">
+                            <span class="text-xs font-semibold text-slate-600">ปี (พ.ศ.)</span>
+                            <select id="pdfYear" name="year" class="mt-1 w-full border border-slate-200 rounded-lg p-2 text-sm">
+                                <option value="">เลือกปี</option>
+                                @foreach ($yearOptions as $year)
+                                    <option value="{{ $year }}">{{ $year + 543 }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+
+                        <div id="pdfDateWrap" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <label class="block">
+                                <span class="text-xs font-semibold text-slate-600">วันที่เริ่มต้น</span>
+                                <div class="relative">
+                                    <input id="pdfStartDate" type="text" name="start"
+                                        class="thai-datepicker mt-1 w-full border border-slate-200 rounded-lg p-2 pl-10 text-sm"
+                                        placeholder="กรุณาเลือกวันที่เริ่มต้น">
+                                    <button type="button"
+                                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600"
+                                        data-open-picker data-target="pdfStartDate" aria-label="เปิดปฏิทินเริ่มต้น">
+                                        📅
+                                    </button>
+                                </div>
+                            </label>
+                            <label class="block">
+                                <span class="text-xs font-semibold text-slate-600">วันที่สิ้นสุด</span>
+                                <div class="relative">
+                                    <input id="pdfEndDate" type="text" name="end"
+                                        class="thai-datepicker mt-1 w-full border border-slate-200 rounded-lg p-2 pl-10 text-sm"
+                                        placeholder="กรุณาเลือกวันที่สิ้นสุด">
+                                    <button type="button"
+                                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600"
+                                        data-open-picker data-target="pdfEndDate" aria-label="เปิดปฏิทินสิ้นสุด">
+                                        📅
+                                    </button>
+                                </div>
+                            </label>
+                        </div>
+
+                        <p class="text-xs text-slate-500">หมายเหตุ: ถ้าไม่เลือก filter ระบบจะสร้างรายงาน PDF จากข้อมูลทั้งหมด</p>
+
+                        <div class="pt-2 flex items-center justify-end gap-2">
+                            <button type="button" id="cancelPdfFilterModal"
+                                class="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">ยกเลิก</button>
+                            <button type="submit"
+                                class="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">เปิด PDF</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -102,7 +173,7 @@
             </div>
             <div class="bg-white border rounded-xl p-4">
                 <div class="text-xs text-slate-500">FTE รวมทั้งหมด</div>
-                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totalFte, 4) }}</div>
+                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totalFte, 7) }}</div>
             </div>
             <div class="bg-white border rounded-xl p-4">
                 <div class="text-xs text-slate-500">ชั่วโมงรวมทั้งหมด</div>
@@ -209,7 +280,7 @@
                         </div>
                         <div class="text-xs text-slate-500">
                             {{ $rows->count() }} รายการ •
-                            FTE {{ number_format($sumFTE, 4) }} •
+                            FTE {{ number_format($sumFTE, 7) }} •
                             ชั่วโมง {{ number_format($sumHours, 2) }}
                         </div>
                     </summary>
@@ -297,7 +368,7 @@
                                                 {{ number_format($item->fte_per_day, 10) }}
                                             </td>
                                             <td class="p-2 text-center font-semibold" data-label="FTE เดือนนี้">
-                                                {{ number_format($item->fte_value, 6) }}
+                                                {{ number_format($item->fte_value, 7) }}
                                             </td>
                                         </tr>
                                     @endforeach
@@ -439,8 +510,147 @@
             const monthEl = document.getElementById('fteMonthFilter');
             const sortEl = document.getElementById('fteSort');
             const resetBtn = document.getElementById('fteResetFilters');
+            const openPdfModalBtn = document.getElementById('openPdfFilterModal');
+            const pdfModal = document.getElementById('pdfFilterModal');
+            const closePdfModalBtn = document.getElementById('closePdfFilterModal');
+            const cancelPdfModalBtn = document.getElementById('cancelPdfFilterModal');
+            const pdfModeEl = document.getElementById('pdfMode');
+            const pdfYearWrap = document.getElementById('pdfYearWrap');
+            const pdfYearEl = document.getElementById('pdfYear');
+            const pdfDateWrap = document.getElementById('pdfDateWrap');
+            const pdfStartDateEl = document.getElementById('pdfStartDate');
+            const pdfEndDateEl = document.getElementById('pdfEndDate');
+            const pdfFilterForm = document.getElementById('pdfFilterForm');
 
             const normalize = (v) => String(v || '').toLowerCase().trim();
+
+            const closePdfModal = () => {
+                if (!pdfModal) return;
+                pdfModal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            };
+
+            const openPdfModal = () => {
+                if (!pdfModal) return;
+                pdfModal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            };
+
+            const syncPdfMode = () => {
+                const mode = pdfModeEl?.value || 'all';
+                const showYear = mode === 'year';
+                const showDate = mode === 'custom';
+
+                if (pdfYearWrap) pdfYearWrap.classList.toggle('hidden', !showYear);
+                if (pdfDateWrap) pdfDateWrap.classList.toggle('hidden', !showDate);
+
+                if (pdfYearEl) {
+                    pdfYearEl.disabled = !showYear;
+                    pdfYearEl.required = showYear;
+                    if (!showYear) pdfYearEl.value = '';
+                }
+
+                if (pdfStartDateEl) {
+                    pdfStartDateEl.disabled = !showDate;
+                    pdfStartDateEl.required = showDate;
+                    if (!showDate) pdfStartDateEl.value = '';
+                }
+
+                if (pdfEndDateEl) {
+                    pdfEndDateEl.disabled = !showDate;
+                    pdfEndDateEl.required = showDate;
+                    if (!showDate) pdfEndDateEl.value = '';
+                }
+            };
+
+            const initPdfThaiDatepickers = () => {
+                const toBuddhist = (selectedDates, dateStr, instance) => {
+                    const altInput = instance?.altInput;
+                    if (altInput) {
+                        altInput.readOnly = true;
+                    }
+
+                    if (selectedDates && selectedDates.length > 0 && altInput) {
+                        const date = selectedDates[0];
+                        const day = date.getDate();
+                        const month = date.toLocaleString('th-TH', {
+                            month: 'long'
+                        });
+                        const year = date.getFullYear() + 543;
+                        altInput.value = `${day} ${month} ${year}`;
+                    }
+
+                    const years = instance?.calendarContainer?.querySelectorAll('.flatpickr-current-month input.cur-year') || [];
+                    years.forEach((el) => {
+                        const year = parseInt(el.value, 10);
+                        if (!Number.isNaN(year)) {
+                            el.value = year + 543;
+                        }
+
+                        if (el.dataset.beBound === '1') return;
+                        el.dataset.beBound = '1';
+                        el.addEventListener('blur', () => {
+                            const inputYear = parseInt(el.value, 10);
+                            if (inputYear > 2400) {
+                                el.value = inputYear - 543;
+                                if (instance.selectedDates[0]) {
+                                    instance.setDate(new Date(instance.selectedDates[0]));
+                                }
+                            }
+                        });
+                    });
+                };
+
+                document.querySelectorAll('#pdfFilterForm .thai-datepicker').forEach((input) => {
+                    if (input._flatpickr) return;
+                    flatpickr(input, {
+                        locale: 'th',
+                        dateFormat: 'd-m-Y',
+                        altInput: true,
+                        altFormat: 'j F Y',
+                        prevArrow: '',
+                        nextArrow: '',
+                        disableMobile: true,
+                        onReady: toBuddhist,
+                        onChange: toBuddhist,
+                        onMonthChange: toBuddhist,
+                        onYearChange: toBuddhist,
+                    });
+
+                    const pickerBtn = document.querySelector(
+                        `[data-open-picker][data-target="${input.id}"]`
+                    );
+                    if (pickerBtn && pickerBtn.dataset.bound !== '1') {
+                        pickerBtn.dataset.bound = '1';
+                        pickerBtn.addEventListener('click', () => {
+                            input._flatpickr?.open();
+                        });
+                    }
+                });
+            };
+
+            const parsePickerDate = (value) => {
+                const raw = String(value || '').trim();
+                if (!raw) return null;
+
+                let match = raw.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+                if (match) {
+                    let year = Number(match[3]);
+                    if (year > 2400) year -= 543;
+                    const parsed = new Date(year, Number(match[2]) - 1, Number(match[1]));
+                    return Number.isNaN(parsed.getTime()) ? null : parsed;
+                }
+
+                match = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+                if (match) {
+                    let year = Number(match[1]);
+                    if (year > 2400) year -= 543;
+                    const parsed = new Date(year, Number(match[2]) - 1, Number(match[3]));
+                    return Number.isNaN(parsed.getTime()) ? null : parsed;
+                }
+
+                return null;
+            };
 
             function sortRows(rows, mode) {
                 const list = Array.from(rows);
@@ -494,6 +704,41 @@
             [searchEl, projectEl, roleEl, yearEl, monthEl, sortEl].forEach(el => {
                 el?.addEventListener('input', applyFilters);
                 el?.addEventListener('change', applyFilters);
+            });
+
+            openPdfModalBtn?.addEventListener('click', openPdfModal);
+            closePdfModalBtn?.addEventListener('click', closePdfModal);
+            cancelPdfModalBtn?.addEventListener('click', closePdfModal);
+            pdfModeEl?.addEventListener('change', syncPdfMode);
+            initPdfThaiDatepickers();
+            syncPdfMode();
+
+            pdfModal?.addEventListener('click', (event) => {
+                if (event.target === pdfModal) {
+                    closePdfModal();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && pdfModal && !pdfModal.classList.contains('hidden')) {
+                    closePdfModal();
+                }
+            });
+
+            pdfFilterForm?.addEventListener('submit', (event) => {
+                const mode = pdfModeEl?.value || 'all';
+                if (mode === 'custom') {
+                    const startValue = pdfStartDateEl?.value || '';
+                    const endValue = pdfEndDateEl?.value || '';
+                    const startDate = parsePickerDate(startValue);
+                    const endDate = parsePickerDate(endValue);
+                    if (startDate && endDate && startDate > endDate) {
+                        event.preventDefault();
+                        alert('วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด');
+                        return;
+                    }
+                }
+                closePdfModal();
             });
 
             resetBtn?.addEventListener('click', () => {

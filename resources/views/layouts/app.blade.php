@@ -5,6 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Research Management</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/sihp-logo.png') }}">
+    <link rel="shortcut icon" href="{{ asset('images/sihp-logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/sihp-logo.png') }}">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -69,6 +75,70 @@
             /* Nav auto hide/show */
             #main-nav.nav-hidden {
                 transform: translateY(-110%);
+            }
+
+            #save-loading-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 9999;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 1rem;
+                background: rgba(15, 23, 42, 0.4);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+            }
+
+            #save-loading-overlay.is-visible {
+                display: flex;
+            }
+
+            .save-loading-overlay__card {
+                min-width: 260px;
+                max-width: min(92vw, 360px);
+                border: 1px solid #e2e8f0;
+                border-radius: 18px;
+                background: #ffffff;
+                padding: 1.25rem 1.5rem;
+                box-shadow: 0 24px 48px rgba(15, 23, 42, 0.22);
+            }
+
+            .save-loading-overlay__row {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .save-loading-overlay__spinner {
+                width: 1.25rem;
+                height: 1.25rem;
+                border-radius: 999px;
+                border: 2px solid #cbd5e1;
+                border-top-color: #4f46e5;
+                animation: save-loading-spin 0.75s linear infinite;
+                flex: 0 0 auto;
+            }
+
+            .save-loading-overlay__title {
+                margin: 0;
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: #1e293b;
+                line-height: 1.35;
+            }
+
+            .save-loading-overlay__subtitle {
+                margin: 0.15rem 0 0;
+                font-size: 0.75rem;
+                color: #64748b;
+                line-height: 1.4;
+            }
+
+            @keyframes save-loading-spin {
+                to {
+                    transform: rotate(360deg);
+                }
             }
         </style>
     @endif
@@ -163,7 +233,7 @@
                                     👤 แก้ไขข้อมูลส่วนตัว
                                 </a>
 
-                                <form method="POST" action="{{ route('logout') }}">
+                                <form method="POST" action="{{ route('logout') }}" data-logout-form>
                                     @csrf
                                     <button type="submit"
                                         class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -211,6 +281,8 @@
         @endif
     </main>
 
+    @include('partials.global-ai-chat')
+
     @livewireScripts
 </body>
 
@@ -218,6 +290,46 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+
+<script>
+    (() => {
+        const logoutFlagKey = 'auth:logged_out';
+        const loginUrl = @json(route('login'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('form[data-logout-form]').forEach((form) => {
+                if (form.dataset.logoutBound === '1') return;
+                form.dataset.logoutBound = '1';
+                form.addEventListener('submit', () => {
+                    try {
+                        window.__clearAppAiChatSession?.();
+                        sessionStorage.setItem(logoutFlagKey, '1');
+                    } catch (error) {}
+                });
+            });
+
+            try {
+                const navEntry = window.performance?.getEntriesByType?.('navigation')?.[0];
+                const isBackForward = navEntry?.type === 'back_forward';
+                if (!isBackForward) {
+                    sessionStorage.removeItem(logoutFlagKey);
+                }
+            } catch (error) {}
+        });
+
+        window.addEventListener('pageshow', (event) => {
+            try {
+                const navEntry = window.performance?.getEntriesByType?.('navigation')?.[0];
+                const isBackForward = event.persisted || navEntry?.type === 'back_forward';
+                const hasLogoutFlag = sessionStorage.getItem(logoutFlagKey) === '1';
+
+                if (isBackForward && hasLogoutFlag) {
+                    window.location.replace(loginUrl);
+                }
+            } catch (error) {}
+        });
+    })();
+</script>
 
 <script>
     // ===== Auto hide nav on scroll down, show on scroll up =====
@@ -1336,4 +1448,163 @@
 
         fteInput.value = fte.toFixed(8);
     });
+</script>
+
+<script>
+    (() => {
+        const overlayId = 'save-loading-overlay';
+        const submitControlsSelector = 'button[type="submit"], input[type="submit"]';
+        const saveKeywords = ['บันทึก', 'save'];
+
+        const normalize = (value) => String(value || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+
+        const getControlLabel = (control) => {
+            if (!control) return '';
+            if (control.tagName === 'INPUT') {
+                return normalize(control.value);
+            }
+            return normalize(control.textContent);
+        };
+
+        const shouldHandleForm = (form, submitter) => {
+            if (!(form instanceof HTMLFormElement)) return false;
+
+            const controls = Array.from(form.querySelectorAll(submitControlsSelector));
+            if (submitter && submitter.matches?.(submitControlsSelector) && !controls.includes(submitter)) {
+                controls.push(submitter);
+            }
+
+            return controls.some((control) => {
+                const label = getControlLabel(control);
+                return saveKeywords.some((keyword) => label.includes(keyword));
+            });
+        };
+
+        const ensureOverlay = () => {
+            let overlay = document.getElementById(overlayId);
+            if (overlay) return overlay;
+
+            overlay = document.createElement('div');
+            overlay.id = overlayId;
+            overlay.className = 'save-loading-overlay';
+            overlay.setAttribute('aria-live', 'assertive');
+            overlay.innerHTML = `
+                <div class="save-loading-overlay__card">
+                    <div class="save-loading-overlay__row">
+                        <span class="save-loading-overlay__spinner" aria-hidden="true"></span>
+                        <div>
+                            <p class="save-loading-overlay__title">กำลังบันทึกข้อมูล...</p>
+                            <p class="save-loading-overlay__subtitle">กรุณารอสักครู่</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            return overlay;
+        };
+
+        const showOverlay = () => {
+            const overlay = ensureOverlay();
+            overlay.classList.add('is-visible');
+        };
+
+        const hideOverlay = () => {
+            const overlay = document.getElementById(overlayId);
+            if (!overlay) return;
+            overlay.classList.remove('is-visible');
+        };
+
+        const markControlLoading = (control, isPrimary) => {
+            if (!(control instanceof HTMLElement)) return;
+
+            control.dataset.saveGuardDisabled = '1';
+            control.classList.add('opacity-70', 'cursor-not-allowed');
+
+            if (control instanceof HTMLButtonElement || control instanceof HTMLInputElement) {
+                control.disabled = true;
+            }
+
+            if (!isPrimary) return;
+
+            if (control instanceof HTMLInputElement) {
+                if (!control.dataset.originalValue) {
+                    control.dataset.originalValue = control.value;
+                }
+                control.value = 'กำลังบันทึก...';
+                return;
+            }
+
+            if (!control.dataset.originalHtml) {
+                control.dataset.originalHtml = control.innerHTML;
+            }
+            control.innerHTML =
+                '<span class="inline-flex items-center gap-2"><span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white"></span><span>กำลังบันทึก...</span></span>';
+        };
+
+        const restoreForm = (form) => {
+            if (!(form instanceof HTMLFormElement)) return;
+            form.removeAttribute('data-save-submitting');
+
+            form.querySelectorAll('[data-save-guard-disabled="1"]').forEach((control) => {
+                if (control instanceof HTMLButtonElement || control instanceof HTMLInputElement) {
+                    control.disabled = false;
+                }
+
+                if (control instanceof HTMLElement) {
+                    control.classList.remove('opacity-70', 'cursor-not-allowed');
+                }
+
+                if (control instanceof HTMLInputElement && control.dataset.originalValue) {
+                    control.value = control.dataset.originalValue;
+                    delete control.dataset.originalValue;
+                }
+
+                if (control instanceof HTMLElement && control.dataset.originalHtml) {
+                    control.innerHTML = control.dataset.originalHtml;
+                    delete control.dataset.originalHtml;
+                }
+
+                if (control instanceof HTMLElement) {
+                    delete control.dataset.saveGuardDisabled;
+                }
+            });
+        };
+
+        document.addEventListener('submit', (event) => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) return;
+
+            if (form.dataset.saveSubmitting === '1') {
+                event.preventDefault();
+                return;
+            }
+
+            if (event.defaultPrevented) return;
+
+            const submitter = event.submitter instanceof HTMLElement ? event.submitter : null;
+            if (!shouldHandleForm(form, submitter)) return;
+
+            form.dataset.saveSubmitting = '1';
+
+            const submitControls = Array.from(form.querySelectorAll(submitControlsSelector));
+            const primaryControl =
+                submitter && submitter.matches?.(submitControlsSelector) ? submitter : submitControls[0] || null;
+
+            submitControls.forEach((control) => {
+                markControlLoading(control, control === primaryControl);
+            });
+
+            showOverlay();
+        });
+
+        window.addEventListener('pageshow', () => {
+            hideOverlay();
+            document.querySelectorAll('form[data-save-submitting="1"]').forEach((form) => {
+                restoreForm(form);
+            });
+        });
+    })();
 </script>

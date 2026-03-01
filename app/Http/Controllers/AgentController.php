@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Project;
 use App\Models\FteRole;
 use App\Models\Output;
+use App\Models\BackOfficeTask;
 
 class AgentController extends Controller
 {
@@ -364,6 +365,239 @@ class AgentController extends Controller
             'generated_at' => now()->toIso8601String(),
             'schema'       => 'sihp/hybrid-pack-v1',
             'items'        => $rows,
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    private function taskOverlapsBEYear($task, int $yearBE): bool {
+        $startBE = $this->beIntFromText($task->start_date ?? null);
+        $endBE = $this->beIntFromText($task->end_date ?? null);
+
+        if ($startBE !== null && $endBE !== null) {
+            return $startBE <= $yearBE && $endBE >= $yearBE;
+        }
+
+        if ($startBE !== null) return $startBE === $yearBE;
+        if ($endBE !== null) return $endBE === $yearBE;
+        return false;
+    }
+
+    private function outputMatchesBEYear($output, int $yearBE): bool {
+        $yearFromField = $this->beIntFromText($output->year ?? null);
+        if ($yearFromField !== null && $yearFromField === $yearBE) return true;
+
+        $deliveredBE = $this->beIntFromText($output->delivered_at ?? null);
+        return $deliveredBE !== null && $deliveredBE === $yearBE;
+    }
+
+    private function robustBackOfficeTaskCandidates(string $q, ?int $yearBE = null): array {
+        if (!Schema::hasTable('back_office_tasks')) return [];
+
+        $tok = $this->tokens($q);
+        $likeSets = [];
+        foreach ($tok as $t) {
+            $like = '%'.str_replace(['%','_'],['\%','\_'],$t).'%';
+            $noSp = '%'.str_replace(' ','',$t).'%';
+            $likeSets[] = compact('like', 'noSp');
+        }
+
+        $candidates = collect();
+
+        $taskIds = DB::table('back_office_tasks')
+            ->select('id')
+            ->when(!empty($likeSets), function ($qB) use ($likeSets) {
+                $cols = ['title', 'description', 'purpose', 'start_date', 'end_date'];
+                $qB->where(function ($W) use ($cols, $likeSets) {
+                    foreach ($likeSets as $s) {
+                        $W->where(function ($OR) use ($cols, $s) {
+                            foreach ($cols as $c) {
+                                $OR->orWhere($c, 'like', $s['like']);
+                                $OR->orWhereRaw("REPLACE($c,' ','') LIKE ?", [$s['noSp']]);
+                            }
+                        });
+                    }
+                });
+            })
+            ->limit(200)
+            ->pluck('id');
+        $candidates = $candidates->merge($taskIds);
+
+        if (Schema::hasTable('back_office_entries')) {
+            $entryTaskIds = DB::table('back_office_entries')
+                ->select('task_id as id')
+                ->when(!empty($likeSets), function ($qB) use ($likeSets) {
+                    $cols = ['person_name', 'category', 'job_detail', 'start_date', 'end_date', 'document_link'];
+                    $qB->where(function ($W) use ($cols, $likeSets) {
+                        foreach ($likeSets as $s) {
+                            $W->where(function ($OR) use ($cols, $s) {
+                                foreach ($cols as $c) {
+                                    $OR->orWhere($c, 'like', $s['like']);
+                                    $OR->orWhereRaw("REPLACE($c,' ','') LIKE ?", [$s['noSp']]);
+                                }
+                            });
+                        }
+                    });
+                })
+                ->limit(500)
+                ->pluck('id');
+            $candidates = $candidates->merge($entryTaskIds);
+        }
+
+        if (Schema::hasTable('back_office_task_outputs')) {
+            $taskOutputIds = DB::table('back_office_task_outputs')
+                ->select('task_id as id')
+                ->when(!empty($likeSets), function ($qB) use ($likeSets) {
+                    $cols = ['title', 'type', 'project_output', 'year', 'journal', 'description', 'document_link'];
+                    $qB->where(function ($W) use ($cols, $likeSets) {
+                        foreach ($likeSets as $s) {
+                            $W->where(function ($OR) use ($cols, $s) {
+                                foreach ($cols as $c) {
+                                    $OR->orWhere($c, 'like', $s['like']);
+                                    $OR->orWhereRaw("REPLACE($c,' ','') LIKE ?", [$s['noSp']]);
+                                }
+                            });
+                        }
+                    });
+                })
+                ->limit(500)
+                ->pluck('id');
+            $candidates = $candidates->merge($taskOutputIds);
+        }
+
+        if (Schema::hasTable('back_office_entry_outputs') && Schema::hasTable('back_office_entries')) {
+            $entryOutputIds = DB::table('back_office_entry_outputs as beo')
+                ->join('back_office_entries as boe', 'boe.id', '=', 'beo.entry_id')
+                ->select('boe.task_id as id')
+                ->when(!empty($likeSets), function ($qB) use ($likeSets) {
+                    $cols = ['beo.title', 'beo.type', 'beo.project_output', 'beo.year', 'beo.journal', 'beo.description', 'beo.document_link'];
+                    $qB->where(function ($W) use ($cols, $likeSets) {
+                        foreach ($likeSets as $s) {
+                            $W->where(function ($OR) use ($cols, $s) {
+                                foreach ($cols as $c) {
+                                    $OR->orWhere($c, 'like', $s['like']);
+                                    $OR->orWhereRaw("REPLACE($c,' ','') LIKE ?", [$s['noSp']]);
+                                }
+                            });
+                        }
+                    });
+                })
+                ->limit(500)
+                ->pluck('id');
+            $candidates = $candidates->merge($entryOutputIds);
+        }
+
+        $ids = $candidates->filter()->unique()->values();
+        if ($yearBE === null || $ids->isEmpty()) {
+            return $ids->take(250)->all();
+        }
+
+        $rows = $this->hydrateBackOfficeTasks($ids->take(250)->all(), $yearBE);
+        return array_values(array_unique(array_map(fn ($row) => $row['task_id'], $rows)));
+    }
+
+    private function hydrateBackOfficeTasks(array $taskIds, ?int $yearBE = null): array {
+        if (empty($taskIds) || !Schema::hasTable('back_office_tasks')) return [];
+
+        $tasks = BackOfficeTask::query()
+            ->with(['entries.outputs', 'outputs', 'creator'])
+            ->whereIn('id', $taskIds)
+            ->orderByDesc('created_at')
+            ->get();
+
+        if ($yearBE !== null) {
+            $tasks = $tasks->filter(function ($task) use ($yearBE) {
+                if ($this->taskOverlapsBEYear($task, $yearBE)) return true;
+
+                foreach ($task->entries as $entry) {
+                    if ($this->taskOverlapsBEYear($entry, $yearBE)) return true;
+                    foreach ($entry->outputs as $output) {
+                        if ($this->outputMatchesBEYear($output, $yearBE)) return true;
+                    }
+                }
+
+                foreach ($task->outputs as $output) {
+                    if ($this->outputMatchesBEYear($output, $yearBE)) return true;
+                }
+
+                return false;
+            })->values();
+        }
+
+        $rows = [];
+        foreach ($tasks as $task) {
+            $entries = $task->entries ?? collect();
+            $taskOutputs = $task->outputs ?? collect();
+            $entryOutputs = $entries->flatMap(fn ($entry) => $entry->outputs ?? collect());
+            $allOutputs = $taskOutputs->concat($entryOutputs);
+            $leaders = collect($task->leaders ?? [])->filter(fn ($v) => trim((string)$v) !== '')->values();
+            $people = $entries->pluck('person_name')->filter(fn ($v) => trim((string)$v) !== '')->unique()->values();
+            $categories = $entries
+                ->groupBy(fn ($entry) => trim((string)($entry->category ?: 'ไม่ระบุ')))
+                ->map->count()
+                ->sortDesc();
+            $outputTypes = $allOutputs
+                ->groupBy(fn ($output) => trim((string)($output->type ?? $output->project_output ?? 'ไม่ระบุ')))
+                ->map->count()
+                ->sortDesc();
+
+            $rows[] = [
+                'task_id' => (int)$task->id,
+                'title' => (string)($task->title ?? 'ไม่ระบุ'),
+                'start_date' => (string)($task->start_date ?? '-'),
+                'end_date' => (string)($task->end_date ?? '-'),
+                'description' => (string)($task->description ?? '-'),
+                'purpose' => (string)($task->purpose ?? '-'),
+                'leaders' => $leaders->isNotEmpty() ? $leaders->implode(', ') : '-',
+                'creator' => trim((string)optional($task->creator)->prefix.' '.(string)optional($task->creator)->name) ?: '-',
+                'entries_count' => (int)$entries->count(),
+                'people_count' => (int)$people->count(),
+                'hours_sum' => round((float)$entries->sum('hours'), 2),
+                'fte_sum' => round((float)$entries->sum('fte_value'), 6),
+                'task_outputs_count' => (int)$taskOutputs->count(),
+                'entry_outputs_count' => (int)$entryOutputs->count(),
+                'outputs_total' => (int)$allOutputs->count(),
+                'categories' => $categories->all(),
+                'output_types' => $outputTypes->all(),
+                'categories_brief' => $categories->take(5)->map(fn ($count, $name) => "{$name} ({$count})")->implode('; ') ?: '-',
+                'people_brief' => $people->take(6)->implode('; ') ?: '-',
+                'outputs_brief' => $allOutputs->take(6)->map(function ($output) {
+                    $type = trim((string)($output->type ?? $output->project_output ?? 'ไม่ระบุ'));
+                    $year = trim((string)($output->year ?? ''));
+                    $title = Str::limit((string)($output->title ?? 'ไม่ระบุ'), 80, '…');
+                    return ($year !== '' ? "[{$year}] " : '').$type.' - '.$title;
+                })->implode(' | ') ?: '-',
+                'href' => route('back_office.show', $task->id),
+            ];
+        }
+
+        return array_values($rows);
+    }
+
+    private function packForLLMEnvelope(array $projectRows, array $backOfficeRows, int $maxProjectItems = 20, int $maxTaskItems = 12): string {
+        $projectRows = array_slice($projectRows, 0, $maxProjectItems);
+        $backOfficeRows = array_slice($backOfficeRows, 0, $maxTaskItems);
+
+        foreach ($projectRows as &$row) {
+            foreach (['copi', 'co_research', 'fte_brief', 'outputs_brief', 'irb_brief'] as $key) {
+                if (!isset($row[$key])) continue;
+                $row[$key] = Str::limit((string)$row[$key], 900, '…');
+            }
+            if (isset($row['budget'])) $row['budget_million'] = round(((float)$row['budget']) / 1_000_000, 3);
+        }
+        unset($row);
+
+        foreach ($backOfficeRows as &$row) {
+            foreach (['description', 'purpose', 'categories_brief', 'people_brief', 'outputs_brief'] as $key) {
+                if (!isset($row[$key])) continue;
+                $row[$key] = Str::limit((string)$row[$key], 900, '…');
+            }
+        }
+        unset($row);
+
+        return json_encode([
+            'generated_at' => now()->toIso8601String(),
+            'schema' => 'sihp/hybrid-pack-v2',
+            'projects' => $projectRows,
+            'back_office' => $backOfficeRows,
         ], JSON_UNESCAPED_UNICODE);
     }
 
@@ -730,7 +964,115 @@ class AgentController extends Controller
                 ]);
             }
 
-            /** 3.2) Outputs ปี {Y} แยกประเภท */
+            /** 3.2) Back Office / งานนอกโครงการ */
+            if (Str::contains($t, 'back office') || Str::contains($t, 'งานนอกโครงการ')) {
+                if (!Schema::hasTable('back_office_tasks')) {
+                    return response()->json(['reply' => 'ยังไม่มีข้อมูล Back Office ในระบบ']);
+                }
+
+                $taskIds = $this->robustBackOfficeTaskCandidates($prompt, $yearHintBE);
+                if (empty($taskIds)) {
+                    $taskIds = BackOfficeTask::query()
+                        ->orderByDesc('created_at')
+                        ->limit(250)
+                        ->pluck('id')
+                        ->all();
+                }
+
+                $taskRows = $this->hydrateBackOfficeTasks($taskIds, $yearHintBE);
+                if (empty($taskRows)) {
+                    return response()->json([
+                        'reply' => $yearHintBE
+                            ? "ไม่พบข้อมูล Back Office ที่ตรงกับปี {$yearHintBE}"
+                            : 'ไม่พบข้อมูล Back Office ที่ตรงกับคำค้น',
+                    ]);
+                }
+
+                $totalTasks = count($taskRows);
+                $totalEntries = array_sum(array_map(fn ($row) => (int)($row['entries_count'] ?? 0), $taskRows));
+                $totalHours = array_sum(array_map(fn ($row) => (float)($row['hours_sum'] ?? 0), $taskRows));
+                $totalFte = array_sum(array_map(fn ($row) => (float)($row['fte_sum'] ?? 0), $taskRows));
+                $totalOutputs = array_sum(array_map(fn ($row) => (int)($row['outputs_total'] ?? 0), $taskRows));
+
+                $categoryMap = [];
+                $outputTypeMap = [];
+                foreach ($taskRows as $row) {
+                    foreach (($row['categories'] ?? []) as $name => $count) {
+                        $label = trim((string)$name) ?: 'ไม่ระบุ';
+                        $categoryMap[$label] = ($categoryMap[$label] ?? 0) + (int)$count;
+                    }
+                    foreach (($row['output_types'] ?? []) as $name => $count) {
+                        $label = trim((string)$name) ?: 'ไม่ระบุ';
+                        $outputTypeMap[$label] = ($outputTypeMap[$label] ?? 0) + (int)$count;
+                    }
+                }
+                arsort($categoryMap);
+                arsort($outputTypeMap);
+
+                $periodLabel = $yearHintBE ? "ปี {$yearHintBE}" : 'ทั้งหมดในระบบ';
+                $reply = "Back Office {$periodLabel}: {$totalTasks} งาน, {$totalEntries} รายการงาน, "
+                    .number_format($totalHours, 2)." ชั่วโมง, FTE รวม ".number_format($totalFte, 4)
+                    .", outputs รวม {$totalOutputs} รายการ";
+
+                $response = [
+                    'reply' => $reply,
+                    'table' => [
+                        'title' => "งาน Back Office {$periodLabel} (เรียงตามชั่วโมงสูงสุด)",
+                        'headers' => ['งาน', 'ผู้รับผิดชอบหลัก', 'รายการงาน', 'ชั่วโมง', 'FTE', 'Outputs', 'ลิงก์'],
+                        'fields' => ['task', 'leaders', 'entries', 'hours', 'fte', 'outputs', 'href'],
+                        'rows' => collect($taskRows)
+                            ->sortByDesc('hours_sum')
+                            ->take(10)
+                            ->map(fn ($row) => [
+                                'task' => $row['title'],
+                                'leaders' => $row['leaders'],
+                                'entries' => $row['entries_count'],
+                                'hours' => number_format((float)$row['hours_sum'], 2),
+                                'fte' => number_format((float)$row['fte_sum'], 4),
+                                'outputs' => $row['outputs_total'],
+                                'href' => $row['href'],
+                            ])->values(),
+                    ],
+                ];
+
+                if (!empty($categoryMap)) {
+                    $categoryPairs = collect($categoryMap)->take(8);
+                    $response['chart'] = [
+                        'type' => 'bar',
+                        'labels' => $categoryPairs->keys()->values(),
+                        'datasets' => [[
+                            'label' => 'จำนวนรายการงาน',
+                            'data' => $categoryPairs->values()->values(),
+                            'backgroundColor' => 'rgba(14, 165, 233, 0.75)',
+                            'borderColor' => '#0284c7',
+                            'borderWidth' => 1,
+                        ]],
+                        'options' => [
+                            'plugins' => ['legend' => ['display' => false]],
+                            'scales' => ['y' => ['beginAtZero' => true]],
+                        ],
+                    ];
+                }
+
+                if (!empty($outputTypeMap)) {
+                    $outputPairs = collect($outputTypeMap)->take(6);
+                    $response['chart2'] = [
+                        'type' => 'doughnut',
+                        'labels' => $outputPairs->keys()->values(),
+                        'datasets' => [[
+                            'label' => 'จำนวน outputs',
+                            'data' => $outputPairs->values()->values(),
+                        ]],
+                        'options' => [
+                            'plugins' => ['legend' => ['position' => 'bottom']],
+                        ],
+                    ];
+                }
+
+                return response()->json($response);
+            }
+
+            /** 3.3) Outputs ปี {Y} แยกประเภท */
             if (Str::contains($t,'outputs') || Str::contains($t,'ผลงาน') || Str::contains($t,'ตีพิมพ์')) {
                 if (!Schema::hasTable('outputs')) {
                     return response()->json(['reply'=>'ยังไม่มีตาราง Outputs ในระบบ']);
@@ -776,7 +1118,7 @@ class AgentController extends Controller
                 ]);
             }
 
-            /** 3.3) แหล่งทุนที่เด่นที่สุด ปี {Y} */
+            /** 3.4) แหล่งทุนที่เด่นที่สุด ปี {Y} */
             if (Str::contains($t,'แหล่งทุนที่เด่น') || Str::contains($t,'top แหล่งทุน') || (Str::contains($t,'แหล่งทุน') && Str::contains($t,'ปี'))) {
                 $targetBE = $yearHintBE ?? $this->nowBE();
                 $projects = Project::select(['id','project_name_th','pi_name','start_year','budget','funding_source'])->get();
@@ -877,6 +1219,7 @@ class AgentController extends Controller
 
             /* ===== Hybrid Pack (LLM) — เผื่อคำถามอื่น ๆ ===== */
             $pids = $this->robustProjectCandidates($prompt, $yearHintBE);
+            $taskIds = $this->robustBackOfficeTaskCandidates($prompt, $yearHintBE);
 
             // FIX 4: หากการค้นหาแบบ Fuzzy Search (Robust Search) ล้มเหลว 
             // แต่มีการระบุปีในคำถาม ให้ดึง Project ID ทั้งหมดในปีนั้นแทน
@@ -885,14 +1228,25 @@ class AgentController extends Controller
                 $pids = Project::where('start_year', (string)$yearHintBE)->pluck('id')->all();
             }
 
+            if (empty($taskIds) && $yearHintBE !== null && Schema::hasTable('back_office_tasks')) {
+                $taskIds = BackOfficeTask::query()
+                    ->orderByDesc('created_at')
+                    ->limit(250)
+                    ->pluck('id')
+                    ->all();
+            }
+
+            $backOfficeRows = $this->hydrateBackOfficeTasks($taskIds, $yearHintBE);
+
             // ************************************************
             // ✅ FIX 5: CHECK FOR GENERAL KNOWLEDGE QUESTION
             // ************************************************
             $hasRelevantPIDs = !empty($pids);
+            $hasRelevantBackOffice = !empty($backOfficeRows);
             
             // ถ้าไม่พบโครงการที่เกี่ยวข้อง (และไม่มีปีระบุที่ใช้เป็นตัวกรองได้) 
             // ให้ถือว่าเป็นคำถามความรู้ทั่วไป และข้ามการส่ง Data Pack ไป
-            if (!$hasRelevantPIDs && $yearHintBE === null) {
+            if (!$hasRelevantPIDs && !$hasRelevantBackOffice && $yearHintBE === null) {
                 // Treat as General Knowledge Question
                 $generalPrompt = "คุณคือผู้ช่วย AI ที่มีความรู้กว้างขวาง โปรดตอบคำถามนี้ตามหลักการและความรู้ทั่วไปที่ทันสมัย ตอบเป็นภาษาไทย กระชับ 8-12 บรรทัด คำถาม: {$prompt}";
                 $g = $this->askGeminiRobust($generalPrompt);
@@ -909,20 +1263,31 @@ class AgentController extends Controller
             // สิ้นสุดส่วน FIX 5: ถ้าถึงจุดนี้ แสดงว่าต้องใช้ข้อมูลในการวิเคราะห์ต่อ
 
             $rows = $this->hydrateProjectsWithJoins($pids);
-            $rows = $this->makeSkeletonIfEmpty($rows, $prompt); 
-            $pack = $this->packForLLM($rows, 24);
+            if (empty($rows) && empty($backOfficeRows)) {
+                $rows = $this->makeSkeletonIfEmpty($rows, $prompt);
+            }
+            $pack = $this->packForLLMEnvelope($rows, $backOfficeRows, 24, 16);
 
             if ($mode === self::MODE_GEMINI) {
-                $g = $this->askGeminiRobust("คุณเป็นผู้ช่วยวิเคราะห์ฐานข้อมูลวิจัย ตอบไทย ไม่เกิน 12 บรรทัด\n\nคำถาม: {$prompt}\n\nข้อมูล: {$pack}");
+                $g = $this->askGeminiRobust("คุณเป็นผู้ช่วยวิเคราะห์ฐานข้อมูลวิจัยและงาน Back Office ตอบไทย ไม่เกิน 12 บรรทัด\n\nคำถาม: {$prompt}\n\nข้อมูล: {$pack}");
                 if ($g['ok']) return response()->json(['reply'=>$g['text'],'data_pack'=>json_decode($pack,true)]);
                 return response()->json(['reply'=>"[GEMINI] ไม่พร้อมใช้งาน: ".$g['reason'],'data_pack'=>json_decode($pack,true)], 503);
             }
 
             // AUTO/HYBRID → ลอง LLM สรุปสั้นๆ แต่มี data_pack ให้ front ใช้
-            $g = $this->askGeminiRobust("คุณเป็นผู้ช่วยวิเคราะห์ฐานข้อมูลวิจัย ตอบไทย กระชับ 8–12 บรรทัด\n\nคำถาม: {$prompt}\n\nข้อมูล: {$pack}\n\nสรุปโดยยึดข้อมูลจริง ห้ามแต่งตัวเลข");
-            $reply = $g['ok'] ? $g['text'] : collect($rows)->take(6)->map(function($r){
-                return "• {$r['project_name']} / PI: {$r['pi_name']} / ปี: {$r['start_year']} / งบ(ลบ.): ".number_format(($r['budget']??0)/1_000_000,2);
-            })->implode("\n");
+            $g = $this->askGeminiRobust("คุณเป็นผู้ช่วยวิเคราะห์ฐานข้อมูลวิจัยและงาน Back Office ตอบไทย กระชับ 8–12 บรรทัด\n\nคำถาม: {$prompt}\n\nข้อมูล: {$pack}\n\nสรุปโดยยึดข้อมูลจริง ห้ามแต่งตัวเลข");
+            $fallbackLines = collect();
+            if (!empty($rows)) {
+                $fallbackLines = $fallbackLines->merge(collect($rows)->take(4)->map(function ($r) {
+                    return "• โครงการ: {$r['project_name']} / PI: {$r['pi_name']} / ปี: {$r['start_year']} / งบ(ลบ.): ".number_format(($r['budget'] ?? 0) / 1_000_000, 2);
+                }));
+            }
+            if (!empty($backOfficeRows)) {
+                $fallbackLines = $fallbackLines->merge(collect($backOfficeRows)->take(4)->map(function ($r) {
+                    return "• Back Office: {$r['title']} / ชั่วโมง: ".number_format((float)($r['hours_sum'] ?? 0), 2)." / FTE: ".number_format((float)($r['fte_sum'] ?? 0), 4)." / Outputs: ".(int)($r['outputs_total'] ?? 0);
+                }));
+            }
+            $reply = $g['ok'] ? $g['text'] : $fallbackLines->implode("\n");
 
             return response()->json([
                 'reply'     => $reply,

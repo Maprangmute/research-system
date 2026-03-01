@@ -1,6 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
+    @php
+        $activeFilterCount = collect(request()->query())
+            ->reject(fn($value, $key) => in_array($key, ['page', 'sort', 'dir'], true))
+            ->filter(fn($value) => filled($value))
+            ->count();
+    @endphp
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     @if (session('error'))
@@ -137,6 +144,182 @@
             line-height: 1.3;
             border: 1px solid rgba(15, 23, 42, 0.08);
         }
+
+        .project-filter-anchor {
+            scroll-margin-top: 96px;
+        }
+
+        .project-filter-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 48;
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease;
+        }
+
+        .project-filter-drawer-overlay.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .project-filter-drawer {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 49;
+            width: min(92vw, 400px);
+            transform: translateX(-100%);
+            transition: transform 0.22s ease;
+        }
+
+        .project-filter-drawer.is-open {
+            transform: translateX(0);
+        }
+
+        .project-filter-fab {
+            position: fixed;
+            left: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            z-index: 35;
+            width: 76px;
+            min-height: 84px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.75rem 0.55rem;
+            border-radius: 22px;
+            border: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.94);
+            color: #0f172a;
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(12px);
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .project-filter-fab.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .project-filter-fab.is-visible:hover {
+            transform: translateY(-2px);
+            border-color: #67e8f9;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.16);
+        }
+
+        .project-filter-fab:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.18), 0 20px 40px rgba(15, 23, 42, 0.16);
+        }
+
+        .project-filter-fab__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #0f172a 0%, #4338ca 100%);
+            color: #ffffff;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        }
+
+        .project-filter-fab__title {
+            font-size: 0.74rem;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .project-filter-fab__meta {
+            font-size: 0.61rem;
+            color: #64748b;
+            line-height: 1.1;
+            text-align: center;
+        }
+
+        .project-filter-fab__badge {
+            position: absolute;
+            top: -0.35rem;
+            right: -0.35rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.45rem;
+            height: 1.45rem;
+            padding: 0 0.32rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            border: 2px solid #fff;
+            color: #ffffff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            line-height: 1;
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .project-filter-fab__badge.hidden {
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            .project-filter-fab {
+                width: 68px;
+                min-height: 76px;
+                padding: 0.65rem 0.45rem;
+                border-radius: 20px;
+            }
+
+            .project-filter-fab__icon {
+                width: 36px;
+                height: 36px;
+                border-radius: 15px;
+            }
+
+            .project-filter-fab__title {
+                font-size: 0.68rem;
+            }
+
+            .project-filter-fab__meta {
+                font-size: 0.58rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .project-filter-fab {
+                width: 58px;
+                min-height: 58px;
+                padding: 8px;
+                border-radius: 18px;
+                gap: 0;
+            }
+
+            .project-filter-fab__icon {
+                width: 34px;
+                height: 34px;
+                border-radius: 14px;
+            }
+
+            .project-filter-fab__title,
+            .project-filter-fab__meta {
+                display: none;
+            }
+
+            .project-filter-fab__badge {
+                min-width: 1.25rem;
+                height: 1.25rem;
+                font-size: 0.62rem;
+            }
+        }
     </style>
 
     <div class="container mx-auto px-4 mt-11 space-y-6">
@@ -159,18 +342,19 @@
 
         {{-- Filters --}}
         <form id="project-filter-form" method="GET" action="{{ route('projects.index') }}"
-            class="bg-white p-4 rounded-xl shadow-sm ring-1 ring-slate-100 space-y-4">
+            class="project-filter-anchor bg-white p-4 rounded-xl shadow-sm ring-1 ring-slate-100 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
                 <label class="block md:col-span-2">
                     <span class="text-xs font-semibold text-slate-600">ค้นหาชื่อโครงการ / Project ID</span>
                     <input id="project-search-input" type="text" name="search"
                         placeholder="ชื่อโครงการ หรือ Project ID (รองรับคำใกล้เคียง)" value="{{ request('search') }}"
+                        data-project-live="true"
                         class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
                     <span class="mt-1 block text-[11px] text-slate-500">ค้นหาแบบ realtime ไม่ต้องกดปุ่ม</span>
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ประเภทโครงการ</span>
-                    <select name="type" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="type" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         @foreach ($typeOptions as $type)
                             <option value="{{ $type }}" @selected(request('type') === $type)>{{ $type }}</option>
@@ -179,7 +363,7 @@
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ปี (พ.ศ.)</span>
-                    <select name="year" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="year" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         @foreach ($yearOptions as $year)
                             <option value="{{ $year }}" @selected(request('year') == $year)>{{ $year }}</option>
@@ -188,7 +372,7 @@
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">PI</span>
-                    <select name="pi_name" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="pi_name" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         @foreach ($piOptions as $pi)
                             <option value="{{ $pi }}" @selected(request('pi_name') === $pi)>{{ $pi }}</option>
@@ -197,7 +381,7 @@
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">แหล่งทุน</span>
-                    <select name="funding_source" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="funding_source" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         @foreach ($fundingSources as $src)
                             <option value="{{ $src }}" @selected(request('funding_source') === $src)>{{ $src }}</option>
@@ -209,7 +393,7 @@
             <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
                 <label class="block md:col-span-2">
                     <span class="text-xs font-semibold text-slate-600">ช่วงงบประมาณ (preset)</span>
-                    <select name="budget_range" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="budget_range" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         <option value="0-500000" @selected(request('budget_range') === '0-500000')>0 - 500,000</option>
                         <option value="500000-1000000" @selected(request('budget_range') === '500000-1000000')>500,000 - 1,000,000</option>
@@ -220,7 +404,7 @@
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">Project Status</span>
-                    <select name="project_status" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="project_status" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
                         @foreach ($statusOptions as $status)
@@ -251,7 +435,7 @@
                 </label> --}}
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">สถานะ FTE</span>
-                    <select name="fte_status" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="fte_status" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         <option value="missing" @selected(request('fte_status') === 'missing')>ยังกรอกไม่ครบ</option>
                         <option value="complete" @selected(request('fte_status') === 'complete')>กรอกครบแล้ว</option>
@@ -259,7 +443,7 @@
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ไม่อัปเดท</span>
-                    <select name="last_update" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="last_update" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         <option value="1m" @selected(request('last_update') === '1m')>1 เดือน</option>
                         <option value="2m" @selected(request('last_update') === '2m')>2 เดือน</option>
@@ -271,15 +455,15 @@
                     <span class="text-xs font-semibold text-slate-600">ปัญหา</span>
                     <div class="flex flex-wrap gap-2 text-xs text-slate-600">
                         <label class="inline-flex items-center gap-1">
-                            <input type="checkbox" name="issue_overdue" value="1" @checked(request('issue_overdue'))>
+                            <input type="checkbox" name="issue_overdue" value="1" data-project-live="true" @checked(request('issue_overdue'))>
                             Overdue
                         </label>
                         <label class="inline-flex items-center gap-1">
-                            <input type="checkbox" name="issue_missing_dates" value="1" @checked(request('issue_missing_dates'))>
+                            <input type="checkbox" name="issue_missing_dates" value="1" data-project-live="true" @checked(request('issue_missing_dates'))>
                             วันที่ไม่ครบ
                         </label>
                         <label class="inline-flex items-center gap-1">
-                            <input type="checkbox" name="issue_duplicates" value="1" @checked(request('issue_duplicates'))>
+                            <input type="checkbox" name="issue_duplicates" value="1" data-project-live="true" @checked(request('issue_duplicates'))>
                             โครงการซ้ำ
                         </label>
                     </div>
@@ -289,7 +473,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">เรียงลำดับ</span>
-                    <select name="sort" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="sort" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="updated_at" @selected(request('sort') === 'updated_at')>อัปเดทล่าสุด → เก่าสุด</option>
                         <option value="created_at" @selected(request('sort') === 'created_at')>สร้างล่าสุด → เก่าสุด</option>
                         <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
@@ -300,12 +484,16 @@
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ทิศทาง</span>
-                    <select name="dir" class="w-full border border-slate-200 rounded-lg p-2">
+                    <select name="dir" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="desc" @selected(request('dir', 'desc') === 'desc')>มาก → น้อย</option>
                         <option value="asc" @selected(request('dir') === 'asc')>น้อย → มาก</option>
                     </select>
                 </label>
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-center">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                        ใช้ฟิลเตอร์
+                        <span id="project-filter-count" class="rounded-full bg-white px-2 py-0.5 text-slate-900 shadow-sm">{{ $activeFilterCount }}</span>
+                    </span>
                     <button type="submit"
                         class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm">ใช้ตัวกรอง</button>
                     <a id="project-filter-reset" href="{{ route('projects.index') }}"
@@ -593,6 +781,168 @@
             </div>
         </div>
     </div>
+
+    <div id="projectFilterDrawerOverlay" class="project-filter-drawer-overlay"></div>
+    <aside id="projectFilterDrawer" class="project-filter-drawer" aria-hidden="true">
+        <div class="flex h-full flex-col border-r border-slate-200 bg-white shadow-2xl">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">คัดกรองโครงการ</h3>
+                    <p class="mt-1 text-xs text-slate-500">ค่าที่เลือกจะ sync กับฟิลเตอร์ด้านบนและอัปเดตตารางทันที</p>
+                </div>
+                <button id="projectFilterDrawerClose" type="button"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
+                    <span class="sr-only">ปิดฟิลเตอร์</span>
+                    <span aria-hidden="true" class="text-xl leading-none">&times;</span>
+                </button>
+            </div>
+
+            <form id="project-filter-drawer-form" method="GET" action="{{ route('projects.index') }}" class="flex h-full flex-col">
+                <div class="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ค้นหาชื่อโครงการ / Project ID</span>
+                        <input id="project-drawer-search-input" type="text" name="search"
+                            placeholder="ชื่อโครงการ หรือ Project ID (รองรับคำใกล้เคียง)" value="{{ request('search') }}"
+                            data-project-live="true"
+                            class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ประเภทโครงการ</span>
+                        <select name="type" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($typeOptions as $type)
+                                <option value="{{ $type }}" @selected(request('type') === $type)>{{ $type }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ปี (พ.ศ.)</span>
+                        <select name="year" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($yearOptions as $year)
+                                <option value="{{ $year }}" @selected(request('year') == $year)>{{ $year }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">PI</span>
+                        <select name="pi_name" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($piOptions as $pi)
+                                <option value="{{ $pi }}" @selected(request('pi_name') === $pi)>{{ $pi }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">แหล่งทุน</span>
+                        <select name="funding_source" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($fundingSources as $src)
+                                <option value="{{ $src }}" @selected(request('funding_source') === $src)>{{ $src }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ช่วงงบประมาณ (preset)</span>
+                        <select name="budget_range" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            <option value="0-500000" @selected(request('budget_range') === '0-500000')>0 - 500,000</option>
+                            <option value="500000-1000000" @selected(request('budget_range') === '500000-1000000')>500,000 - 1,000,000</option>
+                            <option value="1000000-3000000" @selected(request('budget_range') === '1000000-3000000')>1,000,000 - 3,000,000</option>
+                            <option value="3000000-5000000" @selected(request('budget_range') === '3000000-5000000')>3,000,000 - 5,000,000</option>
+                            <option value="5000000-999999999" @selected(request('budget_range') === '5000000-999999999')>มากกว่า 5,000,000</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">Project Status</span>
+                        <select name="project_status" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
+                            @foreach ($statusOptions as $status)
+                                <option value="{{ $status }}" @selected(request('project_status') === $status)>{{ $status }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">สถานะ FTE</span>
+                        <select name="fte_status" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            <option value="missing" @selected(request('fte_status') === 'missing')>ยังกรอกไม่ครบ</option>
+                            <option value="complete" @selected(request('fte_status') === 'complete')>กรอกครบแล้ว</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ไม่อัปเดท</span>
+                        <select name="last_update" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            <option value="1m" @selected(request('last_update') === '1m')>1 เดือน</option>
+                            <option value="2m" @selected(request('last_update') === '2m')>2 เดือน</option>
+                            <option value="3m" @selected(request('last_update') === '3m')>3 เดือน</option>
+                            <option value="gt3" @selected(request('last_update') === 'gt3')>มากกว่า 3 เดือน</option>
+                        </select>
+                    </label>
+                    <div class="block">
+                        <span class="text-xs font-semibold text-slate-600">ปัญหา</span>
+                        <div class="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                            <label class="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5">
+                                <input type="checkbox" name="issue_overdue" value="1" data-project-live="true" @checked(request('issue_overdue'))>
+                                Overdue
+                            </label>
+                            <label class="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5">
+                                <input type="checkbox" name="issue_missing_dates" value="1" data-project-live="true" @checked(request('issue_missing_dates'))>
+                                วันที่ไม่ครบ
+                            </label>
+                            <label class="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5">
+                                <input type="checkbox" name="issue_duplicates" value="1" data-project-live="true" @checked(request('issue_duplicates'))>
+                                โครงการซ้ำ
+                            </label>
+                        </div>
+                    </div>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">เรียงลำดับ</span>
+                        <select name="sort" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="updated_at" @selected(request('sort') === 'updated_at')>อัปเดทล่าสุด → เก่าสุด</option>
+                            <option value="created_at" @selected(request('sort') === 'created_at')>สร้างล่าสุด → เก่าสุด</option>
+                            <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
+                            <option value="start_year" @selected(request('sort') === 'start_year')>ปีโครงการ</option>
+                            <option value="planning_status" @selected(request('sort') === 'planning_status')>Project Status</option>
+                            <option value="project_name_th" @selected(request('sort') === 'project_name_th')>ชื่อโครงการ</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ทิศทาง</span>
+                        <select name="dir" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="desc" @selected(request('dir', 'desc') === 'desc')>มาก → น้อย</option>
+                            <option value="asc" @selected(request('dir') === 'asc')>น้อย → มาก</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="border-t border-slate-200 bg-slate-50 px-4 py-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="submit"
+                            class="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">
+                            ใช้ตัวกรอง
+                        </button>
+                        <a id="project-filter-drawer-reset" href="{{ route('projects.index') }}"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                            ล้าง
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </aside>
+
+    <button id="projectFilterFab" type="button" aria-label="เปิดฟิลเตอร์" class="project-filter-fab" data-project-open-drawer>
+        <span class="project-filter-fab__icon" aria-hidden="true">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </span>
+        <span class="project-filter-fab__title">ฟิลเตอร์</span>
+        <span class="project-filter-fab__meta">เปิดแผง</span>
+        <span id="projectFilterFabBadge" class="project-filter-fab__badge @if ($activeFilterCount === 0) hidden @endif">{{ $activeFilterCount }}</span>
+    </button>
 
     {{-- Context Menu --}}
     <div id="row-menu"
@@ -902,76 +1252,145 @@
 
         // AJAX filter/search/sort/pagination (no page refresh)
         (function() {
-            const form = document.getElementById('project-filter-form');
-            const shellSelector = '#project-table-shell';
-            const loadingEl = document.getElementById('table-loading-indicator');
+            const selectors = {
+                primaryForm: '#project-filter-form',
+                drawerForm: '#project-filter-drawer-form',
+                shell: '#project-table-shell',
+                loading: '#table-loading-indicator',
+                filterAnchor: '.project-filter-anchor',
+                drawer: '#projectFilterDrawer',
+                drawerOverlay: '#projectFilterDrawerOverlay',
+                drawerClose: '#projectFilterDrawerClose',
+                drawerSearchInput: '#project-drawer-search-input',
+                openDrawer: '[data-project-open-drawer]',
+                fab: '#projectFilterFab',
+                fabBadge: '#projectFilterFabBadge',
+                count: '#project-filter-count',
+            };
+
+            const query = (selector, root = document) => root.querySelector(selector);
+            const queryAll = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+            const loadingEl = query(selectors.loading);
+            const currentPath = window.location.pathname;
+            const getPrimaryForm = () => query(selectors.primaryForm);
+            const getDrawerForm = () => query(selectors.drawerForm);
+            const getForms = () => [getPrimaryForm(), getDrawerForm()].filter(Boolean);
+            const form = getPrimaryForm();
             if (!form) return;
 
-            const selectors = [
-                'input[name="search"]',
-                'select[name="type"]',
-                'select[name="year"]',
-                'select[name="pi_name"]',
-                'select[name="funding_source"]',
-                'select[name="project_status"]',
-                'select[name="budget_range"]',
-                'select[name="fte_status"]',
-                'select[name="last_update"]',
-                'input[name="issue_overdue"]',
-                'input[name="issue_missing_dates"]',
-                'input[name="issue_duplicates"]',
-                'select[name="sort"]',
-                'select[name="dir"]'
-            ];
-
-            const fields = Array.from(form.querySelectorAll(selectors.join(',')));
-            if (!fields.length) return;
-
-            let timer = null;
             let controller = null;
             let requestToken = 0;
+            let timer = null;
+            let drawerOpen = false;
+            let previousBodyOverflow = '';
+
+            const countActiveFilters = (sourceForm) => {
+                if (!sourceForm) return 0;
+                return queryAll('[name]', sourceForm).reduce((count, field) => {
+                    if (!field.name || ['page', 'sort', 'dir'].includes(field.name)) return count;
+                    if (field.type === 'checkbox') return count + (field.checked ? 1 : 0);
+                    return String(field.value ?? '').trim() !== '' ? count + 1 : count;
+                }, 0);
+            };
+
+            const updateFilterBadges = () => {
+                const activeCount = countActiveFilters(getPrimaryForm() || getDrawerForm());
+                const countEl = query(selectors.count);
+                const badgeEl = query(selectors.fabBadge);
+                if (countEl) countEl.textContent = String(activeCount);
+                if (badgeEl) {
+                    badgeEl.textContent = String(activeCount);
+                    badgeEl.classList.toggle('hidden', activeCount === 0);
+                }
+            };
+
+            const syncFabVisibility = () => {
+                const fab = query(selectors.fab);
+                const anchor = query(selectors.filterAnchor);
+                if (!fab || !anchor) return;
+                const rect = anchor.getBoundingClientRect();
+                fab.classList.toggle('is-visible', rect.bottom < 48);
+            };
 
             const setLoading = (isLoading) => {
                 if (loadingEl) {
                     loadingEl.classList.toggle('hidden', !isLoading);
                     loadingEl.classList.toggle('flex', isLoading);
                 }
-                const shell = document.querySelector(shellSelector);
-                if (shell) {
-                    shell.classList.toggle('opacity-60', isLoading);
-                }
+                query(selectors.shell)?.classList.toggle('opacity-60', isLoading);
             };
 
-            const parseAndReplaceShell = (html) => {
-                const doc = new DOMParser().parseFromString(html, 'text/html');
-                const nextShell = doc.querySelector(shellSelector);
-                const currentShell = document.querySelector(shellSelector);
-                if (!nextShell || !currentShell) {
-                    return false;
-                }
-                currentShell.replaceWith(nextShell);
-                return true;
-            };
+            const scrollToTableTop = () => {
+                const shell = query(selectors.shell);
+                if (!shell) return;
 
-            const syncFormWithUrl = (url) => {
-                form.querySelectorAll('input[name], select[name]').forEach((field) => {
-                    const name = field.name;
-                    if (!name) return;
-
-                    if (field.type === 'checkbox') {
-                        const values = url.searchParams.getAll(name);
-                        const fieldValue = field.value || '1';
-                        field.checked = values.includes(fieldValue);
-                        return;
-                    }
-
-                    field.value = url.searchParams.get(name) ?? '';
+                window.requestAnimationFrame(() => {
+                    const top = shell.getBoundingClientRect().top + window.scrollY - 96;
+                    window.scrollTo({
+                        top: Math.max(top, 0),
+                        behavior: 'smooth',
+                    });
                 });
             };
 
-            const buildUrlFromForm = () => {
-                const url = new URL(form.action, window.location.origin);
-                const formData = new FormData(form);
+            const setFieldValue = (field, value) => {
+                if (!field) return;
+                if (field.type === 'checkbox') {
+                    const values = Array.isArray(value) ? value : [value];
+                    field.checked = values.includes(field.value || '1');
+                    return;
+                }
+                field.value = value ?? '';
+            };
+
+            const syncFormsFromSource = (sourceForm) => {
+                if (!sourceForm) return;
+                getForms().forEach((targetForm) => {
+                    if (!targetForm || targetForm === sourceForm) return;
+                    queryAll('[name]', sourceForm).forEach((sourceField) => {
+                        if (!sourceField.name) return;
+                        const targetFields = queryAll(`[name="${sourceField.name}"]`, targetForm);
+                        if (!targetFields.length) return;
+
+                        if (sourceField.type === 'checkbox') {
+                            const checkedValues = queryAll(`[name="${sourceField.name}"]`, sourceForm)
+                                .filter((field) => field.checked)
+                                .map((field) => field.value || '1');
+                            targetFields.forEach((field) => setFieldValue(field, checkedValues));
+                            return;
+                        }
+
+                        targetFields.forEach((field) => setFieldValue(field, sourceField.value));
+                    });
+                });
+            };
+
+            const syncFormWithUrl = (url) => {
+                getForms().forEach((targetForm) => {
+                    queryAll('[name]', targetForm).forEach((field) => {
+                        const values = url.searchParams.getAll(field.name);
+                        if (field.type === 'checkbox') {
+                            setFieldValue(field, values);
+                            return;
+                        }
+
+                        if (field.name === 'sort') {
+                            field.value = url.searchParams.get(field.name) ?? 'updated_at';
+                            return;
+                        }
+                        if (field.name === 'dir') {
+                            field.value = url.searchParams.get(field.name) ?? 'desc';
+                            return;
+                        }
+                        field.value = url.searchParams.get(field.name) ?? '';
+                    });
+                });
+                updateFilterBadges();
+            };
+
+            const buildUrlFromForm = (sourceForm) => {
+                const url = new URL(sourceForm.action, window.location.origin);
+                const formData = new FormData(sourceForm);
                 for (const [key, value] of formData.entries()) {
                     if (value !== null && String(value).trim() !== '') {
                         url.searchParams.append(key, String(value));
@@ -981,15 +1400,49 @@
                 return url;
             };
 
+            const parseAndReplaceShell = (html) => {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const nextShell = doc.querySelector(selectors.shell);
+                const currentShell = query(selectors.shell);
+                if (!nextShell || !currentShell) return false;
+                currentShell.replaceWith(nextShell);
+                return true;
+            };
+
+            const closeDrawer = () => {
+                const drawer = query(selectors.drawer);
+                const overlay = query(selectors.drawerOverlay);
+                if (!drawer || !overlay || !drawerOpen) return;
+                drawer.classList.remove('is-open');
+                overlay.classList.remove('is-open');
+                drawer.setAttribute('aria-hidden', 'true');
+                drawerOpen = false;
+                document.body.style.overflow = previousBodyOverflow;
+            };
+
+            const openDrawer = () => {
+                const drawer = query(selectors.drawer);
+                const overlay = query(selectors.drawerOverlay);
+                if (!drawer || !overlay || drawerOpen) return;
+
+                syncFormsFromSource(getPrimaryForm() || getDrawerForm());
+                drawer.classList.add('is-open');
+                overlay.classList.add('is-open');
+                drawer.setAttribute('aria-hidden', 'false');
+                drawerOpen = true;
+                previousBodyOverflow = document.body.style.overflow;
+                document.body.style.overflow = 'hidden';
+
+                window.setTimeout(() => {
+                    query(selectors.drawerSearchInput)?.focus({ preventScroll: true });
+                }, 120);
+            };
+
             const fetchAndRender = async (url, options = {}) => {
-                const {
-                    updateUrl = true
-                } = options;
+                const { updateUrl = true, scrollToTop = false } = options;
                 const token = ++requestToken;
 
-                if (controller) {
-                    controller.abort();
-                }
+                if (controller) controller.abort();
                 controller = new AbortController();
                 setLoading(true);
 
@@ -1001,23 +1454,22 @@
                         },
                         signal: controller.signal
                     });
-                    if (!res.ok) {
-                        throw new Error(`HTTP ${res.status}`);
-                    }
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
                     const html = await res.text();
-                    if (token !== requestToken) {
-                        return;
-                    }
-
+                    if (token !== requestToken) return;
                     if (!parseAndReplaceShell(html)) {
                         throw new Error('Cannot find table shell in response');
                     }
 
                     if (updateUrl) {
-                        history.replaceState({
-                            ajax: true
-                        }, '', `${url.pathname}${url.search}`);
+                        history.replaceState({ ajax: true }, '', `${url.pathname}${url.search}`);
+                    }
+
+                    syncFormWithUrl(url);
+                    syncFabVisibility();
+                    if (scrollToTop) {
+                        scrollToTableTop();
                     }
                 } catch (error) {
                     if (error.name !== 'AbortError') {
@@ -1033,83 +1485,111 @@
             const submitDebounced = (delay = 220) => {
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(() => {
-                    fetchAndRender(buildUrlFromForm(), {
-                        updateUrl: true
-                    });
+                    const sourceForm = getPrimaryForm() || getDrawerForm();
+                    if (!sourceForm) return;
+                    fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                 }, delay);
             };
 
-            form.addEventListener('submit', (event) => {
-                event.preventDefault();
-                fetchAndRender(buildUrlFromForm(), {
-                    updateUrl: true
-                });
-            });
+            const bindForms = () => {
+                getForms().forEach((targetForm) => {
+                    if (!targetForm || targetForm.dataset.ajaxBound === 'true') return;
+                    targetForm.dataset.ajaxBound = 'true';
 
-            fields.forEach((field) => {
-                const isTypingField = field.matches('input[type="text"], input[type="search"]');
-                if (isTypingField) {
-                    field.addEventListener('input', () => submitDebounced(260));
-                    field.addEventListener('keydown', (event) => {
-                        if (event.key === 'Enter') {
-                            event.preventDefault();
-                            submitDebounced(0);
-                        }
+                    targetForm.addEventListener('submit', (event) => {
+                        event.preventDefault();
+                        syncFormsFromSource(targetForm);
+                        const sourceForm = getPrimaryForm() || targetForm;
+                        fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                     });
+
+                    queryAll('[data-project-live]', targetForm).forEach((field) => {
+                        if (field.dataset.projectAjaxBound === 'true') return;
+                        field.dataset.projectAjaxBound = 'true';
+
+                        if (field.matches('input[type="text"], input[type="search"]')) {
+                            field.addEventListener('input', () => {
+                                syncFormsFromSource(targetForm);
+                                updateFilterBadges();
+                                submitDebounced(260);
+                            });
+                            field.addEventListener('keydown', (event) => {
+                                if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                    syncFormsFromSource(targetForm);
+                                    submitDebounced(0);
+                                }
+                            });
+                            return;
+                        }
+
+                        field.addEventListener('change', () => {
+                            syncFormsFromSource(targetForm);
+                            updateFilterBadges();
+                            submitDebounced(120);
+                        });
+                    });
+                });
+            };
+
+            document.addEventListener('click', (event) => {
+                const openButton = event.target.closest(selectors.openDrawer);
+                if (openButton) {
+                    event.preventDefault();
+                    openDrawer();
                     return;
                 }
 
-                field.addEventListener('change', () => submitDebounced(120));
-            });
+                const resetLink = event.target.closest('#project-filter-reset, #project-filter-drawer-reset');
+                if (resetLink) {
+                    event.preventDefault();
+                    const resetUrl = new URL(resetLink.href, window.location.origin);
+                    syncFormWithUrl(resetUrl);
+                    fetchAndRender(resetUrl, { updateUrl: true });
+                    return;
+                }
 
-            document.addEventListener('click', (event) => {
-                const link = event.target.closest(`${shellSelector} a[href]`);
+                const link = event.target.closest(`${selectors.shell} a[href]`);
                 if (!link) return;
 
                 const href = link.getAttribute('href');
                 if (!href) return;
 
                 const url = new URL(href, window.location.origin);
-                const isSamePage = url.pathname === window.location.pathname;
+                const isSamePage = url.pathname === currentPath;
                 const isListInteraction = url.searchParams.has('page') || url.searchParams.has('sort') || url.searchParams.has('dir');
 
-                if (!isSamePage || !isListInteraction) {
-                    return;
-                }
+                if (!isSamePage || !isListInteraction) return;
 
                 event.preventDefault();
                 syncFormWithUrl(url);
                 fetchAndRender(url, {
-                    updateUrl: true
+                    updateUrl: true,
+                    scrollToTop: url.searchParams.has('page'),
                 });
             });
 
-            const resetLink = document.getElementById('project-filter-reset');
-            if (resetLink) {
-                resetLink.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    form.querySelectorAll('input[name], select[name]').forEach((field) => {
-                        if (field.type === 'checkbox') {
-                            field.checked = false;
-                            return;
-                        }
+            query(selectors.drawerClose)?.addEventListener('click', closeDrawer);
+            query(selectors.drawerOverlay)?.addEventListener('click', closeDrawer);
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && drawerOpen) {
+                    closeDrawer();
+                }
+            });
 
-                        if (field.name === 'sort') {
-                            field.value = 'updated_at';
-                            return;
-                        }
-                        if (field.name === 'dir') {
-                            field.value = 'desc';
-                            return;
-                        }
-                        field.value = '';
-                    });
+            window.addEventListener('popstate', () => {
+                const url = new URL(window.location.href);
+                if (url.pathname !== currentPath) return;
+                syncFormWithUrl(url);
+                fetchAndRender(url, { updateUrl: false });
+            });
 
-                    fetchAndRender(new URL(resetLink.href, window.location.origin), {
-                        updateUrl: true
-                    });
-                });
-            }
+            window.addEventListener('scroll', syncFabVisibility, { passive: true });
+            window.addEventListener('resize', syncFabVisibility);
+
+            bindForms();
+            updateFilterBadges();
+            syncFabVisibility();
         })();
     </script>
 @endsection

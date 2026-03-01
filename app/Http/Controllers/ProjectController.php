@@ -92,24 +92,10 @@ class ProjectController extends Controller
         if ($request->filled('budget_max')) {
             $query->where('budget', '<=', $request->budget_max);
         }
-        if ($request->boolean('issue_overdue')) {
-            $query->whereNotNull('end_date')->whereDate('end_date', '<', now()->toDateString());
-        }
-        if ($request->boolean('issue_missing_dates')) {
-            $query->where(function ($q) {
-                $q->whereNull('start_date')->orWhereNull('end_date');
-            });
-        }
-        if ($request->boolean('issue_duplicates')) {
-            $nameExpr = "REGEXP_REPLACE(LOWER(TRIM(project_name_th)),'\\\\s+','')";
-            $duplicateNames = (clone $baseQuery)
-                ->select(DB::raw("$nameExpr as name_norm"))
-                ->whereNotNull('project_name_th')
-                ->whereRaw("TRIM(project_name_th) <> ''")
-                ->groupBy('name_norm')
-                ->havingRaw('count(*) > 1');
-            $query->whereIn(DB::raw($nameExpr), $duplicateNames);
-        }
+        $issueOverdue = $request->boolean('issue_overdue');
+        $issueMissingDates = $request->boolean('issue_missing_dates');
+        $issueDuplicates = $request->boolean('issue_duplicates');
+
         if ($request->filled('last_update')) {
             $now = now();
             if ($request->last_update === '1m') {
@@ -150,10 +136,48 @@ class ProjectController extends Controller
             $this->applyProjectNameSearch($query, $searchScope, $search);
         }
 
+        if ($issueOverdue || $issueMissingDates || $issueDuplicates) {
+            $startDateExpr = $this->projectNormalizedDateSql('start_date');
+            $endDateExpr = $this->projectNormalizedDateSql('end_date');
+            $duplicateProjectIds = $issueDuplicates ? $this->findDuplicateProjectIds(clone $query) : [];
+
+            $query->where(function ($issueQuery) use (
+                $issueOverdue,
+                $issueMissingDates,
+                $issueDuplicates,
+                $startDateExpr,
+                $endDateExpr,
+                $duplicateProjectIds
+            ) {
+                if ($issueOverdue) {
+                    $issueQuery->orWhereRaw("{$endDateExpr} IS NOT NULL AND {$endDateExpr} < CURDATE()");
+                }
+
+                if ($issueMissingDates) {
+                    $issueQuery->orWhereRaw("{$startDateExpr} IS NULL OR {$endDateExpr} IS NULL");
+                }
+
+                if ($issueDuplicates) {
+                    if ($duplicateProjectIds === []) {
+                        $issueQuery->orWhereRaw('0 = 1');
+                    } else {
+                        $issueQuery->orWhereIn('id', $duplicateProjectIds);
+                    }
+                }
+            });
+        }
+
         // sort
         $sortable = ['id', 'project_code', 'project_name_th', 'project_type', 'funding_type', 'theme', 'planning_status', 'start_year', 'updated_at', 'created_at', 'budget'];
         $sort = in_array($request->get('sort'), $sortable, true) ? $request->get('sort') : 'updated_at';
         $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
+
+        if ($issueDuplicates) {
+            $nameSortExpr = $this->projectNormalizedTextSql('project_name_th');
+            $query->orderByRaw("{$nameSortExpr} asc")
+                ->orderByRaw("CHAR_LENGTH(TRIM(COALESCE(project_name_th, ''))) asc")
+                ->orderBy('project_name_th', 'asc');
+        }
 
         $projects = $query->orderBy($sort, $dir)
             ->paginate(10)
@@ -646,6 +670,50 @@ public function store(Request $request)
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    private function projectNormalizedDateSql(string $column): string
+    {
+        $field = "`{$column}`";
+        $trimmed = "NULLIF(TRIM({$field}), '')";
+        $clean = "REPLACE({$trimmed}, '/', '-')";
+        $dmyYear = "CAST(SUBSTRING_INDEX({$clean}, '-', -1) AS UNSIGNED)";
+        $ymdYear = "CAST(SUBSTRING_INDEX({$clean}, '-', 1) AS UNSIGNED)";
+
+        $normalizedDmy = "CASE
+            WHEN {$clean} REGEXP '^[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}$'
+            THEN CONCAT(
+                SUBSTRING_INDEX({$clean}, '-', 2),
+                '-',
+                LPAD(CASE WHEN {$dmyYear} > 2400 THEN {$dmyYear} - 543 ELSE {$dmyYear} END, 4, '0')
+            )
+            ELSE NULL
+        END";
+
+        $normalizedYmd = "CASE
+            WHEN {$clean} REGEXP '^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$'
+            THEN CONCAT(
+                LPAD(CASE WHEN {$ymdYear} > 2400 THEN {$ymdYear} - 543 ELSE {$ymdYear} END, 4, '0'),
+                '-',
+                SUBSTRING_INDEX(SUBSTRING_INDEX({$clean}, '-', 2), '-', -1),
+                '-',
+                SUBSTRING_INDEX({$clean}, '-', -1)
+            )
+            ELSE NULL
+        END";
+
+        return "COALESCE(
+            STR_TO_DATE({$normalizedYmd}, '%Y-%m-%d'),
+            STR_TO_DATE({$normalizedDmy}, '%d-%m-%Y'),
+            STR_TO_DATE({$clean}, '%Y-%m-%d'),
+            STR_TO_DATE({$clean}, '%d-%m-%Y')
+        )";
+    }
+
+    private function projectNormalizedTextSql(string $column): string
+    {
+        $field = "COALESCE(`{$column}`, '')";
+        return "REGEXP_REPLACE(LOWER(TRIM({$field})), '[[:space:][:punct:]]+', '')";
     }
 
     private function buildProjectFteChartData(Project $project): array
@@ -1189,6 +1257,128 @@ public function store(Request $request)
         usort($scored, static fn(array $a, array $b): int => $b['score'] <=> $a['score']);
 
         return array_values(array_unique(array_slice(array_column($scored, 'id'), 0, 80)));
+    }
+
+    private function findDuplicateProjectIds(Builder $scope): array
+    {
+        $candidates = (clone $scope)
+            ->reorder()
+            ->select(['id', 'project_name_th'])
+            ->whereNotNull('project_name_th')
+            ->whereRaw("TRIM(project_name_th) <> ''")
+            ->get();
+
+        if ($candidates->count() < 2) {
+            return [];
+        }
+
+        $prepared = [];
+        $exactGroups = [];
+
+        foreach ($candidates as $candidate) {
+            $rawName = trim((string) $candidate->project_name_th);
+            $normalized = $this->normalizeSearchText($rawName);
+            if ($normalized === '') {
+                continue;
+            }
+
+            $prepared[] = [
+                'id' => (int) $candidate->id,
+                'raw' => $rawName,
+                'normalized' => $normalized,
+                'tokens' => $this->tokenizeSearchTerms($rawName),
+            ];
+            $exactGroups[$normalized][] = (int) $candidate->id;
+        }
+
+        $duplicateIds = [];
+        foreach ($exactGroups as $ids) {
+            if (count($ids) < 2) {
+                continue;
+            }
+
+            foreach ($ids as $id) {
+                $duplicateIds[$id] = true;
+            }
+        }
+
+        $remaining = array_values(array_filter($prepared, static function (array $item) use ($duplicateIds): bool {
+            return !isset($duplicateIds[$item['id']]);
+        }));
+
+        $count = count($remaining);
+        for ($i = 0; $i < $count; $i++) {
+            for ($j = $i + 1; $j < $count; $j++) {
+                if (!$this->areProjectNamesNearDuplicates($remaining[$i], $remaining[$j])) {
+                    continue;
+                }
+
+                $duplicateIds[$remaining[$i]['id']] = true;
+                $duplicateIds[$remaining[$j]['id']] = true;
+            }
+        }
+
+        return array_map('intval', array_keys($duplicateIds));
+    }
+
+    private function areProjectNamesNearDuplicates(array $left, array $right): bool
+    {
+        $leftName = $left['normalized'] ?? '';
+        $rightName = $right['normalized'] ?? '';
+
+        if ($leftName === '' || $rightName === '') {
+            return false;
+        }
+
+        if ($leftName === $rightName) {
+            return true;
+        }
+
+        $leftLength = mb_strlen($leftName, 'UTF-8');
+        $rightLength = mb_strlen($rightName, 'UTF-8');
+        $minLength = min($leftLength, $rightLength);
+        $maxLength = max($leftLength, $rightLength);
+
+        if ($minLength < 12) {
+            return false;
+        }
+
+        if (abs($leftLength - $rightLength) > max(6, (int) floor($maxLength * 0.18))) {
+            return false;
+        }
+
+        $prefixLength = min(10, $minLength);
+        $samePrefix = $prefixLength > 0
+            && mb_substr($leftName, 0, $prefixLength, 'UTF-8') === mb_substr($rightName, 0, $prefixLength, 'UTF-8');
+
+        $shorter = $leftLength <= $rightLength ? $leftName : $rightName;
+        $longer = $leftLength <= $rightLength ? $rightName : $leftName;
+        $containmentRatio = str_contains($longer, $shorter) ? ($minLength / max($maxLength, 1)) : 0.0;
+
+        if ($containmentRatio >= 0.94) {
+            return true;
+        }
+
+        $bigramScore = $this->ngramJaccardScore($leftName, $rightName, 2);
+        $trigramScore = $this->ngramJaccardScore($leftName, $rightName, 3);
+
+        if ($samePrefix && $bigramScore >= 0.92 && $trigramScore >= 0.84) {
+            return true;
+        }
+
+        $leftTokens = $left['tokens'] ?? [];
+        $rightTokens = $right['tokens'] ?? [];
+        if ($leftTokens === [] || $rightTokens === []) {
+            return false;
+        }
+
+        $tokenHits = count(array_intersect($leftTokens, $rightTokens));
+        $tokenScore = $tokenHits / max(min(count($leftTokens), count($rightTokens)), 1);
+
+        return $samePrefix
+            && $tokenScore >= 0.8
+            && $bigramScore >= 0.86
+            && $trigramScore >= 0.72;
     }
 
     private function calculateFuzzyScore(string $needleNormalized, array $tokens, string $candidateName): float

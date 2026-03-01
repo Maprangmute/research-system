@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\BackOfficeEntryOutput;
 use App\Models\BackOfficeTaskOutput;
 use App\Models\Output;
-use App\Models\Project;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
@@ -28,7 +27,15 @@ class OutputController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('type', 'like', '%' . $search . '%')
+                    ->orWhereHas('project', function ($projectQ) use ($search) {
+                        $projectQ->where('project_name_th', 'like', '%' . $search . '%')
+                            ->orWhere('project_code', 'like', '%' . $search . '%');
+                    });
+            });
         }
         if ($request->filled('type')) {
             $query->where('type', $request->type);
@@ -53,17 +60,6 @@ class OutputController extends Controller
 
         $projectOutputs = $query->orderBy($sort, $dir)->get();
 
-        $projectQuery = Project::query();
-        if (!$canViewAll) {
-            $projectQuery->where(function ($q) use ($user, $fullName) {
-                $q->where('user_id', $user->id)
-                    ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
-                        $subQ->where('name', $fullName);
-                    });
-            });
-        }
-
-        $projectOptions = $projectQuery->orderBy('project_name_th')->get(['id', 'project_name_th']);
         $typeOptions = Output::select('type')->whereNotNull('type')->distinct()->orderBy('type')->pluck('type');
 
         $parseYear = function ($raw) {
@@ -253,7 +249,6 @@ class OutputController extends Controller
 
         return view('outputs.index', [
             'outputs' => $outputs,
-            'projectOptions' => $projectOptions,
             'typeOptions' => $typeOptions->unique()->sort()->values(),
             'yearOptions' => $yearOptions,
         ]);

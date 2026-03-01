@@ -18,8 +18,31 @@ class BackOfficeController extends Controller
         $user = Auth::user();
         $fullName = trim($user->prefix . ' ' . $user->name);
 
-        $users = User::select('prefix', 'name')->orderBy('name')->get();
-        $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
+        $visibleTaskIds = $this->visibleTaskQuery($user, $fullName)->select('back_office_tasks.id');
+
+        $personList = BackOfficeEntry::query()
+            ->whereIn('task_id', clone $visibleTaskIds)
+            ->whereNotNull('person_name')
+            ->where('person_name', '!=', '')
+            ->distinct()
+            ->orderBy('person_name')
+            ->pluck('person_name');
+
+        $categoryOptions = BackOfficeEntry::query()
+            ->whereIn('task_id', clone $visibleTaskIds)
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
+
+        $creatorOptions = User::query()
+            ->whereIn('id', $this->visibleTaskQuery($user, $fullName)->select('created_by')->distinct())
+            ->select('id', 'prefix', 'name')
+            ->orderBy('name')
+            ->get();
+
+        $currentSort = $request->input('sort', 'latest');
 
         $query = BackOfficeTask::query()
             ->with(['creator'])
@@ -28,51 +51,9 @@ class BackOfficeController extends Controller
             ->withSum('entries', 'hours')
             ->withSum('entries', 'fte_value');
 
-        if ($user->role !== 'admin') {
-            $query->where(function ($q) use ($fullName, $user) {
-                $q->where('created_by', $user->id)
-                    ->orWhereHas('entries', function ($entryQ) use ($fullName) {
-                        $entryQ->where('person_name', $fullName);
-                    });
-            });
-        }
-
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', '%' . $search . '%')
-                    ->orWhere('description', 'like', '%' . $search . '%');
-            });
-        }
-
-        if ($person = $request->input('person')) {
-            $query->whereHas('entries', function ($entryQ) use ($person) {
-                $entryQ->where('person_name', $person);
-            });
-        }
-
-        if ($category = $request->input('category')) {
-            $query->whereHas('entries', function ($entryQ) use ($category) {
-                $entryQ->where('category', $category);
-            });
-        }
-
-        $rangeStart = $request->input('start');
-        $rangeEnd = $request->input('end');
-        if ($rangeStart || $rangeEnd) {
-            try {
-                $from = $rangeStart ? Carbon::createFromFormat('d-m-Y', $rangeStart)->startOfDay() : null;
-                $to = $rangeEnd ? Carbon::createFromFormat('d-m-Y', $rangeEnd)->endOfDay() : null;
-
-                $query->whereHas('entries', function ($entryQ) use ($from, $to) {
-                    if ($from) {
-                        $entryQ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?", [$from->format('Y-m-d H:i:s')]);
-                    }
-                    if ($to) {
-                        $entryQ->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$to->format('Y-m-d H:i:s')]);
-                    }
-                });
-            } catch (\Exception $e) {}
-        }
+        $this->applyVisibilityScope($query, $user, $fullName);
+        $this->applyIndexFilters($query, $request);
+        $this->applyIndexSorting($query, $currentSort);
 
         $summaryTasks = (clone $query)->get();
         $summary = [
@@ -87,11 +68,157 @@ class BackOfficeController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('back-office.index', [
+        $viewData = [
+            'categoryOptions' => $categoryOptions,
+            'creatorOptions' => $creatorOptions,
+            'currentSort' => $currentSort,
+            'currentSortLabel' => $this->backOfficeSortLabel($currentSort),
             'personList' => $personList,
             'tasks' => $tasks,
             'summary' => $summary,
-        ]);
+        ];
+
+        if ($request->ajax()) {
+            return view('back-office.partials.index-content', $viewData);
+        }
+
+        return view('back-office.index', $viewData);
+    }
+
+    private function visibleTaskQuery($user, string $fullName)
+    {
+        $query = BackOfficeTask::query();
+        $this->applyVisibilityScope($query, $user, $fullName);
+
+        return $query;
+    }
+
+    private function applyVisibilityScope($query, $user, string $fullName): void
+    {
+        if ($user->role === 'admin') {
+            return;
+        }
+
+        $query->where(function ($q) use ($fullName, $user) {
+            $q->where('created_by', $user->id)
+                ->orWhereHas('entries', function ($entryQ) use ($fullName) {
+                    $entryQ->where('person_name', $fullName);
+                });
+        });
+    }
+
+    private function applyIndexFilters($query, Request $request): void
+    {
+        if ($search = trim((string) $request->input('search'))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%')
+                    ->orWhere('purpose', 'like', '%' . $search . '%')
+                    ->orWhere('leaders', 'like', '%' . $search . '%')
+                    ->orWhereHas('creator', function ($creatorQ) use ($search) {
+                        $creatorQ->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('prefix', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('entries', function ($entryQ) use ($search) {
+                        $entryQ->where('person_name', 'like', '%' . $search . '%')
+                            ->orWhere('job_detail', 'like', '%' . $search . '%')
+                            ->orWhere('category', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('outputs', function ($outputQ) use ($search) {
+                        $outputQ->where('title', 'like', '%' . $search . '%')
+                            ->orWhere('type', 'like', '%' . $search . '%')
+                            ->orWhere('description', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        if ($creator = $request->input('creator')) {
+            $query->where('created_by', $creator);
+        }
+
+        if ($person = $request->input('person')) {
+            $query->whereHas('entries', function ($entryQ) use ($person) {
+                $entryQ->where('person_name', $person);
+            });
+        }
+
+        if ($category = $request->input('category')) {
+            $query->whereHas('entries', function ($entryQ) use ($category) {
+                $entryQ->where('category', $category);
+            });
+        }
+
+        if ($outputState = $request->input('with_output')) {
+            if ($outputState === 'yes') {
+                $query->where(function ($q) {
+                    $q->has('outputs')
+                        ->orWhereHas('entries.outputs');
+                });
+            }
+
+            if ($outputState === 'no') {
+                $query->whereDoesntHave('outputs')
+                    ->whereDoesntHave('entries.outputs');
+            }
+        }
+
+        $rangeStart = $request->input('start');
+        $rangeEnd = $request->input('end');
+        if (!$rangeStart && !$rangeEnd) {
+            return;
+        }
+
+        try {
+            $from = $rangeStart ? Carbon::createFromFormat('d-m-Y', $rangeStart)->startOfDay() : null;
+            $to = $rangeEnd ? Carbon::createFromFormat('d-m-Y', $rangeEnd)->endOfDay() : null;
+
+            $query->whereHas('entries', function ($entryQ) use ($from, $to) {
+                if ($from) {
+                    $entryQ->whereRaw("STR_TO_DATE(end_date, '%d-%m-%Y') >= ?", [$from->format('Y-m-d H:i:s')]);
+                }
+                if ($to) {
+                    $entryQ->whereRaw("STR_TO_DATE(start_date, '%d-%m-%Y') <= ?", [$to->format('Y-m-d H:i:s')]);
+                }
+            });
+        } catch (\Exception $e) {
+        }
+    }
+
+    private function applyIndexSorting($query, string $sort): void
+    {
+        switch ($sort) {
+            case 'oldest':
+                $query->orderBy('created_at');
+                break;
+            case 'title':
+                $query->orderBy('title')->orderByDesc('created_at');
+                break;
+            case 'hours':
+                $query->orderByDesc('entries_sum_hours')->orderByDesc('created_at');
+                break;
+            case 'fte':
+                $query->orderByDesc('entries_sum_fte_value')->orderByDesc('created_at');
+                break;
+            case 'outputs':
+                $query->orderByDesc('outputs_count')->orderByDesc('created_at');
+                break;
+            case 'latest':
+            default:
+                $query->orderByDesc('created_at');
+                break;
+        }
+    }
+
+    private function backOfficeSortLabel(string $sort): string
+    {
+        return match ($sort) {
+            'oldest' => 'เก่าสุด',
+            'title' => 'ชื่องาน A-Z',
+            'hours' => 'ชั่วโมงมากที่สุด',
+            'fte' => 'FTE มากที่สุด',
+            'outputs' => 'ผลงานมากที่สุด',
+            default => 'บันทึกล่าสุด',
+        };
     }
 
     public function create()
@@ -246,7 +373,7 @@ class BackOfficeController extends Controller
             ->with('success', 'บันทึกงานนอกโครงการเรียบร้อย');
     }
 
-    public function show(BackOfficeTask $task)
+    public function show(Request $request, BackOfficeTask $task)
     {
         $task->load(['entries.outputs', 'outputs', 'creator']);
 
@@ -255,6 +382,14 @@ class BackOfficeController extends Controller
             'hours' => $task->entries->sum('hours'),
             'fte' => $task->entries->sum('fte_value'),
         ];
+
+        if ($request->boolean('drawer')) {
+            return view('back-office.partials.detail-content', [
+                'task' => $task,
+                'summary' => $summary,
+                'drawerMode' => true,
+            ]);
+        }
 
         return view('back-office.show', [
             'task' => $task,

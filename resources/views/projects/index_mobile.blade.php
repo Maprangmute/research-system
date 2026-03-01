@@ -2,10 +2,17 @@
 
 @section('content')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @php
+        $activeFilterCount = collect(request()->query())
+            ->reject(fn($value, $key) => in_array($key, ['page', 'sort', 'dir', 'view'], true))
+            ->filter(fn($value) => filled($value))
+            ->count();
+    @endphp
     <style>
         .lux-mobile-page {
             max-width: 100%;
             margin: 0.75rem;
+            padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
         }
 
         .lux-mobile-card {
@@ -32,6 +39,123 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+        }
+
+        .project-mobile-filter-anchor {
+            scroll-margin-top: 80px;
+        }
+
+        .project-mobile-filter-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 46;
+            background: rgba(15, 23, 42, 0.28);
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease;
+        }
+
+        .project-mobile-filter-drawer-overlay.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .project-mobile-filter-drawer {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 47;
+            width: min(92vw, 400px);
+            transform: translateX(-100%);
+            transition: transform 0.22s ease;
+        }
+
+        .project-mobile-filter-drawer.is-open {
+            transform: translateX(0);
+        }
+
+        .project-mobile-filter-fab {
+            position: fixed;
+            left: 16px;
+            bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            z-index: 35;
+            width: 62px;
+            min-height: 62px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            border-radius: 18px;
+            border: 1px solid #dbeafe;
+            background: rgba(255, 255, 255, 0.94);
+            color: #0f172a;
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(12px);
+            opacity: 0;
+            transform: translateY(18px);
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .project-mobile-filter-fab.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .project-mobile-filter-fab__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0f172a 0%, #312e81 100%);
+            color: #ffffff;
+        }
+
+        .project-mobile-filter-fab__badge {
+            position: absolute;
+            top: -0.28rem;
+            right: -0.28rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.25rem;
+            height: 1.25rem;
+            padding: 0 0.28rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            border: 2px solid #fff;
+            color: #ffffff;
+            font-size: 0.62rem;
+            font-weight: 800;
+            line-height: 1;
+            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .project-mobile-filter-fab__badge.hidden {
+            display: none;
+        }
+
+        @media (min-width: 641px) and (max-width: 1024px) {
+            .project-mobile-filter-fab {
+                width: 70px;
+                min-height: 78px;
+                flex-direction: column;
+                gap: 0.3rem;
+                padding: 0.72rem 0.45rem;
+                border-radius: 20px;
+            }
+
+            .project-mobile-filter-fab::after {
+                content: 'ฟิลเตอร์';
+                font-size: 0.68rem;
+                font-weight: 700;
+                line-height: 1;
+            }
         }
     </style>
 
@@ -87,8 +211,14 @@
         </form>
 
         {{-- Filters --}}
-        <details class="bg-white rounded-2xl border border-slate-100 shadow-sm">
-            <summary class="px-4 py-3 text-sm font-semibold text-slate-700 cursor-pointer">ตัวกรอง</summary>
+        <details id="project-mobile-filter-anchor" class="project-mobile-filter-anchor bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <summary class="flex items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-slate-700 cursor-pointer">
+                <span>ตัวกรอง</span>
+                <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-medium text-slate-600">
+                    <span>ใช้อยู่</span>
+                    <span id="project-mobile-active-filter-pill" class="font-semibold text-slate-900">{{ $activeFilterCount }}</span>
+                </span>
+            </summary>
             <form id="project-mobile-filter-form" method="GET" action="{{ route('projects.index') }}"
                 class="px-4 pb-4 space-y-3">
                 <input type="hidden" name="search" value="{{ request('search') }}">
@@ -205,7 +335,7 @@
                 <div class="flex gap-2">
                     <button type="submit"
                         class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm">ใช้ตัวกรอง</button>
-                    <a id="project-mobile-reset" href="{{ route('projects.index') }}"
+                    <a id="project-mobile-reset" data-project-mobile-reset href="{{ route('projects.index') }}"
                         class="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 bg-white">ล้าง</a>
                 </div>
             </form>
@@ -396,11 +526,169 @@
                 @endforelse
             </div>
 
-            <div class="py-3">
+            <div id="project-mobile-pagination-wrap" class="py-3">
                 {{ $projects->links('vendor.pagination.th') }}
             </div>
         </div>
     </div>
+
+    <div id="project-mobile-filter-drawer-overlay" class="project-mobile-filter-drawer-overlay"></div>
+    <aside id="project-mobile-filter-drawer" class="project-mobile-filter-drawer" aria-hidden="true">
+        <div class="flex h-full flex-col border-r border-slate-200 bg-white shadow-2xl">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">ตัวกรองโครงการ</h3>
+                    <p class="mt-1 text-xs text-slate-500">ค่าที่เลือกจะ sync กับฟิลเตอร์ด้านบนและอัปเดตผลลัพธ์ทันที</p>
+                </div>
+                <button id="project-mobile-filter-drawer-close" type="button"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50">
+                    <span class="sr-only">ปิดฟิลเตอร์</span>
+                    <span aria-hidden="true" class="text-xl leading-none">&times;</span>
+                </button>
+            </div>
+
+            <form id="project-mobile-filter-drawer-form" method="GET" action="{{ route('projects.index') }}" class="flex h-full flex-col">
+                <div class="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ค้นหาชื่อโครงการ / Project ID</span>
+                        <input id="project-mobile-drawer-search-input" type="text" name="search"
+                            placeholder="ชื่อโครงการ หรือ Project ID (รองรับคำใกล้เคียง)" value="{{ request('search') }}"
+                            class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
+                    </label>
+
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ประเภทโครงการ</span>
+                        <select name="type" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($typeOptions as $type)
+                                <option value="{{ $type }}" @selected(request('type') === $type)>{{ $type }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ปี (พ.ศ.)</span>
+                        <select name="year" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($yearOptions as $year)
+                                <option value="{{ $year }}" @selected(request('year') == $year)>{{ $year }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">PI</span>
+                        <select name="pi_name" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($piOptions as $pi)
+                                <option value="{{ $pi }}" @selected(request('pi_name') === $pi)>{{ $pi }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">แหล่งทุน</span>
+                        <select name="funding_source" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($fundingSources as $src)
+                                <option value="{{ $src }}" @selected(request('funding_source') === $src)>{{ $src }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ช่วงงบประมาณ (preset)</span>
+                        <select name="budget_range" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            <option value="0-500000" @selected(request('budget_range') === '0-500000')>0 - 500,000</option>
+                            <option value="500000-1000000" @selected(request('budget_range') === '500000-1000000')>500,000 - 1,000,000</option>
+                            <option value="1000000-3000000" @selected(request('budget_range') === '1000000-3000000')>1,000,000 - 3,000,000</option>
+                            <option value="3000000-5000000" @selected(request('budget_range') === '3000000-5000000')>3,000,000 - 5,000,000</option>
+                            <option value="5000000-999999999" @selected(request('budget_range') === '5000000-999999999')>มากกว่า 5,000,000</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">Project Status</span>
+                        <select name="project_status" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
+                            @foreach ($statusOptions as $status)
+                                <option value="{{ $status }}" @selected(request('project_status') === $status)>{{ $status }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">สถานะ FTE</span>
+                        <select name="fte_status" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            <option value="missing" @selected(request('fte_status') === 'missing')>ยังกรอกไม่ครบ</option>
+                            <option value="complete" @selected(request('fte_status') === 'complete')>กรอกครบแล้ว</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ไม่อัปเดท</span>
+                        <select name="last_update" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="">ทั้งหมด</option>
+                            <option value="1m" @selected(request('last_update') === '1m')>1 เดือน</option>
+                            <option value="2m" @selected(request('last_update') === '2m')>2 เดือน</option>
+                            <option value="3m" @selected(request('last_update') === '3m')>3 เดือน</option>
+                            <option value="gt3" @selected(request('last_update') === 'gt3')>มากกว่า 3 เดือน</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ปัญหา</span>
+                        <div class="flex flex-wrap gap-2 text-xs text-slate-600">
+                            <label class="inline-flex items-center gap-1">
+                                <input type="checkbox" name="issue_overdue" value="1" @checked(request('issue_overdue'))>
+                                Overdue
+                            </label>
+                            <label class="inline-flex items-center gap-1">
+                                <input type="checkbox" name="issue_missing_dates" value="1" @checked(request('issue_missing_dates'))>
+                                วันที่ไม่ครบ
+                            </label>
+                            <label class="inline-flex items-center gap-1">
+                                <input type="checkbox" name="issue_duplicates" value="1" @checked(request('issue_duplicates'))>
+                                โครงการซ้ำ
+                            </label>
+                        </div>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">เรียงลำดับ</span>
+                        <select name="sort" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="updated_at" @selected(request('sort') === 'updated_at')>อัปเดทล่าสุด → เก่าสุด</option>
+                            <option value="created_at" @selected(request('sort') === 'created_at')>สร้างล่าสุด → เก่าสุด</option>
+                            <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
+                            <option value="start_year" @selected(request('sort') === 'start_year')>ปีโครงการ</option>
+                            <option value="planning_status" @selected(request('sort') === 'planning_status')>Project Status</option>
+                            <option value="project_name_th" @selected(request('sort') === 'project_name_th')>ชื่อโครงการ</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ทิศทาง</span>
+                        <select name="dir" class="w-full border border-slate-200 rounded-lg p-2">
+                            <option value="desc" @selected(request('dir', 'desc') === 'desc')>มาก → น้อย</option>
+                            <option value="asc" @selected(request('dir') === 'asc')>น้อย → มาก</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="border-t border-slate-200 bg-slate-50 px-4 py-4">
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm">
+                            ใช้ตัวกรอง
+                        </button>
+                        <a data-project-mobile-reset href="{{ route('projects.index') }}"
+                            class="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 bg-white">ล้าง</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </aside>
+
+    <button id="project-mobile-filter-fab" type="button" class="project-mobile-filter-fab" aria-label="เปิดฟิลเตอร์">
+        <span class="project-mobile-filter-fab__icon" aria-hidden="true">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <path d="M4 6h16M7 12h10m-7 6h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </span>
+        <span id="project-mobile-filter-fab-badge" class="project-mobile-filter-fab__badge @if ($activeFilterCount === 0) hidden @endif">{{ $activeFilterCount }}</span>
+    </button>
 
     <script>
         function confirmDelete(formId) {
@@ -420,17 +708,27 @@
             });
         }
 
-        // AJAX filter/search/pagination (mobile, no page refresh)
+        // AJAX filter/search/pagination (mobile + tablet, no page refresh)
         (function() {
             const searchForm = document.getElementById('project-mobile-search-form');
             const filterForm = document.getElementById('project-mobile-filter-form');
+            const drawerForm = document.getElementById('project-mobile-filter-drawer-form');
             const searchInput = document.getElementById('project-mobile-search-input');
-            const resetLink = document.getElementById('project-mobile-reset');
+            const drawerSearchInput = document.getElementById('project-mobile-drawer-search-input');
+            const resetLinks = Array.from(document.querySelectorAll('[data-project-mobile-reset]'));
             const loadingEl = document.getElementById('project-mobile-loading');
+            const filterAnchor = document.getElementById('project-mobile-filter-anchor');
+            const filterFab = document.getElementById('project-mobile-filter-fab');
+            const filterFabBadge = document.getElementById('project-mobile-filter-fab-badge');
+            const activeFilterPill = document.getElementById('project-mobile-active-filter-pill');
+            const drawer = document.getElementById('project-mobile-filter-drawer');
+            const drawerOverlay = document.getElementById('project-mobile-filter-drawer-overlay');
+            const drawerClose = document.getElementById('project-mobile-filter-drawer-close');
+            const paginationSelector = '#project-mobile-pagination-wrap';
             const shellSelector = '#project-mobile-results-shell';
             const countSelector = '#project-mobile-count';
 
-            if (!searchForm || !filterForm || !searchInput) return;
+            if (!searchForm || !filterForm || !searchInput || !drawerForm) return;
 
             const trackedNames = [
                 'type',
@@ -449,9 +747,35 @@
             let timer = null;
             let controller = null;
             let requestToken = 0;
+            let drawerOpen = false;
+            let previousBodyOverflow = '';
 
             const currentUrl = new URL(window.location.href);
             const forcedView = currentUrl.searchParams.get('view');
+            const queryAll = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+            const setFieldValue = (field, value) => {
+                if (!field) return;
+                if (field.type === 'checkbox') {
+                    const values = Array.isArray(value) ? value : [value];
+                    field.checked = values.includes(field.value || '1');
+                    return;
+                }
+                field.value = value ?? '';
+            };
+
+            const applySearchValue = (value, sourceInput = null) => {
+                if (searchInput && searchInput !== sourceInput) {
+                    searchInput.value = value;
+                }
+                if (drawerSearchInput && drawerSearchInput !== sourceInput) {
+                    drawerSearchInput.value = value;
+                }
+                const primarySearchField = filterForm.querySelector('input[name="search"]');
+                if (primarySearchField) {
+                    primarySearchField.value = value;
+                }
+            };
 
             const setLoading = (isLoading) => {
                 if (loadingEl) {
@@ -462,6 +786,90 @@
                 if (shell) {
                     shell.classList.toggle('opacity-60', isLoading);
                 }
+            };
+
+            const countActiveFilters = () => {
+                let count = 0;
+                if (String(searchInput.value || '').trim() !== '') {
+                    count += 1;
+                }
+
+                trackedNames.forEach((name) => {
+                    if (['sort', 'dir'].includes(name)) return;
+                    const field = filterForm.querySelector(`[name="${name}"]`);
+                    if (field && String(field.value || '').trim() !== '') {
+                        count += 1;
+                    }
+                });
+
+                checkboxNames.forEach((name) => {
+                    const field = filterForm.querySelector(`input[name="${name}"][type="checkbox"]`);
+                    if (field && field.checked) {
+                        count += 1;
+                    }
+                });
+
+                return count;
+            };
+
+            const updateFilterBadges = () => {
+                const count = countActiveFilters();
+                if (activeFilterPill) {
+                    activeFilterPill.textContent = String(count);
+                }
+                if (filterFabBadge) {
+                    filterFabBadge.textContent = String(count);
+                    filterFabBadge.classList.toggle('hidden', count === 0);
+                }
+            };
+
+            const syncFabVisibility = () => {
+                if (!filterFab || !filterAnchor) return;
+                const rect = filterAnchor.getBoundingClientRect();
+                const pagination = document.querySelector(paginationSelector);
+                const paginationRect = pagination?.getBoundingClientRect();
+                const paginationVisible = Boolean(
+                    paginationRect &&
+                    paginationRect.top < window.innerHeight - 120 &&
+                    paginationRect.bottom > 0
+                );
+                filterFab.classList.toggle('is-visible', rect.bottom < 36 && !paginationVisible);
+            };
+
+            const scrollToResultsTop = () => {
+                const shell = document.querySelector(shellSelector);
+                if (!shell) return;
+
+                window.requestAnimationFrame(() => {
+                    const top = shell.getBoundingClientRect().top + window.scrollY - 84;
+                    window.scrollTo({
+                        top: Math.max(top, 0),
+                        behavior: 'smooth',
+                    });
+                });
+            };
+
+            const openDrawer = () => {
+                if (!drawer || !drawerOverlay || drawerOpen) return;
+                syncFilterFormsFromSource(filterForm);
+                drawer.classList.add('is-open');
+                drawerOverlay.classList.add('is-open');
+                drawer.setAttribute('aria-hidden', 'false');
+                drawerOpen = true;
+                previousBodyOverflow = document.body.style.overflow;
+                document.body.style.overflow = 'hidden';
+                window.setTimeout(() => {
+                    drawerSearchInput?.focus({ preventScroll: true });
+                }, 120);
+            };
+
+            const closeDrawer = () => {
+                if (!drawer || !drawerOverlay || !drawerOpen) return;
+                drawer.classList.remove('is-open');
+                drawerOverlay.classList.remove('is-open');
+                drawer.setAttribute('aria-hidden', 'true');
+                drawerOpen = false;
+                document.body.style.overflow = previousBodyOverflow;
             };
 
             const ensureSearchHidden = (name, value, enabled = true) => {
@@ -480,11 +888,8 @@
                 input.value = value;
             };
 
-            const syncForms = () => {
-                const searchHidden = filterForm.querySelector('input[name="search"]');
-                if (searchHidden) {
-                    searchHidden.value = searchInput.value || '';
-                }
+            const syncSearchFormState = () => {
+                applySearchValue(searchInput.value || '', searchInput);
 
                 trackedNames.forEach((name) => {
                     const field = filterForm.querySelector(`[name="${name}"]`);
@@ -497,8 +902,37 @@
                 });
             };
 
+            const syncFilterFormsFromSource = (sourceForm) => {
+                [filterForm, drawerForm].forEach((targetForm) => {
+                    if (!targetForm || targetForm === sourceForm) return;
+
+                    queryAll('[name]', sourceForm).forEach((sourceField) => {
+                        if (!sourceField.name) return;
+                        const targetFields = queryAll(`[name="${sourceField.name}"]`, targetForm);
+                        if (!targetFields.length) return;
+
+                        if (sourceField.type === 'checkbox') {
+                            const checkedValues = queryAll(`[name="${sourceField.name}"]`, sourceForm)
+                                .filter((field) => field.checked)
+                                .map((field) => field.value || '1');
+                            targetFields.forEach((field) => setFieldValue(field, checkedValues));
+                            return;
+                        }
+
+                        targetFields.forEach((field) => setFieldValue(field, sourceField.value));
+                    });
+                });
+
+                const sourceSearch = sourceForm.querySelector('[name="search"]');
+                if (sourceSearch) {
+                    applySearchValue(sourceSearch.value || '', sourceForm === drawerForm ? drawerSearchInput : searchInput);
+                }
+                syncSearchFormState();
+                updateFilterBadges();
+            };
+
             const buildUrlFromForms = (resetPage = true) => {
-                syncForms();
+                syncSearchFormState();
                 const url = new URL(filterForm.action, window.location.origin);
                 if (forcedView) {
                     url.searchParams.set('view', forcedView);
@@ -532,21 +966,26 @@
             };
 
             const applyUrlToForms = (url) => {
-                searchInput.value = url.searchParams.get('search') ?? '';
+                applySearchValue(url.searchParams.get('search') ?? '');
 
                 trackedNames.forEach((name) => {
-                    const field = filterForm.querySelector(`[name="${name}"]`);
-                    if (!field) return;
-                    field.value = url.searchParams.get(name) ?? '';
+                    [filterForm, drawerForm].forEach((form) => {
+                        const field = form.querySelector(`[name="${name}"]`);
+                        if (!field) return;
+                        field.value = url.searchParams.get(name) ?? '';
+                    });
                 });
 
                 checkboxNames.forEach((name) => {
-                    const field = filterForm.querySelector(`input[name="${name}"][type="checkbox"]`);
-                    if (!field) return;
-                    field.checked = url.searchParams.get(name) === '1';
+                    [filterForm, drawerForm].forEach((form) => {
+                        const field = form.querySelector(`input[name="${name}"][type="checkbox"]`);
+                        if (!field) return;
+                        field.checked = url.searchParams.get(name) === '1';
+                    });
                 });
 
-                syncForms();
+                syncSearchFormState();
+                updateFilterBadges();
             };
 
             const replaceMobileShell = (html) => {
@@ -569,7 +1008,8 @@
 
             const fetchAndRender = async (url, options = {}) => {
                 const {
-                    updateUrl = true
+                    updateUrl = true,
+                    scrollToTop = false
                 } = options;
                 const token = ++requestToken;
 
@@ -605,6 +1045,13 @@
                             ajax: true
                         }, '', `${url.pathname}${url.search}`);
                     }
+
+                    applyUrlToForms(url);
+                    syncFabVisibility();
+
+                    if (scrollToTop) {
+                        scrollToResultsTop();
+                    }
                 } catch (error) {
                     if (error.name !== 'AbortError') {
                         console.error(error);
@@ -627,6 +1074,8 @@
 
             searchForm.addEventListener('submit', (event) => {
                 event.preventDefault();
+                syncSearchFormState();
+                syncFilterFormsFromSource(filterForm);
                 fetchAndRender(buildUrlFromForms(true), {
                     updateUrl: true
                 });
@@ -634,58 +1083,131 @@
 
             filterForm.addEventListener('submit', (event) => {
                 event.preventDefault();
+                syncFilterFormsFromSource(filterForm);
                 fetchAndRender(buildUrlFromForms(true), {
                     updateUrl: true
                 });
             });
 
-            searchInput.addEventListener('input', () => fetchDebounced(260, true));
+            drawerForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                syncFilterFormsFromSource(drawerForm);
+                fetchAndRender(buildUrlFromForms(true), {
+                    updateUrl: true
+                });
+            });
+
+            searchInput.addEventListener('input', () => {
+                applySearchValue(searchInput.value || '', searchInput);
+                syncSearchFormState();
+                syncFilterFormsFromSource(filterForm);
+                fetchDebounced(260, true);
+            });
             searchInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
+                    applySearchValue(searchInput.value || '', searchInput);
+                    syncSearchFormState();
+                    syncFilterFormsFromSource(filterForm);
                     fetchDebounced(0, true);
                 }
             });
 
-            const filterFields = filterForm.querySelectorAll('select, input[type="checkbox"]');
-            filterFields.forEach((field) => {
-                field.addEventListener('change', () => fetchDebounced(120, true));
-            });
+            if (drawerSearchInput) {
+                drawerSearchInput.addEventListener('input', () => {
+                    applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
+                    syncFilterFormsFromSource(drawerForm);
+                    fetchDebounced(260, true);
+                });
+                drawerSearchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
+                        syncFilterFormsFromSource(drawerForm);
+                        fetchDebounced(0, true);
+                    }
+                });
+            }
 
-            if (resetLink) {
+            const bindFilterFields = (form) => {
+                form.querySelectorAll('select, input[type="checkbox"]').forEach((field) => {
+                    field.addEventListener('change', () => {
+                        syncFilterFormsFromSource(form);
+                        fetchDebounced(120, true);
+                    });
+                });
+            };
+            bindFilterFields(filterForm);
+            bindFilterFields(drawerForm);
+
+            resetLinks.forEach((resetLink) => {
                 resetLink.addEventListener('click', (event) => {
                     event.preventDefault();
-                    searchInput.value = '';
+                    applySearchValue('');
 
                     trackedNames.forEach((name) => {
-                        const field = filterForm.querySelector(`[name="${name}"]`);
-                        if (!field) return;
-                        if (name === 'sort') {
-                            field.value = 'updated_at';
-                            return;
-                        }
-                        if (name === 'dir') {
-                            field.value = 'desc';
-                            return;
-                        }
-                        field.value = '';
+                        [filterForm, drawerForm].forEach((form) => {
+                            const field = form.querySelector(`[name="${name}"]`);
+                            if (!field) return;
+                            if (name === 'sort') {
+                                field.value = 'updated_at';
+                                return;
+                            }
+                            if (name === 'dir') {
+                                field.value = 'desc';
+                                return;
+                            }
+                            field.value = '';
+                        });
                     });
 
                     checkboxNames.forEach((name) => {
-                        const field = filterForm.querySelector(`input[name="${name}"][type="checkbox"]`);
-                        if (field) field.checked = false;
+                        [filterForm, drawerForm].forEach((form) => {
+                            const field = form.querySelector(`input[name="${name}"][type="checkbox"]`);
+                            if (field) field.checked = false;
+                        });
                     });
 
                     const resetUrl = new URL(resetLink.href, window.location.origin);
                     if (forcedView) {
                         resetUrl.searchParams.set('view', forcedView);
                     }
-                    syncForms();
+                    syncSearchFormState();
+                    updateFilterBadges();
                     fetchAndRender(resetUrl, {
                         updateUrl: true
                     });
                 });
-            }
+            });
+
+            document.addEventListener('click', (event) => {
+                if (event.target.closest('#project-mobile-filter-fab')) {
+                    event.preventDefault();
+                    openDrawer();
+                    return;
+                }
+
+                if (event.target.closest('#project-mobile-filter-drawer-overlay')) {
+                    closeDrawer();
+                    return;
+                }
+
+                if (event.target.closest('#project-mobile-filter-drawer-close')) {
+                    event.preventDefault();
+                    closeDrawer();
+                    return;
+                }
+            });
+
+            filterFab?.addEventListener('click', openDrawer);
+            drawerOverlay?.addEventListener('click', closeDrawer);
+            drawerClose?.addEventListener('click', closeDrawer);
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && drawerOpen) {
+                    closeDrawer();
+                }
+            });
 
             document.addEventListener('click', (event) => {
                 const link = event.target.closest(`${shellSelector} a[href]`);
@@ -704,11 +1226,16 @@
                 event.preventDefault();
                 applyUrlToForms(url);
                 fetchAndRender(url, {
-                    updateUrl: true
+                    updateUrl: true,
+                    scrollToTop: true
                 });
             });
 
-            syncForms();
+            window.addEventListener('scroll', syncFabVisibility, { passive: true });
+            window.addEventListener('resize', syncFabVisibility);
+
+            applyUrlToForms(currentUrl);
+            syncFabVisibility();
         })();
     </script>
 @endsection
