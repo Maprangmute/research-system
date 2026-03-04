@@ -520,6 +520,129 @@ public function store(Request $request)
         return $pdf->stream($filename);
     }
 
+    public function exportList(Request $request)
+    {
+        $format = strtolower(trim((string) $request->query('format', 'xls')));
+        if (!in_array($format, ['xls', 'excel', 'csv', 'pdf'], true)) {
+            $format = 'xls';
+        }
+
+        $user = auth()->user();
+        $query = Project::query();
+
+        if ($user->role !== 'admin' && $user->role !== 'user_all') {
+            $fullName = trim(($user->prefix ?? '').' '.$user->name);
+            $query->where(function ($inner) use ($fullName, $user) {
+                $inner->where('user_id', $user->id)
+                    ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
+                        $subQ->where('name', $fullName);
+                    });
+            });
+        }
+
+        if ($request->filled('year')) {
+            $query->where('start_year', $request->query('year'));
+        }
+        if ($request->filled('type')) {
+            $query->where('project_type', 'like', '%'.$request->query('type').'%');
+        }
+        if ($request->filled('pi_name')) {
+            $query->whereRaw('TRIM(pi_name) = ?', [$request->query('pi_name')]);
+        }
+        if ($request->filled('funding_source')) {
+            $query->whereRaw('TRIM(funding_source) = ?', [$request->query('funding_source')]);
+        }
+        if ($request->filled('project_status')) {
+            $status = trim((string) $request->query('project_status'));
+            if ($status === '__unspecified__') {
+                $query->where(function ($q) {
+                    $q->whereNull('planning_status')
+                        ->orWhereRaw("TRIM(planning_status) = ''");
+                });
+            } else {
+                $query->whereRaw('TRIM(planning_status) = ?', [$status]);
+            }
+        }
+        if ($request->filled('search')) {
+            $search = trim((string) $request->query('search'));
+            $searchScope = clone $query;
+            $this->applyProjectNameSearch($query, $searchScope, $search);
+        }
+
+        $rows = $query
+            ->orderByDesc('updated_at')
+            ->limit(5000)
+            ->get([
+                'project_code',
+                'project_name_th',
+                'pi_name',
+                'start_year',
+                'budget',
+                'funding_type',
+                'funding_source',
+                'project_type',
+                'planning_status',
+                'updated_at',
+            ]);
+
+        $year = trim((string) $request->query('year', ''));
+        $periodLabel = $year !== '' ? "ปี {$year}" : 'ทั้งหมด';
+        $stamp = now()->setTimezone('Asia/Bangkok')->format('Ymd_His');
+        $suffix = $year !== '' ? $year : 'all';
+        $baseName = "projects_{$suffix}_{$stamp}";
+
+        if ($format === 'csv') {
+            return response()->streamDownload(function () use ($rows) {
+                $handle = fopen('php://output', 'w');
+                fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+                fputcsv($handle, ['Project ID', 'ชื่อโครงการ', 'PI', 'ปี', 'งบประมาณ(บาท)', 'ประเภททุน', 'แหล่งทุน', 'Project Type', 'Project Status', 'อัปเดตล่าสุด']);
+
+                foreach ($rows as $row) {
+                    fputcsv($handle, [
+                        $row->project_code ?: '-',
+                        $row->project_name_th ?: '-',
+                        $row->pi_name ?: '-',
+                        $row->start_year ?: '-',
+                        is_numeric($row->budget) ? number_format((float) $row->budget, 2, '.', '') : '0.00',
+                        $row->funding_type ?: '-',
+                        $row->funding_source ?: '-',
+                        $row->project_type ?: '-',
+                        $row->planning_status ?: '-',
+                        optional($row->updated_at)->format('Y-m-d H:i:s') ?: '-',
+                    ]);
+                }
+
+                fclose($handle);
+            }, "{$baseName}.csv", [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+            ]);
+        }
+
+        if ($format === 'pdf') {
+            $pdf = PDF::loadView('projects.list-pdf', [
+                'rows' => $rows,
+                'periodLabel' => $periodLabel,
+                'generatedAt' => now()->setTimezone('Asia/Bangkok'),
+                'generatedBy' => trim(($user->prefix ?? '').' '.($user->name ?? '')) ?: 'ไม่ระบุ',
+            ], [], [
+                'format' => 'A4-L',
+            ]);
+
+            return $pdf->stream("{$baseName}.pdf");
+        }
+
+        $html = view('projects.list-export-xls', [
+            'rows' => $rows,
+            'periodLabel' => $periodLabel,
+            'generatedAt' => now()->setTimezone('Asia/Bangkok'),
+        ])->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$baseName}.xls\"",
+        ]);
+    }
+
     // ====== SUB-FUNCTIONS ======
 
     private function validateProject(Request $request): array

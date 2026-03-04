@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Project;
 use App\Models\FteRole;
 use App\Models\Output;
+use App\Models\BackOfficeEntry;
 use App\Models\BackOfficeTask;
 
 class AgentController extends Controller
@@ -73,6 +75,467 @@ class AgentController extends Controller
         if (Str::startsWith($t, 'ภายนอก')) return 'ภายนอก';
         return $t;
     }
+    private function normalizeThaiDigits(?string $value): string {
+        return preg_replace_callback('/[๐-๙]/u', static fn ($match) => (string) mb_strpos('๐๑๒๓๔๕๖๗๘๙', $match[0]), (string) $value) ?: '';
+    }
+    private function formatDateBE(Carbon $date): string {
+        return sprintf('%02d-%02d-%04d', (int) $date->day, (int) $date->month, (int) $date->year + 543);
+    }
+    private function parseFlexibleDate(?string $value): ?Carbon {
+        $raw = trim($this->normalizeThaiDigits($value));
+        if ($raw === '') return null;
+
+        $raw = preg_replace('/\s+/u', ' ', $raw) ?: $raw;
+
+        if (preg_match('/^(\d{1,2})([-\/])(\d{1,2})\2(\d{4})$/u', $raw, $m)) {
+            $day = (int) $m[1];
+            $sep = $m[2];
+            $month = (int) $m[3];
+            $year = (int) $m[4];
+            if ($year > 2400) $year -= 543;
+            $raw = sprintf('%02d%s%02d%s%04d', $day, $sep, $month, $sep, $year);
+        } elseif (preg_match('/^(\d{4})([-\/])(\d{1,2})\2(\d{1,2})$/u', $raw, $m)) {
+            $year = (int) $m[1];
+            $sep = $m[2];
+            $month = (int) $m[3];
+            $day = (int) $m[4];
+            if ($year > 2400) $year -= 543;
+            $raw = sprintf('%04d%s%02d%s%02d', $year, $sep, $month, $sep, $day);
+        }
+
+        foreach (['d-m-Y', 'd/m/Y', 'Y-m-d', 'Y/m/d', 'j-n-Y', 'j/n/Y'] as $format) {
+            try {
+                return Carbon::createFromFormat($format, $raw)->startOfDay();
+            } catch (\Throwable $e) {
+            }
+        }
+
+        if (preg_match('/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/u', $raw, $m)) {
+            $day = (int) $m[1];
+            $monthRaw = trim((string) $m[2]);
+            $year = (int) $m[3];
+            $monthMap = [
+                'มกราคม' => 1, 'ม.ค.' => 1, 'ม.ค' => 1,
+                'กุมภาพันธ์' => 2, 'ก.พ.' => 2, 'ก.พ' => 2,
+                'มีนาคม' => 3, 'มี.ค.' => 3, 'มี.ค' => 3,
+                'เมษายน' => 4, 'เม.ย.' => 4, 'เม.ย' => 4,
+                'พฤษภาคม' => 5, 'พ.ค.' => 5, 'พ.ค' => 5,
+                'มิถุนายน' => 6, 'มิ.ย.' => 6, 'มิ.ย' => 6,
+                'กรกฎาคม' => 7, 'ก.ค.' => 7, 'ก.ค' => 7,
+                'สิงหาคม' => 8, 'ส.ค.' => 8, 'ส.ค' => 8,
+                'กันยายน' => 9, 'ก.ย.' => 9, 'ก.ย' => 9,
+                'ตุลาคม' => 10, 'ต.ค.' => 10, 'ต.ค' => 10,
+                'พฤศจิกายน' => 11, 'พ.ย.' => 11, 'พ.ย' => 11,
+                'ธันวาคม' => 12, 'ธ.ค.' => 12, 'ธ.ค' => 12,
+            ];
+
+            if (isset($monthMap[$monthRaw])) {
+                if ($year > 2400) $year -= 543;
+                try {
+                    return Carbon::create($year, $monthMap[$monthRaw], $day, 0, 0, 0)->startOfDay();
+                } catch (\Throwable $e) {
+                }
+            }
+        }
+
+        try {
+            return Carbon::parse($raw)->startOfDay();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+    private function extractPromptDateRange(string $prompt): array {
+        $normalized = trim($this->normalizeThaiDigits($prompt));
+        $datePattern = '(?:\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}|\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}\s+[ก-๙A-Za-z\.]+\s+\d{4})';
+
+        $candidates = [];
+        foreach ([
+            '/ตั้งแต่\s*('.$datePattern.')\s*(?:ถึง|จนถึง|to|-|–)\s*('.$datePattern.')/ui',
+            '/('.$datePattern.')\s*(?:ถึง|จนถึง|to|-|–)\s*('.$datePattern.')/ui',
+        ] as $pattern) {
+            if (preg_match($pattern, $normalized, $m)) {
+                $candidates = [$m[1] ?? null, $m[2] ?? null];
+                break;
+            }
+        }
+
+        if (count(array_filter($candidates)) < 2) {
+            preg_match_all('/'.$datePattern.'/u', $normalized, $matches);
+            $candidates = array_slice($matches[0] ?? [], 0, 2);
+        }
+
+        $from = isset($candidates[0]) ? $this->parseFlexibleDate($candidates[0]) : null;
+        $to = isset($candidates[1]) ? $this->parseFlexibleDate($candidates[1]) : null;
+        if (!$from || !$to) {
+            return ['from' => null, 'to' => null, 'label' => null];
+        }
+        if ($from->gt($to)) {
+            [$from, $to] = [$to, $from];
+        }
+
+        return [
+            'from' => $from->copy()->startOfDay(),
+            'to' => $to->copy()->endOfDay(),
+            'label' => 'ช่วงวันที่ '.$this->formatDateBE($from).' ถึง '.$this->formatDateBE($to),
+        ];
+    }
+    private function resolvePromptWindow(?int $yearBE, array $dateRange = []): array {
+        $from = $dateRange['from'] ?? null;
+        $to = $dateRange['to'] ?? null;
+        if ($from instanceof Carbon && $to instanceof Carbon) {
+            return [
+                'mode' => 'custom',
+                'from' => $from,
+                'to' => $to,
+                'label' => $dateRange['label'] ?? ('ช่วงวันที่ '.$this->formatDateBE($from).' ถึง '.$this->formatDateBE($to)),
+                'query' => [
+                    'mode' => 'custom',
+                    'start' => $from->format('d-m-Y'),
+                    'end' => $to->format('d-m-Y'),
+                ],
+            ];
+        }
+
+        if ($yearBE !== null) {
+            $yearCE = $yearBE > 2400 ? $yearBE - 543 : $yearBE;
+            $from = Carbon::create($yearCE, 1, 1, 0, 0, 0)->startOfDay();
+            $to = Carbon::create($yearCE, 12, 31, 0, 0, 0)->endOfDay();
+
+            return [
+                'mode' => 'year',
+                'from' => $from,
+                'to' => $to,
+                'label' => "ปี {$yearBE}",
+                'query' => [
+                    'mode' => 'year',
+                    'year' => $yearBE,
+                ],
+            ];
+        }
+
+        return [
+            'mode' => 'all',
+            'from' => null,
+            'to' => null,
+            'label' => 'ทั้งหมด',
+            'query' => [
+                'mode' => 'all',
+            ],
+        ];
+    }
+    private function parseContributionBounds(?string $startRaw, ?string $endRaw): ?array {
+        $start = $this->parseFlexibleDate($startRaw);
+        $end = $this->parseFlexibleDate($endRaw);
+        if (!$start || !$end) return null;
+        if ($start->gt($end)) {
+            [$start, $end] = [$end, $start];
+        }
+        return ['start' => $start->copy()->startOfDay(), 'end' => $end->copy()->endOfDay()];
+    }
+    private function monthLabelBE(string $monthKey): string {
+        try {
+            $month = Carbon::createFromFormat('Y-m', $monthKey);
+            return $month->format('m').'/'.($month->year + 543);
+        } catch (\Throwable $e) {
+            return $monthKey;
+        }
+    }
+    private function buildDownloadLinkItem(string $title, string $href, string $meta = ''): array {
+        return [
+            'title' => $title,
+            'funding' => $meta,
+            'href' => $href,
+        ];
+    }
+    private function buildDownloadActionResponse(string $reply, string $title, string $href, string $meta = ''): array {
+        return [
+            'reply' => $reply,
+            'list' => [
+                $this->buildDownloadLinkItem($title, $href, $meta),
+            ],
+        ];
+    }
+    private function buildProjectPdfListResponse(string $reply, array $rows): array {
+        $list = collect($rows)->map(function ($row) {
+            return [
+                'title' => $row['project_name'],
+                'year_be' => $row['start_year'] ?? null,
+                'pi' => $row['pi_name'] ?? '-',
+                'funding' => 'PDF โครงการ',
+                'href' => route('projects.pdf', $row['project_id']),
+            ];
+        })->values()->all();
+
+        return [
+            'reply' => $reply,
+            'list' => $list,
+        ];
+    }
+    private function resolvePersonDisplayName(string $q): string {
+        $best = $this->approximatePersonCandidates($q, 1, 0.18);
+        if (!empty($best)) {
+            return trim((string)($best[0]['label'] ?? $best[0]['text'] ?? ''));
+        }
+
+        return trim((string)$this->personQueryLabel($q));
+    }
+    private function buildPersonFteWindowResponse(string $personQuery, ?int $yearBE = null, array $dateRange = [], bool $includePdfLink = false): ?array {
+        $window = $this->resolvePromptWindow($yearBE, $dateRange);
+        $candidateNames = collect([
+            $this->resolvePersonDisplayName($personQuery),
+            $this->personQueryLabel($personQuery),
+            trim((string)$personQuery),
+        ])->filter()->unique()->values();
+
+        $personName = trim((string)($candidateNames->first() ?? ''));
+        $fteRows = collect();
+        $backOfficeRows = collect();
+
+        foreach ($candidateNames as $candidateName) {
+            $personName = trim((string)$candidateName);
+            $fteRows = FteRole::with('project:id,project_name_th,project_code,pi_name')
+                ->where('name', $personName)
+                ->get();
+            $backOfficeRows = Schema::hasTable('back_office_entries')
+                ? BackOfficeEntry::with('task:id,title,start_date,end_date')
+                    ->where('person_name', $personName)
+                    ->get()
+                : collect();
+
+            if ($fteRows->isNotEmpty() || $backOfficeRows->isNotEmpty()) {
+                break;
+            }
+        }
+
+        if ($fteRows->isEmpty() && $backOfficeRows->isEmpty()) {
+            return null;
+        }
+
+        $itemBuckets = [];
+        $monthlyBuckets = [];
+        $filterFrom = $window['from'] ?? null;
+        $filterTo = $window['to'] ?? null;
+
+        $pushContribution = function (
+            string $bucketKey,
+            string $type,
+            string $title,
+            ?string $pi,
+            ?string $href,
+            Carbon $entryStart,
+            Carbon $entryEnd,
+            float $fteValue,
+            float $hoursValue
+        ) use (&$itemBuckets, &$monthlyBuckets, $filterFrom, $filterTo) {
+            $effectiveStart = $entryStart->copy();
+            $effectiveEnd = $entryEnd->copy();
+
+            if ($filterFrom instanceof Carbon && $filterTo instanceof Carbon) {
+                if ($entryEnd < $filterFrom || $entryStart > $filterTo) return;
+                if ($effectiveStart < $filterFrom) $effectiveStart = $filterFrom->copy();
+                if ($effectiveEnd > $filterTo) $effectiveEnd = $filterTo->copy();
+            }
+
+            if ($effectiveStart->gt($effectiveEnd)) return;
+
+            $totalDays = $entryStart->diffInDays($entryEnd) + 1;
+            if ($totalDays <= 0) return;
+
+            $effectiveDays = $effectiveStart->diffInDays($effectiveEnd) + 1;
+            $fteTotal = $fteValue > 0 ? ($fteValue / $totalDays) * $effectiveDays : 0.0;
+            $hoursTotal = $hoursValue > 0 ? ($hoursValue / $totalDays) * $effectiveDays : 0.0;
+
+            if (!isset($itemBuckets[$bucketKey])) {
+                $itemBuckets[$bucketKey] = [
+                    'type' => $type,
+                    'title' => $title,
+                    'pi' => $pi ?: '-',
+                    'href' => $href ?: '#',
+                    'fte_total' => 0.0,
+                    'hours_total' => 0.0,
+                    'start' => $effectiveStart->copy(),
+                    'end' => $effectiveEnd->copy(),
+                ];
+            }
+
+            $itemBuckets[$bucketKey]['fte_total'] += $fteTotal;
+            $itemBuckets[$bucketKey]['hours_total'] += $hoursTotal;
+            if ($effectiveStart < $itemBuckets[$bucketKey]['start']) {
+                $itemBuckets[$bucketKey]['start'] = $effectiveStart->copy();
+            }
+            if ($effectiveEnd > $itemBuckets[$bucketKey]['end']) {
+                $itemBuckets[$bucketKey]['end'] = $effectiveEnd->copy();
+            }
+
+            $ftePerDay = $fteTotal > 0 ? ($fteTotal / $effectiveDays) : 0.0;
+            $hoursPerDay = $hoursTotal > 0 ? ($hoursTotal / $effectiveDays) : 0.0;
+
+            $cursor = $effectiveStart->copy()->startOfMonth();
+            while ($cursor <= $effectiveEnd) {
+                $monthStart = $cursor->copy()->startOfMonth();
+                $monthEnd = $cursor->copy()->endOfMonth();
+                $overlapStart = $effectiveStart->copy()->max($monthStart);
+                $overlapEnd = $effectiveEnd->copy()->min($monthEnd);
+
+                if ($overlapStart->lte($overlapEnd)) {
+                    $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                    $monthKey = $cursor->format('Y-m');
+
+                    if (!isset($monthlyBuckets[$monthKey])) {
+                        $monthlyBuckets[$monthKey] = ['fte' => 0.0, 'hours' => 0.0];
+                    }
+
+                    $monthlyBuckets[$monthKey]['fte'] += $ftePerDay * $daysInMonth;
+                    $monthlyBuckets[$monthKey]['hours'] += $hoursPerDay * $daysInMonth;
+                }
+
+                $cursor->addMonth();
+            }
+        };
+
+        foreach ($fteRows as $row) {
+            $bounds = $this->parseContributionBounds($row->start_date ?? null, $row->end_date ?? null);
+            if (!$bounds) continue;
+
+            $project = $row->project;
+            $projectId = $project?->id ?? $row->project_id ?? null;
+            $projectTitle = trim((string)($project?->project_name_th ?? 'โครงการไม่ระบุ'));
+            $pushContribution(
+                'project:'.($projectId ?? md5($projectTitle)),
+                'โครงการ',
+                $projectTitle,
+                trim((string)($project?->pi_name ?? '-')) ?: '-',
+                $projectId ? url('/rm/projects/'.$projectId) : '#',
+                $bounds['start'],
+                $bounds['end'],
+                (float)($row->fte_value ?? 0),
+                (float)($row->hours ?? 0)
+            );
+        }
+
+        foreach ($backOfficeRows as $row) {
+            $startRaw = $row->start_date ?: ($row->task?->start_date);
+            $endRaw = $row->end_date ?: ($row->task?->end_date);
+            $bounds = $this->parseContributionBounds($startRaw, $endRaw);
+            if (!$bounds) continue;
+
+            $taskId = $row->task?->id ?? $row->task_id ?? null;
+            $taskTitle = trim((string)($row->task?->title ?? 'งาน Back Office'));
+            $pushContribution(
+                'task:'.($taskId ?? md5($taskTitle)),
+                'Back Office',
+                $taskTitle,
+                null,
+                $taskId ? route('back_office.show', $taskId) : '#',
+                $bounds['start'],
+                $bounds['end'],
+                (float)($row->fte_value ?? 0),
+                (float)($row->hours ?? 0)
+            );
+        }
+
+        if (empty($itemBuckets)) {
+            return [
+                'reply' => "ไม่พบข้อมูล FTE ของ {$personName} ใน{$window['label']}",
+            ];
+        }
+
+        $items = collect($itemBuckets)
+            ->map(function ($row) {
+                return [
+                    ...$row,
+                    'fte_total' => round((float)($row['fte_total'] ?? 0), 6),
+                    'hours_total' => round((float)($row['hours_total'] ?? 0), 2),
+                    'period' => $this->formatDateBE($row['start']).' ถึง '.$this->formatDateBE($row['end']),
+                ];
+            })
+            ->sortByDesc(fn ($row) => ((int)round(($row['fte_total'] ?? 0) * 1000000) * 1000) + (int)round(($row['hours_total'] ?? 0)))
+            ->values();
+
+        $monthlyRows = collect($monthlyBuckets)
+            ->sortKeys()
+            ->map(function ($row, $monthKey) {
+                return [
+                    'month' => $this->monthLabelBE($monthKey),
+                    'fte' => round((float)($row['fte'] ?? 0), 6),
+                    'hours' => round((float)($row['hours'] ?? 0), 2),
+                ];
+            })
+            ->values();
+
+        $totalFte = (float)$items->sum('fte_total');
+        $totalHours = (float)$items->sum('hours_total');
+        $projectCount = (int)$items->where('type', 'โครงการ')->count();
+        $taskCount = (int)$items->where('type', 'Back Office')->count();
+
+        $reply = "FTE ของ {$personName} {$window['label']}: รวม ".number_format($totalFte, 6)
+            ." FTE ใช้เวลา ".number_format($totalHours, 2)." ชั่วโมง";
+        if ($projectCount > 0 || $taskCount > 0) {
+            $reply .= " จากงานวิจัย {$projectCount} โครงการ";
+            if ($taskCount > 0) {
+                $reply .= " และ Back Office {$taskCount} งาน";
+            }
+        }
+
+        $list = collect();
+        if ($includePdfLink) {
+            $pdfUrl = route('fte.pdf', ['person' => $personName]).'?'.http_build_query($window['query']);
+            $list->push($this->buildDownloadLinkItem(
+                "PDF FTE ของ {$personName}",
+                $pdfUrl,
+                "ดาวน์โหลดรายงาน {$window['label']}"
+            ));
+        }
+
+        $list = $list->concat($items->take(10)->map(function ($row) {
+            return [
+                'title' => $row['title'],
+                'pi' => $row['type'] === 'โครงการ' ? ($row['pi'] ?? '-') : null,
+                'funding' => $row['type'].' / FTE '.number_format((float)$row['fte_total'], 6).' / ชั่วโมง '.number_format((float)$row['hours_total'], 2),
+                'href' => $row['href'] ?? '#',
+            ];
+        }))->values();
+
+        $response = [
+            'reply' => $reply,
+            'list' => $list->all(),
+            'table' => [
+                'title' => "รายละเอียด FTE ของ {$personName} ({$window['label']})",
+                'headers' => ['รายการ', 'ประเภท', 'FTE', 'ชั่วโมง', 'ช่วงข้อมูล'],
+                'fields' => ['title', 'type', 'fte_total', 'hours_total', 'period'],
+                'rows' => $items->take(20)->map(function ($row) {
+                    return [
+                        'title' => $row['title'],
+                        'type' => $row['type'],
+                        'fte_total' => number_format((float)$row['fte_total'], 6),
+                        'hours_total' => number_format((float)$row['hours_total'], 2),
+                        'period' => $row['period'],
+                        'href' => $row['href'] ?? '#',
+                    ];
+                })->values(),
+            ],
+        ];
+
+        if ($monthlyRows->isNotEmpty()) {
+            $response['chart'] = [
+                'type' => 'bar',
+                'labels' => $monthlyRows->pluck('month'),
+                'datasets' => [[
+                    'label' => 'FTE',
+                    'data' => $monthlyRows->pluck('fte'),
+                    'backgroundColor' => 'rgba(15, 118, 110, 0.78)',
+                    'borderColor' => '#0f766e',
+                    'borderWidth' => 1,
+                ]],
+                'options' => [
+                    'plugins' => ['legend' => ['display' => false]],
+                    'scales' => ['y' => ['beginAtZero' => true]],
+                ],
+            ];
+        }
+
+        return $response;
+    }
 
     private function yearExpr(string $col): string {
         return "YEAR(COALESCE(STR_TO_DATE($col,'%d-%m-%Y'),STR_TO_DATE($col,'%Y-%m-%d'),$col))";
@@ -100,6 +563,190 @@ class AgentController extends Controller
             if ($t !== '' && !in_array($t, $stop, true)) $tok[] = $t;
         }
         return $tok ?: ($q!==''?[$q]:[]);
+    }
+    private function normalizeSearchText(?string $text): string {
+        $normalized = mb_strtolower(trim((string)$text), 'UTF-8');
+        return preg_replace('/\s+/u', ' ', $normalized) ?: '';
+    }
+    private function squashSearchText(?string $text): string {
+        return preg_replace('/\s+/u', '', $this->normalizeSearchText($text)) ?: '';
+    }
+    private function searchTextChars(string $text): array {
+        return preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    }
+    private function searchTextBigramMap(string $text): array {
+        $chars = $this->searchTextChars($text);
+        $count = count($chars);
+        if ($count === 0) return [];
+        if ($count === 1) return [$chars[0] => 1];
+
+        $grams = [];
+        for ($index = 0; $index < $count - 1; $index++) {
+            $gram = $chars[$index].$chars[$index + 1];
+            $grams[$gram] = ($grams[$gram] ?? 0) + 1;
+        }
+
+        return $grams;
+    }
+    private function diceSimilarity(string $left, string $right): float {
+        if ($left === '' || $right === '') return 0.0;
+        if ($left === $right) return 1.0;
+
+        $leftMap = $this->searchTextBigramMap($left);
+        $rightMap = $this->searchTextBigramMap($right);
+        if (empty($leftMap) || empty($rightMap)) {
+            return Str::contains($right, $left) || Str::contains($left, $right) ? 1.0 : 0.0;
+        }
+
+        $intersection = 0;
+        foreach ($leftMap as $gram => $count) {
+            $intersection += min($count, $rightMap[$gram] ?? 0);
+        }
+
+        $leftCount = array_sum($leftMap);
+        $rightCount = array_sum($rightMap);
+        if (($leftCount + $rightCount) === 0) return 0.0;
+
+        return (2 * $intersection) / ($leftCount + $rightCount);
+    }
+    private function bestContainedDiceSimilarity(string $needle, string $haystack): float {
+        if ($needle === '' || $haystack === '') return 0.0;
+        if ($needle === $haystack) return 1.0;
+        if (Str::contains($haystack, $needle)) return 1.0;
+
+        $needleChars = $this->searchTextChars($needle);
+        $haystackChars = $this->searchTextChars($haystack);
+        $needleLength = count($needleChars);
+        $haystackLength = count($haystackChars);
+        if ($needleLength === 0 || $haystackLength === 0) return 0.0;
+        if ($needleLength === 1 || $haystackLength === 1) {
+            return Str::contains($haystack, $needle) ? 1.0 : 0.0;
+        }
+        if ($haystackLength <= $needleLength + 2) {
+            return $this->diceSimilarity($needle, $haystack);
+        }
+
+        $best = 0.0;
+        $windowLengths = array_values(array_unique(array_filter([
+            $needleLength - 1,
+            $needleLength,
+            $needleLength + 1,
+            $needleLength + 2,
+        ], fn ($length) => $length > 1 && $length <= $haystackLength)));
+
+        foreach ($windowLengths as $windowLength) {
+            for ($offset = 0; $offset <= $haystackLength - $windowLength; $offset++) {
+                $slice = implode('', array_slice($haystackChars, $offset, $windowLength));
+                $best = max($best, $this->diceSimilarity($needle, $slice));
+                if ($best >= 0.985) return $best;
+            }
+        }
+
+        return $best;
+    }
+    private function personQueryTokens(string $q): array {
+        $clean = trim((string)$q);
+        if ($clean === '') return [];
+
+        $clean = preg_replace('/(?:\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}|\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/u', ' ', $clean);
+        $clean = preg_replace('/\d{1,2}\s+[^\s]+\s+\d{4}/u', ' ', $clean);
+        $clean = preg_replace('/(25\d{2}|20\d{2})/u', ' ', $clean);
+        $clean = preg_replace('/ปี\s*(ล่าสุด|นี้|ที่แล้ว|ก่อน)?/u', ' ', $clean);
+        $clean = str_ireplace(['back office', 'research'], ' ', $clean);
+        $clean = str_replace([
+            'สรุปงานของ',
+            'สรุปโครงการของ',
+            'สรุปข้อมูลของ',
+            'สรุปผลงานของ',
+            'สรุปรายละเอียดของ',
+            'สรุปของ',
+            'งานของ',
+            'โครงการของ',
+            'ข้อมูลของ',
+            'ผลงานของ',
+            'รายละเอียดของ',
+            'ของทีม',
+            'ตั้งแต่',
+            'ถึง',
+            'จนถึง',
+            'ระหว่าง',
+            'ไฟล์',
+            'ดาวน์โหลด',
+            'โหลด',
+        ], ' ', $clean);
+
+        $stop = ['สรุป','ข้อมูล','งาน','โครงการ','ผลงาน','รายละเอียด','ของ','ทีม','ปี','ล่าสุด','นี้','ที่แล้ว','ก่อน','back','office','research','fte','บุคลากร','คน','รายชื่อ','pdf','csv','excel','xlsx','xls','export','ตั้งแต่','ถึง','จนถึง','ระหว่าง','โหลด','ดาวน์โหลด'];
+        $raw = preg_split('/[\s,\/:()\-]+/u', trim($clean)) ?: [];
+        $tok = [];
+        foreach ($raw as $t) {
+            $t = trim((string)$t);
+            if ($t !== '' && !in_array($t, $stop, true) && !preg_match('/^\d+$/u', $t)) $tok[] = $t;
+        }
+
+        return $tok ?: $this->tokens($q);
+    }
+    private function personQueryLabel(string $q): string {
+        $tokens = $this->personQueryTokens($q);
+        return !empty($tokens) ? implode(' ', $tokens) : trim((string)$q);
+    }
+    private function stripPersonPrefix(?string $value): string {
+        $value = trim((string)$value);
+        if ($value === '') return '';
+
+        $pattern = '/^(?:นายแพทย์หญิง|นายแพทย์|แพทย์หญิง|แพทย์|ทันตแพทย์หญิง|ทันตแพทย์|เภสัชกรหญิง|เภสัชกร|'
+            .'ศ\.คลินิก|ศ\.นพ\.|ศ\.พญ\.|รศ\.นพ\.|รศ\.พญ\.|ผศ\.นพ\.|ผศ\.พญ\.|'
+            .'ศ\.|รศ\.|ผศ\.|อ\.|ดร\.?|ภกญ\.|ภญ\.|ภก\.|พญ\.|นพ\.|ทพ\.ญ\.|ทพ\.|นาย|นางสาว|นาง)\s*/u';
+
+        do {
+            $next = preg_replace($pattern, '', $value);
+            if ($next === null || $next === $value) break;
+            $value = trim($next);
+        } while ($value !== '');
+
+        return trim(preg_replace('/\s+/u', ' ', $value) ?: '');
+    }
+    private function projectQueryTokens(string $q): array {
+        $clean = trim((string)$q);
+        if ($clean === '') return [];
+
+        $clean = preg_replace('/(?:\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}|\d{4}[\/-]\d{1,2}[\/-]\d{1,2})/u', ' ', $clean);
+        $clean = preg_replace('/\d{1,2}\s+[^\s]+\s+\d{4}/u', ' ', $clean);
+        $clean = preg_replace('/(25\d{2}|20\d{2})/u', ' ', $clean);
+        $clean = preg_replace('/ปี\s*(ล่าสุด|นี้|ที่แล้ว|ก่อน)?/u', ' ', $clean);
+        $clean = str_ireplace(['project'], ' ', $clean);
+        $clean = str_replace([
+            'ค้นหา:',
+            'ค้นหา :',
+            'หาโครงการ',
+            'หาโปรเจค',
+            'ชื่อโครงการ',
+            'ชื่อโปรเจค',
+            'สรุปโครงการ',
+            'รายละเอียดโครงการ',
+            'โครงการของ',
+            'โปรเจคของ',
+            'ตั้งแต่',
+            'ถึง',
+            'จนถึง',
+            'ระหว่าง',
+            'ไฟล์',
+            'ดาวน์โหลด',
+            'โหลด',
+        ], ' ', $clean);
+
+        $stop = ['ค้นหา','หา','โครงการ','โปรเจค','project','ชื่อ','สรุป','รายละเอียด','ของ','ปี','ล่าสุด','นี้','ที่แล้ว','ก่อน','pdf','csv','excel','xlsx','xls','export','ตั้งแต่','ถึง','จนถึง','ระหว่าง','โหลด','ดาวน์โหลด'];
+        $raw = preg_split('/[\s,\/:()\-]+/u', trim($clean)) ?: [];
+        $tok = [];
+        foreach ($raw as $t) {
+            $t = trim((string)$t);
+            if ($t !== '' && !in_array($t, $stop, true) && !preg_match('/^\d+$/u', $t)) $tok[] = $t;
+        }
+
+        return $tok ?: $this->tokens($q);
+    }
+    private function projectQueryLabel(string $q): string {
+        $tokens = $this->projectQueryTokens($q);
+        return !empty($tokens) ? implode(' ', $tokens) : trim((string)$q);
     }
     private function robustProjectCandidates(string $q, ?int $yearBE = null): array {
         $tok = $this->tokens($q);
@@ -223,6 +870,354 @@ class AgentController extends Controller
 
         return $candidates->filter()->unique()->values()->take(300)->all();
     }
+    private function robustProjectTitleCandidates(string $q, ?int $yearBE = null): array {
+        $phrase = $this->projectQueryLabel($q);
+        $tok = $this->projectQueryTokens($q);
+        if (trim($phrase) === '' || empty($tok)) return [];
+
+        $likeSets = [];
+        foreach ($tok as $t) {
+            $like = '%'.str_replace(['%','_'], ['\%', '\_'], $t).'%';
+            $noSp = '%'.str_replace(' ', '', $t).'%';
+            $likeSets[] = compact('like', 'noSp');
+        }
+
+        $rows = Project::query()
+            ->select(['id', 'project_name_th', 'project_name_en', 'project_code', 'start_year'])
+            ->where(function ($W) use ($likeSets) {
+                foreach ($likeSets as $s) {
+                    $W->where(function ($OR) use ($s) {
+                        foreach (['project_name_th', 'project_name_en', 'project_code', 'project_list'] as $col) {
+                            $OR->orWhere($col, 'like', $s['like']);
+                            $OR->orWhereRaw("REPLACE($col,' ','') LIKE ?", [$s['noSp']]);
+                        }
+                    });
+                }
+            })
+            ->when($yearBE, fn ($query) => $query->where('start_year', $yearBE))
+            ->limit(120)
+            ->get();
+
+        $phraseNorm = $this->normalizeSearchText($phrase);
+        $phraseSquashed = $this->squashSearchText($phrase);
+
+        return $rows
+            ->map(function ($row) use ($phraseNorm, $phraseSquashed, $tok) {
+                $sources = collect([
+                    $row->project_name_th,
+                    $row->project_name_en,
+                    $row->project_code,
+                ])->filter(fn ($value) => trim((string)$value) !== '');
+
+                $score = 0;
+                foreach ($sources as $source) {
+                    $sourceNorm = $this->normalizeSearchText($source);
+                    $sourceSquashed = $this->squashSearchText($source);
+
+                    if ($sourceNorm === $phraseNorm || $sourceSquashed === $phraseSquashed) {
+                        $score = max($score, 1000);
+                    } elseif (Str::startsWith($sourceNorm, $phraseNorm) || Str::startsWith($sourceSquashed, $phraseSquashed)) {
+                        $score = max($score, 760);
+                    } elseif (Str::contains($sourceNorm, $phraseNorm) || Str::contains($sourceSquashed, $phraseSquashed)) {
+                        $score = max($score, 620);
+                    }
+
+                    $tokenScore = 0;
+                    foreach ($tok as $token) {
+                        $tokenNorm = $this->normalizeSearchText($token);
+                        $tokenSquashed = $this->squashSearchText($token);
+                        if ($tokenNorm === '' || $tokenSquashed === '') continue;
+
+                        if (Str::startsWith($sourceNorm, $tokenNorm) || Str::startsWith($sourceSquashed, $tokenSquashed)) {
+                            $tokenScore += 72;
+                        } elseif (Str::contains($sourceNorm, $tokenNorm) || Str::contains($sourceSquashed, $tokenSquashed)) {
+                            $tokenScore += 38;
+                        }
+                    }
+
+                    $score = max($score, $tokenScore);
+                }
+
+                return [
+                    'id' => (int)$row->id,
+                    'start_year' => (int)($row->start_year ?? 0),
+                    'score' => $score,
+                ];
+            })
+            ->filter(fn ($row) => ($row['score'] ?? 0) > 0)
+            ->sortByDesc(fn ($row) => (($row['score'] ?? 0) * 10000) + ($row['start_year'] ?? 0))
+            ->pluck('id')
+            ->unique()
+            ->take(60)
+            ->values()
+            ->all();
+    }
+    private function approximateProjectTitleCandidates(
+        string $q,
+        ?int $yearBE = null,
+        int $limit = 5,
+        float $minSimilarity = 0.34
+    ): array {
+        $phrase = $this->projectQueryLabel($q);
+        $phraseSquashed = $this->squashSearchText($phrase);
+        if ($phraseSquashed === '' || mb_strlen($phraseSquashed, 'UTF-8') < 3) return [];
+
+        $tokenSquashed = collect($this->projectQueryTokens($q))
+            ->map(fn ($token) => $this->squashSearchText($token))
+            ->filter(fn ($token) => $token !== '' && mb_strlen($token, 'UTF-8') >= 3)
+            ->unique()
+            ->values()
+            ->all();
+
+        $poolLimit = $yearBE !== null ? 240 : 360;
+        $rows = Project::query()
+            ->select(['id', 'project_name_th', 'project_name_en', 'project_code', 'start_year'])
+            ->when($yearBE, fn ($query) => $query->where('start_year', $yearBE))
+            ->orderByDesc('start_year')
+            ->orderByDesc('id')
+            ->limit($poolLimit)
+            ->get();
+
+        return $rows
+            ->map(function ($row) use ($phraseSquashed, $tokenSquashed) {
+                $sources = collect([
+                    $row->project_name_th,
+                    $row->project_name_en,
+                    $row->project_code,
+                ])->filter(fn ($value) => trim((string)$value) !== '');
+
+                $similarity = 0.0;
+                foreach ($sources as $source) {
+                    $sourceSquashed = $this->squashSearchText($source);
+                    if ($sourceSquashed === '') continue;
+
+                    $similarity = max($similarity, $this->bestContainedDiceSimilarity($phraseSquashed, $sourceSquashed));
+                    foreach ($tokenSquashed as $token) {
+                        $similarity = max($similarity, $this->bestContainedDiceSimilarity($token, $sourceSquashed) * 0.92);
+                    }
+                }
+
+                return [
+                    'id' => (int)$row->id,
+                    'start_year' => (int)($row->start_year ?? 0),
+                    'similarity' => $similarity,
+                ];
+            })
+            ->filter(fn ($row) => ($row['similarity'] ?? 0.0) >= $minSimilarity)
+            ->sortByDesc(fn ($row) => ((int)round(($row['similarity'] ?? 0) * 1000) * 10000) + ($row['start_year'] ?? 0))
+            ->pluck('id')
+            ->unique()
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+    private function approximatePersonCandidates(string $q, int $limit = 5, float $minSimilarity = 0.42): array {
+        $phrase = $this->stripPersonPrefix($this->personQueryLabel($q));
+        $phraseSquashed = $this->squashSearchText($phrase);
+        if ($phraseSquashed === '' || mb_strlen($phraseSquashed, 'UTF-8') < 3) return [];
+
+        $tokenSquashed = collect($this->personQueryTokens($q))
+            ->map(fn ($token) => $this->squashSearchText($this->stripPersonPrefix($token)))
+            ->filter(fn ($token) => $token !== '' && mb_strlen($token, 'UTF-8') >= 2)
+            ->unique()
+            ->values()
+            ->all();
+
+        $pool = cache()->remember('agent:person-name-pool:v1', now()->addMinutes(30), function () {
+            $invalidKeys = array_filter(array_map(function ($value) {
+                return $this->squashSearchText($value);
+            }, ['', '-', 'ไม่ระบุ', 'n/a', 'na', 'unknown']));
+
+            $peopleMap = [];
+
+            $pushPerson = function ($rawName, string $source, int $count = 1) use (&$peopleMap, $invalidKeys) {
+                $rawName = trim((string)$rawName);
+                if ($rawName === '') return;
+
+                $queryName = $this->stripPersonPrefix($rawName);
+                if ($queryName === '') $queryName = $rawName;
+
+                $queryKey = $this->squashSearchText($queryName);
+                if ($queryKey === '' || in_array($queryKey, $invalidKeys, true)) return;
+                if (mb_strlen($queryName, 'UTF-8') < 2) return;
+
+                $parts = preg_split('/\s+/u', $queryName) ?: [];
+                $aliases = array_values(array_filter(array_unique([
+                    $rawName,
+                    $queryName,
+                    preg_replace('/\s+/u', '', $rawName),
+                    preg_replace('/\s+/u', '', $queryName),
+                    $parts[0] ?? null,
+                    count($parts) > 1 ? end($parts) : null,
+                ])));
+
+                if (!isset($peopleMap[$queryKey])) {
+                    $peopleMap[$queryKey] = [
+                        'text' => $queryName,
+                        'label' => $rawName,
+                        'aliases' => $aliases,
+                        'sources' => [$source => true],
+                        'hits' => max(1, $count),
+                    ];
+                    return;
+                }
+
+                $peopleMap[$queryKey]['hits'] += max(1, $count);
+                $peopleMap[$queryKey]['sources'][$source] = true;
+                $peopleMap[$queryKey]['aliases'] = array_values(array_filter(array_unique(array_merge(
+                    $peopleMap[$queryKey]['aliases'],
+                    $aliases
+                ))));
+
+                if (mb_strlen($rawName, 'UTF-8') > mb_strlen($peopleMap[$queryKey]['label'], 'UTF-8')) {
+                    $peopleMap[$queryKey]['label'] = $rawName;
+                }
+            };
+
+            $loadGroupedNames = function (string $table, string $column, string $source, int $limitPerSource = 180) use ($pushPerson) {
+                if (!Schema::hasTable($table)) return;
+
+                $rows = DB::table($table)
+                    ->selectRaw("{$column} as value, COUNT(*) as aggregate_count")
+                    ->whereNotNull($column)
+                    ->where($column, '!=', '')
+                    ->groupBy($column)
+                    ->orderByRaw('COUNT(*) DESC')
+                    ->limit($limitPerSource)
+                    ->get();
+
+                foreach ($rows as $row) {
+                    $pushPerson($row->value ?? '', $source, (int)($row->aggregate_count ?? 1));
+                }
+            };
+
+            $loadGroupedNames('projects', 'pi_name', 'PI', 220);
+            $loadGroupedNames('fte_roles', 'name', 'FTE', 220);
+            $loadGroupedNames('copis', 'name', 'Co-PI', 180);
+            $loadGroupedNames('co_research', 'name', 'Co-Research', 180);
+            $loadGroupedNames('back_office_entries', 'person_name', 'Back Office', 260);
+
+            return collect($peopleMap)
+                ->sortByDesc(fn ($person) => (($person['hits'] ?? 0) * 10) + (count($person['sources'] ?? []) * 12))
+                ->take(420)
+                ->values()
+                ->all();
+        });
+
+        return collect($pool)
+            ->map(function ($person) use ($phraseSquashed, $tokenSquashed) {
+                $variants = collect(array_merge(
+                    [$person['text'] ?? '', $person['label'] ?? ''],
+                    $person['aliases'] ?? []
+                ))
+                    ->map(fn ($value) => $this->squashSearchText($this->stripPersonPrefix($value)))
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                $similarity = 0.0;
+                foreach ($variants as $variant) {
+                    $similarity = max($similarity, $this->bestContainedDiceSimilarity($phraseSquashed, $variant));
+                    foreach ($tokenSquashed as $token) {
+                        $similarity = max($similarity, $this->bestContainedDiceSimilarity($token, $variant) * 0.94);
+                    }
+                }
+
+                $score = $similarity
+                    + min(0.08, ((int)($person['hits'] ?? 0)) * 0.003)
+                    + min(0.06, count($person['sources'] ?? []) * 0.015);
+
+                return [
+                    ...$person,
+                    'similarity' => $similarity,
+                    'score' => $score,
+                ];
+            })
+            ->filter(fn ($person) => ($person['similarity'] ?? 0.0) >= $minSimilarity)
+            ->sortByDesc(fn ($person) => ((int)round(($person['score'] ?? 0.0) * 1000) * 1000) + ((int)($person['hits'] ?? 0)))
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+
+    private function robustPersonProjectCandidates(string $q, ?int $yearBE = null): array {
+        $tok = $this->personQueryTokens($q);
+        $likeSets = [];
+        foreach ($tok as $t) {
+            $like = '%'.str_replace(['%','_'], ['\%', '\_'], $t).'%';
+            $noSp = '%'.str_replace(' ', '', $t).'%';
+            $likeSets[] = compact('like', 'noSp');
+        }
+
+        if (empty($likeSets)) return [];
+
+        $candidates = collect();
+
+        $pi = Project::query()
+            ->select('id')
+            ->where(function ($W) use ($likeSets) {
+                foreach ($likeSets as $s) {
+                    $W->where(function ($OR) use ($s) {
+                        $OR->orWhere('pi_name', 'like', $s['like']);
+                        $OR->orWhereRaw("REPLACE(pi_name,' ','') LIKE ?", [$s['noSp']]);
+                    });
+                }
+            })
+            ->when($yearBE, fn ($qq) => $qq->where('start_year', $yearBE))
+            ->limit(200)
+            ->pluck('id');
+        $candidates = $candidates->merge($pi);
+
+        if (Schema::hasTable('fte_roles')) {
+            $fte = DB::table('fte_roles')
+                ->select('project_id as id')
+                ->where(function ($W) use ($likeSets) {
+                    foreach ($likeSets as $s) {
+                        $W->where(function ($OR) use ($s) {
+                            $OR->orWhere('name', 'like', $s['like']);
+                            $OR->orWhereRaw("REPLACE(name,' ','') LIKE ?", [$s['noSp']]);
+                        });
+                    }
+                })
+                ->limit(300)
+                ->pluck('id');
+            $candidates = $candidates->merge($fte);
+        }
+
+        if (Schema::hasTable('copis')) {
+            $copi = DB::table('copis')
+                ->select('project_id as id')
+                ->where(function ($W) use ($likeSets) {
+                    foreach ($likeSets as $s) {
+                        $W->where(function ($OR) use ($s) {
+                            $OR->orWhere('name', 'like', $s['like']);
+                            $OR->orWhereRaw("REPLACE(name,' ','') LIKE ?", [$s['noSp']]);
+                        });
+                    }
+                })
+                ->limit(300)
+                ->pluck('id');
+            $candidates = $candidates->merge($copi);
+        }
+
+        if (Schema::hasTable('co_research')) {
+            $co = DB::table('co_research')
+                ->select('project_id as id')
+                ->where(function ($W) use ($likeSets) {
+                    foreach ($likeSets as $s) {
+                        $W->where(function ($OR) use ($s) {
+                            $OR->orWhere('name', 'like', $s['like']);
+                            $OR->orWhereRaw("REPLACE(name,' ','') LIKE ?", [$s['noSp']]);
+                        });
+                    }
+                })
+                ->limit(300)
+                ->pluck('id');
+            $candidates = $candidates->merge($co);
+        }
+
+        return $candidates->filter()->unique()->values()->take(300)->all();
+    }
 
     /** รวมข้อมูลโปรเจกต์ที่ UI ใช้งานได้ทันที */
     private function hydrateProjectsWithJoins(array $projectIds): array {
@@ -313,6 +1308,68 @@ class AgentController extends Controller
             ];
         }
         return $result;
+    }
+    private function buildProjectListResponse(string $reply, array $rows): array {
+        $list = collect($rows)->map(function ($row) {
+            return [
+                'id' => $row['project_code'],
+                'project' => $row['project_name'],
+                'year_be' => $row['start_year'],
+                'pi' => $row['pi_name'],
+                'funding' => $row['funding_type'].' / '.$row['funding_source'],
+                'href' => $row['href'],
+            ];
+        })->sortByDesc('year_be')->values()->all();
+
+        return [
+            'reply' => $reply,
+            'list' => $list,
+        ];
+    }
+    private function buildApproximatePersonResponse(string $prompt, array $matches, ?int $yearBE = null): array {
+        $targetPrompt = $yearBE ? "ปี {$yearBE}" : 'ปีล่าสุด';
+        $list = collect($matches)->map(function ($person) use ($yearBE, $targetPrompt) {
+            $name = trim((string)($person['text'] ?? $person['label'] ?? ''));
+            $sources = implode(' / ', array_slice(array_keys($person['sources'] ?? []), 0, 3));
+            return [
+                'title' => $person['label'] ?? $name,
+                'funding' => trim("แหล่งข้อมูล: {$sources}".(((int)($person['hits'] ?? 0)) > 0 ? " / พบ {$person['hits']} รายการ" : '')),
+                'prompt' => "สรุปงานของ {$name} {$targetPrompt}",
+                'submit_mode' => 'send',
+            ];
+        })->values()->all();
+
+        return [
+            'reply' => $yearBE
+                ? "ไม่พบข้อมูลของ “{$prompt}” ในปี {$yearBE} แต่ชื่อที่ใกล้เคียงที่สุดคือ"
+                : "ไม่พบข้อมูลของ “{$prompt}” ในระบบ แต่ชื่อที่ใกล้เคียงที่สุดคือ",
+            'list' => $list,
+        ];
+    }
+    private function personSummaryPrompt(string $name, ?int $yearBE = null): string {
+        $name = trim((string)$name);
+        if ($name === '') return '';
+        return $yearBE
+            ? "สรุปงานของ {$name} ปี {$yearBE}"
+            : "สรุปงานของ {$name} ปีล่าสุด";
+    }
+    private function buildNameActionListResponse(string $reply, array $rows, ?int $yearBE = null): array {
+        $list = collect($rows)->map(function ($row) use ($yearBE) {
+            $name = trim((string)($row['name'] ?? ''));
+            if ($name === '') return null;
+
+            return [
+                'title' => $name,
+                'funding' => trim((string)($row['meta'] ?? '')),
+                'prompt' => $this->personSummaryPrompt($name, $yearBE),
+                'submit_mode' => 'send',
+            ];
+        })->filter()->values()->all();
+
+        return [
+            'reply' => $reply,
+            'list' => $list,
+        ];
     }
 
     /** ใช้ start_year เท่านั้น (ไม่มี end_year/finish_year) */
@@ -572,6 +1629,273 @@ class AgentController extends Controller
         return array_values($rows);
     }
 
+    private function robustPersonBackOfficeTaskCandidates(string $q, ?int $yearBE = null): array {
+        if (!Schema::hasTable('back_office_entries')) return [];
+
+        $tok = $this->personQueryTokens($q);
+        $likeSets = [];
+        foreach ($tok as $t) {
+            $like = '%'.str_replace(['%','_'], ['\%', '\_'], $t).'%';
+            $noSp = '%'.str_replace(' ', '', $t).'%';
+            $likeSets[] = compact('like', 'noSp');
+        }
+
+        if (empty($likeSets)) return [];
+
+        $ids = DB::table('back_office_entries')
+            ->select('task_id as id')
+            ->where(function ($W) use ($likeSets) {
+                foreach ($likeSets as $s) {
+                    $W->where(function ($OR) use ($s) {
+                        $OR->orWhere('person_name', 'like', $s['like']);
+                        $OR->orWhereRaw("REPLACE(person_name,' ','') LIKE ?", [$s['noSp']]);
+                    });
+                }
+            })
+            ->limit(300)
+            ->pluck('id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($yearBE === null || $ids->isEmpty()) {
+            return $ids->take(250)->all();
+        }
+
+        $rows = $this->hydrateBackOfficeTasks($ids->take(250)->all(), $yearBE);
+        return array_values(array_unique(array_map(fn ($row) => $row['task_id'], $rows)));
+    }
+
+    private function personTokensNormalized(string $q): array {
+        return collect($this->personQueryTokens($q))
+            ->map(function ($token) {
+                $normalized = preg_replace('/\s+/u', '', trim((string)$token));
+                return mb_strtolower($normalized, 'UTF-8');
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function personTextMatchesTokens(?string $text, array $tokens): bool {
+        if (!$text || empty($tokens)) return false;
+        $normalized = mb_strtolower(preg_replace('/\s+/u', '', trim((string)$text)), 'UTF-8');
+        foreach ($tokens as $token) {
+            if ($token === '') continue;
+            if (!Str::contains($normalized, $token)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private function hydratePersonBackOfficeContributions(string $q, array $taskIds, ?int $yearBE = null): array {
+        if (empty($taskIds) || !Schema::hasTable('back_office_tasks')) return [];
+
+        $tokens = $this->personTokensNormalized($q);
+        if (empty($tokens)) return [];
+
+        $tasks = BackOfficeTask::query()
+            ->with(['entries.outputs'])
+            ->whereIn('id', $taskIds)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $rows = [];
+        foreach ($tasks as $task) {
+            $matchedEntries = ($task->entries ?? collect())->filter(function ($entry) use ($tokens, $yearBE, $task) {
+                if (!$this->personTextMatchesTokens($entry->person_name ?? '', $tokens)) {
+                    return false;
+                }
+
+                if ($yearBE === null) return true;
+                if ($this->taskOverlapsBEYear($entry, $yearBE)) return true;
+                if ($this->taskOverlapsBEYear($task, $yearBE)) return true;
+                foreach (($entry->outputs ?? collect()) as $output) {
+                    if ($this->outputMatchesBEYear($output, $yearBE)) return true;
+                }
+                return false;
+            })->values();
+
+            if ($matchedEntries->isEmpty()) continue;
+
+            $matchedOutputs = $matchedEntries->flatMap(fn ($entry) => $entry->outputs ?? collect());
+            $categories = $matchedEntries
+                ->groupBy(fn ($entry) => trim((string)($entry->category ?: 'ไม่ระบุ')))
+                ->map->count()
+                ->sortDesc();
+
+            $rows[] = [
+                'task_id' => (int)$task->id,
+                'title' => (string)($task->title ?? 'ไม่ระบุ'),
+                'start_date' => (string)($matchedEntries->pluck('start_date')->filter()->sort()->first() ?? $task->start_date ?? '-'),
+                'end_date' => (string)($matchedEntries->pluck('end_date')->filter()->sortDesc()->first() ?? $task->end_date ?? '-'),
+                'entries_count' => (int)$matchedEntries->count(),
+                'hours_sum' => round((float)$matchedEntries->sum('hours'), 2),
+                'fte_sum' => round((float)$matchedEntries->sum('fte_value'), 6),
+                'outputs_total' => (int)$matchedOutputs->count(),
+                'categories_brief' => $categories->take(5)->map(fn ($count, $name) => "{$name} ({$count})")->implode('; ') ?: '-',
+                'description' => (string)($task->description ?? '-'),
+                'purpose' => (string)($task->purpose ?? '-'),
+                'href' => route('back_office.show', $task->id),
+            ];
+        }
+
+        return array_values($rows);
+    }
+
+    private function buildPersonCombinedResponse(string $prompt, array $projectRows, array $personBackOfficeRows): array {
+        $name = trim($prompt);
+        $projects = collect($projectRows)
+            ->sortBy([
+                ['start_year', 'desc'],
+                ['budget', 'desc'],
+                ['project_name', 'asc'],
+            ])
+            ->values();
+        $tasks = collect($personBackOfficeRows)
+            ->sortByDesc('hours_sum')
+            ->values();
+
+        $summaryParts = [];
+        if ($projects->isNotEmpty()) {
+            $summaryParts[] = "งานวิจัย {$projects->count()} โครงการ";
+        }
+        if ($tasks->isNotEmpty()) {
+            $summaryParts[] = "Back Office {$tasks->count()} งาน";
+        }
+
+        $replySections = [];
+        $replySections[] = "พบข้อมูลของ “{$name}” ใน ".implode(' และ ', $summaryParts);
+
+        if ($projects->isNotEmpty()) {
+            $budgetSum = (float)$projects->sum(fn ($row) => (float)($row['budget'] ?? 0));
+            $years = $projects->pluck('start_year')->filter(fn ($year) => (int)$year > 0)->map(fn ($year) => (int)$year)->values();
+            $yearLabel = '';
+            if ($years->isNotEmpty()) {
+                $minYear = $years->min();
+                $maxYear = $years->max();
+                $yearLabel = $minYear === $maxYear ? "ในปี พ.ศ. {$minYear}" : "ในช่วงปี พ.ศ. {$minYear}–{$maxYear}";
+            }
+
+            $projectLines = $projects->take(6)->map(function ($row, $index) {
+                $budgetMil = number_format(((float)($row['budget'] ?? 0)) / 1_000_000, 2);
+                $year = (int)($row['start_year'] ?? 0) > 0 ? (string)$row['start_year'] : '-';
+                return ($index + 1).") {$row['project_name']} / PI: {$row['pi_name']} / ปี: {$year} / งบ(ลบ.): {$budgetMil}";
+            })->implode("\n");
+
+            $replySections[] = "ด้านโครงการวิจัย พบ {$projects->count()} โครงการ{$yearLabel}".($budgetSum > 0 ? " วงเงินรวมประมาณ ".number_format($budgetSum / 1_000_000, 2)." ล้านบาท" : '')."\n{$projectLines}";
+        }
+
+        if ($tasks->isNotEmpty()) {
+            $hoursTotal = (float)$tasks->sum(fn ($row) => (float)($row['hours_sum'] ?? 0));
+            $fteTotal = (float)$tasks->sum(fn ($row) => (float)($row['fte_sum'] ?? 0));
+            $taskLines = $tasks->take(5)->map(function ($row, $index) {
+                $period = trim(implode(' – ', array_filter([
+                    $row['start_date'] && $row['start_date'] !== '-' ? $row['start_date'] : null,
+                    $row['end_date'] && $row['end_date'] !== '-' ? $row['end_date'] : null,
+                ])));
+                $suffix = $period !== '' ? " / ช่วงงาน: {$period}" : '';
+                return ($index + 1).") {$row['title']}{$suffix} / ชั่วโมง: ".number_format((float)($row['hours_sum'] ?? 0), 2)." / FTE: ".number_format((float)($row['fte_sum'] ?? 0), 6)." / หมวดงาน: ".($row['categories_brief'] ?? '-');
+            })->implode("\n");
+
+            $replySections[] = "ด้าน Back Office พบ {$tasks->count()} งาน ใช้เวลารวม ".number_format($hoursTotal, 2)." ชั่วโมง คิดเป็น ".number_format($fteTotal, 6)." FTE\n{$taskLines}";
+        }
+
+        $list = $projects->take(8)->map(function ($row) {
+            return [
+                'id' => $row['project_code'] ?? $row['project_id'],
+                'project' => $row['project_name'],
+                'year_be' => $row['start_year'] ?? null,
+                'pi' => $row['pi_name'] ?? '-',
+                'funding' => trim((string)($row['funding_type'] ?? 'ไม่ระบุ')).' / '.trim((string)($row['funding_source'] ?? 'ไม่ระบุ')),
+                'href' => $row['href'] ?? '#',
+            ];
+        })->values();
+
+        $taskList = $tasks->take(5)->map(function ($row) {
+            return [
+                'id' => $row['task_id'],
+                'task' => $row['title'],
+                'funding' => 'Back Office / '.number_format((float)($row['hours_sum'] ?? 0), 2).' ชม. / FTE '.number_format((float)($row['fte_sum'] ?? 0), 6),
+                'href' => $row['href'] ?? '#',
+            ];
+        })->values();
+
+        return [
+            'reply' => implode("\n\n", array_filter($replySections)),
+            'list' => $list->concat($taskList)->take(12)->values()->all(),
+        ];
+    }
+
+    private function buildPersonProjectResponse(string $prompt, array $rows): array {
+        $name = trim($prompt);
+        $sorted = collect($rows)
+            ->sortBy([
+                ['start_year', 'desc'],
+                ['budget', 'desc'],
+                ['project_name', 'asc'],
+            ])
+            ->values();
+
+        $count = $sorted->count();
+        $years = $sorted->pluck('start_year')->filter(fn ($year) => (int)$year > 0)->map(fn ($year) => (int)$year)->values();
+        $budgetSum = (float)$sorted->sum(fn ($row) => (float)($row['budget'] ?? 0));
+        $yearLabel = 'ไม่ระบุปี';
+        if ($years->isNotEmpty()) {
+            $minYear = $years->min();
+            $maxYear = $years->max();
+            $yearLabel = $minYear === $maxYear ? "ปี พ.ศ. {$maxYear}" : "ช่วงปี พ.ศ. {$minYear}–{$maxYear}";
+        }
+
+        $piCount = $sorted->pluck('pi_name')->filter()->unique()->count();
+        $topFunding = $sorted
+            ->groupBy(fn ($row) => trim((string)($row['funding_type'] ?? 'ไม่ระบุ')).' / '.trim((string)($row['funding_source'] ?? 'ไม่ระบุ')))
+            ->map->count()
+            ->sortDesc()
+            ->keys()
+            ->first();
+
+        $lines = [];
+        $lines[] = "พบโครงการที่เกี่ยวข้องกับชื่อ “{$name}” ทั้งหมด {$count} โครงการ {$yearLabel}";
+        if ($budgetSum > 0) {
+            $lines[] = "วงเงินรวมประมาณ ".number_format($budgetSum / 1_000_000, 2)." ล้านบาท และเกี่ยวข้องกับ PI {$piCount} คน";
+        } else {
+            $lines[] = "พบรายชื่อ PI ที่เกี่ยวข้อง {$piCount} คน".($topFunding ? " โดยส่วนใหญ่อยู่ในกลุ่มทุน {$topFunding}" : '');
+        }
+        if ($topFunding) {
+            $lines[] = "ประเภททุนที่พบมากคือ {$topFunding}";
+        }
+
+        $projectLines = $sorted->take(8)->map(function ($row, $index) {
+            $budgetMil = number_format(((float)($row['budget'] ?? 0)) / 1_000_000, 2);
+            $year = (int)($row['start_year'] ?? 0) > 0 ? (string)$row['start_year'] : '-';
+            return ($index + 1).") {$row['project_name']} / PI: {$row['pi_name']} / ปี: {$year} / งบ(ลบ.): {$budgetMil}";
+        });
+
+        $reply = implode("\n\n", [
+            implode(' ', array_filter($lines)),
+            $projectLines->implode("\n"),
+        ]);
+
+        $list = $sorted->take(12)->map(function ($row) {
+            return [
+                'id' => $row['project_code'] ?? $row['project_id'],
+                'project' => $row['project_name'],
+                'year_be' => $row['start_year'] ?? null,
+                'pi' => $row['pi_name'] ?? '-',
+                'funding' => trim((string)($row['funding_type'] ?? 'ไม่ระบุ')).' / '.trim((string)($row['funding_source'] ?? 'ไม่ระบุ')),
+                'href' => $row['href'] ?? '#',
+            ];
+        })->values()->all();
+
+        return [
+            'reply' => $reply,
+            'list' => $list,
+        ];
+    }
+
     private function packForLLMEnvelope(array $projectRows, array $backOfficeRows, int $maxProjectItems = 20, int $maxTaskItems = 12): string {
         $projectRows = array_slice($projectRows, 0, $maxProjectItems);
         $backOfficeRows = array_slice($backOfficeRows, 0, $maxTaskItems);
@@ -743,6 +2067,71 @@ class AgentController extends Controller
         ];
     }
 
+    private function budgetBreakdownForFundingType($projects, int $yBE, ?string $fundingType = null): array {
+        $rows = collect($projects)
+            ->filter(fn ($project) => $this->beIntFromText($project->start_year ?? null) === $yBE)
+            ->filter(function ($project) use ($fundingType) {
+                if ($fundingType === null) return true;
+                return $this->normFundingType($project->funding_type ?? null) === $fundingType;
+            })
+            ->values();
+
+        $totalBudget = 0.0;
+        $sourceBuckets = [];
+        $projectRows = [];
+
+        foreach ($rows as $project) {
+            $budget = $this->parseMoney($project->budget ?? 0);
+            $source = trim((string)($project->funding_source ?? 'ไม่ระบุ')) ?: 'ไม่ระบุ';
+
+            $totalBudget += $budget;
+
+            if (!isset($sourceBuckets[$source])) {
+                $sourceBuckets[$source] = [
+                    'source' => $source,
+                    'project_count' => 0,
+                    'budget_total_raw' => 0.0,
+                ];
+            }
+
+            $sourceBuckets[$source]['project_count']++;
+            $sourceBuckets[$source]['budget_total_raw'] += $budget;
+
+            $projectRows[] = [
+                'id' => $project->id,
+                'project' => $project->project_name_th ?? ('#'.$project->id),
+                'pi' => $project->pi_name ?? '-',
+                'budget' => $budget,
+                'source' => $source,
+                'href' => url('/rm/projects/'.$project->id),
+            ];
+        }
+
+        usort($projectRows, fn ($left, $right) => $right['budget'] <=> $left['budget']);
+
+        $sourceRows = collect($sourceBuckets)
+            ->map(function ($row) {
+                return [
+                    'source' => $row['source'],
+                    'project_count' => $row['project_count'],
+                    'budget_total_raw' => $row['budget_total_raw'],
+                    'budget_total' => number_format((float)$row['budget_total_raw'], 2),
+                ];
+            })
+            ->sortByDesc(fn ($row) => ((float)($row['budget_total_raw'] ?? 0) * 1000) + (int)($row['project_count'] ?? 0))
+            ->values()
+            ->all();
+
+        return [
+            'year_be' => $yBE,
+            'funding_type' => $fundingType ?? 'ทั้งหมด',
+            'project_count' => $rows->count(),
+            'total_budget' => $totalBudget,
+            'source_rows' => $sourceRows,
+            'top_projects' => array_slice($projectRows, 0, 10),
+        ];
+    }
+
     /* ==========================
      * Mode resolver
      * ========================== */
@@ -780,19 +2169,56 @@ class AgentController extends Controller
             $yearHintBE = null;
             if (preg_match('/(25\d{2}|20\d{2})/u', $prompt, $m)) {
                 $y=(int)$m[1]; $yearHintBE = ($y>2400 ? $y : $y+543);
-            } elseif (Str::contains($t,'ปีนี้')) {
+            } elseif (Str::contains($t, ['ปีนี้', 'ปีล่าสุด'])) {
                 $yearHintBE = $this->nowBE();
-            } elseif (Str::contains($t,'ปีก่อน')) {
+            } elseif (Str::contains($t, ['ปีก่อน', 'ปีที่แล้ว'])) {
                 $yearHintBE = $this->nowBE()-1;
             }
+
+            $dateRange = $this->extractPromptDateRange($prompt);
+            $wantsPdf = preg_match('/\bpdf\b/i', $prompt) === 1 || Str::contains($t, ['เป็น pdf', 'ไฟล์ pdf']);
+            $wantsCsv = preg_match('/\bcsv\b/i', $prompt) === 1 || Str::contains($t, ['เป็น csv', 'ไฟล์ csv']);
+            $wantsExcel = preg_match('/\b(?:xlsx|xls|excel)\b/i', $prompt) === 1 || Str::contains($t, ['excel', 'xlsx', 'xls', 'เอ็กเซล']);
+            $wantsDownload = $wantsPdf || $wantsCsv || $wantsExcel || Str::contains($t, ['โหลด', 'ดาวน์โหลด', 'export']);
 
             /* ===================== DB-FIRST QUICK ANSWERS ===================== */
             // โค้ดส่วนนี้ไม่ได้เปลี่ยนแปลง (Quick Answers)
 
+            if (
+                $wantsDownload &&
+                (Str::contains($t, ['โครงการทั้งหมด', 'โปรเจคทั้งหมด']) || $t === 'all projects')
+            ) {
+                $format = $wantsPdf ? 'pdf' : ($wantsCsv ? 'csv' : 'xls');
+                $params = ['format' => $format];
+                if ($yearHintBE !== null) {
+                    $params['year'] = $yearHintBE;
+                }
+
+                $label = match ($format) {
+                    'pdf' => 'PDF',
+                    'csv' => 'CSV',
+                    default => 'Excel',
+                };
+
+                return response()->json($this->buildDownloadActionResponse(
+                    $yearHintBE
+                        ? "เตรียมไฟล์รายชื่อโครงการทั้งหมดในปี {$yearHintBE} เป็น {$label}"
+                        : "เตรียมไฟล์รายชื่อโครงการทั้งหมดเป็น {$label}",
+                    $yearHintBE
+                        ? "ดาวน์โหลดโครงการทั้งหมด ปี {$yearHintBE} ({$label})"
+                        : "ดาวน์โหลดโครงการทั้งหมด ({$label})",
+                    route('projects.export', $params),
+                    $yearHintBE ? "ส่งออกเฉพาะปี {$yearHintBE}" : 'ส่งออกทุกโครงการที่คุณมีสิทธิ์เห็น'
+                ));
+            }
+
             /** 0) โปรเจคทั้งหมด/โครงการทั้งหมด */
             if (Str::contains($t,'โปรเจคทั้งหมด') || Str::contains($t,'โครงการทั้งหมด') || $t==='all projects') {
                 $rows = Project::select(['id','project_name_th','pi_name','start_year','funding_type','funding_source'])
-                    ->orderByDesc('id')->limit(200)->get();
+                    ->orderByDesc('id')->get()
+                    ->filter(fn ($project) => $yearHintBE === null || $this->beIntFromText($project->start_year ?? null) === $yearHintBE)
+                    ->take(200)
+                    ->values();
 
                 $list = $rows->map(function($p){
                     return [
@@ -806,8 +2232,490 @@ class AgentController extends Controller
                 })->values();
 
                 return response()->json([
-                    'reply' => 'รายการโครงการทั้งหมด (ล่าสุด 200 รายการ)',
+                    'reply' => $yearHintBE
+                        ? "รายการโครงการทั้งหมดในปี {$yearHintBE} (ล่าสุด 200 รายการ)"
+                        : 'รายการโครงการทั้งหมด (ล่าสุด 200 รายการ)',
                     'list'  => $list,
+                ]);
+            }
+
+            /** 0.1) ประเภททุนทั้งหมด */
+            if (Str::contains($t, ['ประเภททุนทั้งหมด', 'ประเภททุน all'])) {
+                $projects = Project::select(['start_year', 'budget', 'funding_type'])->get()
+                    ->filter(fn ($project) => $yearHintBE === null || $this->beIntFromText($project->start_year ?? null) === $yearHintBE)
+                    ->values();
+
+                if ($projects->isEmpty()) {
+                    return response()->json([
+                        'reply' => $yearHintBE ? "ไม่พบข้อมูลประเภททุนในปี {$yearHintBE}" : 'ไม่พบข้อมูลประเภททุนในระบบ',
+                    ]);
+                }
+
+                $rows = $projects
+                    ->groupBy(fn ($project) => $this->normFundingType($project->funding_type ?? null))
+                    ->map(function ($group, $type) {
+                        $budgetTotal = $group->sum(fn ($project) => $this->parseMoney($project->budget ?? 0));
+                        return [
+                            'type' => $type,
+                            'project_count' => $group->count(),
+                            'budget_total' => number_format($budgetTotal, 2),
+                            'budget_total_raw' => $budgetTotal,
+                        ];
+                    })
+                    ->sortByDesc(fn ($row) => ((int)($row['project_count'] ?? 0) * 1000000000) + (int)round($row['budget_total_raw'] ?? 0))
+                    ->values();
+
+                return response()->json([
+                    'reply' => $yearHintBE
+                        ? "ประเภททุนทั้งหมดในปี {$yearHintBE}"
+                        : 'ประเภททุนทั้งหมดในระบบ',
+                    'table' => [
+                        'title' => $yearHintBE ? "ประเภททุนทั้งหมด ปี {$yearHintBE}" : 'ประเภททุนทั้งหมด',
+                        'headers' => ['ประเภททุน', 'จำนวนโครงการ', 'งบประมาณรวม(บาท)'],
+                        'fields' => ['type', 'project_count', 'budget_total'],
+                        'rows' => $rows->map(fn ($row) => [
+                            'type' => $row['type'],
+                            'project_count' => $row['project_count'],
+                            'budget_total' => $row['budget_total'],
+                        ])->values(),
+                    ],
+                    'chart' => [
+                        'type' => 'doughnut',
+                        'labels' => $rows->pluck('type'),
+                        'datasets' => [[
+                            'label' => 'จำนวนโครงการ',
+                            'data' => $rows->pluck('project_count'),
+                        ]],
+                        'options' => ['plugins' => ['legend' => ['position' => 'bottom']]],
+                    ],
+                ]);
+            }
+
+            /** 0.2) ทุนทั้งหมด / แหล่งทุนทั้งหมด */
+            if (Str::contains($t, ['ทุนทั้งหมด', 'แหล่งทุนทั้งหมด'])) {
+                $projects = Project::select(['start_year', 'budget', 'funding_type', 'funding_source'])->get()
+                    ->filter(fn ($project) => $yearHintBE === null || $this->beIntFromText($project->start_year ?? null) === $yearHintBE)
+                    ->values();
+
+                if ($projects->isEmpty()) {
+                    return response()->json([
+                        'reply' => $yearHintBE ? "ไม่พบข้อมูลทุนในปี {$yearHintBE}" : 'ไม่พบข้อมูลทุนในระบบ',
+                    ]);
+                }
+
+                $sourceRows = $projects
+                    ->groupBy(fn ($project) => trim((string)($project->funding_source ?? 'ไม่ระบุ')) ?: 'ไม่ระบุ')
+                    ->map(function ($group, $source) {
+                        $budgetTotal = $group->sum(fn ($project) => $this->parseMoney($project->budget ?? 0));
+                        $topType = $group
+                            ->groupBy(fn ($project) => $this->normFundingType($project->funding_type ?? null))
+                            ->map->count()
+                            ->sortDesc()
+                            ->keys()
+                            ->first() ?? 'ไม่ระบุ';
+
+                        return [
+                            'source' => $source,
+                            'project_count' => $group->count(),
+                            'budget_total' => number_format($budgetTotal, 2),
+                            'budget_total_raw' => $budgetTotal,
+                            'top_type' => $topType,
+                        ];
+                    })
+                    ->sortByDesc(fn ($row) => ((int)($row['project_count'] ?? 0) * 1000000000) + (int)round($row['budget_total_raw'] ?? 0))
+                    ->values();
+
+                $typeRows = $projects
+                    ->groupBy(fn ($project) => $this->normFundingType($project->funding_type ?? null))
+                    ->map->count()
+                    ->sortDesc();
+
+                return response()->json([
+                    'reply' => $yearHintBE
+                        ? "แหล่งทุนทั้งหมดในปี {$yearHintBE}"
+                        : 'แหล่งทุนทั้งหมดในระบบ',
+                    'table' => [
+                        'title' => $yearHintBE ? "แหล่งทุนทั้งหมด ปี {$yearHintBE}" : 'แหล่งทุนทั้งหมด',
+                        'headers' => ['แหล่งทุน', 'จำนวนโครงการ', 'งบประมาณรวม(บาท)', 'ประเภททุนหลัก'],
+                        'fields' => ['source', 'project_count', 'budget_total', 'top_type'],
+                        'rows' => $sourceRows->take(120)->map(fn ($row) => [
+                            'source' => $row['source'],
+                            'project_count' => $row['project_count'],
+                            'budget_total' => $row['budget_total'],
+                            'top_type' => $row['top_type'],
+                        ])->values(),
+                    ],
+                    'chart' => [
+                        'type' => 'doughnut',
+                        'labels' => $typeRows->keys()->values(),
+                        'datasets' => [[
+                            'label' => 'จำนวนโครงการ',
+                            'data' => $typeRows->values()->values(),
+                        ]],
+                        'options' => ['plugins' => ['legend' => ['position' => 'bottom']]],
+                    ],
+                ]);
+            }
+
+            /** 0.2.1) งบภายใน / งบภายนอก / เปรียบเทียบภายใน-ภายนอก */
+            $isFundingBudgetCompare = Str::contains($t, [
+                'เปรียบเทียบงบภายในกับงบภายนอก',
+                'เทียบงบ',
+                'งบภายในกับงบภายนอก',
+                'ทุนภายในกับทุนภายนอก',
+            ]) || (
+                Str::contains($t, ['งบ', 'ทุน'])
+                && Str::contains($t, ['ภายใน', 'ทุนภายใน', 'งบภายใน'])
+                && Str::contains($t, ['ภายนอก', 'ทุนภายนอก', 'งบภายนอก'])
+            );
+
+            if ($isFundingBudgetCompare) {
+                $targetBE = $yearHintBE ?? $this->nowBE();
+                $projects = Project::select(['id', 'project_name_th', 'pi_name', 'start_year', 'budget', 'funding_type', 'funding_source'])->get();
+
+                $inside = $this->budgetBreakdownForFundingType($projects, $targetBE, 'ภายใน');
+                $outside = $this->budgetBreakdownForFundingType($projects, $targetBE, 'ภายนอก');
+                $unknown = $this->budgetBreakdownForFundingType($projects, $targetBE, 'ไม่ระบุ');
+
+                if (($inside['project_count'] + $outside['project_count'] + $unknown['project_count']) === 0) {
+                    return response()->json([
+                        'reply' => "ไม่พบข้อมูลงบภายในหรือภายนอกในปี {$targetBE}",
+                    ]);
+                }
+
+                $tableRows = collect([
+                    [
+                        'type' => 'ภายใน',
+                        'project_count' => $inside['project_count'],
+                        'budget_total' => number_format((float)$inside['total_budget'], 2),
+                        'top_source' => $inside['source_rows'][0]['source'] ?? '-',
+                    ],
+                    [
+                        'type' => 'ภายนอก',
+                        'project_count' => $outside['project_count'],
+                        'budget_total' => number_format((float)$outside['total_budget'], 2),
+                        'top_source' => $outside['source_rows'][0]['source'] ?? '-',
+                    ],
+                    [
+                        'type' => 'ไม่ระบุ',
+                        'project_count' => $unknown['project_count'],
+                        'budget_total' => number_format((float)$unknown['total_budget'], 2),
+                        'top_source' => $unknown['source_rows'][0]['source'] ?? '-',
+                    ],
+                ])->filter(fn ($row) => (int)($row['project_count'] ?? 0) > 0 || (float)str_replace(',', '', (string)($row['budget_total'] ?? '0')) > 0)
+                    ->values();
+
+                return response()->json([
+                    'reply' => "เปรียบเทียบงบภายในกับงบภายนอก ปี {$targetBE}: "
+                        ."ภายใน <b>".$this->fmtMil((float)$inside['total_budget'])."</b> จาก {$inside['project_count']} โครงการ, "
+                        ."ภายนอก <b>".$this->fmtMil((float)$outside['total_budget'])."</b> จาก {$outside['project_count']} โครงการ",
+                    'table' => [
+                        'title' => "เปรียบเทียบงบภายในกับงบภายนอก ปี {$targetBE}",
+                        'headers' => ['ประเภททุน', 'จำนวนโครงการ', 'งบประมาณรวม(บาท)', 'แหล่งทุนเด่น'],
+                        'fields' => ['type', 'project_count', 'budget_total', 'top_source'],
+                        'rows' => $tableRows,
+                    ],
+                    'chart' => [
+                        'type' => 'bar',
+                        'labels' => $tableRows->pluck('type'),
+                        'datasets' => [[
+                            'label' => 'ล้านบาท',
+                            'data' => $tableRows->map(fn ($row) => round(((float)str_replace(',', '', (string)$row['budget_total'])) / 1_000_000, 2))->values(),
+                            'backgroundColor' => ['#0f766e', '#2563eb', '#94a3b8'],
+                        ]],
+                        'options' => [
+                            'plugins' => ['legend' => ['display' => false]],
+                            'scales' => ['y' => ['beginAtZero' => true]],
+                        ],
+                    ],
+                    'chart2' => [
+                        'type' => 'doughnut',
+                        'labels' => $tableRows->pluck('type'),
+                        'datasets' => [[
+                            'label' => 'จำนวนโครงการ',
+                            'data' => $tableRows->pluck('project_count'),
+                        ]],
+                        'options' => [
+                            'plugins' => ['legend' => ['position' => 'bottom']],
+                        ],
+                    ],
+                ]);
+            }
+
+            $targetFundingType = null;
+            if (Str::contains($t, ['งบภายใน', 'ทุนภายใน'])) {
+                $targetFundingType = 'ภายใน';
+            } elseif (Str::contains($t, ['งบภายนอก', 'ทุนภายนอก'])) {
+                $targetFundingType = 'ภายนอก';
+            }
+
+            if ($targetFundingType !== null) {
+                $targetBE = $yearHintBE ?? $this->nowBE();
+                $projects = Project::select(['id', 'project_name_th', 'pi_name', 'start_year', 'budget', 'funding_type', 'funding_source'])->get();
+                $summary = $this->budgetBreakdownForFundingType($projects, $targetBE, $targetFundingType);
+                $budgetLabel = $targetFundingType === 'ภายใน' ? 'งบภายใน' : 'งบภายนอก';
+
+                if (($summary['project_count'] ?? 0) === 0) {
+                    return response()->json([
+                        'reply' => "ไม่พบข้อมูล{$budgetLabel}ในปี {$targetBE}",
+                    ]);
+                }
+
+                $topSourcesText = collect($summary['source_rows'])
+                    ->take(3)
+                    ->map(fn ($row) => trim((string)($row['source'] ?? 'ไม่ระบุ')).' '.$this->fmtMil((float)($row['budget_total_raw'] ?? 0)))
+                    ->implode(', ');
+
+                $reply = "{$budgetLabel} ปี {$targetBE}: <b>".$this->fmtMil((float)$summary['total_budget'])."</b> จาก {$summary['project_count']} โครงการ";
+                if ($topSourcesText !== '') {
+                    $reply .= "<br>แหล่งทุนเด่น: {$topSourcesText}";
+                }
+
+                $sourceRows = collect($summary['source_rows'])->take(20)->values();
+                $chartRows = collect($summary['source_rows'])->take(8)->values();
+
+                return response()->json([
+                    'reply' => $reply,
+                    'list' => collect($summary['top_projects'])->map(fn ($row) => [
+                        'project' => $row['project'],
+                        'pi' => $row['pi'],
+                        'year_be' => $targetBE,
+                        'funding' => $targetFundingType.' / '.($row['source'] ?? 'ไม่ระบุ'),
+                        'href' => $row['href'],
+                    ])->values(),
+                    'table' => [
+                        'title' => "{$budgetLabel} ปี {$targetBE} แยกตามแหล่งทุน",
+                        'headers' => ['แหล่งทุน', 'จำนวนโครงการ', 'งบประมาณรวม(บาท)'],
+                        'fields' => ['source', 'project_count', 'budget_total'],
+                        'rows' => $sourceRows->map(fn ($row) => [
+                            'source' => $row['source'],
+                            'project_count' => $row['project_count'],
+                            'budget_total' => $row['budget_total'],
+                        ])->values(),
+                    ],
+                    'chart' => [
+                        'type' => $chartRows->count() > 5 ? 'bar' : 'doughnut',
+                        'labels' => $chartRows->pluck('source'),
+                        'datasets' => [[
+                            'label' => 'ล้านบาท',
+                            'data' => $chartRows->map(fn ($row) => round(((float)($row['budget_total_raw'] ?? 0)) / 1_000_000, 2))->values(),
+                            'backgroundColor' => $targetFundingType === 'ภายใน'
+                                ? 'rgba(15, 118, 110, 0.78)'
+                                : 'rgba(37, 99, 235, 0.78)',
+                            'borderColor' => $targetFundingType === 'ภายใน' ? '#115e59' : '#1d4ed8',
+                            'borderWidth' => 1,
+                        ]],
+                        'options' => [
+                            'plugins' => ['legend' => ['display' => $chartRows->count() <= 5, 'position' => 'bottom']],
+                            'scales' => $chartRows->count() > 5 ? ['y' => ['beginAtZero' => true]] : (object)[],
+                        ],
+                    ],
+                ]);
+            }
+
+            /** 0.3) Co-PI ทั้งหมด */
+            if (Str::contains($t, ['co-pi ทั้งหมด', 'copi ทั้งหมด'])) {
+                if (!Schema::hasTable('copis')) {
+                    return response()->json(['reply' => 'ยังไม่มีข้อมูล Co-PI ในระบบ']);
+                }
+
+                $rows = DB::table('copis')
+                    ->leftJoin('projects', 'projects.id', '=', 'copis.project_id')
+                    ->select(['copis.name', 'copis.affiliation', 'projects.start_year', 'projects.budget'])
+                    ->get()
+                    ->filter(fn ($row) => trim((string)($row->name ?? '')) !== '')
+                    ->filter(fn ($row) => $yearHintBE === null || $this->beIntFromText($row->start_year ?? null) === $yearHintBE)
+                    ->groupBy(fn ($row) => trim((string)$row->name))
+                    ->map(function ($group, $name) {
+                        $affiliations = $group->pluck('affiliation')->filter(fn ($value) => trim((string)$value) !== '')->unique()->take(2)->implode(', ');
+                        $budgetTotal = $group->sum(fn ($row) => $this->parseMoney($row->budget ?? 0));
+                        return [
+                            'name' => $name,
+                            'projects' => $group->count(),
+                            'budget_total' => $budgetTotal,
+                            'meta' => trim($group->count().' โครงการ'
+                                .($budgetTotal > 0 ? ' / งบ '.number_format($budgetTotal / 1_000_000, 2).' ล้านบาท' : '')
+                                .($affiliations !== '' ? " / {$affiliations}" : '')),
+                        ];
+                    })
+                    ->sortByDesc(fn ($row) => ((int)($row['projects'] ?? 0) * 1000000) + (int)round($row['budget_total'] ?? 0))
+                    ->take(200)
+                    ->values()
+                    ->all();
+
+                if (empty($rows)) {
+                    return response()->json([
+                        'reply' => $yearHintBE ? "ไม่พบข้อมูล Co-PI ในปี {$yearHintBE}" : 'ไม่พบข้อมูล Co-PI ในระบบ',
+                    ]);
+                }
+
+                return response()->json($this->buildNameActionListResponse(
+                    $yearHintBE ? "Co-PI ทั้งหมดในปี {$yearHintBE}" : 'Co-PI ทั้งหมดในระบบ',
+                    $rows,
+                    $yearHintBE
+                ));
+            }
+
+            /** 0.4) PI ทั้งหมด */
+            if (Str::contains($t, ['pi ทั้งหมด', 'principal investigator ทั้งหมด']) && !Str::contains($t, ['co-pi', 'copi'])) {
+                $rows = Project::select(['pi_name', 'start_year', 'budget'])
+                    ->get()
+                    ->filter(fn ($project) => trim((string)($project->pi_name ?? '')) !== '')
+                    ->filter(fn ($project) => $yearHintBE === null || $this->beIntFromText($project->start_year ?? null) === $yearHintBE)
+                    ->groupBy(fn ($project) => trim((string)$project->pi_name))
+                    ->map(function ($group, $name) {
+                        $budgetTotal = $group->sum(fn ($project) => $this->parseMoney($project->budget ?? 0));
+                        return [
+                            'name' => $name,
+                            'projects' => $group->count(),
+                            'budget_total' => $budgetTotal,
+                            'meta' => trim($group->count().' โครงการ'
+                                .($budgetTotal > 0 ? ' / งบ '.number_format($budgetTotal / 1_000_000, 2).' ล้านบาท' : '')),
+                        ];
+                    })
+                    ->sortByDesc(fn ($row) => ((int)($row['projects'] ?? 0) * 1000000) + (int)round($row['budget_total'] ?? 0))
+                    ->take(200)
+                    ->values()
+                    ->all();
+
+                if (empty($rows)) {
+                    return response()->json([
+                        'reply' => $yearHintBE ? "ไม่พบข้อมูล PI ในปี {$yearHintBE}" : 'ไม่พบข้อมูล PI ในระบบ',
+                    ]);
+                }
+
+                return response()->json($this->buildNameActionListResponse(
+                    $yearHintBE ? "PI ทั้งหมดในปี {$yearHintBE}" : 'PI ทั้งหมดในระบบ',
+                    $rows,
+                    $yearHintBE
+                ));
+            }
+
+            /** 0.5) Co-Research ทั้งหมด */
+            if (Str::contains($t, ['co-research ทั้งหมด', 'coresearch ทั้งหมด', 'co research ทั้งหมด'])) {
+                if (!Schema::hasTable('co_research')) {
+                    return response()->json(['reply' => 'ยังไม่มีข้อมูล Co-Research ในระบบ']);
+                }
+
+                $rows = DB::table('co_research')
+                    ->leftJoin('projects', 'projects.id', '=', 'co_research.project_id')
+                    ->select(['co_research.name', 'co_research.unit_status', 'projects.start_year', 'projects.budget'])
+                    ->get()
+                    ->filter(fn ($row) => trim((string)($row->name ?? '')) !== '')
+                    ->filter(fn ($row) => $yearHintBE === null || $this->beIntFromText($row->start_year ?? null) === $yearHintBE)
+                    ->groupBy(fn ($row) => trim((string)$row->name))
+                    ->map(function ($group, $name) {
+                        $units = $group->pluck('unit_status')->filter(fn ($value) => trim((string)$value) !== '')->unique()->take(2)->implode(', ');
+                        $budgetTotal = $group->sum(fn ($row) => $this->parseMoney($row->budget ?? 0));
+                        return [
+                            'name' => $name,
+                            'projects' => $group->count(),
+                            'budget_total' => $budgetTotal,
+                            'meta' => trim($group->count().' โครงการ'
+                                .($budgetTotal > 0 ? ' / งบ '.number_format($budgetTotal / 1_000_000, 2).' ล้านบาท' : '')
+                                .($units !== '' ? " / {$units}" : '')),
+                        ];
+                    })
+                    ->sortByDesc(fn ($row) => ((int)($row['projects'] ?? 0) * 1000000) + (int)round($row['budget_total'] ?? 0))
+                    ->take(200)
+                    ->values()
+                    ->all();
+
+                if (empty($rows)) {
+                    return response()->json([
+                        'reply' => $yearHintBE ? "ไม่พบข้อมูล Co-Research ในปี {$yearHintBE}" : 'ไม่พบข้อมูล Co-Research ในระบบ',
+                    ]);
+                }
+
+                return response()->json($this->buildNameActionListResponse(
+                    $yearHintBE ? "Co-Research ทั้งหมดในปี {$yearHintBE}" : 'Co-Research ทั้งหมดในระบบ',
+                    $rows,
+                    $yearHintBE
+                ));
+            }
+
+            /** 0.6) FTE ทั้งหมด */
+            if (Str::contains($t, ['fte ทั้งหมด', 'เอฟทีอีทั้งหมด'])) {
+                $rows = FteRole::query()
+                    ->selectRaw('name, SUM(COALESCE(fte_value,0)) AS total_fte, COUNT(*) AS role_count')
+                    ->whereNotNull('name')
+                    ->where('name', '!=', '')
+                    ->when($yearHintBE, function ($query) use ($yearHintBE) {
+                        $targetCE = $yearHintBE - 543;
+                        $this->scopeFTEActiveInCEYear($query, $targetCE);
+                    })
+                    ->groupBy('name')
+                    ->orderByDesc('total_fte')
+                    ->limit(200)
+                    ->get();
+
+                if ($rows->isEmpty()) {
+                    return response()->json([
+                        'reply' => $yearHintBE ? "ไม่พบข้อมูล FTE ในปี {$yearHintBE}" : 'ไม่พบข้อมูล FTE ในระบบ',
+                    ]);
+                }
+
+                return response()->json([
+                    'reply' => $yearHintBE ? "FTE ทั้งหมดในปี {$yearHintBE}" : 'FTE ทั้งหมดในระบบ',
+                    'table' => [
+                        'title' => $yearHintBE ? "FTE ทั้งหมด ปี {$yearHintBE}" : 'FTE ทั้งหมด',
+                        'headers' => ['ชื่อ', 'FTE รวม', 'จำนวนรายการ'],
+                        'fields' => ['name', 'total_fte', 'role_count'],
+                        'rows' => $rows->map(fn ($row) => [
+                            'name' => $row->name,
+                            'total_fte' => number_format((float)$row->total_fte, 4),
+                            'role_count' => (int)$row->role_count,
+                        ])->values(),
+                    ],
+                ]);
+            }
+
+            /** 0.7) Outputs ทั้งหมด */
+            if (Str::contains($t, ['outputs ทั้งหมด', 'output ทั้งหมด', 'ผลงานทั้งหมด', 'publication ทั้งหมด'])) {
+                if (!Schema::hasTable('outputs')) {
+                    return response()->json(['reply' => 'ยังไม่มีตาราง Outputs ในระบบ']);
+                }
+
+                $rows = DB::table('outputs')->select(['type', 'year'])->get()
+                    ->filter(function ($row) use ($yearHintBE) {
+                        if ($yearHintBE === null) return true;
+                        return $this->beIntFromText($row->year ?? null) === $yearHintBE;
+                    })
+                    ->groupBy(fn ($row) => trim((string)($row->type ?? 'ไม่ระบุ')) ?: 'ไม่ระบุ')
+                    ->map(fn ($group, $type) => ['type' => $type, 'count' => $group->count()])
+                    ->sortByDesc('count')
+                    ->values();
+
+                if ($rows->isEmpty()) {
+                    return response()->json([
+                        'reply' => $yearHintBE ? "ไม่พบ Outputs ในปี {$yearHintBE}" : 'ไม่พบ Outputs ในระบบ',
+                    ]);
+                }
+
+                return response()->json([
+                    'reply' => $yearHintBE ? "Outputs ทั้งหมดในปี {$yearHintBE}" : 'Outputs ทั้งหมดในระบบ',
+                    'table' => [
+                        'title' => $yearHintBE ? "Outputs ทั้งหมด ปี {$yearHintBE}" : 'Outputs ทั้งหมด',
+                        'headers' => ['ประเภท', 'จำนวน'],
+                        'fields' => ['type', 'count'],
+                        'rows' => $rows,
+                    ],
+                    'chart' => [
+                        'type' => 'bar',
+                        'labels' => $rows->pluck('type'),
+                        'datasets' => [[
+                            'label' => 'จำนวน',
+                            'data' => $rows->pluck('count'),
+                        ]],
+                        'options' => ['plugins' => ['legend' => ['display' => false]]],
+                    ],
+                ]);
+            }
+
+            /** 0.8) แนะนำคำสั่งทั้งหมดที่รองรับ */
+            if ($t === 'ทั้งหมด' || Str::contains($t, ['อะไรทั้งหมด', 'มีอะไรทั้งหมด'])) {
+                return response()->json([
+                    'reply' => 'คำสั่งแบบ "ทั้งหมด" ที่รองรับ เช่น โครงการทั้งหมด, ทุนทั้งหมด, ประเภททุนทั้งหมด, PI ทั้งหมด, Co-PI ทั้งหมด, Co-Research ทั้งหมด, Outputs ทั้งหมด, FTE ทั้งหมด, Back Office ทั้งหมด',
                 ]);
             }
 
@@ -1198,37 +3106,110 @@ class AgentController extends Controller
                 $query = trim(Str::of($prompt)->replaceFirst('ค้นหา:','')->replaceFirst('ค้นหา :',''));
                 $pids  = $this->robustProjectCandidates($query, $yearHintBE);
                 $rows  = $this->hydrateProjectsWithJoins($pids);
-
-                // คืนลิสต์สั้นๆ เพื่อให้ผู้ใช้ “คลิกเลือก”
-                $list = collect($rows)->map(function($r){
-                    return [
-                        'id'          => $r['project_code'],
-                        'project'     => $r['project_name'],
-                        'year_be'     => $r['start_year'],
-                        'pi'          => $r['pi_name'],
-                        'funding'     => $r['funding_type'].' / '.$r['funding_source'],
-                        'href'        => $r['href'],
-                    ];
-                })->sortByDesc('year_be')->values();
-
-                return response()->json([
-                    'reply' => 'ผลการค้นหา (คลิกเพื่อดูรายละเอียด)',
-                    'list'  => $list,
-                ]);
+                if (empty($rows)) {
+                    $nearestRows = $this->hydrateProjectsWithJoins(
+                        $this->approximateProjectTitleCandidates($query, $yearHintBE, 5, 0.30)
+                    );
+                    if (!empty($nearestRows)) {
+                        return response()->json(
+                            $wantsPdf
+                                ? $this->buildProjectPdfListResponse(
+                                    $yearHintBE
+                                        ? "ไม่พบโครงการที่ตรงกับ “{$query}” ในปี {$yearHintBE} แต่ใกล้เคียงที่สุดคือ (กดเพื่อเปิด PDF)"
+                                        : "ไม่พบโครงการที่ตรงกับ “{$query}” แต่ใกล้เคียงที่สุดคือ (กดเพื่อเปิด PDF)",
+                                    $nearestRows
+                                )
+                                : $this->buildProjectListResponse(
+                                    $yearHintBE
+                                        ? "ไม่พบโครงการที่ตรงกับ “{$query}” ในปี {$yearHintBE} แต่ใกล้เคียงที่สุดคือ"
+                                        : "ไม่พบโครงการที่ตรงกับ “{$query}” แต่ใกล้เคียงที่สุดคือ",
+                                    $nearestRows
+                                )
+                        );
+                    }
+                    return response()->json([
+                        'reply' => $yearHintBE
+                            ? "ไม่พบโครงการที่ตรงกับ “{$query}” ในปี {$yearHintBE}"
+                            : "ไม่พบโครงการที่ตรงกับ “{$query}”",
+                    ]);
+                }
+                return response()->json(
+                    $wantsPdf
+                        ? $this->buildProjectPdfListResponse('ผลการค้นหา (คลิกเพื่อเปิด PDF)', $rows)
+                        : $this->buildProjectListResponse('ผลการค้นหา (คลิกเพื่อดูรายละเอียด)', $rows)
+                );
             }
 
             /* ===== Hybrid Pack (LLM) — เผื่อคำถามอื่น ๆ ===== */
-            $pids = $this->robustProjectCandidates($prompt, $yearHintBE);
-            $taskIds = $this->robustBackOfficeTaskCandidates($prompt, $yearHintBE);
+            $personPrompt = $this->personQueryLabel($prompt);
+            $personProjectIds = $this->robustPersonProjectCandidates($personPrompt, $yearHintBE);
+            $personTaskIds = $this->robustPersonBackOfficeTaskCandidates($personPrompt, $yearHintBE);
+            $isLikelyPersonQuery = !empty($personProjectIds) || !empty($personTaskIds);
+            $personSearchTokens = $this->personQueryTokens($personPrompt);
+            $projectPrompt = $this->projectQueryLabel($prompt);
+            $projectSearchTokens = $this->projectQueryTokens($projectPrompt);
+            $hasSpecificProjectTerms = collect($projectSearchTokens)->contains(function ($token) {
+                return !preg_match('/^(25\d{2}|20\d{2})$/u', trim((string)$token));
+            });
+            $likelyProjectTitleIntent = !$isLikelyPersonQuery
+                && $hasSpecificProjectTerms
+                && count($projectSearchTokens) <= 6
+                && mb_strlen($projectPrompt, 'UTF-8') <= 120
+                && !Str::contains($t, ['งบ', 'budget', 'fte', 'outputs', 'output', 'irb', 'back office', 'งานนอกโครงการ', 'จำนวน', 'รวม', 'เปรียบเทียบ', 'สถานะ']);
+            $projectTitleIds = !$isLikelyPersonQuery
+                ? $this->robustProjectTitleCandidates($projectPrompt, $yearHintBE)
+                : [];
+            $projectApproximateIds = (!$isLikelyPersonQuery && empty($projectTitleIds) && $likelyProjectTitleIntent)
+                ? $this->approximateProjectTitleCandidates($projectPrompt, $yearHintBE, 6, 0.33)
+                : [];
+            $isLikelyProjectTitleQuery = !$isLikelyPersonQuery && !empty($projectTitleIds);
+            $hasApproximateProjectTitleMatches = !$isLikelyPersonQuery && empty($projectTitleIds) && !empty($projectApproximateIds);
+            $likelyPersonNameIntent = !$isLikelyPersonQuery
+                && !$isLikelyProjectTitleQuery
+                && !$hasApproximateProjectTitleMatches
+                && !empty($personSearchTokens)
+                && count($personSearchTokens) <= 4
+                && mb_strlen($personPrompt, 'UTF-8') <= 80
+                && !Str::startsWith($t, 'ค้นหา:')
+                && !Str::startsWith($t, 'ค้นหา :')
+                && !Str::contains($t, ['หาโครงการ', 'หาโปรเจค', 'งบ', 'budget', 'fte', 'outputs', 'output', 'irb', 'back office', 'งานนอกโครงการ', 'จำนวน', 'รวม', 'เปรียบเทียบ', 'สถานะ']);
+            $approximatePersonMatches = $likelyPersonNameIntent
+                ? $this->approximatePersonCandidates($personPrompt, 5, 0.42)
+                : [];
+            $hasApproximatePersonMatches = !$isLikelyPersonQuery && !empty($approximatePersonMatches);
+
+            if ($isLikelyPersonQuery) {
+                $pids = $personProjectIds;
+            } elseif ($isLikelyProjectTitleQuery) {
+                $pids = $projectTitleIds;
+            } elseif ($hasApproximateProjectTitleMatches) {
+                $pids = $projectApproximateIds;
+            } else {
+                $pids = $this->robustProjectCandidates($prompt, $yearHintBE);
+            }
+            $taskIds = $isLikelyPersonQuery
+                ? $personTaskIds
+                : $this->robustBackOfficeTaskCandidates($prompt, $yearHintBE);
 
             // FIX 4: หากการค้นหาแบบ Fuzzy Search (Robust Search) ล้มเหลว 
             // แต่มีการระบุปีในคำถาม ให้ดึง Project ID ทั้งหมดในปีนั้นแทน
-            if (empty($pids) && $yearHintBE !== null) {
+            if (
+                !$isLikelyPersonQuery &&
+                !$hasSpecificProjectTerms &&
+                empty($pids) &&
+                $yearHintBE !== null
+            ) {
                 // ดึง Project IDs ทั้งหมดที่ตรงกับปีที่ระบุโดยตรง
                 $pids = Project::where('start_year', (string)$yearHintBE)->pluck('id')->all();
             }
 
-            if (empty($taskIds) && $yearHintBE !== null && Schema::hasTable('back_office_tasks')) {
+            if (
+                !$isLikelyPersonQuery &&
+                !$likelyPersonNameIntent &&
+                empty($taskIds) &&
+                $yearHintBE !== null &&
+                Schema::hasTable('back_office_tasks')
+            ) {
                 $taskIds = BackOfficeTask::query()
                     ->orderByDesc('created_at')
                     ->limit(250)
@@ -1236,17 +3217,42 @@ class AgentController extends Controller
                     ->all();
             }
 
-            $backOfficeRows = $this->hydrateBackOfficeTasks($taskIds, $yearHintBE);
+            $backOfficeRows = $isLikelyPersonQuery
+                ? $this->hydratePersonBackOfficeContributions($personPrompt, $taskIds, $yearHintBE)
+                : $this->hydrateBackOfficeTasks($taskIds, $yearHintBE);
+
+            $hasCustomDateRange = ($dateRange['from'] ?? null) instanceof Carbon && ($dateRange['to'] ?? null) instanceof Carbon;
+            $hasFteIntent = Str::contains($t, ['fte', 'เอฟทีอี']);
+            if ($isLikelyPersonQuery && ($hasFteIntent || $hasCustomDateRange || $wantsPdf)) {
+                $personFteResponse = $this->buildPersonFteWindowResponse($personPrompt, $yearHintBE, $dateRange, $wantsPdf);
+                if ($personFteResponse !== null) {
+                    return response()->json($personFteResponse);
+                }
+            }
 
             // ************************************************
             // ✅ FIX 5: CHECK FOR GENERAL KNOWLEDGE QUESTION
             // ************************************************
             $hasRelevantPIDs = !empty($pids);
             $hasRelevantBackOffice = !empty($backOfficeRows);
+
+            if (!$hasRelevantPIDs && !$hasRelevantBackOffice && $hasApproximatePersonMatches) {
+                return response()->json($this->buildApproximatePersonResponse($personPrompt, $approximatePersonMatches, $yearHintBE));
+            }
             
             // ถ้าไม่พบโครงการที่เกี่ยวข้อง (และไม่มีปีระบุที่ใช้เป็นตัวกรองได้) 
             // ให้ถือว่าเป็นคำถามความรู้ทั่วไป และข้ามการส่ง Data Pack ไป
             if (!$hasRelevantPIDs && !$hasRelevantBackOffice && $yearHintBE === null) {
+                if ($likelyProjectTitleIntent) {
+                    return response()->json([
+                        'reply' => "ไม่พบโครงการที่ตรงกับ “{$projectPrompt}”",
+                    ]);
+                }
+                if ($likelyPersonNameIntent) {
+                    return response()->json([
+                        'reply' => "ไม่พบข้อมูลของ “{$personPrompt}” ในระบบ",
+                    ]);
+                }
                 // Treat as General Knowledge Question
                 $generalPrompt = "คุณคือผู้ช่วย AI ที่มีความรู้กว้างขวาง โปรดตอบคำถามนี้ตามหลักการและความรู้ทั่วไปที่ทันสมัย ตอบเป็นภาษาไทย กระชับ 8-12 บรรทัด คำถาม: {$prompt}";
                 $g = $this->askGeminiRobust($generalPrompt);
@@ -1263,6 +3269,73 @@ class AgentController extends Controller
             // สิ้นสุดส่วน FIX 5: ถ้าถึงจุดนี้ แสดงว่าต้องใช้ข้อมูลในการวิเคราะห์ต่อ
 
             $rows = $this->hydrateProjectsWithJoins($pids);
+            if (
+                !$isLikelyPersonQuery &&
+                !$isLikelyProjectTitleQuery &&
+                $yearHintBE !== null &&
+                $hasSpecificProjectTerms &&
+                empty($rows) &&
+                empty($backOfficeRows)
+            ) {
+                return response()->json([
+                    'reply' => "ไม่พบโครงการที่ตรงกับ “{$projectPrompt}” ในปี {$yearHintBE}",
+                ]);
+            }
+            if ($isLikelyProjectTitleQuery && !empty($rows) && empty($backOfficeRows)) {
+                $reply = count($rows) === 1
+                    ? "พบโครงการที่ตรงกับ “{$projectPrompt}” (คลิกเพื่อดูรายละเอียด)"
+                    : "พบโครงการที่ใกล้เคียงกับ “{$projectPrompt}” ".count($rows)." รายการ (คลิกเพื่อดูรายละเอียด)";
+                return response()->json(
+                    $wantsPdf
+                        ? $this->buildProjectPdfListResponse(str_replace('ดูรายละเอียด', 'เปิด PDF', $reply), $rows)
+                        : $this->buildProjectListResponse($reply, $rows)
+                );
+            }
+            if ($hasApproximateProjectTitleMatches && !empty($rows) && empty($backOfficeRows)) {
+                return response()->json(
+                    $wantsPdf
+                        ? $this->buildProjectPdfListResponse(
+                            $yearHintBE
+                                ? "ไม่พบโครงการที่ตรงกับ “{$projectPrompt}” ในปี {$yearHintBE} แต่ใกล้เคียงที่สุดคือ (กดเพื่อเปิด PDF)"
+                                : "ไม่พบโครงการที่ตรงกับ “{$projectPrompt}” แต่ใกล้เคียงที่สุดคือ (กดเพื่อเปิด PDF)",
+                            $rows
+                        )
+                        : $this->buildProjectListResponse(
+                            $yearHintBE
+                                ? "ไม่พบโครงการที่ตรงกับ “{$projectPrompt}” ในปี {$yearHintBE} แต่ใกล้เคียงที่สุดคือ"
+                                : "ไม่พบโครงการที่ตรงกับ “{$projectPrompt}” แต่ใกล้เคียงที่สุดคือ",
+                            $rows
+                        )
+                );
+            }
+            if (
+                !$isLikelyPersonQuery &&
+                $yearHintBE !== null &&
+                $likelyPersonNameIntent &&
+                !$hasApproximatePersonMatches &&
+                empty($rows) &&
+                empty($backOfficeRows)
+            ) {
+                return response()->json([
+                    'reply' => "ไม่พบข้อมูลของ “{$personPrompt}” ในปี {$yearHintBE}",
+                ]);
+            }
+            if ($isLikelyPersonQuery && empty($rows) && empty($backOfficeRows)) {
+                return response()->json([
+                    'reply' => $yearHintBE
+                        ? "ไม่พบข้อมูลของ “{$personPrompt}” ในปี {$yearHintBE}"
+                        : "ไม่พบข้อมูลของ “{$personPrompt}” ในระบบ",
+                ]);
+            }
+            if ($isLikelyPersonQuery && !empty($rows) && !empty($backOfficeRows)) {
+                return response()->json($this->buildPersonCombinedResponse($personPrompt, $rows, $backOfficeRows));
+            }
+            if ($isLikelyPersonQuery && !empty($rows) && empty($backOfficeRows)) {
+                return response()->json($this->buildPersonProjectResponse($personPrompt, $rows));
+            }
+            if ($isLikelyPersonQuery && empty($rows) && !empty($backOfficeRows)) {
+                return response()->json($this->buildPersonCombinedResponse($personPrompt, [], $backOfficeRows));
+            }
             if (empty($rows) && empty($backOfficeRows)) {
                 $rows = $this->makeSkeletonIfEmpty($rows, $prompt);
             }

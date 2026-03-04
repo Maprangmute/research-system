@@ -1,5 +1,181 @@
 @php
     $aiChatStorageKey = 'sihp-ai-chat:v2:user:' . (auth()->id() ?? 'guest');
+    $aiChatProjectSuggestions = cache()->remember('sihp-ai-chat:project-suggestions:v1', now()->addMinutes(30), function () {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('projects')) return [];
+
+        return \Illuminate\Support\Facades\DB::table('projects')
+            ->select(['id', 'project_name_th', 'project_name_en', 'project_code', 'pi_name', 'start_year'])
+            ->where(function ($query) {
+                $query->whereNotNull('project_name_th')->where('project_name_th', '!=', '')
+                    ->orWhere(function ($subQuery) {
+                        $subQuery->whereNotNull('project_name_en')->where('project_name_en', '!=', '');
+                    });
+            })
+            ->orderByDesc('start_year')
+            ->orderByDesc('id')
+            ->limit(320)
+            ->get()
+            ->map(function ($project, $index) {
+                $title = trim((string)($project->project_name_th ?: $project->project_name_en ?: ''));
+                if ($title === '') return null;
+
+                $englishTitle = trim((string)($project->project_name_en ?? ''));
+                $projectCode = trim((string)($project->project_code ?? ''));
+                $piName = trim((string)($project->pi_name ?? ''));
+                $year = trim((string)($project->start_year ?? ''));
+                $aliases = array_values(array_filter(array_unique([
+                    $title,
+                    preg_replace('/\s+/u', '', $title),
+                    $englishTitle,
+                    preg_replace('/\s+/u', '', $englishTitle),
+                    $projectCode,
+                ])));
+
+                $metaParts = array_filter([
+                    $year !== '' ? "ปี {$year}" : null,
+                    $piName !== '' ? "PI {$piName}" : null,
+                ]);
+
+                return [
+                    'text' => $title,
+                    'label' => \Illuminate\Support\Str::limit($title, 120, '...'),
+                    'category' => 'โครงการ',
+                    'kind' => 'project',
+                    'priority' => max(96, 160 - (int) floor($index / 8)),
+                    'aliases' => array_slice($aliases, 0, 6),
+                    'featured' => false,
+                    'meta' => implode(' / ', $metaParts),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    });
+    $aiChatPersonSuggestions = cache()->remember('sihp-ai-chat:person-suggestions:v1', now()->addMinutes(30), function () {
+        $normalizeKey = static function ($value): string {
+            $value = trim((string) $value);
+            if ($value === '') return '';
+            $value = preg_replace('/\s+/u', '', $value);
+            return mb_strtolower($value, 'UTF-8');
+        };
+
+        $stripPrefix = static function ($value): string {
+            $value = trim((string) $value);
+            if ($value === '') return '';
+
+            $pattern = '/^(?:นายแพทย์หญิง|นายแพทย์|แพทย์หญิง|แพทย์|ทันตแพทย์หญิง|ทันตแพทย์|เภสัชกรหญิง|เภสัชกร|'
+                . 'ศ\.คลินิก|ศ\.นพ\.|ศ\.พญ\.|รศ\.นพ\.|รศ\.พญ\.|ผศ\.นพ\.|ผศ\.พญ\.|'
+                . 'ศ\.|รศ\.|ผศ\.|อ\.|ดร\.?|ภกญ\.|ภญ\.|ภก\.|พญ\.|นพ\.|ทพ\.ญ\.|ทพ\.|นาย|นางสาว|นาง)\s*/u';
+
+            do {
+                $next = preg_replace($pattern, '', $value);
+                if ($next === null || $next === $value) break;
+                $value = trim($next);
+            } while ($value !== '');
+
+            return trim(preg_replace('/\s+/u', ' ', $value));
+        };
+
+        $invalidKeys = array_filter(array_map($normalizeKey, [
+            '',
+            '-',
+            'ไม่ระบุ',
+            'n/a',
+            'na',
+            'unknown',
+        ]));
+
+        $peopleMap = [];
+
+        $pushPerson = static function ($rawName, string $source, int $count = 1) use (&$peopleMap, $normalizeKey, $stripPrefix, $invalidKeys) {
+            $rawName = trim((string) $rawName);
+            if ($rawName === '') return;
+
+            $queryName = $stripPrefix($rawName);
+            if ($queryName === '') $queryName = $rawName;
+
+            $queryKey = $normalizeKey($queryName);
+            if ($queryKey === '' || in_array($queryKey, $invalidKeys, true)) return;
+            if (mb_strlen($queryName, 'UTF-8') < 2) return;
+
+            $parts = preg_split('/\s+/u', $queryName) ?: [];
+            $aliases = array_values(array_filter(array_unique([
+                $rawName,
+                $queryName,
+                preg_replace('/\s+/u', '', $rawName),
+                preg_replace('/\s+/u', '', $queryName),
+                $parts[0] ?? null,
+                count($parts) > 1 ? end($parts) : null,
+            ])));
+
+            if (!isset($peopleMap[$queryKey])) {
+                $peopleMap[$queryKey] = [
+                    'text' => $queryName,
+                    'label' => $rawName,
+                    'aliases' => $aliases,
+                    'sources' => [$source => true],
+                    'hits' => max(1, $count),
+                ];
+                return;
+            }
+
+            $peopleMap[$queryKey]['hits'] += max(1, $count);
+            $peopleMap[$queryKey]['sources'][$source] = true;
+            $peopleMap[$queryKey]['aliases'] = array_values(array_filter(array_unique(array_merge(
+                $peopleMap[$queryKey]['aliases'],
+                $aliases
+            ))));
+
+            if (mb_strlen($rawName, 'UTF-8') > mb_strlen($peopleMap[$queryKey]['label'], 'UTF-8')) {
+                $peopleMap[$queryKey]['label'] = $rawName;
+            }
+        };
+
+        $loadGroupedNames = static function (string $table, string $column, string $source, int $limit = 180) use ($pushPerson) {
+            if (!\Illuminate\Support\Facades\Schema::hasTable($table)) return;
+
+            $rows = \Illuminate\Support\Facades\DB::table($table)
+                ->selectRaw("{$column} as value, COUNT(*) as aggregate_count")
+                ->whereNotNull($column)
+                ->where($column, '!=', '')
+                ->groupBy($column)
+                ->orderByRaw('COUNT(*) DESC')
+                ->limit($limit)
+                ->get();
+
+            foreach ($rows as $row) {
+                $pushPerson($row->value ?? '', $source, (int) ($row->aggregate_count ?? 1));
+            }
+        };
+
+        $loadGroupedNames('projects', 'pi_name', 'PI', 220);
+        $loadGroupedNames('fte_roles', 'name', 'FTE', 220);
+        $loadGroupedNames('copis', 'name', 'Co-PI', 180);
+        $loadGroupedNames('co_research', 'name', 'Co-Research', 180);
+        $loadGroupedNames('back_office_entries', 'person_name', 'Back Office', 260);
+
+        return collect($peopleMap)
+            ->sortByDesc(fn ($person) => (($person['hits'] ?? 0) * 10) + (count($person['sources'] ?? []) * 12))
+            ->take(320)
+            ->map(function ($person) {
+                $sources = array_keys($person['sources'] ?? []);
+                $priority = 128 + min(42, (int) ($person['hits'] ?? 0)) + (count($sources) * 8);
+
+                return [
+                    'text' => $person['text'] ?? '',
+                    'label' => $person['label'] ?? ($person['text'] ?? ''),
+                    'category' => 'บุคลากร',
+                    'kind' => 'person',
+                    'priority' => $priority,
+                    'aliases' => array_values(array_slice($person['aliases'] ?? [], 0, 8)),
+                    'featured' => false,
+                    'meta' => implode(' / ', array_slice($sources, 0, 3)),
+                ];
+            })
+            ->filter(fn ($person) => !empty($person['text']))
+            ->values()
+            ->all();
+    });
 @endphp
 
 <style>
@@ -189,43 +365,61 @@
     }
 
     #appAiChatSuggestPanel {
-        margin: 0.75rem 1rem 0;
-        padding: 0.8rem;
-        border: 1px solid rgba(226, 232, 240, 0.96);
-        border-radius: 1rem;
-        background: #f8fafc;
-    }
-
-    #appAiChatSuggestPanel[hidden] {
-        display: none;
+        margin: 0.65rem 1rem 0;
+        overflow: hidden;
     }
 
     .app-ai-chat__suggest-label {
-        font-size: 0.68rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: #64748b;
+        display: none;
     }
 
     .app-ai-chat__suggest-grid {
-        margin-top: 0.65rem;
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        max-height: 9.5rem;
-        overflow-y: auto;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.55rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0 0 0.25rem;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(148, 163, 184, 0.7) transparent;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .app-ai-chat__suggest-grid::-webkit-scrollbar {
+        height: 0.35rem;
+    }
+
+    .app-ai-chat__suggest-grid::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .app-ai-chat__suggest-grid::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.65);
+        border-radius: 999px;
+    }
+
+    .app-ai-chat__suggest-grid::after {
+        content: '';
+        flex: 0 0 0.2rem;
     }
 
     .app-ai-chat__suggest {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
         border: 1px solid rgba(203, 213, 225, 0.92);
-        background: #ffffff;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
         color: #0f172a;
         border-radius: 999px;
-        padding: 0.5rem 0.8rem;
+        padding: 0.52rem 0.9rem;
         font-size: 0.75rem;
-        line-height: 1.35;
+        line-height: 1.2;
         text-align: left;
+        white-space: nowrap;
+        scroll-snap-align: start;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
         transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
     }
 
@@ -233,6 +427,87 @@
         background: #ecfeff;
         border-color: #67e8f9;
         transform: translateY(-1px);
+    }
+
+    .app-ai-chat__suggest-text {
+        display: inline-block;
+    }
+
+    .app-ai-chat__suggest-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0.5rem;
+        padding: 0.16rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(15, 118, 110, 0.08);
+        color: #0f766e;
+        font-size: 0.67rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .app-ai-chat__predict {
+        margin-top: 0.6rem;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 1rem;
+        background: rgba(248, 250, 252, 0.96);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+    }
+
+    .app-ai-chat__predict[hidden] {
+        display: none;
+    }
+
+    .app-ai-chat__predict-head {
+        padding: 0.65rem 0.8rem 0.4rem;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    .app-ai-chat__predict-list {
+        display: grid;
+        gap: 0.28rem;
+        max-height: 13.5rem;
+        overflow-y: auto;
+        padding: 0 0.45rem 0.5rem;
+    }
+
+    .app-ai-chat__predict-item {
+        display: grid;
+        gap: 0.18rem;
+        width: 100%;
+        border: 1px solid transparent;
+        border-radius: 0.85rem;
+        background: transparent;
+        padding: 0.58rem 0.72rem;
+        text-align: left;
+        color: #0f172a;
+        transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .app-ai-chat__predict-item:hover,
+    .app-ai-chat__predict-item.is-active {
+        background: #ffffff;
+        border-color: #bae6fd;
+        transform: translateY(-1px);
+    }
+
+    .app-ai-chat__predict-item-title {
+        font-size: 0.79rem;
+        font-weight: 700;
+        line-height: 1.35;
+        color: #0f172a;
+    }
+
+    .app-ai-chat__predict-item-meta {
+        font-size: 0.7rem;
+        line-height: 1.35;
+        color: #64748b;
     }
 
     #appAiChatBody {
@@ -306,12 +581,16 @@
 
     .app-ai-chat__list-item {
         display: block;
+        width: 100%;
         border: 1px solid rgba(226, 232, 240, 0.95);
         border-radius: 0.95rem;
         background: #f8fafc;
         padding: 0.75rem 0.85rem;
         color: inherit;
         text-decoration: none;
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
     }
 
     .app-ai-chat__list-item:hover {
@@ -333,10 +612,11 @@
 
     .app-ai-chat__table-wrap {
         margin-top: 0.8rem;
-        overflow-x: auto;
+        overflow: visible;
         border: 1px solid rgba(226, 232, 240, 0.95);
         border-radius: 1rem;
         background: #ffffff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
     }
 
     .app-ai-chat__table-title {
@@ -347,10 +627,11 @@
     }
 
     .app-ai-chat__table {
-        width: 100%;
-        min-width: 100%;
+        width: max-content;
+        min-width: max(100%, 42rem);
         border-collapse: collapse;
         font-size: 0.74rem;
+        table-layout: auto;
     }
 
     .app-ai-chat__table thead {
@@ -365,12 +646,59 @@
         border-top: 1px solid rgba(226, 232, 240, 0.9);
         color: #334155;
         white-space: normal;
+        word-break: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.45;
+        min-width: 6rem;
     }
 
     .app-ai-chat__table th {
         border-top: none;
         font-weight: 800;
         color: #0f172a;
+        white-space: nowrap;
+        background: #f8fafc;
+    }
+
+    .app-ai-chat__table tbody tr:nth-child(even) {
+        background: rgba(248, 250, 252, 0.72);
+    }
+
+    .app-ai-chat__table .app-ai-chat__col--category,
+    .app-ai-chat__table .app-ai-chat__col--type,
+    .app-ai-chat__table .app-ai-chat__col--status {
+        min-width: 5.2rem;
+    }
+
+    .app-ai-chat__table .app-ai-chat__col--project,
+    .app-ai-chat__table .app-ai-chat__col--project_name,
+    .app-ai-chat__table .app-ai-chat__col--task,
+    .app-ai-chat__table .app-ai-chat__col--title {
+        min-width: 14rem;
+    }
+
+    .app-ai-chat__table .app-ai-chat__col--pi,
+    .app-ai-chat__table .app-ai-chat__col--owner,
+    .app-ai-chat__table .app-ai-chat__col--name {
+        min-width: 7.5rem;
+    }
+
+    .app-ai-chat__table .app-ai-chat__col--budget,
+    .app-ai-chat__table .app-ai-chat__col--fte,
+    .app-ai-chat__table .app-ai-chat__col--hours,
+    .app-ai-chat__table .app-ai-chat__col--year,
+    .app-ai-chat__table .app-ai-chat__col--year_be,
+    .app-ai-chat__table .app-ai-chat__col--count {
+        min-width: 6.25rem;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .app-ai-chat__table .app-ai-chat__col--href,
+    .app-ai-chat__table .app-ai-chat__col--link {
+        min-width: 4.5rem;
+        text-align: center;
+        white-space: nowrap;
     }
 
     .app-ai-chat__table a {
@@ -380,6 +708,87 @@
 
     .app-ai-chat__table a:hover {
         text-decoration: underline;
+    }
+
+    .app-ai-chat__table-wrap--stacked {
+        overflow: visible;
+        border: none;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table {
+        width: 100%;
+        min-width: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table thead {
+        display: none;
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table tbody {
+        display: grid;
+        gap: 0.8rem;
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table tbody tr {
+        display: block;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        border-radius: 1rem;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+        padding: 0.15rem 0.85rem;
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table tbody tr:nth-child(even) {
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table td {
+        display: grid;
+        grid-template-columns: minmax(5.1rem, 6.8rem) minmax(0, 1fr);
+        gap: 0.6rem;
+        min-width: 0;
+        width: 100%;
+        border-top: 1px solid rgba(226, 232, 240, 0.78);
+        padding: 0.58rem 0;
+        text-align: left;
+        align-items: start;
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table td:first-child {
+        border-top: none;
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table td::before {
+        content: attr(data-label);
+        font-size: 0.69rem;
+        font-weight: 800;
+        line-height: 1.35;
+        color: #64748b;
+        text-transform: none;
+        letter-spacing: 0.01em;
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--project,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--project_name,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--task,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--title {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--budget,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--fte,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--hours,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--year,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--year_be,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--count,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--href,
+    .app-ai-chat__table-wrap--stacked .app-ai-chat__table .app-ai-chat__col--link {
+        text-align: left;
     }
 
     .app-ai-chat__chart {
@@ -512,6 +921,58 @@
             padding: 0 0.65rem;
         }
 
+        #appAiChatSuggestPanel {
+            margin-top: 0.55rem;
+        }
+
+        .app-ai-chat__suggest-grid {
+            gap: 0.45rem;
+            padding-bottom: 0.2rem;
+        }
+
+        .app-ai-chat__suggest {
+            padding: 0.48rem 0.78rem;
+            font-size: 0.72rem;
+        }
+
+        .app-ai-chat__suggest-badge {
+            margin-left: 0.42rem;
+            font-size: 0.63rem;
+        }
+
+        .app-ai-chat__predict {
+            margin-top: 0.52rem;
+        }
+
+        .app-ai-chat__predict-head {
+            padding: 0.58rem 0.72rem 0.34rem;
+            font-size: 0.64rem;
+        }
+
+        .app-ai-chat__predict-list {
+            max-height: 11.5rem;
+            padding: 0 0.38rem 0.42rem;
+        }
+
+        .app-ai-chat__predict-item {
+            padding: 0.52rem 0.64rem;
+        }
+
+        .app-ai-chat__predict-item-title {
+            font-size: 0.75rem;
+        }
+
+        .app-ai-chat__table {
+            min-width: max(100%, 36rem);
+        }
+
+        .app-ai-chat__table .app-ai-chat__col--project,
+        .app-ai-chat__table .app-ai-chat__col--project_name,
+        .app-ai-chat__table .app-ai-chat__col--task,
+        .app-ai-chat__table .app-ai-chat__col--title {
+            min-width: 12rem;
+        }
+
         .app-ai-chat__message--user {
             margin-left: 1.2rem;
         }
@@ -557,7 +1018,6 @@
                     <div class="app-ai-chat__subtitle">ถามเรื่องโครงการ งบประมาณ FTE Outputs IRB หรือ งานนอกโครงการ ได้จากทุกหน้าของระบบ</div>
                 </div>
                 <div class="app-ai-chat__header-actions">
-                    <button type="button" id="appAiChatSuggestToggle" class="app-ai-chat__tool">คำถามแนะนำ</button>
                     <button type="button" id="appAiChatClear" class="app-ai-chat__tool">ล้าง</button>
                     <button type="button" id="appAiChatClose" class="app-ai-chat__close" aria-label="ปิดหน้าต่างแชท">✕</button>
                 </div>
@@ -566,14 +1026,7 @@
 
         <div id="appAiChatSuggestPanel" hidden>
             <div class="app-ai-chat__suggest-label">เลือกคำถามตัวอย่างได้โดยไม่บังแชทหลัก</div>
-            <div class="app-ai-chat__suggest-grid">
-                <button type="button" class="app-ai-chat__suggest" data-suggestion="งบประมาณรวมต่อปี 2568">งบประมาณรวมต่อปี 2568</button>
-                <button type="button" class="app-ai-chat__suggest" data-suggestion="FTE ปี 2568 เกิน 1">FTE ปี 2568 เกิน 1</button>
-                <button type="button" class="app-ai-chat__suggest" data-suggestion="Outputs ปีนี้แยกประเภท">Outputs ปีนี้แยกประเภท</button>
-                <button type="button" class="app-ai-chat__suggest" data-suggestion="IRB ใกล้หมดอายุ 30 วัน">IRB ใกล้หมดอายุ 30 วัน</button>
-                <button type="button" class="app-ai-chat__suggest" data-suggestion="สรุป Back Office ปีนี้">สรุป Back Office ปีนี้</button>
-                <button type="button" class="app-ai-chat__suggest" data-suggestion="งานนอกโครงการของทีมปีนี้">งานนอกโครงการของทีมปีนี้</button>
-            </div>
+            <div id="appAiChatSuggestGrid" class="app-ai-chat__suggest-grid"></div>
         </div>
 
         <div id="appAiChatBody"></div>
@@ -582,10 +1035,11 @@
             @csrf
             <div class="app-ai-chat__composer">
                 <textarea id="appAiChatInput" rows="1"
-                    placeholder="พิมพ์คำถาม เช่น สรุป Back Office ปีนี้ หรือ งบประมาณรวมปีล่าสุด"></textarea>
+                    placeholder="พิมพ์คำถามมได้เลย :D"></textarea>
                 <button type="submit" class="app-ai-chat__send">ส่ง</button>
             </div>
-            <div class="app-ai-chat__note">Enter ส่งข้อความ, Shift+Enter ขึ้นบรรทัดใหม่</div>
+            <div id="appAiChatPredict" class="app-ai-chat__predict" hidden></div>
+            <div class="app-ai-chat__note">Enter ส่งข้อความ, Shift+Enter ขึ้นบรรทัดใหม่, Tab รับคำแนะนำ</div>
         </form>
     </section>
 </div>
@@ -598,6 +1052,8 @@
 
         const root = document.getElementById('appAiChatRoot');
         if (!root) return;
+        const projectSuggestionSeed = @json($aiChatProjectSuggestions, JSON_UNESCAPED_UNICODE);
+        const personSuggestionSeed = @json($aiChatPersonSuggestions, JSON_UNESCAPED_UNICODE);
 
         const endpoint = root.dataset.endpoint;
         const storageKey = root.dataset.storageKey;
@@ -615,15 +1071,14 @@
         const bubbleClose = document.getElementById('appAiChatBubbleClose');
         const closeBtn = document.getElementById('appAiChatClose');
         const clearBtn = document.getElementById('appAiChatClear');
-        const suggestToggle = document.getElementById('appAiChatSuggestToggle');
         const suggestPanel = document.getElementById('appAiChatSuggestPanel');
-        const suggestButtons = Array.from(root.querySelectorAll('[data-suggestion]'));
+        const suggestGrid = document.getElementById('appAiChatSuggestGrid');
+        const predictBox = document.getElementById('appAiChatPredict');
         const dashboardFabStack = document.getElementById('dashboardFabStack');
 
         const defaultState = {
             messages: [],
             draft: '',
-            suggestionsOpen: false,
             bubbleDismissed: false,
         };
 
@@ -632,7 +1087,6 @@
         const cloneState = () => ({
             messages: [],
             draft: '',
-            suggestionsOpen: false,
             bubbleDismissed: false,
         });
 
@@ -693,6 +1147,823 @@
             input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
         };
 
+        const normalizeSuggestText = (value) => String(value ?? '')
+            .toLowerCase()
+            .normalize('NFKC')
+            .replace(/\s+/gu, ' ')
+            .trim();
+
+        const squashSuggestText = (value) => normalizeSuggestText(value).replace(/\s+/gu, '');
+
+        const bangkokYearCE = (() => {
+            try {
+                const yearPart = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'Asia/Bangkok',
+                    year: 'numeric'
+                }).formatToParts(new Date()).find((part) => part.type === 'year');
+                return Number(yearPart?.value) || new Date().getFullYear();
+            } catch (error) {
+                return new Date().getFullYear();
+            }
+        })();
+
+        const currentYearBE = bangkokYearCE + 543;
+        const previousYearBE = currentYearBE - 1;
+        const twoYearsAgoBE = currentYearBE - 2;
+
+        const createSuggestion = (text, options = {}) => ({
+            text: String(text ?? '').trim(),
+            label: String(options.label ?? text ?? '').trim(),
+            category: String(options.category ?? 'ทั่วไป').trim(),
+            kind: String(options.kind ?? '').trim(),
+            priority: Number(options.priority ?? 0),
+            aliases: Array.isArray(options.aliases) ? options.aliases.filter(Boolean) : [],
+            featured: Boolean(options.featured),
+            meta: String(options.meta ?? '').trim(),
+            yearBe: Number(options.yearBe ?? 0) || null,
+        });
+
+        const dedupeSuggestions = (items) => {
+            const map = new Map();
+            items.forEach((item) => {
+                if (!item?.text) return;
+                const key = squashSuggestText(item.text);
+                const existing = map.get(key);
+                if (!existing || (item.priority || 0) > (existing.priority || 0)) {
+                    map.set(key, item);
+                }
+            });
+            return Array.from(map.values());
+        };
+
+        const levenshteinDistanceLimited = (left, right, maxDistance = 2) => {
+            const leftChars = Array.from(String(left ?? ''));
+            const rightChars = Array.from(String(right ?? ''));
+            const leftLength = leftChars.length;
+            const rightLength = rightChars.length;
+
+            if (!leftLength) return rightLength;
+            if (!rightLength) return leftLength;
+            if (Math.abs(leftLength - rightLength) > maxDistance) return maxDistance + 1;
+
+            let previousRow = Array.from({
+                length: rightLength + 1
+            }, (_, index) => index);
+
+            for (let leftIndex = 1; leftIndex <= leftLength; leftIndex += 1) {
+                const currentRow = [leftIndex];
+                let rowMin = currentRow[0];
+
+                for (let rightIndex = 1; rightIndex <= rightLength; rightIndex += 1) {
+                    const substitutionCost = leftChars[leftIndex - 1] === rightChars[rightIndex - 1] ? 0 : 1;
+                    const nextValue = Math.min(
+                        previousRow[rightIndex] + 1,
+                        currentRow[rightIndex - 1] + 1,
+                        previousRow[rightIndex - 1] + substitutionCost
+                    );
+                    currentRow[rightIndex] = nextValue;
+                    rowMin = Math.min(rowMin, nextValue);
+                }
+
+                if (rowMin > maxDistance) return maxDistance + 1;
+                previousRow = currentRow;
+            }
+
+            return previousRow[rightLength];
+        };
+
+        const extractSuggestionYearClause = (value) => {
+            const raw = String(value ?? '').trim();
+            const explicitWithYear = raw.match(/ปี\s*(25\d{2}|20\d{2})/u);
+            if (explicitWithYear) return `ปี ${explicitWithYear[1]}`;
+
+            const explicitBare = raw.match(/(?:^|\s)(25\d{2}|20\d{2})(?:\s|$)/u);
+            if (explicitBare) return `ปี ${explicitBare[1]}`;
+
+            const normalized = normalizeSuggestText(raw);
+            if (normalized.includes('ปีที่แล้ว') || normalized.includes('ปีก่อน')) return 'ปีที่แล้ว';
+            if (normalized.includes('ปีนี้') || normalized.includes('ปีล่าสุด')) return 'ปีล่าสุด';
+            return 'ปีล่าสุด';
+        };
+
+        const extractSuggestionScopePrefix = (value) => {
+            const normalized = normalizeSuggestText(value);
+            if (normalized.includes('back office') || normalized.includes('งานนอกโครงการ')) {
+                return 'สรุป Back Office ของ';
+            }
+            if (normalized.includes('โครงการ') || normalized.includes('research')) {
+                return 'สรุปโครงการของ';
+            }
+            return 'สรุปงานของ';
+        };
+
+        const buildPersonSuggestionText = (item, draftText = '') => {
+            const personName = String(item?.text || item?.label || '').trim();
+            if (!personName) return '';
+
+            return `${extractSuggestionScopePrefix(draftText)} ${personName} ${extractSuggestionYearClause(draftText)}`
+                .replace(/\s+/gu, ' ')
+                .trim();
+        };
+
+        const buildProjectSuggestionText = (item) => {
+            const projectName = String(item?.text || item?.label || '').trim();
+            if (!projectName) return '';
+            return `ค้นหา: ${projectName}`;
+        };
+
+        const yearContexts = [{
+                query: 'ปีล่าสุด',
+                yearBe: currentYearBE,
+                badge: String(currentYearBE),
+                aliases: [`ปี ${currentYearBE}`, 'ปีนี้', 'latest year'],
+                featured: true,
+                weight: 38,
+            },
+            {
+                query: 'ปีที่แล้ว',
+                yearBe: previousYearBE,
+                badge: String(previousYearBE),
+                aliases: [`ปี ${previousYearBE}`, 'ปีก่อน', 'last year'],
+                featured: true,
+                weight: 34,
+            },
+            {
+                query: `ปี ${currentYearBE}`,
+                yearBe: currentYearBE,
+                badge: '',
+                aliases: ['ปีล่าสุด', 'ปีนี้'],
+                featured: false,
+                weight: 28,
+            },
+            {
+                query: `ปี ${previousYearBE}`,
+                yearBe: previousYearBE,
+                badge: '',
+                aliases: ['ปีที่แล้ว', 'ปีก่อน'],
+                featured: false,
+                weight: 24,
+            },
+            {
+                query: `ปี ${twoYearsAgoBE}`,
+                yearBe: twoYearsAgoBE,
+                badge: '',
+                aliases: ['ย้อนหลัง 2 ปี'],
+                featured: false,
+                weight: 18,
+            }
+        ];
+
+        const compactYearQuestion = (prefix, yearContext) =>
+            yearContext.query.startsWith('ปี ') ? `${prefix} ${yearContext.query}` : `${prefix}${yearContext.query}`;
+
+        const spacedYearQuestion = (prefix, yearContext) =>
+            `${prefix} ${yearContext.query}`.replace(/\s+/gu, ' ').trim();
+
+        const betweenYearQuestion = (prefix, yearContext, suffix = '') =>
+            `${prefix} ${yearContext.query}${suffix ? ` ${suffix}` : ''}`.replace(/\s+/gu, ' ').trim();
+
+        const buildSuggestionCatalog = () => {
+            const items = [];
+            const add = (...suggestions) => suggestions.flat().forEach((suggestion) => {
+                if (suggestion?.text) items.push(suggestion);
+            });
+
+            const addYearSeries = (builder, options = {}) => {
+                yearContexts.forEach((yearContext, index) => {
+                    add(createSuggestion(builder(yearContext), {
+                        category: options.category,
+                        priority: Number(options.priority ?? 0) + yearContext.weight - index,
+                        aliases: [...(options.aliases || []), ...yearContext.aliases],
+                        featured: Boolean(options.featured && yearContext.featured),
+                        meta: options.showYearBadge === false ? '' : yearContext.badge,
+                        yearBe: yearContext.yearBe,
+                    }));
+                });
+            };
+
+            addYearSeries((year) => compactYearQuestion('งบประมาณรวม', year), {
+                category: 'งบประมาณ',
+                priority: 220,
+                aliases: ['budget', 'งบรวม'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('งบประมาณรวมต่อปี', year), {
+                category: 'งบประมาณ',
+                priority: 214,
+                aliases: ['งบประมาณรายปี', 'budget per year'],
+                featured: true,
+            });
+            addYearSeries((year) => compactYearQuestion('งบภายนอก', year), {
+                category: 'งบประมาณ',
+                priority: 208,
+                aliases: ['ทุนภายนอก'],
+                featured: true,
+            });
+            addYearSeries((year) => compactYearQuestion('งบภายใน', year), {
+                category: 'งบประมาณ',
+                priority: 204,
+                aliases: ['ทุนภายใน'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('Top แหล่งทุน', year), {
+                category: 'งบประมาณ',
+                priority: 198,
+                aliases: ['แหล่งทุนสูงสุด', 'top funding source'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('ทุนภายนอกตามแหล่งทุน', year), {
+                category: 'งบประมาณ',
+                priority: 194,
+                aliases: ['funding source external'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('ทุนภายในตามแหล่งทุน', year), {
+                category: 'งบประมาณ',
+                priority: 190,
+                aliases: ['funding source internal'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('เปรียบเทียบงบภายในกับงบภายนอก', year), {
+                category: 'งบประมาณ',
+                priority: 186,
+                aliases: ['เทียบงบ', 'compare budget'],
+                featured: false,
+            });
+
+            addYearSeries((year) => spacedYearQuestion('จำนวนโครงการ', year), {
+                category: 'โครงการ',
+                priority: 180,
+                aliases: ['projects count'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('โครงการใหม่', year), {
+                category: 'โครงการ',
+                priority: 176,
+                aliases: ['new projects'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('สถานะโครงการ', year), {
+                category: 'โครงการ',
+                priority: 172,
+                aliases: ['project status'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('โครงการแยกตามสถานะ', year), {
+                category: 'โครงการ',
+                priority: 168,
+                aliases: ['project by status'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('โครงการที่กำลังดำเนินการ', year), {
+                category: 'โครงการ',
+                priority: 164,
+                aliases: ['in progress projects'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('โครงการที่ปิดโปรเจค', year), {
+                category: 'โครงการ',
+                priority: 160,
+                aliases: ['completed projects'],
+                featured: false,
+            });
+
+            addYearSeries((year) => betweenYearQuestion('Outputs', year, 'แยกประเภท'), {
+                category: 'Outputs',
+                priority: 212,
+                aliases: ['outputs by type', 'output type'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('จำนวน Outputs', year), {
+                category: 'Outputs',
+                priority: 208,
+                aliases: ['outputs count'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('Publication', year), {
+                category: 'Outputs',
+                priority: 204,
+                aliases: ['publication per year'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('บทบาทผู้เขียน', year), {
+                category: 'Outputs',
+                priority: 200,
+                aliases: ['author role'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('First author', year), {
+                category: 'Outputs',
+                priority: 196,
+                aliases: ['first-author'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('Corresponding author', year), {
+                category: 'Outputs',
+                priority: 192,
+                aliases: ['corresponding'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('Co-author', year), {
+                category: 'Outputs',
+                priority: 188,
+                aliases: ['co author'],
+                featured: false,
+            });
+
+            addYearSeries((year) => spacedYearQuestion('FTE ต่อคน', year), {
+                category: 'FTE',
+                priority: 210,
+                aliases: ['fte per person'],
+                featured: true,
+            });
+            addYearSeries((year) => `FTE ${year.query} เกิน 1`, {
+                category: 'FTE',
+                priority: 206,
+                aliases: ['fte > 1', 'fte high'],
+                featured: true,
+                showYearBadge: false,
+            });
+            addYearSeries((year) => `FTE ${year.query} เกิน 0.5`, {
+                category: 'FTE',
+                priority: 202,
+                aliases: ['fte > 0.5'],
+                featured: false,
+                showYearBadge: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('คนที่มี FTE สูงสุด', year), {
+                category: 'FTE',
+                priority: 198,
+                aliases: ['top fte'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('FTE รวม', year), {
+                category: 'FTE',
+                priority: 194,
+                aliases: ['fte total'],
+                featured: false,
+            });
+
+            addYearSeries((year) => spacedYearQuestion('สรุป Back Office', year), {
+                category: 'Back Office',
+                priority: 208,
+                aliases: ['back office summary'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('งานนอกโครงการของทีม', year), {
+                category: 'Back Office',
+                priority: 204,
+                aliases: ['ทีม back office', 'งานนอกโครงการ'],
+                featured: true,
+            });
+            addYearSeries((year) => spacedYearQuestion('Back Office ชั่วโมงรวม', year), {
+                category: 'Back Office',
+                priority: 200,
+                aliases: ['back office hours'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('Back Office FTE รวม', year), {
+                category: 'Back Office',
+                priority: 196,
+                aliases: ['back office fte'],
+                featured: false,
+            });
+            addYearSeries((year) => spacedYearQuestion('outputs ของ Back Office', year), {
+                category: 'Back Office',
+                priority: 192,
+                aliases: ['back office outputs'],
+                featured: false,
+            });
+
+            add(
+                createSuggestion('IRB ใกล้หมดอายุ 30 วัน', {
+                    category: 'IRB',
+                    priority: 230,
+                    aliases: ['irb 30 วัน', 'irb expiring 30 days'],
+                    featured: true,
+                }),
+                createSuggestion('IRB ใกล้หมดอายุ 60 วัน', {
+                    category: 'IRB',
+                    priority: 226,
+                    aliases: ['irb 60 วัน'],
+                    featured: true,
+                }),
+                createSuggestion('IRB ใกล้หมดอายุ 90 วัน', {
+                    category: 'IRB',
+                    priority: 222,
+                    aliases: ['irb 90 วัน'],
+                    featured: true,
+                }),
+                createSuggestion('IRB ใกล้หมดอายุ 180 วัน', {
+                    category: 'IRB',
+                    priority: 218,
+                    aliases: ['irb 180 วัน', 'irb 6 เดือน'],
+                    featured: true,
+                }),
+                createSuggestion('IRB ที่หมดอายุแล้ว', {
+                    category: 'IRB',
+                    priority: 214,
+                    aliases: ['irb expired'],
+                    featured: false,
+                }),
+                createSuggestion('IRB ของโครงการไหนใกล้หมดอายุ', {
+                    category: 'IRB',
+                    priority: 210,
+                    aliases: ['irb project expiring'],
+                    featured: false,
+                }),
+                createSuggestion('โครงการใกล้สิ้นสุด 3 เดือน', {
+                    category: 'โครงการ',
+                    priority: 206,
+                    aliases: ['due soon 3 months', 'red zone 3 เดือน'],
+                    featured: true,
+                }),
+                createSuggestion('โครงการใกล้สิ้นสุด 6 เดือน', {
+                    category: 'โครงการ',
+                    priority: 202,
+                    aliases: ['due soon 6 months'],
+                    featured: true,
+                }),
+                createSuggestion('โครงการใกล้สิ้นสุด 9 เดือน', {
+                    category: 'โครงการ',
+                    priority: 198,
+                    aliases: ['due soon 9 months'],
+                    featured: false,
+                }),
+                createSuggestion('โครงการเกินกำหนด', {
+                    category: 'โครงการ',
+                    priority: 194,
+                    aliases: ['overdue project'],
+                    featured: true,
+                }),
+                createSuggestion('RED ZONE ทั้งหมด', {
+                    category: 'โครงการ',
+                    priority: 190,
+                    aliases: ['red zone'],
+                    featured: false,
+                }),
+                createSuggestion('PI ตามหน่วยงาน', {
+                    category: 'บุคลากร',
+                    priority: 186,
+                    aliases: ['pi by unit'],
+                    featured: false,
+                }),
+                createSuggestion('PI ทั้งหมด', {
+                    category: 'บุคลากร',
+                    priority: 184,
+                    aliases: ['all pi', 'principal investigator ทั้งหมด'],
+                    featured: true,
+                }),
+                createSuggestion('Co-PI ทั้งหมด', {
+                    category: 'บุคลากร',
+                    priority: 182,
+                    aliases: ['copi', 'co-pi'],
+                    featured: false,
+                }),
+                createSuggestion('Co-Research ตามหน่วยงาน', {
+                    category: 'บุคลากร',
+                    priority: 178,
+                    aliases: ['coresearch', 'co research'],
+                    featured: false,
+                }),
+                createSuggestion('Co-Research ทั้งหมด', {
+                    category: 'บุคลากร',
+                    priority: 176,
+                    aliases: ['all co-research', 'coresearch ทั้งหมด'],
+                    featured: false,
+                }),
+                createSuggestion('โครงการทั้งหมด', {
+                    category: 'โครงการ',
+                    priority: 174,
+                    aliases: ['all projects', 'โปรเจคทั้งหมด'],
+                    featured: false,
+                }),
+                createSuggestion('โหลดโครงการทั้งหมดเป็น Excel', {
+                    category: 'ส่งออกไฟล์',
+                    priority: 173,
+                    aliases: ['export all projects excel', 'โครงการทั้งหมด excel'],
+                    featured: true,
+                }),
+                createSuggestion('โหลดโครงการทั้งหมดเป็น PDF', {
+                    category: 'ส่งออกไฟล์',
+                    priority: 172,
+                    aliases: ['export all projects pdf', 'โครงการทั้งหมด pdf'],
+                    featured: true,
+                }),
+                createSuggestion('ทุนทั้งหมด', {
+                    category: 'งบประมาณ',
+                    priority: 170,
+                    aliases: ['แหล่งทุนทั้งหมด', 'all funding'],
+                    featured: true,
+                }),
+                createSuggestion('ประเภททุนทั้งหมด', {
+                    category: 'งบประมาณ',
+                    priority: 168,
+                    aliases: ['all funding types'],
+                    featured: false,
+                }),
+                createSuggestion('งบประมาณย้อนหลัง 5 ปี', {
+                    category: 'งบประมาณ',
+                    priority: 166,
+                    aliases: ['budget 5 years'],
+                    featured: false,
+                }),
+                createSuggestion('Outputs ทั้งหมด', {
+                    category: 'Outputs',
+                    priority: 164,
+                    aliases: ['ผลงานทั้งหมด', 'all outputs'],
+                    featured: true,
+                }),
+                createSuggestion('FTE ทั้งหมด', {
+                    category: 'FTE',
+                    priority: 162,
+                    aliases: ['all fte'],
+                    featured: false,
+                }),
+                createSuggestion('Back Office ทั้งหมด', {
+                    category: 'Back Office',
+                    priority: 162,
+                    aliases: ['งานนอกโครงการทั้งหมด', 'all back office'],
+                    featured: false,
+                }),
+                createSuggestion('สรุปภาพรวม dashboard', {
+                    category: 'ภาพรวม',
+                    priority: 160,
+                    aliases: ['overview dashboard'],
+                    featured: false,
+                }),
+                createSuggestion('ทั้งหมด', {
+                    category: 'ช่วยเลือกคำสั่ง',
+                    priority: 158,
+                    aliases: ['อะไรทั้งหมด', 'มีอะไรทั้งหมด'],
+                    featured: false,
+                })
+            );
+
+            [
+                'เบาหวาน',
+                'ความดันโลหิตสูง',
+                'ผู้สูงอายุ',
+                'เด็กและเยาวชน',
+                'วัคซีน',
+                'สุขภาพจิต',
+                'มะเร็ง',
+                'PM2.5',
+                'AI',
+                'telemedicine',
+                'อุบัติเหตุทางถนน',
+                'ระบบบริการสุขภาพ',
+                'โรคอ้วน',
+                'บุหรี่ไฟฟ้า',
+                'โรคหัวใจ',
+                'โภชนาการ',
+                'Long COVID',
+                'โรคติดเชื้อ',
+                'การเข้าถึงบริการ',
+                'คุณภาพชีวิต'
+            ].forEach((topic, index) => {
+                add(createSuggestion(`ค้นหา: ${topic}`, {
+                    category: 'ค้นหา',
+                    priority: 162 - index,
+                    aliases: [topic],
+                    featured: index < 6,
+                }));
+            });
+
+            (Array.isArray(projectSuggestionSeed) ? projectSuggestionSeed : []).forEach((project, index) => {
+                add(createSuggestion(project.text, {
+                    label: project.label || project.text,
+                    category: project.category || 'โครงการ',
+                    kind: project.kind || 'project',
+                    priority: Math.max(94, Number(project.priority ?? 0) - Math.floor(index / 16)),
+                    aliases: Array.isArray(project.aliases) ? project.aliases : [],
+                    featured: false,
+                    meta: project.meta || '',
+                }));
+            });
+
+            (Array.isArray(personSuggestionSeed) ? personSuggestionSeed : []).forEach((person, index) => {
+                add(createSuggestion(person.text, {
+                    label: person.label || person.text,
+                    category: person.category || 'บุคลากร',
+                    kind: person.kind || 'person',
+                    priority: Math.max(100, Number(person.priority ?? 0) - Math.floor(index / 12)),
+                    aliases: Array.isArray(person.aliases) ? person.aliases : [],
+                    featured: false,
+                    meta: person.meta || '',
+                }));
+            });
+
+            return dedupeSuggestions(items)
+                .filter((item) => item.text)
+                .sort((left, right) => (right.priority || 0) - (left.priority || 0) || left.text.localeCompare(right.text, 'th'));
+        };
+
+        const suggestionCatalog = buildSuggestionCatalog();
+        const featuredSuggestions = suggestionCatalog.filter((item) => item.featured).slice(0, 40);
+        let predictResults = [];
+        let activePredictIndex = -1;
+
+        const renderSuggestionLabel = (item) => {
+            const text = `<span class="app-ai-chat__suggest-text">${escapeHtml(item.label || item.text)}</span>`;
+            const badge = item.meta ? `<span class="app-ai-chat__suggest-badge">${escapeHtml(item.meta)}</span>` : '';
+            return `${text}${badge}`;
+        };
+
+        const renderSuggestChips = () => {
+            if (!suggestGrid) return;
+            suggestGrid.innerHTML = featuredSuggestions.map((item) => `
+                <button type="button" class="app-ai-chat__suggest" data-suggestion="${escapeHtml(item.text)}" data-submit-mode="send">
+                    ${renderSuggestionLabel(item)}
+                </button>
+            `).join('');
+        };
+
+        const findSuggestionItem = (suggestion) => {
+            if (suggestion && typeof suggestion === 'object') return suggestion;
+
+            const key = squashSuggestText(suggestion);
+            if (!key) return null;
+
+            return suggestionCatalog.find((item) =>
+                squashSuggestText(item?.text) === key || squashSuggestText(item?.label) === key
+            ) || null;
+        };
+
+        const getProjectSourceVariants = (sourceSquashed, queryLength) => {
+            const variants = new Set();
+            const normalizedSource = String(sourceSquashed || '');
+            if (!normalizedSource) return [];
+
+            variants.add(normalizedSource);
+            if (queryLength > 0) {
+                [queryLength - 1, queryLength, queryLength + 1, queryLength + 2].forEach((length) => {
+                    if (length > 0) {
+                        variants.add(normalizedSource.slice(0, Math.min(normalizedSource.length, length)));
+                    }
+                });
+            }
+
+            return Array.from(variants).filter(Boolean);
+        };
+
+        const getApproximateSuggestionBoost = (query, source, item) => {
+            const querySquashed = squashSuggestText(query);
+            const sourceSquashed = squashSuggestText(source);
+            if (!querySquashed || !sourceSquashed) return 0;
+            if (querySquashed.length < 3 || sourceSquashed.length < 3) return 0;
+            if (querySquashed === sourceSquashed) return 0;
+
+            if ((item?.kind || '') === 'person') {
+                const maxDistance = querySquashed.length <= 5 ? 1 : 2;
+                const distance = levenshteinDistanceLimited(querySquashed, sourceSquashed, maxDistance);
+                if (distance === 1) return 248;
+                if (distance === 2) return 176;
+                return 0;
+            }
+
+            if ((item?.kind || '') === 'project') {
+                if (querySquashed.length < 4) return 0;
+                const maxDistance = querySquashed.length <= 6 ? 1 : 2;
+                const bestDistance = getProjectSourceVariants(sourceSquashed, querySquashed.length)
+                    .reduce((best, variant) => Math.min(best, levenshteinDistanceLimited(querySquashed, variant, maxDistance)), Number.POSITIVE_INFINITY);
+
+                if (bestDistance === 1) return 214;
+                if (bestDistance === 2) return 154;
+            }
+
+            return 0;
+        };
+
+        const getSuggestionScore = (query, item) => {
+            const normalizedQuery = normalizeSuggestText(query);
+            if (!normalizedQuery) return item.priority || 0;
+
+            const squashedQuery = squashSuggestText(normalizedQuery);
+            const tokens = normalizedQuery.split(' ').filter(Boolean);
+            let score = item.priority || 0;
+
+            [item.text, item.label, item.category, ...(item.aliases || [])]
+                .map((value) => normalizeSuggestText(value))
+                .filter(Boolean)
+                .forEach((source) => {
+                    const sourceSquashed = squashSuggestText(source);
+                    if (source === normalizedQuery || sourceSquashed === squashedQuery) {
+                        score = Math.max(score, 520 + (item.priority || 0));
+                    } else if (source.startsWith(normalizedQuery) || sourceSquashed.startsWith(squashedQuery)) {
+                        score = Math.max(score, 380 + (item.priority || 0));
+                    } else if (source.includes(normalizedQuery) || sourceSquashed.includes(squashedQuery)) {
+                        score = Math.max(score, 300 + (item.priority || 0));
+                    }
+
+                    let tokenScore = 0;
+                    tokens.forEach((token) => {
+                        const tokenSquashed = squashSuggestText(token);
+                        if (source.startsWith(token) || sourceSquashed.startsWith(tokenSquashed)) {
+                            tokenScore += 56;
+                        } else if (source.includes(token) || sourceSquashed.includes(tokenSquashed)) {
+                            tokenScore += 32;
+                        }
+                    });
+                    score = Math.max(score, tokenScore + (item.priority || 0));
+
+                    const fuzzyBoost = getApproximateSuggestionBoost(normalizedQuery, source, item);
+                    if (fuzzyBoost > 0) {
+                        score = Math.max(score, fuzzyBoost + (item.priority || 0));
+                    }
+                });
+
+            if (item.yearBe && normalizedQuery.includes(String(item.yearBe))) {
+                score += 68;
+            }
+
+            return score;
+        };
+
+        const hidePredictSuggestions = () => {
+            if (!predictBox) return;
+            predictResults = [];
+            activePredictIndex = -1;
+            predictBox.hidden = true;
+            predictBox.innerHTML = '';
+        };
+
+        const renderPredictSuggestions = (query, options = {}) => {
+            if (!predictBox) return;
+
+            const normalizedQuery = normalizeSuggestText(query);
+            if (!normalizedQuery) {
+                hidePredictSuggestions();
+                return;
+            }
+
+            const nextResults = suggestionCatalog
+                .map((item) => ({
+                    ...item,
+                    score: getSuggestionScore(normalizedQuery, item),
+                }))
+                .filter((item) => item.score >= (item.priority || 0) + 26)
+                .sort((left, right) => right.score - left.score || (right.priority || 0) - (left.priority || 0))
+                .slice(0, 8);
+
+            if (!nextResults.length) {
+                hidePredictSuggestions();
+                return;
+            }
+
+            predictResults = nextResults;
+            if (options.preserveActive !== true || activePredictIndex < 0 || activePredictIndex >= predictResults.length) {
+                activePredictIndex = 0;
+            }
+
+            predictBox.hidden = false;
+            predictBox.innerHTML = `
+                <div class="app-ai-chat__predict-head">คำถาม รายชื่อ หรือโครงการใกล้เคียงจากที่พิมพ์</div>
+                <div class="app-ai-chat__predict-list">
+                    ${predictResults.map((item, index) => `
+                        <button type="button"
+                            class="app-ai-chat__predict-item ${index === activePredictIndex ? 'is-active' : ''}"
+                            data-suggestion="${escapeHtml(item.text)}"
+                            data-submit-mode="fill">
+                            <span class="app-ai-chat__predict-item-title">${escapeHtml(item.label || item.text)}</span>
+                            <span class="app-ai-chat__predict-item-meta">${escapeHtml([item.category, item.meta].filter(Boolean).join(' • '))}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        };
+
+        const movePredictSelection = (step) => {
+            if (!predictResults.length) return;
+            activePredictIndex = (activePredictIndex + step + predictResults.length) % predictResults.length;
+            renderPredictSuggestions(input.value, {
+                preserveActive: true
+            });
+        };
+
+        const applySuggestion = (suggestion, {
+            submit = false
+        } = {}) => {
+            const item = findSuggestionItem(suggestion);
+            const nextQuestion = item?.kind === 'person'
+                ? buildPersonSuggestionText(item, input.value)
+                : item?.kind === 'project'
+                    ? buildProjectSuggestionText(item)
+                    : String(item?.text ?? suggestion ?? '').trim();
+            if (!nextQuestion) return;
+            input.value = nextQuestion;
+            state.draft = nextQuestion;
+            saveState();
+            autoSizeInput();
+            input.focus();
+            if (submit) {
+                hidePredictSuggestions();
+                form.requestSubmit();
+                return;
+            }
+            renderPredictSuggestions(nextQuestion);
+        };
+
         const ensureChartLibrary = async () => {
             if (window.Chart) return window.Chart;
             if (chartPromise) return chartPromise;
@@ -726,13 +1997,6 @@
                 if (!body) return;
                 body.scrollTop = body.scrollHeight;
             });
-        };
-
-        const setSuggestPanelOpen = (open) => {
-            state.suggestionsOpen = Boolean(open);
-            suggestPanel.hidden = !state.suggestionsOpen;
-            suggestToggle.textContent = state.suggestionsOpen ? 'ซ่อนคำถาม' : 'คำถามแนะนำ';
-            saveState();
         };
 
         const setBubbleVisible = (show) => {
@@ -806,26 +2070,53 @@
 
             const headers = Array.isArray(table.headers) ? table.headers : [];
             const fields = Array.isArray(table.fields) ? table.fields : [];
+            const resolvedFields = fields.length ? fields : Object.keys(table.rows[0] || {}).filter((field) => field !== 'href');
+            const linkableFields = ['project', 'project_name', 'task', 'title'];
+            const rowsHaveHref = table.rows.some((row) => row?.href && row.href !== '#');
+            const toFieldClass = (value, index) => {
+                const token = String(value ?? '')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9_-]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+                return token || `col-${index}`;
+            };
+            const inlineLinkField = resolvedFields.find((field) => linkableFields.includes(field));
+            const visibleColumns = resolvedFields
+                .map((field, index) => ({
+                    field,
+                    label: headers[index] || field || '-',
+                    index,
+                }))
+                .filter((column) => !(column.field === 'href' && rowsHaveHref && inlineLinkField));
+            const shouldStackTable = true;
+
+            wrap.classList.toggle('app-ai-chat__table-wrap--stacked', shouldStackTable);
 
             if (headers.length) {
                 const thead = document.createElement('thead');
-                thead.innerHTML = `<tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr>`;
+                thead.innerHTML = `<tr>${visibleColumns.map((column) => {
+                    const fieldClass = toFieldClass(column.field || column.label, column.index);
+                    return `<th class="app-ai-chat__col app-ai-chat__col--${fieldClass}">${escapeHtml(column.label)}</th>`;
+                }).join('')}</tr>`;
                 el.appendChild(thead);
             }
 
             const tbody = document.createElement('tbody');
             table.rows.forEach((row) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = fields.map((field) => {
+                tr.innerHTML = visibleColumns.map((column) => {
+                    const field = column.field;
+                    const fieldClass = toFieldClass(field, column.index);
+                    const labelText = column.label || field || '-';
                     let value = row?.[field] ?? '-';
-                    if ((field === 'project' || field === 'project_name' || field === 'task') && row?.href && row.href !== '#') {
+                    if (linkableFields.includes(field) && row?.href && row.href !== '#') {
                         value = `<a href="${escapeHtml(row.href)}" target="_blank" rel="noopener">${escapeHtml(value)}</a>`;
                     } else if (field === 'href' && row?.href && row.href !== '#') {
                         value = `<a href="${escapeHtml(row.href)}" target="_blank" rel="noopener">เปิด</a>`;
                     } else {
                         value = escapeHtml(value);
                     }
-                    return `<td>${value}</td>`;
+                    return `<td class="app-ai-chat__col app-ai-chat__col--${fieldClass}" data-label="${escapeHtml(labelText)}">${value}</td>`;
                 }).join('');
                 tbody.appendChild(tr);
             });
@@ -842,12 +2133,17 @@
             wrap.className = 'app-ai-chat__list';
 
             list.forEach((item) => {
-                const link = document.createElement(item?.href ? 'a' : 'div');
+                const actionPrompt = String(item?.prompt ?? '').trim();
+                const link = document.createElement(item?.href ? 'a' : (actionPrompt ? 'button' : 'div'));
                 link.className = 'app-ai-chat__list-item';
                 if (item?.href) {
                     link.href = item.href;
                     link.target = '_blank';
                     link.rel = 'noopener';
+                } else if (actionPrompt) {
+                    link.type = 'button';
+                    link.dataset.chatPrompt = actionPrompt;
+                    link.dataset.submitMode = String(item?.submit_mode || 'send');
                 }
 
                 const title = item?.project || item?.task || item?.title || item?.id || 'ไม่ระบุ';
@@ -979,7 +2275,7 @@
             clearStoredState();
             input.value = '';
             autoSizeInput();
-            setSuggestPanelOpen(false);
+            hidePredictSuggestions();
             if (!state.bubbleDismissed) {
                 bubble?.classList.add('is-show');
             }
@@ -991,17 +2287,30 @@
         closeBtn?.addEventListener('click', () => setPanelOpen(false));
         bubbleClose?.addEventListener('click', () => setBubbleVisible(false));
         clearBtn?.addEventListener('click', () => clearConversation());
-        suggestToggle?.addEventListener('click', () => setSuggestPanelOpen(!state.suggestionsOpen));
-
-        suggestButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                const question = button.dataset.suggestion || button.textContent || '';
-                input.value = question.trim();
-                state.draft = input.value;
-                saveState();
-                autoSizeInput();
-                setSuggestPanelOpen(false);
-                form.requestSubmit();
+        suggestGrid?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-suggestion]');
+            if (!button) return;
+            applySuggestion(button.dataset.suggestion || button.textContent || '', {
+                submit: (button.dataset.submitMode || 'send') === 'send'
+            });
+        });
+        body?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-chat-prompt]');
+            if (!button) return;
+            applySuggestion(button.dataset.chatPrompt || '', {
+                submit: (button.dataset.submitMode || 'send') === 'send'
+            });
+        });
+        predictBox?.addEventListener('mousedown', (event) => {
+            if (event.target.closest('[data-suggestion]')) {
+                event.preventDefault();
+            }
+        });
+        predictBox?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-suggestion]');
+            if (!button) return;
+            applySuggestion(button.dataset.suggestion || button.textContent || '', {
+                submit: false
             });
         });
 
@@ -1011,12 +2320,43 @@
             state.draft = input.value;
             saveState();
             autoSizeInput();
+            renderPredictSuggestions(input.value);
+        });
+
+        input.addEventListener('focus', () => {
+            renderPredictSuggestions(input.value);
+        });
+
+        input.addEventListener('blur', () => {
+            window.setTimeout(() => {
+                if (predictBox?.contains(document.activeElement)) return;
+                hidePredictSuggestions();
+            }, 140);
         });
 
         input.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowDown' && predictResults.length) {
+                event.preventDefault();
+                movePredictSelection(1);
+                return;
+            }
+            if (event.key === 'ArrowUp' && predictResults.length) {
+                event.preventDefault();
+                movePredictSelection(-1);
+                return;
+            }
+            if (event.key === 'Tab' && predictResults.length && !event.shiftKey) {
+                event.preventDefault();
+                const selected = predictResults[activePredictIndex] || predictResults[0];
+                if (selected) applySuggestion(selected.text, {
+                    submit: false
+                });
+                return;
+            }
             if (event.key !== 'Enter') return;
             if (event.shiftKey || event.ctrlKey || event.metaKey) return;
             event.preventDefault();
+            hidePredictSuggestions();
             form.requestSubmit();
         });
 
@@ -1034,7 +2374,7 @@
             state.draft = '';
             saveState();
             autoSizeInput();
-            setSuggestPanelOpen(false);
+            hidePredictSuggestions();
 
             const thinking = createMessage('assistant');
             thinking.content.innerHTML = '<div class="app-ai-chat__thinking">กำลังวิเคราะห์…</div>';
@@ -1089,12 +2429,9 @@
         } else {
             bubble?.classList.add('is-show');
         }
-
-        if (Array.isArray(state.messages) && state.messages.length > 0) {
-            state.suggestionsOpen = false;
-        }
-
-        setSuggestPanelOpen(Boolean(state.suggestionsOpen));
+        renderSuggestChips();
+        suggestPanel.hidden = featuredSuggestions.length === 0;
+        renderPredictSuggestions(state.draft || '');
         rerenderConversation();
     })();
 </script>

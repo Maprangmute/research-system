@@ -217,6 +217,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
 
 
     // 🆕 เพิ่มรายละเอียดโครงการ
+    Route::get('/projects/export/list', [ProjectController::class, 'exportList'])->name('projects.export');
     Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
 
     // 🆕 PDF Export

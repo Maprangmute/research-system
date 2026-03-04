@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 use PDF;
 
@@ -88,6 +89,97 @@ class DashboardController extends Controller
         $fteRoles        = $projects->flatMap->fteRoles;
         $outputs         = $projects->flatMap->outputs;
         $irbs            = $projects->flatMap->irbs;
+        $normalizeName = static function (?string $value, bool $squash = false): string {
+            $text = mb_strtolower(trim((string) $value), 'UTF-8');
+            $text = preg_replace('/\s+/u', ' ', $text) ?: '';
+            if ($squash) {
+                $text = preg_replace('/\s+/u', '', $text) ?: '';
+            }
+            return $text;
+        };
+        $stripHonorifics = static function (?string $value): string {
+            $text = trim((string) $value);
+            if ($text === '') {
+                return '';
+            }
+
+            $pattern = '/^(?:นายแพทย์หญิง|นายแพทย์|แพทย์หญิง|แพทย์|ทันตแพทย์หญิง|ทันตแพทย์|เภสัชกรหญิง|เภสัชกร|'
+                .'ศ\.คลินิก|ศ\.นพ\.|ศ\.พญ\.|รศ\.นพ\.|รศ\.พญ\.|ผศ\.นพ\.|ผศ\.พญ\.|'
+                .'ศ\.|รศ\.|ผศ\.|อ\.|ดร\.?|ภกญ\.|ภญ\.|ภก\.|พญ\.|นพ\.|ทพ\.ญ\.|ทพ\.|นาย|นางสาว|นาง)\s*/u';
+
+            do {
+                $next = preg_replace($pattern, '', $text);
+                if ($next === null || $next === $text) {
+                    break;
+                }
+                $text = trim($next);
+            } while ($text !== '');
+
+            return preg_replace('/\s+/u', ' ', trim($text)) ?: '';
+        };
+        $fteProfileUrls = [];
+
+        User::query()
+            ->select(['prefix', 'name', 'profile_photo_path'])
+            ->whereNotNull('name')
+            ->whereNotNull('profile_photo_path')
+            ->get()
+            ->each(function (User $user) use (&$fteProfileUrls, $normalizeName, $stripHonorifics) {
+                $photoPath = trim((string) $user->profile_photo_path);
+                if ($photoPath === '') {
+                    return;
+                }
+
+                if (preg_match('~^(https?:)?//~i', $photoPath)) {
+                    $photoUrl = $photoPath;
+                } else {
+                    $publicPath = ltrim((string) preg_replace('~^/?storage/~', '', $photoPath), '/');
+                    if ($publicPath === '') {
+                        return;
+                    }
+                    $photoUrl = asset('storage/'.$publicPath).'?v='.rawurlencode(md5($publicPath));
+                }
+
+                $fullName = trim(implode(' ', array_filter([
+                    trim((string) $user->prefix),
+                    trim((string) $user->name),
+                ])));
+                $bareName = trim((string) $user->name);
+
+                $strippedFullName = $stripHonorifics($fullName);
+                $strippedBareName = $stripHonorifics($bareName);
+                $parts = preg_split('/\s+/u', $strippedBareName) ?: [];
+                $firstName = trim((string) ($parts[0] ?? ''));
+                $firstLastName = count($parts) > 1
+                    ? trim($parts[0].' '.($parts[count($parts) - 1] ?? ''))
+                    : '';
+                $firstLastNoSpace = count($parts) > 1
+                    ? trim($parts[0].($parts[count($parts) - 1] ?? ''))
+                    : '';
+
+                foreach (array_unique(array_filter([
+                    $fullName,
+                    $bareName,
+                    $strippedFullName,
+                    $strippedBareName,
+                    preg_replace('/\s+/u', '', $fullName),
+                    preg_replace('/\s+/u', '', $bareName),
+                    preg_replace('/\s+/u', '', $strippedFullName),
+                    preg_replace('/\s+/u', '', $strippedBareName),
+                    $firstName,
+                    $firstLastName,
+                    $firstLastNoSpace,
+                ])) as $candidate) {
+                    foreach (array_unique(array_filter([
+                        $normalizeName($candidate),
+                        $normalizeName($candidate, true),
+                    ])) as $key) {
+                        if ($key !== '' && !array_key_exists($key, $fteProfileUrls)) {
+                            $fteProfileUrls[$key] = $photoUrl;
+                        }
+                    }
+                }
+            });
 
         $dashboardProjectsJs = $projects->map(function ($project) {
             return [
@@ -223,6 +315,7 @@ class DashboardController extends Controller
             'fteRoles',
             'outputs',
             'irbs',
+            'fteProfileUrls',
             'themes',
             'typeOptions',
             'statusOptions',

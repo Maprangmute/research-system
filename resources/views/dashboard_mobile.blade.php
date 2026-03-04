@@ -78,6 +78,72 @@
             cursor: pointer;
         }
 
+        .fte-avatar-chart-shell {
+            position: relative;
+        }
+
+        .fte-avatar-chart-shell canvas {
+            position: relative;
+            z-index: 2;
+        }
+
+        .fte-avatar-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .fte-avatar-marker {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(-50%, -50%);
+            border-radius: 9999px;
+            overflow: hidden;
+            border: 2.5px solid rgba(255, 255, 255, 0.96);
+            background: linear-gradient(135deg, var(--fte-accent, #0f766e), #0f172a);
+            box-shadow:
+                0 12px 24px rgba(15, 23, 42, 0.18),
+                0 0 0 2px var(--fte-accent, #0f766e);
+        }
+
+        .fte-avatar-marker img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            background: #f8fafc;
+        }
+
+        .fte-avatar-marker__fallback {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            background:
+                radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.26), transparent 38%),
+                linear-gradient(135deg, var(--fte-accent, #0f766e), #0f172a);
+        }
+
+        .fte-avatar-marker.has-photo .fte-avatar-marker__fallback {
+            display: none;
+        }
+
+        .fte-avatar-marker.is-photo-missing img {
+            display: none;
+        }
+
+        .fte-avatar-marker.is-photo-missing .fte-avatar-marker__fallback {
+            display: flex;
+        }
+
         #dashboardFabStack {
             position: fixed;
             left: 1rem;
@@ -1907,7 +1973,10 @@
 
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 การกระจาย FTE</h3>
-                <canvas id="chartFteSummary" height="250"></canvas>
+                <div class="fte-avatar-chart-shell">
+                    <canvas id="chartFteSummary" height="250"></canvas>
+                    <div class="fte-avatar-layer" id="chartFteSummaryAvatarLayer" aria-hidden="true"></div>
+                </div>
             </div>
 
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
@@ -2298,6 +2367,7 @@
             const ftes = flatProjectRelation('fte_roles');
             const irbs = flatProjectRelation('irbs');
             const copisSummary = @json($copiRows);
+            const fteProfileUrls = @json($fteProfileUrls ?? []);
             window.outputs = outputs;
             const isMobileView = window.innerWidth <= 640;
             const isTabletLandscape = window.matchMedia(
@@ -2553,6 +2623,260 @@
             const norm = (v) => String(v ?? '').toLowerCase().trim();
             const cleanText = (v) => String(v ?? '').trim();
             const projectById = new Map(projects.map(p => [p.id, p]));
+            const fteAvatarPalette = ['#0f766e', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#65a30d', '#db2777', '#dc2626'];
+            const fteAvatarCache = new Map();
+
+            function stripPersonHonorifics(value) {
+                let text = String(value ?? '').trim();
+                const pattern = /^(?:นายแพทย์หญิง|นายแพทย์|แพทย์หญิง|แพทย์|ทันตแพทย์หญิง|ทันตแพทย์|เภสัชกรหญิง|เภสัชกร|ศ\.คลินิก|ศ\.นพ\.|ศ\.พญ\.|รศ\.นพ\.|รศ\.พญ\.|ผศ\.นพ\.|ผศ\.พญ\.|ศ\.|รศ\.|ผศ\.|อ\.|ดร\.?|ภกญ\.|ภญ\.|ภก\.|พญ\.|นพ\.|ทพ\.ญ\.|ทพ\.|นาย|นางสาว|นาง)\s*/u;
+                while (text && pattern.test(text)) {
+                    text = text.replace(pattern, '').trim();
+                }
+                return text.replace(/\s+/gu, ' ').trim();
+            }
+
+            function normalizePersonKey(value) {
+                return stripPersonHonorifics(value).replace(/\s+/gu, ' ').trim().toLowerCase();
+            }
+
+            function buildPersonLookupKeys(value) {
+                const raw = String(value ?? '').trim();
+                const stripped = stripPersonHonorifics(raw);
+                const tokens = normalizePersonKey(stripped).split(/\s+/u).filter(Boolean);
+                const variants = [
+                    raw,
+                    stripped,
+                    raw.replace(/\s+/gu, ''),
+                    stripped.replace(/\s+/gu, ''),
+                    tokens[0] || '',
+                    tokens.length > 1 ? `${tokens[0]} ${tokens[tokens.length - 1]}` : '',
+                    tokens.length > 1 ? `${tokens[0]}${tokens[tokens.length - 1]}` : ''
+                ];
+
+                return Array.from(new Set(
+                    variants
+                        .map((candidate) => String(candidate ?? '').replace(/\s+/gu, ' ').trim().toLowerCase())
+                        .concat(
+                            variants.map((candidate) => String(candidate ?? '').replace(/\s+/gu, '').trim().toLowerCase())
+                        )
+                        .filter(Boolean)
+                ));
+            }
+
+            function hashString(value) {
+                const text = normalizePersonKey(value);
+                let hash = 0;
+                for (const char of text) {
+                    hash = ((hash << 5) - hash) + char.codePointAt(0);
+                    hash |= 0;
+                }
+                return Math.abs(hash);
+            }
+
+            function fteAccentFor(name) {
+                return fteAvatarPalette[hashString(name) % fteAvatarPalette.length];
+            }
+
+            function hexToRgba(hex, alpha = 1) {
+                let raw = String(hex ?? '').replace('#', '').trim();
+                if (raw.length === 3) raw = raw.split('').map((char) => char + char).join('');
+                const color = Number.parseInt(raw, 16);
+                if (!Number.isFinite(color)) return `rgba(15, 23, 42, ${alpha})`;
+                const r = (color >> 16) & 255;
+                const g = (color >> 8) & 255;
+                const b = color & 255;
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+
+            function personInitials(name) {
+                const tokens = String(name ?? '').trim().split(/\s+/u).filter(Boolean);
+                if (!tokens.length) return '?';
+                if (tokens.length === 1) return Array.from(tokens[0]).slice(0, 2).join('');
+                return [
+                    Array.from(tokens[0])[0] || '',
+                    Array.from(tokens[tokens.length - 1])[0] || ''
+                ].join('');
+            }
+
+            function resolveFteAvatar(name, accentColor) {
+                const key = normalizePersonKey(name);
+                const cacheKey = `${key}|${accentColor}`;
+                if (fteAvatarCache.has(cacheKey)) return fteAvatarCache.get(cacheKey);
+
+                const entry = {
+                    accentColor,
+                    initials: personInitials(name),
+                    photoUrl: buildPersonLookupKeys(name)
+                        .map((candidate) => fteProfileUrls[candidate] || null)
+                        .find(Boolean) || null,
+                };
+
+                fteAvatarCache.set(cacheKey, entry);
+                return entry;
+            }
+
+            function getFteAvatarLayer(target) {
+                const canvas = target?.canvas || target;
+                if (!canvas || canvas.id !== 'chartFteSummary') return null;
+                return document.getElementById('chartFteSummaryAvatarLayer');
+            }
+
+            function clearFteAvatarLayer(target) {
+                const layer = getFteAvatarLayer(target);
+                if (!layer) return;
+                layer.innerHTML = '';
+                delete layer.dataset.signature;
+            }
+
+            function createFteAvatarMarker(record) {
+                const marker = document.createElement('div');
+                marker.className = `fte-avatar-marker${record.photoUrl ? ' has-photo' : ' is-photo-missing'}`;
+                marker.style.left = `${record.x}px`;
+                marker.style.top = `${record.y}px`;
+                marker.style.width = `${record.diameter}px`;
+                marker.style.height = `${record.diameter}px`;
+                marker.style.zIndex = String(Math.max(1, Math.round(record.radius)));
+                marker.style.setProperty('--fte-accent', record.accent);
+
+                if (record.photoUrl) {
+                    const img = document.createElement('img');
+                    img.alt = record.label;
+                    img.src = record.photoUrl;
+                    img.decoding = 'async';
+                    img.loading = 'eager';
+                    img.addEventListener('error', () => {
+                        marker.classList.remove('has-photo');
+                        marker.classList.add('is-photo-missing');
+                    }, { once: true });
+                    marker.appendChild(img);
+                }
+
+                const fallback = document.createElement('span');
+                fallback.className = 'fte-avatar-marker__fallback';
+                fallback.textContent = record.initials;
+                fallback.style.fontSize = `${Math.max(10, record.radius * 0.76)}px`;
+                marker.appendChild(fallback);
+
+                return marker;
+            }
+
+            function scheduleFteAvatarLayerSync(chart) {
+                if (!chart?.canvas || chart.canvas.id !== 'chartFteSummary') return;
+                if (chart._fteAvatarSyncFrame) {
+                    cancelAnimationFrame(chart._fteAvatarSyncFrame);
+                }
+
+                chart._fteAvatarSyncFrame = requestAnimationFrame(() => {
+                    chart._fteAvatarSyncFrame = null;
+                    syncFteAvatarLayer(chart);
+                });
+            }
+
+            function syncFteAvatarLayer(chart) {
+                const layer = getFteAvatarLayer(chart);
+                const area = chart?.chartArea;
+                if (!layer || !area) {
+                    clearFteAvatarLayer(chart);
+                    return;
+                }
+
+                const records = chart.data.datasets.map((dataset, datasetIndex) => {
+                    const point = chart.getDatasetMeta(datasetIndex)?.data?.[0];
+                    const raw = dataset?.data?.[0];
+                    const radius = Number(raw?.r || point?.options?.radius || 0);
+                    const x = Number(point?.x);
+                    const y = Number(point?.y);
+
+                    if (!Number.isFinite(radius) || !Number.isFinite(x) || !Number.isFinite(y)) {
+                        return null;
+                    }
+
+                    const accent = dataset._fteAccent || fteAccentFor(dataset.label);
+                    const avatar = resolveFteAvatar(dataset.label, accent);
+                    return {
+                        label: dataset.label,
+                        x,
+                        y,
+                        radius,
+                        diameter: Math.max(26, radius * 2),
+                        accent,
+                        initials: avatar.initials,
+                        photoUrl: avatar.photoUrl,
+                    };
+                }).filter(Boolean);
+
+                const signature = records.map((record) => [
+                    record.label,
+                    record.x.toFixed(1),
+                    record.y.toFixed(1),
+                    record.radius.toFixed(1),
+                    record.photoUrl || ''
+                ].join('|')).join('||');
+
+                if (layer.dataset.signature === signature) return;
+
+                layer.dataset.signature = signature;
+                layer.innerHTML = '';
+                records.forEach((record) => {
+                    layer.appendChild(createFteAvatarMarker(record));
+                });
+            }
+
+            function computeFteBubbleRadius(totalFte) {
+                const value = Math.max(0, Number(totalFte) || 0);
+                return Math.max(14, Math.min(32, 12 + Math.sqrt(value) * 7));
+            }
+
+            function buildFteSummaryDatasets(items) {
+                const grouped = {};
+                (items || []).forEach((item) => {
+                    const name = item?.name || 'ไม่ระบุ';
+                    grouped[name] = grouped[name] || { fte: 0, projectSet: new Set() };
+                    grouped[name].fte += toNumber(item?.fte_value || item?.fte || 0);
+                    if (item?.project_id !== null && item?.project_id !== undefined) {
+                        grouped[name].projectSet.add(item.project_id);
+                    }
+                });
+
+                return Object.entries(grouped)
+                    .sort(([, left], [, right]) => right.fte - left.fte)
+                    .map(([name, data]) => {
+                        const accent = fteAccentFor(name);
+                        return {
+                            label: name,
+                            clip: false,
+                            borderWidth: 0,
+                            borderColor: 'rgba(255,255,255,0)',
+                            backgroundColor: 'rgba(255,255,255,0)',
+                            hoverBorderColor: 'rgba(255,255,255,0)',
+                            hoverBackgroundColor: 'rgba(255,255,255,0)',
+                            _fteAccent: accent,
+                            data: [{
+                                x: data.projectSet.size,
+                                y: data.fte,
+                                r: computeFteBubbleRadius(data.fte)
+                            }]
+                        };
+                    });
+            }
+
+            const fteAvatarBubblePlugin = {
+                id: 'fteAvatarBubblePlugin',
+                afterDatasetsDraw(chart) {
+                    if (chart?.canvas?.id !== 'chartFteSummary') return;
+                    scheduleFteAvatarLayerSync(chart);
+                },
+                resize(chart) {
+                    scheduleFteAvatarLayerSync(chart);
+                },
+                afterDestroy(chart) {
+                    if (chart?._fteAvatarSyncFrame) {
+                        cancelAnimationFrame(chart._fteAvatarSyncFrame);
+                        chart._fteAvatarSyncFrame = null;
+                    }
+                    clearFteAvatarLayer(chart);
+                }
+            };
 
             function fillDatalist(id, values, limit = 250) {
                 const datalist = document.getElementById(id);
@@ -3090,6 +3414,18 @@
             }
             const yearLabelTH = ce => ce ? String(ce + 543) : '-';
 
+            function irbExpiryBucketKey(date) {
+                if (!(date instanceof Date) || isNaN(date)) return null;
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                return `${date.getFullYear()}-${month}`;
+            }
+
+            function irbExpiryBucketLabel(bucketKey) {
+                const match = String(bucketKey ?? '').match(/^(\d{4})-(\d{2})$/);
+                if (!match) return String(bucketKey ?? '');
+                return `${Number(match[2])}/${toBE(match[1])}`;
+            }
+
             function outputYearKey(o) {
                 const direct = normalizeOutputYear(o?.year ?? o?.export_year ?? o?.date ?? o?.created_at);
                 if (direct !== 'ไม่ระบุ') return direct;
@@ -3577,18 +3913,20 @@
                 }
 
                 if (id === 'chartIRBExpiry') {
+                    const bucketKey = chart?.$irbExpiryKeys?.[point.index] || null;
                     const labelText = String(label || '');
                     const list = projects.filter(p => {
                         const list = p.irbs || [];
                         return list.some(irb => {
                             const d = parseProjectDate(irb.exp_date);
                             if (!d) return false;
-                            const key = `${d.getMonth() + 1}/${d.getFullYear()}`;
-                            return key === labelText;
+                            const key = irbExpiryBucketKey(d);
+                            if (!key) return false;
+                            return bucketKey ? key === bucketKey : irbExpiryBucketLabel(key) === labelText || key === labelText;
                         });
                     });
                     return {
-                        title: `IRB ใกล้หมดอายุ ${labelText}`,
+                        title: `IRB ใกล้หมดอายุ ${bucketKey ? irbExpiryBucketLabel(bucketKey) : labelText}`,
                         projects: list
                     };
                 }
@@ -4445,26 +4783,28 @@
                             if (!expDate) return;
                             const monthsAhead = (expDate - new Date()) / (1000 * 60 * 60 * 24 * 30);
                             if (monthsAhead >= 0 && monthsAhead <= 6) {
-                                const key = `${expDate.getMonth() + 1}/${expDate.getFullYear()}`;
+                                const key = irbExpiryBucketKey(expDate);
+                                if (!key) return;
                                 group[key] = (group[key] || 0) + 1;
                             }
                         });
                     });
 
-                    const labels = Object.keys(group).sort((a, b) => new Date(a) - new Date(b));
-                    if (!labels.length) {
+                    const bucketKeys = Object.keys(group).sort();
+                    if (!bucketKeys.length) {
                         drawIrbEmptyState();
                         return;
                     }
 
+                    const labels = bucketKeys.map(irbExpiryBucketLabel);
                     Chart.getChart(canvas)?.destroy();
-                    new Chart(canvas, {
+                    const chart = new Chart(canvas, {
                         type: 'bar',
                         data: {
                             labels,
                             datasets: [{
                                 label: 'IRB ใกล้หมดอายุ',
-                                data: labels.map((label) => group[label]),
+                                data: bucketKeys.map((key) => group[key]),
                                 backgroundColor: '#ef4444'
                             }]
                         },
@@ -4477,6 +4817,7 @@
                             }
                         }
                     });
+                    chart.$irbExpiryKeys = bucketKeys;
                 }
 
                 window.renderDashboardIrbExpiryChart = renderIrbExpiryChart;
@@ -5590,24 +5931,7 @@
 
             /* ---------- 12) FTE Bubble (ชื่อ → โครงการ/รวม FTE) ---------- */
             (function() {
-                const fteData = {};
-                ftes.forEach(f => {
-                    const name = f.name || 'ไม่ระบุ';
-                    if (!fteData[name]) fteData[name] = {
-                        fte: 0,
-                        projectSet: new Set()
-                    };
-                    fteData[name].fte += toNumber(f.fte_value || f.fte || 0);
-                    fteData[name].projectSet.add(f.project_id);
-                });
-                const datasets = Object.entries(fteData).map(([name, data]) => ({
-                    label: name,
-                    data: [{
-                        x: data.projectSet.size,
-                        y: data.fte,
-                        r: Math.max(5, data.fte * 10)
-                    }]
-                }));
+                const datasets = buildFteSummaryDatasets(ftes);
                 new Chart(document.getElementById('chartFteSummary'), {
                     type: 'bubble',
                     data: {
@@ -5615,8 +5939,17 @@
                     },
                     options: {
                         responsive: true,
+                        layout: {
+                            padding: {
+                                top: 16,
+                                right: 14,
+                                bottom: 10,
+                                left: 10
+                            }
+                        },
                         plugins: {
                             tooltip: {
+                                displayColors: false,
                                 callbacks: {
                                     label: (ctx) =>
                                         `${ctx.dataset.label}: โครงการ ${ctx.raw.x} / FTE ${ctx.raw.y.toFixed(2)}`
@@ -5641,7 +5974,8 @@
                                 }
                             }
                         }
-                    }
+                    },
+                    plugins: [fteAvatarBubblePlugin]
                 });
             })();
 
@@ -6175,6 +6509,9 @@
             function drawDashboardMobileEmptyChart(canvas, text = 'ไม่มีข้อมูล') {
                 if (!canvas) return;
                 Chart.getChart(canvas)?.destroy();
+                if (canvas.id === 'chartFteSummary') {
+                    clearFteAvatarLayer(canvas);
+                }
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.save();
@@ -6898,26 +7235,28 @@
                             if (!expDate) return;
                             const monthsAhead = (expDate - new Date()) / (1000 * 60 * 60 * 24 * 30);
                             if (monthsAhead >= 0 && monthsAhead <= 6) {
-                                const key = `${expDate.getMonth() + 1}/${expDate.getFullYear()}`;
+                                const key = irbExpiryBucketKey(expDate);
+                                if (!key) return;
                                 group[key] = (group[key] || 0) + 1;
                             }
                         });
                     });
 
-                    const labels = Object.keys(group).sort((a, b) => new Date(a) - new Date(b));
-                    if (!labels.length) {
+                    const bucketKeys = Object.keys(group).sort();
+                    if (!bucketKeys.length) {
                         drawDashboardMobileEmptyChart(canvas, 'ไม่มีข้อมูล IRB');
                         return;
                     }
 
+                    const labels = bucketKeys.map(irbExpiryBucketLabel);
                     Chart.getChart(canvas)?.destroy();
-                    new Chart(canvas, {
+                    const chart = new Chart(canvas, {
                         type: 'bar',
                         data: {
                             labels,
                             datasets: [{
                                 label: 'IRB ใกล้หมดอายุ',
-                                data: labels.map((label) => group[label]),
+                                data: bucketKeys.map((key) => group[key]),
                                 backgroundColor: '#ef4444',
                                 borderRadius: 6
                             }]
@@ -6960,6 +7299,7 @@
                         },
                         plugins: [createDashboardMobileBarValuePlugin('mobileIrbExpiryLabel')]
                     });
+                    chart.$irbExpiryKeys = bucketKeys;
                 }
 
                 function refreshRealtimeDashboardMobile(rows = getFilteredProjects()) {
