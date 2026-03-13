@@ -22,6 +22,23 @@
         'นักประชาสัมพันธ์',
         'เจ้าหน้าที่บริหารงานทั่วไป',
     ];
+    $taskDetails = [
+        'ติดต่อประสานงาน',
+        'ที่ปรึกษาโครงการ',
+        'review literature',
+        'เขียนproposal',
+        'ดำเนินการเอกสารขอirb/submit irb',
+        'ดำเนินการเอกสารขอทุน/submit ทุน',
+        'เก็บข้อมูล',
+        'วิเคราะห์ข้อมูล',
+        'เขียนเล่มรายงาน',
+        'เขียนmanuscript',
+        'submit journal',
+        'เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์',
+        'นำเสนอผลงานวิจัย Oral/Poster presentation',
+        'ประชาสัมพันธ์',
+        'สร้างโปรเเกรม ฐานข้อมูล เเละ โปรเเกรมที่เกี่ยวข้องกับงานวิจัย',
+    ];
 @endphp
 
 {{-- datalist ใช้ร่วมทุกแถว --}}
@@ -44,6 +61,8 @@
 
 <script>
     window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
+    window.PROJECT_CARD_DATE_MODE = 'create';
+    window.PROJECT_MOBILE_WHEEL_DATE = true;
 </script>
 
 @php
@@ -774,15 +793,9 @@
                                     <select name="fte_roles[__i__][task_detail]" class="w-full border p-2 rounded"
                                         required>
                                         <option value="">เลือกภารกิจ</option>
-                                        <option>ติดต่อประสานงาน</option>
-                                        <option>ที่ปรึกษาโครงการ</option>
-                                        <option>review literature</option>
-                                        <option>เขียน proposal</option>
-                                        <option>เก็บข้อมูล</option>
-                                        <option>วิเคราะห์ข้อมูล</option>
-                                        <option>เขียน manuscript</option>
-                                        <option>submit journal</option>
-                                        <option>นำเสนอผลงาน Oral / Poster</option>
+                                        @foreach ($taskDetails as $taskDetail)
+                                            <option value="{{ $taskDetail }}">{{ $taskDetail }}</option>
+                                        @endforeach
                                     </select>
                                 </label>
                             </div>

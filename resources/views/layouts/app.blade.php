@@ -56,6 +56,49 @@
                 border-radius: 12px;
                 border: 1px solid #e2e8f0;
                 background: #ffffff;
+                width: 42px;
+                height: 42px;
+                align-items: center;
+                justify-content: center;
+                transition: transform 0.15s ease, box-shadow 0.15s ease;
+            }
+
+            .mobile-nav-toggle:active {
+                transform: scale(0.96);
+            }
+
+            .mobile-nav-toggle:hover {
+                box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+            }
+
+            .mobile-hamburger {
+                width: 18px;
+                height: 14px;
+                display: inline-flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+            .mobile-hamburger span {
+                display: block;
+                width: 100%;
+                height: 2px;
+                border-radius: 999px;
+                background: #334155;
+                transition: transform 0.2s ease, opacity 0.2s ease;
+                transform-origin: center;
+            }
+
+            .mobile-nav-toggle.is-open .mobile-hamburger span:nth-child(1) {
+                transform: translateY(6px) rotate(45deg);
+            }
+
+            .mobile-nav-toggle.is-open .mobile-hamburger span:nth-child(2) {
+                opacity: 0;
+            }
+
+            .mobile-nav-toggle.is-open .mobile-hamburger span:nth-child(3) {
+                transform: translateY(-6px) rotate(-45deg);
             }
 
             .mobile-nav-links a {
@@ -70,6 +113,59 @@
 
             .mobile-nav-links a:hover {
                 background: #f1f5f9;
+            }
+
+            .mobile-logout-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                margin-top: 4px;
+                padding: 10px 12px;
+                border-radius: 12px;
+                border: 1px solid #fca5a5;
+                background: #fee2e2;
+                color: #b91c1c;
+                font-size: 14px;
+                font-weight: 700;
+                letter-spacing: 0.01em;
+                transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+            }
+
+            .mobile-logout-btn:hover {
+                background: #fecaca;
+                box-shadow: 0 6px 14px rgba(185, 28, 28, 0.14);
+                transform: translateY(-1px);
+            }
+
+            .mobile-logout-btn:active {
+                transform: translateY(0);
+            }
+
+            .mobile-drawer-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.32);
+                backdrop-filter: blur(3px);
+                -webkit-backdrop-filter: blur(3px);
+                z-index: 58;
+            }
+
+            .mobile-drawer-panel {
+                position: fixed;
+                top: 0;
+                right: 0;
+                height: 100dvh;
+                width: min(90vw, 360px);
+                background: #fff;
+                border-left: 1px solid #e5e7eb;
+                border-top-left-radius: 18px;
+                border-bottom-left-radius: 18px;
+                box-shadow: -10px 0 28px rgba(15, 23, 42, 0.14);
+                padding: 14px 12px 16px;
+                z-index: 59;
+                overflow-y: auto;
             }
 
             /* Nav auto hide/show */
@@ -147,32 +243,33 @@
         <!-- ✅ เปลี่ยนจาก max-w-7xl เป็น container -->
         <nav id="main-nav"
             class="bg-white border-b border-slate-200 shadow-sm fixed top-0 inset-x-0 z-50 transition-transform duration-200"
-            x-data="{ openNav: false }">
+            x-data="{ openNav: false }"
+            x-effect="window.dispatchEvent(new CustomEvent('app-mobile-nav', { detail: { open: openNav } }))">
             <div class="container mx-auto px-4 py-3">
-                <div class="flex items-center gap-4 mobile-nav xl:rounded-none xl:border-0 xl:bg-transparent xl:p-0">
-                    <a href="/dashboard" class="font-bold brand text-slate-900 tracking-tight text-lg">Research
+                <div class="flex items-center gap-3 lg:gap-4 mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
+                    <a href="/dashboard" class="font-bold brand text-slate-900 tracking-tight text-base lg:text-lg whitespace-nowrap">Research
                         Dashboard</a>
 
-                    <div class="hidden xl:flex items-center gap-1 flex-1 justify-center">
+                    <div class="hidden md:flex items-center gap-0.5 lg:gap-1 flex-1 justify-start lg:justify-center min-w-0">
                         <a href="/dashboard"
-                            class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📊
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📊
                             Dashboard</a>
                         <a href="/rm"
-                            class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📋
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📋
                             รายการโปรเจค</a>
                         <a href="/rm/create"
-                            class="px-3 py-2 rounded-lg text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50">➕
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50">➕
                             เพิ่มโครงการ</a>
 
                         <a href="{{ route('back_office.index') }}"
-                            class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧾
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧾
                             Back Office</a> <a href="{{ route('outputs.index') }}"
-                            class="px-3 py-2 rounded-lg text-sm font-semibold text-amber-700 hover:text-amber-800 hover:bg-amber-50">📑
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-amber-700 hover:text-amber-800 hover:bg-amber-50">📑
                             outputs</a>
 
                         <div class="relative" x-data="{ openFte: false }">
                             <button type="button" @click="openFte = !openFte" @click.away="openFte = false"
-                                class="px-3 py-2 rounded-lg text-sm font-semibold inline-flex items-center gap-1 text-slate-700 hover:text-blue-700 hover:bg-slate-100">
+                                class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold inline-flex items-center gap-1 text-slate-700 hover:text-blue-700 hover:bg-slate-100 whitespace-nowrap">
                                 🔥 FTE
                                 <svg :class="{ 'rotate-180': openFte }" class="w-4 h-4 text-gray-500 transition-transform"
                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -194,8 +291,8 @@
                     </div>
 
                     <div class="flex items-center gap-2 ml-auto">
-                        <!-- Profile Dropdown -->
-                        <div class="relative" x-data="{ open: false }">
+                        <!-- Profile Dropdown (desktop only) -->
+                        <div class="relative hidden md:block" x-data="{ open: false }">
                             <button @click="open = !open"
                                 class="w-10 h-10 bg-gray-200 rounded-full overflow-hidden focus:outline-none">
                                 <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}?v={{ time() }}"
@@ -243,18 +340,52 @@
                             </div>
                         </div>
 
-                        <button type="button" class="xl:hidden p-2 mobile-nav-toggle text-gray-600 hover:bg-gray-50"
+                        <button type="button" class="md:hidden inline-flex mobile-nav-toggle text-gray-600"
+                            :class="{ 'is-open': openNav }"
                             @click="openNav = !openNav" aria-label="Toggle navigation">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
+                            <span class="mobile-hamburger" aria-hidden="true">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </span>
                         </button>
                     </div>
                 </div>
 
-                <div class="xl:hidden mt-3" x-show="openNav" x-cloak>
-                    <div class="pt-3 pb-2 border-t flex flex-col gap-2 mobile-nav-links">
+                <div class="md:hidden" x-show="openNav" x-cloak>
+                    <div class="mobile-drawer-overlay" x-show="openNav" @click="openNav = false"
+                        x-transition.opacity.duration.200ms></div>
+
+                    <aside class="mobile-drawer-panel" x-show="openNav" @click.stop
+                        x-transition:enter="transform transition ease-out duration-250"
+                        x-transition:enter-start="translate-x-full"
+                        x-transition:enter-end="translate-x-0"
+                        x-transition:leave="transform transition ease-in duration-200"
+                        x-transition:leave-start="translate-x-0"
+                        x-transition:leave-end="translate-x-full">
+                        <div class="pt-1 pb-2 border-b flex items-center justify-between border-slate-200">
+                            <div class="text-sm font-semibold text-slate-700">เมนู</div>
+                            <button type="button" class="inline-flex mobile-nav-toggle text-gray-600"
+                                @click="openNav = false" aria-label="Close navigation">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="pt-3 pb-2 flex flex-col gap-2 mobile-nav-links">
+                        <div class="flex items-center gap-3 px-1 pb-2 border-b border-slate-200">
+                            <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}?v={{ time() }}"
+                                onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'"
+                                alt="Profile" class="w-10 h-10 rounded-full object-cover">
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold text-slate-900 truncate">
+                                    {{ Auth::user()->prefix }} {{ Auth::user()->name }}
+                                </div>
+                                <div class="text-xs text-slate-500 truncate">
+                                    {{ Auth::user()->position }} ({{ Auth::user()->role }})
+                                </div>
+                            </div>
+                        </div>
                         <a href="/dashboard">📊 Dashboard</a>
                         <a href="/rm">📋 รายการโปรเจค</a>
                         <a href="{{ route('back_office.index') }}">🧾 Back Office</a>
@@ -263,6 +394,20 @@
                         <div class="text-gray-700 font-medium">🔥 FTE</div>
                         <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
                         <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
+                        <a href="{{ route('user_guide') }}">📘 คู่มือ</a>
+                        @if (Auth::user()->role === 'admin')
+                            <a href="/user">👥 จัดการผู้ใช้</a>
+                            <a href="/project-logs">📝 Project log</a>
+                        @endif
+                        <a href="{{ route('profile.show') }}">👤 แก้ไขข้อมูลส่วนตัว</a>
+                        <form method="POST" action="{{ route('logout') }}" data-logout-form>
+                            @csrf
+                            <button type="submit" class="mobile-logout-btn">
+                                🚪 ออกจากระบบ
+                            </button>
+                        </form>
+                        </div>
+                    </aside>
                     </div>
                 </div>
             </div>
@@ -281,7 +426,12 @@
         @endif
     </main>
 
-    @include('partials.global-ai-chat')
+    @php
+        $hideAiChatOnPage = request()->routeIs('projects.create') || request()->routeIs('projects.edit');
+    @endphp
+    @unless ($hideAiChatOnPage)
+        @include('partials.global-ai-chat')
+    @endunless
 
     @livewireScripts
 </body>
@@ -440,6 +590,224 @@
         return null;
     }
 
+    function isProjectMobileWheelDateMode() {
+        return window.PROJECT_MOBILE_WHEEL_DATE === true;
+    }
+
+    function toYmdCE(date) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+        const yyyy = String(date.getFullYear());
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function toDmyCE(date) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+        const dd = String(date.getDate()).padStart(2, '0');
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const yyyy = String(date.getFullYear());
+        return `${dd}-${mm}-${yyyy}`;
+    }
+
+    function formatDateBELabel(date) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+        const day = date.getDate();
+        const month = date.toLocaleDateString('th-TH', {
+            month: 'long'
+        });
+        const year = date.getFullYear() + 543;
+        return `${day} ${month} ${year}`;
+    }
+
+    function ensureThaiWheelPickerModal() {
+        if (window.__thaiWheelPickerModal) return window.__thaiWheelPickerModal;
+
+        if (!document.getElementById('thaiWheelPickerStyle')) {
+            const style = document.createElement('style');
+            style.id = 'thaiWheelPickerStyle';
+            style.textContent = `
+                .thai-wheel-overlay{position:fixed;inset:0;background:rgba(15,23,42,.14);display:none;align-items:flex-end;justify-content:center;z-index:120;backdrop-filter:blur(1.5px)}
+                .thai-wheel-overlay.is-open{display:flex}
+                .thai-wheel-sheet{width:min(680px,96vw);background:rgba(255,255,255,.86);border-radius:18px 18px 0 0;box-shadow:0 -10px 32px rgba(0,0,0,.13);padding:12px;border:1px solid rgba(203,213,225,.65)}
+                .thai-wheel-title{font-size:14px;font-weight:700;color:#0f172a;margin:2px 4px 10px}
+                .thai-wheel-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+                .thai-wheel-col{display:flex;flex-direction:column}
+                .thai-wheel-col label{font-size:11px;color:#64748b;margin:0 0 4px 2px}
+                .thai-wheel-select{height:168px;border:1px solid #cbd5e1;border-radius:12px;padding:2px 0;background:rgba(255,255,255,.9);font-size:18px;font-weight:600;color:#0f172a}
+                .thai-wheel-select option{padding:8px 4px;text-align:center}
+                .thai-wheel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+                .thai-wheel-btn{border:none;border-radius:12px;padding:11px 10px;font-size:16px;font-weight:700}
+                .thai-wheel-btn--ok{background:#2563eb;color:#fff}
+                .thai-wheel-btn--cancel{background:#e2e8f0;color:#0f172a}
+            `;
+            document.head.appendChild(style);
+        }
+
+        const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        const now = new Date();
+        const nowBE = now.getFullYear() + 543;
+        const yearMin = nowBE - 10;
+        const yearMax = nowBE + 10;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'thai-wheel-overlay';
+        overlay.innerHTML = `
+            <div class="thai-wheel-sheet" role="dialog" aria-modal="true" aria-label="เลือกวันที่">
+                <div class="thai-wheel-title">เลือกวันที่ (พ.ศ.)</div>
+                <div class="thai-wheel-body">
+                    <div class="thai-wheel-col">
+                        <label>วัน</label>
+                        <select class="thai-wheel-select" id="thaiWheelDay" size="5"></select>
+                    </div>
+                    <div class="thai-wheel-col">
+                        <label>เดือน</label>
+                        <select class="thai-wheel-select" id="thaiWheelMonth" size="5"></select>
+                    </div>
+                    <div class="thai-wheel-col">
+                        <label>ปี พ.ศ.</label>
+                        <select class="thai-wheel-select" id="thaiWheelYear" size="5"></select>
+                    </div>
+                </div>
+                <div class="thai-wheel-actions">
+                    <button type="button" class="thai-wheel-btn thai-wheel-btn--ok" id="thaiWheelOk">เลือกวัน</button>
+                    <button type="button" class="thai-wheel-btn thai-wheel-btn--cancel" id="thaiWheelCancel">ยกเลิก</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const daySel = overlay.querySelector('#thaiWheelDay');
+        const monthSel = overlay.querySelector('#thaiWheelMonth');
+        const yearSel = overlay.querySelector('#thaiWheelYear');
+        const okBtn = overlay.querySelector('#thaiWheelOk');
+        const cancelBtn = overlay.querySelector('#thaiWheelCancel');
+        let onConfirm = null;
+
+        for (let m = 0; m < 12; m++) {
+            const opt = document.createElement('option');
+            opt.value = String(m + 1);
+            opt.textContent = monthNames[m];
+            monthSel.appendChild(opt);
+        }
+        for (let y = yearMin; y <= yearMax; y++) {
+            const opt = document.createElement('option');
+            opt.value = String(y);
+            opt.textContent = String(y);
+            yearSel.appendChild(opt);
+        }
+
+        const daysInMonth = (yearCE, month1) => new Date(yearCE, month1, 0).getDate();
+        const refillDays = () => {
+            const yearBE = Number(yearSel.value || nowBE);
+            const month = Number(monthSel.value || 1);
+            const maxDay = daysInMonth(yearBE - 543, month);
+            const prev = Number(daySel.value || 1);
+            daySel.innerHTML = '';
+            for (let d = 1; d <= maxDay; d++) {
+                const opt = document.createElement('option');
+                opt.value = String(d);
+                opt.textContent = String(d);
+                daySel.appendChild(opt);
+            }
+            daySel.value = String(Math.min(prev, maxDay));
+        };
+
+        const setDate = (date) => {
+            const d = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
+            monthSel.value = String(d.getMonth() + 1);
+            yearSel.value = String(d.getFullYear() + 543);
+            refillDays();
+            daySel.value = String(d.getDate());
+        };
+
+        const open = (date, callback) => {
+            onConfirm = callback;
+            setDate(date);
+            overlay.classList.add('is-open');
+        };
+        const close = () => overlay.classList.remove('is-open');
+
+        monthSel.addEventListener('change', refillDays);
+        yearSel.addEventListener('change', refillDays);
+        cancelBtn.addEventListener('click', close);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) close();
+        });
+        okBtn.addEventListener('click', () => {
+            const day = Number(daySel.value || 1);
+            const month = Number(monthSel.value || 1);
+            const yearBE = Number(yearSel.value || nowBE);
+            const picked = new Date(yearBE - 543, month - 1, day);
+            if (typeof onConfirm === 'function') onConfirm(picked);
+            close();
+        });
+
+        window.__thaiWheelPickerModal = { open };
+        return window.__thaiWheelPickerModal;
+    }
+
+    function initNativeMobileDateInput(input) {
+        if (!(input instanceof HTMLInputElement)) return;
+        if (input.dataset.nativeDateReady === '1') return;
+
+        const parsed = parseDateInputValue(input.value);
+        const holder = input.closest('.relative') || input.parentElement;
+        if (!holder) return;
+
+        let displayInput = holder.querySelector(`input[data-native-date-display-for="${CSS.escape(input.name || '')}"]`);
+        if (!displayInput) {
+            displayInput = document.createElement('input');
+            displayInput.type = 'text';
+            displayInput.readOnly = true;
+            displayInput.className = input.className;
+            displayInput.dataset.nativeDateDisplayFor = input.name || '';
+            holder.appendChild(displayInput);
+        }
+
+        input.type = 'hidden';
+        input.classList.add('native-date-raw');
+        input.style.display = 'none';
+        input.value = parsed ? toYmdCE(parsed) : '';
+
+        const syncDisplay = () => {
+            const rawDate = parseDateInputValue(input.value);
+            displayInput.value = rawDate ? formatDateBELabel(rawDate) : '';
+        };
+        syncDisplay();
+
+        const openWheel = () => {
+            const picker = ensureThaiWheelPickerModal();
+            const current = parseDateInputValue(input.value) || getClientTodayLocal();
+            picker.open(current, (picked) => {
+                if (input.dataset.noPast === '1' && normalizeDateOnly(picked) < getClientTodayLocal()) {
+                    return;
+                }
+                input.value = toYmdCE(picked);
+                syncDisplay();
+                input.dispatchEvent(new Event('input', {
+                    bubbles: true
+                }));
+                input.dispatchEvent(new Event('change', {
+                    bubbles: true
+                }));
+            });
+        };
+
+        displayInput.addEventListener('click', openWheel);
+
+        if (input.id) {
+            const btn = document.querySelector(`[data-open-picker][data-target="${input.id}"]`);
+            if (btn && btn.dataset.nativePickerBound !== '1') {
+                btn.dataset.nativePickerBound = '1';
+                btn.addEventListener('click', openWheel);
+            }
+        }
+        input.dataset.nativeDateReady = '1';
+    }
+
+    window.initNativeMobileDateInput = initNativeMobileDateInput;
+
     function appendFlatpickrHook(instance, hook, callback) {
         if (!instance || typeof callback !== 'function') return;
         const current = instance.config?.[hook];
@@ -523,6 +891,49 @@
     }
 
     function bindProjectDatePairs() {
+        if (isProjectMobileWheelDateMode()) {
+            const bindNativeRange = (startInput, endInput) => {
+                if (!(startInput instanceof HTMLInputElement) || !(endInput instanceof HTMLInputElement)) return;
+                const update = () => {
+                    const startDate = parseDateInputValue(startInput.value);
+                    if (startDate) {
+                        endInput.min = toYmdCE(normalizeDateOnly(startDate));
+                    } else if (endInput.dataset.noPast === '1') {
+                        endInput.min = toYmdCE(getClientTodayLocal());
+                    } else {
+                        endInput.removeAttribute('min');
+                    }
+                    const endDate = parseDateInputValue(endInput.value);
+                    if (startDate && endDate && normalizeDateOnly(endDate) < normalizeDateOnly(startDate)) {
+                        endInput.value = '';
+                        endInput.dispatchEvent(new Event('change', {
+                            bubbles: true
+                        }));
+                    }
+                };
+                startInput.addEventListener('change', update);
+                startInput.addEventListener('input', update);
+                endInput.addEventListener('change', update);
+                endInput.addEventListener('input', update);
+                update();
+            };
+
+            bindNativeRange(
+                document.querySelector('input[name="team_start_date"]'),
+                document.querySelector('input[name="team_end_date"]')
+            );
+            bindNativeRange(
+                document.querySelector('input[name="start_date"]'),
+                document.querySelector('input[name="end_date"]')
+            );
+            document.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
+                const endName = startInput.name.replace('[start_date]', '[end_date]');
+                const endInput = document.querySelector(`input[name="${endName}"]`);
+                bindNativeRange(startInput, endInput);
+            });
+            return;
+        }
+
         bindEndDateMinFromStart(
             document.querySelector('input[name="team_start_date"]'),
             document.querySelector('input[name="team_end_date"]'),
@@ -544,11 +955,29 @@
 
     /* ---------- DATE BE INIT ---------- */
     function initDateBE(scope = document) {
+        const toDmyCE = (date) => {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = String(date.getFullYear());
+            return `${dd}-${mm}-${yyyy}`;
+        };
 
         scope.querySelectorAll('.js-date-be').forEach(input => {
+            if (isProjectMobileWheelDateMode()) {
+                initNativeMobileDateInput(input);
+                return;
+            }
 
             // ❗ กัน init ซ้ำ
             if (input._flatpickr) return;
+
+            // รองรับค่าที่อาจเป็น พ.ศ. หรือรูปแบบเก่าจาก old()/autosave
+            // ให้ normalize เป็น d-m-Y (ค.ศ.) ก่อน init picker
+            const normalized = toDmyCE(parseDateInputValue(input.value));
+            if (normalized) {
+                input.value = normalized;
+            }
 
             const noPast = input.dataset.noPast === '1';
 
@@ -625,6 +1054,45 @@
 
         bindProjectDatePairs();
     }
+
+    function syncFlatpickrRawValue(input) {
+        if (!(input instanceof HTMLInputElement)) return;
+
+        const fp = input._flatpickr;
+        if (!fp) return;
+
+        // Always prefer the visible text field near this input first.
+        const scope = input.closest('label, .relative, .w-full, .grid, .space-y-2') || input.parentElement;
+        const visibleInput = scope?.querySelector?.('input:not([name]):not([type="hidden"])');
+        const visibleRaw = (visibleInput?.value || '').trim();
+
+        let picked = parseDateInputValue(visibleRaw);
+        if (!(picked instanceof Date) || Number.isNaN(picked.getTime())) {
+            const altRaw = (fp.altInput?.value || '').trim();
+            picked = parseDateInputValue(altRaw);
+        }
+        if (!(picked instanceof Date) || Number.isNaN(picked.getTime())) {
+            picked = fp.selectedDates?.[0];
+        }
+        if (!(picked instanceof Date) || Number.isNaN(picked.getTime())) {
+            picked = parseDateInputValue((input.value || '').trim());
+        }
+        if (!(picked instanceof Date) || Number.isNaN(picked.getTime())) return;
+
+        const day = String(picked.getDate()).padStart(2, '0');
+        const month = String(picked.getMonth() + 1).padStart(2, '0');
+        const year = String(picked.getFullYear());
+        input.value = `${day}-${month}-${year}`;
+    }
+
+    function syncDateInputsBeforeSubmit(form) {
+        if (!(form instanceof HTMLFormElement)) return;
+        form.querySelectorAll('input.thai-datepicker, input.js-date-be').forEach(syncFlatpickrRawValue);
+    }
+
+    document.addEventListener('submit', (event) => {
+        syncDateInputsBeforeSubmit(event.target);
+    }, true);
 
 
     /* ---------- ทำให้ altInput หน้าตาเหมือน input เดิม ---------- */
@@ -905,6 +1373,14 @@
             disableRowCollapse() ||
             disableByRoute() ||
             document.body.classList.contains('no-row-collapse-toggle');
+        const isRowCollapseLocked = () => false;
+
+        function clearRowCollapseUi(row) {
+            if (!row) return;
+            row.querySelectorAll('.row-collapse-toggle, .row-collapse-summary').forEach((el) => el.remove());
+            row.classList.remove('row-collapsible', 'row-collapsed');
+            row.dataset.collapsed = '0';
+        }
 
         function getSiblings(row) {
             if (!row) return [];
@@ -936,6 +1412,11 @@
         }
 
         function setCollapsed(row, collapsed) {
+            if (isRowCollapseLocked(row)) {
+                clearRowCollapseUi(row);
+                updateSummary(row);
+                return;
+            }
             if (collapsed && row?.dataset?.forceOpen === '1') {
                 collapsed = false;
             }
@@ -947,6 +1428,10 @@
 
         function ensureToggle(row) {
             if (isCollapseDisabled()) return;
+            if (isRowCollapseLocked(row)) {
+                clearRowCollapseUi(row);
+                return;
+            }
             if (row.querySelector('.row-collapse-toggle')) return;
             const btn = document.createElement('button');
             btn.type = 'button';
@@ -1006,9 +1491,151 @@
                     if (text) return text;
                 }
                 const value = el.value?.trim();
-                if (value) return value;
+                if (value) return maybeFormatDateForSummary(el, value);
             }
             return '';
+        }
+
+        function toBuddhistNumericDate(value) {
+            const raw = (value ?? '').toString().trim();
+            const dmy = raw.match(/^(\d{1,2})([/-])(\d{1,2})\2(\d{4})$/);
+            const ymd = raw.match(/^(\d{4})([/-])(\d{1,2})\2(\d{1,2})$/);
+            const thaiText = raw.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/);
+            if (!dmy && !ymd && !thaiText) return raw;
+
+            let day;
+            let month;
+            let year;
+
+            if (dmy) {
+                day = parseInt(dmy[1], 10);
+                month = parseInt(dmy[3], 10);
+                year = parseInt(dmy[4], 10);
+            } else if (ymd) {
+                year = parseInt(ymd[1], 10);
+                month = parseInt(ymd[3], 10);
+                day = parseInt(ymd[4], 10);
+            } else {
+                const monthMap = {
+                    'มกราคม': 1,
+                    'ม.ค.': 1,
+                    'ม.ค': 1,
+                    'กุมภาพันธ์': 2,
+                    'ก.พ.': 2,
+                    'ก.พ': 2,
+                    'มีนาคม': 3,
+                    'มี.ค.': 3,
+                    'มี.ค': 3,
+                    'เมษายน': 4,
+                    'เม.ย.': 4,
+                    'เม.ย': 4,
+                    'พฤษภาคม': 5,
+                    'พ.ค.': 5,
+                    'พ.ค': 5,
+                    'มิถุนายน': 6,
+                    'มิ.ย.': 6,
+                    'มิ.ย': 6,
+                    'กรกฎาคม': 7,
+                    'ก.ค.': 7,
+                    'ก.ค': 7,
+                    'สิงหาคม': 8,
+                    'ส.ค.': 8,
+                    'ส.ค': 8,
+                    'กันยายน': 9,
+                    'ก.ย.': 9,
+                    'ก.ย': 9,
+                    'ตุลาคม': 10,
+                    'ต.ค.': 10,
+                    'ต.ค': 10,
+                    'พฤศจิกายน': 11,
+                    'พ.ย.': 11,
+                    'พ.ย': 11,
+                    'ธันวาคม': 12,
+                    'ธ.ค.': 12,
+                    'ธ.ค': 12,
+                };
+
+                day = parseInt(thaiText[1], 10);
+                month = monthMap[(thaiText[2] || '').trim()] ?? NaN;
+                year = parseInt(thaiText[3], 10);
+            }
+
+            if (
+                Number.isNaN(day) || Number.isNaN(month) || Number.isNaN(year) ||
+                day < 1 || day > 31 || month < 1 || month > 12
+            ) {
+                return raw;
+            }
+
+            if (year < 2400) year += 543;
+            const dayText = String(day).padStart(2, '0');
+            const monthText = String(month).padStart(2, '0');
+            return `${dayText}-${monthText}-${year}`;
+        }
+
+        function toBuddhistFromDateLike(value) {
+            const raw = (value ?? '').toString().trim();
+            if (!raw) return '';
+            const parsed = new Date(raw);
+            if (Number.isNaN(parsed.getTime())) return '';
+            const day = String(parsed.getDate()).padStart(2, '0');
+            const month = String(parsed.getMonth() + 1).padStart(2, '0');
+            const year = String(parsed.getFullYear() + 543);
+            return `${day}-${month}-${year}`;
+        }
+
+        function maybeFormatDateForSummary(el, value) {
+            const isDateInput = el.classList?.contains('thai-datepicker') || el.classList?.contains('js-date-be');
+            if (!isDateInput) return value;
+            return toBuddhistNumericDate(value);
+        }
+
+        function formatSummaryDateText(value) {
+            const raw = (value ?? '').toString().trim();
+            if (!raw) return '';
+            const normalized = toBuddhistNumericDate(raw);
+            if (normalized !== raw) return normalized;
+            return toBuddhistFromDateLike(raw) || raw;
+        }
+
+        function normalizeSummaryDateForRowInput(inputEl) {
+            if (!inputEl) return '';
+            const altRaw = inputEl._flatpickr?.altInput?.value?.trim();
+            if (altRaw) return altRaw;
+
+            const visibleAltInLabel = inputEl.closest('label')?.querySelector?.(
+                'input:not([name]):not([type="hidden"])'
+            );
+            if (
+                visibleAltInLabel &&
+                visibleAltInLabel !== inputEl &&
+                (visibleAltInLabel.value || '').trim() !== ''
+            ) {
+                return visibleAltInLabel.value.trim();
+            }
+
+            const raw = (inputEl.value ?? '').toString().trim();
+            if (!raw) return '';
+
+            const dmy = raw.match(/^(\d{1,2})([/-])(\d{1,2})\2(\d{4})$/);
+            if (dmy) {
+                const day = String(parseInt(dmy[1], 10)).padStart(2, '0');
+                const month = String(parseInt(dmy[3], 10)).padStart(2, '0');
+                let year = parseInt(dmy[4], 10);
+                if (year < 2400) year += 543;
+                return `${day}-${month}-${year}`;
+            }
+
+            const ymd = raw.match(/^(\d{4})([/-])(\d{1,2})\2(\d{1,2})$/);
+            if (ymd) {
+                let year = parseInt(ymd[1], 10);
+                const month = String(parseInt(ymd[3], 10)).padStart(2, '0');
+                const day = String(parseInt(ymd[4], 10)).padStart(2, '0');
+                if (year < 2400) year += 543;
+                return `${day}-${month}-${year}`;
+            }
+
+            return raw;
         }
 
         function hasName(row, matcher) {
@@ -1025,7 +1652,7 @@
                 const text = el.options[el.selectedIndex]?.textContent?.trim();
                 if (text) return text;
             }
-            return (el.value ?? '').toString().trim();
+            return maybeFormatDateForSummary(el, (el.value ?? '').toString().trim());
         }
 
         function matchKey(name) {
@@ -1065,11 +1692,204 @@
             return '';
         }
 
+        function getFieldElementByName(row, matcher) {
+            const els = row.querySelectorAll('[name]');
+            for (const el of els) {
+                if (matcher(el.name, el)) return el;
+            }
+            return null;
+        }
+
+        function getDateSummaryFromElement(el) {
+            if (!el) return '';
+            const altRaw = el._flatpickr?.altInput?.value?.trim();
+            if (altRaw) {
+                return altRaw;
+            }
+            const picked = el._flatpickr?.selectedDates?.[0];
+            if (picked instanceof Date && !Number.isNaN(picked.getTime())) {
+                const day = String(picked.getDate()).padStart(2, '0');
+                const month = String(picked.getMonth() + 1).padStart(2, '0');
+                const year = picked.getFullYear() + 543;
+                return `${day}-${month}-${year}`;
+            }
+            // Do not fallback to raw input value here; raw hidden value can be stale and
+            // differ from the visible date text shown to users.
+            return '';
+        }
+
+        function pickBestDateInput(inputs) {
+            if (!inputs || inputs.length === 0) return null;
+
+            const scored = inputs.map((el) => {
+                let score = 0;
+                if ((el.type || '').toLowerCase() !== 'hidden') score += 4;
+                if (el.classList?.contains('thai-datepicker') || el.classList?.contains('js-date-be')) score += 3;
+                if (el._flatpickr) score += 2;
+                if ((el.value || '').trim()) score += 1;
+                return {
+                    el,
+                    score
+                };
+            });
+
+            scored.sort((a, b) => b.score - a.score);
+            return scored[0]?.el || inputs[0];
+        }
+
+        function getVisibleDateNearInput(input, row) {
+            if (!input) return '';
+
+            const nearby = input.closest('label, .relative, .w-full, .grid, .space-y-2') || input.parentElement || row;
+            const visibleCandidates = nearby?.querySelectorAll?.(
+                'input:not([name]):not([type="hidden"])'
+            );
+            if (!visibleCandidates || visibleCandidates.length === 0) return '';
+
+            for (const candidate of visibleCandidates) {
+                if (candidate === input) continue;
+                const raw = (candidate.value || '').trim();
+                if (raw) return raw;
+            }
+            return '';
+        }
+
+        function getProjectCardDateValue(row, root, field) {
+            const inputs = Array.from(row.querySelectorAll(`input[name^="${root}["][name$="[${field}]"]`));
+            if (!inputs.length) return '';
+
+            const primary = pickBestDateInput(inputs);
+            const orderedInputs = [primary, ...inputs.filter((el) => el !== primary)];
+
+            for (const input of orderedInputs) {
+                const fromPicker = getDateSummaryFromElement(input);
+                if (fromPicker) return formatSummaryDateText(fromPicker);
+
+                const nearVisible = getVisibleDateNearInput(input, row);
+                if (nearVisible) return formatSummaryDateText(nearVisible);
+
+                const normalized = normalizeSummaryDateForRowInput(input);
+                if (normalized) return formatSummaryDateText(normalized);
+            }
+
+            return '';
+        }
+
+        function findLabelByText(row, text) {
+            const labels = Array.from(row.querySelectorAll('label'));
+            return labels.find((label) => (label.textContent || '').includes(text)) || null;
+        }
+
+        function getDateTextFromLabel(label, fallbackInput) {
+            if (!label) return '';
+
+            const visibleFlatpickr = label.querySelector(
+                'input:not([name]):not([type="hidden"])'
+            );
+            if (visibleFlatpickr && (visibleFlatpickr.value || '').trim()) {
+                return formatSummaryDateText(visibleFlatpickr.value.trim());
+            }
+
+            if (fallbackInput) {
+                const fromPicker = fallbackInput._flatpickr?.altInput?.value?.trim();
+                if (fromPicker) return formatSummaryDateText(fromPicker);
+                const normalized = normalizeSummaryDateForRowInput(fallbackInput);
+                if (normalized) return formatSummaryDateText(normalized);
+            }
+
+            const anyVisibleInput = label.querySelector(
+                'input:not([name]):not([type="hidden"])'
+            );
+            if (anyVisibleInput && (anyVisibleInput.value || '').trim()) {
+                return formatSummaryDateText(anyVisibleInput.value.trim());
+            }
+
+            return '';
+        }
+
+        function getVisibleFlatpickrDateInputs(row) {
+            if (!row) return [];
+            return Array.from(
+                row.querySelectorAll('input:not([name]):not([type="hidden"])')
+            ).filter((el) => {
+                const val = (el.value || '').trim();
+                if (!val) return false;
+                if (el.offsetParent !== null) return true;
+                const style = window.getComputedStyle(el);
+                return style.display !== 'none' && style.visibility !== 'hidden';
+            });
+        }
+
+        function extractDisplayedDateText(inputEl) {
+            if (!inputEl) return '';
+            const fromPicker = inputEl._flatpickr?.altInput?.value?.trim();
+            if (fromPicker) return formatSummaryDateText(fromPicker);
+
+            const nearVisible = inputEl.closest('label, .relative, .w-full, .grid, .space-y-2')?.querySelector?.(
+                'input:not([name]):not([type="hidden"])'
+            );
+            if (nearVisible && (nearVisible.value || '').trim()) {
+                return formatSummaryDateText(nearVisible.value.trim());
+            }
+
+            const raw = (inputEl.value || '').trim();
+            return raw ? formatSummaryDateText(raw) : '';
+        }
+
+        function cacheProjectRowDateSummary(row) {
+            if (!row) return;
+
+            const fteStartInput = row.querySelector('input[name^="fte_roles["][name$="[start_date]"]');
+            const fteEndInput = row.querySelector('input[name^="fte_roles["][name$="[end_date]"]');
+            if (fteStartInput || fteEndInput) {
+                row.dataset.fteStartDisplay = extractDisplayedDateText(fteStartInput);
+                row.dataset.fteEndDisplay = extractDisplayedDateText(fteEndInput);
+            }
+
+            const irbExpInput = row.querySelector('input[name^="irbs["][name$="[exp_date]"]');
+            if (irbExpInput) {
+                row.dataset.irbExpDisplay = extractDisplayedDateText(irbExpInput);
+            }
+        }
+
+        function getStrictDisplayedDateForNamedInput(row, selector) {
+            const input = row.querySelector(selector);
+            if (!input) return '';
+
+            const altRaw = input._flatpickr?.altInput?.value?.trim();
+            if (altRaw) return formatSummaryDateText(altRaw);
+
+            const scope = input.closest('label, .relative, .w-full, .grid, .space-y-2') || input.parentElement || row;
+            const visible = scope.querySelector('input:not([name]):not([type="hidden"])');
+            if (visible && (visible.value || '').trim()) {
+                return formatSummaryDateText(visible.value.trim());
+            }
+
+            return '';
+        }
+
+        function getDisplayDateFromInput(inputEl) {
+            if (!inputEl) return '';
+
+            const altRaw = inputEl._flatpickr?.altInput?.value?.trim();
+            if (altRaw) return altRaw;
+
+            const visibleInLabel = inputEl.closest('label')?.querySelector?.(
+                'input:not([name]):not([type="hidden"])'
+            );
+            if (visibleInLabel && (visibleInLabel.value || '').trim() !== '') {
+                return visibleInLabel.value.trim();
+            }
+
+            return normalizeSummaryDateForRowInput(inputEl);
+        }
+
         function updateSummary(row) {
             const summary = row.querySelector('.row-collapse-summary');
             if (!summary) return;
             const summaryText = summary.querySelector('.row-collapse-summary-text');
             if (!summaryText) return;
+            cacheProjectRowDateSummary(row);
 
             const siblings = getSiblings(row);
             const index = Math.max(1, siblings.indexOf(row) + 1);
@@ -1086,7 +1906,9 @@
                 const values = idx !== null ? getGroupValues(row, 'irbs', idx) : {};
                 const code = values.code || '-';
                 const source = values.source || '-';
-                const exp = values.exp_date || '-';
+                const exp = getStrictDisplayedDateForNamedInput(row, 'input[name^="irbs["][name$="[exp_date]"]') ||
+                    (row.dataset.irbExpDisplay || '').trim() ||
+                    '-';
                 summaryText.innerHTML = `
         <span class="summary-chip">${prefix} • IRB รหัส ${code}</span>
         <span class="summary-chip summary-muted">หน่วยงาน ${source}</span>
@@ -1139,13 +1961,19 @@
                 const task = getFieldValueByName(row, (n) =>
                     n.startsWith('fte_roles[') && (n.endsWith('[job_detail]') || n.endsWith('[task_detail]'))
                 ) || 'ไม่ระบุภาระงาน';
-                const start = getFieldValueByName(row, (n) => n.startsWith('fte_roles[') && n.endsWith(
-                    '[start_date]'));
-                const end = getFieldValueByName(row, (n) => n.startsWith('fte_roles[') && n.endsWith('[end_date]'));
                 const fte = getFieldValueByName(row, (n) =>
                     n.startsWith('fte_roles[') && (n.endsWith('[fte_value]') || n.endsWith('[fte]'))
                 );
-                const dateText = (start || end) ? `${start || '-'} ถึง ${end || '-'}` : 'ยังไม่ระบุช่วงเวลา';
+                const startText = getStrictDisplayedDateForNamedInput(row,
+                        'input[name^="fte_roles["][name$="[start_date]"]') ||
+                    (row.dataset.fteStartDisplay || '').trim() ||
+                    '-';
+                const endText = getStrictDisplayedDateForNamedInput(row,
+                        'input[name^="fte_roles["][name$="[end_date]"]') ||
+                    (row.dataset.fteEndDisplay || '').trim() ||
+                    '-';
+                const hasDate = (startText && startText !== '-') || (endText && endText !== '-');
+                const dateText = hasDate ? `${startText} ถึง ${endText}` : 'ยังไม่ระบุช่วงเวลา';
                 const fteText = fte ? `FTE ${fte}` : 'FTE -';
                 summaryText.innerHTML = `
         <span class="summary-chip">${prefix} • ${name}</span>
@@ -1179,8 +2007,12 @@
                 '[task_detail]')) || 'ไม่ระบุภาระงาน';
             const start = getFieldValueByName(row, (n) => n.endsWith('[start_date]') || n.endsWith('[start]'));
             const end = getFieldValueByName(row, (n) => n.endsWith('[end_date]') || n.endsWith('[end]'));
+            const startEl = getFieldElementByName(row, (n) => n.endsWith('[start_date]') || n.endsWith('[start]'));
+            const endEl = getFieldElementByName(row, (n) => n.endsWith('[end_date]') || n.endsWith('[end]'));
             const fte = getFieldValueByName(row, (n) => n.endsWith('[fte_value]') || n.endsWith('[fte]'));
-            const dateText = (start || end) ? `${start || '-'} ถึง ${end || '-'}` : 'ยังไม่ระบุช่วงเวลา';
+            const startText = normalizeSummaryDateForRowInput(startEl) || formatSummaryDateText(start) || '-';
+            const endText = normalizeSummaryDateForRowInput(endEl) || formatSummaryDateText(end) || '-';
+            const dateText = (start || end) ? `${startText} ถึง ${endText}` : 'ยังไม่ระบุช่วงเวลา';
             const fteText = fte ? `FTE ${fte}` : 'FTE -';
 
             summaryText.innerHTML = `
@@ -1195,6 +2027,20 @@
             if (!row || row.dataset.collapseReady === '1') return;
             row.dataset.collapseReady = '1';
             if (isCollapseDisabled()) return;
+            if (isRowCollapseLocked(row)) {
+                clearRowCollapseUi(row);
+                updateSummary(row);
+                row.querySelectorAll('input, select, textarea').forEach(el => {
+                    el.addEventListener('input', () => updateSummary(row));
+                    el.addEventListener('change', () => updateSummary(row));
+                    const altInput = el._flatpickr?.altInput;
+                    if (altInput) {
+                        altInput.addEventListener('input', () => updateSummary(row));
+                        altInput.addEventListener('change', () => updateSummary(row));
+                    }
+                });
+                return;
+            }
             ensureToggle(row);
             updateSummary(row);
             row.querySelectorAll('input, select, textarea').forEach(el => {
@@ -1229,12 +2075,25 @@
 
         document.addEventListener('click', (e) => {
             if (isCollapseDisabled()) return;
-            const row = e.target?.closest?.(COLLAPSIBLE_SELECTOR);
+            const target = e.target;
+            if (
+                target?.closest?.('.thai-wheel-overlay') ||
+                target?.closest?.('.thai-wheel-sheet') ||
+                target?.closest?.('.thai-wheel-select') ||
+                target?.closest?.('.thai-wheel-btn') ||
+                target?.closest?.('.flatpickr-calendar') ||
+                target?.classList?.contains?.('flatpickr-calendar') ||
+                target?.classList?.contains?.('flatpickr-day') ||
+                target?.classList?.contains?.('flatpickr-monthDropdown-month')
+            ) {
+                return;
+            }
+            const row = target?.closest?.(COLLAPSIBLE_SELECTOR);
             if (!row) {
                 document.querySelectorAll(COLLAPSIBLE_SELECTOR).forEach(el => setCollapsed(el, true));
                 return;
             }
-            if (e.target.closest('.row-collapse-toggle')) return;
+            if (target.closest('.row-collapse-toggle')) return;
             if (row.dataset.collapsed === '1') {
                 setCollapsed(row, false);
                 const siblings = getSiblings(row);
@@ -1386,6 +2245,10 @@
                 'input[name="_method"][value="PUT"], input[name="_method"][value="PATCH"]');
             if (isEdit) {
                 document.querySelectorAll(COLLAPSIBLE_SELECTOR).forEach(row => {
+                    if (isRowCollapseLocked(row)) {
+                        clearRowCollapseUi(row);
+                        return;
+                    }
                     if (rowHasData(row)) setCollapsed(row, true);
                 });
             }

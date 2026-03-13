@@ -22,6 +22,23 @@
         'นักประชาสัมพันธ์',
         'เจ้าหน้าที่บริหารงานทั่วไป',
     ];
+    $taskDetails = [
+        'ติดต่อประสานงาน',
+        'ที่ปรึกษาโครงการ',
+        'review literature',
+        'เขียนproposal',
+        'ดำเนินการเอกสารขอirb/submit irb',
+        'ดำเนินการเอกสารขอทุน/submit ทุน',
+        'เก็บข้อมูล',
+        'วิเคราะห์ข้อมูล',
+        'เขียนเล่มรายงาน',
+        'เขียนmanuscript',
+        'submit journal',
+        'เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์',
+        'นำเสนอผลงานวิจัย Oral/Poster presentation',
+        'ประชาสัมพันธ์',
+        'สร้างโปรเเกรม ฐานข้อมูล เเละ โปรเเกรมที่เกี่ยวข้องกับงานวิจัย',
+    ];
     $piAffiliationList = \App\Models\Project::whereNotNull('pi_affiliation')
         ->whereRaw("TRIM(pi_affiliation) <> ''")
         ->selectRaw('TRIM(pi_affiliation) as pi_affiliation')
@@ -66,6 +83,7 @@
 
 <script>
     window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
+    window.PROJECT_CARD_DATE_MODE = 'edit';
 </script>
 
 <style>
@@ -571,7 +589,7 @@
                                     oninvalid="this.setCustomValidity('กรุณาเลือกวันหมดอายุ IRB')"
                                     oninput="this.setCustomValidity('')">
                                 <!-- ไอคอนปฏิทิน -->
-                                <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
                                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -824,6 +842,7 @@
 
                     @foreach ($project->fteRoles ?? [] as $i => $fte)
                         <div id="fte-{{ $i }}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
+                            <input type="hidden" name="fte_roles[{{ $i }}][id]" value="{{ $fte->id }}">
 
                             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
@@ -834,7 +853,7 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                                         <label class="w-full">
-                                            <span class="block text-sm font-semibold">ชื่อ-นามสกุล <span class="text-red-500">*</span></span>
+                                            <span class="block text-sm font-semibold"><span class="fte-index text-xl font-extrabold text-blue-700">{{ $i + 1 }}</span>. ชื่อ-นามสกุล <span class="text-red-500">*</span></span>
                                             <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
                                                 value="{{ $fte->name }}" class="w-full border p-2 rounded" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
@@ -885,7 +904,7 @@
                                                 class="thai-datepicker w-full border p-2 rounded pl-10" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
                                                 oninput="this.setCustomValidity('')">
-                                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                            <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
                                                 fill="none" stroke="currentColor" stroke-width="2"
                                                 viewBox="0 0 24 24">
                                                 <path
@@ -900,7 +919,7 @@
                                                 class="thai-datepicker w-full border p-2 rounded pl-10" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
                                                 oninput="this.setCustomValidity('')">
-                                            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                            <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
                                                 fill="none" stroke="currentColor" stroke-width="2"
                                                 viewBox="0 0 24 24">
                                                 <path
@@ -923,34 +942,23 @@
                                     <!-- รายละเอียดภารกิจ -->
                                     <label class="w-full">
                                         <span class="block text-sm font-semibold">รายละเอียดภารกิจ <span class="text-red-500">*</span></span>
+                                        @php
+                                            $selectedTaskDetail = old("fte_roles.$i.task_detail", $fte->task_detail);
+                                            $hasKnownTaskDetail = in_array($selectedTaskDetail, $taskDetails, true);
+                                        @endphp
                                         <select name="fte_roles[{{ $i }}][task_detail]"
                                             class="w-full border p-2 rounded" required
                                             oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
                                             oninput="this.setCustomValidity('')">
-
-                                            <option value="" disabled>เลือกภารกิจ</option>
-
-                                            <!-- ⬇ Dropdown ไม่ย่อ รายการอยู่ครบ -->
-                                            <option value="ติดต่อประสานงาน">ติดต่อประสานงาน</option>
-                                            <option value="ที่ปรึกษาโครงการ">ที่ปรึกษาโครงการ</option>
-                                            <option value="review literature">review literature</option>
-                                            <option value="เขียนproposal">เขียนproposal</option>
-                                            <option value="ดำเนินการเอกสารขอirb/submit irb">ดำเนินการเอกสารขอirb/submit irb
-                                            </option>
-                                            <option value="ดำเนินการเอกสารขอทุน/submit ทุน">ดำเนินการเอกสารขอทุน/submit ทุน
-                                            </option>
-                                            <option value="เก็บข้อมูล">เก็บข้อมูล</option>
-                                            <option value="วิเคราะห์ข้อมูล">วิเคราะห์ข้อมูล</option>
-                                            <option value="เขียนเล่มรายงาน">เขียนเล่มรายงาน</option>
-                                            <option value="เขียนmanuscript">เขียนmanuscript</option>
-                                            <option value="submit journal">submit journal</option>
-                                            <option value="เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์">เบิกเงินรางวัลตีพิมพ์ /
-                                                ค่าตอบแทนตีพิมพ์</option>
-                                            <option value="นำเสนอผลงานวิจัย Oral/Poster presentation">นำเสนอผลงานวิจัย
-                                                Oral/Poster presentation</option>
-                                            <option value="ประชาสัมพันธ์-เบิกงบประมาณทุน">ประชาสัมพันธ์ – เบิกงบประมาณทุน
-                                            </option>
-
+                                            <option value="" disabled @selected(blank($selectedTaskDetail))>เลือกภารกิจ</option>
+                                            @if (filled($selectedTaskDetail) && ! $hasKnownTaskDetail)
+                                                <option value="{{ $selectedTaskDetail }}" selected>{{ $selectedTaskDetail }}</option>
+                                            @endif
+                                            @foreach ($taskDetails as $taskDetail)
+                                                <option value="{{ $taskDetail }}" @selected($selectedTaskDetail === $taskDetail)>
+                                                    {{ $taskDetail }}
+                                                </option>
+                                            @endforeach
                                         </select>
                                     </label>
 
@@ -988,6 +996,7 @@
                     @endforeach
 
                 </div>
+                <div id="fte-deleted-ids"></div>
 
                 <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
                     + เพิ่มผู้มีส่วนร่วม
@@ -1118,7 +1127,7 @@
                                     <input name="outputs[{{ $i }}][year]" type="text"
                                         class="thai-datepicker w-full border p-2 rounded pl-10"
                                         value="{{ old("outputs.$i.year", $out->year) }}" placeholder="โปรดใส่วันที่">
-                                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1582,7 +1591,8 @@
         dirty: false,
         scrolled: false,
         nearBottom: false,
-        get show() { return (this.dirty || this.scrolled) && !this.nearBottom }
+        navOpen: false,
+        get show() { return (this.dirty || this.scrolled) && !this.nearBottom && !this.navOpen }
     }" x-init="const THRESHOLD = 160; // ระยะห่างจากขอบล่างที่ต้องการให้ซ่อน (px)
     
     const onScrollOrResize = () => {
@@ -1601,30 +1611,25 @@
     if (form) {
         form.addEventListener('input', () => { dirty = true }, { passive: true });
         form.addEventListener('change', () => { dirty = true }, { passive: true });
-    }" x-show="show" x-transition.opacity
+    }
+
+    window.addEventListener('app-mobile-nav', (e) => {
+        navOpen = !!(e && e.detail && e.detail.open);
+    });" x-show="show" x-transition.opacity
         class="fixed inset-x-0 bottom-0 md:inset-auto md:right-6 md:bottom-6 md:left-auto z-50" style="display:none"
         role="region" aria-live="polite">
         <div class="mx-3 mb-3 md:mx-0 md:mb-0">
-            <div class="max-w-[520px] md:min-w-[420px] bg-white/90 backdrop-blur border shadow-xl rounded-2xl px-4 py-3">
-                <div class="flex items-center gap-3">
-                    <a href="{{ route('projects.index') }}"
-                        class="hidden md:inline-flex items-center text-blue-700 font-semibold hover:text-blue-900 hover:underline">
-                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" stroke-width="2"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        กลับไปยังรายการโครงการ
-                    </a>
-
-                    <div class="ml-auto flex items-center gap-2">
-                        <span x-show="dirty" x-transition.opacity
-                            class="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
-                            มีการแก้ไขที่ยังไม่บันทึก
-                        </span>
+            <div class="w-full md:w-auto md:min-w-[360px] bg-white/92 backdrop-blur border border-slate-200 shadow-lg rounded-2xl px-3 py-3">
+                <div class="flex flex-col gap-2">
+                    <div class="w-full flex items-center gap-2">
+                        <a href="{{ route('projects.index') }}"
+                            class="md:hidden inline-flex w-10 h-9 shrink-0 justify-center items-center text-slate-700 bg-slate-100 hover:bg-slate-200 font-bold text-base rounded-lg shadow">
+                            &lt;
+                        </a>
 
                         <button type="button" @click="document.getElementById('projectForm')?.requestSubmit()"
-                            class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-full shadow">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+                            class="inline-flex flex-1 justify-center items-center bg-amber-200 hover:bg-amber-300 text-amber-900 font-semibold text-sm px-3 py-2 rounded-lg shadow">
+                            <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
@@ -1717,7 +1722,7 @@
                     <input name="irbs[${irbCodeIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกวันหมดอายุ IRB')"
                         oninput="this.setCustomValidity('')">
-                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1743,6 +1748,8 @@
                 onMonthChange: toBuddhist,
                 onYearChange: toBuddhist,
             });
+            const dateInput = document.querySelector(`#${id} .thai-datepicker`);
+            bindDatepickerSummarySync(dateInput);
         }
 
 
@@ -1801,9 +1808,22 @@
 
 
 
+        function getNextFteIndex() {
+            const container = document.getElementById('fte-container');
+            if (!container) return 0;
+            let maxIndex = -1;
+            container.querySelectorAll('[name^="fte_roles["]').forEach((el) => {
+                const m = String(el.name || '').match(/^fte_roles\[(\d+)\]/);
+                if (!m) return;
+                const idx = Number(m[1]);
+                if (!Number.isNaN(idx)) maxIndex = Math.max(maxIndex, idx);
+            });
+            return maxIndex + 1;
+        }
+
         function addFTERow() {
             const container = document.getElementById('fte-container');
-            const index = container.querySelectorAll('.fte-row').length;
+            const index = getNextFteIndex();
             const id = `fte-${index}`;
 
             ensureFteDatalist();
@@ -1814,6 +1834,7 @@
                 'Research Coordinator', 'นักวิชาการสารสนเทศ',
                 'นักประชาสัมพันธ์', 'เจ้าหน้าที่บริหารงานทั่วไป'
             ];
+            const taskDetails = @json($taskDetails);
 
             const groupDropdown = [`<option value="" disabled selected>เลือกกลุ่ม</option>`]
                 .concat(roleGroups.map(g => `<option value="${g}">${g}</option>`))
@@ -1821,6 +1842,10 @@
 
             const jobDropdown = [`<option value="" disabled selected>เลือกภาระงาน</option>`]
                 .concat(jobDetails.map(j => `<option value="${j}">${j}</option>`))
+                .join('');
+
+            const taskDropdown = [`<option value="" disabled selected>เลือกภารกิจ</option>`]
+                .concat(taskDetails.map(t => `<option value="${t}">${t}</option>`))
                 .join('');
 
             container.insertAdjacentHTML('beforeend', `
@@ -1833,7 +1858,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label class="w-full">
                     <span class="block text-sm font-semibold text-gray-700 mb-1">
-                        <span class="fte-index">${index + 1}</span>. ชื่อ-นามสกุล <span class="text-red-500">*</span>
+                        <span class="fte-index text-xl font-extrabold text-blue-700">${index + 1}</span>. ชื่อ-นามสกุล <span class="text-red-500">*</span>
                     </span>
 
                     <input list="${FTE_DATALIST_ID}"
@@ -1877,7 +1902,7 @@
                         oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
                         oninput="this.setCustomValidity('')">
 
-                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -1894,7 +1919,7 @@
                         oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
                         oninput="this.setCustomValidity('')">
 
-                    <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none"
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -1925,21 +1950,7 @@
                     required
                     oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
                     oninput="this.setCustomValidity('')">
-                    <option value="" disabled selected>เลือกภารกิจ</option>
-                    <option>ติดต่อประสานงาน</option>
-                    <option>ที่ปรึกษาโครงการ</option>
-                    <option>review literature</option>
-                    <option>เขียนproposal</option>
-                    <option>ดำเนินการเอกสารขอirb/submit irb</option>
-                    <option>ดำเนินการเอกสารขอทุน/submit ทุน</option>
-                    <option>เก็บข้อมูล</option>
-                    <option>วิเคราะห์ข้อมูล</option>
-                    <option>เขียนเล่มรายงาน</option>
-                    <option>เขียนmanuscript</option>
-                    <option>submit journal</option>
-                    <option>เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์</option>
-                    <option>นำเสนอผลงานวิจัย Oral/Poster presentation</option>
-                    <option>ประชาสัมพันธ์-เบิกงบประมาณทุน</option>
+                    ${taskDropdown}
                 </select>
             </label>
 
@@ -1988,6 +1999,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", function() {
+            reindexFTE();
             attachFTEAuto(); // ให้แถวเดิมทำงาน auto
         });
 
@@ -2121,7 +2133,7 @@ console.log('[FTE AUTO] after=', fteField.value);
           <label class="w-full relative">
             <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
             <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่">
-            <svg class="w-5 h-5 absolute top-9 left-3 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
           </label>
@@ -2471,6 +2483,19 @@ console.log('[FTE AUTO] after=', fteField.value);
 
         function removeRow(id, type) {
             const el = document.getElementById(id);
+            if (el && type === 'fte') {
+                const idInput = el.querySelector('input[name^="fte_roles["][name$="[id]"]');
+                const existingId = Number(idInput?.value || 0);
+                if (existingId > 0) {
+                    const deletedContainer = document.getElementById('fte-deleted-ids');
+                    if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
+                        deletedContainer.insertAdjacentHTML(
+                            'beforeend',
+                            `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
+                        );
+                    }
+                }
+            }
             if (el) el.remove();
             if (type === 'output') reindexOutput();
             if (type === 'copi') reindexCopi?.();
@@ -2542,6 +2567,14 @@ console.log('[FTE AUTO] after=', fteField.value);
             const fallback = new Date(value);
             if (!Number.isNaN(fallback.getTime())) return fallback;
             return null;
+        }
+
+        function toDmyCE(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = String(date.getFullYear());
+            return `${dd}-${mm}-${yyyy}`;
         }
 
         function appendFlatpickrHook(instance, hook, callback) {
@@ -2656,64 +2689,6 @@ console.log('[FTE AUTO] after=', fteField.value);
             });
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.thai-datepicker').forEach((input) => {
-                if (input._flatpickr) return;
-
-                const options = {
-                    locale: "th",
-                    dateFormat: "d-m-Y", // สำหรับส่งไป controller
-                    altInput: true,
-                    altFormat: "j F Y", // <-- เราจะเปลี่ยนตรงนี้ด้านล่าง
-                    prevArrow: "", // 🔒 ซ่อนปุ่มย้อนเดือน
-                    nextArrow: "", // 🔒 ซ่อนปุ่มถัดไปเดือน
-                    disableMobile: true,
-                    onReady: toBuddhist,
-                    onChange: toBuddhist,
-                    onMonthChange: toBuddhist,
-                    onYearChange: toBuddhist,
-                };
-
-                if (input.dataset.noPast === '1') {
-                    options.minDate = getClientTodayLocal();
-                }
-
-                flatpickr(input, options);
-            });
-
-            function toBuddhist(selectedDates, dateStr, instance) {
-                const altInput = instance.altInput;
-                if (altInput) {
-                    altInput.readOnly = true;
-                }
-                if (selectedDates.length > 0) {
-                    const date = selectedDates[0];
-                    const day = date.getDate();
-                    const month = date.toLocaleString('th-TH', {
-                        month: 'long'
-                    });
-                    const year = date.getFullYear() + 543;
-                    altInput.value = `${day} ${month} ${year}`;
-                }
-
-                const years = instance.calendarContainer.querySelectorAll(
-                    '.flatpickr-current-month input.cur-year');
-                years.forEach(el => {
-                    const year = parseInt(el.value);
-                    if (!isNaN(year)) el.value = year + 543;
-
-                    el.addEventListener('blur', () => {
-                        let y = parseInt(el.value);
-                        if (y > 2400) {
-                            el.value = y - 543;
-                            instance.setDate(new Date(instance.selectedDates[0]));
-                        }
-                    });
-                });
-            }
-
-            bindProjectDatePairsThaiPicker();
-        });
     </script>
 
     <script>
@@ -2743,6 +2718,13 @@ console.log('[FTE AUTO] after=', fteField.value);
             document.querySelectorAll('.thai-datepicker').forEach((input) => {
                 if (input._flatpickr) return;
 
+                // รองรับข้อมูลเก่าที่อาจเก็บปี พ.ศ. / รูปแบบหลากหลาย
+                // โดย normalize เป็น d-m-Y (ค.ศ.) ก่อนส่งให้ flatpickr
+                const normalized = toDmyCE(parseLocalDateInput(input.value));
+                if (normalized) {
+                    input.value = normalized;
+                }
+
                 const options = {
                     locale: "th",
                     dateFormat: "d-m-Y",
@@ -2750,7 +2732,19 @@ console.log('[FTE AUTO] after=', fteField.value);
                     altFormat: "j F Y",
                     prevArrow: "", // 🔒 ซ่อนปุ่มย้อนเดือน
                     nextArrow: "", // 🔒 ซ่อนปุ่มถัดไปเดือน
-                    onReady: toBuddhist,
+                    disableMobile: true,
+                    onReady: (selectedDates, dateStr, instance) => {
+                        const altInput = instance.altInput;
+                        if (altInput) {
+                            altInput.readOnly = true;
+                            altInput.className = input.className;
+                        }
+                        input.classList.add('flatpickr-hidden');
+                        input.setAttribute('aria-hidden', 'true');
+                        input.tabIndex = -1;
+                        input.style.display = 'none';
+                        toBuddhist(selectedDates, dateStr, instance);
+                    },
                     onChange: toBuddhist,
                     onMonthChange: toBuddhist,
                     onYearChange: toBuddhist,
@@ -2761,9 +2755,28 @@ console.log('[FTE AUTO] after=', fteField.value);
                 }
 
                 flatpickr(input, options);
+                bindDatepickerSummarySync(input);
             });
 
             bindProjectDatePairsThaiPicker();
+        }
+
+        function bindDatepickerSummarySync(input) {
+            if (!input) return;
+
+            const notify = () => input.dispatchEvent(new Event('change', {
+                bubbles: true
+            }));
+
+            setTimeout(notify, 0);
+
+            const altInput = input._flatpickr?.altInput;
+            if (!altInput || altInput.dataset.summarySyncBound === '1') return;
+
+            altInput.dataset.summarySyncBound = '1';
+            ['input', 'change', 'blur'].forEach((evt) => {
+                altInput.addEventListener(evt, notify);
+            });
         }
 
         function toBuddhist(selectedDates, dateStr, instance) {
@@ -2780,15 +2793,35 @@ console.log('[FTE AUTO] after=', fteField.value);
 
             const years = instance.calendarContainer.querySelectorAll('.flatpickr-current-month input.cur-year');
             years.forEach(el => {
-                const year = parseInt(el.value);
-                if (!isNaN(year)) el.value = year + 543;
+                const year = parseInt(el.value, 10);
+                if (!isNaN(year) && year < 2400) el.value = year + 543;
 
+                if (el.dataset.beBound === '1') return;
+                el.dataset.beBound = '1';
                 el.addEventListener('blur', () => {
-                    let y = parseInt(el.value);
-                    if (y > 2400) {
-                        el.value = y - 543;
-                        instance.setDate(new Date(instance.selectedDates[0]));
+                    const rawYear = parseInt(el.value, 10);
+                    if (Number.isNaN(rawYear)) return;
+
+                    const ceYear = rawYear > 2400 ? rawYear - 543 : rawYear;
+                    const selectedDate = instance.selectedDates?.[0];
+                    if (selectedDate) {
+                        const nextDate = new Date(selectedDate);
+                        nextDate.setFullYear(ceYear);
+                        instance.setDate(nextDate, true);
+                    } else {
+                        instance.changeYear(ceYear);
                     }
+
+                    setTimeout(() => {
+                        const currentYearEl = instance.calendarContainer?.querySelector(
+                            '.flatpickr-current-month input.cur-year'
+                        );
+                        if (!currentYearEl) return;
+                        const currentYear = parseInt(currentYearEl.value, 10);
+                        if (!Number.isNaN(currentYear) && currentYear < 2400) {
+                            currentYearEl.value = currentYear + 543;
+                        }
+                    }, 0);
                 });
             });
         }
@@ -2796,6 +2829,9 @@ console.log('[FTE AUTO] after=', fteField.value);
         document.addEventListener('DOMContentLoaded', () => {
             initThaiDatepickers();
             bindProjectDatePairsThaiPicker();
+            setTimeout(() => {
+                document.querySelectorAll('.thai-datepicker').forEach(bindDatepickerSummarySync);
+            }, 0);
         });
 
 

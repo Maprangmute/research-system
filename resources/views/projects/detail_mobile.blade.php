@@ -24,6 +24,11 @@
             color: #0f172a;
         }
 
+        .mobile-detail,
+        .mobile-detail * {
+            min-width: 0;
+        }
+
         .mobile-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -61,6 +66,7 @@
         .field-value {
             color: #0f172a;
             word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         .tag {
@@ -98,6 +104,8 @@
         .list-meta {
             font-size: 13px;
             color: #64748b;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .output-block {
@@ -118,10 +126,187 @@
             border-radius: 12px;
             padding: 10px;
             background: #ffffff;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .mobile-detail a,
+        .mobile-detail .list-card,
+        .mobile-detail .output-block {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .mobile-detail .list-card > :last-child {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        @media (max-width: 420px) {
+            .field-row {
+                grid-template-columns: 92px 1fr;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .field-row {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+        }
+
+        .detail-fab-wrap {
+            position: fixed;
+            left: 14px;
+            bottom: 14px;
+            z-index: 70;
+            opacity: 0;
+            transform: translateY(8px) scale(0.96);
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s ease;
+        }
+
+        .detail-fab-wrap.is-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .detail-fab-menu {
+            width: min(88vw, 270px);
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 14px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px) scale(0.98);
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+        }
+
+        .detail-fab-menu.is-open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .detail-fab-item {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #0f172a;
+            opacity: 0;
+            transform: translateY(5px);
+            transition: transform 0.18s ease, opacity 0.18s ease, filter 0.15s ease;
+        }
+
+        .detail-fab-menu.is-open .detail-fab-item {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .detail-fab-menu.is-open .detail-fab-item:nth-child(1) {
+            transition-delay: 0.02s;
+        }
+
+        .detail-fab-menu.is-open .detail-fab-item:nth-child(2) {
+            transition-delay: 0.05s;
+        }
+
+        .detail-fab-menu.is-open .detail-fab-item:nth-child(3) {
+            transition-delay: 0.08s;
+        }
+
+        .detail-fab-menu.is-open .detail-fab-item:nth-child(4) {
+            transition-delay: 0.11s;
+        }
+
+        .detail-fab-menu.is-open .detail-fab-item:nth-child(5) {
+            transition-delay: 0.14s;
+        }
+
+        .detail-fab-item:hover {
+            filter: brightness(0.98);
+        }
+
+        .detail-fab-item--edit {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .detail-fab-item--progress {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .detail-fab-item--pdf {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .detail-fab-item--gantt {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        .detail-fab-item--delete {
+            background: #ffe4e6;
+            color: #9f1239;
+        }
+
+        .detail-fab-btn {
+            min-width: 108px;
+            height: 44px;
+            border-radius: 999px;
+            border: 1px solid #bfdbfe;
+            background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+            color: #1d4ed8;
+            font-weight: 700;
+            padding: 0 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            box-shadow: 0 10px 24px rgba(29, 78, 216, 0.22);
+            transition: transform 0.16s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .detail-fab-btn:hover {
+            background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+
+        .detail-fab-btn:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        .detail-fab-btn span[aria-hidden="true"] {
+            transition: transform 0.2s ease;
+        }
+
+        .detail-fab-btn[aria-expanded="true"] span[aria-hidden="true"] {
+            transform: rotate(90deg);
+        }
+
+        #appAiChatFabWrap.is-hidden-at-bottom {
+            opacity: 0;
+            transform: translateY(12px);
+            pointer-events: none;
         }
     </style>
 
-    <div class="mobile-detail max-w-xl mx-auto px-4 py-4 space-y-4">
+    <div id="pageTop" class="mobile-detail max-w-xl mx-auto px-4 py-4 space-y-4">
         @php
             $status = $project->planning_status ?? '-';
             $statusBg = [
@@ -147,7 +332,7 @@
             };
         @endphp
 
-        <div class="mobile-card space-y-3">
+        <div id="detailHeaderCard" class="mobile-card space-y-3">
             <a href="{{ route('projects.index') }}"
                 class="inline-flex items-center gap-2 text-blue-700 font-semibold text-sm hover:text-blue-900">
                 ← กลับไปยังรายการโครงการ
@@ -663,11 +848,41 @@
                 return filter_var($txt, FILTER_VALIDATE_URL)
                     ? '<a href="' .
                             e($txt) .
-                            '" target="_blank" class="text-blue-600 underline break-words">' .
+                        '" target="_blank" class="text-blue-600 underline break-words">' .
                             e($txt) .
                             '</a>'
                     : e($txt);
             }
+
+            $typeUniverseSource = collect($outputTypeOptions ?? [])
+                ->filter(fn($type) => trim((string) $type) !== '')
+                ->map(fn($type) => trim((string) $type))
+                ->unique()
+                ->sort()
+                ->values();
+            $typeUniverse = $typeUniverseSource->isNotEmpty()
+                ? $typeUniverseSource
+                : $outputsReal
+                    ->pluck('type')
+                    ->filter(fn($type) => trim((string) $type) !== '')
+                    ->map(fn($type) => trim((string) $type))
+                    ->unique()
+                    ->sort()
+                    ->values();
+            $typeUniverseCount = max($typeUniverse->count(), 1);
+            $typeStyleMap = [];
+            foreach ($typeUniverse as $index => $type) {
+                $hue = (int) round(fmod(($index * (360 / $typeUniverseCount)), 360));
+                $typeStyleMap[$type] = sprintf(
+                    'background-color:hsl(%1$d 95%% 96%%); border-color:hsl(%1$d 72%% 78%%); color:hsl(%1$d 48%% 24%%);',
+                    $hue
+                );
+            }
+            $defaultTypeStyle = 'background-color:#f8fafc; border-color:#cbd5e1; color:#334155;';
+            $outputTypeStyle = function ($type) use ($typeStyleMap, $defaultTypeStyle) {
+                $label = trim((string) $type);
+                return $typeStyleMap[$label] ?? $defaultTypeStyle;
+            };
         @endphp
 
         <div class="mobile-section space-y-3">
@@ -680,22 +895,27 @@
                         @php
                             $isEA101 = Str::startsWith((string) ($output->type ?? ''), 'EA101');
                             $isEA103 = Str::startsWith((string) ($output->type ?? ''), 'EA103');
+                            $typeBadgeStyle = $outputTypeStyle($output->type ?? '');
                         @endphp
                         <div class="output-block">
                             <div class="flex items-start gap-2">
                                 <div class="list-index">{{ $i + 1 }}</div>
-                                <div class="space-y-2">
-                                    <div class="font-semibold">{{ $output->title ?: '-' }}</div>
-                                    @if (!empty($output->type))
-                                        <span
-                                            class="tag {{ $isEA101 ? 'bg-blue-100 text-blue-800' : ($isEA103 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800') }}">
-                                            {{ $output->type }}
-                                        </span>
-                                    @endif
-                                    <div class="text-sm text-slate-700">
-                                        รายละเอียด/ลิงก์: {!! linkify_if_url($output->project_output ?? null) !!}
+                                <div class="space-y-2 min-w-0 flex-1">
+                                    <div class="font-semibold leading-snug">{{ $output->title ?: '-' }}</div>
+                                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                                        @if (!empty($output->type))
+                                            <span class="tag border rounded-lg" style="{{ $typeBadgeStyle }}">
+                                                {{ $output->type }}
+                                            </span>
+                                        @endif
+                                        <span class="text-slate-400">|</span>
+                                        <span class="text-slate-500">วันที่เผยแพร่</span>
+                                        <span class="font-medium text-slate-700">{{ th_date_or_raw($output->year) }}</span>
                                     </div>
-                                    <div class="text-sm text-slate-700">วันที่เผยแพร่: {{ th_date_or_raw($output->year) }}</div>
+                                    <div class="text-sm text-slate-700">
+                                        <div class="text-slate-500">รายละเอียด/ลิงก์</div>
+                                        <div>{!! linkify_if_url($output->project_output ?? null) !!}</div>
+                                    </div>
 
                                     @if ($isEA101)
                                         <div class="mobile-card space-y-2 bg-blue-50/60">
@@ -881,6 +1101,32 @@
                 | สร้างเมื่อ {{ $createdAt }}
             @endif
         </div>
+
+        <div class="detail-fab-wrap">
+            <div id="detailFabMenu" class="detail-fab-menu">
+                <a href="{{ route('projects.edit', $project) }}" class="detail-fab-item detail-fab-item--edit">
+                    ✏️ แก้ไขโครงการ
+                </a>
+                <a href="{{ route('projects.progress_reports.index', $project) }}" class="detail-fab-item detail-fab-item--progress">
+                    📑 จัดการ Progress Report
+                </a>
+                @if ($isOwner || $isAdmin)
+                    <a href="{{ route('projects.pdf', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--pdf">
+                        🖨️ PDF
+                    </a>
+                @endif
+                <a href="{{ route('projects.gantt', $project) }}" class="detail-fab-item detail-fab-item--gantt">
+                    📊 Gantt
+                </a>
+                <button type="button" id="detailFabDeleteBtn" class="detail-fab-item detail-fab-item--delete">
+                    🗑️ ลบ
+                </button>
+            </div>
+            <button id="detailFabBtn" type="button" class="detail-fab-btn" aria-expanded="false" aria-controls="detailFabMenu">
+                <span aria-hidden="true">☰</span>
+                <span>เมนูลัด</span>
+            </button>
+        </div>
     </div>
 
     @if (!empty($fteChartLabels) && count($fteChartLabels))
@@ -1043,5 +1289,89 @@
                 });
             });
         }
+
+        (function() {
+            const fabBtn = document.getElementById('detailFabBtn');
+            const fabMenu = document.getElementById('detailFabMenu');
+            const fabWrap = document.querySelector('.detail-fab-wrap');
+            const headerCard = document.getElementById('detailHeaderCard');
+            const aiFabWrap = document.getElementById('appAiChatFabWrap');
+            if (!fabBtn || !fabMenu || !fabWrap || !headerCard) return;
+            const bottomThreshold = 40;
+            let headerOutOfView = false;
+
+            const setOpen = (open) => {
+                fabMenu.classList.toggle('is-open', open);
+                fabBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            };
+
+            const setVisible = (visible) => {
+                fabWrap.classList.toggle('is-visible', visible);
+                if (!visible) setOpen(false);
+            };
+
+            const isNearBottom = () => {
+                const doc = document.documentElement;
+                return window.innerHeight + window.scrollY >= doc.scrollHeight - bottomThreshold;
+            };
+
+            const refreshFabVisibility = () => {
+                const nearBottom = isNearBottom();
+                setVisible(headerOutOfView && !nearBottom);
+                if (aiFabWrap) {
+                    aiFabWrap.classList.toggle('is-hidden-at-bottom', nearBottom);
+                }
+            };
+
+            fabBtn.addEventListener('click', () => {
+                const isOpen = fabMenu.classList.contains('is-open');
+                setOpen(!isOpen);
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!fabMenu.contains(event.target) && !fabBtn.contains(event.target)) {
+                    setOpen(false);
+                }
+            });
+
+            setOpen(false);
+
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    const entry = entries[0];
+                    headerOutOfView = !entry.isIntersecting;
+                    refreshFabVisibility();
+                }, {
+                    root: null,
+                    threshold: 0.02,
+                });
+                observer.observe(headerCard);
+            } else {
+                headerOutOfView = window.scrollY > 180;
+            }
+
+            const onScroll = () => {
+                if (!('IntersectionObserver' in window)) {
+                    headerOutOfView = window.scrollY > 180;
+                }
+                refreshFabVisibility();
+            };
+            onScroll();
+            window.addEventListener('scroll', onScroll, { passive: true });
+
+            fabMenu.querySelectorAll('a').forEach((item) => {
+                item.addEventListener('click', () => {
+                    setOpen(false);
+                });
+            });
+
+            const fabDeleteBtn = document.getElementById('detailFabDeleteBtn');
+            if (fabDeleteBtn && deleteBtn) {
+                fabDeleteBtn.addEventListener('click', () => {
+                    setOpen(false);
+                    deleteBtn.click();
+                });
+            }
+        })();
     </script>
 @endsection

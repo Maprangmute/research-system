@@ -358,7 +358,6 @@
                 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h2 class="text-base font-semibold text-slate-900">คัดกรองข้อมูล</h2>
-                        <p class="mt-1 text-sm text-slate-500">พิมพ์หรือเลือกค่าแล้วข้อมูลจะอัปเดตทันที และเมื่อเลื่อนลงไปจะมีปุ่ม popup ฟิลเตอร์ช่วยเปิดซ้ำได้</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">

@@ -432,8 +432,14 @@ public function store(Request $request)
         ]);
 
         $fteChartData = $this->buildProjectFteChartData($project);
+        $outputTypeOptions = Output::query()
+            ->whereNotNull('type')
+            ->whereRaw("TRIM(type) <> ''")
+            ->distinct()
+            ->orderBy('type')
+            ->pluck('type');
 
-        return view($view, array_merge(compact('project'), $fteChartData));
+        return view($view, array_merge(compact('project', 'outputTypeOptions'), $fteChartData));
     }
 
     public function update(Request $request, Project $project)
@@ -708,6 +714,13 @@ public function store(Request $request)
 
             $start = $this->parseProjectDateInput($startRaw);
             $end = $this->parseProjectDateInput($endRaw);
+
+            if ($startRaw !== '' && ! $start) {
+                $errors["fte_roles.$idx.start_date"] = 'รูปแบบวันเริ่มต้นภาระงานไม่ถูกต้อง';
+            }
+            if ($endRaw !== '' && ! $end) {
+                $errors["fte_roles.$idx.end_date"] = 'รูปแบบวันสิ้นสุดภาระงานไม่ถูกต้อง';
+            }
 
             if ($start && $end && $end->lt($start)) {
                 $errors["fte_roles.$idx.end_date"] = 'วันสิ้นสุดภาระงาน ต้องไม่น้อยกว่าวันเริ่มต้นภาระงาน';
@@ -991,34 +1004,167 @@ public function store(Request $request)
 
     private function syncFTERoles(Request $request, Project $project): void
     {
-        $ids = [];
+        $existingRows = $project->fteRoles()->orderBy('id')->get()->values();
+        $existingById = $existingRows->keyBy('id');
+        $deleteIds = collect((array) $request->input('fte_deleted_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+        $deleteLookup = array_fill_keys($deleteIds->all(), true);
 
-        foreach ($request->fte_roles ?? [] as $fte) {
+        $signatureBuckets = [];
+        foreach ($existingRows as $candidate) {
+            if (isset($deleteLookup[$candidate->id])) {
+                continue;
+            }
+            $sig = $this->buildFteSignatureFromModel($candidate);
+            if (! isset($signatureBuckets[$sig])) {
+                $signatureBuckets[$sig] = [];
+            }
+            $signatureBuckets[$sig][] = $candidate->id;
+        }
+
+        $usedExistingIds = [];
+        $explicitSubmittedIds = [];
+
+        foreach (($request->fte_roles ?? []) as $fte) {
+            $start = $this->parseProjectDateInput((string) ($fte['start_date'] ?? ''));
+            $end = $this->parseProjectDateInput((string) ($fte['end_date'] ?? ''));
+
             $payload = [
-                'role_group' => $fte['role_group'] ?? '',
-                'name' => $fte['name'] ?? null,
-                'job_detail' => $fte['job_detail'] ?? null,
-                'start_date' => $fte['start_date'] ?? null,
+                'role_group' => trim((string) ($fte['role_group'] ?? '')),
+                'name' => trim((string) ($fte['name'] ?? '')) ?: null,
+                'job_detail' => trim((string) ($fte['job_detail'] ?? '')) ?: null,
+                'start_date' => $start?->format('d-m-Y'),
                 'hours' => $fte['hours'] ?? null,
-                'end_date' => $fte['end_date'] ?? null,
+                'end_date' => $end?->format('d-m-Y'),
                 'fte_value' => $fte['fte_value'] ?? 0,
                 'fte_value_research' => $fte['fte_value_research'] ?? 0,
-                'task_detail' => $fte['task_detail'] ?? null,
+                'task_detail' => trim((string) ($fte['task_detail'] ?? '')) ?: null,
             ];
 
-            if (! empty($fte['id'])) {
-                $fteRole = $project->fteRoles()->whereKey($fte['id'])->first();
-                if ($fteRole) {
-                    $fteRole->update($payload);
-                    $ids[] = $fteRole->id;
+            // Skip empty rows.
+            if (
+                empty($payload['name']) &&
+                empty($payload['job_detail']) &&
+                empty($payload['task_detail']) &&
+                empty($payload['start_date']) &&
+                empty($payload['end_date']) &&
+                empty($payload['hours']) &&
+                (float) $payload['fte_value'] === 0.0 &&
+                (float) $payload['fte_value_research'] === 0.0
+            ) {
+                continue;
+            }
+
+            $rowId = (int) ($fte['id'] ?? 0);
+            if ($rowId > 0 && isset($existingById[$rowId]) && ! isset($deleteLookup[$rowId])) {
+                $fteRole = $existingById[$rowId];
+                $fteRole->update($payload);
+                $usedExistingIds[$fteRole->id] = true;
+                $explicitSubmittedIds[$fteRole->id] = true;
+                continue;
+            }
+
+            // Legacy support: old clients may submit without row id.
+            $matched = null;
+            $sig = $this->buildFteSignatureFromPayload($payload);
+            $bucket = $signatureBuckets[$sig] ?? [];
+
+            while (! empty($bucket)) {
+                $candidateId = array_shift($bucket);
+                if (isset($usedExistingIds[$candidateId])) {
+                    continue;
                 }
-            } elseif (! empty($fte['name'])) {
-                $new = $project->fteRoles()->create($payload);
-                $ids[] = $new->id;
+                if (isset($explicitSubmittedIds[$candidateId])) {
+                    continue;
+                }
+                $matched = $existingById[$candidateId] ?? null;
+                break;
+            }
+            $signatureBuckets[$sig] = $bucket;
+
+            if (! $matched) {
+                foreach ($existingRows as $candidate) {
+                    if (isset($usedExistingIds[$candidate->id])) {
+                        continue;
+                    }
+                    if (isset($explicitSubmittedIds[$candidate->id])) {
+                        continue;
+                    }
+                    $samePerson = trim((string) $candidate->name) === (string) $payload['name'];
+                    $sameRole = trim((string) $candidate->role_group) === (string) $payload['role_group'];
+                    $sameJob = trim((string) $candidate->job_detail) === (string) $payload['job_detail'];
+                    $sameTask = trim((string) $candidate->task_detail) === (string) ($payload['task_detail'] ?? '');
+                    if ($samePerson && $sameRole && $sameJob && $sameTask) {
+                        $matched = $candidate;
+                        break;
+                    }
+                }
+            }
+
+            if ($matched) {
+                $matched->update($payload);
+                $usedExistingIds[$matched->id] = true;
+            } elseif (! empty($payload['name'])) {
+                $project->fteRoles()->create($payload);
             }
         }
 
-        $project->fteRoles()->whereNotIn('id', $ids)->delete();
+        // Delete only rows explicitly marked as removed by the form.
+        if ($deleteIds->isNotEmpty()) {
+            $project->fteRoles()->whereIn('id', $deleteIds)->delete();
+        }
+    }
+
+    private function buildFteSignatureFromModel($candidate): string
+    {
+        return implode('|', [
+            $this->normalizeFteText($candidate->name),
+            $this->normalizeFteText($candidate->role_group),
+            $this->normalizeFteText($candidate->job_detail),
+            $this->normalizeFteText($candidate->task_detail),
+            (string) ($this->normalizeFteDate($candidate->start_date) ?? ''),
+            (string) ($this->normalizeFteDate($candidate->end_date) ?? ''),
+            number_format($this->normalizeFteNumber($candidate->hours), 8, '.', ''),
+            number_format($this->normalizeFteNumber($candidate->fte_value), 8, '.', ''),
+            number_format($this->normalizeFteNumber($candidate->fte_value_research), 8, '.', ''),
+        ]);
+    }
+
+    private function buildFteSignatureFromPayload(array $payload): string
+    {
+        return implode('|', [
+            $this->normalizeFteText($payload['name'] ?? null),
+            $this->normalizeFteText($payload['role_group'] ?? null),
+            $this->normalizeFteText($payload['job_detail'] ?? null),
+            $this->normalizeFteText($payload['task_detail'] ?? null),
+            (string) ($this->normalizeFteDate($payload['start_date'] ?? null) ?? ''),
+            (string) ($this->normalizeFteDate($payload['end_date'] ?? null) ?? ''),
+            number_format($this->normalizeFteNumber($payload['hours'] ?? null), 8, '.', ''),
+            number_format($this->normalizeFteNumber($payload['fte_value'] ?? null), 8, '.', ''),
+            number_format($this->normalizeFteNumber($payload['fte_value_research'] ?? null), 8, '.', ''),
+        ]);
+    }
+
+    private function normalizeFteText($value): string
+    {
+        return trim((string) ($value ?? ''));
+    }
+
+    private function normalizeFteDate($value): ?string
+    {
+        $parsed = $this->parseProjectDateInput((string) ($value ?? ''));
+        return $parsed ? $parsed->format('d-m-Y') : null;
+    }
+
+    private function normalizeFteNumber($value): float
+    {
+        if ($value === null || $value === '') {
+            return 0.0;
+        }
+        return round((float) $value, 8);
     }
 
     private function syncOutputs(Request $request, Project $project): void

@@ -2212,7 +2212,17 @@
                 Chart.defaults.responsive = true;
                 Chart.defaults.maintainAspectRatio = false;
                 Chart.defaults.layout = Chart.defaults.layout || {};
-                Chart.defaults.layout.padding = 8;
+                Chart.defaults.layout.padding = {
+                    top: 20,
+                    right: 10,
+                    bottom: 6,
+                    left: 6
+                };
+                Chart.defaults.scales = Chart.defaults.scales || {};
+                Chart.defaults.scales.linear = Chart.defaults.scales.linear || {};
+                Chart.defaults.scales.linear.grace = '16%';
+                Chart.defaults.scales.logarithmic = Chart.defaults.scales.logarithmic || {};
+                Chart.defaults.scales.logarithmic.grace = '16%';
                 Chart.defaults.font.family = "'Plus Jakarta Sans','IBM Plex Sans Thai',sans-serif";
                 Chart.defaults.font.size = uiFontSize;
                 if (Chart.defaults.plugins?.legend?.labels) {
@@ -2525,7 +2535,13 @@
             // Mobile readability defaults
             if (window.Chart && isMobileView) {
                 Chart.defaults.font.size = 12;
-                Chart.defaults.layout.padding = 6;
+                Chart.defaults.layout = Chart.defaults.layout || {};
+                Chart.defaults.layout.padding = {
+                    top: 20,
+                    right: 8,
+                    bottom: 6,
+                    left: 6
+                };
                 if (Chart.defaults.plugins?.legend) {
                     Chart.defaults.plugins.legend.position = 'bottom';
                     Chart.defaults.plugins.legend.labels.boxWidth = 8;
@@ -3456,8 +3472,27 @@
                     .map(v => String(v || '').trim())
                     .find(v => v) || '';
                 const s = norm(statusRaw);
-                if (s.includes('ยกเลิก') || s.includes('cancel')) return 'cancelled';
-                if (s.includes('ปิดโปรเจค') || s.includes('closed') || s.includes('complete')) return 'completed';
+                if (
+                    s.includes('ยกเลิก') ||
+                    s.includes('ยุติ') ||
+                    s.includes('ระงับ') ||
+                    s.includes('cancel') ||
+                    s.includes('terminate') ||
+                    s.includes('abandon') ||
+                    s.includes('withdraw')
+                ) return 'cancelled';
+                if (
+                    s.includes('ปิดโปรเจค') ||
+                    s.includes('ปิดโครงการ') ||
+                    s.includes('เสร็จ') ||
+                    s.includes('สิ้นสุด') ||
+                    s.includes('closed') ||
+                    s.includes('complete') ||
+                    s.includes('completed') ||
+                    s.includes('finish') ||
+                    s.includes('finished') ||
+                    s.includes('done')
+                ) return 'completed';
                 return 'in_progress';
             }
 
@@ -3502,12 +3537,26 @@
             function projectIsInProgressInYear(p, yCE, horizonCE) {
                 const Y = Number(yCE);
                 const startY = projectLifecycleStartYearCE(p);
-                if (!Number.isFinite(startY) || Y <= startY) return false;
+                if (!Number.isFinite(startY) || Y < startY) return false;
                 if (!projectExistsInYear(p, Y, horizonCE)) return false;
                 const key = projectLifecycleStatusKey(p);
                 if (key === 'in_progress') return true;
                 const terminalY = projectLifecycleTerminalYearCE(p, horizonCE);
                 return Y < terminalY;
+            }
+
+            function projectLifecycleBucketAtYear(p, yCE, horizonCE) {
+                const Y = Number(yCE);
+                const startY = projectLifecycleStartYearCE(p);
+                if (!(Number.isFinite(Y) && Number.isFinite(startY)) || startY > Y) return null;
+
+                const key = projectLifecycleStatusKey(p);
+                const terminalY = projectLifecycleTerminalYearCE(p, horizonCE);
+                if (key === 'cancelled' && Number.isFinite(terminalY) && terminalY <= Y) return 'cancelled';
+                if (key === 'completed' && Number.isFinite(terminalY) && terminalY <= Y) return 'completed';
+                if (startY === Y) return 'new';
+                if (projectIsInProgressInYear(p, Y, horizonCE)) return 'in_progress';
+                return null;
             }
 
             function matchYearLabel(p, label) {
@@ -3660,17 +3709,14 @@
 
                 if (id === 'chartProjectsPerYear') {
                     const labelText = String(label ?? '').trim();
+                    const isUnknownBucket = labelText === 'ไม่ระบุปี';
                     const Y = Number(yearCE(labelText) || toNumber(labelText));
-                    const startYears = projects
-                        .map(p => projectLifecycleStartYearCE(p))
-                        .filter(Number.isFinite);
-                    const horizonCE = startYears.length ? Math.max(...startYears) : (new Date().getFullYear());
                     return {
-                        title: `โครงการทั้งหมดสะสมถึงปี ${labelText}`,
+                        title: `โครงการที่เริ่มในปี ${labelText}`,
                         projects: projects.filter(p => {
                             const startY = projectLifecycleStartYearCE(p);
-                            if (Number.isFinite(startY) && Number.isFinite(Y)) return startY <= Y;
-                            return Number.isFinite(Y) && Y === horizonCE;
+                            if (isUnknownBucket) return !Number.isFinite(startY);
+                            return Number.isFinite(startY) && Number.isFinite(Y) && startY === Y;
                         })
                     };
                 }
@@ -3679,29 +3725,33 @@
                     const labelText = String(label ?? '').trim();
                     const type = String(datasetLabel || '').trim();
                     const map = window.yearlyNewVsTotalLabelMap || {};
-                    const Y = Number(map[labelText] || yearCE(labelText) || toNumber(labelText));
+                    const rawBucket = map[labelText];
+                    const isUnknownBucket = rawBucket === '__unknown__' || labelText === 'ไม่ระบุปี';
+                    const Y = Number(rawBucket || yearCE(labelText) || toNumber(labelText));
                     const horizonCE = Number(window.yearlyLifecycleHorizonCE) || new Date().getFullYear();
                     let list = [];
                     if (type === 'ทั้งหมด') {
-                        list = projects.filter(p => {
-                            const startY = projectLifecycleStartYearCE(p);
-                            if (Number.isFinite(startY)) return startY <= Y;
-                            return Y === horizonCE;
-                        });
+                        list = isUnknownBucket
+                            ? projects.filter(p => !Number.isFinite(projectLifecycleStartYearCE(p)))
+                            : projects.filter(p => {
+                                const startY = projectLifecycleStartYearCE(p);
+                                if (Number.isFinite(startY)) return startY <= Y;
+                                return Y === horizonCE;
+                            });
                     } else if (type === 'ใหม่') {
-                        list = projects.filter(p => projectLifecycleStartYearCE(p) === Y);
+                        list = isUnknownBucket ? [] : projects.filter(p => projectLifecycleBucketAtYear(p, Y, horizonCE) === 'new');
                     } else if (type === 'กำลังทำ' || type === 'กำลังดำเนินการ') {
-                        list = projects.filter(p => projectIsInProgressInYear(p, Y, horizonCE));
+                        list = isUnknownBucket
+                            ? projects.filter(p => !Number.isFinite(projectLifecycleStartYearCE(p)) && projectLifecycleStatusKey(p) === 'in_progress')
+                            : projects.filter(p => projectLifecycleBucketAtYear(p, Y, horizonCE) === 'in_progress');
                     } else if (type === 'ปิดโปรเจค') {
-                        list = projects.filter(p =>
-                            projectLifecycleStatusKey(p) === 'completed' &&
-                            Number(projectLifecycleTerminalYearCE(p, horizonCE)) === Y
-                        );
+                        list = isUnknownBucket
+                            ? projects.filter(p => !Number.isFinite(projectLifecycleStartYearCE(p)) && projectLifecycleStatusKey(p) === 'completed')
+                            : projects.filter(p => projectLifecycleBucketAtYear(p, Y, horizonCE) === 'completed');
                     } else if (type === 'ยกเลิกโปรเจค') {
-                        list = projects.filter(p =>
-                            projectLifecycleStatusKey(p) === 'cancelled' &&
-                            Number(projectLifecycleTerminalYearCE(p, horizonCE)) === Y
-                        );
+                        list = isUnknownBucket
+                            ? projects.filter(p => !Number.isFinite(projectLifecycleStartYearCE(p)) && projectLifecycleStatusKey(p) === 'cancelled')
+                            : projects.filter(p => projectLifecycleBucketAtYear(p, Y, horizonCE) === 'cancelled');
                     }
                     return {
                         title: `โครงการ${type} ปี ${labelText}`,
@@ -4004,18 +4054,19 @@
                     .map(p => projectLifecycleStartYearCE(p))
                     .filter(Number.isFinite)
                     .sort((a, b) => a - b);
-                if (!startYearsCE.length) return;
+                const unknownProjects = projects.filter((p) => !Number.isFinite(projectLifecycleStartYearCE(p)));
+                if (!startYearsCE.length && !unknownProjects.length) return;
 
                 const yearsCE = Array.from(new Set(startYearsCE));
-                const maxYearCE = yearsCE[yearsCE.length - 1];
-                const labels = yearsCE.map(y => yearLabelTH(y));
-                const data = yearsCE.map(y =>
-                    projects.filter(p => {
+                const buckets = [...yearsCE, ...(unknownProjects.length ? ['__unknown__'] : [])];
+                const labels = buckets.map((bucket) => bucket === '__unknown__' ? 'ไม่ระบุปี' : yearLabelTH(bucket));
+                const data = buckets.map((bucket) => {
+                    if (bucket === '__unknown__') return unknownProjects.length;
+                    return projects.filter(p => {
                         const startY = projectLifecycleStartYearCE(p);
-                        if (Number.isFinite(startY)) return startY <= y;
-                        return y === maxYearCE;
-                    }).length
-                );
+                        return Number.isFinite(startY) && startY === bucket;
+                    }).length;
+                });
                 const colors = labels.map((_, i) => `hsl(${(i * 37) % 360} 70% 60%)`);
 
                 // ทำลายกราฟเดิมถ้ามี
@@ -4642,15 +4693,17 @@
                     'วิเคราะห์ข้อมูล',
                     'เขียนรายงานและpublication',
                     'ปิดโปรเจค',
-                    'ยกเลิกโปรเจค'
+                    'ยกเลิกโปรเจค',
+                    'ไม่ระบุสถานะ'
                 ];
 
                 const statusData = {}; // year → status → count
                 projects.forEach(p => {
                     const year = getYear(p);
-                    const status = p.planning_status || 'ไม่ระบุ';
+                    const rawStatus = p.planning_status || 'ไม่ระบุ';
+                    const status = statuses.includes(rawStatus) ? rawStatus : 'ไม่ระบุสถานะ';
                     if (!statusData[year]) statusData[year] = Object.fromEntries(statuses.map(s => [s, 0]));
-                    if (statuses.includes(status)) statusData[year][status]++;
+                    statusData[year][status]++;
                 });
 
                 // เรียงปีให้ถูก: ตัวเลขก่อน คำทีหลัง
@@ -4666,7 +4719,7 @@
                     stack: 'st'
                 }));
 
-                // ปลั๊กอินแสดงตัวเลขบนแท่ง + กันตกขอบบน/ขวา
+                // ปลั๊กอินแสดง "ยอดรวมต่อปี" เท่านั้น เพื่อลดการซ้อนทับของตัวเลข
                 const dataLabelPlugin = {
                     id: 'dataLabelPluginStatus',
                     afterDatasetsDraw(chart) {
@@ -4683,24 +4736,27 @@
                         ctx.textBaseline = 'bottom';
                         ctx.fillStyle = '#111';
 
-                        chart.data.datasets.forEach((dataset, dsIndex) => {
-                            const meta = chart.getDatasetMeta(dsIndex);
-                            meta.data.forEach((bar, index) => {
+                        const labels = chart.data.labels || [];
+                        labels.forEach((_, index) => {
+                            let total = 0;
+                            let topBar = null;
+                            chart.data.datasets.forEach((dataset, dsIndex) => {
+                                if (!chart.isDatasetVisible(dsIndex)) return;
                                 const value = Number(dataset.data[index] || 0);
-                                if (!isFinite(value) || value <= 0) return;
-
-                                let drawX = bar.x;
-                                let drawY = bar.y - 3; // วางเหนือแท่ง
-
-                                // กันตกขอบบน
-                                const minY = top + 8;
-                                if (drawY < minY) drawY = minY;
-
-                                // กันชิดขอบขวา
-                                if (drawX > right - 2) drawX = right - 2;
-
-                                ctx.fillText(String(value), drawX, drawY);
+                                if (!(value > 0)) return;
+                                total += value;
+                                const bar = chart.getDatasetMeta(dsIndex)?.data?.[index];
+                                if (!bar) return;
+                                if (!topBar || bar.y < topBar.y) topBar = bar;
                             });
+
+                            if (!(total > 0) || !topBar) return;
+                            let drawX = topBar.x;
+                            let drawY = topBar.y - 4;
+                            const minY = top + 10;
+                            if (drawY < minY) drawY = minY;
+                            if (drawX > right - 2) drawX = right - 2;
+                            ctx.fillText(String(total), drawX, drawY);
                         });
 
                         ctx.restore();
@@ -5718,10 +5774,13 @@
 
             /* ---------- 11) โครงการทั้งหมด vs ใหม่ vs ค้างจากปีก่อน (ต่อปี) + Data Label + กันเลขตกขอบ ---------- */
             (function() {
+                const unknownBucketKey = '__unknown__';
+                const unknownBucketLabel = 'ไม่ระบุปี';
+                const unknownProjects = projects.filter((project) => !Number.isFinite(projectLifecycleStartYearCE(project)));
                 const startYears = projects
                     .map((project) => projectLifecycleStartYearCE(project))
                     .filter(Number.isFinite);
-                if (!startYears.length) return;
+                if (!startYears.length && !unknownProjects.length) return;
 
                 const eventYears = projects
                     .filter((project) => {
@@ -5731,17 +5790,22 @@
                     .map((project) => projectLifecycleEventYearCE(project))
                     .filter(Number.isFinite);
 
-                const minYearCE = Math.min(...startYears);
                 const currentYearCE = new Date().getFullYear();
-                const maxYearCE = Math.max(...startYears, ...eventYears, currentYearCE);
+                const maxYearCE = startYears.length
+                    ? Math.max(...startYears, ...eventYears, currentYearCE)
+                    : currentYearCE;
                 window.yearlyLifecycleHorizonCE = maxYearCE;
 
                 const yearsCE = [];
-                for (let year = minYearCE; year <= maxYearCE; year += 1) yearsCE.push(year);
-                const yearLabels = yearsCE.map((year) => yearLabelTH(year));
+                if (startYears.length) {
+                    const minYearCE = Math.min(...startYears);
+                    for (let year = minYearCE; year <= maxYearCE; year += 1) yearsCE.push(year);
+                }
+                const buckets = [...yearsCE, ...(unknownProjects.length ? [unknownBucketKey] : [])];
+                const yearLabels = buckets.map((bucket) => bucket === unknownBucketKey ? unknownBucketLabel : yearLabelTH(bucket));
                 window.yearlyNewVsTotalLabelMap = {};
                 yearLabels.forEach((label, index) => {
-                    window.yearlyNewVsTotalLabelMap[label] = yearsCE[index];
+                    window.yearlyNewVsTotalLabelMap[label] = buckets[index];
                 });
 
                 const totalPerYear = {};
@@ -5756,17 +5820,18 @@
                         if (Number.isFinite(startYear)) return startYear <= year;
                         return year === maxYearCE;
                     }).length;
-                    newPerYear[year] = projects.filter((project) => projectLifecycleStartYearCE(project) === year).length;
-                    inProgressPerYear[year] = projects.filter((project) => projectIsInProgressInYear(project, year, maxYearCE)).length;
-                    completedPerYear[year] = projects.filter((project) =>
-                        projectLifecycleStatusKey(project) === 'completed' &&
-                        Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
-                    ).length;
-                    cancelledPerYear[year] = projects.filter((project) =>
-                        projectLifecycleStatusKey(project) === 'cancelled' &&
-                        Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
-                    ).length;
+                    newPerYear[year] = projects.filter((project) => projectLifecycleBucketAtYear(project, year, maxYearCE) === 'new').length;
+                    inProgressPerYear[year] = projects.filter((project) => projectLifecycleBucketAtYear(project, year, maxYearCE) === 'in_progress').length;
+                    completedPerYear[year] = projects.filter((project) => projectLifecycleBucketAtYear(project, year, maxYearCE) === 'completed').length;
+                    cancelledPerYear[year] = projects.filter((project) => projectLifecycleBucketAtYear(project, year, maxYearCE) === 'cancelled').length;
                 });
+                if (unknownProjects.length) {
+                    totalPerYear[unknownBucketKey] = unknownProjects.length;
+                    newPerYear[unknownBucketKey] = 0;
+                    inProgressPerYear[unknownBucketKey] = unknownProjects.filter((project) => projectLifecycleStatusKey(project) === 'in_progress').length;
+                    completedPerYear[unknownBucketKey] = unknownProjects.filter((project) => projectLifecycleStatusKey(project) === 'completed').length;
+                    cancelledPerYear[unknownBucketKey] = unknownProjects.filter((project) => projectLifecycleStatusKey(project) === 'cancelled').length;
+                }
 
                 const valueLabelBar = {
                     id: 'valueLabelBar',
@@ -5814,7 +5879,7 @@
                         labels: yearLabels,
                         datasets: [{
                                 label: 'ทั้งหมด',
-                                data: yearsCE.map((year) => totalPerYear[year]),
+                                data: buckets.map((bucket) => totalPerYear[bucket] || 0),
                                 type: 'line',
                                 borderColor: '#60a5fa',
                                 backgroundColor: '#60a5fa',
@@ -5831,28 +5896,28 @@
                             },
                             {
                                 label: 'ใหม่',
-                                data: yearsCE.map((year) => newPerYear[year]),
+                                data: buckets.map((bucket) => newPerYear[bucket] || 0),
                                 backgroundColor: '#34d399',
                                 stack: 'status',
                                 order: 1
                             },
                             {
                                 label: 'กำลังดำเนินการ',
-                                data: yearsCE.map((year) => inProgressPerYear[year]),
+                                data: buckets.map((bucket) => inProgressPerYear[bucket] || 0),
                                 backgroundColor: '#fbbf24',
                                 stack: 'status',
                                 order: 1
                             },
                             {
                                 label: 'ปิดโปรเจค',
-                                data: yearsCE.map((year) => completedPerYear[year]),
+                                data: buckets.map((bucket) => completedPerYear[bucket] || 0),
                                 backgroundColor: '#ef4444',
                                 stack: 'status',
                                 order: 1
                             },
                             {
                                 label: 'ยกเลิกโปรเจค',
-                                data: yearsCE.map((year) => cancelledPerYear[year]),
+                                data: buckets.map((bucket) => cancelledPerYear[bucket] || 0),
                                 backgroundColor: '#f97316',
                                 stack: 'status',
                                 order: 1
@@ -6644,22 +6709,23 @@
                         .map((project) => projectLifecycleStartYearCE(project))
                         .filter(Number.isFinite)
                         .sort((a, b) => a - b);
+                    const unknownProjects = (rows || []).filter((project) => !Number.isFinite(projectLifecycleStartYearCE(project)));
 
-                    if (!startYearsCE.length) {
+                    if (!startYearsCE.length && !unknownProjects.length) {
                         drawDashboardMobileEmptyChart(canvas);
                         return;
                     }
 
                     const yearsCE = Array.from(new Set(startYearsCE));
-                    const maxYearCE = yearsCE[yearsCE.length - 1];
-                    const labels = yearsCE.map((year) => yearLabelTH(year));
-                    const data = yearsCE.map((year) =>
-                        rows.filter((project) => {
+                    const buckets = [...yearsCE, ...(unknownProjects.length ? ['__unknown__'] : [])];
+                    const labels = buckets.map((bucket) => bucket === '__unknown__' ? 'ไม่ระบุปี' : yearLabelTH(bucket));
+                    const data = buckets.map((bucket) => {
+                        if (bucket === '__unknown__') return unknownProjects.length;
+                        return rows.filter((project) => {
                             const startYear = projectLifecycleStartYearCE(project);
-                            if (Number.isFinite(startYear)) return startYear <= year;
-                            return year === maxYearCE;
-                        }).length
-                    );
+                            return Number.isFinite(startYear) && startYear === bucket;
+                        }).length;
+                    });
 
                     Chart.getChart(canvas)?.destroy();
                     new Chart(canvas, {
@@ -6725,11 +6791,14 @@
                     const canvas = document.getElementById('chartYearlyNewVsTotal');
                     if (!canvas) return;
 
+                    const unknownBucketKey = '__unknown__';
+                    const unknownBucketLabel = 'ไม่ระบุปี';
+                    const unknownProjects = (rows || []).filter((project) => !Number.isFinite(projectLifecycleStartYearCE(project)));
                     const startYears = (rows || [])
                         .map((project) => projectLifecycleStartYearCE(project))
                         .filter(Number.isFinite);
 
-                    if (!startYears.length) {
+                    if (!startYears.length && !unknownProjects.length) {
                         drawDashboardMobileEmptyChart(canvas);
                         return;
                     }
@@ -6742,16 +6811,22 @@
                         .map((project) => projectLifecycleEventYearCE(project))
                         .filter(Number.isFinite);
 
-                    const minYearCE = Math.min(...startYears);
                     const currentYearCE = new Date().getFullYear();
-                    const maxYearCE = Math.max(...startYears, ...eventYears, currentYearCE);
+                    const maxYearCE = startYears.length
+                        ? Math.max(...startYears, ...eventYears, currentYearCE)
+                        : currentYearCE;
+                    window.yearlyLifecycleHorizonCE = maxYearCE;
 
                     const yearsCE = [];
-                    for (let year = minYearCE; year <= maxYearCE; year += 1) yearsCE.push(year);
-                    const yearLabels = yearsCE.map((year) => yearLabelTH(year));
+                    if (startYears.length) {
+                        const minYearCE = Math.min(...startYears);
+                        for (let year = minYearCE; year <= maxYearCE; year += 1) yearsCE.push(year);
+                    }
+                    const buckets = [...yearsCE, ...(unknownProjects.length ? [unknownBucketKey] : [])];
+                    const yearLabels = buckets.map((bucket) => bucket === unknownBucketKey ? unknownBucketLabel : yearLabelTH(bucket));
                     window.yearlyNewVsTotalLabelMap = {};
                     yearLabels.forEach((label, index) => {
-                        window.yearlyNewVsTotalLabelMap[label] = yearsCE[index];
+                        window.yearlyNewVsTotalLabelMap[label] = buckets[index];
                     });
 
                     const totalPerYear = {};
@@ -6766,17 +6841,18 @@
                             if (Number.isFinite(startYear)) return startYear <= year;
                             return year === maxYearCE;
                         }).length;
-                        newPerYear[year] = rows.filter((project) => projectLifecycleStartYearCE(project) === year).length;
-                        inProgressPerYear[year] = rows.filter((project) => projectIsInProgressInYear(project, year, maxYearCE)).length;
-                        completedPerYear[year] = rows.filter((project) =>
-                            projectLifecycleStatusKey(project) === 'completed' &&
-                            Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
-                        ).length;
-                        cancelledPerYear[year] = rows.filter((project) =>
-                            projectLifecycleStatusKey(project) === 'cancelled' &&
-                            Number(projectLifecycleTerminalYearCE(project, maxYearCE)) === year
-                        ).length;
+                        newPerYear[year] = rows.filter((project) => projectLifecycleBucketAtYear(project, year, maxYearCE) === 'new').length;
+                        inProgressPerYear[year] = rows.filter((project) => projectLifecycleBucketAtYear(project, year, maxYearCE) === 'in_progress').length;
+                        completedPerYear[year] = rows.filter((project) => projectLifecycleBucketAtYear(project, year, maxYearCE) === 'completed').length;
+                        cancelledPerYear[year] = rows.filter((project) => projectLifecycleBucketAtYear(project, year, maxYearCE) === 'cancelled').length;
                     });
+                    if (unknownProjects.length) {
+                        totalPerYear[unknownBucketKey] = unknownProjects.length;
+                        newPerYear[unknownBucketKey] = 0;
+                        inProgressPerYear[unknownBucketKey] = unknownProjects.filter((project) => projectLifecycleStatusKey(project) === 'in_progress').length;
+                        completedPerYear[unknownBucketKey] = unknownProjects.filter((project) => projectLifecycleStatusKey(project) === 'completed').length;
+                        cancelledPerYear[unknownBucketKey] = unknownProjects.filter((project) => projectLifecycleStatusKey(project) === 'cancelled').length;
+                    }
 
                     Chart.getChart(canvas)?.destroy();
                     new Chart(canvas, {
@@ -6785,7 +6861,7 @@
                             labels: yearLabels,
                             datasets: [{
                                     label: 'ทั้งหมด',
-                                    data: yearsCE.map((year) => totalPerYear[year]),
+                                    data: buckets.map((bucket) => totalPerYear[bucket] || 0),
                                     type: 'line',
                                     borderColor: '#60a5fa',
                                     backgroundColor: '#60a5fa',
@@ -6802,28 +6878,28 @@
                                 },
                                 {
                                     label: 'ใหม่',
-                                    data: yearsCE.map((year) => newPerYear[year]),
+                                    data: buckets.map((bucket) => newPerYear[bucket] || 0),
                                     backgroundColor: '#34d399',
                                     stack: 'status',
                                     order: 1
                                 },
                                 {
                                     label: 'กำลังดำเนินการ',
-                                    data: yearsCE.map((year) => inProgressPerYear[year]),
+                                    data: buckets.map((bucket) => inProgressPerYear[bucket] || 0),
                                     backgroundColor: '#fbbf24',
                                     stack: 'status',
                                     order: 1
                                 },
                                 {
                                     label: 'ปิดโปรเจค',
-                                    data: yearsCE.map((year) => completedPerYear[year]),
+                                    data: buckets.map((bucket) => completedPerYear[bucket] || 0),
                                     backgroundColor: '#ef4444',
                                     stack: 'status',
                                     order: 1
                                 },
                                 {
                                     label: 'ยกเลิกโปรเจค',
-                                    data: yearsCE.map((year) => cancelledPerYear[year]),
+                                    data: buckets.map((bucket) => cancelledPerYear[bucket] || 0),
                                     backgroundColor: '#f97316',
                                     stack: 'status',
                                     order: 1
@@ -7140,15 +7216,17 @@
                         'วิเคราะห์ข้อมูล',
                         'เขียนรายงานและpublication',
                         'ปิดโปรเจค',
-                        'ยกเลิกโปรเจค'
+                        'ยกเลิกโปรเจค',
+                        'ไม่ระบุสถานะ'
                     ];
 
                     const statusData = {};
                     rows.forEach((project) => {
                         const year = String(getYear(project) ?? '').trim() || 'ไม่ระบุ';
-                        const status = project.planning_status || 'ไม่ระบุ';
+                        const rawStatus = project.planning_status || 'ไม่ระบุ';
+                        const status = statuses.includes(rawStatus) ? rawStatus : 'ไม่ระบุสถานะ';
                         if (!statusData[year]) statusData[year] = Object.fromEntries(statuses.map((item) => [item, 0]));
-                        if (statuses.includes(status)) statusData[year][status] += 1;
+                        statusData[year][status] += 1;
                     });
 
                     const sortedYears = sortDashboardYearKeys(Object.keys(statusData));

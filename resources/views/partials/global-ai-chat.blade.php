@@ -214,6 +214,12 @@
         transform: translateY(12px);
     }
 
+    #appAiChatFabWrap.is-hidden-at-page-bottom {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(12px);
+    }
+
     #appAiChatBubble {
         position: absolute;
         right: 4.5rem;
@@ -1075,6 +1081,7 @@
         const suggestGrid = document.getElementById('appAiChatSuggestGrid');
         const predictBox = document.getElementById('appAiChatPredict');
         const dashboardFabStack = document.getElementById('dashboardFabStack');
+        const bottomThreshold = 28;
 
         const defaultState = {
             messages: [],
@@ -2021,6 +2028,19 @@
                     scrollChatToBottom();
                 }, 40);
             }
+
+            refreshBottomFabVisibility();
+        };
+
+        const isNearPageBottom = () => {
+            const doc = document.documentElement;
+            return window.innerHeight + window.scrollY >= doc.scrollHeight - bottomThreshold;
+        };
+
+        const refreshBottomFabVisibility = () => {
+            if (!fabWrap) return;
+            const nearBottom = isNearPageBottom();
+            fabWrap.classList.toggle('is-hidden-at-page-bottom', nearBottom);
         };
 
         const createMessage = (role) => {
@@ -2424,6 +2444,13 @@
             }
         });
 
+        window.addEventListener('scroll', refreshBottomFabVisibility, {
+            passive: true
+        });
+        window.addEventListener('resize', refreshBottomFabVisibility, {
+            passive: true
+        });
+
         if (state.bubbleDismissed) {
             bubble?.classList.remove('is-show');
         } else {
@@ -2433,5 +2460,6 @@
         suggestPanel.hidden = featuredSuggestions.length === 0;
         renderPredictSuggestions(state.draft || '');
         rerenderConversation();
+        refreshBottomFabVisibility();
     })();
 </script>

@@ -350,7 +350,6 @@
                         placeholder="ชื่อโครงการ หรือ Project ID (รองรับคำใกล้เคียง)" value="{{ request('search') }}"
                         data-project-live="true"
                         class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
-                    <span class="mt-1 block text-[11px] text-slate-500">ค้นหาแบบ realtime ไม่ต้องกดปุ่ม</span>
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ประเภทโครงการ</span>
