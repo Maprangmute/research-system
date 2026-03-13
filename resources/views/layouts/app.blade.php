@@ -1085,9 +1085,29 @@
         input.value = `${day}-${month}-${year}`;
     }
 
+    function syncNativeWheelRawValue(input) {
+        if (!(input instanceof HTMLInputElement)) return;
+        if (!input.classList.contains('native-date-raw')) return;
+
+        const holder = input.closest('.relative') || input.parentElement;
+        const displayInput = holder?.querySelector?.(`input[data-native-date-display-for="${CSS.escape(input.name || '')}"]`);
+
+        let picked = parseDateInputValue((displayInput?.value || '').trim());
+        if (!(picked instanceof Date) || Number.isNaN(picked.getTime())) {
+            picked = parseDateInputValue((input.value || '').trim());
+        }
+
+        input.value = (picked instanceof Date && !Number.isNaN(picked.getTime()))
+            ? toYmdCE(picked)
+            : '';
+    }
+
     function syncDateInputsBeforeSubmit(form) {
         if (!(form instanceof HTMLFormElement)) return;
-        form.querySelectorAll('input.thai-datepicker, input.js-date-be').forEach(syncFlatpickrRawValue);
+        form.querySelectorAll('input.thai-datepicker, input.js-date-be').forEach((input) => {
+            syncFlatpickrRawValue(input);
+            syncNativeWheelRawValue(input);
+        });
     }
 
     document.addEventListener('submit', (event) => {

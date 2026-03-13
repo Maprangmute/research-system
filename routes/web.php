@@ -115,6 +115,8 @@ use App\Http\Controllers\ProjectLogController;
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/project-logs', [ProjectLogController::class, 'index'])->name('project_logs.index');
+    Route::get('/project-logs/project-suggestions', [ProjectLogController::class, 'projectSuggestions'])->name('project_logs.project_suggestions');
+    Route::get('/project-logs/export', [ProjectLogController::class, 'export'])->name('project_logs.export');
     Route::delete('/project-logs/purge-old', [ProjectLogController::class, 'purgeOld'])->name('project_logs.purge_old');
     Route::get('/project-logs/{id}', [ProjectLogController::class, 'show'])->name('project_logs.show')->whereNumber('id');
     Route::delete('/project-logs/{id}', [ProjectLogController::class, 'destroy'])->name('project_logs.destroy')->whereNumber('id');
