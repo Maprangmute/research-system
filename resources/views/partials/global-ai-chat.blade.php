@@ -526,6 +526,32 @@
         overscroll-behavior: contain;
     }
 
+    .app-ai-chat__scroll-down {
+        position: absolute;
+        left: 50%;
+        bottom: 6.25rem;
+        width: 2.3rem;
+        height: 2.3rem;
+        border: 1px solid #bae6fd;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.94);
+        color: #0369a1;
+        font-size: 1.1rem;
+        font-weight: 700;
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14);
+        opacity: 0;
+        transform: translateX(-50%) translateY(8px);
+        pointer-events: none;
+        transition: opacity 0.16s ease, transform 0.16s ease;
+        z-index: 4;
+    }
+
+    .app-ai-chat__scroll-down.is-show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        pointer-events: auto;
+    }
+
     .app-ai-chat__empty {
         border: 1px dashed #cbd5e1;
         border-radius: 1rem;
@@ -996,6 +1022,11 @@
             min-width: 4.7rem;
         }
 
+        .app-ai-chat__scroll-down {
+            left: 50%;
+            bottom: 6.35rem;
+        }
+
         #appAiChatForm {
             padding-bottom: calc(1rem + env(safe-area-inset-bottom));
         }
@@ -1036,6 +1067,7 @@
         </div>
 
         <div id="appAiChatBody"></div>
+        <button type="button" id="appAiChatScrollDown" class="app-ai-chat__scroll-down" aria-label="เลื่อนไปด้านล่าง">↓</button>
 
         <form id="appAiChatForm">
             @csrf
@@ -1069,6 +1101,7 @@
         const overlay = document.getElementById('appAiChatOverlay');
         const panel = document.getElementById('appAiChatPanel');
         const body = document.getElementById('appAiChatBody');
+        const scrollDownBtn = document.getElementById('appAiChatScrollDown');
         const form = document.getElementById('appAiChatForm');
         const input = document.getElementById('appAiChatInput');
         const fabWrap = document.getElementById('appAiChatFabWrap');
@@ -2003,6 +2036,35 @@
             requestAnimationFrame(() => {
                 if (!body) return;
                 body.scrollTop = body.scrollHeight;
+                updateChatScrollDownButton();
+            });
+        };
+
+        const isNearChatBottom = () => {
+            if (!body) return true;
+            return (body.scrollHeight - (body.scrollTop + body.clientHeight)) <= 28;
+        };
+
+        const updateChatScrollDownButton = () => {
+            if (!scrollDownBtn || !body || !panel) return;
+            const shouldShow = panel.classList.contains('is-open')
+                && body.scrollHeight > body.clientHeight + 8
+                && !isNearChatBottom();
+            scrollDownBtn.classList.toggle('is-show', shouldShow);
+        };
+
+        const scrollMessageToTop = (messageWrap) => {
+            if (!body || !messageWrap) return;
+            requestAnimationFrame(() => {
+                const bodyRect = body.getBoundingClientRect();
+                const wrapRect = messageWrap.getBoundingClientRect();
+                const relativeTop = wrapRect.top - bodyRect.top;
+                const top = Math.max(body.scrollTop + relativeTop - 2, 0);
+                body.scrollTo({
+                    top,
+                    behavior: 'smooth'
+                });
+                updateChatScrollDownButton();
             });
         };
 
@@ -2024,12 +2086,16 @@
                 window.closeDashboardFloatingPanels?.();
                 setBubbleVisible(false);
                 setTimeout(() => {
-                    input?.focus();
+                    const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
+                    if (!isMobileViewport) {
+                        input?.focus();
+                    }
                     scrollChatToBottom();
                 }, 40);
             }
 
             refreshBottomFabVisibility();
+            updateChatScrollDownButton();
         };
 
         const isNearPageBottom = () => {
@@ -2224,7 +2290,8 @@
 
         const appendUserMessage = (text, options = {}) => {
             const {
-                persist = true
+                persist = true,
+                scroll = true
             } = options;
             const {
                 content
@@ -2238,14 +2305,20 @@
                 state.messages = state.messages.slice(-maxStoredMessages);
                 saveState();
             }
-            scrollChatToBottom();
+            if (scroll) {
+                scrollChatToBottom();
+            } else {
+                updateChatScrollDownButton();
+            }
         };
 
         const appendAssistantMessage = async (payload, options = {}) => {
             const {
-                persist = true
+                persist = true,
+                focusTop = true
             } = options;
             const {
+                wrap,
                 content
             } = createMessage('assistant');
             await renderAssistantPayload(content, payload);
@@ -2257,7 +2330,11 @@
                 state.messages = state.messages.slice(-maxStoredMessages);
                 saveState();
             }
-            scrollChatToBottom();
+            if (focusTop) {
+                scrollMessageToTop(wrap);
+            } else {
+                updateChatScrollDownButton();
+            }
         };
 
         const normalizePayload = (data) => ({
@@ -2278,14 +2355,16 @@
             for (const message of state.messages) {
                 if (message?.role === 'user') {
                     appendUserMessage(message.text || '', {
-                        persist: false
+                        persist: false,
+                        scroll: false
                     });
                     continue;
                 }
                 await appendAssistantMessage(message?.payload || {
                     reply: ''
                 }, {
-                    persist: false
+                    persist: false,
+                    focusTop: false
                 });
             }
         };
@@ -2398,7 +2477,7 @@
 
             const thinking = createMessage('assistant');
             thinking.content.innerHTML = '<div class="app-ai-chat__thinking">กำลังวิเคราะห์…</div>';
-            scrollChatToBottom();
+            scrollMessageToTop(thinking.wrap);
 
             try {
                 const response = await fetch(endpoint, {
@@ -2422,7 +2501,7 @@
                 });
                 state.messages = state.messages.slice(-maxStoredMessages);
                 saveState();
-                scrollChatToBottom();
+                scrollMessageToTop(thinking.wrap);
             } catch (error) {
                 const payload = {
                     reply: '<span class="text-red-600">เกิดข้อผิดพลาดในการเรียกผู้ช่วย</span>'
@@ -2435,6 +2514,7 @@
                 });
                 state.messages = state.messages.slice(-maxStoredMessages);
                 saveState();
+                scrollMessageToTop(thinking.wrap);
             }
         });
 
@@ -2450,6 +2530,17 @@
         window.addEventListener('resize', refreshBottomFabVisibility, {
             passive: true
         });
+        body?.addEventListener('scroll', updateChatScrollDownButton, {
+            passive: true
+        });
+        scrollDownBtn?.addEventListener('click', () => {
+            if (!body) return;
+            body.scrollTo({
+                top: body.scrollHeight,
+                behavior: 'smooth'
+            });
+            updateChatScrollDownButton();
+        });
 
         if (state.bubbleDismissed) {
             bubble?.classList.remove('is-show');
@@ -2461,5 +2552,6 @@
         renderPredictSuggestions(state.draft || '');
         rerenderConversation();
         refreshBottomFabVisibility();
+        updateChatScrollDownButton();
     })();
 </script>
