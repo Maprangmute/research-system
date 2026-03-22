@@ -1219,6 +1219,12 @@
         display: flex !important;
     }
 
+    /* ซ่อนปุ่มลูกศร < > บน Flatpickr */
+    .flatpickr-calendar .flatpickr-prev-month,
+    .flatpickr-calendar .flatpickr-next-month {
+        display: none !important;
+    }
+
     .row-collapse-summary {
         width: 100%;
         display: none;
@@ -1374,6 +1380,219 @@
         .row-collapsed .row-collapse-toggle-with-remove {
             top: 0.35rem;
             right: 0.35rem;
+        }
+    }
+
+    .fte-tools {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        width: 100%;
+    }
+
+    .fte-tools__search {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.5rem;
+        padding: 0.55rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .fte-tools__table-btn {
+        border: 1px solid #93c5fd;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border-radius: 0.5rem;
+        padding: 0.5rem 0.85rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+    }
+
+    .fte-tools__table-btn.is-active {
+        background: #dbeafe;
+    }
+
+    .fte-tools__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 0 0 auto;
+    }
+
+    .fte-tools__clear-btn {
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #334155;
+        border-radius: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+    }
+
+    @media (min-width: 768px) {
+        .fte-tools {
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.75rem;
+        }
+
+        .fte-tools__search {
+            width: auto;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        #fte-container.fte-cards-hidden {
+            position: absolute !important;
+            left: -99999px !important;
+            top: auto !important;
+            width: 1px !important;
+            height: 1px !important;
+            overflow: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        .fte-table-wrap {
+            display: none;
+            margin-bottom: 1rem;
+            border: 1px solid #dbeafe;
+            border-radius: 0.75rem;
+            overflow: visible;
+            background: #ffffff;
+        }
+
+        .fte-table-wrap.is-active {
+            display: block;
+        }
+
+        .fte-table-grid {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .fte-table-grid thead th {
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.5rem;
+            border-bottom: 1px solid #bfdbfe;
+            text-align: left;
+            white-space: normal;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            line-height: 1.2;
+        }
+
+        .fte-table-grid tbody td {
+            border-top: 1px solid #e2e8f0;
+            padding: 0.4rem;
+            vertical-align: middle;
+        }
+
+        .fte-table-grid input,
+        .fte-table-grid select {
+            width: 100%;
+            min-width: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.4rem;
+            padding: 0.38rem 0.5rem;
+            font-size: 0.9rem;
+            background: #fff;
+            box-sizing: border-box;
+        }
+
+        .fte-table-grid .fte-table-index {
+            text-align: center;
+            color: #1d4ed8;
+            font-weight: 700;
+            width: 48px;
+        }
+
+        .fte-table-grid .fte-table-remove-btn {
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            background: #fff5f5;
+            border-radius: 0.4rem;
+            padding: 0.35rem 0.5rem;
+            font-size: 0.75rem;
+            width: 100%;
+            white-space: nowrap;
+        }
+
+        .fte-table-grid td:nth-child(9) input {
+            font-size: 0.84rem;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.01em;
+        }
+
+        .fte-table-grid td:nth-child(10) input {
+            font-size: 0.82rem;
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .fte-table-grid td:nth-child(3) select,
+        .fte-table-grid td:nth-child(4) select {
+            font-size: 0.84rem;
+        }
+
+        .fte-table-grid td:nth-child(5) input,
+        .fte-table-grid td:nth-child(6) input {
+            font-size: 0.86rem;
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .fte-table-empty {
+            text-align: center;
+            color: #64748b;
+            padding: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .fte-table-grid input[readonly] {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .project-form {
+            max-width: 96rem !important;
+        }
+
+        .project-form,
+        .project-form input,
+        .project-form select,
+        .project-form textarea,
+        .project-form button {
+            font-size: 1rem;
+        }
+
+        .project-form h2 {
+            font-size: 1.75rem;
+        }
+
+        .project-form h3 {
+            font-size: 1.35rem;
         }
     }
 </style>
@@ -2199,6 +2418,7 @@
             const container = document.getElementById(group.dataset.container);
             const tpl = document.getElementById(group.dataset.template);
             let index = parseInt(group.dataset.index || '1', 10);
+            const groupId = group.dataset.id || '';
 
             if (!container || !tpl) return;
 
@@ -2213,7 +2433,11 @@
             container.appendChild(row);
             updateIndex(container);
             highlightRow(row);
-            setCollapsed(row, false);
+            if (groupId === 'fte' && typeof window.handleFteRowAdded === 'function') {
+                window.handleFteRowAdded(row);
+            } else {
+                setCollapsed(row, false);
+            }
 
             group.dataset.index = index + 1;
 
@@ -2226,7 +2450,23 @@
 
             const id = btn.getAttribute('data-repeatable-add');
             const group = document.querySelector(`[data-repeatable][data-id="${id}"]`);
-            if (group) addRow(group);
+            if (!group) return;
+
+            if (
+                id === 'fte' &&
+                e.isTrusted &&
+                typeof window.validateFteBeforeAdd === 'function' &&
+                !window.validateFteBeforeAdd({
+                    showAlert: true
+                })
+            ) {
+                return;
+            }
+
+            addRow(group);
+            if (id === 'fte') {
+                window.refreshFteUx?.();
+            }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -2272,6 +2512,8 @@
                     if (rowHasData(row)) setCollapsed(row, true);
                 });
             }
+
+            window.initFteUx?.();
         });
 
         const observer = new MutationObserver((mutations) => {
@@ -2281,11 +2523,17 @@
                     if (node.matches && node.matches(COLLAPSIBLE_SELECTOR)) {
                         prepareRow(node);
                         collapseSiblings(node);
+                        if (node.matches('.fte-row') || node.id === 'fte-container') {
+                            window.refreshFteUx?.();
+                        }
                         return;
                     }
                     node.querySelectorAll?.(COLLAPSIBLE_SELECTOR).forEach(row => {
                         prepareRow(row);
                         collapseSiblings(row);
+                        if (row.matches('.fte-row')) {
+                            window.refreshFteUx?.();
+                        }
                     });
                 });
             });
@@ -2298,6 +2546,839 @@
             });
         });
 
+    })();
+</script>
+
+<script>
+    (() => {
+        const FTE_CONTAINER_ID = 'fte-container';
+        const FTE_TOOLS_ID = 'fte-tools';
+        const FTE_SEARCH_ID = 'fte-search-input';
+        const FTE_TABLE_MODE_BTN_ID = 'fte-table-mode-btn';
+        const FTE_CLEAR_SEARCH_BTN_ID = 'fte-search-clear-btn';
+        const FTE_TABLE_WRAP_ID = 'fte-table-wrap';
+        const FTE_TABLE_MODE_STORAGE_KEY = `fte:table-mode:${window.AUTH_USER_ID || 'guest'}`;
+        const isTableModeDisabledOnPage = window.DISABLE_FTE_TABLE_MODE === true;
+        const isDesktopLike = () => window.matchMedia('(min-width: 768px)').matches;
+
+        const getContainer = () => document.getElementById(FTE_CONTAINER_ID);
+        const getRows = () => Array.from(document.querySelectorAll(`#${FTE_CONTAINER_ID} .fte-row`))
+            .filter((row) => !row.closest('template'));
+        const FTE_PROXY_LINK_ATTR = 'data-fte-proxy-id';
+        let fteProxyIdSeq = 0;
+        let fteSubmitAttempted = false;
+
+        const getRequiredFields = (row) => Array.from(row.querySelectorAll('input[required], select[required], textarea[required]'))
+            .filter((field) => !field.disabled && field.type !== 'hidden');
+
+        const getFieldLabel = (field) => {
+            const text = field.closest('label')?.querySelector('span')?.textContent?.trim();
+            return text || 'ช่องข้อมูลที่จำเป็น';
+        };
+
+        const highlightInvalidField = (field) => {
+            field.classList.add('border-red-500', 'bg-red-50');
+            setTimeout(() => field.classList.remove('bg-red-50'), 1200);
+        };
+
+        const focusField = (field) => {
+            const row = field.closest('.fte-row');
+            if (row) {
+                row.classList.remove('row-collapsed');
+                row.dataset.collapsed = '0';
+                row.dataset.forceOpen = '1';
+            }
+            field.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+            setTimeout(() => field.focus({
+                preventScroll: true
+            }), 200);
+        };
+
+        window.validateFteBeforeAdd = ({
+            showAlert = true
+        } = {}) => {
+            if (window.isFteTableMode?.()) {
+                const result = validateFteTableFields({
+                    showAlert,
+                    title: 'กรอก FTE ให้ครบก่อนเพิ่มแถวใหม่',
+                    markStyles: false
+                });
+                if (!result.ok) return false;
+            }
+
+            const rows = getRows();
+            let firstInvalid = null;
+
+            for (const row of rows) {
+                for (const field of getRequiredFields(row)) {
+                    const val = String(field.value ?? '').trim();
+                    const isEmpty = val === '';
+                    const invalid = isEmpty || !field.checkValidity();
+                    if (!invalid) {
+                        field.classList.remove('border-red-500', 'bg-red-50');
+                        continue;
+                    }
+                    firstInvalid = field;
+                    break;
+                }
+                if (firstInvalid) break;
+            }
+
+            if (!firstInvalid) return true;
+
+            highlightInvalidField(firstInvalid);
+            focusField(firstInvalid);
+            firstInvalid.reportValidity?.();
+
+            if (!showAlert) return false;
+
+            const label = getFieldLabel(firstInvalid);
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรอก FTE ให้ครบก่อนเพิ่มแถวใหม่',
+                    text: `กรุณากรอกข้อมูลที่ยังไม่ครบ: ${label}`,
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#2563eb',
+                    didClose: () => focusField(firstInvalid)
+                });
+            } else {
+                alert(`กรุณากรอกข้อมูลที่ยังไม่ครบ: ${label}`);
+            }
+
+            return false;
+        };
+
+        const getFteTableRequiredFields = () => Array.from(document.querySelectorAll(
+            `#${FTE_TABLE_WRAP_ID} input[required], #${FTE_TABLE_WRAP_ID} select[required], #${FTE_TABLE_WRAP_ID} textarea[required]`
+        ));
+
+        const clearProxyInvalidStyles = (el) => {
+            if (!el) return;
+            el.classList.remove('border-red-500', 'bg-red-50');
+            el.style.borderColor = '';
+            el.style.backgroundColor = '';
+            if (el._sourceField) {
+                el._sourceField.classList.remove('border-red-500', 'bg-red-50');
+            }
+        };
+
+        const markProxyInvalidStyles = (el) => {
+            if (!el) return;
+            el.classList.add('border-red-500', 'bg-red-50');
+            el.style.borderColor = '#ef4444';
+            el.style.backgroundColor = '#fef2f2';
+            if (el._sourceField) {
+                el._sourceField.classList.add('border-red-500', 'bg-red-50');
+            }
+        };
+
+        const syncProxyInvalidFromSource = (source, proxy) => {
+            if (!source || !proxy) return;
+            const hasInvalidClass = source.classList.contains('border-red-500') || source.classList.contains('bg-red-50');
+            if (hasInvalidClass) {
+                proxy.classList.add('border-red-500', 'bg-red-50');
+                proxy.style.borderColor = '#ef4444';
+                proxy.style.backgroundColor = '#fef2f2';
+            } else {
+                proxy.classList.remove('border-red-500', 'bg-red-50');
+                proxy.style.borderColor = '';
+                proxy.style.backgroundColor = '';
+            }
+        };
+
+        const syncAllFteProxyInvalidStates = () => {
+            document.querySelectorAll(`#${FTE_TABLE_WRAP_ID} [${FTE_PROXY_LINK_ATTR}]`).forEach((proxy) => {
+                const proxyId = proxy.getAttribute(FTE_PROXY_LINK_ATTR);
+                if (!proxyId) return;
+                const source = document.querySelector(`#${FTE_CONTAINER_ID} [${FTE_PROXY_LINK_ATTR}="${proxyId}"]`);
+                syncProxyInvalidFromSource(source, proxy);
+            });
+        };
+
+        const getProxyFieldPositionText = (field) => {
+            const td = field.closest('td');
+            const tr = field.closest('tr');
+            const rowNo = tr?.querySelector('.fte-table-index')?.textContent?.trim() || '?';
+            const colIndex = td?.cellIndex ?? -1;
+            const th = colIndex >= 0 ?
+                document.querySelector(`#${FTE_TABLE_WRAP_ID} thead th:nth-child(${colIndex + 1})`) :
+                null;
+            const colName = th?.textContent?.trim() || 'ช่องข้อมูล';
+            return `แถว ${rowNo} : ${colName}`;
+        };
+
+        const validateFteTableFields = ({
+            showAlert = true,
+            title = 'กรุณากรอกข้อมูลให้ครบถ้วน',
+            markStyles = true
+        } = {}) => {
+            const requiredFields = getFteTableRequiredFields();
+            let firstInvalid = null;
+
+            requiredFields.forEach((field) => {
+                const empty = String(field.value ?? '').trim() === '';
+                const invalid = empty || !field.checkValidity();
+                if (invalid) {
+                    if (markStyles) markProxyInvalidStyles(field);
+                    if (!firstInvalid) firstInvalid = field;
+                } else {
+                    if (markStyles) clearProxyInvalidStyles(field);
+                }
+            });
+
+            if (!firstInvalid) return {
+                ok: true
+            };
+
+            firstInvalid.reportValidity?.();
+            firstInvalid.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+            setTimeout(() => firstInvalid.focus({
+                preventScroll: true
+            }), 200);
+
+            if (showAlert) {
+                const pos = getProxyFieldPositionText(firstInvalid);
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title,
+                        text: `กรุณากรอก: ${pos}`,
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#4f46e5'
+                    });
+                } else {
+                    alert(`กรุณากรอก: ${pos}`);
+                }
+            }
+
+            return {
+                ok: false,
+                firstInvalid
+            };
+        };
+        window.validateFteTableFields = validateFteTableFields;
+
+        const rowSearchText = (row) => {
+            const pick = (selector) => {
+                const el = row.querySelector(selector);
+                if (!el) return '';
+                if (el.tagName === 'SELECT') {
+                    return (el.options[el.selectedIndex]?.textContent || '').trim();
+                }
+                return String(el.value || '').trim();
+            };
+
+            return [
+                pick('input[name^="fte_roles["][name$="[name]"]'),
+                pick('select[name^="fte_roles["][name$="[role_group]"]'),
+                pick('select[name^="fte_roles["][name$="[job_detail]"]'),
+                pick('select[name^="fte_roles["][name$="[task_detail]"]')
+            ].join(' ').toLowerCase();
+        };
+
+        window.applyFteRowSearchFilter = () => {
+            const query = (document.getElementById(FTE_SEARCH_ID)?.value || '').trim().toLowerCase();
+            if (window.isFteTableMode?.()) {
+                renderFteTable();
+                return;
+            }
+            getRows().forEach((row) => row.style.display = !query || rowSearchText(row).includes(query) ? '' : 'none');
+        };
+
+        const isTableModeEnabled = () => getContainer()?.classList.contains('fte-table-mode');
+        window.isFteTableMode = isTableModeEnabled;
+
+        window.collapseFteRowsExcept = (activeRow) => {
+            const active = typeof activeRow === 'string' ? document.getElementById(activeRow) : activeRow;
+            getRows().forEach((row) => {
+                if (!row) return;
+                if (active && row === active) {
+                    row.classList.remove('row-collapsed');
+                    row.dataset.collapsed = '0';
+                    row.dataset.forceOpen = '1';
+                    return;
+                }
+                row.dataset.collapsed = '1';
+                row.classList.add('row-collapsed');
+                delete row.dataset.forceOpen;
+            });
+        };
+
+        const expandAllFteRows = () => {
+            getRows().forEach((row) => {
+                row.classList.remove('row-collapsed');
+                row.dataset.collapsed = '0';
+                delete row.dataset.forceOpen;
+            });
+        };
+
+        window.handleFteRowAdded = (rowOrId) => {
+            const row = typeof rowOrId === 'string' ? document.getElementById(rowOrId) : rowOrId;
+            if (!row) return;
+            if (isTableModeEnabled()) {
+                expandAllFteRows();
+            } else {
+                window.collapseFteRowsExcept(row);
+            }
+            window.refreshFteUx?.();
+        };
+
+        const getField = (row, selector) => row.querySelector(selector);
+        const getFieldValue = (el) => {
+            if (!el) return '';
+            if (el.tagName === 'SELECT') return el.value || '';
+            return String(el.value ?? '');
+        };
+
+        const parseDateAny = (raw) => {
+            const normalizeThaiDigits = (input) => String(input || '').replace(/[๐-๙]/g, (ch) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(ch)));
+            const value = normalizeThaiDigits(String(raw || '').trim()).replace(/\s+/g, ' ');
+            if (!value) return null;
+
+            let m = value.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+            if (m) {
+                let yyyy = Number(m[3]);
+                if (yyyy > 2400) yyyy -= 543;
+                return {
+                    dd: String(Number(m[1])).padStart(2, '0'),
+                    mm: String(Number(m[2])).padStart(2, '0'),
+                    yyyy
+                };
+            }
+
+            m = value.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+            if (m) {
+                let yyyy = Number(m[1]);
+                if (yyyy > 2400) yyyy -= 543;
+                return {
+                    dd: String(Number(m[3])).padStart(2, '0'),
+                    mm: String(Number(m[2])).padStart(2, '0'),
+                    yyyy
+                };
+            }
+
+            m = value.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/u);
+            if (m) {
+                const monthRaw = m[2];
+                const monthMap = {
+                    'มกราคม': 1, 'ม.ค.': 1, 'ม.ค': 1,
+                    'กุมภาพันธ์': 2, 'ก.พ.': 2, 'ก.พ': 2,
+                    'มีนาคม': 3, 'มี.ค.': 3, 'มี.ค': 3,
+                    'เมษายน': 4, 'เม.ย.': 4, 'เม.ย': 4,
+                    'พฤษภาคม': 5, 'พ.ค.': 5, 'พ.ค': 5,
+                    'มิถุนายน': 6, 'มิ.ย.': 6, 'มิ.ย': 6,
+                    'กรกฎาคม': 7, 'ก.ค.': 7, 'ก.ค': 7,
+                    'สิงหาคม': 8, 'ส.ค.': 8, 'ส.ค': 8,
+                    'กันยายน': 9, 'ก.ย.': 9, 'ก.ย': 9,
+                    'ตุลาคม': 10, 'ต.ค.': 10, 'ต.ค': 10,
+                    'พฤศจิกายน': 11, 'พ.ย.': 11, 'พ.ย': 11,
+                    'ธันวาคม': 12, 'ธ.ค.': 12, 'ธ.ค': 12
+                };
+                const month = monthMap[monthRaw];
+                if (month) {
+                    let yyyy = Number(m[3]);
+                    if (yyyy > 2400) yyyy -= 543;
+                    return {
+                        dd: String(Number(m[1])).padStart(2, '0'),
+                        mm: String(month).padStart(2, '0'),
+                        yyyy
+                    };
+                }
+            }
+
+            return null;
+        };
+
+        const toBuddhistDateText = (raw) => {
+            const parsed = parseDateAny(raw);
+            if (!parsed) return String(raw || '').trim();
+            const yyyyBE = parsed.yyyy < 2400 ? parsed.yyyy + 543 : parsed.yyyy;
+            return `${parsed.dd}-${parsed.mm}-${yyyyBE}`;
+        };
+
+        const toGregorianDateText = (raw) => {
+            const parsed = parseDateAny(raw);
+            if (!parsed) return String(raw || '').trim();
+            let yyyy = parsed.yyyy;
+            if (yyyy > 2400) yyyy -= 543;
+            return `${parsed.dd}-${parsed.mm}-${yyyy}`;
+        };
+
+        const setFieldValue = (el, value, opts = {}) => {
+            if (!el) return;
+            const nextValue = opts.isDate ? toGregorianDateText(value) : value;
+            if (el.tagName === 'SELECT') {
+                el.value = nextValue;
+            } else {
+                el.value = nextValue;
+            }
+            if (el._flatpickr) {
+                try {
+                    el._flatpickr.setDate(nextValue, false);
+                } catch (_) {}
+            }
+            el.dispatchEvent(new Event('input', {
+                bubbles: true
+            }));
+            el.dispatchEvent(new Event('change', {
+                bubbles: true
+            }));
+        };
+
+        const createProxyInput = (source, opts = {}) => {
+            if (!source) {
+                const fallback = document.createElement('input');
+                fallback.type = 'text';
+                fallback.disabled = true;
+                return fallback;
+            }
+
+            let proxy;
+            const isDateField = opts.isDate === true;
+
+            if (source.tagName === 'SELECT') {
+                proxy = source.cloneNode(true);
+                proxy.value = source.value;
+            } else {
+                if (isDateField) {
+                    proxy = document.createElement('input');
+                    proxy.type = 'text';
+                    const fromPicker = source._flatpickr?.altInput?.value || source.value || '';
+                    proxy.value = toBuddhistDateText(fromPicker);
+                    proxy.placeholder = 'วว-ดด-ปปปป (พ.ศ.)';
+                } else {
+                    proxy = source.cloneNode(false);
+                    proxy.value = getFieldValue(source);
+                    if (!proxy.type) proxy.type = opts.type || 'text';
+                }
+            }
+
+            proxy.className = '';
+            proxy.removeAttribute('name');
+            proxy.removeAttribute('id');
+            if (source.required) proxy.required = true;
+            if (source.readOnly || opts.readOnly) proxy.readOnly = true;
+            if (opts.readOnly) proxy.setAttribute('readonly', 'readonly');
+            proxy._sourceField = source;
+            if (!source.getAttribute(FTE_PROXY_LINK_ATTR)) {
+                source.setAttribute(FTE_PROXY_LINK_ATTR, `ftep-${++fteProxyIdSeq}`);
+            }
+            proxy.setAttribute(FTE_PROXY_LINK_ATTR, source.getAttribute(FTE_PROXY_LINK_ATTR));
+
+            const syncFromSource = () => {
+                if (isDateField) {
+                    const fromPicker = source._flatpickr?.altInput?.value || source.value || '';
+                    proxy.value = toBuddhistDateText(fromPicker);
+                } else {
+                    proxy.value = getFieldValue(source);
+                }
+            };
+            source.addEventListener('input', syncFromSource);
+            source.addEventListener('change', syncFromSource);
+            source.addEventListener('input', () => syncProxyInvalidFromSource(source, proxy));
+            source.addEventListener('change', () => syncProxyInvalidFromSource(source, proxy));
+
+            proxy.addEventListener('input', () => setFieldValue(source, proxy.value, opts));
+            proxy.addEventListener('change', () => setFieldValue(source, proxy.value, opts));
+            proxy.addEventListener('input', () => clearProxyInvalidStyles(proxy));
+            proxy.addEventListener('change', () => clearProxyInvalidStyles(proxy));
+
+            if (isDateField && window.flatpickr) {
+                const locale = window.flatpickr?.l10ns?.th ? 'th' : undefined;
+                const formatBE = (date) => {
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear() + 543;
+                    return `${dd}-${mm}-${yyyy}`;
+                };
+                window.flatpickr(proxy, {
+                    dateFormat: 'd-m-Y',
+                    allowInput: false,
+                    locale,
+                    defaultDate: toGregorianDateText(proxy.value || ''),
+                    formatDate: (date) => formatBE(date),
+                    parseDate: (dateStr) => {
+                        const g = toGregorianDateText(dateStr);
+                        return window.flatpickr.parseDate(g, 'd-m-Y');
+                    },
+                    onReady: (_sd, _ds, inst) => {
+                        if (inst.calendarContainer) {
+                            const yearInput = inst.calendarContainer.querySelector('.flatpickr-current-month input.cur-year');
+                            if (yearInput) {
+                                const ce = Number(yearInput.value || 0);
+                                if (ce > 0 && ce < 2400) yearInput.value = String(ce + 543);
+                            }
+                        }
+                    },
+                    onMonthChange: (_sd, _ds, inst) => {
+                        const yearInput = inst.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
+                        if (yearInput) {
+                            const ce = Number(yearInput.value || 0);
+                            if (ce > 0 && ce < 2400) yearInput.value = String(ce + 543);
+                        }
+                    },
+                    onYearChange: (_sd, _ds, inst) => {
+                        const yearInput = inst.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
+                        if (yearInput) {
+                            const ce = Number(yearInput.value || 0);
+                            if (ce > 0 && ce < 2400) yearInput.value = String(ce + 543);
+                        }
+                    },
+                    onChange: (_dates, dateStr) => {
+                        proxy.value = toBuddhistDateText(dateStr);
+                        setFieldValue(source, proxy.value, opts);
+                    },
+                });
+            }
+
+            return proxy;
+        };
+
+        const ensureTableWrap = () => {
+            const container = getContainer();
+            if (!container) return null;
+            let wrap = document.getElementById(FTE_TABLE_WRAP_ID);
+            if (!wrap) {
+                wrap = document.createElement('div');
+                wrap.id = FTE_TABLE_WRAP_ID;
+                wrap.className = 'fte-table-wrap';
+                container.parentElement?.insertBefore(wrap, container);
+            }
+            return wrap;
+        };
+
+        const renderFteTable = () => {
+            const wrap = ensureTableWrap();
+            if (!wrap) return;
+            const query = (document.getElementById(FTE_SEARCH_ID)?.value || '').trim().toLowerCase();
+            const rows = getRows().filter((row) => !query || rowSearchText(row).includes(query));
+
+            if (!rows.length) {
+                wrap.innerHTML = '<div class="fte-table-empty">ไม่พบรายการ FTE</div>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'fte-table-grid';
+            table.innerHTML = `
+                <colgroup>
+                    <col style="width:3%">
+                    <col style="width:15%">
+                    <col style="width:12%">
+                    <col style="width:12%">
+                    <col style="width:10%">
+                    <col style="width:10%">
+                    <col style="width:6%">
+                    <col style="width:12%">
+                    <col style="width:7%">
+                    <col style="width:6%">
+                    <col style="width:5%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>ลำดับ</th><th>ชื่อ</th><th>กลุ่ม</th><th>ภาระงาน</th><th>เริ่ม</th><th>สิ้นสุด</th>
+                        <th>ชั่วโมง</th><th>รายละเอียด</th><th>FTE Auto</th><th>FTE หัวหน้า</th><th>ลบ</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            rows.forEach((row, idx) => {
+                const tr = document.createElement('tr');
+                const tdIndex = document.createElement('td');
+                tdIndex.className = 'fte-table-index';
+                tdIndex.textContent = String(idx + 1);
+                tr.appendChild(tdIndex);
+
+                const cellDefs = [
+                    ['input[name^="fte_roles["][name$="[name]"]'],
+                    ['select[name^="fte_roles["][name$="[role_group]"]'],
+                    ['select[name^="fte_roles["][name$="[job_detail]"]'],
+                    ['input[name^="fte_roles["][name$="[start_date]"]', {
+                        isDate: true
+                    }],
+                    ['input[name^="fte_roles["][name$="[end_date]"]', {
+                        isDate: true
+                    }],
+                    ['input[name^="fte_roles["][name$="[hours]"]', {
+                        type: 'number'
+                    }],
+                    ['select[name^="fte_roles["][name$="[task_detail]"]'],
+                    ['input[name^="fte_roles["][name$="[fte_value]"]', {
+                        readOnly: true
+                    }],
+                    ['input[name^="fte_roles["][name$="[fte_value_research]"]', {
+                        type: 'number'
+                    }],
+                ];
+
+                cellDefs.forEach(([selector, options = {}]) => {
+                    const td = document.createElement('td');
+                    td.appendChild(createProxyInput(getField(row, selector), options));
+                    tr.appendChild(td);
+                });
+
+                const removeTd = document.createElement('td');
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'fte-table-remove-btn';
+                removeBtn.textContent = 'ลบ';
+                removeBtn.addEventListener('click', () => {
+                    const doRemove = () => {
+                        const proxyInRow = tr.querySelector(`[${FTE_PROXY_LINK_ATTR}]`);
+                        const proxyId = proxyInRow?.getAttribute(FTE_PROXY_LINK_ATTR) || '';
+                        const sourceField = proxyId ?
+                            document.querySelector(`#${FTE_CONTAINER_ID} [${FTE_PROXY_LINK_ATTR}="${proxyId}"]`) :
+                            null;
+                        const sourceRow = sourceField?.closest('.fte-row') || row;
+                        if (sourceRow) {
+                            const idInput = sourceRow.querySelector('input[name^="fte_roles["][name$="[id]"]');
+                            const existingId = Number(idInput?.value || 0);
+                            if (existingId > 0) {
+                                const deletedContainer = document.getElementById('fte-deleted-ids');
+                                if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
+                                    deletedContainer.insertAdjacentHTML(
+                                        'beforeend',
+                                        `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
+                                    );
+                                }
+                            }
+                        }
+
+                        // remove source row directly to avoid duplicate/overridden remove handlers
+                        sourceRow?.remove();
+                        if (typeof window.reindexFTE === 'function') {
+                            window.reindexFTE();
+                        }
+                        setTimeout(() => window.refreshFteUx?.(), 0);
+                    };
+
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'ยืนยันการลบ',
+                            text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
+                            showCancelButton: true,
+                            confirmButtonText: 'ลบ',
+                            cancelButtonText: 'ยกเลิก',
+                            confirmButtonColor: '#dc2626'
+                        }).then((result) => {
+                            if (result.isConfirmed) doRemove();
+                        });
+                        return;
+                    }
+
+                    if (confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) {
+                        doRemove();
+                    }
+                });
+                removeTd.appendChild(removeBtn);
+                tr.appendChild(removeTd);
+                tbody.appendChild(tr);
+            });
+
+            wrap.innerHTML = '';
+            wrap.appendChild(table);
+            wrap.scrollLeft = 0;
+            syncAllFteProxyInvalidStates();
+        };
+
+        const forceMarkFteProxyInvalidFromSourceValue = () => {
+            if (!fteSubmitAttempted) return;
+            document.querySelectorAll(`#${FTE_TABLE_WRAP_ID} [${FTE_PROXY_LINK_ATTR}]`).forEach((proxy) => {
+                const source = proxy._sourceField;
+                if (!source) return;
+                const invalid = !source.checkValidity?.() || (source.required && String(source.value ?? '').trim() === '');
+                if (invalid) {
+                    markProxyInvalidStyles(proxy);
+                } else {
+                    clearProxyInvalidStyles(proxy);
+                }
+            });
+        };
+
+        const applyTableModeState = () => {
+            const container = getContainer();
+            const wrap = ensureTableWrap();
+            if (!container || !wrap) return;
+            if (isTableModeDisabledOnPage) {
+                container.classList.remove('fte-table-mode');
+            }
+            const active = !isTableModeDisabledOnPage && isTableModeEnabled() && isDesktopLike();
+            container.classList.toggle('fte-cards-hidden', active);
+            wrap.classList.toggle('is-active', active);
+            if (active) {
+                expandAllFteRows();
+                renderFteTable();
+            }
+        };
+
+        const ensureTools = () => {
+            const container = getContainer();
+            if (!container || document.getElementById(FTE_TOOLS_ID)) return;
+            const wrap = ensureTableWrap();
+
+            const tools = document.createElement('div');
+            tools.id = FTE_TOOLS_ID;
+            tools.className = 'fte-tools';
+            tools.innerHTML = `
+                <input
+                    id="${FTE_SEARCH_ID}"
+                    type="search"
+                    class="fte-tools__search"
+                    placeholder="ค้นหา FTE: ชื่อ / กลุ่ม / ภาระงาน"
+                >
+                <div class="fte-tools__actions">
+                    <button
+                        id="${FTE_CLEAR_SEARCH_BTN_ID}"
+                        type="button"
+                        class="fte-tools__clear-btn"
+                    >
+                        ล้างคำค้นหา
+                    </button>
+                    ${isTableModeDisabledOnPage ? '' : `
+                    <button
+                        id="${FTE_TABLE_MODE_BTN_ID}"
+                        type="button"
+                        class="fte-tools__table-btn hidden md:inline-flex"
+                    >
+                        ดูแบบตาราง
+                    </button>`}
+                </div>
+            `;
+
+            if (wrap) {
+                container.parentElement?.insertBefore(tools, wrap);
+            } else {
+                container.parentElement?.insertBefore(tools, container);
+            }
+
+            const searchInput = document.getElementById(FTE_SEARCH_ID);
+            searchInput?.addEventListener('input', window.applyFteRowSearchFilter);
+
+            const clearBtn = document.getElementById(FTE_CLEAR_SEARCH_BTN_ID);
+            clearBtn?.addEventListener('click', () => {
+                if (!searchInput) return;
+                searchInput.value = '';
+                window.applyFteRowSearchFilter();
+                searchInput.focus();
+            });
+
+            const tableBtn = document.getElementById(FTE_TABLE_MODE_BTN_ID);
+            const setTableBtnState = () => {
+                const active = container.classList.contains('fte-table-mode');
+                tableBtn?.classList.toggle('is-active', active);
+                if (tableBtn) tableBtn.textContent = active ? 'ดูแบบ Card' : 'ดูแบบตาราง';
+                applyTableModeState();
+            };
+
+            const shouldEnableTableMode = !isTableModeDisabledOnPage && localStorage.getItem(FTE_TABLE_MODE_STORAGE_KEY) === '1';
+            if (shouldEnableTableMode) {
+                container.classList.add('fte-table-mode');
+            } else if (isTableModeDisabledOnPage) {
+                container.classList.remove('fte-table-mode');
+            }
+            setTableBtnState();
+
+            tableBtn?.addEventListener('click', () => {
+                container.classList.toggle('fte-table-mode');
+                const active = container.classList.contains('fte-table-mode');
+                localStorage.setItem(FTE_TABLE_MODE_STORAGE_KEY, active ? '1' : '0');
+                setTableBtnState();
+            });
+
+            window.addEventListener('resize', () => {
+                applyTableModeState();
+            });
+        };
+
+        window.initFteUx = () => {
+            ensureTools();
+            window.applyFteRowSearchFilter();
+        };
+
+        window.refreshFteUx = () => {
+            ensureTools();
+            applyTableModeState();
+            window.applyFteRowSearchFilter();
+        };
+
+        window.syncFteTableValidationUi = ({
+            ensureRender = false
+        } = {}) => {
+            if (!window.isFteTableMode?.()) return;
+            fteSubmitAttempted = true;
+            if (ensureRender) renderFteTable();
+            validateFteTableFields({
+                showAlert: false,
+                markStyles: true
+            });
+            forceMarkFteProxyInvalidFromSourceValue();
+            syncAllFteProxyInvalidStates();
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.initFteUx();
+        });
+
+        const onFteFormSubmit = (event) => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            if (!form.querySelector(`#${FTE_CONTAINER_ID}`)) return;
+            fteSubmitAttempted = true;
+            if (window.isFteTableMode?.()) {
+                // mark table fields immediately and after DOM settles from page-level validators
+                window.syncFteTableValidationUi?.({
+                    ensureRender: true
+                });
+                requestAnimationFrame(() => {
+                    window.syncFteTableValidationUi?.({
+                        ensureRender: true
+                    });
+                });
+            }
+            // Let form-level validators run first, then mirror red-border state to table proxies.
+            setTimeout(() => {
+                window.syncFteTableValidationUi?.({
+                    ensureRender: true
+                });
+            }, 0);
+        };
+        // capture phase so this still runs even when page-level validator calls stopPropagation()
+        document.addEventListener('submit', onFteFormSubmit, true);
+
+        document.addEventListener('invalid', (event) => {
+            if (!fteSubmitAttempted) return;
+            if (!window.isFteTableMode?.()) return;
+            const source = event.target;
+            if (!(source instanceof HTMLElement)) return;
+            const name = source.getAttribute('name') || '';
+            if (!/^fte_roles\[\d+\]\[/.test(name)) return;
+
+            const proxyId = source.getAttribute(FTE_PROXY_LINK_ATTR);
+            if (!proxyId) return;
+            const proxy = document.querySelector(`#${FTE_TABLE_WRAP_ID} [${FTE_PROXY_LINK_ATTR}="${proxyId}"]`);
+            if (!proxy) return;
+            markProxyInvalidStyles(proxy);
+        }, true);
+
+        // Ensure submit-attempt state is set as soon as browser emits any invalid event in this form.
+        document.addEventListener('invalid', (event) => {
+            const source = event.target;
+            if (!(source instanceof HTMLElement)) return;
+            const form = source.closest('form');
+            if (!(form instanceof HTMLFormElement)) return;
+            if (!form.querySelector(`#${FTE_CONTAINER_ID}`)) return;
+            fteSubmitAttempted = true;
+        }, true);
     })();
 </script>
 
@@ -2330,6 +3411,12 @@
         console.log('hr=', hr, 'fte(raw)=', fte, 'fte(fixed)=', fte.toFixed(5));
 
         fteInput.value = fte.toFixed(8);
+        fteInput.dispatchEvent(new Event('input', {
+            bubbles: true
+        }));
+        fteInput.dispatchEvent(new Event('change', {
+            bubbles: true
+        }));
     });
 </script>
 

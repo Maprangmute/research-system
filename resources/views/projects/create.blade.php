@@ -2081,6 +2081,9 @@
 
                     // 2. ถ้าไม่ผ่าน ให้หยุดส่งข้อมูลและแจ้งเตือน
                     if (!isValid) {
+                        window.syncFteTableValidationUi?.({
+                            ensureRender: true
+                        });
                         e.preventDefault(); // 🛑 หยุดการส่งฟอร์มทันที
                         e.stopPropagation();
 

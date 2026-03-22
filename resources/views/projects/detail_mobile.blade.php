@@ -24,6 +24,10 @@
             color: #0f172a;
         }
 
+        #pageTop.mobile-detail {
+            max-width: 36rem;
+        }
+
         .mobile-detail,
         .mobile-detail * {
             min-width: 0;
@@ -145,6 +149,16 @@
         @media (max-width: 420px) {
             .field-row {
                 grid-template-columns: 92px 1fr;
+            }
+        }
+
+        @media (min-width: 768px) {
+            #pageTop.mobile-detail {
+                max-width: 96rem;
+            }
+
+            .mobile-detail {
+                font-size: 1rem;
             }
         }
 
@@ -306,7 +320,7 @@
         }
     </style>
 
-    <div id="pageTop" class="mobile-detail max-w-xl mx-auto px-4 py-4 space-y-4">
+    <div id="pageTop" class="mobile-detail mx-auto px-4 py-4 space-y-4">
         @php
             $status = $project->planning_status ?? '-';
             $statusBg = [

@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+<script>
+    window.DISABLE_FTE_TABLE_MODE = true;
+</script>
+
 @if ($errors->any())
     <div class="bg-red-100 text-red-800 p-3 rounded mb-4">
         <ul class="list-disc list-inside text-sm">
@@ -1841,6 +1845,9 @@
 
                     // 2. ถ้าไม่ผ่าน ให้หยุดส่งข้อมูลและแจ้งเตือน
                     if (!isValid) {
+                        window.syncFteTableValidationUi?.({
+                            ensureRender: true
+                        });
                         e.preventDefault(); // 🛑 หยุดการส่งฟอร์มทันที
                         e.stopPropagation();
 

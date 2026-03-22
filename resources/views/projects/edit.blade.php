@@ -754,11 +754,8 @@
             <div x-data="{ showFTE: false, currentTab: 'external', setTab(tab) { this.currentTab = tab } }" x-effect="document.body.classList.toggle('overflow-hidden', showFTE)">
 
                 <!-- Header -->
-                <div class="flex justify-between items-center mb-2">
+                <div class="mb-2">
                     <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
-                    <a href="#" @click.prevent="showFTE = true" class="text-sm text-blue-600 hover:underline">
-                        รายละเอียดค่า FTE
-                    </a>
                 </div>
 
                 <!-- Modal -->
@@ -1824,6 +1821,12 @@
         }
 
         function addFTERow() {
+            if (typeof window.validateFteBeforeAdd === 'function' && !window.validateFteBeforeAdd({
+                    showAlert: true
+                })) {
+                return;
+            }
+
             const container = document.getElementById('fte-container');
             const index = getNextFteIndex();
             const id = `fte-${index}`;
@@ -1996,6 +1999,7 @@
 
             reindexFTE();
             keepAddedRowOpen(id);
+            window.handleFteRowAdded?.(id);
             initThaiDatepickers();
             attachFTEAuto(); // สำคัญ!
         }
@@ -2985,6 +2989,9 @@ console.log('[FTE AUTO] after=', fteField.value);
                     });
 
                     if (!isValid) {
+                        window.syncFteTableValidationUi?.({
+                            ensureRender: true
+                        });
                         e.preventDefault();
                         e.stopPropagation();
 

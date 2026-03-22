@@ -59,6 +59,29 @@
             }
         }
 
+        @media (min-width: 768px) {
+            #pageTop.project-detail-safe {
+                max-width: 96rem;
+            }
+
+            #pageTop.project-detail-safe,
+            #pageTop.project-detail-safe input,
+            #pageTop.project-detail-safe select,
+            #pageTop.project-detail-safe textarea,
+            #pageTop.project-detail-safe button,
+            #pageTop.project-detail-safe table {
+                font-size: 1rem;
+            }
+
+            #pageTop.project-detail-safe h2 {
+                font-size: 1.75rem;
+            }
+
+            #pageTop.project-detail-safe h3 {
+                font-size: 1.35rem;
+            }
+        }
+
         .detail-fab-wrap {
             position: fixed;
             left: 16px;
@@ -210,7 +233,7 @@
         }
     </style>
 
-    <div id="pageTop" class="project-detail-safe max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <div id="pageTop" class="project-detail-safe mx-auto px-4 py-6 space-y-6">
         @php
             $status = $project->planning_status ?? '-';
             // Mapping สีพื้นหลังแต่ละสถานะ
