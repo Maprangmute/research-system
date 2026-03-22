@@ -683,13 +683,112 @@ public function store(Request $request)
             'end_date' => 'nullable|string',
             'updated_by' => 'nullable|integer',
             'project_list' => 'nullable|string|max:255',
+            '_fte_expected_rows' => 'nullable|integer|min:0',
+            '_form_expected_vars' => 'nullable|integer|min:0',
+            'fte_roles' => 'nullable|array',
+            'fte_roles.*.id' => 'nullable|integer',
+            'fte_roles.*.fte_value' => 'nullable|numeric|min:0',
+            'fte_roles.*.fte_value_research' => 'nullable|numeric|min:0|max:1',
+            'fte_roles.*.hours' => 'nullable|numeric|min:0',
         ], [
             'planning_status.required' => 'กรุณาเลือก Project Status',
+            'fte_roles.*.fte_value.numeric' => 'ค่า FTE (ผู้วิจัย) ต้องเป็นตัวเลข',
+            'fte_roles.*.fte_value.min' => 'ค่า FTE (ผู้วิจัย) ต้องไม่ติดลบ',
+            'fte_roles.*.fte_value_research.numeric' => 'ค่า FTE (ผู้บริหาร) ต้องเป็นตัวเลข',
+            'fte_roles.*.fte_value_research.min' => 'ค่า FTE (ผู้บริหาร) ต้องไม่ติดลบ',
+            'fte_roles.*.fte_value_research.max' => 'ค่า FTE (ผู้บริหาร) ต้องไม่เกิน 1.00',
+            'fte_roles.*.hours.numeric' => 'ชั่วโมงการทำงานต้องเป็นตัวเลข',
+            'fte_roles.*.hours.min' => 'ชั่วโมงการทำงานต้องไม่ติดลบ',
         ]);
 
+        $this->validateInputCapacity($request);
+        $this->validateRequiredFteFields($request);
         $this->validateNoPastProjectDates($request);
 
         return $validated;
+    }
+
+    private function validateRequiredFteFields(Request $request): void
+    {
+        $errors = [];
+        $rows = (array) $request->input('fte_roles', []);
+
+        foreach ($rows as $idx => $fteRow) {
+            $name = trim((string) data_get($fteRow, 'name', ''));
+            $roleGroup = trim((string) data_get($fteRow, 'role_group', ''));
+            $jobDetail = trim((string) data_get($fteRow, 'job_detail', ''));
+            $taskDetail = trim((string) data_get($fteRow, 'task_detail', ''));
+            $startDate = trim((string) data_get($fteRow, 'start_date', ''));
+            $endDate = trim((string) data_get($fteRow, 'end_date', ''));
+            $hoursRaw = data_get($fteRow, 'hours', null);
+            $hasHours = ! is_null($hoursRaw) && trim((string) $hoursRaw) !== '';
+            $fteResearchRaw = data_get($fteRow, 'fte_value_research', null);
+            $hasFteResearch = ! is_null($fteResearchRaw) && trim((string) $fteResearchRaw) !== '';
+
+            $hasAnyValue = $name !== ''
+                || $roleGroup !== ''
+                || $jobDetail !== ''
+                || $taskDetail !== ''
+                || $startDate !== ''
+                || $endDate !== ''
+                || $hasHours
+                || $hasFteResearch;
+
+            if (! $hasAnyValue) {
+                continue;
+            }
+
+            if ($name === '') {
+                $errors["fte_roles.$idx.name"] = 'กรุณากรอกชื่อ-นามสกุล ผู้มีส่วนร่วม';
+            }
+            if ($roleGroup === '') {
+                $errors["fte_roles.$idx.role_group"] = 'กรุณาเลือกกลุ่มของผู้มีส่วนร่วม';
+            }
+            if ($jobDetail === '') {
+                $errors["fte_roles.$idx.job_detail"] = 'กรุณาเลือกภาระงานของผู้มีส่วนร่วม';
+            }
+            if ($taskDetail === '') {
+                $errors["fte_roles.$idx.task_detail"] = 'กรุณาเลือกรายละเอียดภารกิจ';
+            }
+            if ($startDate === '') {
+                $errors["fte_roles.$idx.start_date"] = 'กรุณาเลือกวันเริ่มต้นภาระงาน';
+            }
+            if ($endDate === '') {
+                $errors["fte_roles.$idx.end_date"] = 'กรุณาเลือกวันสิ้นสุดภาระงาน';
+            }
+            if (! $hasHours) {
+                $errors["fte_roles.$idx.hours"] = 'กรุณาระบุชั่วโมงการทำงาน';
+            }
+        }
+
+        if (! empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function validateInputCapacity(Request $request): void
+    {
+        $expectedFteRows = (int) $request->input('_fte_expected_rows', 0);
+        $expectedVars = (int) $request->input('_form_expected_vars', 0);
+        $receivedFteRows = count((array) $request->input('fte_roles', []));
+        $maxInputVars = (int) ini_get('max_input_vars');
+        if ($maxInputVars <= 0) {
+            $maxInputVars = 1000;
+        }
+
+        $errors = [];
+
+        if ($expectedFteRows > 0 && $receivedFteRows < $expectedFteRows) {
+            $errors['fte_roles'] = "ข้อมูลผู้มีส่วนร่วม (FTE) ถูกส่งมาไม่ครบ ({$receivedFteRows}/{$expectedFteRows} รายการ) กรุณาลดจำนวนรายการต่อครั้ง หรือตั้งค่า max_input_vars ให้สูงกว่า {$maxInputVars}";
+        }
+
+        if ($expectedVars > $maxInputVars) {
+            $errors['project_name_th'] = "ข้อมูลฟอร์มมีจำนวนช่องมากเกินลิมิตระบบ (ประมาณ {$expectedVars} ช่อง > max_input_vars {$maxInputVars}) กรุณาเพิ่มค่า max_input_vars (แนะนำอย่างน้อย 10000)";
+        }
+
+        if (! empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     private function validateNoPastProjectDates(Request $request): void

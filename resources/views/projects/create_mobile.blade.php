@@ -226,6 +226,8 @@
 
         <form id="projectForm" action="{{ route('projects.store') }}" method="POST" novalidate>
             @csrf
+            <input type="hidden" name="_fte_expected_rows" id="fteExpectedRows" value="0">
+            <input type="hidden" name="_form_expected_vars" id="formExpectedVars" value="0">
 
             <hr class="my-6 border-t-2 border-gray-300">
             <!-- A: Project Overview -->
@@ -1700,6 +1702,32 @@
             })();
         </script>
     @endif
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('projectForm');
+            if (!form) return;
+
+            const updateFormMeta = () => {
+                const fteIndexes = new Set();
+                form.querySelectorAll('[name^="fte_roles["]').forEach((el) => {
+                    if (el.disabled || el.closest('template')) return;
+                    const m = String(el.name || '').match(/^fte_roles\[(\d+)\]/);
+                    if (m) fteIndexes.add(m[1]);
+                });
+
+                const namedFields = Array.from(form.querySelectorAll('input[name], select[name], textarea[name]'))
+                    .filter((el) => !el.disabled && !el.closest('template')).length;
+
+                const fteExpected = form.querySelector('#fteExpectedRows');
+                const varsExpected = form.querySelector('#formExpectedVars');
+                if (fteExpected) fteExpected.value = String(fteIndexes.size);
+                if (varsExpected) varsExpected.value = String(namedFields);
+            };
+
+            form.addEventListener('submit', updateFormMeta, true);
+        });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
