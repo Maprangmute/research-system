@@ -9,7 +9,7 @@
         <thead class="bg-slate-100 text-slate-700">
             <tr>
                 <th class="px-4 py-3 text-left w-[42%]">ชื่อ</th>
-                <th class="px-4 py-3 text-right w-[18%]">FTE สะสม</th>
+                <th class="px-4 py-3 text-right w-[18%]">FTE ตามช่วงที่เลือก</th>
                 <th class="px-4 py-3 text-right w-[18%]">FTE เดือนนี้</th>
                 <th class="px-4 py-3 text-center w-[22%]">รายละเอียด</th>
             </tr>
@@ -33,12 +33,12 @@
                                 class="w-8 h-8 rounded-full border shadow object-cover" alt="avatar">
                         @endif
 
-                        <a href="{{ route('fte.detail', ['person' => $row->name]) }}"
+                        <a href="{{ route('fte.detail', array_merge(['person' => $row->name], request()->only(['mode', 'year', 'start', 'end']))) }}"
                             class="text-blue-800 hover:underline font-bold">
                             {{ $row->name }}
                         </a>
                     </td>
-                    <td class="px-4 py-2 text-right font-semibold text-green-600" data-label="FTE สะสม">
+                    <td class="px-4 py-2 text-right font-semibold text-green-600" data-label="FTE ตามช่วงที่เลือก">
                         {{ number_format($row->total_fte, 7) }}
                     </td>
                     <td class="px-4 py-2 text-right font-semibold text-slate-700" data-label="FTE เดือนนี้">

@@ -1167,15 +1167,18 @@ public function store(Request $request)
         foreach (($request->fte_roles ?? []) as $fte) {
             $start = $this->parseProjectDateInput((string) ($fte['start_date'] ?? ''));
             $end = $this->parseProjectDateInput((string) ($fte['end_date'] ?? ''));
+            $hoursRaw = $fte['hours'] ?? null;
+            $hours = ($hoursRaw === null || $hoursRaw === '') ? null : round((float) $hoursRaw, 8);
+            $computedFteValue = $hours !== null ? $this->computeProjectFteValueFromHours($hours) : 0.0;
 
             $payload = [
                 'role_group' => trim((string) ($fte['role_group'] ?? '')),
                 'name' => trim((string) ($fte['name'] ?? '')) ?: null,
                 'job_detail' => trim((string) ($fte['job_detail'] ?? '')) ?: null,
                 'start_date' => $start?->format('d-m-Y'),
-                'hours' => $fte['hours'] ?? null,
+                'hours' => $hours,
                 'end_date' => $end?->format('d-m-Y'),
-                'fte_value' => $fte['fte_value'] ?? 0,
+                'fte_value' => $computedFteValue,
                 'fte_value_research' => $fte['fte_value_research'] ?? 0,
                 'task_detail' => trim((string) ($fte['task_detail'] ?? '')) ?: null,
             ];
@@ -1301,6 +1304,11 @@ public function store(Request $request)
             return 0.0;
         }
         return round((float) $value, 8);
+    }
+
+    private function computeProjectFteValueFromHours(float $hours): float
+    {
+        return round($hours * 0.000621, 8);
     }
 
     private function syncOutputs(Request $request, Project $project): void

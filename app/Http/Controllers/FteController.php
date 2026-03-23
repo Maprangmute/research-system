@@ -10,6 +10,7 @@ use App\Models\BackOfficeEntry;
 use App\Models\BackOfficeTask;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use PDF;
 
@@ -76,9 +77,12 @@ public function index(Request $request)
         });
     }
 
+    $fteStartYearExpr = 'YEAR(' . $this->parsedDateExpression('start_date') . ')';
+    $backOfficeTaskStartYearExpr = 'YEAR(' . $this->parsedDateExpression('start_date') . ')';
+
     $fteYears = FteRole::query()
         ->whereIn('project_id', $projectIds)
-        ->selectRaw('DISTINCT RIGHT(start_date,4) AS year')
+        ->selectRaw("DISTINCT {$fteStartYearExpr} AS year")
         ->pluck('year');
 
     $backOfficeYearsQuery = BackOfficeTask::query();
@@ -91,7 +95,7 @@ public function index(Request $request)
         });
     }
     $backOfficeYears = $backOfficeYearsQuery
-        ->selectRaw('DISTINCT RIGHT(start_date,4) AS year')
+        ->selectRaw("DISTINCT {$backOfficeTaskStartYearExpr} AS year")
         ->pluck('year');
 
     $availableYears = $fteYears
@@ -203,16 +207,12 @@ public function index(Request $request)
             if (empty($item->start_date) || empty($item->end_date)) continue;
 
             try {
-                // detect format
-                $formatStart = strpos($item->start_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
-                $formatEnd   = strpos($item->end_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
-
-                $startDate = Carbon::createFromFormat($formatStart, $item->start_date)->startOfDay();
-                $endDate   = Carbon::createFromFormat($formatEnd,   $item->end_date)->endOfDay();
+                [$startDate, $endDate] = $this->parseStoredDateBounds($item->start_date, $item->end_date);
+                if (! $startDate || ! $endDate) continue;
 
                 if ($startDate->gt($endDate)) continue;
 
-                $totalDays = $startDate->diffInDays($endDate) + 1;
+                $totalDays = $this->inclusiveDateOnlyDays($startDate, $endDate);
                 if ($totalDays <= 0) continue;
 
                 $ftePerDay = $item->fte_value / $totalDays;
@@ -263,10 +263,11 @@ public function index(Request $request)
                     $overlapEnd   = $effectiveEnd->copy()->startOfDay()->min($monthEnd->copy()->startOfDay());
 
                     if ($overlapStart->lte($overlapEnd)) {
-                        $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                        $daysInMonth = $this->inclusiveDateOnlyDays($overlapStart, $overlapEnd);
                         $fteMonth = $daysInMonth * $ftePerDay;
 
                         $expanded->push((object)[
+                            'rounding_key'  => 'person-index:' . $item->id,
                             'month'         => $cursor->format('Y-m'),
                             'project'       => $item->project,
                             'role_group'    => $item->role_group,
@@ -291,6 +292,7 @@ public function index(Request $request)
             } catch (\Exception $e) {}
         }
 
+        $expanded = $this->rebalancePersonIndexDisplayValues($expanded);
         return $expanded->groupBy('month')->sortKeys(); // IMPORTANT
     });
 
@@ -360,9 +362,10 @@ public function projectIndex(Request $request)
     $projectIds = $projectList->pluck('id');
     $projectOptions = $projectList;
     $yearSourceProjectIds = filled($projectId) ? collect([(int) $projectId]) : $projectIds;
+    $fteStartYearExpr = 'YEAR(' . $this->parsedDateExpression('start_date') . ')';
     $availableYears = FteRole::query()
         ->whereIn('project_id', $yearSourceProjectIds)
-        ->selectRaw('DISTINCT RIGHT(start_date,4) AS year')
+        ->selectRaw("DISTINCT {$fteStartYearExpr} AS year")
         ->pluck('year')
         ->filter()
         ->map(fn($y) => (int) $y)
@@ -383,14 +386,14 @@ public function projectIndex(Request $request)
             continue;
         }
         try {
-            $formatStart = strpos($row->start_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
-            $formatEnd = strpos($row->end_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
-            $startDate = Carbon::createFromFormat($formatStart, $row->start_date)->startOfDay();
-            $endDate = Carbon::createFromFormat($formatEnd, $row->end_date)->endOfDay();
+            [$startDate, $endDate] = $this->parseStoredDateBounds($row->start_date, $row->end_date);
+            if (! $startDate || ! $endDate) {
+                continue;
+            }
             if ($startDate->gt($endDate)) {
                 continue;
             }
-            $totalDays = $startDate->diffInDays($endDate) + 1;
+            $totalDays = $this->inclusiveDateOnlyDays($startDate, $endDate);
             if ($totalDays <= 0) {
                 continue;
             }
@@ -402,7 +405,7 @@ public function projectIndex(Request $request)
                 $overlapStart = $startDate->copy()->max($mStart);
                 $overlapEnd = $endDate->copy()->min($mEnd);
                 if ($overlapStart->lte($overlapEnd)) {
-                    $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                    $daysInMonth = $this->inclusiveDateOnlyDays($overlapStart, $overlapEnd);
                     $fteMonth = $daysInMonth * $ftePerDay;
                     $totalFteMap[$row->project_id] = ($totalFteMap[$row->project_id] ?? 0) + $fteMonth;
                 }
@@ -472,15 +475,12 @@ public function projectIndex(Request $request)
             if (empty($item->start_date) || empty($item->end_date)) continue;
 
             try {
-                $formatStart = strpos($item->start_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
-                $formatEnd = strpos($item->end_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
-
-                $startDate = Carbon::createFromFormat($formatStart, $item->start_date)->startOfDay();
-                $endDate = Carbon::createFromFormat($formatEnd, $item->end_date)->endOfDay();
+                [$startDate, $endDate] = $this->parseStoredDateBounds($item->start_date, $item->end_date);
+                if (! $startDate || ! $endDate) continue;
 
                 if ($startDate->gt($endDate)) continue;
 
-                $totalDays = $startDate->diffInDays($endDate) + 1;
+                $totalDays = $this->inclusiveDateOnlyDays($startDate, $endDate);
                 if ($totalDays <= 0) continue;
 
                 $ftePerDay = $item->fte_value / $totalDays;
@@ -526,11 +526,12 @@ public function projectIndex(Request $request)
                     $overlapEnd = $effectiveEnd->copy()->startOfDay()->min($monthEnd->copy()->startOfDay());
 
                     if ($overlapStart->lte($overlapEnd)) {
-                        $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                        $daysInMonth = $this->inclusiveDateOnlyDays($overlapStart, $overlapEnd);
                         $fteMonth = $daysInMonth * $ftePerDay;
                         $hoursInMonth = $hoursPerDay * $daysInMonth;
 
                         $expanded->push((object)[
+                            'rounding_key'  => 'fte-role:' . $item->id,
                             'month'         => $cursor->format('Y-m'),
                             'project'       => $item->project,
                             'name'          => $item->name,
@@ -554,6 +555,7 @@ public function projectIndex(Request $request)
             } catch (\Exception $e) {}
         }
 
+        $expanded = $this->rebalanceProjectIndexDisplayValues($expanded);
         return $expanded->groupBy('month')->sortKeys();
     });
 
@@ -706,7 +708,7 @@ public function exportPdf(Request $request, $person)
 private function buildFteDetailData(string $person, array $filter = []): array
 {
     $mode = strtolower((string) ($filter['mode'] ?? 'all'));
-    if (!in_array($mode, ['all', 'year', 'custom'], true)) {
+    if (!in_array($mode, ['all', 'year', 'month', 'custom'], true)) {
         $mode = 'all';
     }
 
@@ -727,6 +729,10 @@ private function buildFteDetailData(string $person, array $filter = []): array
         } else {
             $mode = 'all';
         }
+    } elseif ($mode === 'month') {
+        $filterFrom = now()->startOfMonth()->startOfDay();
+        $filterTo = now()->endOfMonth()->endOfDay();
+        $filterLabel = 'เดือนปัจจุบัน';
     } elseif ($mode === 'custom') {
         [$customFrom, $customTo] = $this->parseDateRange($startInput, $endInput);
         if ($customFrom && $customTo) {
@@ -762,11 +768,8 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
     foreach ($raw as $item) {
         try {
-            $formatStart = strpos($item->start_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
-            $formatEnd   = strpos($item->end_date,   '/') !== false ? 'd/m/Y' : 'd-m-Y';
-
-            $entryStart = Carbon::createFromFormat($formatStart, $item->start_date)->startOfDay();
-            $entryEnd   = Carbon::createFromFormat($formatEnd,   $item->end_date)->endOfDay();
+            [$entryStart, $entryEnd] = $this->parseStoredDateBounds($item->start_date, $item->end_date);
+            if (! $entryStart || ! $entryEnd) continue;
 
             if ($entryStart->gt($entryEnd)) continue;
 
@@ -781,7 +784,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
             if ($effectiveStart->gt($effectiveEnd)) continue;
 
-            $totalDays  = $entryStart->diffInDays($entryEnd) + 1;
+            $totalDays  = $this->inclusiveDateOnlyDays($entryStart, $entryEnd);
             if ($totalDays <= 0) continue;
 
             $ftePerDay = $item->fte_value / $totalDays;
@@ -801,12 +804,13 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
                 if ($overlapStart->lte($overlapEnd)) {
 
-                    $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                    $daysInMonth = $this->inclusiveDateOnlyDays($overlapStart, $overlapEnd);
                     $hoursInMonth = $hoursPerDay * $daysInMonth;
                     $fteMonth = $daysInMonth * $ftePerDay;
 
                     // ⭐ โครงสร้างเดิม + hours_in_month ที่เพิ่มเข้ามา
                     $expanded->push((object)[
+                        'rounding_key'  => 'fte-role:' . $item->id,
                         'month'         => $cursor->format('Y-m'),
                         'project'       => $item->project,
                         'role_group'    => $item->role_group,
@@ -840,11 +844,8 @@ private function buildFteDetailData(string $person, array $filter = []): array
                 continue;
             }
 
-            $formatStart = strpos($startRaw, '/') !== false ? 'd/m/Y' : 'd-m-Y';
-            $formatEnd   = strpos($endRaw,   '/') !== false ? 'd/m/Y' : 'd-m-Y';
-
-            $entryStart = Carbon::createFromFormat($formatStart, $startRaw)->startOfDay();
-            $entryEnd   = Carbon::createFromFormat($formatEnd,   $endRaw)->endOfDay();
+            [$entryStart, $entryEnd] = $this->parseStoredDateBounds($startRaw, $endRaw);
+            if (! $entryStart || ! $entryEnd) continue;
 
             if ($entryStart->gt($entryEnd)) continue;
 
@@ -859,7 +860,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
             if ($effectiveStart->gt($effectiveEnd)) continue;
 
-            $totalDays  = $entryStart->diffInDays($entryEnd) + 1;
+            $totalDays  = $this->inclusiveDateOnlyDays($entryStart, $entryEnd);
             if ($totalDays <= 0) continue;
 
             $ftePerDay = $entry->fte_value / $totalDays;
@@ -878,11 +879,12 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
                 if ($overlapStart->lte($overlapEnd)) {
 
-                    $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                    $daysInMonth = $this->inclusiveDateOnlyDays($overlapStart, $overlapEnd);
                     $hoursInMonth = $hoursPerDay * $daysInMonth;
                     $fteMonth = $daysInMonth * $ftePerDay;
 
                     $expanded->push((object)[
+                        'rounding_key'  => 'back-office:' . $entry->id,
                         'month'         => $cursor->format('Y-m'),
                         'project'       => (object) [
                             'id' => null,
@@ -909,6 +911,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
         } catch (\Exception $e) {}
     }
 
+    $expanded = $this->rebalanceSplitDisplayValues($expanded);
     $monthlyFTE = $expanded->groupBy('month')->sortKeys();
 
     $chartLabels = $monthlyFTE->keys()->values();
@@ -934,15 +937,12 @@ private function buildFteProjectData(Project $project): array
 
     foreach ($fteRoles as $item) {
         try {
-            $formatStart = strpos($item->start_date, '/') !== false ? 'd/m/Y' : 'd-m-Y';
-            $formatEnd   = strpos($item->end_date,   '/') !== false ? 'd/m/Y' : 'd-m-Y';
-
-            $start = Carbon::createFromFormat($formatStart, $item->start_date)->startOfDay();
-            $end   = Carbon::createFromFormat($formatEnd,   $item->end_date)->endOfDay();
+            [$start, $end] = $this->parseStoredDateBounds($item->start_date, $item->end_date);
+            if (! $start || ! $end) continue;
 
             if ($start->gt($end)) continue;
 
-            $totalDays  = $start->diffInDays($end) + 1;
+            $totalDays  = $this->inclusiveDateOnlyDays($start, $end);
             if ($totalDays <= 0) continue;
 
             $ftePerDay  = $item->fte_value / $totalDays;
@@ -960,11 +960,12 @@ private function buildFteProjectData(Project $project): array
                 $overlapEnd   = $end->copy()->min($mEnd);
 
                 if ($overlapStart->lte($overlapEnd)) {
-                    $daysInMonth = $overlapStart->diffInDays($overlapEnd) + 1;
+                    $daysInMonth = $this->inclusiveDateOnlyDays($overlapStart, $overlapEnd);
                     $fteMonth = $daysInMonth * $ftePerDay;
                     $hoursInMonth = $hoursPerDay * $daysInMonth;
 
                     $expanded->push((object)[
+                        'rounding_key'   => 'fte-role:' . $item->id,
                         'month'          => $cursor->format('Y-m'),
                         'project'        => $item->project,
                         'name'           => $item->name,
@@ -986,6 +987,7 @@ private function buildFteProjectData(Project $project): array
         } catch (\Exception $e) {}
     }
 
+    $expanded = $this->rebalanceSplitDisplayValues($expanded);
     $monthlyFTE = $expanded->groupBy('month')->sortKeys();
     $chartLabels = $monthlyFTE->keys()->values();
     $chartData = $monthlyFTE->map(fn($rows) => $rows->sum('fte_value'))->values();
@@ -1191,7 +1193,117 @@ private function buildFteProjectData(Project $project): array
             throw new \InvalidArgumentException('Invalid date column');
         }
 
-        return "STR_TO_DATE(REPLACE({$column}, '/', '-'), '%d-%m-%Y')";
+        return "CASE
+            WHEN REPLACE({$column}, '/', '-') REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+                THEN STR_TO_DATE(REPLACE({$column}, '/', '-'), '%Y-%m-%d')
+            WHEN REPLACE({$column}, '/', '-') REGEXP '^[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}$'
+                THEN STR_TO_DATE(REPLACE({$column}, '/', '-'), '%d-%m-%Y')
+            ELSE NULL
+        END";
+    }
+
+    private function parseStoredDateBounds(?string $start, ?string $end): array
+    {
+        $parsedStart = $this->parseInputDate($start)?->startOfDay();
+        $parsedEnd = $this->parseInputDate($end)?->endOfDay();
+
+        if (! $parsedStart || ! $parsedEnd) {
+            return [null, null];
+        }
+
+        return [$parsedStart, $parsedEnd];
+    }
+
+    private function inclusiveDateOnlyDays(Carbon $start, Carbon $end): int
+    {
+        $startDate = $start->copy()->startOfDay();
+        $endDate = $end->copy()->startOfDay();
+
+        if ($startDate->gt($endDate)) {
+            return 0;
+        }
+
+        return (int) $startDate->diffInDays($endDate) + 1;
+    }
+
+    private function rebalanceSplitDisplayValues(Collection $rows): Collection
+    {
+        $rows->each(function ($row) {
+            $row->hours_in_month_exact = (float) ($row->hours_in_month ?? 0);
+            $row->fte_value_exact = (float) ($row->fte_value ?? 0);
+        });
+
+        foreach ($rows->groupBy('rounding_key') as $group) {
+            $this->rebalanceRoundedField($group, 'hours_in_month', 2);
+            $this->rebalanceRoundedField($group, 'fte_value', 7);
+        }
+
+        return $rows;
+    }
+
+    private function rebalanceProjectIndexDisplayValues(Collection $rows): Collection
+    {
+        foreach ($rows->groupBy('rounding_key') as $group) {
+            $this->rebalanceRoundedField($group, 'fte_month', 7);
+            $this->rebalanceRoundedField($group, 'hours_in_month', 2);
+        }
+
+        return $rows;
+    }
+
+    private function rebalancePersonIndexDisplayValues(Collection $rows): Collection
+    {
+        foreach ($rows->groupBy('rounding_key') as $group) {
+            $this->rebalanceRoundedField($group, 'fte_month', 7);
+        }
+
+        return $rows;
+    }
+
+    private function rebalanceRoundedField(Collection $rows, string $field, int $precision): void
+    {
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $scale = 10 ** $precision;
+        $prepared = [];
+        $targetUnits = (int) round(
+            $rows->sum(fn($row) => (float) ($row->{$field} ?? 0)) * $scale
+        );
+
+        foreach ($rows->values() as $index => $row) {
+            $exactUnits = ((float) ($row->{$field} ?? 0)) * $scale;
+            $baseUnits = (int) floor($exactUnits + 1e-9);
+
+            $prepared[] = [
+                'row' => $row,
+                'index' => $index,
+                'units' => $baseUnits,
+                'remainder' => $exactUnits - $baseUnits,
+            ];
+        }
+
+        $currentUnits = array_sum(array_column($prepared, 'units'));
+        $remainderUnits = max(0, $targetUnits - $currentUnits);
+
+        usort($prepared, function (array $left, array $right) {
+            if (abs($left['remainder'] - $right['remainder']) > 1e-12) {
+                return $left['remainder'] < $right['remainder'] ? 1 : -1;
+            }
+
+            return $left['index'] <=> $right['index'];
+        });
+
+        for ($i = 0; $i < $remainderUnits; $i++) {
+            $prepared[$i % count($prepared)]['units']++;
+        }
+
+        usort($prepared, fn(array $left, array $right) => $left['index'] <=> $right['index']);
+
+        foreach ($prepared as $item) {
+            $item['row']->{$field} = $item['units'] / $scale;
+        }
     }
 
     private function backOfficeCategoryLabel(?string $category): string

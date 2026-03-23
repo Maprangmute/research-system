@@ -76,6 +76,9 @@
                                 • {{ $profile->department }}
                             @endif
                         </div>
+                        <div class="mt-2 inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                            ช่วงข้อมูล: {{ $pdfFilter['label'] ?? 'ทั้งหมด' }}
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
