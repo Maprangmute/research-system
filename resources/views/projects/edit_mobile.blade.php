@@ -356,7 +356,7 @@
                         oninput="this.setCustomValidity('')">
                         <option value="">-- เลือกประเภทลักษณะ --</option>
                         <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ"
-                            {{ old('project_list', $project->project_list) == 'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ' ? 'selected' : '' }}>
+                            {{ in_array(old('project_list', $project->project_list), ['โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ', 'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภา'], true) ? 'selected' : '' }}>
                             โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
                         </option>
                         <option value="โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ"
@@ -478,117 +478,29 @@
 
             <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">B: ระยะเวลาดำเนินโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่โครงการเริ่ม (ทีม)</span>
+                <x-date-be name="team_start_date" label="วันที่โครงการเริ่ม (ทีม)"
+                    value="{{ old('team_start_date', $project->team_start_date) }}"
+                    placeholder="กรุณาเลือกวันที่เริ่มงานของทีม" />
 
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+                <x-date-be name="team_end_date" label="วันที่สิ้นสุดทำ (ทีม)"
+                    value="{{ old('team_end_date', $project->team_end_date) }}"
+                    placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม" />
 
-                        <!-- Input -->
-                        <input name="team_start_date" value="{{ old('team_start_date', $project->team_start_date) }}"
-                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่เริ่มงานของทีม">
-                    </div>
-                </label>
+                <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal (เดือน/ปี)"
+                    value="{{ old('proposal_date', $project->proposal_date) }}"
+                    placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal" />
 
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดทำ (ทีม)</span>
+                <x-date-be name="contract_date" label="BC101 - วันที่สัญญาอนุมัติ"
+                    value="{{ old('contract_date', $project->contract_date) }}"
+                    placeholder="กรุณาเลือกวันที่อนุมัติสัญญา" />
 
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+                <x-date-be name="start_date" label="BC102 - วันที่โครงการเริ่ม (ตามสัญญา)"
+                    value="{{ old('start_date', $project->start_date) }}"
+                    placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
-                        <!-- ช่องกรอกวันที่ -->
-                        <input name="team_end_date" value="{{ old('team_end_date', $project->team_end_date) }}"
-                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม">
-                    </div>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BA001 - วันที่เริ่มเขียน Proposal (เดือน/ปี)</span>
-
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-
-                        <!-- ช่องกรอก -->
-                        <input name="proposal_date" value="{{ old('proposal_date', $project->proposal_date) }}"
-                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal">
-                    </div>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BC101 - วันที่สัญญาอนุมัติ</span>
-
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-
-                        <!-- ช่องกรอก -->
-                        <input name="contract_date" value="{{ old('contract_date', $project->contract_date) }}"
-                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่อนุมัติสัญญา">
-                    </div>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BC102 - วันที่โครงการเริ่ม (ตามสัญญา)</span>
-
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-
-                        <!-- ช่องกรอก -->
-                        <input name="start_date" value="{{ old('start_date', $project->start_date) }}" type="text"
-                            class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา">
-                    </div>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด (ตามสัญญา)</span>
-
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-
-                        <!-- ช่องกรอกวันที่ -->
-                        <input name="end_date" value="{{ old('end_date', $project->end_date) }}" type="text"
-                            class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
-                    </div>
-                </label>
+                <x-date-be name="end_date" label="วันที่สิ้นสุด (ตามสัญญา)"
+                    value="{{ old('end_date', $project->end_date) }}"
+                    placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา" />
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">Project Status <span class="text-red-500">*</span></span>
@@ -644,28 +556,31 @@
             <h3 class="font-semibold text-lg text-blue-700 mb-2">IRB</h3>
             <div id="irb-code-container" class="space-y-2 mb-4">
                 @foreach ($project->irbs ?? [] as $i => $irb)
-                    <div id="irb-{{ $i }}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center p-3 border rounded-lg bg-gray-50">
-                        <div class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span
-                                    class="irb-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span></span>
-                            <input name="irbs[{{ $i }}][code]" value="{{ $irb['code'] }}"
-                                class="w-full border p-2 rounded" placeholder="Eg. 2025xxx" required
+                    <div id="irb-{{ $i }}" class="irb-row space-y-3 p-4 border rounded-lg bg-gray-50">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-slate-700">IRB ที่ <span class="irb-index">{{ $i + 1 }}</span></span>
+                            <button type="button" onclick="removeRow('irb-{{ $i }}', 'irb')"
+                                class="text-red-600">✕</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                            <div class="w-full">
+                                <span class="block text-sm text-gray-700 mb-1">รหัส IRB <span class="text-red-500">*</span></span>
+                                <input name="irbs[{{ $i }}][code]" value="{{ $irb['code'] }}"
+                                class="w-full border p-2 rounded" placeholder="เช่น SIHP-IRB-2025-001" required
                                 oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
                                 oninput="this.setCustomValidity('')">
-                        </div>
-                        <div class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span
-                                    class="irb-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span></span>
-                            <input name="irbs[{{ $i }}][source]" value="{{ $irb['source'] }}"
-                                class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงาน" required
+                            </div>
+                            <div class="w-full">
+                                <span class="block text-sm text-gray-700 mb-1">หน่วยงาน <span class="text-red-500">*</span></span>
+                                <input name="irbs[{{ $i }}][source]" value="{{ $irb['source'] }}"
+                                class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงานที่ออก IRB" required
                                 oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
                                 oninput="this.setCustomValidity('')">
-                        </div>
-                        <div class="w-full flex flex-col sm:flex-row gap-2 items-end">
+                            </div>
                             <div class="w-full relative">
-                                <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ <span class="text-red-500">*</span></span>
+                                <span class="block text-sm text-gray-700 mb-1">วันหมดอายุ IRB <span class="text-red-500">*</span></span>
                                 <input name="irbs[{{ $i }}][exp_date]" value="{{ $irb['exp_date'] ?? '' }}"
-                                    type="text" placeholder="เลือกวันที่"
+                                    type="text" placeholder="เลือกวันหมดอายุ IRB"
                                     class="thai-datepicker w-full border p-2 rounded pl-10" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกวันหมดอายุ IRB')"
                                     oninput="this.setCustomValidity('')">
@@ -677,8 +592,6 @@
                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                             </div>
-                            <button type="button" onclick="removeRow('irb-{{ $i }}', 'irb')"
-                                class="text-red-600 mb-2">✕</button>
                         </div>
 
                     </div>
@@ -921,6 +834,11 @@
                     @foreach ($project->fteRoles ?? [] as $i => $fte)
                         <div id="fte-{{ $i }}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
                             <input type="hidden" name="fte_roles[{{ $i }}][id]" value="{{ $fte->id }}">
+                            <div class="flex items-center justify-between gap-3 mb-4">
+                                <span class="text-sm font-semibold text-slate-700">ผู้มีส่วนร่วมคนที่ <span class="fte-index">{{ $i + 1 }}</span></span>
+                                <button type="button" onclick="removeRow('fte-{{ $i }}','fte')"
+                                    class="text-red-600">✕</button>
+                            </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
@@ -933,7 +851,7 @@
                                         <label class="w-full">
                                             <span class="block text-sm font-semibold"><span class="fte-index text-xl font-extrabold text-blue-700">{{ $i + 1 }}</span>. ชื่อ-นามสกุล <span class="text-red-500">*</span></span>
                                             <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
-                                                value="{{ $fte->name }}" class="w-full border p-2 rounded" required
+                                                value="{{ $fte->name }}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
                                                 oninput="this.setCustomValidity('')">
                                         </label>
@@ -979,7 +897,7 @@
                                             <span class="block text-sm font-semibold">วันเริ่มต้นภาระงาน <span class="text-red-500">*</span></span>
                                             <input name="fte_roles[{{ $i }}][start_date]" type="text"
                                                 value="{{ $fte->start_date }}"
-                                                class="thai-datepicker w-full border p-2 rounded pl-10" required
+                                                class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันเริ่มต้นภาระงาน" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
                                                 oninput="this.setCustomValidity('')">
                                             <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
@@ -994,7 +912,7 @@
                                             <span class="block text-sm font-semibold">วันสิ้นสุดภาระงาน <span class="text-red-500">*</span></span>
                                             <input name="fte_roles[{{ $i }}][end_date]" type="text"
                                                 value="{{ $fte->end_date }}"
-                                                class="thai-datepicker w-full border p-2 rounded pl-10" required
+                                                class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันสิ้นสุดภาระงาน" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
                                                 oninput="this.setCustomValidity('')">
                                             <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
@@ -1060,13 +978,8 @@
                                         <input type="number" step="0.01" min="0" max="1"
                                             name="fte_roles[{{ $i }}][fte_value_research]"
                                             value="{{ $fte->fte_value_research }}"
-                                            class="w-full border p-3 rounded text-right">
+                                            class="w-full border p-3 rounded text-right" placeholder="0.00">
                                     </label>
-
-                                    <button type="button" onclick="removeRow('fte-{{ $i }}','fte')"
-                                        class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
-                                        ✕ ลบผู้มีส่วนร่วมนี้
-                                    </button>
 
                                 </div>
                             </div>
@@ -1097,20 +1010,25 @@
                         data-index="{{ $i }}">
                         {{-- hidden id ของ output เดิม --}}
                         <input type="hidden" name="outputs[{{ $i }}][id]" value="{{ $out->id }}">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="font-semibold text-blue-700">ผลงานที่ <span class="output-index">{{ $i + 1 }}</span></span>
+                            <button type="button" onclick="removeRow('output-{{ $i }}','output')"
+                                class="text-red-600">✕</button>
+                        </div>
 
                         {{-- ชื่อผลงาน --}}
                         <label class="block w-full">
                             <span class="block text-sm text-gray-700 mb-1">
-                                ชื่อผลงานที่ <span class="output-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span>
+                                ชื่อผลงาน <span class="text-red-500">*</span>
                             </span>
                             <input name="outputs[{{ $i }}][title]" type="text"
                                 class="w-full border p-2 rounded" value="{{ old("outputs.$i.title", $out->title) }}"
                                 required oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
-                                oninput="this.setCustomValidity('')" placeholder="ชื่อผลงาน">
+                                oninput="this.setCustomValidity('')" placeholder="ระบุชื่อผลงาน">
                         </label>
 
                         {{-- บรรทัด: ประเภท, หมายเหตุ, วันที่ --}}
-                        <div class="grid grid-cols-3 gap-4 items-end">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน <span class="text-red-500">*</span></span>
                                 <select name="outputs[{{ $i }}][type]"
@@ -1196,25 +1114,21 @@
                                 <input name="outputs[{{ $i }}][project_output]" type="text"
                                     class="w-full border p-2 rounded"
                                     value="{{ old("outputs.$i.project_output", $out->project_output) }}"
-                                    placeholder="เพิ่มเติม">
+                                    placeholder="เช่น ตีพิมพ์แล้ว / ลิงก์ / รายละเอียดเพิ่มเติม">
                             </label>
 
-                            <div class="flex gap-2 w-full">
-                                <label class="w-full relative">
-                                    <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
-                                    <input name="outputs[{{ $i }}][year]" type="text"
-                                        class="thai-datepicker w-full border p-2 rounded pl-10"
-                                        value="{{ old("outputs.$i.year", $out->year) }}" placeholder="โปรดใส่วันที่">
-                                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
-                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </label>
-                                <button type="button" onclick="removeRow('output-{{ $i }}','output')"
-                                    class="text-red-600 mb-2">✕</button>
-                            </div>
+                            <label class="w-full relative">
+                                <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+                                <input name="outputs[{{ $i }}][year]" type="text"
+                                    class="thai-datepicker w-full border p-2 rounded pl-10"
+                                    value="{{ old("outputs.$i.year", $out->year) }}" placeholder="เลือกวันที่ publish">
+                                <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </label>
                         </div>
 
                         {{-- จุดติดตั้งส่วนพิเศษ (EA101/EA103) --}}
@@ -1223,8 +1137,8 @@
 
                             {{-- EA101 --}}
                             @if (str_starts_with($t, 'EA101'))
-                                <div class="ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50">
-                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div class="ea101-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <label>
                                             <span class="block text-sm text-gray-700 mb-1">Journal</span>
                                             <input name="outputs[{{ $i }}][journal]" type="text"
@@ -1260,92 +1174,102 @@
 
                                     {{-- Authors --}}
                                     @php $authors = $out->authors ?? collect(); @endphp
-                                    <div class="space-y-2">
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
+                                    <div class="space-y-3">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <span class="font-semibold text-slate-800">รายชื่อผู้เขียน (Authors)</span>
                                             <button type="button"
-                                                class="add-author-btn px-3 py-1 rounded bg-blue-600 text-white"
+                                                class="add-author-btn whitespace-nowrap px-3 py-2 rounded-lg bg-blue-600 text-sm font-semibold text-white"
                                                 onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
                                         </div>
 
-                                        <div class="authors-container space-y-2" id="authors-{{ $i }}">
+                                        <div class="authors-container space-y-3" id="authors-{{ $i }}">
                                             @forelse($authors as $j => $auth)
-                                                <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div class="author-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
                                                     <input type="hidden"
                                                         name="outputs[{{ $i }}][authors][{{ $j }}][id]"
                                                         value="{{ $auth->id }}">
-
-                                                    <label class="w-full">
-                                                        <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
-                                                            (Role) <span class="required-mark">*</span>
-                                                        </span>
-                                                        <select
-                                                            name="outputs[{{ $i }}][authors][{{ $j }}][role]"
-                                                            class="w-full border p-2 rounded" required
-                                                            oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
-                                                            oninput="this.setCustomValidity('')">
-                                                            <option value="" 
-                                                                {{ !$auth->role ? 'selected' : '' }}>เลือกบทบาท
-                                                            </option>
-                                                            <option value="first"
-                                                                {{ $auth->role === 'first' ? 'selected' : '' }}>
-                                                                First-author</option>
-                                                            <option value="co"
-                                                                {{ $auth->role === 'co' ? 'selected' : '' }}>Co-author
-                                                            </option>
-                                                            <option
-                                                                value="corresponding"{{ $auth->role === 'corresponding' ? 'selected' : '' }}>
-                                                                Corresponding author</option>
-                                                        </select>
-                                                    </label>
-
-                                                    <label class="w-full">
-                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อ-นามสกุล
-                                                            ผู้เขียน <span class="required-mark">*</span></span>
-                                                        <input
-                                                            name="outputs[{{ $i }}][authors][{{ $j }}][name]"
-                                                            type="text" list="userNames" class="w-full border p-2 rounded"
-                                                            value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}"
-                                                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required
-                                                            oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
-                                                            oninput="this.setCustomValidity('')">
-                                                    </label>
-
-                                                    <div class="flex items-end">
+                                                    <div class="flex items-center justify-between gap-2">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="author-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-100 px-2 text-xs font-bold text-blue-700">{{ $j + 1 }}</span>
+                                                            <span class="text-sm font-semibold text-slate-700">ผู้เขียน</span>
+                                                        </div>
                                                         <button type="button"
-                                                            class="px-3 py-2 rounded border text-red-600 border-red-300"
-                                                            onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
+                                                            class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600"
+                                                            onclick="removeAuthorRow(this)">ลบ</button>
+                                                    </div>
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        <label class="w-full">
+                                                            <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
+                                                                (Role) <span class="required-mark">*</span>
+                                                            </span>
+                                                            <select
+                                                                name="outputs[{{ $i }}][authors][{{ $j }}][role]"
+                                                                class="w-full border p-2 rounded" required
+                                                                oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
+                                                                oninput="this.setCustomValidity('')">
+                                                                <option value="" 
+                                                                    {{ !$auth->role ? 'selected' : '' }}>เลือกบทบาท
+                                                                </option>
+                                                                <option value="first"
+                                                                    {{ $auth->role === 'first' ? 'selected' : '' }}>
+                                                                    First-author</option>
+                                                                <option value="co"
+                                                                    {{ $auth->role === 'co' ? 'selected' : '' }}>Co-author
+                                                                </option>
+                                                                <option
+                                                                    value="corresponding"{{ $auth->role === 'corresponding' ? 'selected' : '' }}>
+                                                                    Corresponding author</option>
+                                                            </select>
+                                                        </label>
+
+                                                        <label class="w-full">
+                                                            <span class="block text-sm text-gray-700 mb-1">ชื่อ-นามสกุล
+                                                                ผู้เขียน <span class="required-mark">*</span></span>
+                                                            <input
+                                                                name="outputs[{{ $i }}][authors][{{ $j }}][name]"
+                                                                type="text" list="userNames" class="w-full border p-2 rounded"
+                                                                value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}"
+                                                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                                                oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
+                                                                oninput="this.setCustomValidity('')">
+                                                        </label>
                                                     </div>
                                                 </div>
                                             @empty
-                                                <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                    <label class="w-full">
-                                                        <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
-                                                            (Role) <span class="required-mark">*</span></span>
-                                                        <select name="outputs[{{ $i }}][authors][0][role]"
-                                                            class="w-full border p-2 rounded" required
-                                                            oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
-                                                            oninput="this.setCustomValidity('')">
-                                                            <option value="">เลือกบทบาท
-                                                            </option>
-                                                            <option value="first">First-author</option>
-                                                            <option value="co">Co-author</option>
-                                                            <option value="corresponding">Corresponding author</option>
-                                                        </select>
-                                                    </label>
-                                                    <label class="w-full">
-                                                        <span class="block text-sm text-gray-700 mb-1">คำนำหน้า ชื่อ-สกุล
-                                                            ผู้เขียน <span class="required-mark">*</span></span>
-                                                        <input name="outputs[{{ $i }}][authors][0][name]"
-                                                            type="text" list="userNames" class="w-full border p-2 rounded"
-                                                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required
-                                                            oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
-                                                            oninput="this.setCustomValidity('')">
-                                                    </label>
-                                                    <div class="flex items-end">
+                                                <div class="author-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
+                                                    <div class="flex items-center justify-between gap-2">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="author-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-100 px-2 text-xs font-bold text-blue-700">1</span>
+                                                            <span class="text-sm font-semibold text-slate-700">ผู้เขียน</span>
+                                                        </div>
                                                         <button type="button"
-                                                            class="px-3 py-2 rounded border text-red-600 border-red-300"
-                                                            onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
+                                                            class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600"
+                                                            onclick="removeAuthorRow(this)">ลบ</button>
+                                                    </div>
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        <label class="w-full">
+                                                            <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน
+                                                                (Role) <span class="required-mark">*</span></span>
+                                                            <select name="outputs[{{ $i }}][authors][0][role]"
+                                                                class="w-full border p-2 rounded" required
+                                                                oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
+                                                                oninput="this.setCustomValidity('')">
+                                                                <option value="">เลือกบทบาท
+                                                                </option>
+                                                                <option value="first">First-author</option>
+                                                                <option value="co">Co-author</option>
+                                                                <option value="corresponding">Corresponding author</option>
+                                                            </select>
+                                                        </label>
+                                                        <label class="w-full">
+                                                            <span class="block text-sm text-gray-700 mb-1">คำนำหน้า ชื่อ-สกุล
+                                                                ผู้เขียน <span class="required-mark">*</span></span>
+                                                            <input name="outputs[{{ $i }}][authors][0][name]"
+                                                                type="text" list="userNames" class="w-full border p-2 rounded"
+                                                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                                                oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
+                                                                oninput="this.setCustomValidity('')">
+                                                        </label>
                                                     </div>
                                                 </div>
                                             @endforelse
@@ -1356,119 +1280,126 @@
 
                             {{-- EA103 --}}
                             @if (str_starts_with($t, 'EA103'))
-                                <div class="ea103-section space-y-3 border rounded-xl p-4 bg-amber-50/60">
-                                    <div class="flex items-center justify-between">
-                                        <span class="font-semibold text-amber-800">Conferences</span>
+                                <div class="ea103-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <span class="font-semibold text-slate-800">Conferences</span>
                                         <button type="button"
-                                            class="add-conf-btn px-3 py-1 rounded bg-amber-600 text-white"
+                                            class="add-conf-btn whitespace-nowrap px-3 py-2 rounded-lg bg-amber-600 text-sm font-semibold text-white"
                                             onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
                                     </div>
 
                                     @php $confs = $out->conferences ?? collect(); @endphp
-                                    <div class="overflow-x-auto">
-                                        <table class="min-w-full text-sm border">
-                                            <thead class="bg-amber-100">
-                                                <tr>
-                                                    <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
-                                                    <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
-                                                    <th class="px-2 py-2 text-left">สถานที่</th>
-                                                    <th class="px-2 py-2 text-left">หมายเหตุ</th>
-                                                    <th class="px-2 py-2 text-center">ลบ</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="conference-tbody" id="confs-{{ $i }}"
-                                                data-conf-index="{{ max($confs->count() - 1, 0) }}">
-                                                @forelse($confs as $k => $c)
-                                                    <tr class="border-t conference-row">
-                                                        <input type="hidden"
-                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][id]"
-                                                            value="{{ $c->id }}">
-                                                        <td class="px-2 py-2">
-                                                            <input
-                                                                name="outputs[{{ $i }}][conferences][{{ $k }}][name]"
-                                                                class="w-56 border p-2 rounded"
-                                                                value="{{ old("outputs.$i.conferences.$k.name", $c->name) }}"
-                                                                placeholder="เช่น PMAC 2025">
-                                                        </td>
-                                                        <td class="px-2 py-2">
-                                                            @php $pt = old("outputs.$i.conferences.$k.presentation_type", $c->presentation_type); @endphp
-                                                            <select
-                                                                name="outputs[{{ $i }}][conferences][{{ $k }}][presentation_type]"
-                                                                class="w-44 border p-2 rounded">
-                                                                <option value="">เลือก</option>
-                                                                <option value="Oral"
-                                                                    {{ $pt === 'Oral' ? 'selected' : '' }}>Oral
-                                                                </option>
-                                                                <option
-                                                                    value="Poster"{{ $pt === 'Poster' ? 'selected' : '' }}>
-                                                                    Poster</option>
-                                                                <option value="Panel"
-                                                                    {{ $pt === 'Panel' ? 'selected' : '' }}>Panel
-                                                                </option>
-                                                                <option value="Invited Talk"
-                                                                    {{ $pt === 'Invited Talk' ? 'selected' : '' }}>
-                                                                    Invited Talk</option>
-                                                            </select>
-                                                        </td>
-                                                        <td class="px-2 py-2">
-                                                            <input
-                                                                name="outputs[{{ $i }}][conferences][{{ $k }}][location]"
-                                                                class="w-44 border p-2 rounded"
-                                                                value="{{ old("outputs.$i.conferences.$k.location", $c->location) }}"
-                                                                placeholder="เมือง/ประเทศ">
-                                                        </td>
-                                                        <td class="px-2 py-2">
-                                                            <input
-                                                                name="outputs[{{ $i }}][conferences][{{ $k }}][note]"
-                                                                class="w-56 border p-2 rounded"
-                                                                value="{{ old("outputs.$i.conferences.$k.note", $c->note) }}"
-                                                                placeholder="หมายเหตุ">
-                                                        </td>
-                                                        <td class="px-2 py-2 text-center">
-                                                            <button type="button"
-                                                                class="px-2 py-1 text-red-600 border border-red-300 rounded"
-                                                                onclick="removeConferenceRow(this)">ลบ</button>
-                                                        </td>
-                                                    </tr>
-                                                @empty
-                                                    <tr class="border-t conference-row">
-                                                        <td class="px-2 py-2">
-                                                            <input
-                                                                name="outputs[{{ $i }}][conferences][0][name]"
-                                                                class="w-56 border p-2 rounded"
-                                                                placeholder="เช่น PMAC 2025">
-                                                        </td>
-                                                        <td class="px-2 py-2">
-                                                            <select
-                                                                name="outputs[{{ $i }}][conferences][0][presentation_type]"
-                                                                class="w-44 border p-2 rounded">
-                                                                <option value="">เลือก</option>
-                                                                <option value="Oral">Oral</option>
-                                                                <option value="Poster">Poster</option>
-                                                                <option value="Panel">Panel</option>
-                                                                <option value="Invited Talk">Invited Talk</option>
-                                                            </select>
-                                                        </td>
-                                                        <td class="px-2 py-2">
-                                                            <input
-                                                                name="outputs[{{ $i }}][conferences][0][location]"
-                                                                class="w-44 border p-2 rounded"
-                                                                placeholder="เมือง/ประเทศ">
-                                                        </td>
-                                                        <td class="px-2 py-2">
-                                                            <input
-                                                                name="outputs[{{ $i }}][conferences][0][note]"
-                                                                class="w-56 border p-2 rounded" placeholder="หมายเหตุ">
-                                                        </td>
-                                                        <td class="px-2 py-2 text-center">
-                                                            <button type="button"
-                                                                class="px-2 py-1 text-red-600 border border-red-300 rounded"
-                                                                onclick="removeConferenceRow(this)">ลบ</button>
-                                                        </td>
-                                                    </tr>
-                                                @endforelse
-                                            </tbody>
-                                        </table>
+                                    <div class="conference-tbody space-y-3" id="confs-{{ $i }}"
+                                        data-conf-index="{{ max($confs->count() - 1, 0) }}">
+                                        @forelse($confs as $k => $c)
+                                            <div class="conference-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
+                                                <input type="hidden"
+                                                    name="outputs[{{ $i }}][conferences][{{ $k }}][id]"
+                                                    value="{{ $c->id }}">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="conference-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-700">{{ $k + 1 }}</span>
+                                                        <span class="text-sm font-semibold text-slate-700">Conference</span>
+                                                    </div>
+                                                    <button type="button"
+                                                        class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600"
+                                                        onclick="removeConferenceRow(this)">ลบ</button>
+                                                </div>
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
+                                                        <input
+                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][name]"
+                                                            class="w-full border p-2 rounded"
+                                                            value="{{ old("outputs.$i.conferences.$k.name", $c->name) }}"
+                                                            placeholder="เช่น PMAC 2025">
+                                                    </label>
+                                                    <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
+                                                        @php $pt = old("outputs.$i.conferences.$k.presentation_type", $c->presentation_type); @endphp
+                                                        <select
+                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][presentation_type]"
+                                                            class="w-full border p-2 rounded">
+                                                            <option value="">เลือก</option>
+                                                            <option value="Oral"
+                                                                {{ $pt === 'Oral' ? 'selected' : '' }}>Oral
+                                                            </option>
+                                                            <option
+                                                                value="Poster"{{ $pt === 'Poster' ? 'selected' : '' }}>
+                                                                Poster</option>
+                                                            <option value="Panel"
+                                                                {{ $pt === 'Panel' ? 'selected' : '' }}>Panel
+                                                            </option>
+                                                            <option value="Invited Talk"
+                                                                {{ $pt === 'Invited Talk' ? 'selected' : '' }}>
+                                                                Invited Talk</option>
+                                                        </select>
+                                                    </label>
+                                                    <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
+                                                        <input
+                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][location]"
+                                                            class="w-full border p-2 rounded"
+                                                            value="{{ old("outputs.$i.conferences.$k.location", $c->location) }}"
+                                                            placeholder="เมือง/ประเทศ">
+                                                    </label>
+                                                    <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">หมายเหตุ</span>
+                                                        <input
+                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][note]"
+                                                            class="w-full border p-2 rounded"
+                                                            value="{{ old("outputs.$i.conferences.$k.note", $c->note) }}"
+                                                            placeholder="หมายเหตุเพิ่มเติม">
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        @empty
+                                            <div class="conference-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="conference-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-700">1</span>
+                                                        <span class="text-sm font-semibold text-slate-700">Conference</span>
+                                                    </div>
+                                                    <button type="button"
+                                                        class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600"
+                                                        onclick="removeConferenceRow(this)">ลบ</button>
+                                                </div>
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
+                                                        <input
+                                                            name="outputs[{{ $i }}][conferences][0][name]"
+                                                            class="w-full border p-2 rounded"
+                                                            placeholder="เช่น PMAC 2025">
+                                                    </label>
+                                                    <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
+                                                        <select
+                                                            name="outputs[{{ $i }}][conferences][0][presentation_type]"
+                                                            class="w-full border p-2 rounded">
+                                                            <option value="">เลือก</option>
+                                                            <option value="Oral">Oral</option>
+                                                            <option value="Poster">Poster</option>
+                                                            <option value="Panel">Panel</option>
+                                                            <option value="Invited Talk">Invited Talk</option>
+                                                        </select>
+                                                    </label>
+                                                    <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
+                                                        <input
+                                                            name="outputs[{{ $i }}][conferences][0][location]"
+                                                            class="w-full border p-2 rounded"
+                                                            placeholder="เมือง/ประเทศ">
+                                                    </label>
+                                                    <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">หมายเหตุ</span>
+                                                        <input
+                                                            name="outputs[{{ $i }}][conferences][0][note]"
+                                                            class="w-full border p-2 rounded" placeholder="หมายเหตุเพิ่มเติม">
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        @endforelse
                                     </div>
                                 </div>
                             @endif
@@ -1769,6 +1700,30 @@
             }, 400);
         }
 
+        function confirmProjectMobileRemoval(callback) {
+            if (typeof window.confirmProjectRowRemoval === 'function') {
+                window.confirmProjectRowRemoval(callback);
+                return;
+            }
+            callback();
+        }
+
+        function reindexAuthorRows(container) {
+            container?.querySelectorAll('.author-row').forEach((row, index) => {
+                row.querySelectorAll('.author-index').forEach((el) => {
+                    el.textContent = index + 1;
+                });
+            });
+        }
+
+        function reindexConferenceRows(container) {
+            container?.querySelectorAll('.conference-row').forEach((row, index) => {
+                row.querySelectorAll('.conference-index').forEach((el) => {
+                    el.textContent = index + 1;
+                });
+            });
+        }
+
         // let irbCodeIndex = {{ count($project->irbs ?? []) }};
         let irbCodeIndex = document.querySelectorAll('.irb-row').length;
 
@@ -1777,23 +1732,27 @@
             const id = `irb-${irbCodeIndex}`;
 
             container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center p-3 border rounded-lg bg-white">
+        <div id="${id}" class="irb-row space-y-3 p-4 border rounded-lg bg-white">
+            <div class="flex items-center justify-between gap-3">
+                <span class="text-sm font-semibold text-slate-700">IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span></span>
+                <button type="button" onclick="removeRow('${id}', 'irb')" class="text-red-600">✕</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span> <span class="text-red-500">*</span></span>
-                <input name="irbs[${irbCodeIndex}][code]" type="text" placeholder="ECxxxx" class="w-full border p-2 rounded" required
+                <span class="block text-sm text-gray-700 mb-1">รหัส IRB <span class="text-red-500">*</span></span>
+                <input name="irbs[${irbCodeIndex}][code]" type="text" placeholder="เช่น SIHP-IRB-2025-001" class="w-full border p-2 rounded" required
                     oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
                     oninput="this.setCustomValidity('')">
             </div>
             <div class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span class="irb-index">${irbCodeIndex + 1}</span> <span class="text-red-500">*</span></span>
-                <input name="irbs[${irbCodeIndex}][source]" type="text" placeholder="ชื่อหน่วยงาน" class="w-full border p-2 rounded" required
+                <span class="block text-sm text-gray-700 mb-1">หน่วยงาน <span class="text-red-500">*</span></span>
+                <input name="irbs[${irbCodeIndex}][source]" type="text" placeholder="ชื่อหน่วยงานที่ออก IRB" class="w-full border p-2 rounded" required
                     oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
                     oninput="this.setCustomValidity('')">
             </div>
-            <div class="w-full flex flex-col sm:flex-row gap-2 items-end">
-                <div class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ <span class="text-red-500">*</span></span>
-                    <input name="irbs[${irbCodeIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่" required
+            <div class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันหมดอายุ IRB <span class="text-red-500">*</span></span>
+                    <input name="irbs[${irbCodeIndex}][exp_date]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันหมดอายุ IRB" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกวันหมดอายุ IRB')"
                         oninput="this.setCustomValidity('')">
                     <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
@@ -1803,7 +1762,7 @@
                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 </div>
-                <button type="button" onclick="removeRow('${id}', 'irb')" class="text-red-600 mb-2">✕</button>
+            </div>
             </div>
         </div>
     `);
@@ -1829,6 +1788,8 @@
                         if (altInput) {
                             altInput.readOnly = true;
                             altInput.className = input.className;
+                            altInput.classList.remove('js-date-be', 'thai-datepicker', 'native-date-raw', 'flatpickr-hidden');
+                            altInput.placeholder = input.getAttribute('placeholder') || input.dataset.placeholder || '';
                         }
                         if (input) input.classList.add('flatpickr-hidden');
                         toBuddhist(selectedDates, dateStr, instance);
@@ -1945,6 +1906,10 @@
 
             container.insertAdjacentHTML('beforeend', `
 <div id="${id}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
+    <div class="flex items-center justify-between gap-3 mb-4">
+        <span class="text-sm font-semibold text-slate-700">ผู้มีส่วนร่วมคนที่ <span class="fte-index">${index + 1}</span></span>
+        <button type="button" onclick="removeRow('${id}', 'fte')" class="text-red-600">✕</button>
+    </div>
     <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
         <div class="md:col-span-9 space-y-4">
@@ -1959,7 +1924,7 @@
                     <input list="${FTE_DATALIST_ID}"
                         name="fte_roles[${index}][name]"
                         class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
-                        placeholder="พิมพ์หรือเลือกชื่อ"
+                        placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม"
                         required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
                                     oninput="this.setCustomValidity('')">
@@ -1992,7 +1957,7 @@
                     <input name="fte_roles[${index}][start_date]"
                         type="text"
                         class="thai-datepicker w-full border p-2 rounded pl-10"
-                        placeholder="โปรดใส่วันที่"
+                        placeholder="เลือกวันเริ่มต้นภาระงาน"
                         required
                         oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
                         oninput="this.setCustomValidity('')">
@@ -2009,7 +1974,7 @@
                     <input name="fte_roles[${index}][end_date]"
                         type="text"
                         class="thai-datepicker w-full border p-2 rounded pl-10"
-                        placeholder="โปรดใส่วันที่"
+                        placeholder="เลือกวันสิ้นสุดภาระงาน"
                         required
                         oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
                         oninput="this.setCustomValidity('')">
@@ -2075,12 +2040,6 @@
                     placeholder="0.00"
                     class="w-full border p-3 rounded text-right">
             </label>
-
-            <button type="button"
-                onclick="removeRow('${id}', 'fte')"
-                class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
-                ✕ ลบผู้มีส่วนร่วมนี้
-            </button>
         </div>
 
     </div>
@@ -2144,8 +2103,9 @@ console.log('[FTE AUTO] after=', fteField.value);
         function reindexFTE() {
             const rows = document.querySelectorAll('#fte-container .fte-row');
             rows.forEach((row, index) => {
-                const span = row.querySelector('.fte-index');
-                if (span) span.textContent = index + 1;
+                row.querySelectorAll('.fte-index').forEach((span) => {
+                    span.textContent = index + 1;
+                });
             });
         }
 
@@ -2182,18 +2142,22 @@ console.log('[FTE AUTO] after=', fteField.value);
             document.getElementById('output-container').insertAdjacentHTML('beforeend', `
     <div id="${id}" class="output-row space-y-2 border p-4 rounded-lg bg-gray-50" data-index="${idx}">
       <input type="hidden" name="outputs[${idx}][id]" value="">
+      <div class="flex items-center justify-between gap-3">
+        <span class="font-semibold text-blue-700">ผลงานที่ <span class="output-index">${idx + 1}</span></span>
+        <button type="button" onclick="removeRow('${id}','output')" class="text-red-600">✕</button>
+      </div>
       <label class="block w-full">
         <span class="block text-sm text-gray-700 mb-1">
-          ชื่อผลงานที่ <span class="output-index">${idx + 1}</span> <span class="text-red-500">*</span>
+          ชื่อผลงาน <span class="text-red-500">*</span>
         </span>
         <input name="outputs[${idx}][title]" type="text" class="w-full border p-2 rounded" 
         required
         oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')"
         oninput="this.setCustomValidity('')"
-         placeholder="ชื่อผลงาน">
+         placeholder="ระบุชื่อผลงาน">
       </label>
 
-      <div class="grid grid-cols-3 gap-4 items-end">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
         <label class="w-full">
           <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน <span class="text-red-500">*</span></span>
           <select name="outputs[${idx}][type]" class="w-full border p-2 rounded output-type" required
@@ -2222,19 +2186,16 @@ console.log('[FTE AUTO] after=', fteField.value);
 
         <label class="w-full">
           <span class="block text-sm text-gray-700 mb-1">รายละเอียด / หมายเหตุ / LINK</span>
-          <input name="outputs[${idx}][project_output]" type="text" class="w-full border p-2 rounded" placeholder="เช่น ตีพิมพ์แล้ว / ลิงก์">
+          <input name="outputs[${idx}][project_output]" type="text" class="w-full border p-2 rounded" placeholder="เช่น ตีพิมพ์แล้ว / ลิงก์ / รายละเอียดเพิ่มเติม">
         </label>
 
-        <div class="flex gap-2 w-full">
-          <label class="w-full relative">
-            <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
-            <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่">
-            <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-          </label>
-          <button type="button" onclick="removeRow('${id}','output')" class="text-red-600 mb-2">✕</button>
-        </div>
+        <label class="w-full relative">
+          <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+          <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่ publish">
+          <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </label>
       </div>
 
       <!-- จุด mount สำหรับ section พิเศษ -->
@@ -2299,9 +2260,9 @@ console.log('[FTE AUTO] after=', fteField.value);
         /* ===== EA101: Authors ===== */
         function renderEA101Section(idx) {
             const wrap = document.createElement('div');
-            wrap.className = 'ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50';
+            wrap.className = 'ea101-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4';
             wrap.innerHTML = `
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <label>
         <span class="block text-sm text-gray-700 mb-1">Journal</span>
         <input name="outputs[${idx}][journal]" class="w-full border p-2 rounded" placeholder="เช่น IEEE Access">
@@ -2322,12 +2283,12 @@ console.log('[FTE AUTO] after=', fteField.value);
       </label>
     </div>
 
-    <div class="space-y-2">
-      <div class="flex items-center justify-between">
-        <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
-        <button type="button" class="add-author-btn px-3 py-1 rounded bg-blue-600 text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+    <div class="space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <span class="font-semibold text-slate-800">รายชื่อผู้เขียน (Authors)</span>
+        <button type="button" class="add-author-btn whitespace-nowrap px-3 py-2 rounded-lg bg-blue-600 text-sm font-semibold text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
       </div>
-      <div class="authors-container space-y-2" id="authors-${idx}"></div>
+      <div class="authors-container space-y-3" id="authors-${idx}"></div>
     </div>
   `;
             return wrap;
@@ -2342,7 +2303,15 @@ console.log('[FTE AUTO] after=', fteField.value);
             const aIdx = authorIndex[idx] || 0;
 
             authorsWrap.insertAdjacentHTML('beforeend', `
-    <div class="author-row grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="author-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="author-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-100 px-2 text-xs font-bold text-blue-700"></span>
+          <span class="text-sm font-semibold text-slate-700">ผู้เขียน</span>
+        </div>
+        <button type="button" onclick="removeAuthorRow(this)" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600">ลบ</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <label>
         <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน <span class="required-mark">*</span></span>
         <select name="outputs[${idx}][authors][${aIdx}][role]" class="w-full border p-2 rounded" required
@@ -2360,42 +2329,33 @@ console.log('[FTE AUTO] after=', fteField.value);
                                     oninvalid="this.setCustomValidity('กรุณากรอกชื่อผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
       </label>
-      <div class="flex items-end">
-        <button type="button" onclick="removeAuthorRow(this)" class="px-3 py-2 rounded border text-red-600 border-red-300">ลบ</button>
       </div>
     </div>
   `);
 
             authorIndex[idx] = aIdx + 1;
+            reindexAuthorRows(authorsWrap);
         }
 
         function removeAuthorRow(btnEl) {
-            btnEl.closest('.author-row')?.remove();
+            const row = btnEl.closest('.author-row');
+            const container = row?.parentElement;
+            confirmProjectMobileRemoval(() => {
+                row?.remove();
+                reindexAuthorRows(container);
+            });
         }
 
         /* ===== EA103: Conferences ===== */
         function renderEA103Section(idx) {
             const wrap = document.createElement('div');
-            wrap.className = 'ea103-section space-y-3 border rounded-xl p-4 bg-amber-50/60';
+            wrap.className = 'ea103-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4';
             wrap.innerHTML = `
-    <div class="flex items-center justify-between">
-      <span class="font-semibold text-amber-800">Conferences</span>
-      <button type="button" class="add-conf-btn px-3 py-1 rounded bg-amber-600 text-white" onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <span class="font-semibold text-slate-800">Conferences</span>
+      <button type="button" class="add-conf-btn whitespace-nowrap px-3 py-2 rounded-lg bg-amber-600 text-sm font-semibold text-white" onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
     </div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm border">
-        <thead class="bg-amber-100">
-          <tr>
-            <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
-            <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
-            <th class="px-2 py-2 text-left">สถานที่</th>
-            <th class="px-2 py-2 text-left">หมายเหตุ</th>
-            <th class="px-2 py-2 text-center">ลบ</th>
-          </tr>
-        </thead>
-        <tbody class="conference-tbody" id="confs-${idx}" data-conf-index="0"></tbody>
-      </table>
-    </div>
+    <div class="conference-tbody space-y-3" id="confs-${idx}" data-conf-index="0"></div>
   `;
             return wrap;
         }
@@ -2409,42 +2369,70 @@ console.log('[FTE AUTO] after=', fteField.value);
             const cIdx = confIndex[idx] || 0;
 
             tbody.insertAdjacentHTML('beforeend', `
-    <tr class="border-t conference-row">
-      <td class="px-2 py-2">
-        <input name="outputs[${idx}][conferences][${cIdx}][name]" class="w-56 border p-2 rounded" placeholder="เช่น PMAC 2025">
-      </td>
-      <td class="px-2 py-2">
-        <select name="outputs[${idx}][conferences][${cIdx}][presentation_type]" class="w-44 border p-2 rounded">
-          <option value="">เลือก</option>
-          <option value="Oral">Oral</option>
-          <option value="Poster">Poster</option>
-          <option value="Panel">Panel</option>
-          <option value="Invited Talk">Invited Talk</option>
-        </select>
-      </td>
-      <td class="px-2 py-2">
-        <input name="outputs[${idx}][conferences][${cIdx}][location]" class="w-44 border p-2 rounded" placeholder="เมือง/ประเทศ">
-      </td>
-      <td class="px-2 py-2">
-        <input name="outputs[${idx}][conferences][${cIdx}][note]" class="w-56 border p-2 rounded" placeholder="หมายเหตุ">
-      </td>
-      <td class="px-2 py-2 text-center">
-        <button type="button" class="px-2 py-1 text-red-600 border border-red-300 rounded" onclick="removeConferenceRow(this)">ลบ</button>
-      </td>
-    </tr>
+    <div class="conference-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="conference-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-700"></span>
+          <span class="text-sm font-semibold text-slate-700">Conference</span>
+        </div>
+        <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeConferenceRow(this)">ลบ</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label>
+          <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
+          <input name="outputs[${idx}][conferences][${cIdx}][name]" class="w-full border p-2 rounded" placeholder="เช่น PMAC 2025">
+        </label>
+        <label>
+          <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
+          <select name="outputs[${idx}][conferences][${cIdx}][presentation_type]" class="w-full border p-2 rounded">
+            <option value="">เลือก</option>
+            <option value="Oral">Oral</option>
+            <option value="Poster">Poster</option>
+            <option value="Panel">Panel</option>
+            <option value="Invited Talk">Invited Talk</option>
+          </select>
+        </label>
+        <label>
+          <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
+          <input name="outputs[${idx}][conferences][${cIdx}][location]" class="w-full border p-2 rounded" placeholder="เมือง/ประเทศ">
+        </label>
+        <label>
+          <span class="block text-sm text-gray-700 mb-1">หมายเหตุ</span>
+          <input name="outputs[${idx}][conferences][${cIdx}][note]" class="w-full border p-2 rounded" placeholder="หมายเหตุเพิ่มเติม">
+        </label>
+      </div>
+    </div>
   `);
 
             confIndex[idx] = cIdx + 1;
+            reindexConferenceRows(tbody);
         }
 
         function removeConferenceRow(btn) {
-            btn.closest('tr.conference-row')?.remove();
+            const row = btn.closest('.conference-row');
+            const container = row?.parentElement;
+            confirmProjectMobileRemoval(() => {
+                row?.remove();
+                reindexConferenceRows(container);
+            });
         }
 
         // ---------- ลบ Output + reindex ----------
         function removeRow(id, prefix) {
-            document.getElementById(id)?.remove();
-            reindexOutput();
+            const row = document.getElementById(id);
+            const finalizeRemoval = () => {
+                row?.remove();
+                reindexOutput();
+            };
+
+            confirmProjectMobileRemoval(() => {
+                if (row && typeof window.removeProjectRowWithScroll === 'function') {
+                    window.removeProjectRowWithScroll(row, finalizeRemoval);
+                    return;
+                }
+
+                finalizeRemoval();
+            });
         }
 
         function reindexOutput() {
@@ -2579,25 +2567,37 @@ console.log('[FTE AUTO] after=', fteField.value);
 
         function removeRow(id, type) {
             const el = document.getElementById(id);
-            if (el && type === 'fte') {
-                const idInput = el.querySelector('input[name^="fte_roles["][name$="[id]"]');
-                const existingId = Number(idInput?.value || 0);
-                if (existingId > 0) {
-                    const deletedContainer = document.getElementById('fte-deleted-ids');
-                    if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
-                        deletedContainer.insertAdjacentHTML(
-                            'beforeend',
-                            `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
-                        );
+            const finalizeRemoval = () => {
+                if (el && type === 'fte') {
+                    const idInput = el.querySelector('input[name^="fte_roles["][name$="[id]"]');
+                    const existingId = Number(idInput?.value || 0);
+                    if (existingId > 0) {
+                        const deletedContainer = document.getElementById('fte-deleted-ids');
+                        if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
+                            deletedContainer.insertAdjacentHTML(
+                                'beforeend',
+                                `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
+                            );
+                        }
                     }
                 }
-            }
-            if (el) el.remove();
-            if (type === 'output') reindexOutput();
-            if (type === 'copi') reindexCopi?.();
-            if (type === 'irb') reindexIRB?.();
-            if (type === 'fte') reindexFTE?.();
-            if (type === 'coresearch') reindexCoResearch?.();
+
+                el?.remove();
+                if (type === 'output') reindexOutput();
+                if (type === 'copi') reindexCopi?.();
+                if (type === 'irb') reindexIRB?.();
+                if (type === 'fte') reindexFTE?.();
+                if (type === 'coresearch') reindexCoResearch?.();
+            };
+
+            confirmProjectMobileRemoval(() => {
+                if (el && typeof window.removeProjectRowWithScroll === 'function') {
+                    window.removeProjectRowWithScroll(el, finalizeRemoval);
+                    return;
+                }
+
+                finalizeRemoval();
+            });
         }
     </script>
 
@@ -2708,6 +2708,7 @@ console.log('[FTE AUTO] after=', fteField.value);
 
         function initNativeThaiDateInput(input) {
             if (!(input instanceof HTMLInputElement)) return;
+            if (input.hasAttribute('data-native-date-display-for')) return;
             if (typeof window.initNativeMobileDateInput === 'function') {
                 window.initNativeMobileDateInput(input);
                 return;
@@ -2860,14 +2861,6 @@ console.log('[FTE AUTO] after=', fteField.value);
 
         function bindProjectDatePairsThaiPicker() {
             if (MOBILE_WHEEL_MODE) {
-                bindEndDateMinNative(
-                    document.querySelector('input[name="team_start_date"]'),
-                    document.querySelector('input[name="team_end_date"]')
-                );
-                bindEndDateMinNative(
-                    document.querySelector('input[name="start_date"]'),
-                    document.querySelector('input[name="end_date"]')
-                );
                 document.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
                     const endName = startInput.name.replace('[start_date]', '[end_date]');
                     const endInput = document.querySelector(`input[name="${endName}"]`);
@@ -2875,18 +2868,6 @@ console.log('[FTE AUTO] after=', fteField.value);
                 });
                 return;
             }
-
-            bindEndDateMinThaiPicker(
-                document.querySelector('input[name="team_start_date"]'),
-                document.querySelector('input[name="team_end_date"]'),
-                'team'
-            );
-
-            bindEndDateMinThaiPicker(
-                document.querySelector('input[name="start_date"]'),
-                document.querySelector('input[name="end_date"]'),
-                'contract'
-            );
 
             document.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
                 const endName = startInput.name.replace('[start_date]', '[end_date]');
@@ -2920,6 +2901,7 @@ console.log('[FTE AUTO] after=', fteField.value);
         function initThaiDatepickers() {
             if (MOBILE_WHEEL_MODE) {
                 document.querySelectorAll('.thai-datepicker').forEach((input) => {
+                    if (input.hasAttribute('data-native-date-display-for')) return;
                     initNativeThaiDateInput(input);
                 });
                 bindProjectDatePairsThaiPicker();
@@ -2927,6 +2909,7 @@ console.log('[FTE AUTO] after=', fteField.value);
             }
 
             document.querySelectorAll('.thai-datepicker').forEach((input) => {
+                if (input.hasAttribute('data-native-date-display-for')) return;
                 if (input._flatpickr) return;
 
                 // รองรับข้อมูลเก่าที่อาจเก็บปี พ.ศ. / รูปแบบหลากหลาย
@@ -2949,6 +2932,8 @@ console.log('[FTE AUTO] after=', fteField.value);
                         if (altInput) {
                             altInput.readOnly = true;
                             altInput.className = input.className;
+                            altInput.classList.remove('js-date-be', 'thai-datepicker', 'native-date-raw', 'flatpickr-hidden');
+                            altInput.placeholder = input.getAttribute('placeholder') || input.dataset.placeholder || '';
                         }
                         input.classList.add('flatpickr-hidden');
                         toBuddhist(selectedDates, dateStr, instance);

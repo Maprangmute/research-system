@@ -12,6 +12,10 @@ class Project extends Model
 {
     use SoftDeletes; // ถ้าต้องการ soft delete
 
+    private const LEGACY_PROJECT_LIST_MAP = [
+        'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภา' => 'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ',
+    ];
+
     protected $fillable = [
         'project_code',
         'project_name_th',
@@ -66,6 +70,26 @@ class Project extends Model
         'strategy_5_2',
         'project_list'
     ];
+
+    public function getProjectListAttribute($value): ?string
+    {
+        return $this->normalizeProjectListValue($value);
+    }
+
+    public function setProjectListAttribute($value): void
+    {
+        $this->attributes['project_list'] = $this->normalizeProjectListValue($value);
+    }
+
+    private function normalizeProjectListValue($value): ?string
+    {
+        $normalized = trim((string) ($value ?? ''));
+        if ($normalized === '') {
+            return null;
+        }
+
+        return self::LEGACY_PROJECT_LIST_MAP[$normalized] ?? $normalized;
+    }
 
     /**
      * Use project_code as the primary route key for URL generation.

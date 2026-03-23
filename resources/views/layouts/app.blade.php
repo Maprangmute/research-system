@@ -761,8 +761,15 @@
             displayInput.type = 'text';
             displayInput.readOnly = true;
             displayInput.className = input.className;
+            displayInput.classList.remove('js-date-be', 'thai-datepicker', 'native-date-raw', 'flatpickr-hidden');
             displayInput.dataset.nativeDateDisplayFor = input.name || '';
             holder.appendChild(displayInput);
+        }
+
+        const placeholder = input.getAttribute('placeholder') || input.dataset.placeholder || '';
+        if (placeholder) {
+            displayInput.placeholder = placeholder;
+            displayInput.dataset.placeholder = placeholder;
         }
 
         input.type = 'hidden';
@@ -775,6 +782,8 @@
             displayInput.value = rawDate ? formatDateBELabel(rawDate) : '';
         };
         syncDisplay();
+        input.addEventListener('input', syncDisplay);
+        input.addEventListener('change', syncDisplay);
 
         const openWheel = () => {
             const picker = ensureThaiWheelPickerModal();
@@ -964,6 +973,7 @@
         };
 
         scope.querySelectorAll('.js-date-be').forEach(input => {
+            if (input.hasAttribute('data-native-date-display-for')) return;
             if (isProjectMobileWheelDateMode()) {
                 initNativeMobileDateInput(input);
                 return;
@@ -1121,6 +1131,7 @@
 
         // copy class
         inst.altInput.className = originalInput.className;
+        inst.altInput.classList.remove('js-date-be', 'thai-datepicker', 'native-date-raw', 'flatpickr-hidden');
 
         // placeholder
         const ph = originalInput.getAttribute('placeholder') || originalInput.dataset.placeholder;
@@ -1244,6 +1255,11 @@
         max-width: 100%;
         overflow-wrap: anywhere;
         margin-right: 0.75rem;
+        color: #0f172a;
+    }
+
+    .row-collapse-summary .summary-primary {
+        font-weight: 600;
         color: #0f172a;
     }
 
@@ -1467,7 +1483,7 @@
             pointer-events: none !important;
         }
 
-        .fte-table-wrap {
+        #fte-table-wrap {
             display: none;
             margin-bottom: 1rem;
             border: 1px solid #dbeafe;
@@ -1476,7 +1492,7 @@
             background: #ffffff;
         }
 
-        .fte-table-wrap.is-active {
+        #fte-table-wrap.is-active {
             display: block;
         }
 
@@ -1726,6 +1742,8 @@
                     if (altVal) return altVal;
                 }
                 if (el.tagName === 'SELECT') {
+                    const selectedValue = (el.value ?? '').toString().trim();
+                    if (!selectedValue) continue;
                     const text = el.options[el.selectedIndex]?.textContent?.trim();
                     if (text) return text;
                 }
@@ -1888,6 +1906,8 @@
                 if (altVal) return altVal;
             }
             if (el.tagName === 'SELECT') {
+                const selectedValue = (el.value ?? '').toString().trim();
+                if (!selectedValue) return '';
                 const text = el.options[el.selectedIndex]?.textContent?.trim();
                 if (text) return text;
             }
@@ -2133,6 +2153,10 @@
             const siblings = getSiblings(row);
             const index = Math.max(1, siblings.indexOf(row) + 1);
             const prefix = `#${index}`;
+            const filledOr = (value, fallback) => {
+                const text = (value ?? '').toString().trim();
+                return text && text !== '-' ? text : fallback;
+            };
 
             if (row.classList.contains('irb-row') || hasName(row, (n) => n.startsWith('irbs['))) {
                 let idx = getIndexFromId(row, 'irb');
@@ -2143,13 +2167,16 @@
                     });
                 }
                 const values = idx !== null ? getGroupValues(row, 'irbs', idx) : {};
-                const code = values.code || '-';
-                const source = values.source || '-';
-                const exp = getStrictDisplayedDateForNamedInput(row, 'input[name^="irbs["][name$="[exp_date]"]') ||
-                    (row.dataset.irbExpDisplay || '').trim() ||
-                    '-';
+                const code = filledOr(values.code, 'ยังไม่กรอกรหัส');
+                const source = filledOr(values.source, 'ยังไม่กรอกหน่วยงาน');
+                const exp = filledOr(
+                    getStrictDisplayedDateForNamedInput(row, 'input[name^="irbs["][name$="[exp_date]"]') ||
+                    (row.dataset.irbExpDisplay || '').trim(),
+                    'ยังไม่เลือกวันหมดอายุ'
+                );
                 summaryText.innerHTML = `
-        <span class="summary-chip">${prefix} • IRB รหัส ${code}</span>
+        <span class="summary-chip summary-primary">IRB ${prefix}</span>
+        <span class="summary-chip summary-muted">รหัส ${code}</span>
         <span class="summary-chip summary-muted">หน่วยงาน ${source}</span>
         <span class="summary-chip summary-muted">หมดอายุ ${exp}</span>
       `;
@@ -2165,10 +2192,11 @@
                     });
                 }
                 const values = idx !== null ? getGroupValues(row, 'copis', idx) : {};
-                const name = values.name || 'ไม่ระบุชื่อ';
-                const aff = values.affiliation || '-';
+                const name = filledOr(values.name, 'ยังไม่กรอกชื่อ');
+                const aff = filledOr(values.affiliation, 'ยังไม่กรอกสังกัด');
                 summaryText.innerHTML = `
-        <span class="summary-chip">${prefix} • COPI ชื่อ ${name}</span>
+        <span class="summary-chip summary-primary">COPI ${prefix}</span>
+        <span class="summary-chip summary-muted">ชื่อ ${name}</span>
         <span class="summary-chip summary-muted">สังกัด ${aff}</span>
       `;
                 return;
@@ -2183,67 +2211,87 @@
                     });
                 }
                 const values = idx !== null ? getGroupValues(row, 'coresearch', idx) : {};
-                const name = values.name || 'ไม่ระบุชื่อ';
-                const aff = values.affiliation || '-';
-                const status = values.unit_status || '-';
+                const name = filledOr(values.name, 'ยังไม่กรอกชื่อ');
+                const aff = filledOr(values.affiliation, 'ยังไม่กรอกสังกัด');
+                const status = filledOr(values.unit_status, 'ยังไม่เลือกสถานะ');
                 summaryText.innerHTML = `
-        <span class="summary-chip">${prefix} • ${name}</span>
-        <span class="summary-chip summary-muted">${aff}</span>
-        <span class="summary-chip summary-muted">${status}</span>
+        <span class="summary-chip summary-primary">Co-Researcher ${prefix}</span>
+        <span class="summary-chip summary-muted">ชื่อ ${name}</span>
+        <span class="summary-chip summary-muted">สังกัด ${aff}</span>
+        <span class="summary-chip summary-muted">สถานะ ${status}</span>
       `;
                 return;
             }
 
             if (row.classList.contains('fte-row') || hasName(row, (n) => n.startsWith('fte_roles['))) {
-                const name = getFieldValueByName(row, (n) => n.startsWith('fte_roles[') && n.endsWith('[name]')) ||
-                    'ไม่ระบุชื่อ';
+                const name = filledOr(
+                    getFieldValueByName(row, (n) => n.startsWith('fte_roles[') && n.endsWith('[name]')),
+                    'ยังไม่กรอกชื่อ'
+                );
                 const task = getFieldValueByName(row, (n) =>
                     n.startsWith('fte_roles[') && (n.endsWith('[job_detail]') || n.endsWith('[task_detail]'))
-                ) || 'ไม่ระบุภาระงาน';
+                );
                 const fte = getFieldValueByName(row, (n) =>
                     n.startsWith('fte_roles[') && (n.endsWith('[fte_value]') || n.endsWith('[fte]'))
                 );
-                const startText = getStrictDisplayedDateForNamedInput(row,
-                        'input[name^="fte_roles["][name$="[start_date]"]') ||
-                    (row.dataset.fteStartDisplay || '').trim() ||
-                    '-';
-                const endText = getStrictDisplayedDateForNamedInput(row,
-                        'input[name^="fte_roles["][name$="[end_date]"]') ||
-                    (row.dataset.fteEndDisplay || '').trim() ||
-                    '-';
-                const hasDate = (startText && startText !== '-') || (endText && endText !== '-');
-                const dateText = hasDate ? `${startText} ถึง ${endText}` : 'ยังไม่ระบุช่วงเวลา';
-                const fteText = fte ? `FTE ${fte}` : 'FTE -';
+                const startText = filledOr(
+                    getStrictDisplayedDateForNamedInput(row, 'input[name^="fte_roles["][name$="[start_date]"]') ||
+                    (row.dataset.fteStartDisplay || '').trim(),
+                    ''
+                );
+                const endText = filledOr(
+                    getStrictDisplayedDateForNamedInput(row, 'input[name^="fte_roles["][name$="[end_date]"]') ||
+                    (row.dataset.fteEndDisplay || '').trim(),
+                    ''
+                );
+                const hasDate = Boolean(startText || endText);
+                const dateText = hasDate ? `${startText || '-'} ถึง ${endText || '-'}` : 'ยังไม่เลือกช่วงเวลา';
+                const taskText = filledOr(task, 'ยังไม่เลือกภาระงาน');
+                const fteText = fte ? `FTE ${fte}` : 'FTE ยังไม่คำนวณ';
                 summaryText.innerHTML = `
-        <span class="summary-chip">${prefix} • ${name}</span>
-        <span class="summary-chip summary-muted">${task}</span>
-        <span class="summary-chip summary-muted">${dateText}</span>
+        <span class="summary-chip summary-primary">ผู้มีส่วนร่วม ${prefix}</span>
+        <span class="summary-chip summary-muted">ชื่อ ${name}</span>
+        <span class="summary-chip summary-muted">ภาระงาน ${taskText}</span>
+        <span class="summary-chip summary-muted">ช่วงเวลา ${dateText}</span>
         <span class="summary-chip summary-muted">${fteText}</span>
       `;
                 return;
             }
 
             if (row.classList.contains('output-row') || hasName(row, (n) => n.startsWith('outputs['))) {
-                const title = getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[title]')) ||
-                    'ไม่ระบุชื่อผลงาน';
-                const type = getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[type]')) ||
-                    '-';
-                const publish = getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[year]')) ||
-                    '-';
-                const projectOutput = getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith(
-                    '[project_output]')) || '';
+                const title = filledOr(
+                    getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[title]')),
+                    'ยังไม่กรอกชื่อผลงาน'
+                );
+                const type = filledOr(
+                    getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[type]')),
+                    'ยังไม่เลือกประเภท'
+                );
+                const publish = filledOr(
+                    getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[year]')),
+                    'ยังไม่เลือกวันที่ publish'
+                );
+                const projectOutput = filledOr(
+                    getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[project_output]')),
+                    ''
+                );
                 summaryText.innerHTML = `
-        <span class="summary-chip">${prefix} • ${title}</span>
-        <span class="summary-chip summary-muted">${type}${projectOutput ? ` • ${projectOutput}` : ''}</span>
-        <span class="summary-chip summary-muted">เผยแพร่ ${publish}</span>
+        <span class="summary-chip summary-primary">Output ${prefix}</span>
+        <span class="summary-chip summary-muted">ชื่อ ${title}</span>
+        <span class="summary-chip summary-muted">ประเภท ${type}${projectOutput ? ` • ${projectOutput}` : ''}</span>
+        <span class="summary-chip summary-muted">วันที่ publish ${publish}</span>
       `;
                 return;
             }
 
-            const name = getFieldValueByName(row, (n) => n.endsWith('[name]') || n.endsWith('[person_name]')) ||
-                'ไม่ระบุชื่อ';
-            const task = getFieldValueByName(row, (n) => n.endsWith('[job_detail]') || n.endsWith(
-                '[task_detail]')) || 'ไม่ระบุภาระงาน';
+            const name = filledOr(
+                getFieldValueByName(row, (n) => n.endsWith('[name]') || n.endsWith('[person_name]')),
+                'ยังไม่กรอกชื่อ'
+            );
+            const task = filledOr(
+                getFieldValueByName(row, (n) => n.endsWith('[job_detail]') || n.endsWith('[task_detail]')),
+                'ยังไม่เลือกภาระงาน'
+            );
             const start = getFieldValueByName(row, (n) => n.endsWith('[start_date]') || n.endsWith('[start]'));
             const end = getFieldValueByName(row, (n) => n.endsWith('[end_date]') || n.endsWith('[end]'));
             const startEl = getFieldElementByName(row, (n) => n.endsWith('[start_date]') || n.endsWith('[start]'));
@@ -2251,13 +2299,14 @@
             const fte = getFieldValueByName(row, (n) => n.endsWith('[fte_value]') || n.endsWith('[fte]'));
             const startText = normalizeSummaryDateForRowInput(startEl) || formatSummaryDateText(start) || '-';
             const endText = normalizeSummaryDateForRowInput(endEl) || formatSummaryDateText(end) || '-';
-            const dateText = (start || end) ? `${startText} ถึง ${endText}` : 'ยังไม่ระบุช่วงเวลา';
-            const fteText = fte ? `FTE ${fte}` : 'FTE -';
+            const dateText = (start || end) ? `${startText} ถึง ${endText}` : 'ยังไม่เลือกช่วงเวลา';
+            const fteText = fte ? `FTE ${fte}` : 'FTE ยังไม่คำนวณ';
 
             summaryText.innerHTML = `
-      <span class="summary-chip">${prefix} • ${name}</span>
-      <span class="summary-chip summary-muted">${task}</span>
-      <span class="summary-chip summary-muted">${dateText}</span>
+      <span class="summary-chip summary-primary">รายการ ${prefix}</span>
+      <span class="summary-chip summary-muted">ชื่อ ${name}</span>
+      <span class="summary-chip summary-muted">ภาระงาน ${task}</span>
+      <span class="summary-chip summary-muted">ช่วงเวลา ${dateText}</span>
       <span class="summary-chip summary-muted">${fteText}</span>
     `;
         }
@@ -2393,6 +2442,123 @@
             }
         }
 
+        window.confirmProjectRowRemoval = confirmRemove;
+
+        function getRowRemovalAnchor(row) {
+            if (!row) return null;
+
+            const nextSibling = row.nextElementSibling;
+            if (nextSibling instanceof HTMLElement) return nextSibling;
+
+            const prevSibling = row.previousElementSibling;
+            if (prevSibling instanceof HTMLElement) return prevSibling;
+
+            const repeatable = row.closest?.('[data-repeatable]');
+            if (repeatable instanceof HTMLElement) {
+                const addBtn = repeatable.querySelector(
+                    `[data-repeatable-add="${repeatable.dataset.id || ''}"]`
+                );
+                if (addBtn instanceof HTMLElement) return addBtn;
+            }
+
+            const parent = row.parentElement;
+            if (!parent) return null;
+
+            const nextAfterParent = parent.nextElementSibling;
+            if (nextAfterParent instanceof HTMLElement) return nextAfterParent;
+
+            return parent instanceof HTMLElement ? parent : null;
+        }
+
+        function findPreviousSectionHeading(startNode) {
+            let node = startNode;
+
+            while (node && node !== document.body) {
+                let sibling = node.previousElementSibling;
+
+                while (sibling) {
+                    if (sibling instanceof HTMLElement) {
+                        if (sibling.matches('h2, h3, h4')) return sibling;
+
+                        const nestedHeading = sibling.querySelector('h2, h3, h4');
+                        if (nestedHeading instanceof HTMLElement) return nestedHeading;
+                    }
+
+                    sibling = sibling.previousElementSibling;
+                }
+
+                node = node.parentElement;
+            }
+
+            return null;
+        }
+
+        function getRowSectionHeading(row) {
+            if (!row || row.matches?.('.author-row, .conference-row')) return null;
+
+            const sectionRoot = row.closest?.(
+                '[data-repeatable], #irb-code-container, #copi-container, #coresearch-container, #fte-container, #output-container'
+            );
+
+            return findPreviousSectionHeading(sectionRoot || row);
+        }
+
+        function getMobileScrollOffset() {
+            const mainNav = document.getElementById('main-nav');
+            const navHeight = mainNav instanceof HTMLElement ? mainNav.getBoundingClientRect().height : 0;
+            return Math.max(navHeight + 28, Math.round(window.innerHeight * 0.25));
+        }
+
+        function removeRowWithMobileScroll(rowOrId, commitRemoval) {
+            const row = typeof rowOrId === 'string' ? document.getElementById(rowOrId) : rowOrId;
+            if (!row || typeof commitRemoval !== 'function') return;
+
+            if (!isMobileViewport()) {
+                commitRemoval();
+                return;
+            }
+
+            const rowRect = row.getBoundingClientRect();
+            const targetTop = Math.max(16, Math.min(rowRect.top, window.innerHeight - 120));
+            const anchor = getRowRemovalAnchor(row);
+            const sectionHeading = getRowSectionHeading(row);
+
+            commitRemoval();
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (sectionHeading instanceof HTMLElement && sectionHeading.isConnected) {
+                        const offset = getMobileScrollOffset();
+                        const nextTop = Math.max(
+                            0,
+                            window.scrollY + sectionHeading.getBoundingClientRect().top - offset
+                        );
+
+                        window.scrollTo({
+                            top: nextTop,
+                            left: 0,
+                            behavior: 'auto'
+                        });
+                        return;
+                    }
+
+                    const liveAnchor = anchor instanceof HTMLElement && anchor.isConnected ? anchor : null;
+                    if (!liveAnchor) return;
+
+                    const delta = liveAnchor.getBoundingClientRect().top - targetTop;
+                    if (Math.abs(delta) < 2) return;
+
+                    window.scrollBy({
+                        top: delta,
+                        left: 0,
+                        behavior: 'auto'
+                    });
+                });
+            });
+        }
+
+        window.removeProjectRowWithScroll = removeRowWithMobileScroll;
+
         function bindRemove(row) {
             row.querySelectorAll('[data-repeatable-remove]').forEach(btn => {
                 const currentText = (btn.textContent || '').trim();
@@ -2407,8 +2573,10 @@
                     const container = document.getElementById(group.dataset.container);
 
                     confirmRemove(() => {
-                        row.remove();
-                        updateIndex(container);
+                        removeRowWithMobileScroll(row, () => {
+                            row.remove();
+                            updateIndex(container);
+                        });
                     });
                 };
             });

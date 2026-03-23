@@ -248,14 +248,59 @@
             $statusText = $status !== '-' ? $status : 'ไม่ระบุสถานะ';
             $bgClass = $statusBg[$status] ?? 'bg-gray-200';
             $formatDateBE = function ($value) {
-                if (!$value) {
+                $raw = trim((string) ($value ?? ''));
+                if ($raw === '') {
                     return '-';
                 }
+
+                $raw = preg_replace_callback('/[๐-๙]/u', static fn ($m) => (string) mb_strpos('๐๑๒๓๔๕๖๗๘๙', $m[0]), $raw);
+                $raw = preg_replace('/\s+/u', ' ', $raw);
+
+                $formatCarbon = static function (\Carbon\Carbon $date) {
+                    $date = $date->copy()->locale('th');
+                    return $date->translatedFormat('j F') . ' ' . ($date->year + 543);
+                };
+
+                foreach (['Y-m-d', 'd-m-Y', 'd/m/Y', 'Y/m/d'] as $format) {
+                    try {
+                        return $formatCarbon(\Carbon\Carbon::createFromFormat($format, $raw));
+                    } catch (\Throwable $e) {
+                    }
+                }
+
+                if (preg_match('/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/u', $raw, $m)) {
+                    $monthMap = [
+                        'มกราคม' => 1, 'ม.ค.' => 1, 'ม.ค' => 1,
+                        'กุมภาพันธ์' => 2, 'ก.พ.' => 2, 'ก.พ' => 2,
+                        'มีนาคม' => 3, 'มี.ค.' => 3, 'มี.ค' => 3,
+                        'เมษายน' => 4, 'เม.ย.' => 4, 'เม.ย' => 4,
+                        'พฤษภาคม' => 5, 'พ.ค.' => 5, 'พ.ค' => 5,
+                        'มิถุนายน' => 6, 'มิ.ย.' => 6, 'มิ.ย' => 6,
+                        'กรกฎาคม' => 7, 'ก.ค.' => 7, 'ก.ค' => 7,
+                        'สิงหาคม' => 8, 'ส.ค.' => 8, 'ส.ค' => 8,
+                        'กันยายน' => 9, 'ก.ย.' => 9, 'ก.ย' => 9,
+                        'ตุลาคม' => 10, 'ต.ค.' => 10, 'ต.ค' => 10,
+                        'พฤศจิกายน' => 11, 'พ.ย.' => 11, 'พ.ย' => 11,
+                        'ธันวาคม' => 12, 'ธ.ค.' => 12, 'ธ.ค' => 12,
+                    ];
+                    $day = (int) $m[1];
+                    $month = $monthMap[$m[2]] ?? null;
+                    $year = (int) $m[3];
+                    if ($year > 2400) {
+                        $year -= 543;
+                    }
+                    if ($month) {
+                        try {
+                            return $formatCarbon(\Carbon\Carbon::create($year, $month, $day, 0, 0, 0));
+                        } catch (\Throwable $e) {
+                        }
+                    }
+                }
+
                 try {
-                    $d = \Carbon\Carbon::parse($value)->locale('th');
-                    return $d->translatedFormat('j F') . ' ' . ($d->year + 543);
-                } catch (\Exception $e) {
-                    return $value ?: '-';
+                    return $formatCarbon(\Carbon\Carbon::parse($raw));
+                } catch (\Throwable $e) {
+                    return $raw;
                 }
             };
         @endphp

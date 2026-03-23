@@ -277,7 +277,7 @@
                         oninput="this.setCustomValidity('')">
                         <option value="">-- เลือกประเภทลักษณะ --</option>
                         <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ"
-                            {{ old('project_list', $project->project_list) == 'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ' ? 'selected' : '' }}>
+                            {{ in_array(old('project_list', $project->project_list), ['โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ', 'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภา'], true) ? 'selected' : '' }}>
                             โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
                         </option>
                         <option value="โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ"
@@ -399,117 +399,29 @@
 
             <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">B: ระยะเวลาดำเนินโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่โครงการเริ่ม (ทีม)</span>
+                <x-date-be name="team_start_date" label="วันที่โครงการเริ่ม (ทีม)"
+                    value="{{ old('team_start_date', $project->team_start_date) }}"
+                    placeholder="กรุณาเลือกวันที่เริ่มงานของทีม" />
 
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+                <x-date-be name="team_end_date" label="วันที่สิ้นสุดทำ (ทีม)"
+                    value="{{ old('team_end_date', $project->team_end_date) }}"
+                    placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม" />
 
-                        <!-- Input -->
-                        <input name="team_start_date" value="{{ old('team_start_date', $project->team_start_date) }}"
-                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่เริ่มงานของทีม">
-                    </div>
-                </label>
+                <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal (เดือน/ปี)"
+                    value="{{ old('proposal_date', $project->proposal_date) }}"
+                    placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal" />
 
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดทำ (ทีม)</span>
+                <x-date-be name="contract_date" label="BC101 - วันที่สัญญาอนุมัติ"
+                    value="{{ old('contract_date', $project->contract_date) }}"
+                    placeholder="กรุณาเลือกวันที่อนุมัติสัญญา" />
 
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+                <x-date-be name="start_date" label="BC102 - วันที่โครงการเริ่ม (ตามสัญญา)"
+                    value="{{ old('start_date', $project->start_date) }}"
+                    placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
-                        <!-- ช่องกรอกวันที่ -->
-                        <input name="team_end_date" value="{{ old('team_end_date', $project->team_end_date) }}"
-                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม">
-                    </div>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BA001 - วันที่เริ่มเขียน Proposal (เดือน/ปี)</span>
-
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-
-                        <!-- ช่องกรอก -->
-                        <input name="proposal_date" value="{{ old('proposal_date', $project->proposal_date) }}"
-                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal">
-                    </div>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BC101 - วันที่สัญญาอนุมัติ</span>
-
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-
-                        <!-- ช่องกรอก -->
-                        <input name="contract_date" value="{{ old('contract_date', $project->contract_date) }}"
-                            type="text" class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่อนุมัติสัญญา">
-                    </div>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">BC102 - วันที่โครงการเริ่ม (ตามสัญญา)</span>
-
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-
-                        <!-- ช่องกรอก -->
-                        <input name="start_date" value="{{ old('start_date', $project->start_date) }}" type="text"
-                            class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา">
-                    </div>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด (ตามสัญญา)</span>
-
-                    <div class="relative">
-                        <!-- ไอคอนปฏิทิน -->
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-
-                        <!-- ช่องกรอกวันที่ -->
-                        <input name="end_date" value="{{ old('end_date', $project->end_date) }}" type="text"
-                            class="thai-datepicker w-full border p-2 rounded pl-10"
-                            placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
-                    </div>
-                </label>
+                <x-date-be name="end_date" label="วันที่สิ้นสุด (ตามสัญญา)"
+                    value="{{ old('end_date', $project->end_date) }}"
+                    placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา" />
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">Project Status <span class="text-red-500">*</span></span>
@@ -2676,18 +2588,6 @@ console.log('[FTE AUTO] after=', fteField.value);
         }
 
         function bindProjectDatePairsThaiPicker() {
-            bindEndDateMinThaiPicker(
-                document.querySelector('input[name="team_start_date"]'),
-                document.querySelector('input[name="team_end_date"]'),
-                'team'
-            );
-
-            bindEndDateMinThaiPicker(
-                document.querySelector('input[name="start_date"]'),
-                document.querySelector('input[name="end_date"]'),
-                'contract'
-            );
-
             document.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
                 const endName = startInput.name.replace('[start_date]', '[end_date]');
                 const endInput = document.querySelector(`input[name="${endName}"]`);
@@ -2744,6 +2644,8 @@ console.log('[FTE AUTO] after=', fteField.value);
                         if (altInput) {
                             altInput.readOnly = true;
                             altInput.className = input.className;
+                            altInput.classList.remove('js-date-be', 'thai-datepicker', 'native-date-raw', 'flatpickr-hidden');
+                            altInput.placeholder = input.getAttribute('placeholder') || input.dataset.placeholder || '';
                         }
                         input.classList.add('flatpickr-hidden');
                         input.setAttribute('aria-hidden', 'true');

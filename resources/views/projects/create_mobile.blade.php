@@ -65,6 +65,7 @@
 
 <script>
     window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
+    window.enableRowCollapseSummaryOnMobile = true;
     window.PROJECT_CARD_DATE_MODE = 'create';
     window.PROJECT_MOBILE_WHEEL_DATE = true;
 </script>
@@ -316,7 +317,7 @@
                         oninvalid="this.setCustomValidity('กรุณาเลือกลักษณะโครงการ')"
                         oninput="this.setCustomValidity('')">
                         <option value="">-- เลือกประเภทลักษณะ --</option>
-                        <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภา">
+                        <option value="โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ">
                             โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
                         <option value="โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ">โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ</option>
                         <option value="โครงการวิจัยนอกคณะ">โครงการวิจัยนอกคณะ</option>
@@ -481,33 +482,37 @@
 
                 {{-- template --}}
                 <x-slot:template>
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
+                    <div class="space-y-3 p-4 border rounded-lg bg-white" data-repeatable-row>
 
-                        <div class="col-span-12 md:col-span-1 text-center">
-                            <span data-repeatable-index
-                                class="inline-flex w-8 h-8 items-center justify-center
-                           rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
-                                #
-                            </span>
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <span data-repeatable-index
+                                    class="inline-flex w-8 h-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+                                    #
+                                </span>
+                                <span class="text-sm font-semibold text-slate-700">IRB</span>
+                            </div>
+                            <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
                         </div>
 
-                        <div class="col-span-12 md:col-span-3">
-                            <label class="text-sm">รหัส IRB <span class="text-red-500">*</span></label>
-                            <input name="irbs[__i__][code]" class="w-full border p-2 rounded" required
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <div class="col-span-12 md:col-span-4">
+                                <label class="text-sm">รหัส IRB <span class="text-red-500">*</span></label>
+                                <input name="irbs[__i__][code]" class="w-full border p-2 rounded" placeholder="เช่น SIHP-IRB-2025-001" required
                                 oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
                                 oninput="this.setCustomValidity('')">
-                        </div>
+                            </div>
 
-                        <div class="col-span-12 md:col-span-3">
-                            <label class="text-sm">หน่วยงาน <span class="text-red-500">*</span></label>
-                            <input name="irbs[__i__][source]" list="irbSourceList" class="w-full border p-2 rounded" required
+                            <div class="col-span-12 md:col-span-4">
+                                <label class="text-sm">หน่วยงาน <span class="text-red-500">*</span></label>
+                                <input name="irbs[__i__][source]" list="irbSourceList" class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงานที่ออก IRB" required
                                 oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
                                 oninput="this.setCustomValidity('')">
-                        </div>
+                            </div>
 
-                        <div class="col-span-12 md:col-span-5 flex flex-col sm:flex-row gap-2 items-end">
-                            <x-date-be name="irbs[__i__][exp_date]" label="วันหมดอายุ IRB" required />
-                            <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
+                            <div class="col-span-12 md:col-span-4">
+                                <x-date-be name="irbs[__i__][exp_date]" label="วันหมดอายุ IRB" placeholder="เลือกวันหมดอายุ IRB" required />
+                            </div>
                         </div>
                     </div>
                 </x-slot:template>
@@ -726,17 +731,18 @@
                 {{-- ================== TEMPLATE ================== --}}
                 <x-slot:template>
                     <div class="fte-row p-4 border rounded-lg bg-white shadow-sm" data-repeatable-row>
-
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-
-                            <div class="md:col-span-1 flex justify-center pt-2">
+                        <div class="flex items-center justify-between gap-3 mb-4">
+                            <div class="flex items-center gap-3">
                                 <span data-repeatable-index
-                                    class="inline-flex w-8 h-8 items-center justify-center
-                        rounded-full bg-blue-100 text-blue-700
-                        text-sm font-semibold">
+                                    class="inline-flex w-8 h-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
                                     #
                                 </span>
+                                <span class="text-sm font-semibold text-slate-700">ผู้มีส่วนร่วม</span>
                             </div>
+                            <button type="button" class="text-red-600" data-repeatable-remove>✕</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
                             <div class="md:col-span-8 space-y-4">
 
@@ -746,7 +752,7 @@
                                             ชื่อ-นามสกุล <span class="text-red-500">*</span>
                                         </span>
                                         <input list="fteUsers" name="fte_roles[__i__][name]"
-                                            class="w-full border p-2 rounded" required>
+                                            class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required>
                                     </label>
 
                                     <label>
@@ -778,8 +784,8 @@
                                         </select>
                                     </label>
 
-                                    <x-date-be name="fte_roles[__i__][start_date]" label="วันเริ่มต้นภาระงาน" required />
-                                    <x-date-be name="fte_roles[__i__][end_date]" label="วันสิ้นสุดภาระงาน" required />
+                                    <x-date-be name="fte_roles[__i__][start_date]" label="วันเริ่มต้นภาระงาน" placeholder="เลือกวันเริ่มต้นภาระงาน" required />
+                                    <x-date-be name="fte_roles[__i__][end_date]" label="วันสิ้นสุดภาระงาน" placeholder="เลือกวันสิ้นสุดภาระงาน" required />
                                 </div>
 
                                 <label>
@@ -787,7 +793,7 @@
                                         ชั่วโมงการทำงาน (Hour)
                                     </span>
                                     <input name="fte_roles[__i__][hours]" type="number" step="0.1" min="0"
-                                        class="fte-hours w-full border p-2 rounded text-right" required
+                                        class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0" required
                                         oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
                                         oninput="this.setCustomValidity('')">
                                 </label>
@@ -806,7 +812,7 @@
                                 </label>
                             </div>
 
-                            <div class="md:col-span-3 space-y-4">
+                            <div class="md:col-span-4 space-y-4">
                                 <label class="block p-4 border rounded-xl bg-blue-50">
                                     <span class="block text-sm font-bold text-blue-800 mb-2">
                                         FTE (คำนวณอัตโนมัติ)
@@ -822,11 +828,6 @@
                                     <input name="fte_roles[__i__][fte_value_research]" type="number" step="0.01" placeholder="0.00"
                                         min="0" max="1" class="w-full border p-3 rounded text-right">
                                 </label>
-
-                                <button type="button" class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50"
-                                    data-repeatable-remove>
-                                    ✕ ลบผู้มีส่วนร่วมนี้
-                                </button>
                             </div>
 
                         </div>
@@ -859,10 +860,10 @@
 
                         <label>
                             <span class="text-sm">ชื่อผลงาน <span class="text-red-500">*</span></span>
-                            <input name="outputs[__i__][title]" class="w-full border p-2 rounded" required>
+                            <input name="outputs[__i__][title]" class="w-full border p-2 rounded" placeholder="ระบุชื่อผลงาน" required>
                         </label>
 
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <label>
                                 <span class="text-sm">ประเภท <span class="text-red-500">*</span></span>
                                 <select name="outputs[__i__][type]" class="output-type w-full border p-2 rounded"
@@ -891,10 +892,10 @@
 
                             <label>
                                 <span class="text-sm">หมายเหตุ</span>
-                                <input name="outputs[__i__][project_output]" class="w-full border p-2 rounded">
+                                <input name="outputs[__i__][project_output]" class="w-full border p-2 rounded" placeholder="เช่น ตีพิมพ์แล้ว / ลิงก์ / รายละเอียดเพิ่มเติม">
                             </label>
 
-                            <x-date-be name="outputs[__i__][year]" label="วันที่ publish" required />
+                            <x-date-be name="outputs[__i__][year]" label="วันที่ publish" placeholder="เลือกวันที่ publish" required />
                         </div>
 
                         <div class="special-mount mt-3"></div>
@@ -1042,11 +1043,33 @@
                 input.value = input.value.replace(/,/g, '');
             });
         }
+        function confirmProjectMobileRemoval(callback) {
+            if (typeof window.confirmProjectRowRemoval === 'function') {
+                window.confirmProjectRowRemoval(callback);
+                return;
+            }
+            callback();
+        }
+
+        function reindexAuthorRows(container) {
+            container?.querySelectorAll('.author-row').forEach((row, index) => {
+                row.querySelectorAll('.author-index').forEach((el) => {
+                    el.textContent = index + 1;
+                });
+            });
+        }
+
+        function reindexConferenceRows(container) {
+            container?.querySelectorAll('.conference-row').forEach((row, index) => {
+                row.querySelectorAll('.conference-index').forEach((el) => {
+                    el.textContent = index + 1;
+                });
+            });
+        }
+
         // ✅ REMOVE & REINDEX
         function removeRow(id, type) {
             const el = document.getElementById(id);
-            if (el) el.remove();
-
             const map = {
                 fte: reindexFTE,
                 copi: reindexCopi,
@@ -1054,7 +1077,19 @@
                 output: reindexOutput,
                 coresearch: reindexCoResearch
             };
-            map[type]?.();
+            const finalizeRemoval = () => {
+                el?.remove();
+                map[type]?.();
+            };
+
+            confirmProjectMobileRemoval(() => {
+                if (el && typeof window.removeProjectRowWithScroll === 'function') {
+                    window.removeProjectRowWithScroll(el, finalizeRemoval);
+                    return;
+                }
+
+                finalizeRemoval();
+            });
         }
 
 
@@ -1102,9 +1137,9 @@
         /** ===== EA101 Section (Authors) ===== */
         function renderEA101Section(idx) {
             const wrap = document.createElement('div');
-            wrap.className = 'ea101-section space-y-3 border rounded-xl p-4 bg-blue-50/50';
+            wrap.className = 'ea101-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4';
             wrap.innerHTML = `
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <label class="w-full">
         <span class="block text-sm text-gray-700 mb-1">Journal</span>
         <input name="outputs[${idx}][journal]" type="text" class="w-full border p-2 rounded" placeholder="เช่น IEEE Access">
@@ -1127,17 +1162,18 @@
       </label>
     </div>
 
-    <div class="space-y-2">
-      <div class="flex items-center justify-between">
-        <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
-        <button type="button" class="px-3 py-1 rounded bg-blue-600 text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+    <div class="space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <span class="font-semibold text-slate-800">รายชื่อผู้เขียน (Authors)</span>
+        <button type="button" class="add-author-btn whitespace-nowrap px-3 py-2 rounded-lg bg-blue-600 text-sm font-semibold text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
       </div>
-      <div class="authors-container space-y-2" data-auth-index="0"></div>
+      <div class="authors-container space-y-3" data-auth-index="0"></div>
     </div>
   `;
 
             const authorsWrap = wrap.querySelector('.authors-container');
             authorsWrap.appendChild(buildAuthorRow(idx, 0));
+            reindexAuthorRows(authorsWrap);
 
             return wrap;
         }
@@ -1153,35 +1189,41 @@
             authorsWrap.setAttribute('data-auth-index', aIdx);
 
             authorsWrap.appendChild(buildAuthorRow(idx, aIdx));
+            reindexAuthorRows(authorsWrap);
         }
 
         function buildAuthorRow(outputIdx, authorIdx) {
             const row = document.createElement('div');
-            row.className = 'author-row grid grid-cols-1 md:grid-cols-3 gap-3';
+            row.className = 'author-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3';
             row.innerHTML = `
-    <label class="w-full">
-      <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน (Role)</span>
-      <select name="outputs[${outputIdx}][authors][${authorIdx}][role]" class="w-full border p-2 rounded" required
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="author-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-100 px-2 text-xs font-bold text-blue-700"></span>
+        <span class="text-sm font-semibold text-slate-700">ผู้เขียน</span>
+      </div>
+      <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeAuthorRow(this)">ลบ</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน (Role)</span>
+        <select name="outputs[${outputIdx}][authors][${authorIdx}][role]" class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
-        <option value=""  >เลือกบทบาท</option>
-        <option value="first">First-author</option>
-        <option value="co">Co-author</option>
-        <option value="corresponding">Corresponding author</option>
-      </select>
-    </label>
+          <option value=""  >เลือกบทบาท</option>
+          <option value="first">First-author</option>
+          <option value="co">Co-author</option>
+          <option value="corresponding">Corresponding author</option>
+        </select>
+      </label>
 
-    <label class="w-full">
-      <span class="block text-sm text-gray-700 mb-1">ชื่อ-สกุล ผู้เขียน</span>
-      <input name="outputs[${outputIdx}][authors][${authorIdx}][name]" list="userNames" type="text"
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">ชื่อ-สกุล ผู้เขียน</span>
+        <input name="outputs[${outputIdx}][authors][${authorIdx}][name]" list="userNames" type="text"
              class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
              placeholder="คำนำหน้า ชื่อ-นามสกุล" required
                                     oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
-    </label>
-
-    <div class="flex items-end">
-      <button type="button" class="px-3 py-2 rounded border text-red-600 border-red-300" onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
+      </label>
     </div>
   `;
             return row;
@@ -1189,37 +1231,28 @@
 
         function removeAuthorRow(btnEl) {
             const row = btnEl.closest('.author-row');
-            if (row) row.remove();
+            const authorsWrap = row?.parentElement;
+            confirmProjectMobileRemoval(() => {
+                row?.remove();
+                reindexAuthorRows(authorsWrap);
+            });
         }
 
         /** ===== EA103 Section (Conferences) ===== */
         function renderEA103Section(idx) {
             const wrap = document.createElement('div');
-            wrap.className = 'ea103-section space-y-3 border rounded-xl p-4 bg-amber-50/60';
+            wrap.className = 'ea103-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4';
             wrap.innerHTML = `
-    <div class="flex items-center justify-between">
-      <span class="font-semibold text-amber-800">Conferences</span>
-      <button type="button" class="px-3 py-1 rounded bg-amber-600 text-white" onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <span class="font-semibold text-slate-800">Conferences</span>
+      <button type="button" class="add-conf-btn whitespace-nowrap px-3 py-2 rounded-lg bg-amber-600 text-sm font-semibold text-white" onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
     </div>
-
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm border">
-        <thead class="bg-amber-100">
-          <tr>
-            <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
-            <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
-            <th class="px-2 py-2 text-left">สถานที่</th>
-            <th class="px-2 py-2 text-left">หมายเหตุ</th>
-            <th class="px-2 py-2 text-center">ลบ</th>
-          </tr>
-        </thead>
-        <tbody class="conference-tbody" data-conf-index="0"></tbody>
-      </table>
-    </div>
+    <div class="conference-tbody space-y-3" data-conf-index="0"></div>
   `;
 
             const tbody = wrap.querySelector('.conference-tbody');
             tbody.appendChild(buildConferenceRow(idx, 0));
+            reindexConferenceRows(tbody);
 
             return wrap;
         }
@@ -1235,40 +1268,55 @@
             tbody.setAttribute('data-conf-index', cIdx);
 
             tbody.appendChild(buildConferenceRow(idx, cIdx));
+            reindexConferenceRows(tbody);
         }
 
         function buildConferenceRow(outputIdx, cIdx) {
-            const tr = document.createElement('tr');
-            tr.className = 'border-t conference-row';
-            tr.innerHTML = `
-    <td class="px-2 py-2">
-      <input name="outputs[${outputIdx}][conferences][${cIdx}][name]" class="w-56 border p-2 rounded" placeholder="เช่น PMAC 2025">
-    </td>
-    <td class="px-2 py-2">
-      <select name="outputs[${outputIdx}][conferences][${cIdx}][presentation_type]" class="w-44 border p-2 rounded">
-        <option value="">เลือก</option>
-        <option value="Oral">Oral</option>
-        <option value="Poster">Poster</option>
-        <option value="Panel">Panel</option>
-        <option value="Invited Talk">Invited Talk</option>
-      </select>
-    </td>
-    <td class="px-2 py-2">
-      <input name="outputs[${outputIdx}][conferences][${cIdx}][location]" class="w-44 border p-2 rounded" placeholder="เมือง/ประเทศ">
-    </td>
-    <td class="px-2 py-2">
-      <input name="outputs[${outputIdx}][conferences][${cIdx}][note]" class="w-56 border p-2 rounded" placeholder="หมายเหตุ">
-    </td>
-    <td class="px-2 py-2 text-center">
-      <button type="button" class="px-2 py-1 text-red-600 border border-red-300 rounded" onclick="removeConferenceRow(this)">ลบ</button>
-    </td>
+            const row = document.createElement('div');
+            row.className = 'conference-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3';
+            row.innerHTML = `
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="conference-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-700"></span>
+        <span class="text-sm font-semibold text-slate-700">Conference</span>
+      </div>
+      <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeConferenceRow(this)">ลบ</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
+        <input name="outputs[${outputIdx}][conferences][${cIdx}][name]" class="w-full border p-2 rounded" placeholder="เช่น PMAC 2025">
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
+        <select name="outputs[${outputIdx}][conferences][${cIdx}][presentation_type]" class="w-full border p-2 rounded">
+          <option value="">เลือก</option>
+          <option value="Oral">Oral</option>
+          <option value="Poster">Poster</option>
+          <option value="Panel">Panel</option>
+          <option value="Invited Talk">Invited Talk</option>
+        </select>
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
+        <input name="outputs[${outputIdx}][conferences][${cIdx}][location]" class="w-full border p-2 rounded" placeholder="เมือง/ประเทศ">
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">หมายเหตุ</span>
+        <input name="outputs[${outputIdx}][conferences][${cIdx}][note]" class="w-full border p-2 rounded" placeholder="หมายเหตุเพิ่มเติม">
+      </label>
+    </div>
   `;
-            return tr;
+            return row;
         }
 
         function removeConferenceRow(btn) {
-            const tr = btn.closest('tr.conference-row');
-            if (tr) tr.remove();
+            const row = btn.closest('.conference-row');
+            const container = row?.parentElement;
+            confirmProjectMobileRemoval(() => {
+                row?.remove();
+                reindexConferenceRows(container);
+            });
         }
 
         /** ===== util reindex ===== */

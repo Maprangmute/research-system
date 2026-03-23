@@ -667,8 +667,8 @@ public function store(Request $request)
             'funding_name' => 'nullable|string',
             'budget' => 'nullable|numeric|min:0',
             'start_year' => 'nullable|string',
-            'team_start_date' => 'nullable|date',
-            'team_end_date' => 'nullable|date',
+            'team_start_date' => 'nullable|string',
+            'team_end_date' => 'nullable|string',
             'pi_name' => 'nullable|string',
             'pi_affiliation' => 'nullable|string',
             'planning_status' => 'required|string',
@@ -704,6 +704,43 @@ public function store(Request $request)
         $this->validateInputCapacity($request);
         $this->validateRequiredFteFields($request);
         $this->validateNoPastProjectDates($request);
+
+        return $this->normalizeValidatedProjectDates($validated, $request);
+    }
+
+    private function normalizeValidatedProjectDates(array $validated, Request $request): array
+    {
+        $dateFields = [
+            'team_start_date' => 'วันที่โครงการเริ่มทำงานของทีมวิจัย',
+            'team_end_date' => 'วันที่สิ้นสุดการทำงานของทีมวิจัย',
+            'proposal_date' => 'BA001 - วันที่เริ่มเขียน Proposal',
+            'contract_date' => 'BC101 - วันที่สัญญาอนุมัติ',
+            'start_date' => 'BC102 - วันที่โครงการเริ่ม (ตามสัญญา)',
+            'end_date' => 'BC103 - วันที่สิ้นสุด (ตามสัญญา)',
+        ];
+
+        $errors = [];
+
+        foreach ($dateFields as $field => $label) {
+            $raw = trim((string) $request->input($field, ''));
+
+            if ($raw === '') {
+                $validated[$field] = null;
+                continue;
+            }
+
+            $parsed = $this->parseProjectDateInput($raw);
+            if (! $parsed) {
+                $errors[$field] = "{$label} รูปแบบวันที่ไม่ถูกต้อง";
+                continue;
+            }
+
+            $validated[$field] = $parsed->format('d-m-Y');
+        }
+
+        if (! empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
 
         return $validated;
     }

@@ -21,8 +21,8 @@ public function index(Request $request)
     $user = Auth::user();
     $fullName = trim($user->prefix . ' ' . $user->name);
 
-    $mode   = $request->input('mode', 'month');
-    $year   = $request->input('year');
+    $modeInput = trim((string) $request->input('mode', ''));
+    $yearInput = $request->input('year');
     $person = $request->input('person');
     $start  = $request->input('start');
     $end    = $request->input('end');
@@ -75,6 +75,37 @@ public function index(Request $request)
                 });
         });
     }
+
+    $fteYears = FteRole::query()
+        ->whereIn('project_id', $projectIds)
+        ->selectRaw('DISTINCT RIGHT(start_date,4) AS year')
+        ->pluck('year');
+
+    $backOfficeYearsQuery = BackOfficeTask::query();
+    if ($user->role !== 'admin') {
+        $backOfficeYearsQuery->where(function ($q) use ($fullName, $user) {
+            $q->where('created_by', $user->id)
+                ->orWhereHas('entries', function ($entryQ) use ($fullName) {
+                    $entryQ->where('person_name', $fullName);
+                });
+        });
+    }
+    $backOfficeYears = $backOfficeYearsQuery
+        ->selectRaw('DISTINCT RIGHT(start_date,4) AS year')
+        ->pluck('year');
+
+    $availableYears = $fteYears
+        ->merge($backOfficeYears)
+        ->filter()
+        ->map(fn($y) => (int) $y)
+        ->filter()
+        ->unique()
+        ->sortDesc()
+        ->values();
+
+    $defaultYearBE = $availableYears->isNotEmpty() ? $availableYears->first() + 543 : now()->year + 543;
+    $mode = $modeInput !== '' ? $modeInput : ($availableYears->isNotEmpty() ? 'year' : 'month');
+    $year = filled($yearInput) ? $yearInput : ($mode === 'year' ? $defaultYearBE : null);
 
     // ========== FILTER ==========
     $filterFrom = null;
@@ -279,30 +310,7 @@ public function index(Request $request)
         ];
     })->sortByDesc('total_fte')->values();
 
-    // years
-    $years = FteRole::selectRaw('DISTINCT RIGHT(start_date,4) AS year')
-        ->orderByDesc('year')
-        ->pluck('year');
-
-    $backOfficeYearsQuery = BackOfficeTask::query();
-    if ($user->role !== 'admin') {
-        $backOfficeYearsQuery->where(function ($q) use ($fullName, $user) {
-            $q->where('created_by', $user->id)
-                ->orWhereHas('entries', function ($entryQ) use ($fullName) {
-                    $entryQ->where('person_name', $fullName);
-                });
-        });
-    }
-    $backOfficeYears = $backOfficeYearsQuery
-        ->selectRaw('DISTINCT RIGHT(start_date,4) AS year')
-        ->pluck('year');
-
-    $years = $years
-        ->merge($backOfficeYears)
-        ->filter()
-        ->unique()
-        ->sortDesc()
-        ->map(fn($y) => (int)$y + 543);
+    $years = $availableYears->map(fn($y) => $y + 543);
 
     $viewData = [
         'fteSummary' => $fteSummary,
@@ -310,7 +318,7 @@ public function index(Request $request)
         'monthlyFTE' => $monthlyFTE,
         'profiles'   => $profiles,
         'mode'       => $mode,
-        'year'       => $request->input('year'),
+        'year'       => $year,
         'person'     => $person,
         'start'      => $start,
         'end'        => $end,
@@ -331,8 +339,8 @@ public function projectIndex(Request $request)
     $user = Auth::user();
     $fullName = trim($user->prefix . ' ' . $user->name);
 
-    $mode = $request->input('mode', 'month');
-    $year = $request->input('year');
+    $modeInput = trim((string) $request->input('mode', ''));
+    $yearInput = $request->input('year');
     $projectId = $request->input('project_id');
     $start = $request->input('start');
     $end = $request->input('end');
@@ -351,6 +359,21 @@ public function projectIndex(Request $request)
         ->get(['id', 'project_name_th', 'start_year']);
     $projectIds = $projectList->pluck('id');
     $projectOptions = $projectList;
+    $yearSourceProjectIds = filled($projectId) ? collect([(int) $projectId]) : $projectIds;
+    $availableYears = FteRole::query()
+        ->whereIn('project_id', $yearSourceProjectIds)
+        ->selectRaw('DISTINCT RIGHT(start_date,4) AS year')
+        ->pluck('year')
+        ->filter()
+        ->map(fn($y) => (int) $y)
+        ->filter()
+        ->unique()
+        ->sortDesc()
+        ->values();
+
+    $defaultYearBE = $availableYears->isNotEmpty() ? $availableYears->first() + 543 : now()->year + 543;
+    $mode = $modeInput !== '' ? $modeInput : ($availableYears->isNotEmpty() ? 'year' : 'month');
+    $year = filled($yearInput) ? $yearInput : ($mode === 'year' ? $defaultYearBE : null);
 
     $totalFteMap = [];
     $allRows = FteRole::whereIn('project_id', $projectIds)
@@ -557,10 +580,7 @@ public function projectIndex(Request $request)
     $summaryFilteredFte = $fteSummary->sum('filtered_fte');
     $summaryMonthFte = $fteSummary->sum('fte_this_month');
 
-    $years = FteRole::selectRaw('DISTINCT RIGHT(start_date,4) AS year')
-        ->orderByDesc('year')
-        ->pluck('year')
-        ->map(fn($y) => (int)$y + 543);
+    $years = $availableYears->map(fn($y) => $y + 543);
 
     $viewData = [
         'fteSummary' => $fteSummary,
@@ -571,7 +591,7 @@ public function projectIndex(Request $request)
         'summaryMonthFte' => $summaryMonthFte,
         'years' => $years,
         'mode' => $mode,
-        'year' => $request->input('year'),
+        'year' => $year,
         'projectId' => $projectId,
         'start' => $start,
         'end' => $end,
