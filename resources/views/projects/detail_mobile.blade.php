@@ -815,7 +815,7 @@
         </div>
 
         <div class="mobile-section space-y-3">
-            <h3 class="font-semibold text-lg text-blue-700">G: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
+            <h3 class="font-semibold text-lg text-blue-700">G: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
             @php
                 $fteReal = ($project->fteRoles ?? collect())->filter(fn($f) => !empty(trim($f->name)));
             @endphp

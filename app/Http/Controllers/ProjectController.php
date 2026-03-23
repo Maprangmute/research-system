@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
@@ -264,6 +265,7 @@ class ProjectController extends Controller
 
 public function store(Request $request)
 {
+    $this->hydratePackedFteRequest($request);
     $validated = $this->validateProject($request);
     $project = null;
 
@@ -454,6 +456,7 @@ public function store(Request $request)
             abort(403);
         }
 
+        $this->hydratePackedFteRequest($request);
         $validated = $this->validateProject($request);
         $this->validateOutputs($request);
 
@@ -805,6 +808,7 @@ public function store(Request $request)
 
     private function validateInputCapacity(Request $request): void
     {
+        $hasPackedFtePayload = trim((string) $request->input('fte_roles_payload', '')) !== '';
         $expectedFteRows = (int) $request->input('_fte_expected_rows', 0);
         $expectedVars = (int) $request->input('_form_expected_vars', 0);
         $receivedFteRows = count((array) $request->input('fte_roles', []));
@@ -819,13 +823,97 @@ public function store(Request $request)
             $errors['fte_roles'] = "ข้อมูลผู้มีส่วนร่วม (FTE) ถูกส่งมาไม่ครบ ({$receivedFteRows}/{$expectedFteRows} รายการ) กรุณาลดจำนวนรายการต่อครั้ง หรือตั้งค่า max_input_vars ให้สูงกว่า {$maxInputVars}";
         }
 
-        if ($expectedVars > $maxInputVars) {
+        if (! $hasPackedFtePayload && $expectedVars > $maxInputVars) {
             $errors['project_name_th'] = "ข้อมูลฟอร์มมีจำนวนช่องมากเกินลิมิตระบบ (ประมาณ {$expectedVars} ช่อง > max_input_vars {$maxInputVars}) กรุณาเพิ่มค่า max_input_vars (แนะนำอย่างน้อย 10000)";
         }
 
         if (! empty($errors)) {
+            Log::warning('project.fte_input_capacity_failed', [
+                'route' => optional($request->route())->getName(),
+                'has_packed_fte_payload' => $hasPackedFtePayload,
+                'expected_fte_rows' => $expectedFteRows,
+                'received_fte_rows' => $receivedFteRows,
+                'expected_vars' => $expectedVars,
+                'max_input_vars' => $maxInputVars,
+            ]);
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    private function hydratePackedFteRequest(Request $request): void
+    {
+        $rawPayload = trim((string) $request->input('fte_roles_payload', ''));
+        if ($rawPayload === '') {
+            return;
+        }
+
+        try {
+            $decoded = json_decode($rawPayload, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            Log::error('project.fte_payload_decode_failed', [
+                'route' => optional($request->route())->getName(),
+                'payload_length' => strlen($rawPayload),
+                'payload_preview' => mb_substr($rawPayload, 0, 500),
+                'error' => $e->getMessage(),
+            ]);
+            throw ValidationException::withMessages([
+                'fte_roles' => 'ข้อมูลผู้มีส่วนร่วม (FTE) ที่ส่งมาไม่ถูกต้อง กรุณาลองบันทึกใหม่อีกครั้ง',
+            ]);
+        }
+
+        if (! is_array($decoded)) {
+            Log::error('project.fte_payload_invalid_shape', [
+                'route' => optional($request->route())->getName(),
+                'payload_length' => strlen($rawPayload),
+                'decoded_type' => gettype($decoded),
+            ]);
+            throw ValidationException::withMessages([
+                'fte_roles' => 'ข้อมูลผู้มีส่วนร่วม (FTE) ที่ส่งมาไม่ถูกต้อง กรุณาลองบันทึกใหม่อีกครั้ง',
+            ]);
+        }
+
+        $rows = collect($decoded)
+            ->filter(fn ($row) => is_array($row))
+            ->values()
+            ->map(function (array $row) {
+                return [
+                    'id' => $this->normalizePackedFteScalar($row['id'] ?? null),
+                    'name' => $this->normalizePackedFteScalar($row['name'] ?? null),
+                    'role_group' => $this->normalizePackedFteScalar($row['role_group'] ?? null),
+                    'job_detail' => $this->normalizePackedFteScalar($row['job_detail'] ?? null),
+                    'start_date' => $this->normalizePackedFteScalar($row['start_date'] ?? null),
+                    'end_date' => $this->normalizePackedFteScalar($row['end_date'] ?? null),
+                    'hours' => $this->normalizePackedFteScalar($row['hours'] ?? null),
+                    'fte_value' => $this->normalizePackedFteScalar($row['fte_value'] ?? null),
+                    'fte_value_research' => $this->normalizePackedFteScalar($row['fte_value_research'] ?? null),
+                    'task_detail' => $this->normalizePackedFteScalar($row['task_detail'] ?? null),
+                ];
+            })
+            ->all();
+
+        $request->merge([
+            'fte_roles' => $rows,
+            '_fte_expected_rows' => count($rows),
+            '_form_expected_vars' => 0,
+        ]);
+
+        Log::info('project.fte_payload_hydrated', [
+            'route' => optional($request->route())->getName(),
+            'payload_length' => strlen($rawPayload),
+            'rows' => count($rows),
+            'deleted_ids' => count((array) $request->input('fte_deleted_ids', [])),
+        ]);
+    }
+
+    private function normalizePackedFteScalar($value): ?string
+    {
+        if (is_array($value) || is_object($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 
     private function validateNoPastProjectDates(Request $request): void

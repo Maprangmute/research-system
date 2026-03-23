@@ -1120,9 +1120,153 @@
         });
     }
 
+    function getProjectValidationDisplayTarget(field) {
+        if (!(field instanceof HTMLElement)) return field;
+
+        if (field instanceof HTMLInputElement) {
+            const flatpickrAltInput = field._flatpickr?.altInput;
+            if (flatpickrAltInput instanceof HTMLInputElement && flatpickrAltInput.offsetParent !== null) {
+                return flatpickrAltInput;
+            }
+
+            const name = field.getAttribute('name') || '';
+            if (name) {
+                const nativeDisplayInput = document.querySelector(
+                    `input[data-native-date-display-for="${CSS.escape(name)}"]`
+                );
+                if (nativeDisplayInput instanceof HTMLInputElement && nativeDisplayInput.offsetParent !== null) {
+                    return nativeDisplayInput;
+                }
+            }
+        }
+
+        return field;
+    }
+
+    function parseProjectComparableDateInput(input) {
+        if (!(input instanceof HTMLInputElement)) return null;
+
+        const values = [
+            input.value,
+            input._flatpickr?.altInput?.value,
+        ];
+
+        const name = input.getAttribute('name') || '';
+        if (name) {
+            values.push(
+                document.querySelector(`input[data-native-date-display-for="${CSS.escape(name)}"]`)?.value || ''
+            );
+        }
+
+        for (const raw of values) {
+            const parsed = parseDateInputValue((raw || '').trim());
+            if (parsed instanceof Date && !Number.isNaN(parsed.getTime())) {
+                return normalizeDateOnly(parsed);
+            }
+        }
+
+        return null;
+    }
+
+    function getFteDateRangePair(field) {
+        if (!(field instanceof HTMLInputElement)) return null;
+
+        const name = field.getAttribute('name') || '';
+        const match = name.match(/^(fte_roles\[\d+\])\[(start_date|end_date)\]$/);
+        if (!match) return null;
+
+        const [, baseName] = match;
+        const form = field.form;
+        if (!(form instanceof HTMLFormElement)) return null;
+
+        const startInput = form.querySelector(`input[name="${CSS.escape(`${baseName}[start_date]`)}"]`);
+        const endInput = form.querySelector(`input[name="${CSS.escape(`${baseName}[end_date]`)}"]`);
+
+        if (!(startInput instanceof HTMLInputElement) || !(endInput instanceof HTMLInputElement)) {
+            return null;
+        }
+
+        return {
+            startInput,
+            endInput,
+        };
+    }
+
+    function applyFteDateRangeValidity(startInput, endInput) {
+        if (!(startInput instanceof HTMLInputElement) || !(endInput instanceof HTMLInputElement)) {
+            return true;
+        }
+
+        const startDate = parseProjectComparableDateInput(startInput);
+        const endDate = parseProjectComparableDateInput(endInput);
+        const isValid = !(startDate && endDate && endDate < startDate);
+
+        endInput.setCustomValidity(isValid ? '' : 'วันสิ้นสุดภาระงาน ต้องไม่น้อยกว่าวันเริ่มต้นภาระงาน');
+
+        return isValid;
+    }
+
+    function validateProjectFteDateRanges(form) {
+        if (!(form instanceof HTMLFormElement)) {
+            return {
+                ok: true,
+                firstInvalidField: null,
+            };
+        }
+
+        let firstInvalidField = null;
+
+        form.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
+            const endName = startInput.name.replace('[start_date]', '[end_date]');
+            const endInput = form.querySelector(`input[name="${CSS.escape(endName)}"]`);
+            const isValid = applyFteDateRangeValidity(startInput, endInput);
+
+            if (!isValid && !firstInvalidField) {
+                firstInvalidField = getProjectValidationDisplayTarget(endInput);
+            }
+        });
+
+        return {
+            ok: !firstInvalidField,
+            firstInvalidField,
+        };
+    }
+
+    window.getProjectValidationDisplayTarget = getProjectValidationDisplayTarget;
+    window.validateProjectFteDateRanges = validateProjectFteDateRanges;
+
     document.addEventListener('submit', (event) => {
         syncDateInputsBeforeSubmit(event.target);
     }, true);
+
+    const syncProjectFteDateRangeField = (field) => {
+        const pair = getFteDateRangePair(field);
+        if (!pair) return false;
+        applyFteDateRangeValidity(pair.startInput, pair.endInput);
+        return true;
+    };
+
+    document.addEventListener('input', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) return;
+        const handled = syncProjectFteDateRangeField(event.target);
+        if (handled && window.isFteTableMode?.()) {
+            window.syncAllFteProxyInvalidStates?.();
+        }
+    }, true);
+
+    document.addEventListener('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) return;
+        const handled = syncProjectFteDateRangeField(event.target);
+        if (handled && window.isFteTableMode?.()) {
+            window.syncAllFteProxyInvalidStates?.();
+        }
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('form#projectForm').forEach((form) => {
+            validateProjectFteDateRanges(form);
+        });
+    });
 
 
     /* ---------- ทำให้ altInput หน้าตาเหมือน input เดิม ---------- */
@@ -2684,6 +2828,21 @@
             window.initFteUx?.();
         });
 
+        let fteUxRefreshQueued = false;
+        const shouldRefreshFteUx = () => {
+            if (window.isFteTableMode?.()) return true;
+            return Boolean((document.getElementById('fte-search-input')?.value || '').trim());
+        };
+        const scheduleFteUxRefresh = () => {
+            if (!shouldRefreshFteUx()) return;
+            if (fteUxRefreshQueued) return;
+            fteUxRefreshQueued = true;
+            requestAnimationFrame(() => {
+                fteUxRefreshQueued = false;
+                window.refreshFteUx?.();
+            });
+        };
+
         const observer = new MutationObserver((mutations) => {
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(node => {
@@ -2692,7 +2851,7 @@
                         prepareRow(node);
                         collapseSiblings(node);
                         if (node.matches('.fte-row') || node.id === 'fte-container') {
-                            window.refreshFteUx?.();
+                            scheduleFteUxRefresh();
                         }
                         return;
                     }
@@ -2700,7 +2859,7 @@
                         prepareRow(row);
                         collapseSiblings(row);
                         if (row.matches('.fte-row')) {
-                            window.refreshFteUx?.();
+                            scheduleFteUxRefresh();
                         }
                     });
                 });
@@ -2768,11 +2927,15 @@
         window.validateFteBeforeAdd = ({
             showAlert = true
         } = {}) => {
+            const projectForm = document.getElementById('projectForm');
+            fteSubmitAttempted = true;
+            window.validateProjectFteDateRanges?.(projectForm);
+
             if (window.isFteTableMode?.()) {
                 const result = validateFteTableFields({
                     showAlert,
                     title: 'กรอก FTE ให้ครบก่อนเพิ่มแถวใหม่',
-                    markStyles: false
+                    markStyles: true
                 });
                 if (!result.ok) return false;
             }
@@ -2804,24 +2967,26 @@
             if (!showAlert) return false;
 
             const label = getFieldLabel(firstInvalid);
+            const fieldMessage = String(firstInvalid.validationMessage || '').trim();
+            const alertText = fieldMessage || `กรุณากรอกข้อมูลที่ยังไม่ครบ: ${label}`;
             if (window.Swal) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'กรอก FTE ให้ครบก่อนเพิ่มแถวใหม่',
-                    text: `กรุณากรอกข้อมูลที่ยังไม่ครบ: ${label}`,
+                    text: alertText,
                     confirmButtonText: 'ตกลง',
                     confirmButtonColor: '#2563eb',
                     didClose: () => focusField(firstInvalid)
                 });
             } else {
-                alert(`กรุณากรอกข้อมูลที่ยังไม่ครบ: ${label}`);
+                alert(alertText);
             }
 
             return false;
         };
 
         const getFteTableRequiredFields = () => Array.from(document.querySelectorAll(
-            `#${FTE_TABLE_WRAP_ID} input[required], #${FTE_TABLE_WRAP_ID} select[required], #${FTE_TABLE_WRAP_ID} textarea[required]`
+            `#${FTE_TABLE_WRAP_ID} [data-fte-required="1"]`
         ));
 
         const clearProxyInvalidStyles = (el) => {
@@ -2846,8 +3011,15 @@
 
         const syncProxyInvalidFromSource = (source, proxy) => {
             if (!source || !proxy) return;
-            const hasInvalidClass = source.classList.contains('border-red-500') || source.classList.contains('bg-red-50');
-            if (hasInvalidClass) {
+            if (typeof proxy.setCustomValidity === 'function') {
+                proxy.setCustomValidity(source.validity?.customError ? String(source.validationMessage || '') : '');
+            }
+            const sourceIsValid = source.validity ? source.validity.valid : true;
+            if (sourceIsValid) {
+                source.classList.remove('border-red-500', 'bg-red-50');
+            }
+            const invalid = source.classList.contains('border-red-500') || source.classList.contains('bg-red-50');
+            if (invalid) {
                 proxy.classList.add('border-red-500', 'bg-red-50');
                 proxy.style.borderColor = '#ef4444';
                 proxy.style.backgroundColor = '#fef2f2';
@@ -2865,6 +3037,53 @@
                 const source = document.querySelector(`#${FTE_CONTAINER_ID} [${FTE_PROXY_LINK_ATTR}="${proxyId}"]`);
                 syncProxyInvalidFromSource(source, proxy);
             });
+        };
+        window.syncAllFteProxyInvalidStates = syncAllFteProxyInvalidStates;
+
+        const bindTableProxyEndDateMin = (startSource, endSource, endProxy) => {
+            if (
+                !(startSource instanceof HTMLInputElement) ||
+                !(endSource instanceof HTMLInputElement) ||
+                !(endProxy instanceof HTMLInputElement)
+            ) {
+                return;
+            }
+
+            const updateMinDate = () => {
+                const minDate = parseProjectComparableDateInput(startSource);
+                const endDate = parseProjectComparableDateInput(endSource);
+
+                if (endProxy._flatpickr) {
+                    endProxy._flatpickr.set('minDate', minDate || null);
+                    endProxy._flatpickr.set('disable', minDate ? [date => normalizeDateOnly(date) < minDate] : []);
+                    requestAnimationFrame(() => syncProxyFlatpickrBeUi(endProxy._flatpickr));
+                }
+
+                if (minDate && endDate && endDate < minDate) {
+                    if (endProxy._flatpickr) {
+                        endProxy._flatpickr.clear();
+                    } else {
+                        endProxy.value = '';
+                    }
+
+                    setFieldValue(endSource, '', {
+                        isDate: true
+                    });
+                }
+
+                applyFteDateRangeValidity(startSource, endSource);
+                syncProxyInvalidFromSource(endSource, endProxy);
+            };
+
+            startSource.addEventListener('input', updateMinDate);
+            startSource.addEventListener('change', updateMinDate);
+
+            if (endProxy._flatpickr) {
+                appendFlatpickrHook(endProxy._flatpickr, 'onOpen', updateMinDate);
+            }
+
+            updateMinDate();
+            requestAnimationFrame(updateMinDate);
         };
 
         const getProxyFieldPositionText = (field) => {
@@ -2884,6 +3103,7 @@
             title = 'กรุณากรอกข้อมูลให้ครบถ้วน',
             markStyles = true
         } = {}) => {
+            syncAllFteProxyInvalidStates();
             const requiredFields = getFteTableRequiredFields();
             let firstInvalid = null;
 
@@ -2913,16 +3133,18 @@
 
             if (showAlert) {
                 const pos = getProxyFieldPositionText(firstInvalid);
+                const fieldMessage = String(firstInvalid.validationMessage || '').trim();
+                const alertText = fieldMessage ? `${fieldMessage} (${pos})` : `กรุณากรอก: ${pos}`;
                 if (window.Swal) {
                     Swal.fire({
                         icon: 'error',
                         title,
-                        text: `กรุณากรอก: ${pos}`,
+                        text: alertText,
                         confirmButtonText: 'ตกลง',
                         confirmButtonColor: '#4f46e5'
                     });
                 } else {
-                    alert(`กรุณากรอก: ${pos}`);
+                    alert(alertText);
                 }
             }
 
@@ -2992,10 +3214,14 @@
             if (!row) return;
             if (isTableModeEnabled()) {
                 expandAllFteRows();
+                window.refreshFteUx?.();
             } else {
                 window.collapseFteRowsExcept(row);
+                const hasQuery = Boolean((document.getElementById(FTE_SEARCH_ID)?.value || '').trim());
+                if (hasQuery) {
+                    window.applyFteRowSearchFilter?.();
+                }
             }
-            window.refreshFteUx?.();
         };
 
         const getField = (row, selector) => row.querySelector(selector);
@@ -3100,6 +3326,47 @@
             }));
         };
 
+        const syncProxyFlatpickrBeUi = (inst) => {
+            if (!inst) return;
+
+            const selectedDate = inst.selectedDates?.[0];
+            if (selectedDate && inst.input instanceof HTMLInputElement) {
+                const dd = String(selectedDate.getDate()).padStart(2, '0');
+                const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                const yyyy = String(selectedDate.getFullYear() + 543);
+                inst.input.value = `${dd}-${mm}-${yyyy}`;
+            } else if (inst.input instanceof HTMLInputElement && inst.input.value) {
+                inst.input.value = toBuddhistDateText(inst.input.value);
+            }
+
+            const yearInput = inst.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
+            if (!yearInput) return;
+
+            const year = parseInt(yearInput.value, 10);
+            if (!Number.isNaN(year) && year > 0 && year < 2400) {
+                yearInput.value = String(year + 543);
+            }
+
+            if (yearInput.dataset.beBound === '1') return;
+            yearInput.dataset.beBound = '1';
+            yearInput.addEventListener('blur', () => {
+                const rawYear = parseInt(yearInput.value, 10);
+                if (Number.isNaN(rawYear)) return;
+
+                const ceYear = rawYear > 2400 ? rawYear - 543 : rawYear;
+                const picked = inst.selectedDates?.[0];
+                if (picked) {
+                    const nextDate = new Date(picked);
+                    nextDate.setFullYear(ceYear);
+                    inst.setDate(nextDate, true);
+                } else {
+                    inst.changeYear(ceYear);
+                }
+
+                requestAnimationFrame(() => syncProxyFlatpickrBeUi(inst));
+            });
+        };
+
         const createProxyInput = (source, opts = {}) => {
             if (!source) {
                 const fallback = document.createElement('input');
@@ -3131,7 +3398,13 @@
             proxy.className = '';
             proxy.removeAttribute('name');
             proxy.removeAttribute('id');
-            if (source.required) proxy.required = true;
+            proxy.required = false;
+            proxy.removeAttribute('required');
+            proxy.removeAttribute('aria-invalid');
+            if (source.required) {
+                proxy.dataset.fteRequired = '1';
+                proxy.setAttribute('aria-required', 'true');
+            }
             if (source.readOnly || opts.readOnly) proxy.readOnly = true;
             if (opts.readOnly) proxy.setAttribute('readonly', 'readonly');
             proxy._sourceField = source;
@@ -3170,6 +3443,9 @@
                     dateFormat: 'd-m-Y',
                     allowInput: false,
                     locale,
+                    disableMobile: true,
+                    prevArrow: '',
+                    nextArrow: '',
                     defaultDate: toGregorianDateText(proxy.value || ''),
                     formatDate: (date) => formatBE(date),
                     parseDate: (dateStr) => {
@@ -3177,34 +3453,31 @@
                         return window.flatpickr.parseDate(g, 'd-m-Y');
                     },
                     onReady: (_sd, _ds, inst) => {
-                        if (inst.calendarContainer) {
-                            const yearInput = inst.calendarContainer.querySelector('.flatpickr-current-month input.cur-year');
-                            if (yearInput) {
-                                const ce = Number(yearInput.value || 0);
-                                if (ce > 0 && ce < 2400) yearInput.value = String(ce + 543);
-                            }
-                        }
+                        syncProxyFlatpickrBeUi(inst);
+                        requestAnimationFrame(() => syncProxyFlatpickrBeUi(inst));
+                    },
+                    onOpen: (_sd, _ds, inst) => {
+                        syncProxyFlatpickrBeUi(inst);
+                        requestAnimationFrame(() => syncProxyFlatpickrBeUi(inst));
                     },
                     onMonthChange: (_sd, _ds, inst) => {
-                        const yearInput = inst.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
-                        if (yearInput) {
-                            const ce = Number(yearInput.value || 0);
-                            if (ce > 0 && ce < 2400) yearInput.value = String(ce + 543);
-                        }
+                        requestAnimationFrame(() => syncProxyFlatpickrBeUi(inst));
                     },
                     onYearChange: (_sd, _ds, inst) => {
-                        const yearInput = inst.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
-                        if (yearInput) {
-                            const ce = Number(yearInput.value || 0);
-                            if (ce > 0 && ce < 2400) yearInput.value = String(ce + 543);
-                        }
+                        requestAnimationFrame(() => syncProxyFlatpickrBeUi(inst));
                     },
-                    onChange: (_dates, dateStr) => {
+                    onValueUpdate: (_sd, _ds, inst) => {
+                        syncProxyFlatpickrBeUi(inst);
+                    },
+                    onChange: (_dates, dateStr, inst) => {
                         proxy.value = toBuddhistDateText(dateStr);
+                        syncProxyFlatpickrBeUi(inst);
                         setFieldValue(source, proxy.value, opts);
                     },
                 });
             }
+
+            syncProxyInvalidFromSource(source, proxy);
 
             return proxy;
         };
@@ -3290,9 +3563,16 @@
 
                 cellDefs.forEach(([selector, options = {}]) => {
                     const td = document.createElement('td');
-                    td.appendChild(createProxyInput(getField(row, selector), options));
+                    const proxy = createProxyInput(getField(row, selector), options);
+                    td.appendChild(proxy);
                     tr.appendChild(td);
                 });
+
+                bindTableProxyEndDateMin(
+                    getField(row, 'input[name^="fte_roles["][name$="[start_date]"]'),
+                    getField(row, 'input[name^="fte_roles["][name$="[end_date]"]'),
+                    tr.querySelector('td:nth-child(6) input')
+                );
 
                 const removeTd = document.createElement('td');
                 const removeBtn = document.createElement('button');
@@ -3364,7 +3644,7 @@
             document.querySelectorAll(`#${FTE_TABLE_WRAP_ID} [${FTE_PROXY_LINK_ATTR}]`).forEach((proxy) => {
                 const source = proxy._sourceField;
                 if (!source) return;
-                const invalid = !source.checkValidity?.() || (source.required && String(source.value ?? '').trim() === '');
+                const invalid = !(source.validity?.valid ?? true) || (source.required && String(source.value ?? '').trim() === '');
                 if (invalid) {
                     markProxyInvalidStyles(proxy);
                 } else {
@@ -3576,8 +3856,6 @@
         // const fte = hr * 0.00745;
         const fte = hr * 0.000621;
 
-        console.log('hr=', hr, 'fte(raw)=', fte, 'fte(fixed)=', fte.toFixed(5));
-
         fteInput.value = fte.toFixed(8);
         fteInput.dispatchEvent(new Event('input', {
             bubbles: true
@@ -3586,6 +3864,122 @@
             bubbles: true
         }));
     });
+</script>
+
+<script>
+    (() => {
+        const PROJECT_FORM_ID = 'projectForm';
+        const FTE_PAYLOAD_INPUT_ID = 'fteRolesPayload';
+        const FTE_FIELD_SELECTOR = 'input[name^="fte_roles["], select[name^="fte_roles["], textarea[name^="fte_roles["]';
+        const FTE_NAME_PATTERN = /^fte_roles\[(\d+)\]\[([^\]]+)\]$/;
+
+        const isProjectForm = (form) => form instanceof HTMLFormElement && form.id === PROJECT_FORM_ID;
+
+        const shouldSkipField = (field) => {
+            if (!(field instanceof HTMLElement)) return true;
+            if (field.closest('template')) return true;
+            if (field.disabled) return true;
+            return false;
+        };
+
+        const readFieldValue = (field) => {
+            if (field instanceof HTMLInputElement) {
+                if (field.type === 'checkbox' || field.type === 'radio') {
+                    return field.checked ? field.value : null;
+                }
+                return field.value;
+            }
+
+            if (field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
+                return field.value;
+            }
+
+            return null;
+        };
+
+        const collectFteRows = (form) => {
+            const rows = new Map();
+
+            form.querySelectorAll(FTE_FIELD_SELECTOR).forEach((field) => {
+                if (shouldSkipField(field)) return;
+
+                const name = field.getAttribute('name') || '';
+                const match = name.match(FTE_NAME_PATTERN);
+                if (!match) return;
+
+                const [, index, key] = match;
+                if (!rows.has(index)) {
+                    rows.set(index, {});
+                }
+
+                const value = readFieldValue(field);
+                if (value === null) return;
+                rows.get(index)[key] = value;
+            });
+
+            return Array.from(rows.entries())
+                ->sort((a, b) => Number(a[0]) - Number(b[0]))
+                ->map(([, row]) => row);
+        };
+
+        const disablePackedFields = (form) => {
+            form.querySelectorAll(FTE_FIELD_SELECTOR).forEach((field) => {
+                if (shouldSkipField(field)) return;
+                field.dataset.ftePackedDisabled = '1';
+                field.disabled = true;
+            });
+        };
+
+        const restorePackedFields = (form) => {
+            form.querySelectorAll('[data-fte-packed-disabled="1"]').forEach((field) => {
+                field.disabled = false;
+                delete field.dataset.ftePackedDisabled;
+            });
+            delete form.dataset.ftePackedSubmitted;
+        };
+
+        const updatePackedMeta = (form, packedRows) => {
+            const expectedRows = form.querySelector('#fteExpectedRows');
+            const expectedVars = form.querySelector('#formExpectedVars');
+
+            if (expectedRows) {
+                expectedRows.value = String(packedRows.length);
+            }
+
+            if (expectedVars) {
+                const namedFields = Array.from(form.querySelectorAll('input[name], select[name], textarea[name]'))
+                    .filter((field) => !field.disabled && !field.closest('template'))
+                    .length;
+                expectedVars.value = String(namedFields);
+            }
+        };
+
+        document.addEventListener('submit', (event) => {
+            const form = event.target;
+            if (!isProjectForm(form)) return;
+            if (form.dataset.ftePackedSubmitted === '1') return;
+
+            const payloadInput = form.querySelector(`#${FTE_PAYLOAD_INPUT_ID}`);
+            if (!(payloadInput instanceof HTMLInputElement)) return;
+
+            const packedRows = collectFteRows(form);
+            if (packedRows.length === 0) {
+                payloadInput.value = '';
+                return;
+            }
+
+            payloadInput.value = JSON.stringify(packedRows);
+            disablePackedFields(form);
+            updatePackedMeta(form, packedRows);
+            form.dataset.ftePackedSubmitted = '1';
+        });
+
+        window.addEventListener('pageshow', () => {
+            const form = document.getElementById(PROJECT_FORM_ID);
+            if (!isProjectForm(form)) return;
+            restorePackedFields(form);
+        });
+    })();
 </script>
 
 <script>

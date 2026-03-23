@@ -155,6 +155,7 @@
             @csrf
             <input type="hidden" name="_fte_expected_rows" id="fteExpectedRows" value="0">
             <input type="hidden" name="_form_expected_vars" id="formExpectedVars" value="0">
+            <input type="hidden" name="fte_roles_payload" id="fteRolesPayload" value="">
 
             <hr class="my-6 border-t-2 border-gray-300">
             <!-- A: Project Overview -->
@@ -772,7 +773,7 @@
 
             <hr class="my-6 border-t-2 border-gray-300">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
+                <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
             </div>
 
             <x-repeatable-row id="fte" addText="+ เพิ่มผู้มีส่วนร่วม" addClass="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
@@ -1639,6 +1640,7 @@
 
             const FORM_KEY = `autosave:project:${window.AUTH_USER_ID}:${location.pathname}`;
             const TTL_HOURS = 48;
+            const HAS_SERVER_ERRORS = @json($errors->any());
 
             /* ---------- helpers ---------- */
             const now = () => Date.now();
@@ -1671,7 +1673,10 @@
 
             FORM.addEventListener('input', debounceSave);
             FORM.addEventListener('change', debounceSave);
-            FORM.addEventListener('submit', () => localStorage.removeItem(FORM_KEY));
+            FORM.addEventListener('submit', () => {
+                clearTimeout(timer);
+                save();
+            });
 
             /* ---------- dynamic rows ---------- */
             const maxIndex = (data, prefix) => {
@@ -1872,6 +1877,16 @@
             const bannerMeta = document.getElementById('autosave-banner-meta');
             const bannerRestore = document.getElementById('autosave-banner-restore');
             const bannerDiscard = document.getElementById('autosave-banner-discard');
+            const restoreDraft = (payload) => {
+                const data = payload.data;
+                addRepeatableRows('irb', maxIndex(data, 'irbs'));
+                addRepeatableRows('copi', maxIndex(data, 'copis'));
+                addRepeatableRows('coresearch', maxIndex(data, 'coresearch'));
+                addRepeatableRows('fte', maxIndex(data, 'fte_roles'));
+                addRepeatableRows('output', maxIndex(data, 'outputs'));
+                ensureOutputSections(data);
+                applyForm(data);
+            };
 
 
             document.addEventListener('DOMContentLoaded', () => {
@@ -1885,6 +1900,12 @@
                         return;
                     }
 
+                    if (HAS_SERVER_ERRORS) {
+                        restoreDraft(payload);
+                        banner?.classList.add('hidden');
+                        return;
+                    }
+
                     if (banner && bannerMeta && bannerRestore && bannerDiscard) {
                         const projectName =
                             payload?.data?.project_name_th?.trim() || '— ยังไม่ได้ระบุชื่อโครงการ —';
@@ -1894,14 +1915,7 @@
                         bannerRestore.onclick = () => {
                             banner.classList.add('hidden');
                             askRestore(payload, () => {
-                                const data = payload.data;
-                                addRepeatableRows('irb', maxIndex(data, 'irbs'));
-                                addRepeatableRows('copi', maxIndex(data, 'copis'));
-                                addRepeatableRows('coresearch', maxIndex(data, 'coresearch'));
-                                addRepeatableRows('fte', maxIndex(data, 'fte_roles'));
-                                addRepeatableRows('output', maxIndex(data, 'outputs'));
-                                ensureOutputSections(data);
-                                applyForm(data);
+                                restoreDraft(payload);
                             }, () => localStorage.removeItem(FORM_KEY));
                         };
 
@@ -1914,14 +1928,7 @@
                     askRestore(
                         payload,
                         () => {
-                            const data = payload.data;
-                            addRepeatableRows('irb', maxIndex(data, 'irbs'));
-                            addRepeatableRows('copi', maxIndex(data, 'copis'));
-                            addRepeatableRows('coresearch', maxIndex(data, 'coresearch'));
-                            addRepeatableRows('fte', maxIndex(data, 'fte_roles'));
-                            addRepeatableRows('output', maxIndex(data, 'outputs'));
-                            ensureOutputSections(data);
-                            applyForm(data);
+                            restoreDraft(payload);
                         },
                         () => localStorage.removeItem(FORM_KEY)
                     );
@@ -2019,6 +2026,7 @@
                 projectForm.addEventListener('submit', function(e) {
                     let isValid = true;
                     let firstInvalidField = null;
+                    let firstInvalidMessage = '';
                     const invalidRows = new Set();
                     const invalidSections = new Set();
                     const sectionNameById = {
@@ -2028,6 +2036,8 @@
                         fte: 'Roles and Responsibilities',
                         output: 'ผลงานวิจัย (Output)',
                     };
+
+                    window.validateProjectFteDateRanges?.(projectForm);
 
                     // 1. ค้นหาทุกช่องที่มีคำว่า required
                     const requiredFields = projectForm.querySelectorAll('[required]');
@@ -2047,33 +2057,37 @@
                         }
 
                         const val = field.value.trim();
-                        let displayTarget = field;
+                        const invalid = !val || !field.checkValidity();
+                        const displayTarget = window.getProjectValidationDisplayTarget?.(field) || field;
 
-                        // // ถ้าเป็น Flatpickr ต้องไปจัดการตัวที่ User เห็น (altInput)
-                        // if (field._flatpickr) {
-                        //     displayTarget = field._flatpickr.altInput;
-                        // }
-                        displayTarget = field;
-
-
-                        if (!val) {
+                        if (invalid) {
                             isValid = false;
                             displayTarget.classList.add('border-red-500', 'bg-red-50');
-                            if (displayTarget.name === 'planning_status') {
+                            if (field !== displayTarget) {
+                                field.classList.add('border-red-500', 'bg-red-50');
+                            }
+                            if (field.name === 'planning_status') {
                                 displayTarget.style.backgroundColor = '#fef2f2';
                                 displayTarget.style.color = '#991b1b';
                             }
-                            if (!firstInvalidField) firstInvalidField = displayTarget;
-                            const row = displayTarget.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row');
+                            if (!firstInvalidField) {
+                                firstInvalidField = displayTarget;
+                                firstInvalidMessage = field.validationMessage || '';
+                            }
+                            const row = field.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row') ||
+                                displayTarget.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row');
                             if (row) invalidRows.add(row);
-                            const group = displayTarget.closest('[data-repeatable]');
+                            const group = field.closest('[data-repeatable]') || displayTarget.closest('[data-repeatable]');
                             if (group) {
                                 const id = group.dataset.id || '';
                                 if (sectionNameById[id]) invalidSections.add(sectionNameById[id]);
                             }
                         } else {
                             displayTarget.classList.remove('border-red-500', 'bg-red-50');
-                            if (displayTarget.name === 'planning_status') {
+                            if (field !== displayTarget) {
+                                field.classList.remove('border-red-500', 'bg-red-50');
+                            }
+                            if (field.name === 'planning_status') {
                                 updateStatusColor(displayTarget);
                             }
                         }
@@ -2115,11 +2129,14 @@
                         const sectionText = invalidSections.size
                             ? ` (ส่วน: ${Array.from(invalidSections).join(', ')})`
                             : '';
+                        const errorText = firstInvalidMessage
+                            ? `${firstInvalidMessage}${sectionText}`
+                            : `กรุณากรอก: ${fieldLabel}${sectionText}`;
 
                         Swal.fire({
                             icon: 'error',
                             title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
-                            text: `กรุณากรอก: ${fieldLabel}${sectionText}`,
+                            text: errorText,
                             confirmButtonText: 'ตกลง',
                             confirmButtonColor: '#4f46e5',
                             returnFocus: false,

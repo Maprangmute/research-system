@@ -838,7 +838,7 @@
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
-                <h3 class="font-semibold text-lg text-blue-700 mb-3">G: รายชื่อผู้มีส่วนร่วม (FTE)</h3>
+                <h3 class="font-semibold text-lg text-blue-700 mb-3">G: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
 
                 <div class="overflow-x-auto rounded-xl shadow-sm ring-1 ring-slate-200 mb-6 bg-white">
                     <table class="min-w-full text-sm border-separate border-spacing-0">

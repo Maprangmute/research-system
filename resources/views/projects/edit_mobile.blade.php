@@ -220,6 +220,7 @@
             @method('PUT')
             <input type="hidden" name="_fte_expected_rows" id="fteExpectedRows" value="0">
             <input type="hidden" name="_form_expected_vars" id="formExpectedVars" value="0">
+            <input type="hidden" name="fte_roles_payload" id="fteRolesPayload" value="">
 
             <h3 class="font-semibold text-lg text-blue-700 mb-2">A: ข้อมูลโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -747,7 +748,7 @@
 
                 <!-- Header -->
                 <div class="mb-2">
-                    <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วม</h3>
+                    <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
                 </div>
 
                 <!-- Modal -->
@@ -831,9 +832,28 @@
                 <!-- ========== LIST OF FTE ROWS ========== -->
                 <div id="fte-container" class="space-y-4 mb-4">
 
-                    @foreach ($project->fteRoles ?? [] as $i => $fte)
+                    @php
+                        $fteRows = old('fte_roles');
+                        if (!is_array($fteRows)) {
+                            $fteRows = $project->fteRoles ?? collect();
+                        }
+                    @endphp
+                    @foreach ($fteRows as $i => $fte)
+                        @php
+                            $fteId = data_get($fte, 'id');
+                            $fteName = data_get($fte, 'name');
+                            $selectedRoleGroup = data_get($fte, 'role_group');
+                            $selectedJobDetail = data_get($fte, 'job_detail');
+                            $fteStartDate = data_get($fte, 'start_date');
+                            $fteEndDate = data_get($fte, 'end_date');
+                            $fteHours = data_get($fte, 'hours');
+                            $selectedTaskDetail = data_get($fte, 'task_detail');
+                            $hasKnownTaskDetail = in_array($selectedTaskDetail, $taskDetails, true);
+                            $fteValue = data_get($fte, 'fte_value');
+                            $fteValueResearch = data_get($fte, 'fte_value_research');
+                        @endphp
                         <div id="fte-{{ $i }}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
-                            <input type="hidden" name="fte_roles[{{ $i }}][id]" value="{{ $fte->id }}">
+                            <input type="hidden" name="fte_roles[{{ $i }}][id]" value="{{ $fteId }}">
                             <div class="flex items-center justify-between gap-3 mb-4">
                                 <span class="text-sm font-semibold text-slate-700">ผู้มีส่วนร่วมคนที่ <span class="fte-index">{{ $i + 1 }}</span></span>
                                 <button type="button" onclick="removeRow('fte-{{ $i }}','fte')"
@@ -851,7 +871,7 @@
                                         <label class="w-full">
                                             <span class="block text-sm font-semibold"><span class="fte-index text-xl font-extrabold text-blue-700">{{ $i + 1 }}</span>. ชื่อ-นามสกุล <span class="text-red-500">*</span></span>
                                             <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
-                                                value="{{ $fte->name }}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
+                                                value="{{ $fteName }}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
                                                 oninput="this.setCustomValidity('')">
                                         </label>
@@ -865,7 +885,7 @@
                                                 <option value="" disabled>เลือกกลุ่ม</option>
 
                                                 @foreach ($roleGroups as $group)
-                                                    <option value="{{ $group }}" @selected($fte->role_group == $group)>
+                                                    <option value="{{ $group }}" @selected($selectedRoleGroup == $group)>
                                                         {{ $group }}
                                                     </option>
                                                 @endforeach
@@ -886,7 +906,7 @@
                                                 <option value="" disabled>เลือกภาระงาน</option>
 
                                                 @foreach ($jobDetails as $job)
-                                                    <option value="{{ $job }}" @selected($fte->job_detail == $job)>
+                                                    <option value="{{ $job }}" @selected($selectedJobDetail == $job)>
                                                         {{ $job }}
                                                     </option>
                                                 @endforeach
@@ -896,7 +916,7 @@
                                         <label class="w-full relative">
                                             <span class="block text-sm font-semibold">วันเริ่มต้นภาระงาน <span class="text-red-500">*</span></span>
                                             <input name="fte_roles[{{ $i }}][start_date]" type="text"
-                                                value="{{ $fte->start_date }}"
+                                                value="{{ $fteStartDate }}"
                                                 class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันเริ่มต้นภาระงาน" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
                                                 oninput="this.setCustomValidity('')">
@@ -911,7 +931,7 @@
                                         <label class="w-full relative">
                                             <span class="block text-sm font-semibold">วันสิ้นสุดภาระงาน <span class="text-red-500">*</span></span>
                                             <input name="fte_roles[{{ $i }}][end_date]" type="text"
-                                                value="{{ $fte->end_date }}"
+                                                value="{{ $fteEndDate }}"
                                                 class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันสิ้นสุดภาระงาน" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
                                                 oninput="this.setCustomValidity('')">
@@ -929,7 +949,7 @@
                                     <label class="w-full">
                                         <span class="block text-sm font-semibold">ชั่วโมงการทำงาน (Hour) <span class="text-red-500">*</span></span>
                                         <input type="number" step="0.1" min="0"
-                                            name="fte_roles[{{ $i }}][hours]" value="{{ $fte->hours }}"
+                                            name="fte_roles[{{ $i }}][hours]" value="{{ $fteHours }}"
                                             class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0" required
                                             oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
                                             oninput="this.setCustomValidity('')">
@@ -938,10 +958,6 @@
                                     <!-- รายละเอียดภารกิจ -->
                                     <label class="w-full">
                                         <span class="block text-sm font-semibold">รายละเอียดภารกิจ <span class="text-red-500">*</span></span>
-                                        @php
-                                            $selectedTaskDetail = old("fte_roles.$i.task_detail", $fte->task_detail);
-                                            $hasKnownTaskDetail = in_array($selectedTaskDetail, $taskDetails, true);
-                                        @endphp
                                         <select name="fte_roles[{{ $i }}][task_detail]"
                                             class="w-full border p-2 rounded" required
                                             oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
@@ -968,7 +984,7 @@
                                         <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
                                         <input type="number" step="0.00001" min="0" max="1"
                                             name="fte_roles[{{ $i }}][fte_value]"
-                                            value="{{ $fte->fte_value }}"
+                                            value="{{ $fteValue }}"
                                             class="fte-value w-full border p-3 rounded bg-gray-100 text-right" readonly>
                                     </label>
 
@@ -977,7 +993,7 @@
                                         <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
                                         <input type="number" step="0.01" min="0" max="1"
                                             name="fte_roles[{{ $i }}][fte_value_research]"
-                                            value="{{ $fte->fte_value_research }}"
+                                            value="{{ $fteValueResearch }}"
                                             class="w-full border p-3 rounded text-right" placeholder="0.00">
                                     </label>
 
@@ -1793,7 +1809,9 @@
                         }
                         if (input) input.classList.add('flatpickr-hidden');
                         toBuddhist(selectedDates, dateStr, instance);
+                        requestAnimationFrame(() => toBuddhist(instance.selectedDates || selectedDates, dateStr, instance));
                     },
+                    onValueUpdate: toBuddhist,
                     onChange: toBuddhist,
                     onMonthChange: toBuddhist,
                     onYearChange: toBuddhist,
@@ -2046,21 +2064,22 @@
 </div>
 `);
 
+            const row = document.getElementById(id);
             reindexFTE();
             keepAddedRowOpen(id);
             window.handleFteRowAdded?.(id);
-            initThaiDatepickers();
-            attachFTEAuto(); // สำคัญ!
+            initThaiDatepickers(row, {
+                bindPairs: true
+            });
         }
 
         document.addEventListener("DOMContentLoaded", function() {
             reindexFTE();
-            attachFTEAuto(); // ให้แถวเดิมทำงาน auto
         });
 
 
-        function attachFTEAuto() {
-            document.querySelectorAll('.fte-hours').forEach(input => {
+        function attachFTEAuto(scope = document) {
+            scope.querySelectorAll('.fte-hours').forEach(input => {
                 input.oninput = function() {
 
                     const row = this.closest('.fte-row');
@@ -2090,11 +2109,7 @@
                     const fte = (hours * 0.000621).toFixed(8);
                     // const fte = (hours * 0.00745).toFixed(6);
                     
-
-
-                    console.log('[FTE AUTO] hours=', hours, 'calc fte=', fte, 'before=', fteField.value);
-fteField.value = fte;
-console.log('[FTE AUTO] after=', fteField.value);
+                    fteField.value = fte;
                 };
             });
         }
@@ -2859,9 +2874,9 @@ console.log('[FTE AUTO] after=', fteField.value);
             endInput[updaterKey]();
         }
 
-        function bindProjectDatePairsThaiPicker() {
+        function bindProjectDatePairsThaiPicker(scope = document) {
             if (MOBILE_WHEEL_MODE) {
-                document.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
+                scope.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
                     const endName = startInput.name.replace('[start_date]', '[end_date]');
                     const endInput = document.querySelector(`input[name="${endName}"]`);
                     bindEndDateMinNative(startInput, endInput);
@@ -2869,7 +2884,7 @@ console.log('[FTE AUTO] after=', fteField.value);
                 return;
             }
 
-            document.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
+            scope.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
                 const endName = startInput.name.replace('[start_date]', '[end_date]');
                 const endInput = document.querySelector(`input[name="${endName}"]`);
                 bindEndDateMinThaiPicker(startInput, endInput, `fte_${startInput.name}`);
@@ -2898,17 +2913,21 @@ console.log('[FTE AUTO] after=', fteField.value);
             });
         });
 
-        function initThaiDatepickers() {
+        function initThaiDatepickers(scope = document, {
+            bindPairs = true
+        } = {}) {
             if (MOBILE_WHEEL_MODE) {
-                document.querySelectorAll('.thai-datepicker').forEach((input) => {
+                scope.querySelectorAll('.thai-datepicker').forEach((input) => {
                     if (input.hasAttribute('data-native-date-display-for')) return;
                     initNativeThaiDateInput(input);
                 });
-                bindProjectDatePairsThaiPicker();
+                if (bindPairs) {
+                    bindProjectDatePairsThaiPicker(scope);
+                }
                 return;
             }
 
-            document.querySelectorAll('.thai-datepicker').forEach((input) => {
+            scope.querySelectorAll('.thai-datepicker').forEach((input) => {
                 if (input.hasAttribute('data-native-date-display-for')) return;
                 if (input._flatpickr) return;
 
@@ -2937,7 +2956,9 @@ console.log('[FTE AUTO] after=', fteField.value);
                         }
                         input.classList.add('flatpickr-hidden');
                         toBuddhist(selectedDates, dateStr, instance);
+                        requestAnimationFrame(() => toBuddhist(instance.selectedDates || selectedDates, dateStr, instance));
                     },
+                    onValueUpdate: toBuddhist,
                     onChange: toBuddhist,
                     onMonthChange: toBuddhist,
                     onYearChange: toBuddhist,
@@ -2949,9 +2970,12 @@ console.log('[FTE AUTO] after=', fteField.value);
 
                 flatpickr(input, options);
                 bindDatepickerSummarySync(input);
+                bindThaiDatepickerAltOpen(input);
             });
 
-            bindProjectDatePairsThaiPicker();
+            if (bindPairs) {
+                bindProjectDatePairsThaiPicker(scope);
+            }
         }
 
         function bindDatepickerSummarySync(input) {
@@ -2969,6 +2993,40 @@ console.log('[FTE AUTO] after=', fteField.value);
             altInput.dataset.summarySyncBound = '1';
             ['input', 'change', 'blur'].forEach((evt) => {
                 altInput.addEventListener(evt, notify);
+            });
+        }
+
+        function bindThaiDatepickerAltOpen(input) {
+            const instance = input?._flatpickr;
+            const altInput = instance?.altInput;
+            if (!altInput || altInput.dataset.altOpenBound === '1') return;
+
+            altInput.dataset.altOpenBound = '1';
+            altInput.style.cursor = 'pointer';
+
+            const openPicker = (event) => {
+                event?.preventDefault?.();
+                instance.open();
+                requestAnimationFrame(() => instance.open());
+            };
+
+            ['mousedown', 'click', 'focus'].forEach((evt) => {
+                altInput.addEventListener(evt, openPicker);
+            });
+
+            const extraTargets = [
+                input.closest('label'),
+                input.closest('.relative')
+            ].filter(Boolean);
+
+            extraTargets.forEach((target) => {
+                if (target.dataset.altOpenBound === '1') return;
+                target.dataset.altOpenBound = '1';
+                target.addEventListener('mousedown', (event) => {
+                    if (event.target?.closest?.('.flatpickr-calendar')) return;
+                    if (event.target === altInput) return;
+                    openPicker(event);
+                });
             });
         }
 
@@ -3034,7 +3092,10 @@ console.log('[FTE AUTO] after=', fteField.value);
             bindProjectDatePairsThaiPicker();
             setTimeout(normalizeFlatpickrMobile, 0);
             setTimeout(() => {
-                document.querySelectorAll('.thai-datepicker').forEach(bindDatepickerSummarySync);
+                document.querySelectorAll('.thai-datepicker').forEach((input) => {
+                    bindDatepickerSummarySync(input);
+                    bindThaiDatepickerAltOpen(input);
+                });
             }, 0);
         });
 
@@ -3137,6 +3198,7 @@ console.log('[FTE AUTO] after=', fteField.value);
                 projectForm.addEventListener('submit', function(e) {
                     let isValid = true;
                     let firstInvalidField = null;
+                    let firstInvalidMessage = '';
                     const invalidRows = new Set();
                     const invalidSections = new Set();
                     const sectionNameById = {
@@ -3146,6 +3208,8 @@ console.log('[FTE AUTO] after=', fteField.value);
                         fte: 'Roles and Responsibilities',
                         output: 'ผลงานวิจัย (Output)',
                     };
+
+                    window.validateProjectFteDateRanges?.(projectForm);
 
                     const requiredFields = projectForm.querySelectorAll('[required]');
                     projectForm.querySelectorAll('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row')
@@ -3161,26 +3225,37 @@ console.log('[FTE AUTO] after=', fteField.value);
                         }
 
                         const val = field.value.trim();
-                        const displayTarget = field;
+                        const invalid = !val || !field.checkValidity();
+                        const displayTarget = window.getProjectValidationDisplayTarget?.(field) || field;
 
-                        if (!val) {
+                        if (invalid) {
                             isValid = false;
                             displayTarget.classList.add('border-red-500', 'bg-red-50');
-                            if (displayTarget.name === 'planning_status') {
+                            if (field !== displayTarget) {
+                                field.classList.add('border-red-500', 'bg-red-50');
+                            }
+                            if (field.name === 'planning_status') {
                                 displayTarget.style.backgroundColor = '#fef2f2';
                                 displayTarget.style.color = '#991b1b';
                             }
-                            if (!firstInvalidField) firstInvalidField = displayTarget;
-                            const row = displayTarget.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row');
+                            if (!firstInvalidField) {
+                                firstInvalidField = displayTarget;
+                                firstInvalidMessage = field.validationMessage || '';
+                            }
+                            const row = field.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row') ||
+                                displayTarget.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row');
                             if (row) invalidRows.add(row);
-                            const group = displayTarget.closest('[data-repeatable]');
+                            const group = field.closest('[data-repeatable]') || displayTarget.closest('[data-repeatable]');
                             if (group) {
                                 const id = group.dataset.id || '';
                                 if (sectionNameById[id]) invalidSections.add(sectionNameById[id]);
                             }
                         } else {
                             displayTarget.classList.remove('border-red-500', 'bg-red-50');
-                            if (displayTarget.name === 'planning_status') {
+                            if (field !== displayTarget) {
+                                field.classList.remove('border-red-500', 'bg-red-50');
+                            }
+                            if (field.name === 'planning_status') {
                                 updateStatusColor(displayTarget);
                             }
                         }
@@ -3219,11 +3294,14 @@ console.log('[FTE AUTO] after=', fteField.value);
                         const sectionText = invalidSections.size
                             ? ` (ส่วน: ${Array.from(invalidSections).join(', ')})`
                             : '';
+                        const errorText = firstInvalidMessage
+                            ? `${firstInvalidMessage}${sectionText}`
+                            : `กรุณากรอก: ${fieldLabel}${sectionText}`;
 
                         Swal.fire({
                             icon: 'error',
                             title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
-                            text: `กรุณากรอก: ${fieldLabel}${sectionText}`,
+                            text: errorText,
                             confirmButtonText: 'ตกลง',
                             confirmButtonColor: '#4f46e5',
                             returnFocus: false,
