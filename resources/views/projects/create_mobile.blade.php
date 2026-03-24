@@ -28,20 +28,28 @@
     ];
     $taskDetails = [
         'ติดต่อประสานงาน',
-        'ที่ปรึกษาโครงการ',
+        'ประชุมผู้มีส่วนได้ส่วนเสีย (Stakeholder meeting)',
         'review literature',
         'เขียนproposal',
-        'ดำเนินการเอกสารขอirb/submit irb',
         'ดำเนินการเอกสารขอทุน/submit ทุน',
+        'พัฒนาเครื่องมือและแนวทางในการเก็บข้อมูล',
+        'ดำเนินการเอกสารขอirb/submit irb',
+        'อบรมพัฒนาศักยภาพ',
         'เก็บข้อมูล',
         'วิเคราะห์ข้อมูล',
+        'ยืนขอขยายระยะเวลาโครงการ',
         'เขียนเล่มรายงาน',
+        'ส่งเล่มรายงาน เเละ แก้ไขตามข้อเสนอเเนะจากผู้ให้ทุน',
+        'ส่งเล่มรายงานฉบับสมบูรณ์',
+        'สรุปงบประมาณที่ใช้จริง เเละ ปิดโครงการ',
         'เขียนmanuscript',
         'submit journal',
         'เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์',
         'นำเสนอผลงานวิจัย Oral/Poster presentation',
         'ประชาสัมพันธ์',
+        'จัดทำสื่อ / Communication Assets',
         'สร้างโปรเเกรม ฐานข้อมูล เเละ โปรเเกรมที่เกี่ยวข้องกับงานวิจัย',
+        'IT and Technical support',
     ];
 @endphp
 
@@ -429,8 +437,22 @@
                 <x-date-be name="team_start_date" label="วันที่โครงการเริ่มทำงานของทีมวิจัย"
                     placeholder="กรุณาเลือกวันที่เริ่มทำงานของทีมวิจัย" />
 
-                <x-date-be name="team_end_date" label="วันที่สิ้นสุดการทำงานของทีมวิจัย"
-                    placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีมวิจัย" />
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดการทำงานของทีมวิจัย</span>
+                    <input name="team_end_date" type="text"
+                        value="{{ old('team_end_date') }}"
+                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
+                        data-force-be-date="1"
+                        placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีมวิจัย">
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2z" />
+                    </svg>
+                    @error('team_end_date')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
+                </label>
 
                 <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal"
                     placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal" />
@@ -441,8 +463,22 @@
                 <x-date-be name="start_date" label="BC102 - วันที่โครงการเริ่ม (ตามสัญญา)"
                     placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
-                <x-date-be name="end_date" label="BC103 - วันที่สิ้นสุด (ตามสัญญา)"
-                    placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา" />
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">BC103 - วันที่สิ้นสุด (ตามสัญญา)</span>
+                    <input name="end_date" type="text"
+                        value="{{ old('end_date') }}"
+                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
+                        data-force-be-date="1"
+                        placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2z" />
+                    </svg>
+                    @error('end_date')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
+                </label>
 
                 <label class="w-full">
                     {{-- BA000 - Project Planning (Status) --}}
@@ -1975,5 +2011,70 @@
                 budgetInput.focus();
             }
         });
+    </script>
+    <script>
+        (() => {
+            const formatBe = (date) => {
+                if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+                const day = date.getDate();
+                const month = date.toLocaleString('th-TH', { month: 'long' });
+                const year = date.getFullYear() + 543;
+                return `${day} ${month} ${year}`;
+            };
+
+            const syncForcedBeDatepicker = (input) => {
+                if (!(input instanceof HTMLInputElement)) return false;
+                const fp = input._flatpickr;
+                if (!fp) return false;
+
+                const picked = fp.selectedDates?.[0] ||
+                    (typeof parseLocalDateInput === 'function' ? parseLocalDateInput(input.value) : null) ||
+                    (typeof parseLocalDateInput === 'function' ? parseLocalDateInput(fp.altInput?.value) : null);
+
+                if (picked && fp.altInput) {
+                    fp.altInput.value = formatBe(picked);
+                }
+
+                const yearInput = fp.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
+                if (yearInput) {
+                    const year = parseInt(yearInput.value, 10);
+                    if (!Number.isNaN(year) && year < 2400) {
+                        yearInput.value = String(year + 543);
+                    }
+                }
+
+                return true;
+            };
+
+            const bindForcedBeDatepicker = (input) => {
+                if (!(input instanceof HTMLInputElement) || input.dataset.forceBeBound === '1') return;
+
+                const attach = () => {
+                    if (!syncForcedBeDatepicker(input)) {
+                        requestAnimationFrame(attach);
+                        return;
+                    }
+
+                    const fp = input._flatpickr;
+                    if (!fp || input.dataset.forceBeBound === '1') return;
+                    input.dataset.forceBeBound = '1';
+
+                    ['onReady', 'onOpen', 'onValueUpdate', 'onChange', 'onMonthChange', 'onYearChange'].forEach((hook) => {
+                        if (typeof appendFlatpickrHook === 'function') {
+                            appendFlatpickrHook(fp, hook, () => syncForcedBeDatepicker(input));
+                        }
+                    });
+
+                    fp.altInput?.addEventListener('focus', () => syncForcedBeDatepicker(input));
+                    fp.altInput?.addEventListener('click', () => syncForcedBeDatepicker(input));
+                };
+
+                attach();
+            };
+
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('input[data-force-be-date="1"]').forEach(bindForcedBeDatepicker);
+            });
+        })();
     </script>
 @endsection

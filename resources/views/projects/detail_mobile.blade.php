@@ -409,6 +409,12 @@
                     class="px-3 py-2 rounded-lg bg-indigo-100 text-indigo-800 text-sm font-semibold hover:bg-indigo-200">
                     📑 Progress Report
                 </a>
+
+                <a href="{{ route('fte.project.detail', $project) }}" target="_blank"
+                    class="px-3 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200">
+                        🔥 FTE project
+                </a>
+                       
                 @php
                     $isOwner = $project->user_id === auth()->id();
                     $isAdmin = auth()->user() && auth()->user()->role === 'admin';

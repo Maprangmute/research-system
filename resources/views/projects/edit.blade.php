@@ -24,20 +24,28 @@
     ];
     $taskDetails = [
         'ติดต่อประสานงาน',
-        'ที่ปรึกษาโครงการ',
+        'ประชุมผู้มีส่วนได้ส่วนเสีย (Stakeholder meeting)',
         'review literature',
         'เขียนproposal',
-        'ดำเนินการเอกสารขอirb/submit irb',
         'ดำเนินการเอกสารขอทุน/submit ทุน',
+        'พัฒนาเครื่องมือและแนวทางในการเก็บข้อมูล',
+        'ดำเนินการเอกสารขอirb/submit irb',
+        'อบรมพัฒนาศักยภาพ',
         'เก็บข้อมูล',
         'วิเคราะห์ข้อมูล',
+        'ยืนขอขยายระยะเวลาโครงการ',
         'เขียนเล่มรายงาน',
+        'ส่งเล่มรายงาน เเละ แก้ไขตามข้อเสนอเเนะจากผู้ให้ทุน',
+        'ส่งเล่มรายงานฉบับสมบูรณ์',
+        'สรุปงบประมาณที่ใช้จริง เเละ ปิดโครงการ',
         'เขียนmanuscript',
         'submit journal',
         'เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์',
         'นำเสนอผลงานวิจัย Oral/Poster presentation',
         'ประชาสัมพันธ์',
+        'จัดทำสื่อ / Communication Assets',
         'สร้างโปรเเกรม ฐานข้อมูล เเละ โปรเเกรมที่เกี่ยวข้องกับงานวิจัย',
+        'IT and Technical support',
     ];
     $piAffiliationList = \App\Models\Project::whereNotNull('pi_affiliation')
         ->whereRaw("TRIM(pi_affiliation) <> ''")
@@ -84,6 +92,7 @@
 <script>
     window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
     window.PROJECT_CARD_DATE_MODE = 'edit';
+    document.documentElement.classList.add('page-loading-lock');
 </script>
 
 <style>
@@ -94,6 +103,67 @@
     .required-mark {
         color: #ef4444;
         font-weight: 600;
+    }
+
+    .page-loading-lock,
+    .page-loading-lock body {
+        overflow: hidden;
+    }
+
+    .page-loading-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.86);
+        backdrop-filter: blur(2px);
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .page-loading-overlay.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .page-loading-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.9rem 1.1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.9rem;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        color: #334155;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .page-loading-spinner {
+        width: 1.15rem;
+        height: 1.15rem;
+        border: 2px solid #cbd5e1;
+        border-top-color: #2563eb;
+        border-radius: 9999px;
+        animation: page-loading-spin 0.7s linear infinite;
+    }
+
+    @keyframes page-loading-spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .fte-row {
+        content-visibility: auto;
+        contain-intrinsic-size: 120px;
+    }
+
+    .fte-row.row-collapsed {
+        contain-intrinsic-size: 88px;
     }
 </style>
 
@@ -115,6 +185,13 @@
     <!-- ✅ เพิ่ม Plugin สำหรับเลือกปี -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+
+    <div id="projectEditLoadingOverlay" class="page-loading-overlay" aria-live="polite" aria-busy="true">
+        <div class="page-loading-card">
+            <span class="page-loading-spinner" aria-hidden="true"></span>
+            <span>กำลังเตรียมหน้าแก้ไขโครงการ...</span>
+        </div>
+    </div>
 
     <div class="project-form max-w-6xl mx-auto mt-6 bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
 
@@ -404,9 +481,22 @@
                     value="{{ old('team_start_date', $project->team_start_date) }}"
                     placeholder="กรุณาเลือกวันที่เริ่มงานของทีม" />
 
-                <x-date-be name="team_end_date" label="วันที่สิ้นสุดทำ (ทีม)"
-                    value="{{ old('team_end_date', $project->team_end_date) }}"
-                    placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม" />
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดทำ (ทีม)</span>
+                    <input name="team_end_date" type="text"
+                        value="{{ old('team_end_date', $project->team_end_date) }}"
+                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
+                        data-force-be-date="1"
+                        placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม">
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    @error('team_end_date')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
+                </label>
 
                 <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal (เดือน/ปี)"
                     value="{{ old('proposal_date', $project->proposal_date) }}"
@@ -420,9 +510,22 @@
                     value="{{ old('start_date', $project->start_date) }}"
                     placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
-                <x-date-be name="end_date" label="วันที่สิ้นสุด (ตามสัญญา)"
-                    value="{{ old('end_date', $project->end_date) }}"
-                    placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา" />
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด (ตามสัญญา)</span>
+                    <input name="end_date" type="text"
+                        value="{{ old('end_date', $project->end_date) }}"
+                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
+                        data-force-be-date="1"
+                        placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    @error('end_date')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
+                </label>
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">Project Status <span class="text-red-500">*</span></span>
@@ -664,89 +767,10 @@
             <!-- ========== SECTION D : รายชื่อผู้มีส่วนร่วม (FTE) ========== -->
             <hr class="my-6 border-t-2 border-gray-300">
 
-            <div x-data="{ showFTE: false, currentTab: 'external', setTab(tab) { this.currentTab = tab } }" x-effect="document.body.classList.toggle('overflow-hidden', showFTE)">
+            <div>
 
-                <!-- Header -->
                 <div class="mb-2">
                     <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
-                </div>
-
-                <!-- Modal -->
-                <div x-show="showFTE" x-cloak x-transition.opacity
-                    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
-                    @click.self="showFTE = false" x-trap.noscroll="showFTE" x-init="...">
-
-
-                    <!-- Modal box -->
-                    <div x-ref="fteModal"
-                        class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl ring-1 ring-gray-200"
-                        @click.stop>
-                        <!-- Modal Header -->
-                        <div
-                            class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-white to-blue-50 sticky top-0 z-10">
-                            <div class="flex items-center space-x-2">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h6m6-6v12m6-6h-6" />
-                                </svg>
-                                <h2 class="text-lg md:text-xl font-bold text-gray-800">ข้อมูลผู้มีส่วนร่วม (FTE)</h2>
-                            </div>
-                            <button @click="showFTE = false"
-                                class="text-gray-500 hover:text-red-500 hover:bg-red-100 rounded-full p-2 transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Tabs -->
-                        <div
-                            class="flex justify-start px-6 pt-3 space-x-4 border-b text-sm font-medium bg-white sticky top-[60px] z-10">
-                            <button @click.prevent="setTab('external')"
-                                :class="currentTab === 'external'
-                                    ?
-                                    'text-blue-600 border-b-2 border-blue-600 font-semibold' :
-                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
-                                ทุนภายนอก
-                            </button>
-                            <button @click.prevent="setTab('internal')"
-                                :class="currentTab === 'internal'
-                                    ?
-                                    'text-blue-600 border-b-2 border-blue-600 font-semibold' :
-                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
-                                ทุนภายใน
-                            </button>
-                            <button @click.prevent="setTab('cohort')"
-                                :class="currentTab === 'cohort'
-                                    ?
-                                    'text-blue-600 border-b-2 border-blue-600 font-semibold' :
-                                    'text-gray-500 hover:text-blue-500 border-b-2 border-transparent'">
-                                COHORT
-                            </button>
-                        </div>
-
-                        <!-- Tab Content -->
-                        <div class="p-6 space-y-4 text-sm bg-white">
-                            <div x-show="currentTab === 'external'" x-transition>
-                                @include('projects.table.external')
-                            </div>
-                            <div x-show="currentTab === 'internal'" x-transition>
-                                @include('projects.table.internal')
-                            </div>
-                            <div x-show="currentTab === 'cohort'" x-transition>
-                                @include('projects.table.cohort')
-                            </div>
-                        </div>
-
-                        <div class="px-6 py-4 bg-gray-50 text-right border-t">
-                            <button @click="showFTE = false"
-                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                                ปิดหน้าต่าง
-                            </button>
-                        </div>
-
-                    </div>
                 </div>
 
                 <!-- ========== LIST OF FTE ROWS ========== -->
@@ -832,7 +856,8 @@
                                             <span class="block text-sm font-semibold">วันเริ่มต้นภาระงาน <span class="text-red-500">*</span></span>
                                             <input name="fte_roles[{{ $i }}][start_date]" type="text"
                                                 value="{{ $fteStartDate }}"
-                                                class="thai-datepicker w-full border p-2 rounded pl-10" required
+                                                class="fte-shared-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer" required readonly
+                                                data-date-role="start"
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
                                                 oninput="this.setCustomValidity('')">
                                             <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
@@ -847,7 +872,8 @@
                                             <span class="block text-sm font-semibold">วันสิ้นสุดภาระงาน <span class="text-red-500">*</span></span>
                                             <input name="fte_roles[{{ $i }}][end_date]" type="text"
                                                 value="{{ $fteEndDate }}"
-                                                class="thai-datepicker w-full border p-2 rounded pl-10" required
+                                                class="fte-shared-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer" required readonly
+                                                data-date-role="end"
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
                                                 oninput="this.setCustomValidity('')">
                                             <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
@@ -924,6 +950,7 @@
 
                 </div>
                 <div id="fte-deleted-ids"></div>
+                <input type="text" id="fteSharedDatepicker" class="hidden" aria-hidden="true" tabindex="-1">
 
                 <button type="button" onclick="addFTERow()" class="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
                     + เพิ่มผู้มีส่วนร่วม
@@ -1733,21 +1760,23 @@
         }
 
 
-
-
-
-        function getNextFteIndex() {
-            const container = document.getElementById('fte-container');
-            if (!container) return 0;
-            let maxIndex = -1;
-            container.querySelectorAll('[name^="fte_roles["]').forEach((el) => {
-                const m = String(el.name || '').match(/^fte_roles\[(\d+)\]/);
-                if (!m) return;
-                const idx = Number(m[1]);
-                if (!Number.isNaN(idx)) maxIndex = Math.max(maxIndex, idx);
-            });
-            return maxIndex + 1;
-        }
+        const FTE_ROLE_GROUPS = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
+        const FTE_JOB_DETAILS = [
+            'Researcher', 'Researcher Assistant', 'Project Manager',
+            'Research Coordinator', 'นักวิชาการสารสนเทศ',
+            'นักประชาสัมพันธ์', 'เจ้าหน้าที่บริหารงานทั่วไป'
+        ];
+        const FTE_TASK_DETAILS = @json($taskDetails);
+        const FTE_GROUP_DROPDOWN = [`<option value="" disabled selected>เลือกกลุ่ม</option>`]
+            .concat(FTE_ROLE_GROUPS.map((group) => `<option value="${group}">${group}</option>`))
+            .join('');
+        const FTE_JOB_DROPDOWN = [`<option value="" disabled selected>เลือกภาระงาน</option>`]
+            .concat(FTE_JOB_DETAILS.map((job) => `<option value="${job}">${job}</option>`))
+            .join('');
+        const FTE_TASK_DROPDOWN = [`<option value="" disabled selected>เลือกภารกิจ</option>`]
+            .concat(FTE_TASK_DETAILS.map((task) => `<option value="${task}">${task}</option>`))
+            .join('');
+        let fteNextIndex = document.querySelectorAll('#fte-container .fte-row').length;
 
         function addFTERow() {
             if (typeof window.validateFteBeforeAdd === 'function' && !window.validateFteBeforeAdd({
@@ -1757,30 +1786,10 @@
             }
 
             const container = document.getElementById('fte-container');
-            const index = getNextFteIndex();
+            const index = fteNextIndex++;
             const id = `fte-${index}`;
 
             ensureFteDatalist();
-
-            const roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
-            const jobDetails = [
-                'Researcher', 'Researcher Assistant', 'Project Manager',
-                'Research Coordinator', 'นักวิชาการสารสนเทศ',
-                'นักประชาสัมพันธ์', 'เจ้าหน้าที่บริหารงานทั่วไป'
-            ];
-            const taskDetails = @json($taskDetails);
-
-            const groupDropdown = [`<option value="" disabled selected>เลือกกลุ่ม</option>`]
-                .concat(roleGroups.map(g => `<option value="${g}">${g}</option>`))
-                .join('');
-
-            const jobDropdown = [`<option value="" disabled selected>เลือกภาระงาน</option>`]
-                .concat(jobDetails.map(j => `<option value="${j}">${j}</option>`))
-                .join('');
-
-            const taskDropdown = [`<option value="" disabled selected>เลือกภารกิจ</option>`]
-                .concat(taskDetails.map(t => `<option value="${t}">${t}</option>`))
-                .join('');
 
             container.insertAdjacentHTML('beforeend', `
 <div id="${id}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
@@ -1809,7 +1818,7 @@
                     <select name="fte_roles[${index}][role_group]" class="w-full border p-2 rounded" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่ม')"
                         oninput="this.setCustomValidity('')">
-                        ${groupDropdown}
+                        ${FTE_GROUP_DROPDOWN}
                     </select>
                 </label>
             </div>
@@ -1822,7 +1831,7 @@
                     <select name="fte_roles[${index}][job_detail]" class="w-full border p-2 rounded" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
                         oninput="this.setCustomValidity('')">
-                        ${jobDropdown}
+                        ${FTE_JOB_DROPDOWN}
                     </select>
                 </label>
 
@@ -1830,8 +1839,10 @@
                     <span class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน <span class="text-red-500">*</span></span>
                     <input name="fte_roles[${index}][start_date]"
                         type="text"
-                        class="thai-datepicker w-full border p-2 rounded pl-10"
+                        class="fte-shared-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
+                        data-date-role="start"
                         placeholder="โปรดใส่วันที่"
+                        readonly
                         required
                         oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
                         oninput="this.setCustomValidity('')">
@@ -1847,8 +1858,10 @@
                     <span class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน <span class="text-red-500">*</span></span>
                     <input name="fte_roles[${index}][end_date]"
                         type="text"
-                        class="thai-datepicker w-full border p-2 rounded pl-10"
+                        class="fte-shared-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
+                        data-date-role="end"
                         placeholder="โปรดใส่วันที่"
+                        readonly
                         required
                         oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
                         oninput="this.setCustomValidity('')">
@@ -1884,7 +1897,7 @@
                     required
                     oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
                     oninput="this.setCustomValidity('')">
-                    ${taskDropdown}
+                    ${FTE_TASK_DROPDOWN}
                 </select>
             </label>
 
@@ -1927,62 +1940,286 @@
 `);
 
             const row = document.getElementById(id);
-            reindexFTE();
+            const rowNumber = container.querySelectorAll('.fte-row').length;
+            setFteRowIndex(row, rowNumber);
             keepAddedRowOpen(id);
             window.handleFteRowAdded?.(id);
-            initThaiDatepickers(row, {
-                bindPairs: true
-            });
         }
 
         document.addEventListener("DOMContentLoaded", function() {
             reindexFTE();
         });
 
+        function setFteRowIndex(row, index) {
+            const span = row?.querySelector('.fte-index');
+            if (span) span.textContent = index;
+            const summaryIndex = row?.querySelector('.fte-summary-index');
+            if (summaryIndex) summaryIndex.textContent = index;
+        }
 
-        function attachFTEAuto(scope = document) {
-            scope.querySelectorAll('.fte-hours').forEach(input => {
-                input.oninput = function() {
+        function reindexFTE(startIndex = 0) {
+            const rows = document.querySelectorAll('#fte-container .fte-row');
+            rows.forEach((row, index) => {
+                if (index < startIndex) return;
+                setFteRowIndex(row, index + 1);
+            });
+        }
 
-                    const row = this.closest('.fte-row');
-                    const fteField = row.querySelector('.fte-value');
+        function getFteContainer() {
+            return document.getElementById('fte-container');
+        }
 
-                    const hours = parseFloat(this.value);
+        function getFteFieldValue(row, field) {
+            return row.querySelector(`[name^="fte_roles["][name$="[${field}]"]`)?.value?.trim() || '';
+        }
 
-                    const oldFTE = fteField.value; // ค่าเดิมในช่อง FTE
+        function getFteSerializedValue(row, field, {
+            preferIso = false
+        } = {}) {
+            const input = row.querySelector(`[name^="fte_roles["][name$="[${field}]"]`);
+            if (!input) return '';
 
-                    // ========== RULE 1 ==========
-                    // ชั่วโมง = 0 และ fte เดิม > 0 → ห้ามแก้ไข
-                    if ((!hours || hours === 0) && oldFTE !== "" && parseFloat(oldFTE) > 0) {
-                        return; // ไม่แตะต้องค่าเดิม
-                    }
+            const rawValue = input.value?.trim() || '';
+            const isoValue = input.dataset?.isoValue?.trim() || '';
 
-                    // ========== RULE 2 ==========
-                    // ชั่วโมง = 0 และ FTE เดิมว่างหรือ 0 → set = 0.00000
-                    if (!hours || hours === 0) {
-                        if (oldFTE === "" || parseFloat(oldFTE) === 0) {
-                            fteField.value = "0.00000";
-                        }
-                        return;
-                    }
+            if (preferIso) {
+                const parsedRaw = parseLocalDateInput(rawValue);
+                if (parsedRaw) {
+                    return toDmyCE(parsedRaw);
+                }
 
-                    // ========== RULE 3 ==========
-                    // ชั่วโมงมากกว่า 0 → คำนวณปกติ
-                    const fte = (hours * 0.000621).toFixed(8);
-                    // const fte = (hours * 0.00745).toFixed(6);
-                    
-                    fteField.value = fte;
+                const parsedIso = parseLocalDateInput(isoValue);
+                if (parsedIso) {
+                    return toDmyCE(parsedIso);
+                }
+
+                return rawValue || isoValue;
+            }
+
+            return rawValue || isoValue;
+        }
+
+        function serializeFteRows() {
+            const container = getFteContainer();
+            if (!container) return [];
+
+            return Array.from(container.querySelectorAll('.fte-row')).map((row) => {
+                mountFteRowBody(row);
+                return {
+                    id: getFteSerializedValue(row, 'id'),
+                    name: getFteSerializedValue(row, 'name'),
+                    role_group: getFteSerializedValue(row, 'role_group'),
+                    job_detail: getFteSerializedValue(row, 'job_detail'),
+                    start_date: getFteSerializedValue(row, 'start_date', {
+                        preferIso: true
+                    }),
+                    end_date: getFteSerializedValue(row, 'end_date', {
+                        preferIso: true
+                    }),
+                    hours: getFteSerializedValue(row, 'hours'),
+                    fte_value: getFteSerializedValue(row, 'fte_value'),
+                    fte_value_research: getFteSerializedValue(row, 'fte_value_research'),
+                    task_detail: getFteSerializedValue(row, 'task_detail'),
                 };
             });
         }
 
+        function getFteSummaryParts(row) {
+            const name = getFteFieldValue(row, 'name') || 'ยังไม่ได้ระบุชื่อ';
+            const roleGroup = getFteFieldValue(row, 'role_group');
+            const jobDetail = getFteFieldValue(row, 'job_detail');
+            const taskDetail = getFteFieldValue(row, 'task_detail');
+            const hours = getFteFieldValue(row, 'hours');
+            const fteValue = getFteFieldValue(row, 'fte_value');
 
-        function reindexFTE() {
-            const rows = document.querySelectorAll('#fte-container .fte-row');
-            rows.forEach((row, index) => {
-                const span = row.querySelector('.fte-index');
-                if (span) span.textContent = index + 1;
+            const meta = [roleGroup, jobDetail].filter(Boolean).join(' / ') || 'ยังไม่ได้เลือกกลุ่มหรือภาระงาน';
+            const task = taskDetail || 'ยังไม่ได้เลือกรายละเอียดภารกิจ';
+            const metrics = [
+                hours ? `${hours} hr` : '0 hr',
+                fteValue ? `FTE ${fteValue}` : 'FTE 0.00000000'
+            ].join(' | ');
+
+            return {
+                name,
+                meta,
+                task,
+                metrics
+            };
+        }
+
+        function updateFteRowSummary(row) {
+            if (!row) return;
+            const summary = getFteSummaryParts(row);
+            const nameEl = row.querySelector('.fte-summary-name');
+            const metaEl = row.querySelector('.fte-summary-meta');
+            const taskEl = row.querySelector('.fte-summary-task');
+            const metricsEl = row.querySelector('.fte-summary-metrics');
+
+            if (nameEl) nameEl.textContent = summary.name;
+            if (metaEl) metaEl.textContent = summary.meta;
+            if (taskEl) taskEl.textContent = summary.task;
+            if (metricsEl) metricsEl.textContent = summary.metrics;
+        }
+
+        function mountFteRowBody(row) {
+            if (!row || row.dataset.fteBodyMounted === '1') return;
+            const host = row._fteBodyHost;
+            const fragment = row._fteBodyFragment;
+            if (!host || !fragment) return;
+
+            host.hidden = false;
+            host.appendChild(fragment);
+            row._fteBodyFragment = document.createDocumentFragment();
+            row.dataset.fteBodyMounted = '1';
+            primeLazyThaiDatepickers(host);
+        }
+
+        function unmountFteRowBody(row) {
+            if (!row || row.dataset.fteBodyMounted !== '1') return;
+            const host = row._fteBodyHost;
+            if (!host) return;
+
+            const fragment = document.createDocumentFragment();
+            while (host.firstChild) {
+                fragment.appendChild(host.firstChild);
+            }
+
+            row._fteBodyFragment = fragment;
+            row.dataset.fteBodyMounted = '0';
+            host.hidden = true;
+        }
+
+        function setFteRowOpen(row, open) {
+            if (!row) return;
+
+            if (open) {
+                const container = getFteContainer();
+                container?.querySelectorAll('.fte-row[data-collapsed="0"]').forEach((otherRow) => {
+                    if (otherRow !== row) setFteRowOpen(otherRow, false);
+                });
+                mountFteRowBody(row);
+                row.dataset.collapsed = '0';
+                row.classList.remove('row-collapsed');
+                row.querySelector('.fte-summary-toggle')?.setAttribute('aria-expanded', 'true');
+            } else {
+                updateFteRowSummary(row);
+                unmountFteRowBody(row);
+                row.dataset.collapsed = '1';
+                row.classList.add('row-collapsed');
+                row.querySelector('.fte-summary-toggle')?.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        function hydrateFteRow(row, {
+            open = false
+        } = {}) {
+            if (!row || row.dataset.fteHydrated === '1') {
+                if (open) setFteRowOpen(row, true);
+                return;
+            }
+
+            const bodyNodes = Array.from(row.childNodes);
+            row.textContent = '';
+
+            const summary = document.createElement('div');
+            summary.className = 'fte-summary-shell flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3';
+            summary.innerHTML = `
+                <button type="button" class="fte-summary-toggle flex-1 text-left" aria-expanded="false">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="text-sm font-semibold text-slate-700">ผู้มีส่วนร่วมคนที่ <span class="fte-summary-index">1</span></div>
+                            <div class="fte-summary-name truncate text-base font-bold text-slate-900"></div>
+                            <div class="fte-summary-meta mt-1 text-sm text-slate-600"></div>
+                            <div class="fte-summary-task mt-1 text-sm text-slate-500"></div>
+                            <div class="fte-summary-metrics mt-2 text-xs font-medium text-slate-500"></div>
+                        </div>
+                        <div class="ml-2 shrink-0 text-xs font-semibold text-blue-700">แก้ไข</div>
+                    </div>
+                </button>
+                <button type="button" class="fte-summary-delete shrink-0 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+                    ลบ
+                </button>
+            `;
+
+            const bodyHost = document.createElement('div');
+            bodyHost.className = 'fte-editor-body mt-4';
+            bodyNodes.forEach((node) => bodyHost.appendChild(node));
+
+            row.append(summary, bodyHost);
+            row._fteBodyHost = bodyHost;
+            row._fteBodyFragment = document.createDocumentFragment();
+            row.dataset.fteHydrated = '1';
+
+            summary.querySelector('.fte-summary-toggle')?.addEventListener('click', () => {
+                const nextOpen = row.dataset.collapsed !== '0';
+                setFteRowOpen(row, nextOpen);
             });
+
+            summary.querySelector('.fte-summary-delete')?.addEventListener('click', (event) => {
+                event.stopPropagation();
+                removeRow(row.id, 'fte');
+            });
+
+            updateFteRowSummary(row);
+            setFteRowOpen(row, open);
+        }
+
+        function initFteEditorWindowing() {
+            const container = getFteContainer();
+            if (!container || container.dataset.fteWindowingReady === '1') return;
+            container.dataset.fteWindowingReady = '1';
+
+            const rows = Array.from(container.querySelectorAll('.fte-row'));
+            const firstRow = rows.shift();
+            if (firstRow) {
+                hydrateFteRow(firstRow, {
+                    open: true
+                });
+            }
+
+            const chunkSize = 12;
+            const hydrateChunk = () => {
+                const slice = rows.splice(0, chunkSize);
+                slice.forEach((row) => hydrateFteRow(row, {
+                    open: false
+                }));
+                if (rows.length > 0) {
+                    if (typeof window.requestIdleCallback === 'function') {
+                        window.requestIdleCallback(hydrateChunk, {
+                            timeout: 120
+                        });
+                    } else {
+                        window.setTimeout(hydrateChunk, 16);
+                    }
+                }
+            };
+
+            if (rows.length > 0) {
+                if (typeof window.requestIdleCallback === 'function') {
+                    window.requestIdleCallback(hydrateChunk, {
+                        timeout: 120
+                    });
+                } else {
+                    window.setTimeout(hydrateChunk, 16);
+                }
+            }
+
+            container.addEventListener('input', (event) => {
+                const row = event.target.closest('.fte-row');
+                if (!row) return;
+                updateFteRowSummary(row);
+            });
+
+            container.addEventListener('change', (event) => {
+                const row = event.target.closest('.fte-row');
+                if (!row) return;
+                updateFteRowSummary(row);
+            });
+
+            const form = document.getElementById('projectForm');
+            form?.addEventListener('submit', () => {
+                container.querySelectorAll('.fte-row').forEach((row) => mountFteRowBody(row));
+            }, true);
         }
 
 
@@ -2415,6 +2652,9 @@
 
         function removeRow(id, type) {
             const el = document.getElementById(id);
+            const removedIndex = type === 'fte' && el?.parentElement ?
+                Array.from(el.parentElement.children).indexOf(el) :
+                -1;
             if (el && type === 'fte') {
                 const idInput = el.querySelector('input[name^="fte_roles["][name$="[id]"]');
                 const existingId = Number(idInput?.value || 0);
@@ -2432,7 +2672,7 @@
             if (type === 'output') reindexOutput();
             if (type === 'copi') reindexCopi?.();
             if (type === 'irb') reindexIRB?.();
-            if (type === 'fte') reindexFTE?.();
+            if (type === 'fte') reindexFTE?.(Math.max(0, removedIndex));
             if (type === 'coresearch') reindexCoResearch?.();
         }
     </script>
@@ -2602,7 +2842,7 @@
         }
 
         function bindProjectDatePairsThaiPicker(scope = document) {
-            scope.querySelectorAll('input[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
+            scope.querySelectorAll('input.thai-datepicker[name^="fte_roles["][name$="[start_date]"]').forEach((startInput) => {
                 const endName = startInput.name.replace('[start_date]', '[end_date]');
                 const endInput = document.querySelector(`input[name="${endName}"]`);
                 bindEndDateMinThaiPicker(startInput, endInput, `fte_${startInput.name}`);
@@ -2690,6 +2930,183 @@
             }
         }
 
+        function formatThaiBuddhistDate(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+            const day = date.getDate();
+            const month = date.toLocaleString('th-TH', {
+                month: 'long'
+            });
+            const year = date.getFullYear() + 543;
+            return `${day} ${month} ${year}`;
+        }
+
+        function syncFteSharedDateInput(input) {
+            if (!(input instanceof HTMLInputElement)) return null;
+            const parsed = parseLocalDateInput(input.value || '') || parseLocalDateInput(input.dataset.isoValue || '');
+            if (!parsed) {
+                input.dataset.isoValue = '';
+                return null;
+            }
+
+            const isoValue = toDmyCE(parsed);
+            input.dataset.isoValue = isoValue;
+            input.value = formatThaiBuddhistDate(parsed);
+            input.setCustomValidity('');
+            return parsed;
+        }
+
+        function initSharedFteDatepicker() {
+            const sharedInput = document.getElementById('fteSharedDatepicker');
+            if (!(sharedInput instanceof HTMLInputElement) || sharedInput._flatpickr) return;
+
+            let activeTarget = null;
+            const resolveSharedDateValue = (input) => {
+                return syncFteSharedDateInput(input);
+            };
+
+            const picker = flatpickr(sharedInput, {
+                locale: 'th',
+                dateFormat: 'd-m-Y',
+                prevArrow: '',
+                nextArrow: '',
+                disableMobile: true,
+                clickOpens: false,
+                allowInput: false,
+                static: false,
+                onReady(selectedDates, dateStr, instance) {
+                    toBuddhist(selectedDates, dateStr, instance);
+                },
+                onValueUpdate: toBuddhist,
+                onMonthChange: toBuddhist,
+                onYearChange: toBuddhist,
+                onChange(selectedDates) {
+                    if (!(activeTarget instanceof HTMLInputElement)) return;
+                    const selected = selectedDates?.[0] || null;
+                    activeTarget.value = selected ? formatThaiBuddhistDate(selected) : '';
+                    activeTarget.dataset.isoValue = selected ? toDmyCE(selected) : '';
+                    activeTarget.setCustomValidity('');
+                    activeTarget.dispatchEvent(new Event('input', {
+                        bubbles: true
+                    }));
+                    activeTarget.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+
+                    const row = activeTarget.closest('.fte-row');
+                    const startInput = row?.querySelector('.fte-shared-datepicker[data-date-role="start"]');
+                    const endInput = row?.querySelector('.fte-shared-datepicker[data-date-role="end"]');
+                    if (activeTarget.dataset.dateRole === 'start' && startInput && endInput) {
+                        const startDate = resolveSharedDateValue(startInput);
+                        const endDate = resolveSharedDateValue(endInput);
+                        if (startDate && endDate && normalizeDateOnly(endDate) < normalizeDateOnly(startDate)) {
+                            endInput.value = '';
+                            endInput.dataset.isoValue = '';
+                            endInput.dispatchEvent(new Event('input', {
+                                bubbles: true
+                            }));
+                            endInput.dispatchEvent(new Event('change', {
+                                bubbles: true
+                            }));
+                        }
+                    }
+                }
+            });
+
+            const openSharedPicker = (target) => {
+                if (!(target instanceof HTMLInputElement)) return;
+                activeTarget = target;
+                const row = target.closest('.fte-row');
+                const startInput = row?.querySelector('.fte-shared-datepicker[data-date-role="start"]');
+                const endInput = row?.querySelector('.fte-shared-datepicker[data-date-role="end"]');
+
+                syncFteSharedDateInput(startInput);
+                syncFteSharedDateInput(endInput);
+
+                const currentDate = resolveSharedDateValue(target);
+                const minDate = target.dataset.dateRole === 'end' ? resolveSharedDateValue(startInput) : null;
+                const maxDate = target.dataset.dateRole === 'start' ? resolveSharedDateValue(endInput) : null;
+
+                picker.set('positionElement', target);
+                picker._positionElement = target;
+                picker.set('minDate', minDate ? normalizeDateOnly(minDate) : null);
+                picker.set('maxDate', maxDate ? normalizeDateOnly(maxDate) : null);
+                picker.set('disable', [
+                    ...(minDate ? [date => normalizeDateOnly(date) < normalizeDateOnly(minDate)] : []),
+                    ...(maxDate ? [date => normalizeDateOnly(date) > normalizeDateOnly(maxDate)] : []),
+                ]);
+                picker.setDate(currentDate || null, false);
+                picker.open();
+                requestAnimationFrame(() => {
+                    picker._positionCalendar?.();
+                    toBuddhist(picker.selectedDates || [], picker.input?.value || '', picker);
+                });
+            };
+
+            document.addEventListener('click', (event) => {
+                const target = event.target.closest('.fte-shared-datepicker') ||
+                    event.target.closest('.relative')?.querySelector('.fte-shared-datepicker');
+                if (!(target instanceof HTMLInputElement)) return;
+                openSharedPicker(target);
+            });
+
+            document.addEventListener('focusin', (event) => {
+                const target = event.target.closest('.fte-shared-datepicker');
+                if (!target) return;
+                openSharedPicker(target);
+            });
+
+            document.addEventListener('submit', (event) => {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement) || form.id !== 'projectForm') return;
+                form.querySelectorAll('.fte-shared-datepicker').forEach((input) => {
+                    if (!(input instanceof HTMLInputElement)) return;
+                    syncFteSharedDateInput(input);
+                    const isoValue = input.dataset.isoValue || '';
+                    if (isoValue) {
+                        input.value = isoValue;
+                    }
+                });
+            }, true);
+
+            window.addEventListener('pageshow', () => {
+                document.querySelectorAll('.fte-shared-datepicker').forEach((input) => {
+                    syncFteSharedDateInput(input);
+                });
+            });
+        }
+
+        function shouldLazyInitThaiDatepicker(input) {
+            return Boolean(input?.closest?.('#fte-container .fte-row'));
+        }
+
+        function primeLazyThaiDatepickers(scope = document) {
+            scope.querySelectorAll('.thai-datepicker').forEach((input) => {
+                if (input._flatpickr || input.dataset.lazyDatepickerBound === '1' || !shouldLazyInitThaiDatepicker(input)) {
+                    return;
+                }
+
+                input.dataset.lazyDatepickerBound = '1';
+
+                const boot = () => {
+                    if (input._flatpickr) {
+                        requestAnimationFrame(() => input._flatpickr?.open());
+                        return;
+                    }
+                    const row = input.closest('.fte-row');
+                    initThaiDatepickers(row || input.closest('label') || input.parentElement || input, {
+                        bindPairs: true
+                    });
+                    requestAnimationFrame(() => input._flatpickr?.open());
+                };
+
+                ['focus', 'click'].forEach((eventName) => {
+                    input.addEventListener(eventName, boot, {
+                        passive: true
+                    });
+                });
+            });
+        }
+
         function bindDatepickerSummarySync(input) {
             if (!input) return;
 
@@ -2744,7 +3161,7 @@
 
         function toBuddhist(selectedDates, dateStr, instance) {
             const altInput = instance.altInput;
-            if (selectedDates.length > 0) {
+            if (altInput && selectedDates.length > 0) {
                 const date = selectedDates[0];
                 const day = date.getDate();
                 const month = date.toLocaleString('th-TH', {
@@ -2790,14 +3207,20 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initThaiDatepickers();
-            bindProjectDatePairsThaiPicker();
-            setTimeout(() => {
-                document.querySelectorAll('.thai-datepicker').forEach((input) => {
-                    bindDatepickerSummarySync(input);
-                    bindThaiDatepickerAltOpen(input);
+            const eagerScopes = Array.from(document.querySelectorAll('.thai-datepicker'))
+                .filter((input) => !shouldLazyInitThaiDatepicker(input));
+
+            eagerScopes.forEach((input) => {
+                initThaiDatepickers(input.closest('label') || input.parentElement || input, {
+                    bindPairs: true
                 });
-            }, 0);
+            });
+
+            primeLazyThaiDatepickers();
+            initSharedFteDatepicker();
+            document.querySelectorAll('.fte-shared-datepicker').forEach((input) => {
+                syncFteSharedDateInput(input);
+            });
         });
 
 
@@ -2828,24 +3251,28 @@
             const form = document.getElementById('projectForm');
             if (!form) return;
 
-            const updateFormMeta = () => {
-                const fteIndexes = new Set();
-                form.querySelectorAll('[name^="fte_roles["]').forEach((el) => {
-                    if (el.disabled || el.closest('template')) return;
-                    const m = String(el.name || '').match(/^fte_roles\[(\d+)\]/);
-                    if (m) fteIndexes.add(m[1]);
-                });
-
+            const updateFormMeta = ({
+                includeFtePayload = false
+            } = {}) => {
                 const namedFields = Array.from(form.querySelectorAll('input[name], select[name], textarea[name]'))
                     .filter((el) => !el.disabled && !el.closest('template')).length;
 
                 const fteExpected = form.querySelector('#fteExpectedRows');
                 const varsExpected = form.querySelector('#formExpectedVars');
-                if (fteExpected) fteExpected.value = String(fteIndexes.size);
+                const ftePayload = form.querySelector('#fteRolesPayload');
+                const rowCount = form.querySelectorAll('#fte-container .fte-row').length;
+
+                if (fteExpected) fteExpected.value = String(rowCount);
                 if (varsExpected) varsExpected.value = String(namedFields);
+                if (ftePayload) {
+                    ftePayload.value = includeFtePayload ? JSON.stringify(serializeFteRows()) : '';
+                }
             };
 
-            form.addEventListener('submit', updateFormMeta, true);
+            updateFormMeta();
+            form.addEventListener('submit', () => updateFormMeta({
+                includeFtePayload: true
+            }), true);
         });
     </script>
 
@@ -3130,6 +3557,103 @@
 
                 applyProgressSummary(payload.summary || {});
                 closeModal();
+            });
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const overlayId = 'projectEditLoadingOverlay';
+            let released = false;
+
+            const releaseLoadingOverlay = () => {
+                if (released) return;
+                released = true;
+
+                const overlay = document.getElementById(overlayId);
+                overlay?.classList.add('is-hidden');
+                window.setTimeout(() => overlay?.remove(), 240);
+                document.documentElement.classList.remove('page-loading-lock');
+            };
+
+            window.releaseProjectEditLoadingOverlay = releaseLoadingOverlay;
+
+            window.addEventListener('load', () => {
+                window.setTimeout(() => {
+                    window.requestAnimationFrame(() => {
+                        window.requestAnimationFrame(releaseLoadingOverlay);
+                    });
+                }, 250);
+            }, {
+                once: true
+            });
+
+            window.setTimeout(releaseLoadingOverlay, 4000);
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const formatBe = (date) => {
+                if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+                const day = date.getDate();
+                const month = date.toLocaleString('th-TH', { month: 'long' });
+                const year = date.getFullYear() + 543;
+                return `${day} ${month} ${year}`;
+            };
+
+            const syncForcedBeDatepicker = (input) => {
+                if (!(input instanceof HTMLInputElement)) return false;
+                const fp = input._flatpickr;
+                if (!fp) return false;
+
+                const picked = fp.selectedDates?.[0] ||
+                    (typeof parseLocalDateInput === 'function' ? parseLocalDateInput(input.value) : null) ||
+                    (typeof parseLocalDateInput === 'function' ? parseLocalDateInput(fp.altInput?.value) : null);
+
+                if (picked && fp.altInput) {
+                    fp.altInput.value = formatBe(picked);
+                }
+
+                const yearInput = fp.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
+                if (yearInput) {
+                    const year = parseInt(yearInput.value, 10);
+                    if (!Number.isNaN(year) && year < 2400) {
+                        yearInput.value = String(year + 543);
+                    }
+                }
+
+                return true;
+            };
+
+            const bindForcedBeDatepicker = (input) => {
+                if (!(input instanceof HTMLInputElement) || input.dataset.forceBeBound === '1') return;
+
+                const attach = () => {
+                    if (!syncForcedBeDatepicker(input)) {
+                        requestAnimationFrame(attach);
+                        return;
+                    }
+
+                    const fp = input._flatpickr;
+                    if (!fp || input.dataset.forceBeBound === '1') return;
+                    input.dataset.forceBeBound = '1';
+
+                    ['onReady', 'onOpen', 'onValueUpdate', 'onChange', 'onMonthChange', 'onYearChange'].forEach((hook) => {
+                        if (typeof appendFlatpickrHook === 'function') {
+                            appendFlatpickrHook(fp, hook, () => syncForcedBeDatepicker(input));
+                        }
+                    });
+
+                    fp.altInput?.addEventListener('focus', () => syncForcedBeDatepicker(input));
+                    fp.altInput?.addEventListener('click', () => syncForcedBeDatepicker(input));
+                };
+
+                attach();
+            };
+
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('input[data-force-be-date="1"]').forEach(bindForcedBeDatepicker);
             });
         })();
     </script>

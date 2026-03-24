@@ -24,20 +24,28 @@
     ];
     $taskDetails = [
         'ติดต่อประสานงาน',
-        'ที่ปรึกษาโครงการ',
+        'ประชุมผู้มีส่วนได้ส่วนเสีย (Stakeholder meeting)',
         'review literature',
         'เขียนproposal',
-        'ดำเนินการเอกสารขอirb/submit irb',
         'ดำเนินการเอกสารขอทุน/submit ทุน',
+        'พัฒนาเครื่องมือและแนวทางในการเก็บข้อมูล',
+        'ดำเนินการเอกสารขอirb/submit irb',
+        'อบรมพัฒนาศักยภาพ',
         'เก็บข้อมูล',
         'วิเคราะห์ข้อมูล',
+        'ยืนขอขยายระยะเวลาโครงการ',
         'เขียนเล่มรายงาน',
+        'ส่งเล่มรายงาน เเละ แก้ไขตามข้อเสนอเเนะจากผู้ให้ทุน',
+        'ส่งเล่มรายงานฉบับสมบูรณ์',
+        'สรุปงบประมาณที่ใช้จริง เเละ ปิดโครงการ',
         'เขียนmanuscript',
         'submit journal',
         'เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์',
         'นำเสนอผลงานวิจัย Oral/Poster presentation',
         'ประชาสัมพันธ์',
+        'จัดทำสื่อ / Communication Assets',
         'สร้างโปรเเกรม ฐานข้อมูล เเละ โปรเเกรมที่เกี่ยวข้องกับงานวิจัย',
+        'IT and Technical support',
     ];
 @endphp
 
@@ -351,8 +359,22 @@
                 <x-date-be name="team_start_date" label="วันที่โครงการเริ่มทำงานของทีมวิจัย"
                     placeholder="กรุณาเลือกวันที่เริ่มทำงานของทีมวิจัย" />
 
-                <x-date-be name="team_end_date" label="วันที่สิ้นสุดการทำงานของทีมวิจัย"
-                    placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีมวิจัย" />
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดการทำงานของทีมวิจัย</span>
+                    <input name="team_end_date" type="text"
+                        value="{{ old('team_end_date') }}"
+                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
+                        data-force-be-date="1"
+                        placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีมวิจัย">
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    @error('team_end_date')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
+                </label>
 
                 <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal"
                     placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal" />
@@ -363,8 +385,22 @@
                 <x-date-be name="start_date" label="BC102 - วันที่โครงการเริ่ม (ตามสัญญา)"
                     placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
-                <x-date-be name="end_date" label="BC103 - วันที่สิ้นสุด (ตามสัญญา)"
-                    placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา" />
+                <label class="w-full relative">
+                    <span class="block text-sm text-gray-700 mb-1">BC103 - วันที่สิ้นสุด (ตามสัญญา)</span>
+                    <input name="end_date" type="text"
+                        value="{{ old('end_date') }}"
+                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
+                        data-force-be-date="1"
+                        placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2z" />
+                    </svg>
+                    @error('end_date')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
+                </label>
 
                 <label class="w-full">
                     {{-- BA000 - Project Planning (Status) --}}
@@ -840,11 +876,53 @@
                                         </select>
                                     </label>
 
-                                    <x-date-be name="fte_roles[0][start_date]" label="วันเริ่มต้นภาระงาน"
-                                        placeholder="เลือกวันเริ่มต้น" required />
+                                    <div class="w-full">
+                                        <label class="block text-sm text-gray-700 mb-1">
+                                            วันเริ่มต้นภาระงาน <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="relative">
+                                            <input
+                                                type="text"
+                                                name="fte_roles[0][start_date]"
+                                                placeholder="เลือกวันเริ่มต้น"
+                                                readonly
+                                                required
+                                                data-date-role="start"
+                                                class="fte-shared-datepicker w-full border rounded-lg px-3 py-2 pr-10 bg-white cursor-pointer"
+                                            >
+                                            <button
+                                                type="button"
+                                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                                                aria-label="เปิดปฏิทินวันเริ่มต้น"
+                                            >
+                                                📅
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                    <x-date-be name="fte_roles[0][end_date]" label="วันสิ้นสุดภาระงาน"
-                                        placeholder="เลือกวันสิ้นสุด" required />
+                                    <div class="w-full">
+                                        <label class="block text-sm text-gray-700 mb-1">
+                                            วันสิ้นสุดภาระงาน <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="relative">
+                                            <input
+                                                type="text"
+                                                name="fte_roles[0][end_date]"
+                                                placeholder="เลือกวันสิ้นสุด"
+                                                readonly
+                                                required
+                                                data-date-role="end"
+                                                class="fte-shared-datepicker w-full border rounded-lg px-3 py-2 pr-10 bg-white cursor-pointer"
+                                            >
+                                            <button
+                                                type="button"
+                                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                                                aria-label="เปิดปฏิทินวันสิ้นสุด"
+                                            >
+                                                📅
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {{-- HOURS --}}
@@ -961,8 +1039,53 @@
                                         </select>
                                     </label>
 
-                                    <x-date-be name="fte_roles[__i__][start_date]" label="วันเริ่มต้นภาระงาน" required />
-                                    <x-date-be name="fte_roles[__i__][end_date]" label="วันสิ้นสุดภาระงาน" required />
+                                    <div class="w-full">
+                                        <label class="block text-sm text-gray-700 mb-1">
+                                            วันเริ่มต้นภาระงาน <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="relative">
+                                            <input
+                                                type="text"
+                                                name="fte_roles[__i__][start_date]"
+                                                placeholder="เลือกวันเริ่มต้น"
+                                                readonly
+                                                required
+                                                data-date-role="start"
+                                                class="fte-shared-datepicker w-full border rounded-lg px-3 py-2 pr-10 bg-white cursor-pointer"
+                                            >
+                                            <button
+                                                type="button"
+                                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                                                aria-label="เปิดปฏิทินวันเริ่มต้น"
+                                            >
+                                                📅
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="w-full">
+                                        <label class="block text-sm text-gray-700 mb-1">
+                                            วันสิ้นสุดภาระงาน <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="relative">
+                                            <input
+                                                type="text"
+                                                name="fte_roles[__i__][end_date]"
+                                                placeholder="เลือกวันสิ้นสุด"
+                                                readonly
+                                                required
+                                                data-date-role="end"
+                                                class="fte-shared-datepicker w-full border rounded-lg px-3 py-2 pr-10 bg-white cursor-pointer"
+                                            >
+                                            <button
+                                                type="button"
+                                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                                                aria-label="เปิดปฏิทินวันสิ้นสุด"
+                                            >
+                                                📅
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <label>
@@ -1017,6 +1140,8 @@
                 </x-slot:template>
 
             </x-repeatable-row>
+
+            <input type="text" id="fteSharedDatepicker" class="hidden" aria-hidden="true" tabindex="-1">
 
 
             <hr class="my-6 border-t-2 border-gray-300">
@@ -1534,6 +1659,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             // initThaiDatepickers();
             setupBudgetInput();
+            initSharedFteDatepicker();
+            hydrateSharedFteDateInputs();
 
             document.querySelectorAll("select[id$='_status']").forEach(updateStatusColor);
         });
@@ -1607,6 +1734,174 @@
         function resetForm() {
             document.getElementById('project-name-modal').classList.add('hidden');
             location.reload(); // 🔄 รีโหลดหน้าเว็บใหม่
+        }
+
+        function parseLocalDateInput(raw) {
+            const value = String(raw ?? '').trim();
+            if (!value) return null;
+
+            let match = value.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+            if (match) {
+                const [, day, month, year] = match;
+                const date = new Date(Number(year), Number(month) - 1, Number(day));
+                return Number.isNaN(date.getTime()) ? null : date;
+            }
+
+            match = value.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/);
+            if (match) {
+                const parsed = new Date(value);
+                return Number.isNaN(parsed.getTime()) ? null : parsed;
+            }
+
+            return null;
+        }
+
+        function toDmyCE(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = String(date.getFullYear());
+            return `${dd}-${mm}-${yyyy}`;
+        }
+
+        function normalizeDateOnly(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        function formatThaiBuddhistDate(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+            const day = date.getDate();
+            const month = date.toLocaleString('th-TH', {
+                month: 'long'
+            });
+            const year = date.getFullYear() + 543;
+            return `${day} ${month} ${year}`;
+        }
+
+        function hydrateSharedFteDateInputs(scope = document) {
+            scope.querySelectorAll('.fte-shared-datepicker').forEach((input) => {
+                if (!(input instanceof HTMLInputElement)) return;
+                const parsed = parseLocalDateInput(input.dataset.isoValue || input.value);
+                if (!parsed) return;
+                input.dataset.isoValue = toDmyCE(parsed);
+                input.value = formatThaiBuddhistDate(parsed);
+            });
+        }
+
+        function initSharedFteDatepicker() {
+            const sharedInput = document.getElementById('fteSharedDatepicker');
+            if (!(sharedInput instanceof HTMLInputElement) || sharedInput._flatpickr) return;
+
+            let activeTarget = null;
+            const resolveSharedDateValue = (input) => {
+                if (!(input instanceof HTMLInputElement)) return null;
+                return parseLocalDateInput(input.dataset.isoValue || input.value || '');
+            };
+
+            const picker = flatpickr(sharedInput, {
+                locale: 'th',
+                dateFormat: 'd-m-Y',
+                prevArrow: '',
+                nextArrow: '',
+                disableMobile: true,
+                clickOpens: false,
+                allowInput: false,
+                onReady(selectedDates, dateStr, instance) {
+                    if (typeof toBuddhist === 'function') toBuddhist(selectedDates, dateStr, instance);
+                },
+                onValueUpdate: typeof toBuddhist === 'function' ? toBuddhist : undefined,
+                onMonthChange: typeof toBuddhist === 'function' ? toBuddhist : undefined,
+                onYearChange: typeof toBuddhist === 'function' ? toBuddhist : undefined,
+                onChange(selectedDates) {
+                    if (!(activeTarget instanceof HTMLInputElement)) return;
+                    const selected = selectedDates?.[0] || null;
+                    activeTarget.value = selected ? formatThaiBuddhistDate(selected) : '';
+                    activeTarget.dataset.isoValue = selected ? toDmyCE(selected) : '';
+                    activeTarget.setCustomValidity('');
+                    activeTarget.dispatchEvent(new Event('input', {
+                        bubbles: true
+                    }));
+                    activeTarget.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+
+                    const row = activeTarget.closest('.fte-row');
+                    const startInput = row?.querySelector('.fte-shared-datepicker[data-date-role="start"]');
+                    const endInput = row?.querySelector('.fte-shared-datepicker[data-date-role="end"]');
+                    if (activeTarget.dataset.dateRole === 'start' && startInput && endInput) {
+                        const startDate = resolveSharedDateValue(startInput);
+                        const endDate = resolveSharedDateValue(endInput);
+                        if (startDate && endDate && normalizeDateOnly(endDate) < normalizeDateOnly(startDate)) {
+                            endInput.value = '';
+                            endInput.dataset.isoValue = '';
+                            endInput.dispatchEvent(new Event('input', {
+                                bubbles: true
+                            }));
+                            endInput.dispatchEvent(new Event('change', {
+                                bubbles: true
+                            }));
+                        }
+                    }
+                }
+            });
+
+            const openSharedPicker = (target) => {
+                if (!(target instanceof HTMLInputElement)) return;
+                activeTarget = target;
+
+                const row = target.closest('.fte-row');
+                const startInput = row?.querySelector('.fte-shared-datepicker[data-date-role="start"]');
+                const endInput = row?.querySelector('.fte-shared-datepicker[data-date-role="end"]');
+                const currentDate = resolveSharedDateValue(target);
+                const minDate = target.dataset.dateRole === 'end' ? resolveSharedDateValue(startInput) : null;
+                const maxDate = target.dataset.dateRole === 'start' ? resolveSharedDateValue(endInput) : null;
+
+                picker.set('minDate', minDate ? normalizeDateOnly(minDate) : null);
+                picker.set('maxDate', maxDate ? normalizeDateOnly(maxDate) : null);
+                picker.set('disable', [
+                    ...(minDate ? [date => normalizeDateOnly(date) < normalizeDateOnly(minDate)] : []),
+                    ...(maxDate ? [date => normalizeDateOnly(date) > normalizeDateOnly(maxDate)] : []),
+                ]);
+                picker.setDate(currentDate || null, false);
+                picker.open();
+            };
+
+            document.addEventListener('click', (event) => {
+                const pickerTarget = event.target.closest('.fte-shared-datepicker');
+                if (pickerTarget instanceof HTMLInputElement) {
+                    openSharedPicker(pickerTarget);
+                    return;
+                }
+
+                const button = event.target.closest('.fte-row button[aria-label^="เปิดปฏิทิน"]');
+                const target = button?.closest('.relative')?.querySelector('.fte-shared-datepicker');
+                if (target instanceof HTMLInputElement) {
+                    openSharedPicker(target);
+                }
+            });
+
+            document.addEventListener('focusin', (event) => {
+                const target = event.target.closest('.fte-shared-datepicker');
+                if (target instanceof HTMLInputElement) {
+                    openSharedPicker(target);
+                }
+            });
+
+            document.addEventListener('submit', (event) => {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement) || form.id !== 'projectForm') return;
+                form.querySelectorAll('.fte-shared-datepicker').forEach((input) => {
+                    if (!(input instanceof HTMLInputElement)) return;
+                    const isoValue = input.dataset.isoValue || '';
+                    if (isoValue) input.value = isoValue;
+                });
+            }, true);
+
+            window.addEventListener('pageshow', () => {
+                hydrateSharedFteDateInputs();
+            });
         }
     </script>
 
@@ -1886,6 +2181,7 @@
                 addRepeatableRows('output', maxIndex(data, 'outputs'));
                 ensureOutputSections(data);
                 applyForm(data);
+                hydrateSharedFteDateInputs();
             };
 
 
@@ -1956,22 +2252,16 @@
             if (!form) return;
 
             const updateFormMeta = () => {
-                const fteIndexes = new Set();
-                form.querySelectorAll('[name^="fte_roles["]').forEach((el) => {
-                    if (el.disabled || el.closest('template')) return;
-                    const m = String(el.name || '').match(/^fte_roles\[(\d+)\]/);
-                    if (m) fteIndexes.add(m[1]);
-                });
-
                 const namedFields = Array.from(form.querySelectorAll('input[name], select[name], textarea[name]'))
                     .filter((el) => !el.disabled && !el.closest('template')).length;
 
                 const fteExpected = form.querySelector('#fteExpectedRows');
                 const varsExpected = form.querySelector('#formExpectedVars');
-                if (fteExpected) fteExpected.value = String(fteIndexes.size);
+                if (fteExpected) fteExpected.value = String(form.querySelectorAll('.fte-row[data-repeatable-row]').length);
                 if (varsExpected) varsExpected.value = String(namedFields);
             };
 
+            updateFormMeta();
             form.addEventListener('submit', updateFormMeta, true);
         });
     </script>
@@ -2163,5 +2453,70 @@
                 budgetInput.focus();
             }
         });
+    </script>
+    <script>
+        (() => {
+            const formatBe = (date) => {
+                if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+                const day = date.getDate();
+                const month = date.toLocaleString('th-TH', { month: 'long' });
+                const year = date.getFullYear() + 543;
+                return `${day} ${month} ${year}`;
+            };
+
+            const syncForcedBeDatepicker = (input) => {
+                if (!(input instanceof HTMLInputElement)) return false;
+                const fp = input._flatpickr;
+                if (!fp) return false;
+
+                const picked = fp.selectedDates?.[0] ||
+                    (typeof parseLocalDateInput === 'function' ? parseLocalDateInput(input.value) : null) ||
+                    (typeof parseLocalDateInput === 'function' ? parseLocalDateInput(fp.altInput?.value) : null);
+
+                if (picked && fp.altInput) {
+                    fp.altInput.value = formatBe(picked);
+                }
+
+                const yearInput = fp.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
+                if (yearInput) {
+                    const year = parseInt(yearInput.value, 10);
+                    if (!Number.isNaN(year) && year < 2400) {
+                        yearInput.value = String(year + 543);
+                    }
+                }
+
+                return true;
+            };
+
+            const bindForcedBeDatepicker = (input) => {
+                if (!(input instanceof HTMLInputElement) || input.dataset.forceBeBound === '1') return;
+
+                const attach = () => {
+                    if (!syncForcedBeDatepicker(input)) {
+                        requestAnimationFrame(attach);
+                        return;
+                    }
+
+                    const fp = input._flatpickr;
+                    if (!fp || input.dataset.forceBeBound === '1') return;
+                    input.dataset.forceBeBound = '1';
+
+                    ['onReady', 'onOpen', 'onValueUpdate', 'onChange', 'onMonthChange', 'onYearChange'].forEach((hook) => {
+                        if (typeof appendFlatpickrHook === 'function') {
+                            appendFlatpickrHook(fp, hook, () => syncForcedBeDatepicker(input));
+                        }
+                    });
+
+                    fp.altInput?.addEventListener('focus', () => syncForcedBeDatepicker(input));
+                    fp.altInput?.addEventListener('click', () => syncForcedBeDatepicker(input));
+                };
+
+                attach();
+            };
+
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('input[data-force-be-date="1"]').forEach(bindForcedBeDatepicker);
+            });
+        })();
     </script>
 @endsection

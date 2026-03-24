@@ -53,6 +53,26 @@
             table-layout: auto;
         }
 
+        .project-detail-safe .detail-index-col {
+            width: 3.5rem;
+            min-width: 3.5rem;
+            white-space: nowrap;
+        }
+
+        .project-detail-safe .irb-code-col {
+            width: 30%;
+        }
+
+        .project-detail-safe .irb-source-col {
+            width: 40%;
+        }
+
+        .project-detail-safe .irb-exp-col {
+            width: 10rem;
+            min-width: 10rem;
+            white-space: nowrap;
+        }
+
         @media (max-width: 640px) {
             .project-detail-safe .overflow-x-auto > table {
                 min-width: 620px;
@@ -354,6 +374,15 @@
                             </a>
                         @endif
 
+                        @if ($isOwner || $isAdmin)
+                            <a href="{{ route('fte.project.detail', $project) }}" target="_blank"
+                                class="px-3 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200">
+                                🔥 FTE project
+                            </a>
+                        @endif
+
+                        
+
                         <a href="{{ route('projects.gantt', $project) }}"
                             class="px-3 py-2 rounded-lg bg-sky-100 text-sky-800 text-sm font-semibold hover:bg-sky-200">
                             📊 Gantt
@@ -549,7 +578,7 @@
                     class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
                     <thead class="bg-blue-50">
                         <tr>
-                            <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
+                            <th class="detail-index-col border px-2 py-2 text-center font-semibold rounded-tl-2xl">#</th>
                             <th class="border px-3 py-2 font-semibold">ชื่อ</th>
                             <th class="border px-3 py-2 font-semibold rounded-tr-2xl">สังกัด</th>
                         </tr>
@@ -558,7 +587,7 @@
                         @if ($coPolicy->count())
                             @foreach ($coPolicy as $i => $co)
                                 <tr>
-                                    <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
+                                    <td class="detail-index-col border px-2 py-2 text-center">{{ $i + 1 }}</td>
                                     <td class="border px-3 py-2">{{ $co->name ?: '-' }}</td>
                                     <td class="border px-3 py-2">{{ $co->affiliation ?: '-' }}</td>
                                 </tr>
@@ -577,7 +606,7 @@
                     class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
                     <thead class="bg-blue-50">
                         <tr>
-                            <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
+                            <th class="detail-index-col border px-2 py-2 text-center font-semibold rounded-tl-2xl">#</th>
                             <th class="border px-3 py-2 font-semibold">ชื่อ</th>
                             <th class="border px-3 py-2 font-semibold rounded-tr-2xl">สังกัด</th>
                         </tr>
@@ -586,7 +615,7 @@
                         @if ($coInternal->count())
                             @foreach ($coInternal as $i => $co)
                                 <tr>
-                                    <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
+                                    <td class="detail-index-col border px-2 py-2 text-center">{{ $i + 1 }}</td>
                                     <td class="border px-3 py-2">{{ $co->name ?: '-' }}</td>
                                     <td class="border px-3 py-2">{{ $co->affiliation ?: '-' }}</td>
                                 </tr>
@@ -606,7 +635,7 @@
                     class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 text-sm">
                     <thead class="bg-blue-50">
                         <tr>
-                            <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl">#</th>
+                            <th class="detail-index-col border px-2 py-2 text-center font-semibold rounded-tl-2xl">#</th>
                             <th class="border px-3 py-2 font-semibold">ชื่อ</th>
                             <th class="border px-3 py-2 font-semibold rounded-tr-2xl">สังกัด</th>
                         </tr>
@@ -615,7 +644,7 @@
                         @if ($coExternal->count())
                             @foreach ($coExternal as $i => $co)
                                 <tr>
-                                    <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
+                                    <td class="detail-index-col border px-2 py-2 text-center">{{ $i + 1 }}</td>
                                     <td class="border px-3 py-2">{{ $co->name ?: '-' }}</td>
                                     <td class="border px-3 py-2">{{ $co->affiliation ?: '-' }}</td>
                                 </tr>
@@ -786,55 +815,59 @@
                         </label>
                     </div>
                 </div>
-                <table
-                    class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-0">
-                    <thead class="bg-blue-50">
-                        <tr>
-                            <th class="border px-3 py-2 text-center font-semibold rounded-tl-2xl w-12">ลำดับ</th>
-                            <th class="border px-3 py-2 font-semibold">รหัส IRB</th>
-                            <th class="border px-3 py-2 font-semibold">จากหน่วยงาน</th>
-                            <th class="border px-3 py-2 text-center font-semibold rounded-tr-2xl">วันหมดอายุ</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-[15px]">
-                        @php
-                            // ถ้าอยากให้แถวว่างจริง ๆ ไม่แสดง ให้ filter ข้อมูลที่ว่างออกก่อน
-                            $irbs = $project->irbs->filter(function ($irb) {
-                                return !empty(trim($irb->code)) ||
-                                    !empty(trim($irb->source)) ||
-                                    !empty(trim($irb->exp_date));
-                            });
-                        @endphp
-                        @if ($irbs->count())
-                            @foreach ($irbs as $i => $irb)
-                                @php
-                                    $expIso = $irb->exp_date
-                                        ? \Carbon\Carbon::parse($irb->exp_date)->format('Y-m-d')
-                                        : '';
-                                @endphp
+                <div class="overflow-x-auto rounded-2xl">
+                    <table
+                        class="min-w-full bg-white rounded-2xl shadow-mb ring-1 ring-slate-100 border-separate border-spacing-0 mb-0">
+                        <thead class="bg-blue-50">
+                            <tr>
+                                <th class="detail-index-col border px-2 py-3 text-center font-semibold rounded-tl-2xl">#</th>
+                                <th class="irb-code-col border px-4 py-3 font-semibold">รหัส IRB</th>
+                                <th class="irb-source-col border px-4 py-3 font-semibold">จากหน่วยงาน</th>
+                                <th class="irb-exp-col border px-4 py-3 text-center font-semibold rounded-tr-2xl">วันหมดอายุ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-[15px]">
+                            @php
+                                // ถ้าอยากให้แถวว่างจริง ๆ ไม่แสดง ให้ filter ข้อมูลที่ว่างออกก่อน
+                                $irbs = $project->irbs->filter(function ($irb) {
+                                    return !empty(trim($irb->code)) ||
+                                        !empty(trim($irb->source)) ||
+                                        !empty(trim($irb->exp_date));
+                                });
+                            @endphp
+                            @if ($irbs->count())
+                                @foreach ($irbs as $i => $irb)
+                                    @php
+                                        $expIso = $irb->exp_date
+                                            ? \Carbon\Carbon::parse($irb->exp_date)->format('Y-m-d')
+                                            : '';
+                                    @endphp
+                                    <tr>
+                                        <td class="detail-index-col border px-2 py-3 text-center align-middle">{{ $i + 1 }}</td>
+                                        <td class="border px-4 py-3">{{ $irb->code ?: '-' }}</td>
+                                        <td class="border px-4 py-3">{{ $irb->source ?: '-' }}</td>
+                                        <td class="irb-exp-col border px-4 py-3 text-center">
+                                            @php
+                                                \Carbon\Carbon::setLocale('th');
+                                                $date = $irb->exp_date ? \Carbon\Carbon::parse($irb->exp_date) : null;
+                                                $thaiMonth = $date
+                                                    ? $date->translatedFormat('j F') . ' ' . ($date->year + 543)
+                                                    : '-';
+                                            @endphp
+                                            {{ $thaiMonth }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @else
                                 <tr>
-                                    <td class="border px-3 py-2 text-center">{{ $i + 1 }}</td>
-                                    <td class="border px-3 py-2">{{ $irb->code ?: '-' }}</td>
-                                    <td class="border px-3 py-2">{{ $irb->source ?: '-' }}</td>
-                                    <td class="border px-3 py-2 text-center">
-                                        @php
-                                            \Carbon\Carbon::setLocale('th');
-                                            $date = $irb->exp_date ? \Carbon\Carbon::parse($irb->exp_date) : null;
-                                            $thaiMonth = $date
-                                                ? $date->translatedFormat('j F') . ' ' . ($date->year + 543)
-                                                : '-';
-                                        @endphp
-                                        {{ $thaiMonth }}
+                                    <td colspan="4" class="py-10 text-center text-gray-500">
+                                        ไม่มีข้อมูลรหัส IRB
                                     </td>
                                 </tr>
-                            @endforeach
-                        @else
-                            <tr>
-                                <td colspan="4" class="py-6 text-center text-gray-500">ไม่มีข้อมูล</td>
-                            </tr>
-                        @endif
-                    </tbody>
-                </table>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
