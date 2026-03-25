@@ -972,7 +972,7 @@
             return `${dd}-${mm}-${yyyy}`;
         };
 
-        scope.querySelectorAll('.js-date-be').forEach(input => {
+        scope.querySelectorAll('.js-date-be, .thai-datepicker').forEach(input => {
             if (input.hasAttribute('data-native-date-display-for')) return;
             if (isProjectMobileWheelDateMode()) {
                 initNativeMobileDateInput(input);

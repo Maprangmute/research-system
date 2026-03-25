@@ -2372,7 +2372,15 @@
             /* ---------- Data from backend ---------- */
 
             const projects = @json($dashboardProjectsJs);
-            const flatProjectRelation = (key) => projects.flatMap((project) => (project && Array.isArray(project[key])) ? project[key] : []);
+            const flatProjectRelation = (key) => projects.flatMap((project) => {
+                if (!(project && Array.isArray(project[key]))) return [];
+                return project[key]
+                    .filter(Boolean)
+                    .map((item) => ({
+                        ...item,
+                        project_id: item?.project_id ?? project?.id ?? null,
+                    }));
+            });
             const outputs = flatProjectRelation('outputs');
             const ftes = flatProjectRelation('fte_roles');
             const irbs = flatProjectRelation('irbs');

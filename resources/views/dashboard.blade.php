@@ -975,12 +975,24 @@
                             </select>
                         </div>
                         <div>
+                            <label class="text-xs font-semibold text-gray-700 block">PI โครงการ</label>
+                            <input type="text" id="filterPi" list="filterPiSuggestions" class="w-full border rounded px-2 py-1 text-sm"
+                                placeholder="ชื่อผู้วิจัยหลัก">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">สังกัดผู้วิจัยหลัก</label>
+                            <input type="text" id="filterPiAffiliation" list="filterPiAffiliationSuggestions" class="w-full border rounded px-2 py-1 text-sm"
+                                placeholder="สังกัดผู้วิจัยหลัก">
+                        </div>
+                        <div>
                             <label class="text-xs font-semibold text-gray-700 block">ค้นหาโครงการ</label>
                             <input type="text" id="filterName" list="filterNameSuggestions" class="w-full border rounded px-2 py-1 text-sm"
                                 placeholder="ชื่อโครงการ">
                         </div>
                     </div>
 
+                    <datalist id="filterPiSuggestions"></datalist>
+                    <datalist id="filterPiAffiliationSuggestions"></datalist>
                     <datalist id="filterNameSuggestions"></datalist>
                     <datalist id="tableSearchSuggestions"></datalist>
                 </div>
@@ -1686,7 +1698,15 @@
             /* ---------- Data from backend ---------- */
 
             const projects = @json($dashboardProjectsJs);
-            const flatProjectRelation = (key) => projects.flatMap((project) => (project && Array.isArray(project[key])) ? project[key] : []);
+            const flatProjectRelation = (key) => projects.flatMap((project) => {
+                if (!(project && Array.isArray(project[key]))) return [];
+                return project[key]
+                    .filter(Boolean)
+                    .map((item) => ({
+                        ...item,
+                        project_id: item?.project_id ?? project?.id ?? null,
+                    }));
+            });
             const outputs = flatProjectRelation('outputs');
             const ftes = flatProjectRelation('fte_roles');
             const irbs = flatProjectRelation('irbs');
@@ -2050,6 +2070,8 @@
             }
 
             function initializeFilterSuggestions() {
+                fillDatalist('filterPiSuggestions', projects.map((p) => p?.pi_name));
+                fillDatalist('filterPiAffiliationSuggestions', projects.map((p) => p?.pi_affiliation));
                 fillDatalist('filterNameSuggestions', projects.map((p) => p?.project_name_th));
                 fillDatalist('tableSearchSuggestions', projects.flatMap((p) => ([
                     p?.project_code,
@@ -2073,6 +2095,8 @@
                 { id: 'filterType', label: 'ประเภทโครงการ' },
                 { id: 'filterStatus', label: 'สถานะโครงการ' },
                 { id: 'filterSource', label: 'แหล่งทุน' },
+                { id: 'filterPi', label: 'PI โครงการ' },
+                { id: 'filterPiAffiliation', label: 'สังกัดผู้วิจัยหลัก' },
                 { id: 'filterName', label: 'ชื่อโครงการ' },
                 { id: 'tableSearch', label: 'ค้นหาในตาราง' },
             ];
@@ -2819,6 +2843,8 @@
                 const type = norm(document.getElementById('filterType')?.value);
                 const status = norm(document.getElementById('filterStatus')?.value);
                 const source = norm(document.getElementById('filterSource')?.value);
+                const pi = norm(document.getElementById('filterPi')?.value);
+                const piAffiliation = norm(document.getElementById('filterPiAffiliation')?.value);
                 const name = norm(document.getElementById('filterName')?.value);
                 const search = norm(document.getElementById('tableSearch')?.value);
 
@@ -2829,8 +2855,9 @@
                     const projectType = norm(p.project_type);
                     const projectStatus = norm(p.planning_status);
                     const fundingSource = norm(p.funding_source);
+                    const principalInvestigator = norm(p.pi_name);
+                    const principalInvestigatorAffiliation = norm(p.pi_affiliation);
                     const nameTh = norm(p.project_name_th);
-                    const piName = norm(p.pi_name);
                     const searchIndex = projectSearchIndex(p);
 
                     if (y && year !== y) return false;
@@ -2839,6 +2866,8 @@
                     if (type && projectType !== type) return false;
                     if (status && projectStatus !== status) return false;
                     if (source && fundingSource !== source) return false;
+                    if (pi && !principalInvestigator.includes(pi)) return false;
+                    if (piAffiliation && !principalInvestigatorAffiliation.includes(piAffiliation)) return false;
                     if (name && !nameTh.includes(name)) return false;
                     if (search && !searchIndex.includes(search)) return false;
                     return true;
@@ -2871,6 +2900,8 @@
                     document.getElementById('filterType')?.value,
                     document.getElementById('filterStatus')?.value,
                     document.getElementById('filterSource')?.value,
+                    document.getElementById('filterPi')?.value,
+                    document.getElementById('filterPiAffiliation')?.value,
                     document.getElementById('filterName')?.value,
                     document.getElementById('tableSearch')?.value
                 ]
@@ -4333,7 +4364,7 @@
                 };
 
                 function renderPiByUnitChart(rows) {
-                    const sourceRows = Array.isArray(rows) ? rows : projects;
+                    const sourceRows = Array.isArray(rows) ? rows : (Array.isArray(window.__dashboardCurrentRows) ? window.__dashboardCurrentRows : projects);
                     const filtered = sourceRows.filter((p) =>
                         (p.pi_affiliation || '').trim() === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ'
                     );
@@ -4356,6 +4387,10 @@
 
                     const canvas = document.getElementById('chartPIsPerUnit');
                     if (!canvas) return;
+                    if (!values.length || !values.some((value) => Number(value) > 0)) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
                     const targetHeight = Math.min(360, Math.max(240, chartLabels.length * 20));
                     canvas.setAttribute('height', String(targetHeight));
                     window.applyChartCanvasSizing?.();
@@ -4565,30 +4600,7 @@
                     if (prev) prev.destroy();
 
                     if (!summary.labels.length) {
-                        new Chart(canvas, {
-                            type: 'doughnut',
-                            data: {
-                                labels: ['ไม่มีข้อมูล'],
-                                datasets: [{
-                                    data: [1],
-                                    backgroundColor: ['#e5e7eb'],
-                                    borderWidth: 0
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                cutout: '58%',
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    },
-                                    tooltip: {
-                                        enabled: false
-                                    }
-                                }
-                            }
-                        });
+                        drawEmptyChart(canvas);
                         return;
                     }
 
@@ -4637,6 +4649,7 @@
                 }
 
                 function getRowsForRender() {
+                    if (Array.isArray(window.__dashboardCurrentRows)) return window.__dashboardCurrentRows;
                     if (typeof getFilteredProjects === 'function') return getFilteredProjects();
                     return projects;
                 }
@@ -5273,6 +5286,7 @@
                             scales: {
                                 y: {
                                     beginAtZero: true,
+                                    grace: '12%',
                                     title: {
                                         display: true,
                                         text: 'จำนวนโครงการ'
@@ -6127,6 +6141,8 @@
                 const filterType = document.getElementById('filterType');
                 const filterStatus = document.getElementById('filterStatus');
                 const filterSource = document.getElementById('filterSource');
+                const filterPi = document.getElementById('filterPi');
+                const filterPiAffiliation = document.getElementById('filterPiAffiliation');
                 const filterName = document.getElementById('filterName');
                 const tableSearch = document.getElementById('tableSearch');
 
@@ -6206,7 +6222,7 @@
                 });
 
                 [filterYear, filterTheme, filterFunding, filterType, filterStatus, filterSource].forEach(el => el?.addEventListener('change', resetAndRender));
-                [filterName, tableSearch].forEach(el => el?.addEventListener('input', resetAndRender));
+                [filterPi, filterPiAffiliation, filterName, tableSearch].forEach(el => el?.addEventListener('input', resetAndRender));
 
                 renderTable();
             })();
@@ -7066,6 +7082,8 @@
                     filterType: document.getElementById('filterType'),
                     filterStatus: document.getElementById('filterStatus'),
                     filterSource: document.getElementById('filterSource'),
+                    filterPi: document.getElementById('filterPi'),
+                    filterPiAffiliation: document.getElementById('filterPiAffiliation'),
                     filterName: document.getElementById('filterName'),
                     tableSearch: document.getElementById('tableSearch'),
                     filterReset: document.getElementById('filterReset'),
@@ -7346,6 +7364,7 @@
                             return Number.isFinite(startY) && startY === bucket;
                         }).length;
                     });
+                    const colors = labels.map((_, index) => `hsl(${(index * 37) % 360} 70% 60%)`);
 
                     new Chart(canvas, {
                         type: 'bar',
@@ -7354,9 +7373,7 @@
                             datasets: [{
                                 label: 'จำนวนโครงการรายปี',
                                 data,
-                                backgroundColor: gradient('chartProjectsPerYear', 'rgba(14,165,233,0.9)', 'rgba(14,165,233,0.2)'),
-                                borderColor: '#0284c7',
-                                borderWidth: 1.5,
+                                backgroundColor: colors,
                                 borderRadius: 10,
                                 maxBarThickness: 42,
                             }]
@@ -7394,6 +7411,7 @@
                                 },
                                 y: {
                                     beginAtZero: true,
+                                    grace: '12%',
                                     title: {
                                         display: true,
                                         text: 'จำนวนโครงการ'
@@ -7419,6 +7437,11 @@
                     const canvas = document.getElementById('chartFundingSplit');
                     if (!canvas) return;
                     Chart.getChart(canvas)?.destroy();
+                    const totalProjects = internal.reduce((sum, value) => sum + value, 0) + external.reduce((sum, value) => sum + value, 0);
+                    if (!totalProjects) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
 
                     new Chart(canvas, {
                         type: 'bar',
@@ -7476,6 +7499,7 @@
                                 y: {
                                     stacked: true,
                                     beginAtZero: true,
+                                    grace: '12%',
                                     ticks: {
                                         precision: 0
                                     },
@@ -7498,6 +7522,11 @@
                     const canvas = document.getElementById('chartBudgetPerYear');
                     if (!canvas) return;
                     Chart.getChart(canvas)?.destroy();
+                    if (!budgets.length || !budgets.some((value) => Number(value) > 0)) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+                    clearEmptyChartState(canvas);
                     const maxBudget = Math.max(0, ...budgets);
                     const minLabelBudget = maxBudget > 0 ? Math.max(maxBudget * 0.03, 1_000_000) : 0;
 
@@ -7566,25 +7595,41 @@
                     });
                 }
 
-                function getProjectIdSet(rows) {
-                    return new Set((Array.isArray(rows) ? rows : [])
-                        .map((project) => project?.id)
-                        .filter((id) => id !== null && id !== undefined));
-                }
-
                 function getRelatedOutputs(rows) {
-                    const projectIds = getProjectIdSet(rows);
-                    return (Array.isArray(outputs) ? outputs : []).filter((item) => projectIds.has(item?.project_id));
+                    return (Array.isArray(rows) ? rows : []).flatMap((project) => {
+                        const list = Array.isArray(project?.outputs) ? project.outputs : [];
+                        return list
+                            .filter(Boolean)
+                            .map((item) => ({
+                                ...item,
+                                project_id: item?.project_id ?? project?.id ?? null,
+                            }));
+                    });
                 }
 
                 function getRelatedFtes(rows) {
-                    const projectIds = getProjectIdSet(rows);
-                    return (Array.isArray(ftes) ? ftes : []).filter((item) => projectIds.has(item?.project_id));
+                    return (Array.isArray(rows) ? rows : []).flatMap((project) => {
+                        const list = Array.isArray(project?.fte_roles) ? project.fte_roles
+                            : (Array.isArray(project?.fteRoles) ? project.fteRoles : []);
+                        return list
+                            .filter(Boolean)
+                            .map((item) => ({
+                                ...item,
+                                project_id: item?.project_id ?? project?.id ?? null,
+                            }));
+                    });
                 }
 
                 function getRelatedIrbs(rows) {
-                    const projectIds = getProjectIdSet(rows);
-                    return (Array.isArray(irbs) ? irbs : []).filter((item) => projectIds.has(item?.project_id));
+                    return (Array.isArray(rows) ? rows : []).flatMap((project) => {
+                        const list = Array.isArray(project?.irbs) ? project.irbs : [];
+                        return list
+                            .filter(Boolean)
+                            .map((item) => ({
+                                ...item,
+                                project_id: item?.project_id ?? project?.id ?? null,
+                            }));
+                    });
                 }
 
                 function drawEmptyChart(canvas, text = 'ไม่มีข้อมูล') {
@@ -7593,16 +7638,56 @@
                     if (canvas.id === 'chartFteSummary') {
                         clearFteAvatarLayer(canvas);
                     }
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) return;
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.save();
-                    ctx.font = '14px sans-serif';
-                    ctx.fillStyle = '#64748b';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-                    ctx.restore();
+                    const card = canvas.closest('.lux-chart-card');
+                    if (card) {
+                        card.classList.add('hidden');
+                    }
+                    const parent = canvas.parentElement;
+                    if (parent) {
+                        if (getComputedStyle(parent).position === 'static') {
+                            parent.style.position = 'relative';
+                        }
+                        let overlay = parent.querySelector('.chart-empty-state');
+                        if (!overlay) {
+                            overlay = document.createElement('div');
+                            overlay.className = 'chart-empty-state';
+                            overlay.style.position = 'absolute';
+                            overlay.style.inset = '0';
+                            overlay.style.display = 'flex';
+                            overlay.style.alignItems = 'center';
+                            overlay.style.justifyContent = 'center';
+                            overlay.style.color = '#64748b';
+                            overlay.style.fontSize = '14px';
+                            overlay.style.pointerEvents = 'none';
+                            overlay.style.textAlign = 'center';
+                            overlay.style.padding = '1rem';
+                            parent.appendChild(overlay);
+                        }
+                        overlay.textContent = text;
+                    }
+                    canvas.style.visibility = 'hidden';
+                }
+
+                function clearEmptyChartState(canvas) {
+                    if (!canvas) return;
+                    canvas.style.visibility = '';
+                    const card = canvas.closest('.lux-chart-card');
+                    if (card) {
+                        card.classList.remove('hidden');
+                    }
+                    const parent = canvas.parentElement;
+                    const overlay = parent?.querySelector('.chart-empty-state');
+                    if (overlay) overlay.remove();
+                }
+
+                function resetDashboardChartCanvases() {
+                    document.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
+                        Chart.getChart(canvas)?.destroy();
+                        clearEmptyChartState(canvas);
+                        const replacement = canvas.cloneNode(false);
+                        canvas.replaceWith(replacement);
+                    });
+                    clearFteAvatarLayer(document.getElementById('chartFteSummary'));
                 }
 
                 function renderOutputStackedFiltered(rows) {
@@ -7685,6 +7770,11 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 16
+                                }
+                            },
                             plugins: {
                                 legend: {
                                     position: 'bottom'
@@ -7701,6 +7791,7 @@
                                 y: {
                                     stacked: true,
                                     beginAtZero: true,
+                                    grace: '12%',
                                     ticks: {
                                         precision: 0
                                     }
@@ -7874,7 +7965,7 @@
                     const topNSelect = document.getElementById('topN');
                     if (!canvas) return;
 
-                    if (!canvas.dataset.filteredBound) {
+                    if (!window.__dashboardAuthorRoleFilteredBound) {
                         [yearSelect, topNSelect].forEach((node) => node?.addEventListener('change', () => {
                             window.setTimeout(() => renderAuthorRolePerYearFiltered(getRows()), 0);
                         }));
@@ -7887,7 +7978,7 @@
                         nextButton?.addEventListener('click', () => {
                             window.setTimeout(() => renderAuthorRolePerYearFiltered(getRows()), 0);
                         });
-                        canvas.dataset.filteredBound = '1';
+                        window.__dashboardAuthorRoleFilteredBound = true;
                     }
 
                     const publicationRows = getRelatedOutputs(rows).filter((item) => isPublicationType(item.type));
@@ -8151,6 +8242,11 @@
                         byYearCategory[year] = byYearCategory[year] || Object.fromEntries(categories.map((item) => [item, 0]));
                         byYearCategory[year][category] += 1;
                     });
+                    const hasCollabData = years.some((year) => categories.some((category) => Number(byYearCategory[year]?.[category] ?? 0) > 0));
+                    if (!hasCollabData) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
 
                     const dataLabelPlugin = {
                         id: `collabLabel_${years.join('_')}`.slice(0, 48),
@@ -8483,6 +8579,10 @@
                     const timelineCanvas = document.getElementById('chartRedZoneTimeline');
                     if (timelineCanvas) {
                         Chart.getChart(timelineCanvas)?.destroy();
+                        const timelineData = [overdueProjects.length, dueSoon['3'], dueSoon['6'], dueSoon['9']];
+                        if (!timelineData.some((value) => Number(value) > 0)) {
+                            drawEmptyChart(timelineCanvas);
+                        } else {
                         const barValuePlugin = {
                             id: 'barValueRedZoneFiltered',
                             afterDatasetsDraw(chart) {
@@ -8519,7 +8619,7 @@
                                 labels: ['เกินกำหนด', '3 เดือน', '6 เดือน', '9 เดือน'],
                                 datasets: [{
                                     label: 'จำนวนโครงการ',
-                                    data: [overdueProjects.length, dueSoon['3'], dueSoon['6'], dueSoon['9']],
+                                    data: timelineData,
                                     backgroundColor: ['#b91c1c', '#d97706', '#f59e0b', '#fcd34d']
                                 }]
                             },
@@ -8542,6 +8642,7 @@
                             },
                             plugins: [barValuePlugin]
                         });
+                        }
                     }
 
                     const overdueCanvas = document.getElementById('chartOverdueProjects');
@@ -8549,6 +8650,9 @@
                         const projectsWithEndDate = rows.filter((project) => parseProjectDate(getEndDateRaw(project)));
                         const totalProjects = projectsWithEndDate.length;
                         Chart.getChart(overdueCanvas)?.destroy();
+                        if (!totalProjects) {
+                            drawEmptyChart(overdueCanvas);
+                        } else {
                         const overdueCalloutPlugin = {
                             id: 'doughnutCalloutOverdueFiltered',
                             afterDatasetsDraw(chart) {
@@ -8657,10 +8761,15 @@
                             },
                             plugins: [overdueCalloutPlugin]
                         });
+                        }
                     }
 
                     const overdueBadge = document.getElementById('overdueCountBadge');
                     if (overdueBadge) overdueBadge.textContent = `${overdueProjects.length} โครงการ`;
+                    const overdueDrawerCard = document.querySelector('[data-lux-drawer="overdue"]');
+                    if (overdueDrawerCard) {
+                        overdueDrawerCard.classList.toggle('hidden', overdueProjects.length === 0);
+                    }
 
                     const state = window.filteredOverdueTableState || { page: 1, pageSize: 10, bound: false };
                     state.rows = overdueProjects.slice().sort((a, b) => a.endDate - b.endDate);
@@ -8744,6 +8853,16 @@
                             const members = coResearchMembers(project).filter((member) => member.unitLabel === unit);
                             return total + (members.length ? 1 : 0);
                         }, 0);
+                        const coResearchDatasets = [
+                            { label: 'ภายใน 3 เดือน', data: unitList.map((unit) => countByUnitWithin(unit, 3)), backgroundColor: '#0f766e' },
+                            { label: 'ภายใน 6 เดือน', data: unitList.map((unit) => countByUnitWithin(unit, 6)), backgroundColor: '#c0841a' },
+                            { label: 'ภายใน 1 ปี', data: unitList.map((unit) => countByUnitWithin(unit, 12)), backgroundColor: '#475569' }
+                        ];
+                        const hasCoResearchData = coResearchDatasets.some((dataset) => dataset.data.some((value) => Number(value) > 0));
+                        if (!hasCoResearchData) {
+                            drawEmptyChart(coResearchCanvas);
+                            return;
+                        }
 
                         Chart.getChart(coResearchCanvas)?.destroy();
                         const barValuePlugin = {
@@ -8781,11 +8900,7 @@
                             type: 'bar',
                             data: {
                                 labels: unitList,
-                                datasets: [
-                                    { label: 'ภายใน 3 เดือน', data: unitList.map((unit) => countByUnitWithin(unit, 3)), backgroundColor: '#0f766e' },
-                                    { label: 'ภายใน 6 เดือน', data: unitList.map((unit) => countByUnitWithin(unit, 6)), backgroundColor: '#c0841a' },
-                                    { label: 'ภายใน 1 ปี', data: unitList.map((unit) => countByUnitWithin(unit, 12)), backgroundColor: '#475569' }
-                                ]
+                                datasets: coResearchDatasets
                             },
                             options: {
                                 responsive: true,
@@ -8851,9 +8966,23 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 14
+                                }
+                            },
                             plugins: {
                                 legend: {
                                     position: 'bottom'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        precision: 0
+                                    }
                                 }
                             }
                         }
@@ -8861,8 +8990,268 @@
                     chart.$irbExpiryKeys = bucketKeys;
                 }
 
+                function renderFundingSourceTopChartsFiltered(rows) {
+                    const TOP_N_SOURCES = 5;
+                    const FUNDING_COLORS = ['#dc4b4b', '#d4a153', '#9acb4b', '#4fbf5f', '#3cb9c8', '#5f88d6', '#7b5ac8'];
+
+                    const renderSingle = (canvasId, targetType, groupKey) => {
+                        const canvas = document.getElementById(canvasId);
+                        if (!canvas) return;
+
+                        const countBySource = {};
+                        const budgetBySource = {};
+                        (Array.isArray(rows) ? rows : []).forEach((project) => {
+                            if ((getFundingType(project) || '').trim() !== targetType) return;
+                            const source = (getFundingSource(project) || 'ไม่ระบุ').toString().trim();
+                            const budget = Number(getBudget(project)) || 0;
+                            countBySource[source] = (countBySource[source] || 0) + 1;
+                            budgetBySource[source] = (budgetBySource[source] || 0) + budget;
+                        });
+
+                        const entries = Object.keys(countBySource).map((label) => ({
+                            label,
+                            count: countBySource[label],
+                            budget: budgetBySource[label]
+                        })).sort((a, b) => (b.count - a.count) || (b.budget - a.budget));
+
+                        const topEntries = entries.slice(0, TOP_N_SOURCES);
+                        const otherEntries = entries.slice(TOP_N_SOURCES);
+                        if (otherEntries.length) {
+                            topEntries.push({
+                                label: 'อื่นๆ',
+                                count: otherEntries.reduce((sum, item) => sum + item.count, 0),
+                                budget: otherEntries.reduce((sum, item) => sum + item.budget, 0),
+                            });
+                        }
+
+                        window.fundingSourceGroups = window.fundingSourceGroups || {};
+                        window.fundingSourceGroups[groupKey] = {
+                            top: entries.slice(0, TOP_N_SOURCES).map((item) => item.label),
+                            others: otherEntries.map((item) => item.label)
+                        };
+
+                        Chart.getChart(canvas)?.destroy();
+                        if (!topEntries.length) {
+                            drawEmptyChart(canvas);
+                            return;
+                        }
+                        clearEmptyChartState(canvas);
+
+                        const totalCount = topEntries.reduce((sum, item) => sum + item.count, 0);
+                        const detailPlugin = {
+                            id: `${canvasId}_detail_plugin`,
+                            afterDatasetsDraw(chart) {
+                                const dataset = chart.data.datasets?.[0];
+                                const meta = chart.getDatasetMeta(0);
+                                if (!dataset || !meta?.data?.length) return;
+                                const { ctx, chartArea: { left, right, top, bottom } } = chart;
+                                ctx.save();
+                                ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
+                                ctx.fillStyle = '#0f172a';
+                                ctx.strokeStyle = 'rgba(100,116,139,0.5)';
+                                ctx.lineWidth = 1;
+                                ctx.textBaseline = 'middle';
+
+                                meta.data.forEach((arc, index) => {
+                                    const value = Number(dataset.data?.[index] || 0);
+                                    if (!(value > 0)) return;
+                                    const labelText = `${value} (${formatThaiMoney(topEntries[index]?.budget || 0)})`;
+                                    const textWidth = ctx.measureText(labelText).width;
+                                    const angle = (arc.startAngle + arc.endAngle) / 2;
+                                    const isRight = Math.cos(angle) >= 0;
+                                    const sx = arc.x + Math.cos(angle) * (arc.outerRadius - 1);
+                                    const sy = arc.y + Math.sin(angle) * (arc.outerRadius - 1);
+                                    const mx = arc.x + Math.cos(angle) * (arc.outerRadius + 10);
+                                    let my = arc.y + Math.sin(angle) * (arc.outerRadius + 10);
+                                    let tx = mx + (isRight ? 12 : -12);
+
+                                    if (isRight) {
+                                        if (tx + textWidth > right - 4) tx = right - textWidth - 4;
+                                        if (tx < left + 4) tx = left + 4;
+                                        ctx.textAlign = 'left';
+                                    } else {
+                                        if (tx - textWidth < left + 4) tx = left + textWidth + 4;
+                                        if (tx > right - 4) tx = right - 4;
+                                        ctx.textAlign = 'right';
+                                    }
+
+                                    if (my < top + 10) my = top + 10;
+                                    if (my > bottom - 10) my = bottom - 10;
+
+                                    ctx.beginPath();
+                                    ctx.moveTo(sx, sy);
+                                    ctx.lineTo(mx, my);
+                                    ctx.lineTo(tx + (isRight ? -4 : 4), my);
+                                    ctx.stroke();
+                                    ctx.fillText(labelText, tx, my);
+                                });
+
+                                const center = meta.data[0];
+                                if (center) {
+                                    ctx.textAlign = 'center';
+                                    ctx.fillStyle = '#334155';
+                                    ctx.font = '700 12px "IBM Plex Sans Thai", sans-serif';
+                                    ctx.fillText(`รวม ${totalCount}`, center.x, center.y);
+                                }
+
+                                ctx.restore();
+                            }
+                        };
+
+                        new Chart(canvas, {
+                            type: 'doughnut',
+                            data: {
+                                labels: topEntries.map((item) => item.label),
+                                datasets: [{
+                                    data: topEntries.map((item) => item.count),
+                                    backgroundColor: topEntries.map((_, index) => FUNDING_COLORS[index % FUNDING_COLORS.length]),
+                                    borderColor: '#ffffff',
+                                    borderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '55%',
+                                layout: {
+                                    padding: {
+                                        left: 24,
+                                        right: 24,
+                                        top: 12,
+                                        bottom: 12
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom'
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: (ctx) => {
+                                                const item = topEntries[ctx.dataIndex];
+                                                const count = Number(item?.count || 0);
+                                                const budget = Number(item?.budget || 0);
+                                                const pct = totalCount ? ((count / totalCount) * 100).toFixed(1) : '0.0';
+                                                return ` ${ctx.label}: ${count} งาน | ${formatThaiMoney(budget)} (${pct}%)`;
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: [detailPlugin]
+                        });
+                    };
+
+                    renderSingle('chartExternalBySource', 'ภายนอก', 'external');
+                    renderSingle('chartInternalBySource', 'ภายใน', 'internal');
+                }
+
+                function renderPiByUnitChartFiltered(rows) {
+                    const TOP_N = 20;
+                    const PI_COLORS = ['#4f7ac8', '#4fbf5f', '#d4a153', '#ef4444', '#7b5ac8', '#3cb9c8', '#0ea5e9'];
+                    const shorten = (text, max = 32) => {
+                        const value = String(text || '').trim();
+                        return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+                    };
+
+                    const sourceRows = Array.isArray(rows) ? rows : [];
+                    const filtered = sourceRows.filter((project) =>
+                        (project.pi_affiliation || '').trim() === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ'
+                    );
+
+                    const countByPI = {};
+                    filtered.forEach((project) => {
+                        const name = (project.pi_name || '').toString().trim();
+                        if (!name || name === 'ไม่ระบุ') return;
+                        countByPI[name] = (countByPI[name] || 0) + 1;
+                    });
+
+                    const top = Object.entries(countByPI)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, TOP_N);
+
+                    const labels = top.map(([name]) => name).reverse();
+                    const values = top.map(([, count]) => count).reverse();
+                    const canvas = document.getElementById('chartPIsPerUnit');
+                    if (!canvas) return;
+
+                    if (!values.length || !values.some((value) => Number(value) > 0)) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+                    clearEmptyChartState(canvas);
+
+                    const targetHeight = Math.min(360, Math.max(240, labels.length * 20));
+                    canvas.setAttribute('height', String(targetHeight));
+                    window.applyChartCanvasSizing?.();
+                    Chart.getChart(canvas)?.destroy();
+
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'จำนวนโครงการ',
+                                data: values,
+                                backgroundColor: labels.map((_, index) => PI_COLORS[index % PI_COLORS.length]),
+                                borderRadius: 8,
+                                barThickness: 22,
+                                categoryPercentage: 0.74,
+                                barPercentage: 0.92
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            layout: {
+                                padding: {
+                                    top: 6,
+                                    bottom: 6,
+                                    right: 76
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` จำนวนโครงการ: ${ctx.raw || 0}`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    grace: '18%',
+                                    grid: {
+                                        color: 'rgba(148,163,184,0.22)'
+                                    },
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                },
+                                y: {
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        autoSkip: false,
+                                        padding: 8,
+                                        callback: (value, index) => shorten(labels[index] || value)
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [valueLabelRight]
+                    });
+                }
+
                 function refreshRealtimeDashboard() {
                     const rows = getRows();
+                    window.__dashboardCurrentRows = Array.isArray(rows) ? rows.slice() : [];
+                    resetDashboardChartCanvases();
                     updateSummary(rows);
                     updateTypeTable(rows);
                     renderProjectsPerYear(rows);
@@ -8878,10 +9267,40 @@
                     renderFteSummaryFiltered(rows);
                     renderRedZoneAndOverdueFiltered(rows);
                     renderIrbExpiryFiltered(rows);
-                    window.renderFundingSourceCharts?.(rows);
-                    window.renderPiByUnitChart?.(rows);
+                    renderFundingSourceTopChartsFiltered(rows);
+                    renderPiByUnitChartFiltered(rows);
                     window.applyChartCanvasSizing?.();
                 }
+
+                function dashboardHasActiveFilters() {
+                    return Boolean(
+                        el.filterYear?.value ||
+                        el.filterTheme?.value ||
+                        el.filterFunding?.value ||
+                        el.filterType?.value ||
+                        el.filterStatus?.value ||
+                        el.filterSource?.value ||
+                        el.filterPi?.value ||
+                        el.filterPiAffiliation?.value ||
+                        el.filterName?.value ||
+                        el.tableSearch?.value
+                    );
+                }
+
+                let chartInteractionRefreshTimer = null;
+                const queueFilteredChartRefresh = () => {
+                    if (!dashboardHasActiveFilters()) return;
+                    clearTimeout(chartInteractionRefreshTimer);
+                    chartInteractionRefreshTimer = setTimeout(() => {
+                        window.refreshRealtimeDashboard?.();
+                    }, 180);
+                };
+
+                document.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
+                    canvas.addEventListener('mouseenter', queueFilteredChartRefresh);
+                    canvas.addEventListener('mousemove', queueFilteredChartRefresh);
+                    canvas.addEventListener('touchstart', queueFilteredChartRefresh, { passive: true });
+                });
 
                 let debounceTimer = null;
                 const refreshDebounced = () => {
@@ -8892,7 +9311,7 @@
                 [el.filterYear, el.filterTheme, el.filterFunding, el.filterType, el.filterStatus, el.filterSource].forEach((node) => {
                     node?.addEventListener('change', refreshRealtimeDashboard);
                 });
-                [el.filterName, el.tableSearch].forEach((node) => {
+                [el.filterPi, el.filterPiAffiliation, el.filterName, el.tableSearch].forEach((node) => {
                     node?.addEventListener('input', refreshDebounced);
                 });
 
@@ -8903,6 +9322,8 @@
                     if (el.filterType) el.filterType.value = '';
                     if (el.filterStatus) el.filterStatus.value = '';
                     if (el.filterSource) el.filterSource.value = '';
+                    if (el.filterPi) el.filterPi.value = '';
+                    if (el.filterPiAffiliation) el.filterPiAffiliation.value = '';
                     if (el.filterName) el.filterName.value = '';
                     if (el.tableSearch) el.tableSearch.value = '';
 
@@ -8924,6 +9345,12 @@
                     el.filterSource?.dispatchEvent(new Event('change', {
                         bubbles: true
                     }));
+                    el.filterPi?.dispatchEvent(new Event('input', {
+                        bubbles: true
+                    }));
+                    el.filterPiAffiliation?.dispatchEvent(new Event('input', {
+                        bubbles: true
+                    }));
                     el.filterName?.dispatchEvent(new Event('input', {
                         bubbles: true
                     }));
@@ -8936,6 +9363,7 @@
 
                 window.refreshRealtimeDashboard = refreshRealtimeDashboard;
                 const initialRows = getRows();
+                window.__dashboardCurrentRows = Array.isArray(initialRows) ? initialRows.slice() : [];
                 updateSummary(initialRows);
                 updateTypeTable(initialRows);
                 window.applyChartCanvasSizing?.();

@@ -95,6 +95,7 @@
     $copiAffiliationList = \App\Models\Copi::whereNotNull('affiliation')
         ->whereRaw("TRIM(affiliation) <> ''")
         ->selectRaw('TRIM(affiliation) as affiliation')
+        ->distinct()
         ->orderBy('affiliation')
         ->pluck('affiliation');
 
@@ -359,22 +360,8 @@
                 <x-date-be name="team_start_date" label="วันที่โครงการเริ่มทำงานของทีมวิจัย"
                     placeholder="กรุณาเลือกวันที่เริ่มทำงานของทีมวิจัย" />
 
-                <label class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดการทำงานของทีมวิจัย</span>
-                    <input name="team_end_date" type="text"
-                        value="{{ old('team_end_date') }}"
-                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
-                        data-force-be-date="1"
-                        placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีมวิจัย">
-                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
-                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    @error('team_end_date')
-                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
-                    @enderror
-                </label>
+                <x-date-be name="team_end_date" label="วันที่สิ้นสุดการทำงานของทีมวิจัย"
+                    placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีมวิจัย" />
 
                 <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal"
                     placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal" />
@@ -385,22 +372,8 @@
                 <x-date-be name="start_date" label="BC102 - วันที่โครงการเริ่ม (ตามสัญญา)"
                     placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
-                <label class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">BC103 - วันที่สิ้นสุด (ตามสัญญา)</span>
-                    <input name="end_date" type="text"
-                        value="{{ old('end_date') }}"
-                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
-                        data-force-be-date="1"
-                        placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
-                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
-                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2z" />
-                    </svg>
-                    @error('end_date')
-                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
-                    @enderror
-                </label>
+                <x-date-be name="end_date" label="BC103 - วันที่สิ้นสุด (ตามสัญญา)"
+                    placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา" />
 
                 <label class="w-full">
                     {{-- BA000 - Project Planning (Status) --}}

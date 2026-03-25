@@ -68,6 +68,7 @@
     $copiAffiliationList = \App\Models\Copi::whereNotNull('affiliation')
         ->whereRaw("TRIM(affiliation) <> ''")
         ->selectRaw('TRIM(affiliation) as affiliation')
+        ->distinct()
         ->orderBy('affiliation')
         ->pluck('affiliation');
 @endphp
@@ -483,16 +484,19 @@
 
                 <label class="w-full relative">
                     <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุดทำ (ทีม)</span>
-                    <input name="team_end_date" type="text"
-                        value="{{ old('team_end_date', $project->team_end_date) }}"
-                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
-                        data-force-be-date="1"
-                        placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม">
-                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
-                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                    <div class="relative">
+                        <input id="date_team_end_date_edit" name="team_end_date" type="text"
+                            value="{{ old('team_end_date', $project->team_end_date) }}"
+                            class="thai-datepicker w-full border rounded-lg px-3 py-2 pr-10 bg-white cursor-pointer focus:ring-2 focus:ring-blue-500"
+                            data-force-be-date="1"
+                            placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีม">
+                        <button type="button"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                            data-open-picker
+                            data-target="date_team_end_date_edit">
+                            📅
+                        </button>
+                    </div>
                     @error('team_end_date')
                         <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
                     @enderror
@@ -512,16 +516,19 @@
 
                 <label class="w-full relative">
                     <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด (ตามสัญญา)</span>
-                    <input name="end_date" type="text"
-                        value="{{ old('end_date', $project->end_date) }}"
-                        class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
-                        data-force-be-date="1"
-                        placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
-                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
-                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                    <div class="relative">
+                        <input id="date_end_date_edit" name="end_date" type="text"
+                            value="{{ old('end_date', $project->end_date) }}"
+                            class="thai-datepicker w-full border rounded-lg px-3 py-2 pr-10 bg-white cursor-pointer focus:ring-2 focus:ring-blue-500"
+                            data-force-be-date="1"
+                            placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา">
+                        <button type="button"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                            data-open-picker
+                            data-target="date_end_date_edit">
+                            📅
+                        </button>
+                    </div>
                     @error('end_date')
                         <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
                     @enderror

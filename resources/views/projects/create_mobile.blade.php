@@ -102,6 +102,7 @@
     $copiAffiliationList = \App\Models\Copi::whereNotNull('affiliation')
         ->whereRaw("TRIM(affiliation) <> ''")
         ->selectRaw('TRIM(affiliation) as affiliation')
+        ->distinct()
         ->orderBy('affiliation')
         ->pluck('affiliation');
 
