@@ -1969,14 +1969,32 @@
             return document.getElementById('fte-container');
         }
 
+        function getFteFieldElement(row, field) {
+            if (!row) return null;
+
+            const selector = `[name^="fte_roles["][name$="[${field}]"]`;
+            const direct = row.querySelector(selector);
+            if (direct) return direct;
+
+            const host = row._fteBodyHost;
+            const hostField = host?.querySelector?.(selector);
+            if (hostField) return hostField;
+
+            const fragment = row._fteBodyFragment;
+            const fragmentField = fragment?.querySelector?.(selector);
+            if (fragmentField) return fragmentField;
+
+            return null;
+        }
+
         function getFteFieldValue(row, field) {
-            return row.querySelector(`[name^="fte_roles["][name$="[${field}]"]`)?.value?.trim() || '';
+            return getFteFieldElement(row, field)?.value?.trim() || '';
         }
 
         function getFteSerializedValue(row, field, {
             preferIso = false
         } = {}) {
-            const input = row.querySelector(`[name^="fte_roles["][name$="[${field}]"]`);
+            const input = getFteFieldElement(row, field);
             if (!input) return '';
 
             const rawValue = input.value?.trim() || '';
@@ -2004,7 +2022,6 @@
             if (!container) return [];
 
             return Array.from(container.querySelectorAll('.fte-row')).map((row) => {
-                mountFteRowBody(row);
                 return {
                     id: getFteSerializedValue(row, 'id'),
                     name: getFteSerializedValue(row, 'name'),
@@ -2218,6 +2235,7 @@
 
             const form = document.getElementById('projectForm');
             form?.addEventListener('submit', () => {
+                if (document.getElementById('fteRolesPayload')) return;
                 container.querySelectorAll('.fte-row').forEach((row) => mountFteRowBody(row));
             }, true);
         }
@@ -3391,7 +3409,7 @@
 
                     if (!isValid) {
                         window.syncFteTableValidationUi?.({
-                            ensureRender: true
+                            ensureRender: false
                         });
                         e.preventDefault();
                         e.stopPropagation();

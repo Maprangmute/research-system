@@ -1869,8 +1869,7 @@
             removeBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const targetRemove = row.querySelector('[data-repeatable-remove]');
-                if (targetRemove) targetRemove.click();
+                requestRepeatableRowRemoval(row);
             });
             summary.appendChild(text);
             summary.appendChild(removeBtn);
@@ -2520,6 +2519,13 @@
             ) {
                 return;
             }
+            if (
+                target?.closest?.('[data-repeatable-remove]') ||
+                target?.closest?.('.row-collapse-remove') ||
+                target?.closest?.('.fte-summary-delete')
+            ) {
+                return;
+            }
             const row = target?.closest?.(COLLAPSIBLE_SELECTOR);
             if (!row) {
                 document.querySelectorAll(COLLAPSIBLE_SELECTOR).forEach(el => setCollapsed(el, true));
@@ -2537,6 +2543,14 @@
 
         document.addEventListener('focusin', (e) => {
             if (isCollapseDisabled()) return;
+            const target = e.target;
+            if (
+                target?.closest?.('[data-repeatable-remove]') ||
+                target?.closest?.('.row-collapse-remove') ||
+                target?.closest?.('.fte-summary-delete')
+            ) {
+                return;
+            }
             const row = e.target?.closest?.(COLLAPSIBLE_SELECTOR);
             if (!row) return;
             if (row.dataset.collapsed === '1') setCollapsed(row, false);
@@ -2570,19 +2584,95 @@
             setTimeout(() => row.classList.remove('repeatable-highlight'), 1200);
         }
 
-        function confirmRemove(callback) {
+        function getRowRemovalLabel(row) {
+            if (!row) return 'รายการนี้';
+
+            const siblings = getSiblings(row);
+            const index = Math.max(1, siblings.indexOf(row) + 1);
+            const prefix = `#${index}`;
+            const filledOr = (value, fallback = '') => {
+                const text = (value ?? '').toString().trim();
+                return text && text !== '-' ? text : fallback;
+            };
+
+            if (row.classList.contains('irb-row') || hasName(row, (n) => n.startsWith('irbs['))) {
+                let idx = getIndexFromId(row, 'irb');
+                if (idx === null) {
+                    row.querySelectorAll('[name]').forEach((el) => {
+                        const meta = matchKey(el.name);
+                        if (meta && meta.root === 'irbs') idx = meta.index;
+                    });
+                }
+                const values = idx !== null ? getGroupValues(row, 'irbs', idx) : {};
+                const code = filledOr(values.code, 'ยังไม่กรอกรหัส');
+                return `IRB ${prefix} รหัส ${code}`;
+            }
+
+            if (row.classList.contains('copi-row') || hasName(row, (n) => n.startsWith('copis['))) {
+                let idx = getIndexFromId(row, 'copi');
+                if (idx === null) {
+                    row.querySelectorAll('[name]').forEach((el) => {
+                        const meta = matchKey(el.name);
+                        if (meta && meta.root === 'copis') idx = meta.index;
+                    });
+                }
+                const values = idx !== null ? getGroupValues(row, 'copis', idx) : {};
+                const name = filledOr(values.name, 'ยังไม่กรอกชื่อ');
+                return `COPI ${prefix} ชื่อ ${name}`;
+            }
+
+            if (row.classList.contains('coresearch-row') || hasName(row, (n) => n.startsWith('coresearch['))) {
+                let idx = getIndexFromId(row, 'coresearch');
+                if (idx === null) {
+                    row.querySelectorAll('[name]').forEach((el) => {
+                        const meta = matchKey(el.name);
+                        if (meta && meta.root === 'coresearch') idx = meta.index;
+                    });
+                }
+                const values = idx !== null ? getGroupValues(row, 'coresearch', idx) : {};
+                const name = filledOr(values.name, 'ยังไม่กรอกชื่อ');
+                return `Co-Researcher ${prefix} ชื่อ ${name}`;
+            }
+
+            if (row.classList.contains('fte-row') || hasName(row, (n) => n.startsWith('fte_roles['))) {
+                const name = filledOr(
+                    getFieldValueByName(row, (n) => n.startsWith('fte_roles[') && n.endsWith('[name]')),
+                    'ยังไม่กรอกชื่อ'
+                );
+                return `ผู้มีส่วนร่วม ${prefix} ชื่อ ${name}`;
+            }
+
+            if (row.classList.contains('output-row') || hasName(row, (n) => n.startsWith('outputs['))) {
+                const title = filledOr(
+                    getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[title]')),
+                    'ยังไม่กรอกชื่อผลงาน'
+                );
+                return `Output ${prefix} ชื่อ ${title}`;
+            }
+
+            const name = filledOr(
+                getFieldValueByName(row, (n) => n.endsWith('[name]') || n.endsWith('[person_name]')),
+                ''
+            );
+            if (name) return `รายการ ${prefix} ชื่อ ${name}`;
+            return `รายการ ${prefix}`;
+        }
+
+        function confirmRemove(callback, options = {}) {
+            const detail = (options.detail || '').toString().trim();
+            const text = detail ? `ต้องการลบ ${detail} หรือไม่?` : 'ต้องการลบรายการนี้ใช่หรือไม่?';
             if (window.Swal) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'ยืนยันการลบ',
-                    text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
+                    text,
                     showCancelButton: true,
                     confirmButtonText: 'ลบ',
                     cancelButtonText: 'ยกเลิก',
                     confirmButtonColor: '#dc2626'
                 }).then(r => r.isConfirmed && callback());
             } else {
-                if (confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) callback();
+                if (confirm(text)) callback();
             }
         }
 
@@ -2703,6 +2793,22 @@
 
         window.removeProjectRowWithScroll = removeRowWithMobileScroll;
 
+        function requestRepeatableRowRemoval(row) {
+            if (!row) return;
+            const group = row.closest('[data-repeatable]');
+            const container = group ? document.getElementById(group.dataset.container) : row.parentElement;
+            const detail = getRowRemovalLabel(row);
+
+            confirmRemove(() => {
+                removeRowWithMobileScroll(row, () => {
+                    row.remove();
+                    updateIndex(container);
+                });
+            }, {
+                detail
+            });
+        }
+
         function bindRemove(row) {
             row.querySelectorAll('[data-repeatable-remove]').forEach(btn => {
                 const currentText = (btn.textContent || '').trim();
@@ -2712,16 +2818,10 @@
                 }
                 row.classList.add('has-inline-remove');
 
-                btn.onclick = () => {
-                    const group = row.closest('[data-repeatable]');
-                    const container = document.getElementById(group.dataset.container);
-
-                    confirmRemove(() => {
-                        removeRowWithMobileScroll(row, () => {
-                            row.remove();
-                            updateIndex(container);
-                        });
-                    });
+                btn.onclick = (event) => {
+                    event?.preventDefault?.();
+                    event?.stopPropagation?.();
+                    requestRepeatableRowRemoval(row);
                 };
             });
         }
@@ -2829,12 +2929,17 @@
         });
 
         let fteUxRefreshQueued = false;
+        let suppressNextFteUxRefresh = false;
         const shouldRefreshFteUx = () => {
             if (window.isFteTableMode?.()) return true;
             return Boolean((document.getElementById('fte-search-input')?.value || '').trim());
         };
         const scheduleFteUxRefresh = () => {
             if (!shouldRefreshFteUx()) return;
+            if (suppressNextFteUxRefresh) {
+                suppressNextFteUxRefresh = false;
+                return;
+            }
             if (fteUxRefreshQueued) return;
             fteUxRefreshQueued = true;
             requestAnimationFrame(() => {
@@ -3214,6 +3319,11 @@
             if (!row) return;
             if (isTableModeEnabled()) {
                 expandAllFteRows();
+                const hasQuery = Boolean((document.getElementById(FTE_SEARCH_ID)?.value || '').trim());
+                if (!hasQuery && appendFteTableRow(row)) {
+                    suppressNextFteUxRefresh = true;
+                    return;
+                }
                 window.refreshFteUx?.();
             } else {
                 window.collapseFteRowsExcept(row);
@@ -3495,17 +3605,7 @@
             return wrap;
         };
 
-        const renderFteTable = () => {
-            const wrap = ensureTableWrap();
-            if (!wrap) return;
-            const query = (document.getElementById(FTE_SEARCH_ID)?.value || '').trim().toLowerCase();
-            const rows = getRows().filter((row) => !query || rowSearchText(row).includes(query));
-
-            if (!rows.length) {
-                wrap.innerHTML = '<div class="fte-table-empty">ไม่พบรายการ FTE</div>';
-                return;
-            }
-
+        const createFteTableShell = () => {
             const table = document.createElement('table');
             table.className = 'fte-table-grid';
             table.innerHTML = `
@@ -3530,109 +3630,186 @@
                 </thead>
                 <tbody></tbody>
             `;
-            const tbody = table.querySelector('tbody');
+            return table;
+        };
 
-            rows.forEach((row, idx) => {
-                const tr = document.createElement('tr');
-                const tdIndex = document.createElement('td');
-                tdIndex.className = 'fte-table-index';
-                tdIndex.textContent = String(idx + 1);
-                tr.appendChild(tdIndex);
+        const buildFteTableRow = (row, idx) => {
+            const tr = document.createElement('tr');
+            const tdIndex = document.createElement('td');
+            tdIndex.className = 'fte-table-index';
+            tdIndex.textContent = String(idx + 1);
+            tr.appendChild(tdIndex);
 
-                const cellDefs = [
-                    ['input[name^="fte_roles["][name$="[name]"]'],
-                    ['select[name^="fte_roles["][name$="[role_group]"]'],
-                    ['select[name^="fte_roles["][name$="[job_detail]"]'],
-                    ['input[name^="fte_roles["][name$="[start_date]"]', {
-                        isDate: true
-                    }],
-                    ['input[name^="fte_roles["][name$="[end_date]"]', {
-                        isDate: true
-                    }],
-                    ['input[name^="fte_roles["][name$="[hours]"]', {
-                        type: 'number'
-                    }],
-                    ['select[name^="fte_roles["][name$="[task_detail]"]'],
-                    ['input[name^="fte_roles["][name$="[fte_value]"]', {
-                        readOnly: true
-                    }],
-                    ['input[name^="fte_roles["][name$="[fte_value_research]"]', {
-                        type: 'number'
-                    }],
-                ];
+            const cellDefs = [
+                ['input[name^="fte_roles["][name$="[name]"]'],
+                ['select[name^="fte_roles["][name$="[role_group]"]'],
+                ['select[name^="fte_roles["][name$="[job_detail]"]'],
+                ['input[name^="fte_roles["][name$="[start_date]"]', {
+                    isDate: true
+                }],
+                ['input[name^="fte_roles["][name$="[end_date]"]', {
+                    isDate: true
+                }],
+                ['input[name^="fte_roles["][name$="[hours]"]', {
+                    type: 'number'
+                }],
+                ['select[name^="fte_roles["][name$="[task_detail]"]'],
+                ['input[name^="fte_roles["][name$="[fte_value]"]', {
+                    readOnly: true
+                }],
+                ['input[name^="fte_roles["][name$="[fte_value_research]"]', {
+                    type: 'number'
+                }],
+            ];
 
-                cellDefs.forEach(([selector, options = {}]) => {
-                    const td = document.createElement('td');
-                    const proxy = createProxyInput(getField(row, selector), options);
-                    td.appendChild(proxy);
-                    tr.appendChild(td);
-                });
-
-                bindTableProxyEndDateMin(
-                    getField(row, 'input[name^="fte_roles["][name$="[start_date]"]'),
-                    getField(row, 'input[name^="fte_roles["][name$="[end_date]"]'),
-                    tr.querySelector('td:nth-child(6) input')
-                );
-
-                const removeTd = document.createElement('td');
-                const removeBtn = document.createElement('button');
-                removeBtn.type = 'button';
-                removeBtn.className = 'fte-table-remove-btn';
-                removeBtn.textContent = 'ลบ';
-                removeBtn.addEventListener('click', () => {
-                    const doRemove = () => {
-                        const proxyInRow = tr.querySelector(`[${FTE_PROXY_LINK_ATTR}]`);
-                        const proxyId = proxyInRow?.getAttribute(FTE_PROXY_LINK_ATTR) || '';
-                        const sourceField = proxyId ?
-                            document.querySelector(`#${FTE_CONTAINER_ID} [${FTE_PROXY_LINK_ATTR}="${proxyId}"]`) :
-                            null;
-                        const sourceRow = sourceField?.closest('.fte-row') || row;
-                        if (sourceRow) {
-                            const idInput = sourceRow.querySelector('input[name^="fte_roles["][name$="[id]"]');
-                            const existingId = Number(idInput?.value || 0);
-                            if (existingId > 0) {
-                                const deletedContainer = document.getElementById('fte-deleted-ids');
-                                if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
-                                    deletedContainer.insertAdjacentHTML(
-                                        'beforeend',
-                                        `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
-                                    );
-                                }
-                            }
-                        }
-
-                        // remove source row directly to avoid duplicate/overridden remove handlers
-                        sourceRow?.remove();
-                        if (typeof window.reindexFTE === 'function') {
-                            window.reindexFTE();
-                        }
-                        setTimeout(() => window.refreshFteUx?.(), 0);
-                    };
-
-                    if (window.Swal) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'ยืนยันการลบ',
-                            text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
-                            showCancelButton: true,
-                            confirmButtonText: 'ลบ',
-                            cancelButtonText: 'ยกเลิก',
-                            confirmButtonColor: '#dc2626'
-                        }).then((result) => {
-                            if (result.isConfirmed) doRemove();
-                        });
-                        return;
-                    }
-
-                    if (confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) {
-                        doRemove();
-                    }
-                });
-                removeTd.appendChild(removeBtn);
-                tr.appendChild(removeTd);
-                tbody.appendChild(tr);
+            cellDefs.forEach(([selector, options = {}]) => {
+                const td = document.createElement('td');
+                const proxy = createProxyInput(getField(row, selector), options);
+                td.appendChild(proxy);
+                tr.appendChild(td);
             });
 
+            bindTableProxyEndDateMin(
+                getField(row, 'input[name^="fte_roles["][name$="[start_date]"]'),
+                getField(row, 'input[name^="fte_roles["][name$="[end_date]"]'),
+                tr.querySelector('td:nth-child(6) input')
+            );
+
+            const removeTd = document.createElement('td');
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'fte-table-remove-btn';
+            removeBtn.textContent = 'ลบ';
+            removeBtn.addEventListener('click', () => {
+                const detail = getFteTableRemovalLabel(row, tr);
+                const doRemove = () => {
+                    const proxyInRow = tr.querySelector(`[${FTE_PROXY_LINK_ATTR}]`);
+                    const proxyId = proxyInRow?.getAttribute(FTE_PROXY_LINK_ATTR) || '';
+                    const sourceField = proxyId ?
+                        document.querySelector(`#${FTE_CONTAINER_ID} [${FTE_PROXY_LINK_ATTR}="${proxyId}"]`) :
+                        null;
+                    const sourceRow = sourceField?.closest('.fte-row') || row;
+                    if (sourceRow) {
+                        const idInput = sourceRow.querySelector('input[name^="fte_roles["][name$="[id]"]');
+                        const existingId = Number(idInput?.value || 0);
+                        if (existingId > 0) {
+                            const deletedContainer = document.getElementById('fte-deleted-ids');
+                            if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
+                                deletedContainer.insertAdjacentHTML(
+                                    'beforeend',
+                                    `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
+                                );
+                            }
+                        }
+                    }
+
+                    // remove source row directly to avoid duplicate/overridden remove handlers
+                    sourceRow?.remove();
+                    if (typeof window.reindexFTE === 'function') {
+                        window.reindexFTE();
+                    }
+                    suppressNextFteUxRefresh = true;
+                    const tbody = tr.parentElement;
+                    tr.remove();
+                    syncFteTableIndexes(tbody);
+                    if (tbody && tbody.querySelectorAll('tr').length === 0) {
+                        const wrap = ensureTableWrap();
+                        if (wrap) {
+                            wrap.innerHTML = '<div class="fte-table-empty">ไม่พบรายการ FTE</div>';
+                        }
+                    }
+                };
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'ยืนยันการลบ',
+                        text: `ต้องการลบ ${detail} หรือไม่?`,
+                        showCancelButton: true,
+                        confirmButtonText: 'ลบ',
+                        cancelButtonText: 'ยกเลิก',
+                        confirmButtonColor: '#dc2626'
+                    }).then((result) => {
+                        if (result.isConfirmed) doRemove();
+                    });
+                    return;
+                }
+
+                if (confirm(`ต้องการลบ ${detail} หรือไม่?`)) {
+                    doRemove();
+                }
+            });
+            removeTd.appendChild(removeBtn);
+            tr.appendChild(removeTd);
+            return tr;
+        };
+
+        const getFteTableRemovalLabel = (row, tr) => {
+            const safe = (value, fallback) => {
+                const text = String(value || '').trim();
+                return text || fallback;
+            };
+
+            const indexText = safe(
+                tr?.querySelector('.fte-table-index')?.textContent,
+                '?'
+            );
+
+            const sourceName = getField(row, 'input[name^="fte_roles["][name$="[name]"]')?.value;
+            const proxyName = tr?.querySelector('td:nth-child(2) input')?.value;
+            const name = safe(sourceName || proxyName, 'ยังไม่กรอกชื่อ');
+
+            return `ผู้มีส่วนร่วม #${indexText} ชื่อ ${name}`;
+        };
+
+        const syncFteTableIndexes = (tbody) => {
+            tbody?.querySelectorAll('tr').forEach((tr, idx) => {
+                const indexCell = tr.querySelector('.fte-table-index');
+                if (indexCell) indexCell.textContent = String(idx + 1);
+            });
+        };
+
+        const appendFteTableRow = (row) => {
+            const wrap = ensureTableWrap();
+            if (!wrap || !row) return false;
+
+            let table = wrap.querySelector('table.fte-table-grid');
+            if (!table) {
+                table = createFteTableShell();
+                wrap.innerHTML = '';
+                wrap.appendChild(table);
+            }
+
+            const tbody = table.querySelector('tbody');
+            if (!tbody) return false;
+
+            const nextIndex = tbody.querySelectorAll('tr').length;
+            tbody.appendChild(buildFteTableRow(row, nextIndex));
+            syncFteTableIndexes(tbody);
+            syncAllFteProxyInvalidStates();
+            return true;
+        };
+
+        const renderFteTable = () => {
+            const wrap = ensureTableWrap();
+            if (!wrap) return;
+            const query = (document.getElementById(FTE_SEARCH_ID)?.value || '').trim().toLowerCase();
+            const rows = getRows().filter((row) => !query || rowSearchText(row).includes(query));
+
+            if (!rows.length) {
+                wrap.innerHTML = '<div class="fte-table-empty">ไม่พบรายการ FTE</div>';
+                return;
+            }
+
+            const table = createFteTableShell();
+            const tbody = table.querySelector('tbody');
+            const fragment = document.createDocumentFragment();
+
+            rows.forEach((row, idx) => {
+                fragment.appendChild(buildFteTableRow(row, idx));
+            });
+
+            tbody.appendChild(fragment);
             wrap.innerHTML = '';
             wrap.appendChild(table);
             wrap.scrollLeft = 0;
@@ -3728,7 +3905,8 @@
                 applyTableModeState();
             };
 
-            const shouldEnableTableMode = !isTableModeDisabledOnPage && localStorage.getItem(FTE_TABLE_MODE_STORAGE_KEY) === '1';
+            const storedTableMode = localStorage.getItem(FTE_TABLE_MODE_STORAGE_KEY);
+            const shouldEnableTableMode = !isTableModeDisabledOnPage && storedTableMode !== '0';
             if (shouldEnableTableMode) {
                 container.classList.add('fte-table-mode');
             } else if (isTableModeDisabledOnPage) {
@@ -3764,7 +3942,9 @@
         } = {}) => {
             if (!window.isFteTableMode?.()) return;
             fteSubmitAttempted = true;
-            if (ensureRender) renderFteTable();
+            if (ensureRender && !document.querySelector(`#${FTE_TABLE_WRAP_ID} table.fte-table-grid`)) {
+                renderFteTable();
+            }
             validateFteTableFields({
                 showAlert: false,
                 markStyles: true
@@ -3783,20 +3963,13 @@
             if (!form.querySelector(`#${FTE_CONTAINER_ID}`)) return;
             fteSubmitAttempted = true;
             if (window.isFteTableMode?.()) {
-                // mark table fields immediately and after DOM settles from page-level validators
                 window.syncFteTableValidationUi?.({
-                    ensureRender: true
-                });
-                requestAnimationFrame(() => {
-                    window.syncFteTableValidationUi?.({
-                        ensureRender: true
-                    });
+                    ensureRender: false
                 });
             }
-            // Let form-level validators run first, then mirror red-border state to table proxies.
             setTimeout(() => {
                 window.syncFteTableValidationUi?.({
-                    ensureRender: true
+                    ensureRender: false
                 });
             }, 0);
         };
