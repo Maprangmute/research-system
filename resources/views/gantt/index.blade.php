@@ -587,7 +587,6 @@
         }
 
         .gantt_grid_data .gantt_cell[data-column-name="workflow_status"],
-        .gantt_grid_data .gantt_cell[data-column-name="progress_percent"],
         .gantt_grid_data .gantt_cell[data-column-name="start_date"],
         .gantt_grid_data .gantt_cell[data-column-name="end_date"],
         .gantt_grid_data .gantt_cell[data-column-name="quick_add"],
@@ -962,6 +961,8 @@
                         <span id="zoom-level" class="gantt-zoom-value">100%</span>
                         <button id="zoom-in" type="button" class="gantt-btn" title="ซูมเข้า">+</button>
                     </div>
+                    <button id="btn-export-pdf" type="button" class="gantt-btn">Export PDF</button>
+                    <button id="btn-export-excel" type="button" class="gantt-btn">Export Excel</button>
                     <button id="btn-add" type="button" class="gantt-btn gantt-btn-soft">+ เพิ่มงาน</button>
                 </div>
             </div>
@@ -1067,7 +1068,7 @@
                     </select>
                 </div>
 
-                <div class="drawer-field">
+                <div class="drawer-field" style="display:none;">
                     <label for="drawer-progress">ความคืบหน้า (%)</label>
                     <select id="drawer-progress">
                         <option value="0">0%</option>
@@ -1098,11 +1099,14 @@
         </div>
     </aside>
 
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script>
         (() => {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
             const projectId = @json((int) $project->id);
             const projectRef = @json((string) $project->getRouteKey());
+            const projectTitle = @json((string) $project->project_name_th);
 
             const tasksUrl = `/projects/${encodeURIComponent(projectRef)}/tasks`;
             const linksUrl = `/projects/${encodeURIComponent(projectRef)}/task-links`;
@@ -1203,6 +1207,8 @@
             const drawerSave = document.getElementById('drawer-save');
             const drawerSaveInline = document.getElementById('drawer-save-inline');
             const drawerDelete = document.getElementById('drawer-delete');
+            const exportPdfBtn = document.getElementById('btn-export-pdf');
+            const exportExcelBtn = document.getElementById('btn-export-excel');
 
             function isNumericId(value) {
                 if (value === null || value === undefined || value === '') {
@@ -1218,6 +1224,15 @@
                     hour: '2-digit',
                     minute: '2-digit',
                 });
+            }
+
+            function toDateStamp(date = new Date()) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${year}${month}${day}_${hours}${minutes}`;
             }
 
             function toGanttProgress(raw) {
@@ -1253,6 +1268,11 @@
                     .replaceAll('>', '&gt;')
                     .replaceAll('"', '&quot;')
                     .replaceAll("'", '&#39;');
+            }
+
+            function exportBaseName() {
+                const raw = `gantt_${projectRef}_${toDateStamp()}`;
+                return raw.replace(/[^\w.-]+/g, '_');
             }
 
             function toStatusClass(status) {
@@ -1633,7 +1653,136 @@
             }
 
             function isInlineEditableColumn(columnName) {
-                return ['text', 'workflow_status', 'progress_percent', 'start_date', 'end_date'].includes(String(columnName || ''));
+                return ['text', 'workflow_status', 'start_date', 'end_date'].includes(String(columnName || ''));
+            }
+
+            function normalizeTaskParentKey(parent) {
+                if (parent === null || parent === undefined || parent === '' || parent === 0 || parent === '0') {
+                    return '0';
+                }
+
+                return String(parent);
+            }
+
+            function compareTaskRowsByStartDate(left, right) {
+                const leftId = String(left?.id ?? '');
+                const rightId = String(right?.id ?? '');
+
+                if (leftId === FTE_ROOT_ID && rightId !== FTE_ROOT_ID) {
+                    return -1;
+                }
+
+                if (rightId === FTE_ROOT_ID && leftId !== FTE_ROOT_ID) {
+                    return 1;
+                }
+
+                const leftStart = parseApiDate(left?.start_date);
+                const rightStart = parseApiDate(right?.start_date);
+
+                if (leftStart && rightStart) {
+                    const diff = leftStart.getTime() - rightStart.getTime();
+                    if (diff !== 0) {
+                        return diff;
+                    }
+                } else if (leftStart || rightStart) {
+                    return leftStart ? -1 : 1;
+                }
+
+                const leftEnd = parseApiDate(left?.end_date);
+                const rightEnd = parseApiDate(right?.end_date);
+
+                if (leftEnd && rightEnd) {
+                    const diff = leftEnd.getTime() - rightEnd.getTime();
+                    if (diff !== 0) {
+                        return diff;
+                    }
+                } else if (leftEnd || rightEnd) {
+                    return leftEnd ? -1 : 1;
+                }
+
+                const leftText = String(left?.text ?? '').trim();
+                const rightText = String(right?.text ?? '').trim();
+                const textDiff = leftText.localeCompare(rightText, 'th', { sensitivity: 'base', numeric: true });
+                if (textDiff !== 0) {
+                    return textDiff;
+                }
+
+                return leftId.localeCompare(rightId, 'en', { numeric: true, sensitivity: 'base' });
+            }
+
+            function sortTaskRowsByStartDate(rows) {
+                const inputRows = Array.isArray(rows) ? rows.filter(Boolean) : [];
+                const childrenByParent = new Map();
+                const ordered = [];
+                const visited = new Set();
+
+                inputRows.forEach((row) => {
+                    const parentKey = normalizeTaskParentKey(row?.parent);
+                    if (!childrenByParent.has(parentKey)) {
+                        childrenByParent.set(parentKey, []);
+                    }
+                    childrenByParent.get(parentKey).push(row);
+                });
+
+                const visit = (parentKey) => {
+                    const children = [...(childrenByParent.get(parentKey) || [])].sort(compareTaskRowsByStartDate);
+                    children.forEach((row) => {
+                        const rowId = String(row?.id ?? '');
+                        if (visited.has(rowId)) {
+                            return;
+                        }
+
+                        visited.add(rowId);
+                        ordered.push(row);
+                        visit(rowId);
+                    });
+                };
+
+                visit('0');
+
+                inputRows
+                    .filter((row) => !visited.has(String(row?.id ?? '')))
+                    .sort(compareTaskRowsByStartDate)
+                    .forEach((row) => {
+                        const rowId = String(row?.id ?? '');
+                        if (visited.has(rowId)) {
+                            return;
+                        }
+
+                        visited.add(rowId);
+                        ordered.push(row);
+                        visit(rowId);
+                    });
+
+                return ordered;
+            }
+
+            function sortCurrentGanttRowsByStartDate() {
+                if (!isGanttReady || typeof gantt.serialize !== 'function') {
+                    return;
+                }
+
+                const snapshot = gantt.serialize();
+                if (!Array.isArray(snapshot?.data)) {
+                    return;
+                }
+
+                const sortedData = sortTaskRowsByStartDate(snapshot.data);
+                const links = Array.isArray(snapshot?.links) ? snapshot.links : [];
+                const viewState = captureViewState();
+
+                isHydrating = true;
+                closeTaskActionDrawer();
+
+                try {
+                    gantt.clearAll();
+                    gantt.parse({ data: sortedData, links });
+                    restoreViewState(viewState);
+                    applyFilters();
+                    queueHorizontalNavSync();
+                } finally {
+                    isHydrating = false;
+                }
             }
 
             function startInlineEdit(taskId, columnName) {
@@ -1825,6 +1974,136 @@
 
                 const parentTask = gantt.getTask(parentId);
                 return isFteTask(parentTask) ? 0 : parentId;
+            }
+
+            function getOrderedVisibleTasksForExport() {
+                const snapshot = typeof gantt.serialize === 'function' ? gantt.serialize() : null;
+                const orderedRows = Array.isArray(snapshot?.data) ? snapshot.data : [];
+
+                return orderedRows
+                    .map((row) => {
+                        const id = row?.id;
+                        if (id === null || id === undefined || !gantt.isTaskExists(id)) {
+                            return null;
+                        }
+
+                        const task = gantt.getTask(id);
+                        if (!task || String(task.id) === FTE_ROOT_ID || !taskMatchesFilter(task)) {
+                            return null;
+                        }
+
+                        const startDate = parseApiDate(task.start_date);
+                        const endDate = parseApiDate(task.end_date);
+                        const workflowStatus = normalizeWorkflowStatus(task.workflow_status || task.status, {
+                            progress: task.progress_percent ?? task.progress,
+                            start: task.start_date,
+                            end: task.end_date,
+                        });
+
+                        return {
+                            id: String(task.id ?? ''),
+                            text: String(task.text || '').trim() || '-',
+                            owner: String(task.owner || '').trim() || '-',
+                            status: STATUS_CONFIG[workflowStatus]?.label || '-',
+                            start: startDate ? toThaiDateBE(startDate, true) : '-',
+                            end: endDate ? toThaiDateBE(endDate, true) : '-',
+                            parent: String(task.parent || '0'),
+                            isFte: isFteTask(task),
+                        };
+                    })
+                    .filter(Boolean);
+            }
+
+            function buildExportMetaText(taskCount) {
+                const scaleLabel = scaleSelectEl?.selectedOptions?.[0]?.textContent?.trim() || currentScale;
+                const filters = [];
+                if (filterState.search) filters.push(`ค้นหา: ${filterState.search}`);
+                if (filterState.owner) filters.push(`ผู้รับผิดชอบ: ${filterState.owner}`);
+                if (filterState.status && filterState.status !== 'all') {
+                    filters.push(`สถานะ: ${STATUS_CONFIG[filterState.status]?.label || filterState.status}`);
+                }
+
+                return [
+                    `โครงการ: ${projectTitle}`,
+                    `มุมมอง: ${scaleLabel}`,
+                    `จำนวนรายการ: ${taskCount}`,
+                    `ส่งออกเมื่อ: ${new Date().toLocaleString('th-TH')}`,
+                    filters.length ? `ฟิลเตอร์: ${filters.join(' | ')}` : 'ฟิลเตอร์: ไม่มี',
+                ];
+            }
+
+            function buildServerExportUrl(format) {
+                const url = new URL(@json(route('projects.gantt.export', $project)), window.location.origin);
+                url.searchParams.set('format', format);
+
+                const searchValue = String(document.getElementById('filter-search')?.value || '').trim();
+                const ownerValue = String(document.getElementById('filter-owner')?.value || '').trim();
+                const statusValue = String(document.getElementById('filter-status')?.value || 'all').trim() || 'all';
+                const scaleValue = String(scaleSelectEl?.value || scaleSelectMobileEl?.value || currentScale || 'year').trim() || 'year';
+
+                if (searchValue) url.searchParams.set('search', searchValue);
+                if (ownerValue) url.searchParams.set('owner', ownerValue);
+                if (statusValue && statusValue !== 'all') url.searchParams.set('status', statusValue);
+                url.searchParams.set('scale', scaleValue);
+
+                return url.toString();
+            }
+
+            async function captureGanttSnapshot() {
+                if (typeof html2canvas === 'undefined') {
+                    throw new Error('ไม่พบ html2canvas');
+                }
+
+                const target = document.querySelector('.gantt-shell');
+                if (!(target instanceof HTMLElement)) {
+                    throw new Error('ไม่พบพื้นที่ Gantt');
+                }
+
+                closeTaskActionDrawer();
+                closeDrawer();
+
+                await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+                return html2canvas(target, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: -window.scrollY,
+                    windowWidth: document.documentElement.scrollWidth,
+                    windowHeight: document.documentElement.scrollHeight,
+                });
+            }
+
+            function setExportButtonsDisabled(disabled) {
+                [exportPdfBtn, exportExcelBtn].forEach((button) => {
+                    if (!(button instanceof HTMLButtonElement)) {
+                        return;
+                    }
+                    button.disabled = disabled;
+                    button.style.opacity = disabled ? '0.65' : '';
+                    button.style.cursor = disabled ? 'wait' : '';
+                });
+            }
+
+            function downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
+            async function exportGanttPdf() {
+                window.open(buildServerExportUrl('pdf'), '_blank', 'noopener');
+            }
+
+            async function exportGanttExcel() {
+                window.location.href = buildServerExportUrl('xls');
             }
 
             function suppressGridClick(ms = 220) {
@@ -2722,8 +3001,8 @@
                         return;
                     }
 
-                    const normalTasks = normalTaskRows.map(mapTaskFromApi);
-                    const fteTasks = fteTaskRows.map(mapTaskFromApi);
+                    const normalTasks = sortTaskRowsByStartDate(normalTaskRows).map(mapTaskFromApi);
+                    const fteTasks = sortTaskRowsByStartDate(fteTaskRows).map(mapTaskFromApi);
                     const links = linkRows.map(mapLinkFromApi);
                     const normalBeforeFte = normalTasks.filter((task) => Number(task.order || 0) < FTE_ORDER_BREAK);
                     const normalAfterFte = normalTasks.filter((task) => Number(task.order || 0) >= FTE_ORDER_BREAK);
@@ -2740,6 +3019,7 @@
                     } else {
                         gantt.parse({ data: normalTasks, links });
                     }
+                    sortCurrentGanttRowsByStartDate();
                     setScale(document.getElementById('scale-select')?.value || 'year');
                     lastServerSignature = currentSignature;
 
@@ -3244,8 +3524,7 @@
                         สถานะ: ${statusLabel}<br/>
                         ผู้รับผิดชอบ: ${task.owner || '-'}<br/>
                         เริ่ม: ${toThaiDateBE(start, true)}<br/>
-                        สิ้นสุด: ${toThaiDateBE(end, true)}<br/>
-                        คืบหน้า: ${toBackendProgress(task.progress_percent ?? task.progress)}%
+                        สิ้นสุด: ${toThaiDateBE(end, true)}
                     `;
                 };
 
@@ -3277,18 +3556,6 @@
                             type: 'select',
                             map_to: 'workflow_status',
                             options: gantt.serverList('workflowStatuses'),
-                        },
-                    },
-                    {
-                        name: 'progress_percent',
-                        label: 'Progress',
-                        width: 80,
-                        align: 'center',
-                        template: (task) => `<div class="gantt-cell-center"><span class="gantt-progress-pill">${toBackendProgress(task.progress_percent ?? task.progress)}%</span></div>`,
-                        editor: {
-                            type: 'select',
-                            map_to: 'progress_percent',
-                            options: gantt.serverList('progressValues'),
                         },
                     },
                     {
@@ -3510,6 +3777,7 @@
                             lastPointerDragAt = Date.now();
                             suppressGridClick(900);
                         }
+                        sortCurrentGanttRowsByStartDate();
                         markDirty(true);
                         return true;
                     });
@@ -3568,6 +3836,9 @@
                     event.preventDefault();
                     event.returnValue = '';
                 });
+
+                exportPdfBtn?.addEventListener('click', exportGanttPdf);
+                exportExcelBtn?.addEventListener('click', exportGanttExcel);
 
                 sharedPageBindingsReady = true;
             }

@@ -464,7 +464,7 @@
                 <div class="field-value">{{ $project->theme ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">Shortcut</div>
+                <div class="field-label">เอกสารโครงการ (proposal , IRB) : </div>
                 <div class="field-value">
                     @if ($project->shortcut_link)
                         <a href="{{ $project->shortcut_link }}" class="text-blue-600 underline" target="_blank"

@@ -46,6 +46,8 @@
         'จัดทำสื่อ / Communication Assets',
         'สร้างโปรเเกรม ฐานข้อมูล เเละ โปรเเกรมที่เกี่ยวข้องกับงานวิจัย',
         'IT and Technical support',
+        'ที่ปรึกษาโครงการ',
+        'เบิกงบประมาณทุน'
     ];
     $piAffiliationList = \App\Models\Project::whereNotNull('pi_affiliation')
         ->whereRaw("TRIM(pi_affiliation) <> ''")
@@ -344,7 +346,7 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ลิงก์ Google Drive / Shortcut</span>
+                    <span class="block text-sm text-gray-700 mb-1">เอกสารโครงการ (proposal , IRB)</span>
                     <input name="shortcut_link" value="{{ old('shortcut_link', $project->shortcut_link) }}"
                         class="w-full border p-2 rounded">
                 </label>
@@ -420,8 +422,27 @@
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
-                    <input name="funding_type" value="{{ old('funding_type', $project->funding_type) }}"
-                        class="w-full border p-2 rounded">
+                    <select name="funding_type" class="w-full border p-2 rounded">
+                        <option value="" disabled
+                            {{ old('funding_type', $project->funding_type) ? '' : 'selected' }}>
+                            กรุณาเลือกขนาดของโปรเจค
+                        </option>
+                        <option value="ภายใน"
+                            {{ old('funding_type', $project->funding_type) == 'ภายใน' ? 'selected' : '' }}>
+                            ภายใน
+                        </option>
+                        <option value="ภายนอก"
+                            {{ old('funding_type', $project->funding_type) == 'ภายนอก' ? 'selected' : '' }}>
+                            ภายนอก
+                        </option>
+                    </select>
+                </label>
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA103 - ชื่อแหล่งทุน</span>
+                    <input name="funding_source" type="text"
+                        value="{{ old('funding_source', $project->funding_source) }}"
+                        class="w-full border p-2 rounded"
+                        placeholder="ชื่อหน่วยงานหรือองค์กรที่ให้ทุน">
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>

@@ -418,7 +418,7 @@
                     <div><span class="font-semibold">Theme:</span> {{ $project->theme ?? '-' }}</div>
 
                     <div class="md:col-span-2">
-                        <span class="font-semibold">Shortcut:</span>
+                        <span class="font-semibold">Shortcutเอกสารโครงการ (proposal , IRB) : </span>
                         @if ($project->shortcut_link)
                             <a href="{{ $project->shortcut_link }}" class="text-blue-600 underline ml-1" target="_blank"
                                 rel="noopener">

@@ -136,6 +136,7 @@ use App\Http\Controllers\GanttController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/rm/projects/{project}/gantt', [GanttController::class, 'index'])->name('projects.gantt');
+    Route::get('/rm/projects/{project}/gantt/export', [GanttController::class, 'export'])->name('projects.gantt.export');
 
     // Gantt Tasks
     Route::get('/projects/{project}/tasks', [TaskController::class, 'index']);

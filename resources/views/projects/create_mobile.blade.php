@@ -50,6 +50,8 @@
         'จัดทำสื่อ / Communication Assets',
         'สร้างโปรเเกรม ฐานข้อมูล เเละ โปรเเกรมที่เกี่ยวข้องกับงานวิจัย',
         'IT and Technical support',
+        'ที่ปรึกษาโครงการ',
+        'เบิกงบประมาณทุน'
     ];
 @endphp
 
@@ -428,7 +430,7 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ลิงก์ Google Drive / Shortcut</span>
+                    <span class="block text-sm text-gray-700 mb-1">เอกสารโครงการ (proposal , IRB)</span>
                     <input name="shortcut_link" type="text" class="w-full border p-2 rounded">
                 </label>
 
