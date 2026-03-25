@@ -73,6 +73,7 @@
 
 <script>
     window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
+    window.DISABLE_FTE_TABLE_MODE = true;
     window.enableRowCollapseSummaryOnMobile = true;
     window.PROJECT_CARD_DATE_MODE = 'create';
     window.PROJECT_MOBILE_WHEEL_DATE = true;
@@ -186,6 +187,116 @@
         .lux-mobile-form .btn,
         .lux-mobile-form button {
             border-radius: 10px;
+        }
+
+        .lux-mobile-form #fte-tools,
+        .lux-mobile-form #fte-table-wrap {
+            display: none !important;
+        }
+
+        .fte-mobile-row {
+            content-visibility: auto;
+            contain-intrinsic-size: 120px;
+        }
+
+        .fte-mobile-row.row-collapsed {
+            contain-intrinsic-size: 88px;
+        }
+
+        #fte-container .fte-mobile-row.row-collapsed {
+            padding-bottom: 1rem !important;
+        }
+
+        #fte-container .fte-mobile-row.row-collapsed > * {
+            display: block !important;
+        }
+
+        #fte-container .fte-mobile-row .row-collapse-toggle,
+        #fte-container .fte-mobile-row .row-collapse-summary,
+        #fte-container .fte-mobile-row .fte-summary-shell {
+            display: none !important;
+        }
+
+        #fte-container .fte-mobile-row.fte-mobile-collapsed .fte-mobile-body {
+            display: none;
+        }
+
+        #fte-container .fte-mobile-toggle {
+            width: 100%;
+        }
+
+        #fte-container .fte-mobile-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        #fte-container .fte-mobile-remove {
+            flex-shrink: 0;
+            border: 1px solid #fecaca;
+            border-radius: 9999px;
+            padding: 0.25rem 0.75rem;
+            color: #dc2626;
+            font-size: 0.85rem;
+            font-weight: 600;
+            line-height: 1.2;
+            background: #fff;
+        }
+
+        #fte-container .fte-mobile-summary {
+            display: none;
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.35;
+        }
+
+        #fte-container .fte-mobile-row.fte-mobile-collapsed .fte-mobile-summary {
+            display: block;
+        }
+
+        #fte-container .fte-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        #fte-container .fte-metric-card {
+            padding: 0.75rem;
+        }
+
+        #fte-container .fte-metric-card span {
+            font-size: 0.9rem;
+            margin-bottom: 0.4rem;
+        }
+
+        #fte-container .fte-metric-card input {
+            padding: 0.75rem;
+        }
+
+        #fte-container .fte-metric-card--research {
+            border-color: #bfdbfe;
+            background: #eff6ff;
+        }
+
+        #fte-container .fte-metric-card--manager {
+            border-color: #a7f3d0;
+            background: #ecfdf5;
+        }
+
+        #fte-container .fte-field-label {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+
+        .lux-mobile-add-row-btn {
+            display: block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
     <!-- Flatpickr -->
@@ -510,7 +621,7 @@
             <!-- รหัส IRB -->
             <hr class="my-6 border-t-2 border-gray-300">
             <h3 class="font-semibold text-lg text-blue-700 mb-2">IRB</h3>
-            <x-repeatable-row id="irb" addText="+ เพิ่ม IRB" startIndex="0" addClass="mb-6 px-3 py-1 bg-red-600 text-white rounded">
+            <x-repeatable-row id="irb" addText="+ เพิ่ม IRB" startIndex="0" addClass="lux-mobile-add-row-btn mb-6 px-3 py-1 bg-red-600 text-white rounded">
 
                 {{-- ✅ ต้องมี container --}}
                 <div data-repeatable-container class="space-y-2">
@@ -622,7 +733,7 @@
             <h3 class="text-balance text-blue-700 mb-2">
                 รายชื่อผู้ร่วมวิจัย (COPI)
             </h3>
-            <x-repeatable-row id="copi" addText="+ เพิ่ม COPI" startIndex="0" addClass="mb-6 px-3 py-1 bg-yellow-600 text-white rounded">
+            <x-repeatable-row id="copi" addText="+ เพิ่ม COPI" startIndex="0" addClass="lux-mobile-add-row-btn mb-6 px-3 py-1 bg-yellow-600 text-white rounded">
 
                 {{-- ✅ container --}}
                 <div data-repeatable-container class="space-y-3 mb-4">
@@ -676,7 +787,7 @@
 
 
             <h3 class="text-blue-700 font-semibold mt-2"> Co-Researcher</h3>
-            <x-repeatable-row id="coresearch" addText="+ เพิ่ม Co-Researcher" startIndex="0" addClass="mb-6 px-3 py-1 bg-purple-600 text-white rounded">
+            <x-repeatable-row id="coresearch" addText="+ เพิ่ม Co-Researcher" startIndex="0" addClass="lux-mobile-add-row-btn mb-6 px-3 py-1 bg-purple-600 text-white rounded">
 
                 {{-- ================== container ================== --}}
                 <div data-repeatable-container class="space-y-4 mb-4">
@@ -758,127 +869,167 @@
                 <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
             </div>
 
-            <x-repeatable-row id="fte" addText="+ เพิ่มผู้มีส่วนร่วม" startIndex="0" addClass="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
-
-                {{-- ================== CONTAINER ================== --}}
-                <div data-repeatable-container class="space-y-6 mb-6">
-
-                </div>
-
-                {{-- ================== TEMPLATE ================== --}}
-                <x-slot:template>
-                    <div class="fte-row p-4 border rounded-lg bg-white shadow-sm" data-repeatable-row>
-                        <div class="flex items-center justify-between gap-3 mb-4">
-                            <div class="flex items-center gap-3">
-                                <span data-repeatable-index
-                                    class="inline-flex w-8 h-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
-                                    #
-                                </span>
-                                <span class="text-sm font-semibold text-slate-700">ผู้มีส่วนร่วม</span>
-                            </div>
-                            <button type="button" class="text-red-600" data-repeatable-remove>✕</button>
+            <div id="fte-container" class="space-y-4 mb-4">
+                @php
+                    $fteRows = old('fte_roles', []);
+                @endphp
+                @foreach ($fteRows as $i => $fte)
+                    @php
+                        $fteName = data_get($fte, 'name');
+                        $selectedRoleGroup = data_get($fte, 'role_group');
+                        $selectedJobDetail = data_get($fte, 'job_detail');
+                        $fteStartDate = data_get($fte, 'start_date');
+                        $fteEndDate = data_get($fte, 'end_date');
+                        $fteHours = data_get($fte, 'hours');
+                        $selectedTaskDetail = data_get($fte, 'task_detail');
+                        $fteValue = data_get($fte, 'fte_value');
+                        $fteValueResearch = data_get($fte, 'fte_value_research');
+                    @endphp
+                    <div id="fte-{{ $i }}" class="fte-mobile-row p-4 border rounded-lg bg-white shadow-sm">
+                        <div class="fte-mobile-header">
+                            <button type="button" class="fte-mobile-toggle text-left">
+                                <span class="text-sm font-semibold text-slate-700">ผู้มีส่วนร่วมคนที่ <span class="fte-index">{{ $i + 1 }}</span></span>
+                                <div class="fte-mobile-summary mt-2"></div>
+                            </button>
+                            <button type="button" onclick="removeRow('fte-{{ $i }}','fte')" class="fte-mobile-remove">ลบ</button>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-
-                            <div class="md:col-span-8 space-y-4">
-
+                        <div class="fte-mobile-body grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                            <div class="md:col-span-9 space-y-4">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <label>
-                                        <span class="block text-sm font-semibold mb-1">
-                                            ชื่อ-นามสกุล <span class="text-red-500">*</span>
+                                    <label class="w-full">
+                                        <span class="fte-field-label text-sm font-semibold">
+                                            ชื่อ-นามสกุล
+                                            <span class="text-red-500">*</span>
                                         </span>
-                                        <input list="fteUsers" name="fte_roles[__i__][name]"
-                                            class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required>
+                                        <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
+                                            value="{{ $fteName }}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
+                                            oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
+                                            oninput="this.setCustomValidity('')">
                                     </label>
 
-                                    <label>
-                                        <span class="block text-sm font-semibold mb-1">
-                                            กลุ่ม
-                                        </span>
-                                        <select name="fte_roles[__i__][role_group]" class="w-full border p-2 rounded" required
+                                    <label class="w-full">
+                                        <span class="block text-sm font-semibold">กลุ่ม</span>
+                                        <select name="fte_roles[{{ $i }}][role_group]" class="w-full border p-2 rounded" required
                                             oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่ม')"
                                             oninput="this.setCustomValidity('')">
-                                            <option value="" disabled selected>เลือกกลุ่ม</option>
+                                            <option value="" disabled>เลือกกลุ่ม</option>
                                             @foreach ($roleGroups as $group)
-                                                <option value="{{ $group }}">{{ $group }}</option>
+                                                <option value="{{ $group }}" @selected($selectedRoleGroup == $group)>{{ $group }}</option>
                                             @endforeach
                                         </select>
                                     </label>
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <label>
-                                        <span class="block text-sm font-semibold mb-1">
-                                            ภาระงาน <span class="text-red-500">*</span>
+                                    <label class="w-full">
+                                        <span class="fte-field-label text-sm font-semibold">
+                                            ภาระงาน
+                                            <span class="text-red-500">*</span>
                                         </span>
-                                        <select name="fte_roles[__i__][job_detail]" class="w-full border p-2 rounded"
-                                            required>
-                                            <option value="">เลือกภาระงาน</option>
+                                        <select name="fte_roles[{{ $i }}][job_detail]" class="w-full border p-2 rounded" required
+                                            oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
+                                            oninput="this.setCustomValidity('')">
+                                            <option value="" disabled>เลือกภาระงาน</option>
                                             @foreach ($jobDetails as $job)
-                                                <option value="{{ $job }}">{{ $job }}</option>
+                                                <option value="{{ $job }}" @selected($selectedJobDetail == $job)>{{ $job }}</option>
                                             @endforeach
                                         </select>
                                     </label>
 
-                                    <x-date-be name="fte_roles[__i__][start_date]" label="วันเริ่มต้นภาระงาน" placeholder="เลือกวันเริ่มต้นภาระงาน" required />
-                                    <x-date-be name="fte_roles[__i__][end_date]" label="วันสิ้นสุดภาระงาน" placeholder="เลือกวันสิ้นสุดภาระงาน" required />
+                                    <label class="w-full relative">
+                                        <span class="fte-field-label text-sm font-semibold text-gray-700 mb-1">
+                                            วันเริ่มต้นภาระงาน
+                                            <span class="text-red-500">*</span>
+                                        </span>
+                                        <input name="fte_roles[{{ $i }}][start_date]" type="text"
+                                            value="{{ $fteStartDate }}"
+                                            class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันเริ่มต้นภาระงาน" required
+                                            oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
+                                            oninput="this.setCustomValidity('')">
+                                        <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </label>
+
+                                    <label class="w-full relative">
+                                        <span class="fte-field-label text-sm font-semibold text-gray-700 mb-1">
+                                            วันสิ้นสุดภาระงาน
+                                            <span class="text-red-500">*</span>
+                                        </span>
+                                        <input name="fte_roles[{{ $i }}][end_date]" type="text"
+                                            value="{{ $fteEndDate }}"
+                                            class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันสิ้นสุดภาระงาน" required
+                                            oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
+                                            oninput="this.setCustomValidity('')">
+                                        <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </label>
                                 </div>
 
-                                <label>
-                                    <span class="block text-sm font-semibold mb-1">
+                                <label class="w-full">
+                                    <span class="fte-field-label text-sm font-semibold">
                                         ชั่วโมงการทำงาน (Hour)
+                                        <span class="text-red-500">*</span>
                                     </span>
-                                    <input name="fte_roles[__i__][hours]" type="number" step="0.1" min="0"
+                                    <input type="number" step="0.1" min="0"
+                                        name="fte_roles[{{ $i }}][hours]" value="{{ $fteHours }}"
                                         class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0" required
                                         oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
                                         oninput="this.setCustomValidity('')">
                                 </label>
 
-                                <label>
-                                    <span class="block text-sm font-semibold mb-1">
-                                        รายละเอียดภารกิจ <span class="text-red-500">*</span>
+                                <label class="w-full">
+                                    <span class="fte-field-label text-sm font-semibold">
+                                        รายละเอียดภารกิจ
+                                        <span class="text-red-500">*</span>
                                     </span>
-                                    <select name="fte_roles[__i__][task_detail]" class="w-full border p-2 rounded"
-                                        required>
-                                        <option value="">เลือกภารกิจ</option>
+                                    <select name="fte_roles[{{ $i }}][task_detail]" class="w-full border p-2 rounded" required
+                                        oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
+                                        oninput="this.setCustomValidity('')">
+                                        <option value="" disabled @selected(blank($selectedTaskDetail))>เลือกภารกิจ</option>
                                         @foreach ($taskDetails as $taskDetail)
-                                            <option value="{{ $taskDetail }}">{{ $taskDetail }}</option>
+                                            <option value="{{ $taskDetail }}" @selected($selectedTaskDetail === $taskDetail)>{{ $taskDetail }}</option>
                                         @endforeach
                                     </select>
                                 </label>
                             </div>
 
-                            <div class="md:col-span-4 space-y-4">
-                                <label class="block p-4 border rounded-xl bg-blue-50">
-                                    <span class="block text-sm font-bold text-blue-800 mb-2">
-                                        FTE (คำนวณอัตโนมัติ)
-                                    </span>
-                                    <input name="fte_roles[__i__][fte_value]" type="number" step="0.00001" placeholder="0.000000"
-                                        class="fte-value w-full border p-3 rounded text-right bg-gray-100" readonly>
-                                </label>
+                            <div class="md:col-span-3">
+                                <div class="fte-metrics-grid">
+                                    <label class="fte-metric-card fte-metric-card--research block border rounded-xl">
+                                        <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
+                                        <input name="fte_roles[{{ $i }}][fte_value]" type="number" step="0.00001"
+                                            value="{{ $fteValue }}"
+                                            class="fte-value w-full border p-3 rounded text-right bg-gray-100" readonly>
+                                    </label>
 
-                                <label class="block p-4 border rounded-xl bg-emerald-50">
-                                    <span class="block text-sm font-bold text-emerald-800 mb-2">
-                                        FTE (ให้โดยหัวหน้าโครงการ)
-                                    </span>
-                                    <input name="fte_roles[__i__][fte_value_research]" type="number" step="0.01" placeholder="0.00"
-                                        min="0" max="1" class="w-full border p-3 rounded text-right">
-                                </label>
+                                    <label class="fte-metric-card fte-metric-card--manager block border rounded-xl">
+                                        <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
+                                        <input name="fte_roles[{{ $i }}][fte_value_research]" type="number" step="0.01"
+                                            min="0" max="1" value="{{ $fteValueResearch }}"
+                                            class="w-full border p-3 rounded text-right" placeholder="0.00">
+                                    </label>
+                                </div>
                             </div>
-
                         </div>
                     </div>
-                </x-slot:template>
+                @endforeach
+            </div>
 
-            </x-repeatable-row>
+            <button type="button" onclick="event.stopPropagation(); addFTERow()" data-fte-add-row class="lux-mobile-add-row-btn mb-6 px-3 py-1 bg-blue-600 text-white rounded">
+                + เพิ่มผู้มีส่วนร่วม
+            </button>
 
 
             <hr class="my-6 border-t-2 border-gray-300">
             <!-- E: ผลงานวิจัย (Output) -->
             <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
 
-            <x-repeatable-row id="output" addText="+ เพิ่ม Output" startIndex="0" addClass="mb-6 px-3 py-1 bg-green-600 text-white rounded">
+            <x-repeatable-row id="output" addText="+ เพิ่ม Output" startIndex="0" addClass="lux-mobile-add-row-btn mb-6 px-3 py-1 bg-green-600 text-white rounded">
 
                 <div data-repeatable-container class="space-y-4 mb-4">
 
@@ -1053,6 +1204,402 @@
     </style>
 
     <script>
+        function getMobileFteSummary(row) {
+            const getValue = (field) => row.querySelector(`[name^="fte_roles["][name$="[${field}]"]`)?.value?.trim() || '';
+            const name = getValue('name') || 'ยังไม่ได้ระบุชื่อ';
+            const meta = [getValue('role_group'), getValue('job_detail')].filter(Boolean).join(' / ') || 'ยังไม่ได้เลือกกลุ่มหรือภาระงาน';
+            const hours = getValue('hours') || '-';
+            const startDate = getValue('start_date') || '-';
+            const endDate = getValue('end_date') || '-';
+            const task = getValue('task_detail') || 'ยังไม่ได้เลือกรายละเอียดภารกิจ';
+            return `${name}<br>${meta}<br>${startDate} ถึง ${endDate}<br>${hours} ชั่วโมง<br>${task}`;
+        }
+
+        function getMobileFteCollapsedState(row) {
+            return row?.dataset?.fteMobileCollapsed === '1';
+        }
+
+        function restoreMobileFteState(row, collapsed) {
+            if (!(row instanceof HTMLElement)) return;
+            row.classList.remove('row-collapsed', 'row-collapsible');
+            row.dataset.collapsed = '0';
+            delete row.dataset.forceOpen;
+            setMobileFteCollapsed(row, collapsed);
+        }
+
+        function reindexMobileCreateFteCards() {
+            document.querySelectorAll('#fte-container .fte-mobile-row').forEach((row, index) => {
+                row.querySelectorAll('.fte-index').forEach((el) => {
+                    el.textContent = index + 1;
+                });
+            });
+        }
+
+        function reindexFTE() {
+            reindexMobileCreateFteCards();
+        }
+
+        function keepAddedRowOpen(rowOrId) {
+            const row = typeof rowOrId === 'string' ? document.getElementById(rowOrId) : rowOrId;
+            if (!row) return;
+            row.dataset.forceOpen = '1';
+            row.dataset.newlyAdded = '1';
+            row.dataset.collapsed = '0';
+            row.classList.remove('row-collapsed');
+            setTimeout(() => {
+                if (!row.isConnected) return;
+                if (row.dataset.newlyAdded === '1') {
+                    delete row.dataset.forceOpen;
+                    delete row.dataset.newlyAdded;
+                }
+            }, 400);
+        }
+
+        function getNextFteIndex() {
+            const container = document.getElementById('fte-container');
+            if (!container) return 0;
+            let maxIndex = -1;
+            container.querySelectorAll('[name^="fte_roles["]').forEach((el) => {
+                const m = String(el.name || '').match(/^fte_roles\[(\d+)\]/);
+                if (!m) return;
+                const idx = Number(m[1]);
+                if (!Number.isNaN(idx)) maxIndex = Math.max(maxIndex, idx);
+            });
+            return maxIndex + 1;
+        }
+
+        function addFTERow() {
+            if (typeof window.validateFteBeforeAdd === 'function' && !window.validateFteBeforeAdd({
+                    showAlert: true
+                })) {
+                return;
+            }
+
+            const container = document.getElementById('fte-container');
+            const index = getNextFteIndex();
+            const id = `fte-${index}`;
+            const roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
+            const jobDetails = [
+                'Researcher', 'Researcher Assistant', 'Project Manager',
+                'Research Coordinator', 'นักวิชาการสารสนเทศ',
+                'นักประชาสัมพันธ์', 'เจ้าหน้าที่บริหารงานทั่วไป'
+            ];
+            const taskDetails = @json($taskDetails);
+
+            const groupDropdown = [`<option value="" disabled selected>เลือกกลุ่ม</option>`]
+                .concat(roleGroups.map((g) => `<option value="${g}">${g}</option>`))
+                .join('');
+
+            const jobDropdown = [`<option value="" disabled selected>เลือกภาระงาน</option>`]
+                .concat(jobDetails.map((j) => `<option value="${j}">${j}</option>`))
+                .join('');
+
+            const taskDropdown = [`<option value="" disabled selected>เลือกภารกิจ</option>`]
+                .concat(taskDetails.map((t) => `<option value="${t}">${t}</option>`))
+                .join('');
+
+            container.insertAdjacentHTML('beforeend', `
+<div id="${id}" class="fte-mobile-row p-4 border rounded-lg bg-white shadow-sm">
+    <div class="fte-mobile-header">
+        <button type="button" class="fte-mobile-toggle text-left">
+            <span class="text-sm font-semibold text-slate-700">ผู้มีส่วนร่วมคนที่ <span class="fte-index">${index + 1}</span></span>
+            <div class="fte-mobile-summary mt-2"></div>
+        </button>
+        <button type="button" onclick="removeRow('${id}','fte')" class="fte-mobile-remove">ลบ</button>
+    </div>
+
+    <div class="fte-mobile-body grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div class="md:col-span-9 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label class="w-full">
+                    <span class="fte-field-label text-sm font-semibold">
+                        ชื่อ-นามสกุล
+                        <span class="text-red-500">*</span>
+                    </span>
+                    <input list="fteUsers" name="fte_roles[${index}][name]"
+                        class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
+                        oninput="this.setCustomValidity('')">
+                </label>
+
+                <label class="w-full">
+                    <span class="block text-sm font-semibold">กลุ่ม</span>
+                    <select name="fte_roles[${index}][role_group]" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่ม')"
+                        oninput="this.setCustomValidity('')">
+                        ${groupDropdown}
+                    </select>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <label class="w-full">
+                    <span class="fte-field-label text-sm font-semibold">
+                        ภาระงาน
+                        <span class="text-red-500">*</span>
+                    </span>
+                    <select name="fte_roles[${index}][job_detail]" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
+                        oninput="this.setCustomValidity('')">
+                        ${jobDropdown}
+                    </select>
+                </label>
+
+                <label class="w-full relative">
+                    <span class="fte-field-label text-sm font-semibold text-gray-700 mb-1">
+                        วันเริ่มต้นภาระงาน
+                        <span class="text-red-500">*</span>
+                    </span>
+                    <input name="fte_roles[${index}][start_date]" type="text"
+                        class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันเริ่มต้นภาระงาน" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกวันเริ่มต้นภาระงาน')"
+                        oninput="this.setCustomValidity('')">
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </label>
+
+                <label class="w-full relative">
+                    <span class="fte-field-label text-sm font-semibold text-gray-700 mb-1">
+                        วันสิ้นสุดภาระงาน
+                        <span class="text-red-500">*</span>
+                    </span>
+                    <input name="fte_roles[${index}][end_date]" type="text"
+                        class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันสิ้นสุดภาระงาน" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกวันสิ้นสุดภาระงาน')"
+                        oninput="this.setCustomValidity('')">
+                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </label>
+            </div>
+
+            <label class="w-full">
+                <span class="fte-field-label text-sm font-semibold">
+                    ชั่วโมงการทำงาน (Hour)
+                    <span class="text-red-500">*</span>
+                </span>
+                <input type="number" step="0.1" min="0"
+                    name="fte_roles[${index}][hours]"
+                    class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0" required
+                    oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
+                    oninput="this.setCustomValidity('')">
+            </label>
+
+            <label class="w-full">
+                <span class="fte-field-label text-sm font-semibold">
+                    รายละเอียดภารกิจ
+                    <span class="text-red-500">*</span>
+                </span>
+                <select name="fte_roles[${index}][task_detail]" class="w-full border p-2 rounded" required
+                    oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
+                    oninput="this.setCustomValidity('')">
+                    ${taskDropdown}
+                </select>
+            </label>
+        </div>
+
+        <div class="md:col-span-3">
+            <div class="fte-metrics-grid">
+                <label class="fte-metric-card fte-metric-card--research block border rounded-xl">
+                    <span class="block text-sm font-bold text-blue-800 mb-2">FTE (ผู้วิจัย)</span>
+                    <input name="fte_roles[${index}][fte_value]" type="number" step="0.00001"
+                        class="fte-value w-full border p-3 rounded text-right bg-gray-100" readonly>
+                </label>
+
+                <label class="fte-metric-card fte-metric-card--manager block border rounded-xl">
+                    <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
+                    <input name="fte_roles[${index}][fte_value_research]" type="number" step="0.01"
+                        min="0" max="1" class="w-full border p-3 rounded text-right" placeholder="0.00">
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+`);
+
+            const row = document.getElementById(id);
+            keepAddedRowOpen(row);
+            initializeMobileFteRow(row);
+            collapseAllMobileFteCards(row);
+            setMobileFteCollapsed(row, false);
+            reindexFTE();
+        }
+
+        function confirmMobileFteRemoval(row, callback) {
+            const collapsed = getMobileFteCollapsedState(row);
+            const name = row.querySelector(`[name^="fte_roles["][name$="[name]"]`)?.value?.trim() || 'ยังไม่ได้ระบุชื่อ';
+            const text = `ต้องการลบ ผู้มีส่วนร่วม ชื่อ ${name} หรือไม่?`;
+
+            const onCancel = () => restoreMobileFteState(row, collapsed);
+
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ยืนยันการลบ',
+                    text,
+                    showCancelButton: true,
+                    confirmButtonText: 'ลบ',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#dc2626'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        callback();
+                    } else {
+                        onCancel();
+                    }
+                });
+                return;
+            }
+
+            if (confirm(text)) {
+                callback();
+            } else {
+                onCancel();
+            }
+        }
+
+        function setMobileFteCollapsed(row, collapsed) {
+            if (!(row instanceof HTMLElement)) return;
+            row.classList.toggle('fte-mobile-collapsed', collapsed);
+            row.dataset.fteMobileCollapsed = collapsed ? '1' : '0';
+            const body = row.querySelector('.fte-mobile-body');
+            if (body) body.hidden = collapsed;
+            const summary = row.querySelector('.fte-mobile-summary');
+            if (summary) summary.innerHTML = collapsed ? getMobileFteSummary(row) : '';
+        }
+
+        function collapseAllMobileFteCards(exceptRow = null) {
+            document.querySelectorAll('#fte-container .fte-mobile-row').forEach((row) => {
+                if (row === exceptRow) return;
+                setMobileFteCollapsed(row, true);
+            });
+        }
+
+        function ensureMobileFteDisclosure(row) {
+            if (!(row instanceof HTMLElement)) return;
+            const toggle = row.querySelector('.fte-mobile-toggle');
+            const body = row.querySelector('.fte-mobile-body');
+            const removeBtn = row.querySelector('.fte-mobile-remove');
+            if (!toggle || !body) return;
+
+            if (row.dataset.mobileFteDisclosureReady !== '1') {
+                row.dataset.mobileFteDisclosureReady = '1';
+                toggle.addEventListener('click', () => {
+                    const nextCollapsed = row.dataset.fteMobileCollapsed !== '1';
+                    collapseAllMobileFteCards(nextCollapsed ? null : row);
+                    setMobileFteCollapsed(row, nextCollapsed);
+                });
+                ['pointerdown', 'mousedown', 'touchstart'].forEach((eventName) => {
+                    removeBtn?.addEventListener(eventName, (event) => {
+                        event.stopPropagation();
+                    });
+                });
+                if (removeBtn) {
+                    removeBtn.onclick = (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const container = document.getElementById('fte-container');
+                        confirmMobileFteRemoval(row, () => {
+                            const finalizeRemoval = () => {
+                                row.remove();
+                                reindexMobileCreateFteCards();
+                            };
+
+                            if (typeof window.removeProjectRowWithScroll === 'function') {
+                                window.removeProjectRowWithScroll(row, finalizeRemoval);
+                                return;
+                            }
+
+                            finalizeRemoval();
+                        });
+                    };
+                }
+                row.addEventListener('input', () => {
+                    if (row.dataset.fteMobileCollapsed === '1') {
+                        setMobileFteCollapsed(row, true);
+                    }
+                });
+                row.addEventListener('change', () => {
+                    if (row.dataset.fteMobileCollapsed === '1') {
+                        setMobileFteCollapsed(row, true);
+                    }
+                });
+            }
+
+            const shouldOpen = row.dataset.forceOpen === '1';
+            setMobileFteCollapsed(row, !shouldOpen);
+        }
+
+        function normalizeMobileFteCard(row) {
+            if (!(row instanceof HTMLElement)) return;
+            row.classList.remove('row-collapsed', 'row-collapsible');
+            row.dataset.collapsed = '0';
+            row.querySelectorAll('.row-collapse-toggle, .row-collapse-summary').forEach((el) => el.remove());
+            ensureMobileFteDisclosure(row);
+        }
+
+        function initializeMobileFteRow(row) {
+            normalizeMobileFteCard(row);
+            if (typeof primeLazyThaiDatepickers === 'function') {
+                primeLazyThaiDatepickers(row);
+            }
+        }
+
+        function initMobileFteCards() {
+            const container = document.getElementById('fte-container');
+            if (!container) return;
+
+            const normalizeAll = () => {
+                container.querySelectorAll('.fte-mobile-row').forEach(normalizeMobileFteCard);
+            };
+
+            normalizeAll();
+            window.requestAnimationFrame(normalizeAll);
+            window.setTimeout(normalizeAll, 60);
+
+            if (container.dataset.mobileFteCardsReady === '1') return;
+            container.dataset.mobileFteCardsReady = '1';
+
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (!(node instanceof HTMLElement)) return;
+                        if (node.classList.contains('fte-mobile-row')) {
+                            normalizeMobileFteCard(node);
+                            return;
+                        }
+                        node.querySelectorAll?.('.fte-mobile-row').forEach(normalizeMobileFteCard);
+                    });
+                });
+            });
+            observer.observe(container, {
+                childList: true
+            });
+
+            document.addEventListener('click', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                if (target.closest('#fte-container .fte-mobile-row')) return;
+                if (target.closest('[data-fte-add-row]')) return;
+                if (
+                    target.closest('.swal2-container') ||
+                    target.closest('.flatpickr-calendar') ||
+                    target.closest('.thai-wheel-overlay') ||
+                    target.closest('.thai-wheel-sheet')
+                ) {
+                    return;
+                }
+                collapseAllMobileFteCards();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initMobileFteCards);
+    </script>
+
+    <script>
         // ✅ STATUS COLOR
         function updateStatusColor(selectEl) {
             const selected = selectEl.options[selectEl.selectedIndex];
@@ -1202,7 +1749,7 @@
     <div class="space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="font-semibold text-slate-800">รายชื่อผู้เขียน (Authors)</span>
-        <button type="button" class="add-author-btn whitespace-nowrap px-3 py-2 rounded-lg bg-blue-600 text-sm font-semibold text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+        <button type="button" class="lux-mobile-add-row-btn add-author-btn whitespace-nowrap px-3 py-2 rounded-lg bg-blue-600 text-sm font-semibold text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
       </div>
       <div class="authors-container space-y-3" data-auth-index="0"></div>
     </div>
@@ -1282,7 +1829,7 @@
             wrap.innerHTML = `
     <div class="flex flex-wrap items-center justify-between gap-2">
       <span class="font-semibold text-slate-800">Conferences</span>
-      <button type="button" class="add-conf-btn whitespace-nowrap px-3 py-2 rounded-lg bg-amber-600 text-sm font-semibold text-white" onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
+      <button type="button" class="lux-mobile-add-row-btn add-conf-btn whitespace-nowrap px-3 py-2 rounded-lg bg-amber-600 text-sm font-semibold text-white" onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
     </div>
     <div class="conference-tbody space-y-3" data-conf-index="0"></div>
   `;
@@ -1889,7 +2436,7 @@
 
                     // 1. ค้นหาทุกช่องที่มีคำว่า required
                     const requiredFields = projectForm.querySelectorAll('[required]');
-                    projectForm.querySelectorAll('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row')
+                    projectForm.querySelectorAll('[data-repeatable-row], .output-row, .fte-mobile-row, .copi-row, .coresearch-row, .irb-row')
                         .forEach(row => {
                             delete row.dataset.forceOpen;
                         });
@@ -1922,8 +2469,8 @@
                                 firstInvalidField = displayTarget;
                                 firstInvalidMessage = field.validationMessage || '';
                             }
-                            const row = field.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row') ||
-                                displayTarget.closest('[data-repeatable-row], .output-row, .fte-row, .copi-row, .coresearch-row, .irb-row');
+                            const row = field.closest('[data-repeatable-row], .output-row, .fte-mobile-row, .copi-row, .coresearch-row, .irb-row') ||
+                                displayTarget.closest('[data-repeatable-row], .output-row, .fte-mobile-row, .copi-row, .coresearch-row, .irb-row');
                             if (row) invalidRows.add(row);
                             const group = field.closest('[data-repeatable]') || displayTarget.closest('[data-repeatable]');
                             if (group) {

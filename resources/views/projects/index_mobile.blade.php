@@ -749,10 +749,15 @@
             let requestToken = 0;
             let drawerOpen = false;
             let previousBodyOverflow = '';
+            let isSearchComposing = false;
 
             const currentUrl = new URL(window.location.href);
             const forcedView = currentUrl.searchParams.get('view');
             const queryAll = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+            const normalizeSearchTerm = (value) => String(value || '')
+                .toLowerCase()
+                .replace(/\s+/g, ' ')
+                .trim();
 
             const setFieldValue = (field, value) => {
                 if (!field) return;
@@ -786,6 +791,22 @@
                 if (shell) {
                     shell.classList.toggle('opacity-60', isLoading);
                 }
+            };
+
+            const applyLocalSearchPreview = (rawValue) => {
+                const shell = document.querySelector(shellSelector);
+                if (!shell) return;
+
+                const cards = queryAll('.lux-mobile-card', shell);
+                if (!cards.length) return;
+
+                const term = normalizeSearchTerm(rawValue);
+                cards.forEach((card) => {
+                    const haystack = card.dataset.mobileSearchText || normalizeSearchTerm(card.textContent);
+                    card.dataset.mobileSearchText = haystack;
+                    const matched = term === '' || haystack.includes(term);
+                    card.classList.toggle('hidden', !matched);
+                });
             };
 
             const countActiveFilters = () => {
@@ -1009,7 +1030,8 @@
             const fetchAndRender = async (url, options = {}) => {
                 const {
                     updateUrl = true,
-                    scrollToTop = false
+                    scrollToTop = false,
+                    silent = false
                 } = options;
                 const token = ++requestToken;
 
@@ -1017,7 +1039,9 @@
                     controller.abort();
                 }
                 controller = new AbortController();
-                setLoading(true);
+                if (!silent) {
+                    setLoading(true);
+                }
 
                 try {
                     const res = await fetch(url.toString(), {
@@ -1052,22 +1076,25 @@
                     if (scrollToTop) {
                         scrollToResultsTop();
                     }
+
+                    applyLocalSearchPreview(searchInput?.value || '');
                 } catch (error) {
                     if (error.name !== 'AbortError') {
                         console.error(error);
                     }
                 } finally {
-                    if (token === requestToken) {
+                    if (!silent && token === requestToken) {
                         setLoading(false);
                     }
                 }
             };
 
-            const fetchDebounced = (delay = 220, resetPage = true) => {
+            const fetchDebounced = (delay = 220, resetPage = true, options = {}) => {
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(() => {
                     fetchAndRender(buildUrlFromForms(resetPage), {
-                        updateUrl: true
+                        updateUrl: true,
+                        ...options
                     });
                 }, delay);
             };
@@ -1098,34 +1125,69 @@
             });
 
             searchInput.addEventListener('input', () => {
+                if (isSearchComposing) return;
                 applySearchValue(searchInput.value || '', searchInput);
+                applyLocalSearchPreview(searchInput.value || '');
                 syncSearchFormState();
                 syncFilterFormsFromSource(filterForm);
-                fetchDebounced(260, true);
+                fetchDebounced(320, true, {
+                    silent: true
+                });
             });
             searchInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     applySearchValue(searchInput.value || '', searchInput);
+                    applyLocalSearchPreview(searchInput.value || '');
                     syncSearchFormState();
                     syncFilterFormsFromSource(filterForm);
                     fetchDebounced(0, true);
                 }
             });
+            searchInput.addEventListener('compositionstart', () => {
+                isSearchComposing = true;
+            });
+            searchInput.addEventListener('compositionend', () => {
+                isSearchComposing = false;
+                applySearchValue(searchInput.value || '', searchInput);
+                applyLocalSearchPreview(searchInput.value || '');
+                syncSearchFormState();
+                syncFilterFormsFromSource(filterForm);
+                fetchDebounced(320, true, {
+                    silent: true
+                });
+            });
 
             if (drawerSearchInput) {
                 drawerSearchInput.addEventListener('input', () => {
+                    if (isSearchComposing) return;
                     applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
+                    applyLocalSearchPreview(drawerSearchInput.value || '');
                     syncFilterFormsFromSource(drawerForm);
-                    fetchDebounced(260, true);
+                    fetchDebounced(320, true, {
+                        silent: true
+                    });
                 });
                 drawerSearchInput.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter') {
                         event.preventDefault();
                         applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
+                        applyLocalSearchPreview(drawerSearchInput.value || '');
                         syncFilterFormsFromSource(drawerForm);
                         fetchDebounced(0, true);
                     }
+                });
+                drawerSearchInput.addEventListener('compositionstart', () => {
+                    isSearchComposing = true;
+                });
+                drawerSearchInput.addEventListener('compositionend', () => {
+                    isSearchComposing = false;
+                    applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
+                    applyLocalSearchPreview(drawerSearchInput.value || '');
+                    syncFilterFormsFromSource(drawerForm);
+                    fetchDebounced(320, true, {
+                        silent: true
+                    });
                 });
             }
 
@@ -1235,6 +1297,7 @@
             window.addEventListener('resize', syncFabVisibility);
 
             applyUrlToForms(currentUrl);
+            applyLocalSearchPreview(searchInput?.value || '');
             syncFabVisibility();
         })();
     </script>
