@@ -397,6 +397,10 @@
                 ← กลับไปยังรายการโครงการ
             </a>
             <h2 class="text-xl font-semibold text-slate-900">{{ $project->project_name_th ?? '-' }}</h2>
+            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600">
+                <span class="font-medium text-slate-500">รหัสโครงการ</span>
+                <span class="font-semibold text-slate-700">{{ $project->project_code ?: '-' }}</span>
+            </div>
             <span class="tag {{ $bgClass }} border border-slate-300 text-slate-900">
                 สถานะ: {{ $statusText }}
             </span>
@@ -467,9 +471,10 @@
                 <div class="field-label">เอกสารโครงการ (proposal , IRB) : </div>
                 <div class="field-value">
                     @if ($project->shortcut_link)
-                        <a href="{{ $project->shortcut_link }}" class="text-blue-600 underline" target="_blank"
-                            rel="noopener">
-                            {{ $project->shortcut_link }}
+                        <a href="{{ $project->shortcut_link }}"
+                            class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700 underline-offset-2 hover:bg-blue-100 hover:underline"
+                            target="_blank" rel="noopener">
+                            {{ $project->project_code ?: 'รหัสโครงการ' }}
                         </a>
                     @else
                         -

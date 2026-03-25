@@ -1137,11 +1137,11 @@
             </div>
             <div class="lux-chart-scroll mb-6">
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔴 RED ZONE: โครงการใกล้สิ้นสุด / เกินกำหนด</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔴 RED ZONE: โครงการใกล้กำหนดส่ง / เกินกำหนด</h3>
                 <canvas id="chartRedZoneTimeline" height="250"></canvas>
             </div>
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔥 โครงการที่เกินกำหนดแล้ว (Overdue)</h3> <canvas
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔥 โครงการที่เกินกำหนดส่งแล้ว (Overdue)</h3> <canvas
                     id="chartOverdueProjects" height="250"></canvas>
             </div>
 
@@ -1151,7 +1151,7 @@
                     class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-left"
                     data-drawer-toggle aria-expanded="false">
                     <div class="flex items-center gap-2">
-                        <h3 class="text-sm font-semibold text-gray-700">⏱️ รายการโครงการที่เกินกำหนด (ลงรายละเอียด)</h3>
+                        <h3 class="text-sm font-semibold text-gray-700">⏱️ รายการโครงการเกินกำหนดส่ง (ลงรายละเอียด)</h3>
                         <span id="overdueCountBadge"
                             class="text-xs font-semibold px-3 py-1 rounded-full lux-chip">0 โครงการ</span>
                     </div>
@@ -1166,8 +1166,8 @@
                             <thead class="bg-gray-50 text-xs text-gray-700">
                                 <tr>
                                     <th class="p-2 text-left">ชื่อโครงการ</th>
-                                    <th class="p-2 text-center">วันสิ้นสุด</th>
-                                    <th class="p-2 text-center">เกินกำหนด (วัน)</th>
+                                    <th class="p-2 text-center">วันครบกำหนดส่ง</th>
+                                    <th class="p-2 text-center">เกินกำหนดส่ง (วัน)</th>
                                     <th class="p-2 text-center">PI</th>
                                 </tr>
                             </thead>
@@ -1722,6 +1722,7 @@
             const getYear = (p) => p.start_year || 'ไม่ระบุ';
             const getEndYear = (p) => p.end_year || p.finish_year || null; // ปรับตามฟิลด์จริง
             const getEndDateRaw = (p) => p.end_date || p.team_end_date || p.finish_date || p.endDate || null;
+            const getProjectDeadlineRaw = (p) => p?.end_date || p?.team_end_date || p?.endDate || null;
             const getBudget = (p) => toNumber(p.total_budget ?? p.budget ?? 0);
             const getFundingType = (p) => p.funding_type || 'ไม่ระบุ';
             const getFundingSource = (p) => p.funding_source || 'ไม่ระบุ';
@@ -2110,6 +2111,10 @@
                     .replace(/'/g, '&#39;');
             }
 
+            function escapeHtml(value) {
+                return escapeHtmlText(value);
+            }
+
             function getActiveFilterEntries() {
                 return dashboardFilterFields
                     .map(({ id, label }) => {
@@ -2417,7 +2422,7 @@
                     const yearOptions = Array.from(new Set(rows.map(endYearLabel))).sort();
                     const activeYear = state.yearFilter || '';
                     const diffHeader = modalType === 'overdue'
-                        ? 'เกินกำหนด (วัน)'
+                        ? 'เกินกำหนดส่ง (วัน)'
                         : (modalType === 'remaining' ? 'คงเหลือ (วัน)' : 'คงเหลือ/เกิน (วัน)');
 
                     const filtered = activeYear ? rows.filter(p => endYearLabel(p) === activeYear) : rows.slice();
@@ -2445,7 +2450,8 @@
                                     <tr class="bg-gray-100 text-xs text-gray-700">
                                         <th class="p-2 text-center">#</th>
                                         <th class="p-2 text-left">ชื่อโครงการ</th>
-                                        <th class="p-2 text-center">ปีสิ้นสุด</th>
+                                        <th class="p-2 text-center">สถานะ Red Zone</th>
+                                        <th class="p-2 text-center">วันครบกำหนดส่ง</th>
                                         <th class="p-2 text-center">${diffHeader}</th>
                                         <th class="p-2 text-center">PI</th>
                                     </tr>
@@ -2454,11 +2460,12 @@
                     `;
 
                     if (!pageRows.length) {
-                        html += `<tr class="border-t"><td colspan="5" class="p-3 text-center text-gray-500">ไม่มีข้อมูล</td></tr>`;
+                        html += `<tr class="border-t"><td colspan="6" class="p-3 text-center text-gray-500">ไม่มีข้อมูล</td></tr>`;
                     } else {
                         pageRows.forEach((p, idx) => {
-                            const endDate = parseProjectDate(getEndDateRaw(p));
-                            const diffDays = endDate ? Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                            const info = getRedZoneInfo(p, now);
+                            const endDate = info?.endDate || null;
+                            const diffDays = info ? Math.ceil(info.diffDays) : null;
                             let diffLabel = '-';
                             let diffClass = 'text-amber-600 font-semibold';
                             if (diffDays != null) {
@@ -2480,7 +2487,8 @@
                                     <td class="p-2 text-left text-blue-700 hover:underline" data-label="ชื่อโครงการ">
                                         <a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a>
                                     </td>
-                                    <td class="p-2 text-center" data-label="ปีสิ้นสุด">${formatDateTH(endDate, '-')}</td>
+                                    <td class="p-2 text-center" data-label="สถานะ Red Zone">${escapeHtml(info?.statusLabel || '-')}</td>
+                                    <td class="p-2 text-center" data-label="วันครบกำหนดส่ง">${formatDateTH(endDate, '-')}</td>
                                     <td class="p-2 text-center ${diffClass}" data-label="${diffHeader}">${diffLabel}</td>
                                     <td class="p-2 text-center" data-label="PI">${p.pi_name || '-'}</td>
                                 </tr>
@@ -2750,6 +2758,56 @@
                     s.includes('done')
                 ) return 'completed';
                 return 'in_progress';
+            }
+
+            function projectIsClosedForRedZone(p) {
+                const lifecycle = projectLifecycleStatusKey(p);
+                if (lifecycle === 'completed' || lifecycle === 'cancelled') return true;
+
+                const finishDate = parseProjectDate(p?.finish_date);
+                if (finishDate && !isNaN(finishDate)) return true;
+
+                const finishY = yearCE(p?.finish_year);
+                if (Number.isFinite(finishY)) return true;
+
+                return false;
+            }
+
+            function getRedZoneInfo(p, now = new Date()) {
+                if (projectIsClosedForRedZone(p)) return null;
+
+                const deadlineDate = parseProjectDate(getProjectDeadlineRaw(p));
+                if (!deadlineDate) return null;
+
+                const diffDays = (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+                const diffMonths = diffDays / 30.4375;
+                let bucket = null;
+                let statusLabel = '';
+
+                if (diffDays < 0) {
+                    bucket = 'เกินกำหนด';
+                    statusLabel = 'เกินกำหนด';
+                } else if (diffMonths <= 3) {
+                    bucket = '3 เดือน';
+                    statusLabel = 'ใกล้กำหนดส่ง (ภายใน 3 เดือน)';
+                } else if (diffMonths <= 6) {
+                    bucket = '6 เดือน';
+                    statusLabel = 'ใกล้กำหนดส่ง (ภายใน 6 เดือน)';
+                } else if (diffMonths <= 9) {
+                    bucket = '9 เดือน';
+                    statusLabel = 'ใกล้กำหนดส่ง (ภายใน 9 เดือน)';
+                }
+
+                if (!bucket) return null;
+
+                return {
+                    project: p,
+                    endDate: deadlineDate,
+                    diffDays,
+                    diffMonths,
+                    bucket,
+                    statusLabel,
+                };
             }
 
             function projectLifecycleStartYearCE(p) {
@@ -3208,19 +3266,9 @@
                 if (id === 'chartRedZoneTimeline') {
                     const now = new Date();
                     const bucket = String(label || '');
-                    const list = projects.filter(p => {
-                        const endDate = parseProjectDate(getEndDateRaw(p));
-                        if (!endDate) return false;
-                        const diffDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-                        const diffMonths = diffDays / 30.4375;
-                        if (bucket === 'เกินกำหนด') return diffDays < 0;
-                        if (bucket === '3 เดือน') return diffDays >= 0 && diffMonths <= 3;
-                        if (bucket === '6 เดือน') return diffMonths > 3 && diffMonths <= 6;
-                        if (bucket === '9 เดือน') return diffMonths > 6 && diffMonths <= 9;
-                        return false;
-                    });
+                    const list = projects.filter(p => getRedZoneInfo(p, now)?.bucket === bucket);
                     return {
-                        title: `โครงการ ${bucket}`,
+                        title: bucket === 'เกินกำหนด' ? 'โครงการเกินกำหนดส่ง' : `โครงการใกล้กำหนดส่ง ${bucket}`,
                         projects: list,
                         modalType: 'redzone'
                     };
@@ -3231,11 +3279,10 @@
                     const labelText = String(label || '');
                     const isOverdue = labelText.includes('เกินกำหนด');
                     const list = projects.filter(p => {
-                        const endDate = parseProjectDate(getEndDateRaw(p));
-                        if (!endDate) return false;
-                        const diffDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-                        if (isOverdue) return diffDays < 0;
-                        return diffDays >= 0;
+                        const info = getRedZoneInfo(p, now);
+                        if (!info) return false;
+                        if (isOverdue) return info.bucket === 'เกินกำหนด';
+                        return info.bucket !== 'เกินกำหนด';
                     });
                     return {
                         title: labelText,
@@ -3318,12 +3365,15 @@
             }
 
             function handleChartClick(evt, chart) {
-                const isYearlyLifecycle = chart?.canvas?.id === 'chartYearlyNewVsTotal';
+                const chartId = chart?.canvas?.id || '';
+                const allowLooseHit = ['chartRedZoneTimeline', 'chartOverdueProjects', 'chartYearlyNewVsTotal']
+                    .includes(chartId);
+                const isYearlyLifecycle = chartId === 'chartYearlyNewVsTotal';
                 let points = chart.getElementsAtEventForMode(evt, 'nearest', {
                     intersect: true,
                     axis: 'xy'
                 }, true);
-                if ((!points || !points.length) && isYearlyLifecycle) {
+                if ((!points || !points.length) && allowLooseHit) {
                     points = chart.getElementsAtEventForMode(evt, 'index', {
                         intersect: false,
                         axis: 'x'
@@ -5224,23 +5274,16 @@
                 };
 
                 projects.forEach(p => {
-                    const endDate = parseProjectDate(getEndDateRaw(p));
-                    if (!endDate) return;
+                    const info = getRedZoneInfo(p, now);
+                    if (!info) return;
 
-                    const diffDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-                    const diffMonths = diffDays / 30.4375;
-
-                    if (diffDays < 0) {
-                        overdueProjects.push({
-                            project: p,
-                            endDate,
-                            diffDays
-                        });
-                    } else if (diffMonths <= 3) {
+                    if (info.bucket === 'เกินกำหนด') {
+                        overdueProjects.push(info);
+                    } else if (info.bucket === '3 เดือน') {
                         dueSoon['3']++;
-                    } else if (diffMonths <= 6) {
+                    } else if (info.bucket === '6 เดือน') {
                         dueSoon['6']++;
-                    } else if (diffMonths <= 9) {
+                    } else if (info.bucket === '9 เดือน') {
                         dueSoon['9']++;
                     }
                 });
@@ -5294,13 +5337,14 @@
                         },
                         options: {
                             responsive: true,
+                            onClick: (evt, _elements, chart) => handleChartClick(evt?.native || evt, chart),
                             plugins: {
                                 legend: {
                                     display: false
                                 },
                                 title: {
                                     display: true,
-                                    text: 'สถานะโครงการเทียบวันสิ้นสุด'
+                                    text: 'สถานะโครงการเทียบวันครบกำหนดส่ง'
                                 },
                                 tooltip: {
                                     callbacks: {
@@ -5329,7 +5373,7 @@
                 // --- Chart 2: Overdue Projects (Gauge) ---
                 const elOverdue = document.getElementById('chartOverdueProjects');
                 if (elOverdue) {
-                    const projectsWithEndDate = projects.filter(p => parseProjectDate(getEndDateRaw(p)));
+                    const projectsWithEndDate = rows.filter((project) => getRedZoneInfo(project, now));
                     const totalProjectsRaw = projectsWithEndDate.length;
                     const totalProjects = totalProjectsRaw || 1;
                     const overdueCount = overdueProjects.length;
@@ -5412,7 +5456,7 @@
                     new Chart(elOverdue, {
                         type: 'doughnut',
                         data: {
-                            labels: ['เกินกำหนดแล้ว', 'โครงการที่ยังดำเนินการ'],
+                            labels: ['เกินกำหนดส่งแล้ว', 'โครงการที่ยังดำเนินการ'],
                             datasets: [{
                                 data: [overdueCount, remainingCount],
                                 backgroundColor: ['#ef4444', '#38bdf8'],
@@ -5424,6 +5468,7 @@
                         options: {
                             responsive: true,
                             cutout: '64%',
+                            onClick: (evt, _elements, chart) => handleChartClick(evt?.native || evt, chart),
                             layout: {
                                 padding: {
                                     left: 26,
@@ -5480,7 +5525,7 @@
                     tbody.innerHTML = '';
                     if (!pageRows.length) {
                         tbody.innerHTML =
-                            `<tr class="border-t"><td colspan="4" class="p-3 text-center text-gray-500">ไม่มีโครงการที่เกินกำหนด</td></tr>`;
+                            `<tr class="border-t"><td colspan="4" class="p-3 text-center text-gray-500">ไม่มีโครงการที่เกินกำหนดส่ง</td></tr>`;
                     } else {
                         pageRows.forEach(item => {
                             const overdueDays = Math.ceil(Math.abs(item.diffDays));
@@ -5490,8 +5535,8 @@
                                 <td class="p-2 text-left text-blue-700 hover:underline" data-label="โครงการ">
                                     <a href="/rm/projects/${item.project.id}" target="_blank" rel="noopener">${item.project.project_name_th || '-'}</a>
                                 </td>
-                                <td class="p-2 text-center" data-label="วันสิ้นสุด">${formatDateTH(item.endDate, item.project.end_date || '-')}</td>
-                                <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนด (วัน)">${overdueDays}</td>
+                                <td class="p-2 text-center" data-label="วันครบกำหนดส่ง">${formatDateTH(item.endDate, item.project.end_date || '-')}</td>
+                                <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนดส่ง (วัน)">${overdueDays}</td>
                                 <td class="p-2 text-center" data-label="PI">${item.project.pi_name || '-'}</td>
                             `;
                             tbody.appendChild(row);
@@ -6605,8 +6650,8 @@
                 if (!btn || !container) return;
 
                 const chartTitles = {
-                    chartRedZoneTimeline: 'RED ZONE: โครงการใกล้สิ้นสุด / เกินกำหนด',
-                    chartOverdueProjects: 'โครงการที่เกินกำหนด (โดนัท)',
+                    chartRedZoneTimeline: 'RED ZONE: โครงการใกล้กำหนดส่ง / เกินกำหนด',
+                    chartOverdueProjects: 'โครงการที่เกินกำหนดส่ง (โดนัท)',
                     chartCoResearchByUnitWindow: 'Co-Research ตามหน่วยงาน (3/6/12 เดือน)',
                     chartProjectsPerYear: 'จำนวนโครงการรายปี',
                     chartYearlyNewVsTotal: 'โครงการทั้งหมด/ใหม่/กำลังดำเนินการ/ปิดโปรเจค/ยกเลิกโปรเจค (รายปี)',
@@ -6659,15 +6704,13 @@
                     const now = new Date();
                     return projects
                         .map(p => {
-                            const endDate = parseProjectDate(getEndDateRaw(p));
-                            if (!endDate) return null;
-                            const diffDays = (endDate - now) / (1000 * 60 * 60 * 24);
-                            if (diffDays >= 0) return null;
+                            const info = getRedZoneInfo(p, now);
+                            if (!info || info.bucket !== 'เกินกำหนด') return null;
                             return {
                                 project: p.project_name_th || '-',
-                                endDate,
-                                endDateStr: formatDateTH(endDate, '-'),
-                                overdueDays: Math.abs(Math.ceil(diffDays)),
+                                endDate: info.endDate,
+                                endDateStr: formatDateTH(info.endDate, '-'),
+                                overdueDays: Math.abs(Math.ceil(info.diffDays)),
                                 pi: p.pi_name || '-'
                             };
                         })
@@ -6907,7 +6950,7 @@
 
                 function addTablePages() {
                         const tableSets = [{
-                            title: 'ตารางโครงการเกินกำหนด',
+                            title: 'ตารางโครงการเกินกำหนดส่ง',
                             rows: buildOverdueRows(),
                         columns: [{
                                 key: 'project',
@@ -6915,12 +6958,12 @@
                                 },
                                 {
                                     key: 'endDateStr',
-                                    label: 'วันสิ้นสุด',
+                                    label: 'วันครบกำหนดส่ง',
                                     align: 'center'
                                 },
                                 {
                                     key: 'overdueDays',
-                                    label: 'เกินกำหนด (วัน)',
+                                    label: 'เกินกำหนดส่ง (วัน)',
                                     align: 'center'
                                 },
                                 {
@@ -8601,18 +8644,15 @@
                     const dueSoon = { '3': 0, '6': 0, '9': 0 };
 
                     rows.forEach((project) => {
-                        const endDate = parseProjectDate(getEndDateRaw(project));
-                        if (!endDate) return;
-                        const diffDays = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-                        const diffMonths = diffDays / 30.4375;
-
-                        if (diffDays < 0) {
-                            overdueProjects.push({ project, endDate, diffDays });
-                        } else if (diffMonths <= 3) {
+                        const info = getRedZoneInfo(project, now);
+                        if (!info) return;
+                        if (info.bucket === 'เกินกำหนด') {
+                            overdueProjects.push(info);
+                        } else if (info.bucket === '3 เดือน') {
                             dueSoon['3'] += 1;
-                        } else if (diffMonths <= 6) {
+                        } else if (info.bucket === '6 เดือน') {
                             dueSoon['6'] += 1;
-                        } else if (diffMonths <= 9) {
+                        } else if (info.bucket === '9 เดือน') {
                             dueSoon['9'] += 1;
                         }
                     });
@@ -8667,6 +8707,7 @@
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
+                                onClick: (evt, _elements, chart) => handleChartClick(evt?.native || evt, chart),
                                 plugins: {
                                     legend: {
                                         display: false
@@ -8688,7 +8729,7 @@
 
                     const overdueCanvas = document.getElementById('chartOverdueProjects');
                     if (overdueCanvas) {
-                        const projectsWithEndDate = rows.filter((project) => parseProjectDate(getEndDateRaw(project)));
+                    const projectsWithEndDate = rows.filter((project) => getRedZoneInfo(project, now));
                         const totalProjects = projectsWithEndDate.length;
                         Chart.getChart(overdueCanvas)?.destroy();
                         if (!totalProjects) {
@@ -8769,7 +8810,7 @@
                         new Chart(overdueCanvas, {
                             type: 'doughnut',
                             data: {
-                                labels: ['เกินกำหนดแล้ว', 'โครงการที่ยังดำเนินการ'],
+                                labels: ['เกินกำหนดส่งแล้ว', 'โครงการที่ยังดำเนินการ'],
                                 datasets: [{
                                     data: totalProjects ? [overdueProjects.length, Math.max(totalProjects - overdueProjects.length, 0)] : [1],
                                     backgroundColor: totalProjects ? ['#ef4444', '#38bdf8'] : ['#e5e7eb'],
@@ -8781,6 +8822,7 @@
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 cutout: '64%',
+                                onClick: (evt, _elements, chart) => handleChartClick(evt?.native || evt, chart),
                                 layout: {
                                     padding: {
                                         left: 26,
@@ -8830,7 +8872,7 @@
 
                         tbody.innerHTML = '';
                         if (!pageRows.length) {
-                            tbody.innerHTML = `<tr class="border-t"><td colspan="4" class="p-3 text-center text-gray-500">ไม่มีโครงการที่เกินกำหนด</td></tr>`;
+                            tbody.innerHTML = `<tr class="border-t"><td colspan="4" class="p-3 text-center text-gray-500">ไม่มีโครงการที่เกินกำหนดส่ง</td></tr>`;
                         } else {
                             pageRows.forEach((item) => {
                                 const overdueDays = Math.ceil(Math.abs(item.diffDays));
@@ -8840,8 +8882,8 @@
                                     <td class="p-2 text-left text-blue-700 hover:underline" data-label="โครงการ">
                                         <a href="/rm/projects/${item.project.id}" target="_blank" rel="noopener">${escapeHtml(item.project.project_name_th || '-')}</a>
                                     </td>
-                                    <td class="p-2 text-center" data-label="วันสิ้นสุด">${escapeHtml(formatDateTH(item.endDate, item.project.end_date || '-'))}</td>
-                                    <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนด (วัน)">${overdueDays}</td>
+                                    <td class="p-2 text-center" data-label="วันครบกำหนดส่ง">${escapeHtml(formatDateTH(item.endDate, item.project.end_date || '-'))}</td>
+                                    <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนดส่ง (วัน)">${overdueDays}</td>
                                     <td class="p-2 text-center" data-label="PI">${escapeHtml(item.project.pi_name || '-')}</td>
                                 `;
                                 tbody.appendChild(row);

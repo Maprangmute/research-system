@@ -224,7 +224,7 @@
         <li><strong>ประเภท:</strong> {{ text_or_dash($project->project_type) }}</li>
         <li><strong>ลักษณะ:</strong> {{ text_or_dash($project->project_list) }}</li>
         <li><strong>Theme:</strong> {{ text_or_dash($project->theme) }}</li>
-        <li><strong>Shortcut:</strong> {{ text_or_dash($project->shortcut_link) }}</li>
+        <li><strong>เอกสารโครงการ (proposal , IRB) :</strong> {{ text_or_dash($project->shortcut_link) }}</li>
         <li><strong>ขนาด:</strong> {{ text_or_dash($project->size) }}</li>
         <li><strong>รหัสโครงการ R:</strong> {{ text_or_dash($project->r_code) }}</li>
         <li><strong>ปีโปรเจค:</strong> {{ text_or_dash($project->start_year) }}</li>

@@ -206,6 +206,10 @@
             </a>
         </div>
         <h2 class="text-xl font-bold mb-6 text-gray-800">✏️ แก้ไขข้อมูลโครงการวิจัย</h2>
+        <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600">
+            <span class="font-medium text-slate-500">รหัสโครงการ</span>
+            <span class="font-semibold text-slate-700">{{ $project->project_code ?: '-' }}</span>
+        </div>
 
 
 
@@ -242,9 +246,9 @@
                         <option value="" {{ old('project_type', $project->project_type) ? '' : 'selected' }}>
                             เลือกประเภทของโครงการ
                         </option>
-                        <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล"
-                            {{ old('project_type', $project->project_type) == '01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล' ? 'selected' : '' }}>
-                            01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล
+                        <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สูงอายุของคณะแพทยศาสตร์ศิริราชพยาบาล"
+                            {{ old('project_type', $project->project_type) == '01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สูงอายุของคณะแพทยศาสตร์ศิริราชพยาบาล' ? 'selected' : '' }}>
+                            01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สูงอายุของคณะแพทยศาสตร์ศิริราชพยาบาล
                         </option>
                         <option
                             value="02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล"
@@ -425,7 +429,7 @@
                     <select name="funding_type" class="w-full border p-2 rounded">
                         <option value="" disabled
                             {{ old('funding_type', $project->funding_type) ? '' : 'selected' }}>
-                            กรุณาเลือกขนาดของโปรเจค
+                            กรุณาเลือกประเภทแหล่งทุน
                         </option>
                         <option value="ภายใน"
                             {{ old('funding_type', $project->funding_type) == 'ภายใน' ? 'selected' : '' }}>

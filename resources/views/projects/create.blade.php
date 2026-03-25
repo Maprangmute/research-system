@@ -186,8 +186,8 @@
                         oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของโครงการ')"
                         oninput="this.setCustomValidity('')">
                         <option value="" disabled selected>เลือกประเภทของโครงการ</option> <!-- สำหรับ placeholder -->
-                        <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล">01 ผู้สูงอายุ
-                            ตามยุทธศาสตร์ศาสตร์สุขอายุของคณะแพทยศาสตร์ศิริราชพยาบาล</option>
+                        <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สูงอายุของคณะแพทยศาสตร์ศิริราชพยาบาล">01 ผู้สูงอายุ
+                            ตามยุทธศาสตร์ศาสตร์สูงอายุของคณะแพทยศาสตร์ศิริราชพยาบาล</option>
                         <option
                             value="02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล">
                             02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ
@@ -298,7 +298,7 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
                     <select name="funding_type" class="w-full border p-2 rounded">
-                        <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
+                        <option value="" disabled selected>กรุณาเลือกประเภทแหล่งทุน</option>
                         <option value="ภายใน">ภายใน</option>
                         <option value="ภายนอก">ภายนอก</option>
                     </select>
