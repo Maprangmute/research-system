@@ -2836,6 +2836,34 @@
                 return matchYearLabel(p, labelStr);
             }
 
+            function isPiInPolicyUnit(project) {
+                const fields = [
+                    project?.project_list,
+                    project?.pi_affiliation,
+                    project?.unit_name,
+                    project?.department,
+                ]
+                    .map((value) => String(value || '').trim())
+                    .filter(Boolean);
+
+                if (!fields.length) return false;
+
+                return fields.some((raw) => {
+                    const normalized = raw
+                        .replace(/\s+/g, ' ')
+                        .replace(/[()]/g, ' ')
+                        .trim()
+                        .toLowerCase();
+
+                    return (
+                        (normalized.includes('ภายในหน่วยวิจัย') && normalized.includes('สุขภา')) ||
+                        normalized.includes('หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ') ||
+                        normalized.includes('siriraj health policy') ||
+                        normalized.includes('policy-driven health')
+                    );
+                });
+            }
+
             function getFilteredProjects() {
                 const y = norm(document.getElementById('filterYear')?.value);
                 const t = norm(document.getElementById('filterTheme')?.value);
@@ -3164,7 +3192,7 @@
                     return {
                         title: `PI ${label}`,
                         projects: projects.filter(p =>
-                            (p.pi_affiliation || '').trim() === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ' &&
+                            isPiInPolicyUnit(p) &&
                             (p.pi_name || '').trim() === String(label ?? '').trim()
                         )
                     };
@@ -4365,12 +4393,9 @@
 
                 function renderPiByUnitChart(rows) {
                     const sourceRows = Array.isArray(rows) ? rows : (Array.isArray(window.__dashboardCurrentRows) ? window.__dashboardCurrentRows : projects);
-                    const filtered = sourceRows.filter((p) =>
-                        (p.pi_affiliation || '').trim() === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ'
-                    );
-
+                    const filteredRows = sourceRows.filter((p) => isPiInPolicyUnit(p));
                     const countByPI = {};
-                    filtered.forEach((p) => {
+                    filteredRows.forEach((p) => {
                         const name = (p.pi_name || '').toString().trim();
                         if (!name || name === 'ไม่ระบุ') return;
                         countByPI[name] = (countByPI[name] || 0) + 1;
@@ -7639,7 +7664,8 @@
                         clearFteAvatarLayer(canvas);
                     }
                     const card = canvas.closest('.lux-chart-card');
-                    if (card) {
+                    const shouldHideCard = typeof dashboardHasActiveFilters === 'function' && dashboardHasActiveFilters();
+                    if (card && shouldHideCard) {
                         card.classList.add('hidden');
                     }
                     const parent = canvas.parentElement;
@@ -7664,8 +7690,9 @@
                             parent.appendChild(overlay);
                         }
                         overlay.textContent = text;
+                        overlay.style.display = shouldHideCard ? 'none' : 'flex';
                     }
-                    canvas.style.visibility = 'hidden';
+                    canvas.style.visibility = shouldHideCard ? 'hidden' : 'visible';
                 }
 
                 function clearEmptyChartState(canvas) {
@@ -8042,6 +8069,7 @@
                         return;
                     }
 
+                    clearEmptyChartState(canvas);
                     canvas.height = Math.min(Math.max(280, topRows.length * 20), 420);
                     Chart.getChart(canvas)?.destroy();
                     new Chart(canvas, {
@@ -9153,14 +9181,57 @@
                         const value = String(text || '').trim();
                         return value.length > max ? `${value.slice(0, max - 1)}…` : value;
                     };
+                    const valueLabelRight = {
+                        id: 'valueLabelRightPiFiltered',
+                        afterDatasetsDraw(chart) {
+                            const {
+                                ctx,
+                                chartArea: {
+                                    left,
+                                    right,
+                                    top,
+                                    bottom
+                                },
+                                scales: {
+                                    x: scaleX
+                                }
+                            } = chart;
+                            const ds = chart.data.datasets?.[0];
+                            const meta = chart.getDatasetMeta(0);
+                            if (!ds || !meta?.data?.length) return;
+
+                            ctx.save();
+                            ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
+                            ctx.fillStyle = '#111827';
+                            ctx.textBaseline = 'middle';
+                            ctx.textAlign = 'left';
+
+                            meta.data.forEach((bar, index) => {
+                                const value = Number(ds.data?.[index] || 0);
+                                if (!(value > 0)) return;
+
+                                const text = String(value);
+                                const textWidth = ctx.measureText(text).width;
+                                let drawX = scaleX.getPixelForValue(value) + 8;
+                                const maxX = right - textWidth - 2;
+                                if (drawX > maxX) drawX = maxX;
+                                if (drawX < left + 2) drawX = left + 2;
+
+                                let drawY = bar.y;
+                                if (drawY < top + 10) drawY = top + 10;
+                                if (drawY > bottom - 10) drawY = bottom - 10;
+
+                                ctx.fillText(text, drawX, drawY);
+                            });
+
+                            ctx.restore();
+                        }
+                    };
 
                     const sourceRows = Array.isArray(rows) ? rows : [];
-                    const filtered = sourceRows.filter((project) =>
-                        (project.pi_affiliation || '').trim() === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ'
-                    );
-
+                    const filteredRows = sourceRows.filter((project) => isPiInPolicyUnit(project));
                     const countByPI = {};
-                    filtered.forEach((project) => {
+                    filteredRows.forEach((project) => {
                         const name = (project.pi_name || '').toString().trim();
                         if (!name || name === 'ไม่ระบุ') return;
                         countByPI[name] = (countByPI[name] || 0) + 1;
@@ -9364,9 +9435,7 @@
                 window.refreshRealtimeDashboard = refreshRealtimeDashboard;
                 const initialRows = getRows();
                 window.__dashboardCurrentRows = Array.isArray(initialRows) ? initialRows.slice() : [];
-                updateSummary(initialRows);
-                updateTypeTable(initialRows);
-                window.applyChartCanvasSizing?.();
+                refreshRealtimeDashboard();
             })();
         </script>
     </div>

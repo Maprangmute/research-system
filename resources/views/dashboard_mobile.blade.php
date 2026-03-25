@@ -1762,12 +1762,24 @@
                             </select>
                         </div>
                         <div>
+                            <label class="text-xs font-semibold text-gray-700 block">PI โครงการ</label>
+                            <input type="text" id="filterPi" list="filterPiSuggestions" class="w-full border rounded px-2 py-1 text-sm"
+                                placeholder="พิมพ์ชื่อ PI">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-700 block">สังกัดผู้วิจัยหลัก</label>
+                            <input type="text" id="filterPiAffiliation" list="filterPiAffiliationSuggestions" class="w-full border rounded px-2 py-1 text-sm"
+                                placeholder="พิมพ์สังกัด PI">
+                        </div>
+                        <div>
                             <label class="text-xs font-semibold text-gray-700 block">ค้นหาโครงการ</label>
                             <input type="text" id="filterName" list="filterNameSuggestions" class="w-full border rounded px-2 py-1 text-sm"
                                 placeholder="ชื่อโครงการ">
                         </div>
                     </div>
 
+                    <datalist id="filterPiSuggestions"></datalist>
+                    <datalist id="filterPiAffiliationSuggestions"></datalist>
                     <datalist id="filterNameSuggestions"></datalist>
                     <datalist id="tableSearchSuggestions"></datalist>
                 </div>
@@ -2947,6 +2959,8 @@
             }
 
             function initializeFilterSuggestions() {
+                fillDatalist('filterPiSuggestions', projects.map((p) => p?.pi_name));
+                fillDatalist('filterPiAffiliationSuggestions', projects.map((p) => p?.pi_affiliation));
                 fillDatalist('filterNameSuggestions', projects.map((p) => p?.project_name_th));
                 fillDatalist('tableSearchSuggestions', projects.flatMap((p) => ([
                     p?.project_code,
@@ -2970,6 +2984,8 @@
                 { id: 'filterType', label: 'ประเภทโครงการ' },
                 { id: 'filterStatus', label: 'สถานะโครงการ' },
                 { id: 'filterSource', label: 'แหล่งทุน' },
+                { id: 'filterPi', label: 'PI โครงการ' },
+                { id: 'filterPiAffiliation', label: 'สังกัดผู้วิจัยหลัก' },
                 { id: 'filterName', label: 'ชื่อโครงการ' },
                 { id: 'tableSearch', label: 'ค้นหาในตาราง' },
             ];
@@ -3584,6 +3600,8 @@
                 const type = norm(document.getElementById('filterType')?.value);
                 const status = norm(document.getElementById('filterStatus')?.value);
                 const source = norm(document.getElementById('filterSource')?.value);
+                const pi = norm(document.getElementById('filterPi')?.value);
+                const piAffiliation = norm(document.getElementById('filterPiAffiliation')?.value);
                 const name = norm(document.getElementById('filterName')?.value);
                 const search = norm(document.getElementById('tableSearch')?.value);
 
@@ -3596,6 +3614,7 @@
                     const fundingSource = norm(p.funding_source);
                     const nameTh = norm(p.project_name_th);
                     const piName = norm(p.pi_name);
+                    const principalInvestigatorAffiliation = norm(p.pi_affiliation);
                     const searchIndex = projectSearchIndex(p);
 
                     if (y && year !== y) return false;
@@ -3604,6 +3623,8 @@
                     if (type && projectType !== type) return false;
                     if (status && projectStatus !== status) return false;
                     if (source && fundingSource !== source) return false;
+                    if (pi && !piName.includes(pi)) return false;
+                    if (piAffiliation && !principalInvestigatorAffiliation.includes(piAffiliation)) return false;
                     if (name && !nameTh.includes(name)) return false;
                     if (search && !searchIndex.includes(search)) return false;
                     return true;
@@ -3636,6 +3657,8 @@
                     document.getElementById('filterType')?.value,
                     document.getElementById('filterStatus')?.value,
                     document.getElementById('filterSource')?.value,
+                    document.getElementById('filterPi')?.value,
+                    document.getElementById('filterPiAffiliation')?.value,
                     document.getElementById('filterName')?.value,
                     document.getElementById('tableSearch')?.value
                 ]
@@ -6579,11 +6602,36 @@
             /* ---------- Export CSV/Excel (ตามตัวกรอง) ---------- */
             const isCompactDashboardViewport = window.innerWidth <= 1024;
 
+            function dashboardMobileHasActiveFilters() {
+                return Boolean(
+                    document.getElementById('filterYear')?.value ||
+                    document.getElementById('filterTheme')?.value ||
+                    document.getElementById('filterFunding')?.value ||
+                    document.getElementById('filterType')?.value ||
+                    document.getElementById('filterStatus')?.value ||
+                    document.getElementById('filterSource')?.value ||
+                    document.getElementById('filterPi')?.value ||
+                    document.getElementById('filterPiAffiliation')?.value ||
+                    document.getElementById('filterName')?.value ||
+                    document.getElementById('tableSearch')?.value
+                );
+            }
+
             function drawDashboardMobileEmptyChart(canvas, text = 'ไม่มีข้อมูล') {
                 if (!canvas) return;
                 Chart.getChart(canvas)?.destroy();
                 if (canvas.id === 'chartFteSummary') {
                     clearFteAvatarLayer(canvas);
+                }
+                const card = canvas.closest('.lux-chart-card');
+                const shouldHideCard = dashboardMobileHasActiveFilters();
+                if (card) {
+                    card.classList.toggle('hidden', shouldHideCard);
+                }
+                if (shouldHideCard) {
+                    const ctx = canvas.getContext('2d');
+                    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+                    return;
                 }
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -6594,6 +6642,26 @@
                 ctx.textBaseline = 'middle';
                 ctx.fillText(text, canvas.width / 2, canvas.height / 2);
                 ctx.restore();
+            }
+
+            function clearDashboardMobileEmptyChartState(canvas) {
+                if (!canvas) return;
+                const card = canvas.closest('.lux-chart-card');
+                if (card) {
+                    card.classList.remove('hidden');
+                }
+                const ctx = canvas.getContext('2d');
+                ctx?.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function resetDashboardMobileChartCanvases() {
+                document.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
+                    Chart.getChart(canvas)?.destroy();
+                    clearDashboardMobileEmptyChartState(canvas);
+                    const replacement = canvas.cloneNode(false);
+                    canvas.replaceWith(replacement);
+                });
+                clearFteAvatarLayer(document.getElementById('chartFteSummary'));
             }
 
             function sortDashboardYearKeys(values) {
@@ -7389,6 +7457,7 @@
                 }
 
                 function refreshRealtimeDashboardMobile(rows = getFilteredProjects()) {
+                    resetDashboardMobileChartCanvases();
                     renderProjectsPerYear(rows);
                     renderYearlyLifecycle(rows);
                     renderFundingSplit(rows);
@@ -7850,6 +7919,8 @@
                 const filterType = document.getElementById('filterType');
                 const filterStatus = document.getElementById('filterStatus');
                 const filterSource = document.getElementById('filterSource');
+                const filterPi = document.getElementById('filterPi');
+                const filterPiAffiliation = document.getElementById('filterPiAffiliation');
                 const filterName = document.getElementById('filterName');
                 const tableSearch = document.getElementById('tableSearch');
                 const filterReset = document.getElementById('filterReset');
@@ -7935,7 +8006,7 @@
                 });
 
                 [filterYear, filterTheme, filterFunding, filterType, filterStatus, filterSource].forEach(el => el?.addEventListener('change', resetAndRender));
-                [filterName, tableSearch].forEach(el => el?.addEventListener('input', resetAndRender));
+                [filterPi, filterPiAffiliation, filterName, tableSearch].forEach(el => el?.addEventListener('input', resetAndRender));
                 filterReset?.addEventListener('click', () => {
                     if (filterYear) filterYear.value = '';
                     if (filterTheme) filterTheme.value = '';
@@ -7943,6 +8014,8 @@
                     if (filterType) filterType.value = '';
                     if (filterStatus) filterStatus.value = '';
                     if (filterSource) filterSource.value = '';
+                    if (filterPi) filterPi.value = '';
+                    if (filterPiAffiliation) filterPiAffiliation.value = '';
                     if (filterName) filterName.value = '';
                     if (tableSearch) tableSearch.value = '';
                     resetAndRender();
@@ -8193,6 +8266,13 @@
                     }
                     rows.sort((a, b) => b.total - a.total);
                     const top = rows.slice(0, TOP_N);
+                    const el = document.getElementById('chartAuthorRolePerYear');
+                    if (!el) return;
+
+                    if (!top.length) {
+                        drawDashboardMobileEmptyChart(el, 'ไม่มีข้อมูล');
+                        return;
+                    }
 
                     const labels = top.map(r => r.name);
                     const datasets = [{
@@ -8215,11 +8295,10 @@
                         borderWidth: 1
                     }));
 
-                    const el = document.getElementById('chartAuthorRolePerYear');
-                    if (!el) return;
                     el.height = Math.min(Math.max(320, labels.length * 30), 460);
 
                     if (authorChart) authorChart.destroy();
+                    clearDashboardMobileEmptyChartState(el);
                     authorChart = new Chart(el, {
                         type: 'bar',
                         data: {

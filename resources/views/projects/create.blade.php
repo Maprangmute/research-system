@@ -360,8 +360,34 @@
                 <x-date-be name="team_start_date" label="วันที่โครงการเริ่มทำงานของทีมวิจัย"
                     placeholder="กรุณาเลือกวันที่เริ่มทำงานของทีมวิจัย" />
 
-                <x-date-be name="team_end_date" label="วันที่สิ้นสุดการทำงานของทีมวิจัย"
-                    placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีมวิจัย" />
+                <div class="w-full">
+                    <label class="block text-sm text-gray-700 mb-1" for="date_team_end_date">
+                        วันที่สิ้นสุดการทำงานของทีมวิจัย
+                    </label>
+                    <div class="relative">
+                        <input
+                            id="date_team_end_date"
+                            type="text"
+                            name="team_end_date"
+                            value="{{ old('team_end_date') }}"
+                            placeholder="กรุณาเลือกวันที่สิ้นสุดการทำงานของทีมวิจัย"
+                            readonly
+                            data-force-be-date="1"
+                            class="thai-datepicker w-full border rounded-lg px-3 py-2 pr-10 bg-white cursor-pointer focus:ring-2 focus:ring-blue-500 @error('team_end_date') border-red-500 bg-red-50 @enderror"
+                        >
+                        <button
+                            type="button"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                            data-open-picker
+                            data-target="date_team_end_date"
+                        >
+                            📅
+                        </button>
+                    </div>
+                    @error('team_end_date')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
+                </div>
 
                 <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal"
                     placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal" />
@@ -372,8 +398,34 @@
                 <x-date-be name="start_date" label="BC102 - วันที่โครงการเริ่ม (ตามสัญญา)"
                     placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
-                <x-date-be name="end_date" label="BC103 - วันที่สิ้นสุด (ตามสัญญา)"
-                    placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา" />
+                <div class="w-full">
+                    <label class="block text-sm text-gray-700 mb-1" for="date_end_date">
+                        BC103 - วันที่สิ้นสุด (ตามสัญญา)
+                    </label>
+                    <div class="relative">
+                        <input
+                            id="date_end_date"
+                            type="text"
+                            name="end_date"
+                            value="{{ old('end_date') }}"
+                            placeholder="กรุณาเลือกวันที่สิ้นสุดตามสัญญา"
+                            readonly
+                            data-force-be-date="1"
+                            class="thai-datepicker w-full border rounded-lg px-3 py-2 pr-10 bg-white cursor-pointer focus:ring-2 focus:ring-blue-500 @error('end_date') border-red-500 bg-red-50 @enderror"
+                        >
+                        <button
+                            type="button"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                            data-open-picker
+                            data-target="date_end_date"
+                        >
+                            📅
+                        </button>
+                    </div>
+                    @error('end_date')
+                        <span class="text-sm text-red-500 mt-1 block">{{ $message }}</span>
+                    @enderror
+                </div>
 
                 <label class="w-full">
                     {{-- BA000 - Project Planning (Status) --}}
