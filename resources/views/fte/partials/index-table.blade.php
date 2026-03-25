@@ -75,18 +75,25 @@
                                         </span>
                                     </div>
                                     <div class="p-2 fte-detail-table-wrap">
-                                        <table class="fte-detail-table min-w-[1180px] w-full table-auto text-sm border border-slate-200 rounded-lg overflow-hidden">
+                                        <table class="fte-detail-table min-w-[1320px] w-full table-auto text-sm border border-slate-200 rounded-lg overflow-hidden">
                                             <thead class="bg-gray-100">
                                                 <tr>
                                                     <th class="p-3 text-left font-semibold text-slate-700 min-w-[340px]">ชื่อโปรเจค / งานนอกโครงการ</th>
                                                     <th class="p-3 text-left font-semibold text-slate-700 min-w-[180px]">กลุ่ม</th>
                                                     <th class="p-3 text-left font-semibold text-slate-700 min-w-[340px]">รายละเอียดงาน</th>
+                                                    <th class="p-3 text-center font-semibold text-slate-700 min-w-[150px]">ชั่วโมงการทำงาน</th>
                                                     <th class="p-3 text-center font-semibold text-slate-700 min-w-[150px]">จำนวนวันทำงาน</th>
                                                     <th class="p-3 text-right font-semibold text-slate-700 min-w-[140px]">FTE</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 @foreach ($items as $item)
+                                                    @php
+                                                        $hoursInMonth = $item->hours_in_month_exact
+                                                            ?? $item->hours_in_month
+                                                            ?? $item->hours
+                                                            ?? 0;
+                                                    @endphp
                                                     <tr class="{{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
                                                         <td class="p-3 break-words whitespace-normal align-top" data-label="โปรเจค/งาน">
                                                             @if ($item->project?->id)
@@ -128,7 +135,11 @@
                                                             @endif
                                                         </td>
 
-                                                        <td class="p-3 text-center font-semibold text-slate-700 align-top" data-label="วันทำงาน">
+                                                        <td class="p-3 text-center font-semibold text-slate-700 align-top" data-label="ชั่วโมงการทำงาน">
+                                                            {{ number_format((float) $hoursInMonth, 2) }} ชั่วโมง
+                                                        </td>
+
+                                                        <td class="p-3 text-center font-semibold text-slate-700 align-top" data-label="จำนวนวันทำงาน">
                                                             {{ $item->days_in_month }} วัน
                                                         </td>
 

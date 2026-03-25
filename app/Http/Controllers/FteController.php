@@ -216,6 +216,7 @@ public function index(Request $request)
                 if ($totalDays <= 0) continue;
 
                 $ftePerDay = $item->fte_value / $totalDays;
+                $hoursPerDay = $item->hours ? ((float) $item->hours / $totalDays) : 0;
 
                 $effectiveStart = $startDate->copy();
                 $effectiveEnd   = $endDate->copy();
@@ -265,6 +266,7 @@ public function index(Request $request)
                     if ($overlapStart->lte($overlapEnd)) {
                         $daysInMonth = $this->inclusiveDateOnlyDays($overlapStart, $overlapEnd);
                         $fteMonth = $daysInMonth * $ftePerDay;
+                        $hoursInMonth = $hoursPerDay * $daysInMonth;
 
                         $expanded->push((object)[
                             'rounding_key'  => 'person-index:' . $item->id,
@@ -274,6 +276,7 @@ public function index(Request $request)
                             'job_detail'    => $item->job_detail,
                             'fte_month'     => $fteMonth,
                             'fte_value'     => $item->fte_value,
+                            'hours_in_month'=> $hoursInMonth,
                             'days_in_month' => $daysInMonth,
                             'total_days'    => $totalDays,
                             'fte_per_day'   => $ftePerDay,
@@ -1255,6 +1258,7 @@ private function buildFteProjectData(Project $project): array
     {
         foreach ($rows->groupBy('rounding_key') as $group) {
             $this->rebalanceRoundedField($group, 'fte_month', 7);
+            $this->rebalanceRoundedField($group, 'hours_in_month', 2);
         }
 
         return $rows;

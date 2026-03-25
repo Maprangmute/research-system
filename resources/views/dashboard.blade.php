@@ -6813,10 +6813,21 @@
 
                     const chartEl = document.getElementById(id);
                     const chartObj = Chart.getChart(chartEl);
-                    if (chartObj) {
+                    let imageSrc = '';
+                    if (chartObj && typeof chartObj.toBase64Image === 'function') {
+                        imageSrc = chartObj.toBase64Image();
+                    } else if (chartEl instanceof HTMLCanvasElement && chartEl.width > 0 && chartEl.height > 0) {
+                        try {
+                            imageSrc = chartEl.toDataURL('image/png', 0.92);
+                        } catch (error) {
+                            imageSrc = '';
+                        }
+                    }
+
+                    if (imageSrc) {
                         const img = document.createElement('img');
                         img.alt = chartTitles[id] || id;
-                        img.src = chartObj.toBase64Image();
+                        img.src = imageSrc;
                         card.appendChild(img);
                     } else {
                         const empty = document.createElement('div');
@@ -7039,6 +7050,8 @@
                     container.innerHTML = '';
 
                     try {
+                        window.refreshRealtimeDashboard?.();
+                        await wait(180);
                         addCoverPage();
                         addChartPages();
                         addTablePages();

@@ -17,8 +17,8 @@
         }
         body {
             font-family: "thsarabun", Tahoma, sans-serif;
-            font-size: 11.5pt;
-            line-height: 1.35;
+            font-size: 12.5pt;
+            line-height: 1.45;
             color: #222;
         }
         .section-title {
@@ -37,12 +37,17 @@
         }
         th, td {
             border: 1px solid #dde6f6;
-            padding: 6px 10px;
+            padding: 7px 10px;
             vertical-align: top;
+            font-size: 1em;
         }
         thead {
             background: #F1F5F9;
             color: #0F172A;
+        }
+        th {
+            font-size: 1.02em;
+            font-weight: bold;
         }
         ul {
             margin: 0 0 12px 18px;
@@ -67,6 +72,101 @@
         .fte-bar {
             height: 10px;
             background: #0F766E;
+        }
+        .outputs-table {
+            table-layout: fixed;
+        }
+        .outputs-table th,
+        .outputs-table td {
+            word-break: break-word;
+            white-space: normal;
+        }
+        .outputs-col-index {
+            width: 5%;
+            text-align: center;
+        }
+        .outputs-col-title {
+            width: 35%;
+        }
+        .outputs-col-type {
+            width: 14%;
+        }
+        .outputs-col-detail {
+            width: 31%;
+        }
+        .outputs-col-date {
+            width: 15%;
+        }
+        .output-title {
+            font-weight: bold;
+            color: #0f172a;
+            line-height: 1.35;
+            margin-bottom: 4px;
+        }
+        .output-subline {
+            margin-top: 4px;
+            color: #334155;
+            line-height: 1.35;
+        }
+        .output-subline strong {
+            color: #0f172a;
+        }
+        .output-list {
+            margin-top: 6px;
+        }
+        .output-card {
+            border: 1px solid #dbe4f2;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            background: #fff;
+            page-break-inside: avoid;
+        }
+        .output-card-header {
+            display: table;
+            width: 100%;
+            margin-bottom: 6px;
+        }
+        .output-card-index,
+        .output-card-date {
+            display: table-cell;
+            vertical-align: top;
+            white-space: nowrap;
+        }
+        .output-card-index {
+            width: 36px;
+            font-weight: bold;
+            color: #475569;
+            padding-right: 10px;
+        }
+        .output-card-main {
+            display: table-cell;
+            vertical-align: top;
+        }
+        .output-card-date {
+            width: 118px;
+            text-align: right;
+            color: #475569;
+            font-size: 0.95em;
+            padding-left: 10px;
+        }
+        .output-meta {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px dashed #dbe4f2;
+        }
+        .output-meta-row {
+            margin-top: 4px;
+            line-height: 1.35;
+        }
+        .output-type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 0.95em;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -490,60 +590,60 @@
 
     {{-- SECTION H: Outputs --}}
     <div class="section-title">H: ผลงานวิจัย (Outputs)</div>
-    <table>
-        <thead>
-            <tr>
-                <th class="nowrap">#</th>
-                <th>ชื่อผลงาน</th>
-                <th>ประเภท</th>
-                <th>รายละเอียด/ลิงก์</th>
-                <th>วันที่เผยแพร่</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($project->outputs as $i => $output)
-                <tr>
-                    <td class="nowrap">{{ $i+1 }}</td>
-                    <td>{{ text_or_dash($output->title) }}</td>
-                    <td>{{ text_or_dash($output->type) }}</td>
-                    <td>{{ text_or_dash($output->project_output ?? $output->output ?? '') }}</td>
-                    <td>{{ th_date_or_dash($output->year) }}</td>
-                </tr>
-                @if (!empty($output->journal) || !empty($output->quartile) || $output->impact_factor !== null)
-                    <tr>
-                        <td></td>
-                        <td colspan="4">
-                            <strong>Journal:</strong> {{ text_or_dash($output->journal) }} |
-                            <strong>Quartile:</strong> {{ text_or_dash($output->quartile) }} |
+    <div class="output-list">
+        @forelse ($project->outputs as $i => $output)
+            <div class="output-card">
+                <div class="output-card-header">
+                    <div class="output-card-index">{{ $i + 1 }}.</div>
+                    <div class="output-card-main">
+                        <div class="output-title">{{ text_or_dash($output->title) }}</div>
+                        <div class="output-type-badge">{{ text_or_dash($output->type) }}</div>
+                    </div>
+                    <div class="output-card-date">{{ th_date_or_dash($output->year) }}</div>
+                </div>
+
+                <div class="output-meta">
+                    <div class="output-meta-row">
+                        <strong>รายละเอียด/ลิงก์:</strong>
+                        {{ text_or_dash($output->project_output ?? $output->output ?? '') }}
+                    </div>
+
+                    @if (!empty($output->journal) || !empty($output->quartile) || $output->impact_factor !== null)
+                        <div class="output-meta-row">
+                            <strong>Journal:</strong> {{ text_or_dash($output->journal) }}
+                        </div>
+                        <div class="output-meta-row">
+                            <strong>Quartile:</strong> {{ text_or_dash($output->quartile) }}
+                            |
                             <strong>Impact Factor:</strong> {{ text_or_dash($output->impact_factor) }}
-                        </td>
-                    </tr>
-                @endif
-                @if (!empty($output->authors) && $output->authors->count())
-                    <tr>
-                        <td></td>
-                        <td colspan="4">
+                        </div>
+                    @endif
+
+                    @if (!empty($output->authors) && $output->authors->count())
+                        <div class="output-meta-row">
                             <strong>Authors:</strong>
                             {{ $output->authors->pluck('name')->filter()->implode(', ') }}
-                        </td>
-                    </tr>
-                @endif
-                @if (!empty($output->conferences) && $output->conferences->count())
-                    <tr>
-                        <td></td>
-                        <td colspan="4">
+                        </div>
+                    @endif
+
+                    @if (!empty($output->conferences) && $output->conferences->count())
+                        <div class="output-meta-row">
                             <strong>Conferences:</strong>
                             {{ $output->conferences->pluck('name')->filter()->implode(', ') }}
-                        </td>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @empty
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="check">ไม่มีข้อมูล</td>
                     </tr>
-                @endif
-            @empty
-                <tr>
-                    <td colspan="5" class="check">ไม่มีข้อมูล</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
+                </tbody>
+            </table>
+        @endforelse
+    </div>
 
     @include('projects.partials.progress_section_pdf', ['project' => $project])
 
