@@ -1127,7 +1127,7 @@
                 <div class="flex items-center gap-2">
                     <button id="btnExportPdf"
                         class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg shadow-sm">
-                        Export Overview เป็น PDF
+                        Export Dashboard เป็น PDF
                     </button>
                 </div>
             </div>
@@ -1137,12 +1137,12 @@
             </div>
             <div class="lux-chart-scroll mb-6">
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔴 RED ZONE: โครงการใกล้กำหนดส่ง / เกินกำหนด</h3>
-                <canvas id="chartRedZoneTimeline" height="250"></canvas>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔴 RED ZONE: ย้อนหลัง 3 ปี</h3>
+                <canvas id="chartRedZoneTimeline" height="380"></canvas>
             </div>
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔥 โครงการที่เกินกำหนดส่งแล้ว (Overdue)</h3> <canvas
-                    id="chartOverdueProjects" height="250"></canvas>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔥 ภาพรวมสถานะโครงการตามสัญญา</h3> <canvas
+                    id="chartOverdueProjects" height="380"></canvas>
             </div>
 
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 md:col-span-2 lux-drawer"
@@ -1151,7 +1151,7 @@
                     class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-left"
                     data-drawer-toggle aria-expanded="false">
                     <div class="flex items-center gap-2">
-                        <h3 class="text-sm font-semibold text-gray-700">⏱️ รายการโครงการเกินกำหนดส่ง (ลงรายละเอียด)</h3>
+                        <h3 class="text-sm font-semibold text-gray-700">⏱️ รายการโครงการเกินกำหนดที่ยังต้องติดตาม</h3>
                         <span id="overdueCountBadge"
                             class="text-xs font-semibold px-3 py-1 rounded-full lux-chip">0 โครงการ</span>
                     </div>
@@ -1166,14 +1166,16 @@
                             <thead class="bg-gray-50 text-xs text-gray-700">
                                 <tr>
                                     <th class="p-2 text-left">ชื่อโครงการ</th>
-                                    <th class="p-2 text-center">วันครบกำหนดส่ง</th>
-                                    <th class="p-2 text-center">เกินกำหนดส่ง (วัน)</th>
+                                    <th class="p-2 text-center">วันที่สิ้นสุดสัญญา (พ.ศ.)</th>
+                                    <th class="p-2 text-center">วันที่สิ้นสุดการทำงานทีม</th>
+                                    <th class="p-2 text-center">เกินกำหนด (วัน)</th>
+                                    <th class="p-2 text-center">สถานะโครงการ</th>
                                     <th class="p-2 text-center">PI</th>
                                 </tr>
                             </thead>
                             <tbody id="overdueTableBody">
                                 <tr class="border-t">
-                                    <td colspan="4" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
+                                    <td colspan="6" class="p-3 text-center text-gray-500">กำลังประมวลผลข้อมูล</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1722,7 +1724,8 @@
             const getYear = (p) => p.start_year || 'ไม่ระบุ';
             const getEndYear = (p) => p.end_year || p.finish_year || null; // ปรับตามฟิลด์จริง
             const getEndDateRaw = (p) => p.end_date || p.team_end_date || p.finish_date || p.endDate || null;
-            const getProjectDeadlineRaw = (p) => p?.end_date || p?.team_end_date || p?.endDate || null;
+            const getContractEndDateRaw = (p) => p.end_date || p.endDate || null;
+            const getTeamEndDateRaw = (p) => p.team_end_date || p.teamEndDate || null;
             const getBudget = (p) => toNumber(p.total_budget ?? p.budget ?? 0);
             const getFundingType = (p) => p.funding_type || 'ไม่ระบุ';
             const getFundingSource = (p) => p.funding_source || 'ไม่ระบุ';
@@ -1757,6 +1760,336 @@
                 }
 
                 return null;
+            }
+
+            const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+            function startOfLocalDay(date) {
+                if (!(date instanceof Date) || isNaN(date)) return null;
+                return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            }
+
+            function daysBetweenLocal(laterDate, earlierDate) {
+                const later = startOfLocalDay(laterDate);
+                const earlier = startOfLocalDay(earlierDate);
+                if (!later || !earlier) return null;
+                return Math.floor((later.getTime() - earlier.getTime()) / MS_PER_DAY);
+            }
+
+            function getContractEndDate(p) {
+                return parseProjectDate(getContractEndDateRaw(p));
+            }
+
+            function getTeamEndDate(p) {
+                return parseProjectDate(getTeamEndDateRaw(p));
+            }
+
+            function getProjectStatusLabel(p) {
+                return [p?.planning_status, p?.closure_status, p?.execution_status]
+                    .map(v => String(v || '').trim())
+                    .find(v => v) || 'ไม่ระบุ';
+            }
+
+            function buildOverdueRecord(p, referenceDate = new Date()) {
+                const contractEndDate = getContractEndDate(p);
+                if (!contractEndDate) return null;
+
+                const teamEndDate = getTeamEndDate(p);
+                const statusKey = projectLifecycleStatusKey(p);
+                if (statusKey === 'cancelled') return null;
+
+                const isCompleted = statusKey === 'completed';
+                let overdueDays = null;
+                let overdueSource = '';
+                let sourceCategory = '';
+
+                if (isCompleted) {
+                    if (!teamEndDate) return null;
+                    overdueDays = daysBetweenLocal(teamEndDate, contractEndDate);
+                    overdueSource = 'team_end_date';
+                    sourceCategory = 'closed_late';
+                } else {
+                    if (teamEndDate) {
+                        overdueDays = daysBetweenLocal(teamEndDate, contractEndDate);
+                        overdueSource = 'team_end_date';
+                        sourceCategory = 'open_team_late';
+                    } else {
+                        overdueDays = daysBetweenLocal(referenceDate, contractEndDate);
+                        overdueSource = 'today';
+                        sourceCategory = 'open_system_late';
+                    }
+                }
+
+                if (!Number.isFinite(overdueDays) || overdueDays <= 0) return null;
+
+                const bucketKey = overdueDays <= 30 ? '1m' : (overdueDays <= 90 ? '3m' : '6m');
+                const bucketLabel = bucketKey === '1m' ? '1 เดือน' : (bucketKey === '3m' ? '3 เดือน' : '6 เดือน+');
+
+                return {
+                    project: p,
+                    contractEndDate,
+                    teamEndDate,
+                    overdueDays,
+                    overdueSource,
+                    sourceCategory,
+                    statusLabel: getProjectStatusLabel(p),
+                    contractEndYearCE: contractEndDate.getFullYear(),
+                    bucketKey,
+                    bucketLabel,
+                };
+            }
+
+            function buildOverdueRecords(rows, referenceDate = new Date()) {
+                return (Array.isArray(rows) ? rows : [])
+                    .map(project => buildOverdueRecord(project, referenceDate))
+                    .filter(Boolean);
+            }
+
+            function buildActiveOverdueRecords(rows, referenceDate = new Date()) {
+                return buildOverdueRecords(rows, referenceDate)
+                    .filter(record => record.sourceCategory === 'open_system_late' || record.sourceCategory === 'open_team_late');
+            }
+
+            function isActiveProjectForOverdue(p) {
+                const statusKey = projectLifecycleStatusKey(p);
+                return statusKey !== 'completed' && statusKey !== 'cancelled';
+            }
+
+            function classifyProjectForOverview(p, referenceDate = new Date()) {
+                const statusKey = projectLifecycleStatusKey(p);
+                const contractEndDate = getContractEndDate(p);
+                const teamEndDate = getTeamEndDate(p);
+                const overdueRecord = buildOverdueRecord(p, referenceDate);
+
+                if (!contractEndDate) {
+                    return { key: 'incomplete_data', label: 'ข้อมูลไม่ครบ' };
+                }
+
+                if (overdueRecord) {
+                    return {
+                        key: overdueRecord.sourceCategory,
+                        label: overdueSourceLabel(overdueRecord),
+                        record: overdueRecord
+                    };
+                }
+
+                if (statusKey === 'cancelled') {
+                    return { key: 'cancelled', label: 'ยกเลิกโปรเจค' };
+                }
+
+                if (statusKey === 'completed') {
+                    if (!teamEndDate) {
+                        return { key: 'incomplete_data', label: 'ข้อมูลไม่ครบ' };
+                    }
+                    return { key: 'completed_on_time', label: 'ปิดโปรเจคแล้วและไม่เกินสัญญา' };
+                }
+
+                if (teamEndDate) {
+                    return { key: 'team_finished_not_closed', label: 'ทีมสิ้นสุดแล้วแต่ยังไม่ปิดโปรเจค' };
+                }
+
+                return { key: 'active_not_due', label: 'ยังไม่ครบกำหนดสัญญา' };
+            }
+
+            const OVERDUE_OVERVIEW_CATEGORY_DEFS = [
+                { key: 'open_system_late', label: 'ครบกำหนดแต่ยังไม่ลงปิดโปรเจคในระบบ', color: '#dc2626', recordMode: true },
+                { key: 'open_team_late', label: 'ทำงานเกินสัญญาและยังไม่ปิดโปรเจค', color: '#d97706', recordMode: true },
+                { key: 'closed_late', label: 'ทำงานเกินสัญญาแต่ปิดโปรเจคแล้ว', color: '#7c3aed', recordMode: true },
+                { key: 'active_not_due', label: 'ยังไม่ครบกำหนดสัญญา', color: '#0ea5e9' },
+                { key: 'team_finished_not_closed', label: 'ทีมสิ้นสุดแล้วแต่ยังไม่ปิดโปรเจค', color: '#14b8a6' },
+                { key: 'completed_on_time', label: 'ปิดโปรเจคแล้วและไม่เกินสัญญา', color: '#22c55e' },
+                { key: 'cancelled', label: 'ยกเลิกโปรเจค', color: '#64748b' },
+                { key: 'incomplete_data', label: 'ข้อมูลไม่ครบ', color: '#f59e0b' },
+            ];
+
+            function buildOverdueOverviewSummary(rows, referenceDate = new Date()) {
+                const projectsList = Array.isArray(rows) ? rows : [];
+                const groups = new Map(OVERDUE_OVERVIEW_CATEGORY_DEFS.map((def) => [def.key, {
+                    ...def,
+                    count: 0,
+                    rows: [],
+                    projects: [],
+                }]));
+
+                projectsList.forEach((project) => {
+                    const classification = classifyProjectForOverview(project, referenceDate);
+                    const group = groups.get(classification.key);
+                    if (!group) return;
+                    group.count += 1;
+                    if (group.recordMode && classification.record) {
+                        group.rows.push(classification.record);
+                    } else {
+                        group.projects.push(project);
+                    }
+                });
+
+                return OVERDUE_OVERVIEW_CATEGORY_DEFS.map((def) => groups.get(def.key)).filter(Boolean);
+            }
+
+            function createDoughnutCalloutPlugin(id) {
+                return {
+                    id,
+                    afterDatasetsDraw(chart) {
+                        const {
+                            ctx,
+                            chartArea: {
+                                left,
+                                right,
+                                top,
+                                bottom
+                            }
+                        } = chart;
+                        const meta = chart.getDatasetMeta(0);
+                        const ds = chart.data.datasets?.[0];
+                        if (!meta || !ds) return;
+
+                        const total = (Array.isArray(ds.data) ? ds.data : [])
+                            .reduce((sum, v) => sum + (Number(v) || 0), 0) || 1;
+
+                        ctx.save();
+                        ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
+                        ctx.textBaseline = 'middle';
+                        ctx.lineWidth = 1.2;
+
+                        const leftItems = [];
+                        const rightItems = [];
+
+                        meta.data.forEach((arc, i) => {
+                            const v = Number(ds.data[i] || 0);
+                            if (!isFinite(v) || v <= 0) return;
+
+                            const angle = (arc.startAngle + arc.endAngle) / 2;
+                            const cos = Math.cos(angle);
+                            const sin = Math.sin(angle);
+                            const pct = ((v / total) * 100).toFixed(1);
+                            const label = `${v} โครงการ (${pct}%)`;
+                            const textWidth = ctx.measureText(label).width;
+
+                            const item = {
+                                arc,
+                                cos,
+                                sin,
+                                label,
+                                textWidth,
+                                color: Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : '#64748b',
+                                sx: arc.x + cos * (arc.outerRadius - 1),
+                                sy: arc.y + sin * (arc.outerRadius - 1),
+                                mx: arc.x + cos * (arc.outerRadius + 12),
+                                my: arc.y + sin * (arc.outerRadius + 12),
+                            };
+
+                            if (cos >= 0) rightItems.push(item);
+                            else leftItems.push(item);
+                        });
+
+                        const resolveSide = (items, side) => {
+                            const minY = top + 12;
+                            const maxY = bottom - 12;
+                            const gap = 16;
+                            items.sort((a, b) => a.my - b.my);
+
+                            items.forEach((item, index) => {
+                                let y = Math.max(item.my, minY);
+                                if (index > 0) {
+                                    y = Math.max(y, items[index - 1].resolvedY + gap);
+                                }
+                                item.resolvedY = y;
+                            });
+
+                            for (let i = items.length - 1; i >= 0; i -= 1) {
+                                const next = items[i + 1];
+                                let y = Math.min(items[i].resolvedY, maxY);
+                                if (next) {
+                                    y = Math.min(y, next.resolvedY - gap);
+                                }
+                                items[i].resolvedY = y;
+                            }
+
+                            items.forEach((item) => {
+                                let tx = item.mx + (side === 'right' ? 16 : -16);
+                                if (side === 'right') {
+                                    const maxX = right - item.textWidth - 4;
+                                    if (tx > maxX) tx = maxX;
+                                    if (tx < left + 4) tx = left + 4;
+                                    item.textAlign = 'left';
+                                    item.lineEndX = tx - 4;
+                                } else {
+                                    const minX = left + item.textWidth + 4;
+                                    if (tx < minX) tx = minX;
+                                    if (tx > right - 4) tx = right - 4;
+                                    item.textAlign = 'right';
+                                    item.lineEndX = tx + 4;
+                                }
+                                item.textX = tx;
+                            });
+                        };
+
+                        resolveSide(leftItems, 'left');
+                        resolveSide(rightItems, 'right');
+
+                        [...leftItems, ...rightItems].forEach((item) => {
+                            ctx.strokeStyle = item.color || '#64748b';
+                            ctx.fillStyle = '#0f172a';
+                            ctx.textAlign = item.textAlign;
+
+                            ctx.beginPath();
+                            ctx.moveTo(item.sx, item.sy);
+                            ctx.lineTo(item.mx, item.resolvedY);
+                            ctx.lineTo(item.lineEndX, item.resolvedY);
+                            ctx.stroke();
+
+                            ctx.fillText(item.label, item.textX, item.resolvedY);
+                        });
+
+                        ctx.restore();
+                    }
+                };
+            }
+
+            function overdueRecordYearLabel(record) {
+                if (record?.contractEndYearCE) return yearLabelTH(record.contractEndYearCE);
+                return 'ไม่ระบุ';
+            }
+
+            function overdueRecordEndDateLabel(record) {
+                return formatDateTH(record?.contractEndDate, '-');
+            }
+
+            function overdueRecordTeamEndDateLabel(record) {
+                return formatDateTH(record?.teamEndDate, '-');
+            }
+
+            function overdueSourceLabel(record) {
+                if (record?.sourceCategory === 'closed_late') return 'ทำงานเกินสัญญาแต่ปิดโปรเจคแล้ว';
+                if (record?.sourceCategory === 'open_team_late') return 'ทำงานเกินสัญญาและยังไม่ปิดโปรเจค';
+                if (record?.sourceCategory === 'open_system_late') return 'ครบกำหนดแต่ยังไม่ลงปิดโปรเจคในระบบ';
+                return '-';
+            }
+
+            function getRedZoneRecentYears(referenceDate = new Date()) {
+                const currentYear = referenceDate.getFullYear();
+                return [currentYear - 2, currentYear - 1, currentYear];
+            }
+
+            function applyOverdueRecordSort(items, mode) {
+                const list = Array.isArray(items) ? items : [];
+                const safe = (v) => String(v || '').trim();
+                const num = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
+                const getSource = (r) => getFundingSource(r?.project || {});
+                const by = {
+                    name_asc: (a, b) => safe(a?.project?.project_name_th).localeCompare(safe(b?.project?.project_name_th), 'th'),
+                    name_desc: (a, b) => safe(b?.project?.project_name_th).localeCompare(safe(a?.project?.project_name_th), 'th'),
+                    pi_asc: (a, b) => safe(a?.project?.pi_name).localeCompare(safe(b?.project?.pi_name), 'th'),
+                    pi_desc: (a, b) => safe(b?.project?.pi_name).localeCompare(safe(a?.project?.pi_name), 'th'),
+                    year_desc: (a, b) => num(b?.contractEndYearCE) - num(a?.contractEndYearCE),
+                    year_asc: (a, b) => num(a?.contractEndYearCE) - num(b?.contractEndYearCE),
+                    funding_asc: (a, b) => safe(getSource(a)).localeCompare(safe(getSource(b)), 'th'),
+                    funding_desc: (a, b) => safe(getSource(b)).localeCompare(safe(getSource(a)), 'th'),
+                    budget_desc: (a, b) => num(getBudget(b?.project || {})) - num(getBudget(a?.project || {})),
+                    budget_asc: (a, b) => num(getBudget(a?.project || {})) - num(getBudget(b?.project || {})),
+                };
+                const sorter = by[mode] || by.year_desc;
+                return [...list].sort(sorter);
             }
 
             const formatDateTH = (d, fallback = '-') =>
@@ -2111,10 +2444,6 @@
                     .replace(/'/g, '&#39;');
             }
 
-            function escapeHtml(value) {
-                return escapeHtmlText(value);
-            }
-
             function getActiveFilterEntries() {
                 return dashboardFilterFields
                     .map(({ id, label }) => {
@@ -2329,7 +2658,7 @@
             }
 
             function endYearLabel(p) {
-                const endDate = parseProjectDate(getEndDateRaw(p));
+                const endDate = getContractEndDate(p);
                 if (endDate) return yearLabelTH(endDate.getFullYear());
                 const start = yearCE(p.start_year);
                 if (start) return yearLabelTH(start);
@@ -2416,17 +2745,19 @@
                     return;
                 }
 
-                if (modalType === 'redzone' || modalType === 'overdue' || modalType === 'remaining') {
-                    const now = new Date();
+                if (modalType === 'redzone' || modalType === 'overdue') {
                     const pageSize = state.pageSize || 10;
-                    const yearOptions = Array.from(new Set(rows.map(endYearLabel))).sort();
+                    const yearOptions = Array.from(new Set(rows.map(overdueRecordYearLabel))).sort((a, b) => {
+                        const yearA = yearCE(a);
+                        const yearB = yearCE(b);
+                        if (Number.isFinite(yearA) && Number.isFinite(yearB)) return yearA - yearB;
+                        return String(a).localeCompare(String(b), 'th');
+                    });
                     const activeYear = state.yearFilter || '';
-                    const diffHeader = modalType === 'overdue'
-                        ? 'เกินกำหนดส่ง (วัน)'
-                        : (modalType === 'remaining' ? 'คงเหลือ (วัน)' : 'คงเหลือ/เกิน (วัน)');
+                    const diffHeader = 'เกินกำหนด (วัน)';
 
-                    const filtered = activeYear ? rows.filter(p => endYearLabel(p) === activeYear) : rows.slice();
-                    const sorted = applyProjectSort(filtered, mode || 'name_asc');
+                    const filtered = activeYear ? rows.filter(record => overdueRecordYearLabel(record) === activeYear) : rows.slice();
+                    const sorted = applyOverdueRecordSort(filtered, mode || 'year_desc');
                     const totalPages = Math.max(Math.ceil(sorted.length / pageSize), 1);
                     state.page = Math.min(Math.max(state.page || 1, 1), totalPages);
                     const start = (state.page - 1) * pageSize;
@@ -2450,9 +2781,10 @@
                                     <tr class="bg-gray-100 text-xs text-gray-700">
                                         <th class="p-2 text-center">#</th>
                                         <th class="p-2 text-left">ชื่อโครงการ</th>
-                                        <th class="p-2 text-center">สถานะ Red Zone</th>
-                                        <th class="p-2 text-center">วันครบกำหนดส่ง</th>
+                                        <th class="p-2 text-center">วันที่สิ้นสุดสัญญา (พ.ศ.)</th>
+                                        <th class="p-2 text-center">วันที่สิ้นสุดการทำงานทีม</th>
                                         <th class="p-2 text-center">${diffHeader}</th>
+                                        <th class="p-2 text-center">สถานะโครงการ</th>
                                         <th class="p-2 text-center">PI</th>
                                     </tr>
                                 </thead>
@@ -2460,37 +2792,24 @@
                     `;
 
                     if (!pageRows.length) {
-                        html += `<tr class="border-t"><td colspan="6" class="p-3 text-center text-gray-500">ไม่มีข้อมูล</td></tr>`;
+                        html += `<tr class="border-t"><td colspan="7" class="p-3 text-center text-gray-500">ไม่มีข้อมูล</td></tr>`;
                     } else {
-                        pageRows.forEach((p, idx) => {
-                            const info = getRedZoneInfo(p, now);
-                            const endDate = info?.endDate || null;
-                            const diffDays = info ? Math.ceil(info.diffDays) : null;
-                            let diffLabel = '-';
-                            let diffClass = 'text-amber-600 font-semibold';
-                            if (diffDays != null) {
-                                if (modalType === 'overdue') {
-                                    diffLabel = `${Math.abs(diffDays)}`;
-                                    diffClass = 'text-red-600 font-semibold';
-                                } else if (modalType === 'remaining') {
-                                    diffLabel = `${Math.max(diffDays, 0)}`;
-                                    diffClass = 'text-emerald-600 font-semibold';
-                                } else {
-                                    diffLabel = diffDays < 0 ? `${Math.abs(diffDays)}` : `${diffDays}`;
-                                    diffClass = diffDays < 0 ? 'text-red-600 font-semibold' :
-                                        'text-amber-600 font-semibold';
-                                }
-                            }
+                        pageRows.forEach((record, idx) => {
+                            const project = record.project || {};
                             html += `
                                 <tr class="border-t">
                                     <td class="p-2 text-center" data-label="#">${start + idx + 1}</td>
                                     <td class="p-2 text-left text-blue-700 hover:underline" data-label="ชื่อโครงการ">
-                                        <a href="/rm/projects/${p.id}" target="_blank" rel="noopener">${p.project_name_th || '-'}</a>
+                                        <a href="/rm/projects/${project.id}" target="_blank" rel="noopener">${escapeHtmlText(project.project_name_th || '-')}</a>
+                                        <div class="mt-1 text-[11px] font-normal text-slate-500">${escapeHtmlText(overdueSourceLabel(record))}</div>
                                     </td>
-                                    <td class="p-2 text-center" data-label="สถานะ Red Zone">${escapeHtml(info?.statusLabel || '-')}</td>
-                                    <td class="p-2 text-center" data-label="วันครบกำหนดส่ง">${formatDateTH(endDate, '-')}</td>
-                                    <td class="p-2 text-center ${diffClass}" data-label="${diffHeader}">${diffLabel}</td>
-                                    <td class="p-2 text-center" data-label="PI">${p.pi_name || '-'}</td>
+                                    <td class="p-2 text-center" data-label="วันที่สิ้นสุดสัญญา (พ.ศ.)">${escapeHtmlText(overdueRecordEndDateLabel(record))}</td>
+                                    <td class="p-2 text-center" data-label="วันที่สิ้นสุดการทำงานทีม">${escapeHtmlText(overdueRecordTeamEndDateLabel(record))}</td>
+                                    <td class="p-2 text-center text-red-600 font-semibold" data-label="${diffHeader}">
+                                        <div>${record.overdueDays}</div>
+                                    </td>
+                                    <td class="p-2 text-center" data-label="สถานะโครงการ">${escapeHtmlText(record.statusLabel || '-')}</td>
+                                    <td class="p-2 text-center" data-label="PI">${escapeHtmlText(project.pi_name || '-')}</td>
                                 </tr>
                             `;
                         });
@@ -2514,6 +2833,73 @@
                         state.page = 1;
                         renderProjectModal(state, mode);
                     });
+                    document.getElementById('modalPrev')?.addEventListener('click', () => {
+                        state.page = Math.max((state.page || 1) - 1, 1);
+                        renderProjectModal(state, mode);
+                    });
+                    document.getElementById('modalNext')?.addEventListener('click', () => {
+                        state.page = (state.page || 1) + 1;
+                        renderProjectModal(state, mode);
+                    });
+                    return;
+                }
+
+                if (modalType === 'incomplete_data') {
+                    const pageSize = state.pageSize || 10;
+                    const sorted = applyProjectSort(rows, mode || 'name_asc');
+                    const totalPages = Math.max(Math.ceil(sorted.length / pageSize), 1);
+                    state.page = Math.min(Math.max(state.page || 1, 1), totalPages);
+                    const start = (state.page - 1) * pageSize;
+                    const pageRows = sorted.slice(start, start + pageSize);
+
+                    let html = `
+                        <div class="mb-3 text-xs text-slate-500">ทั้งหมด ${sorted.length} รายการ</div>
+                        <div class="overflow-x-auto">
+                            <table class="lux-modal-table table-auto w-full border text-sm">
+                                <thead>
+                                    <tr class="bg-gray-100 text-xs text-gray-700">
+                                        <th class="p-2 text-center">#</th>
+                                        <th class="p-2 text-left">ชื่อโครงการ</th>
+                                        <th class="p-2 text-center">ปีโปรเจค</th>
+                                        <th class="p-2 text-center">วันที่สิ้นสุดสัญญา</th>
+                                        <th class="p-2 text-center">วันที่สิ้นสุดการทำงานทีม</th>
+                                        <th class="p-2 text-center">สถานะโปรเจค</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    if (!pageRows.length) {
+                        html += `<tr class="border-t"><td colspan="6" class="p-3 text-center text-gray-500">ไม่มีข้อมูล</td></tr>`;
+                    } else {
+                        pageRows.forEach((project, idx) => {
+                            html += `
+                                <tr class="border-t">
+                                    <td class="p-2 text-center" data-label="#">${start + idx + 1}</td>
+                                    <td class="p-2 text-left text-blue-700 hover:underline" data-label="ชื่อโครงการ">
+                                        <a href="/rm/projects/${project.id}" target="_blank" rel="noopener">${escapeHtmlText(project.project_name_th || '-')}</a>
+                                    </td>
+                                    <td class="p-2 text-center" data-label="ปีโปรเจค">${escapeHtmlText(project.start_year || '-')}</td>
+                                    <td class="p-2 text-center" data-label="วันที่สิ้นสุดสัญญา">${escapeHtmlText(formatDateTH(getContractEndDate(project), '-'))}</td>
+                                    <td class="p-2 text-center" data-label="วันที่สิ้นสุดการทำงานทีม">${escapeHtmlText(formatDateTH(getTeamEndDate(project), '-'))}</td>
+                                    <td class="p-2 text-center" data-label="สถานะโปรเจค">${escapeHtmlText(getProjectStatusLabel(project))}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
+                            <button id="modalPrev" class="border rounded px-3 py-1 hover:bg-gray-50">ก่อนหน้า</button>
+                            <div id="modalPagination">หน้า ${state.page} / ${totalPages}</div>
+                            <button id="modalNext" class="border rounded px-3 py-1 hover:bg-gray-50">ถัดไป</button>
+                        </div>
+                    `;
+
+                    showModal(title, html);
                     document.getElementById('modalPrev')?.addEventListener('click', () => {
                         state.page = Math.max((state.page || 1) - 1, 1);
                         renderProjectModal(state, mode);
@@ -2637,7 +3023,8 @@
             }
 
             function showProjectList(title, list, options = {}) {
-                const rows = uniqueProjects(list);
+                const preserveRows = options.preserveRows === true;
+                const rows = preserveRows ? (Array.isArray(list) ? list.slice() : []) : uniqueProjects(list);
                 const includeFunding = options.includeFunding === true;
                 window.chartModalState = {
                     title,
@@ -2758,56 +3145,6 @@
                     s.includes('done')
                 ) return 'completed';
                 return 'in_progress';
-            }
-
-            function projectIsClosedForRedZone(p) {
-                const lifecycle = projectLifecycleStatusKey(p);
-                if (lifecycle === 'completed' || lifecycle === 'cancelled') return true;
-
-                const finishDate = parseProjectDate(p?.finish_date);
-                if (finishDate && !isNaN(finishDate)) return true;
-
-                const finishY = yearCE(p?.finish_year);
-                if (Number.isFinite(finishY)) return true;
-
-                return false;
-            }
-
-            function getRedZoneInfo(p, now = new Date()) {
-                if (projectIsClosedForRedZone(p)) return null;
-
-                const deadlineDate = parseProjectDate(getProjectDeadlineRaw(p));
-                if (!deadlineDate) return null;
-
-                const diffDays = (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-                const diffMonths = diffDays / 30.4375;
-                let bucket = null;
-                let statusLabel = '';
-
-                if (diffDays < 0) {
-                    bucket = 'เกินกำหนด';
-                    statusLabel = 'เกินกำหนด';
-                } else if (diffMonths <= 3) {
-                    bucket = '3 เดือน';
-                    statusLabel = 'ใกล้กำหนดส่ง (ภายใน 3 เดือน)';
-                } else if (diffMonths <= 6) {
-                    bucket = '6 เดือน';
-                    statusLabel = 'ใกล้กำหนดส่ง (ภายใน 6 เดือน)';
-                } else if (diffMonths <= 9) {
-                    bucket = '9 เดือน';
-                    statusLabel = 'ใกล้กำหนดส่ง (ภายใน 9 เดือน)';
-                }
-
-                if (!bucket) return null;
-
-                return {
-                    project: p,
-                    endDate: deadlineDate,
-                    diffDays,
-                    diffMonths,
-                    bucket,
-                    statusLabel,
-                };
             }
 
             function projectLifecycleStartYearCE(p) {
@@ -3264,30 +3601,36 @@
                 }
 
                 if (id === 'chartRedZoneTimeline') {
-                    const now = new Date();
-                    const bucket = String(label || '');
-                    const list = projects.filter(p => getRedZoneInfo(p, now)?.bucket === bucket);
+                    const yearLabel = String(label || '');
+                    const dataset = chart?.data?.datasets?.[point.datasetIndex] || {};
+                    const records = buildOverdueRecords(projects);
+                    const list = records.filter(record =>
+                        overdueRecordYearLabel(record) === yearLabel &&
+                        record.sourceCategory === dataset.redzoneSourceCategory
+                    );
+                    const sourceText = dataset.redzoneSourceCategory === 'closed_late'
+                        ? 'ทำงานเกินสัญญาแต่ปิดโปรเจคแล้ว'
+                        : (dataset.redzoneSourceCategory === 'open_team_late'
+                            ? 'ทำงานเกินสัญญาและยังไม่ปิดโปรเจค'
+                            : 'ครบกำหนดแต่ยังไม่ลงปิดโปรเจคในระบบ');
                     return {
-                        title: bucket === 'เกินกำหนด' ? 'โครงการเกินกำหนดส่ง' : `โครงการใกล้กำหนดส่ง ${bucket}`,
-                        projects: list,
+                        title: `${yearLabel} • ${sourceText}`,
+                        rows: list,
                         modalType: 'redzone'
                     };
                 }
 
                 if (id === 'chartOverdueProjects') {
-                    const now = new Date();
-                    const labelText = String(label || '');
-                    const isOverdue = labelText.includes('เกินกำหนด');
-                    const list = projects.filter(p => {
-                        const info = getRedZoneInfo(p, now);
-                        if (!info) return false;
-                        if (isOverdue) return info.bucket === 'เกินกำหนด';
-                        return info.bucket !== 'เกินกำหนด';
-                    });
+                    const categoryKey = chart?.$overdueOverviewKeys?.[point.index] || null;
+                    const groups = buildOverdueOverviewSummary(projects);
+                    const group = groups.find((entry) => entry.key === categoryKey)
+                        || groups.find((entry) => entry.label === String(label || ''));
+                    if (!group) return null;
                     return {
-                        title: labelText,
-                        projects: list,
-                        modalType: isOverdue ? 'overdue' : 'remaining'
+                        title: group.label,
+                        rows: group.recordMode ? group.rows : null,
+                        projects: group.recordMode ? null : group.projects,
+                        modalType: group.recordMode ? 'overdue' : (group.key === 'incomplete_data' ? 'incomplete_data' : null)
                     };
                 }
 
@@ -3365,15 +3708,12 @@
             }
 
             function handleChartClick(evt, chart) {
-                const chartId = chart?.canvas?.id || '';
-                const allowLooseHit = ['chartRedZoneTimeline', 'chartOverdueProjects', 'chartYearlyNewVsTotal']
-                    .includes(chartId);
-                const isYearlyLifecycle = chartId === 'chartYearlyNewVsTotal';
+                const isYearlyLifecycle = chart?.canvas?.id === 'chartYearlyNewVsTotal';
                 let points = chart.getElementsAtEventForMode(evt, 'nearest', {
                     intersect: true,
                     axis: 'xy'
                 }, true);
-                if ((!points || !points.length) && allowLooseHit) {
+                if ((!points || !points.length) && isYearlyLifecycle) {
                     points = chart.getElementsAtEventForMode(evt, 'index', {
                         intersect: false,
                         axis: 'x'
@@ -3408,9 +3748,10 @@
                     at: nowTs
                 };
                 const result = resolveProjectsForChart(chart, picked);
-                if (result) showProjectList(result.title, result.projects, {
+                if (result) showProjectList(result.title, result.rows || result.projects, {
                     includeFunding: result.includeFunding,
                     modalType: result.modalType,
+                    preserveRows: Array.isArray(result.rows),
                     unit: result.unit,
                     windowMonths: result.windowMonths
                 });
@@ -5266,37 +5607,53 @@
             /* ---------- NEW: 13) Red Zone Timeline + Overdue Table + Co-Research Window ---------- */
             (function() {
                 const now = new Date();
-                const overdueProjects = [];
-                const dueSoon = {
-                    '3': 0,
-                    '6': 0,
-                    '9': 0
-                };
-
-                projects.forEach(p => {
-                    const info = getRedZoneInfo(p, now);
-                    if (!info) return;
-
-                    if (info.bucket === 'เกินกำหนด') {
-                        overdueProjects.push(info);
-                    } else if (info.bucket === '3 เดือน') {
-                        dueSoon['3']++;
-                    } else if (info.bucket === '6 เดือน') {
-                        dueSoon['6']++;
-                    } else if (info.bucket === '9 เดือน') {
-                        dueSoon['9']++;
+                const overdueProjects = buildOverdueRecords(projects, now);
+                const activeOverdueProjects = overdueProjects.filter(record =>
+                    record.sourceCategory === 'open_system_late' || record.sourceCategory === 'open_team_late'
+                );
+                const redZoneYears = getRedZoneRecentYears(now);
+                const labels = redZoneYears.map(year => yearLabelTH(year));
+                const timelineDatasets = [
+                    {
+                        label: 'ครบกำหนดแต่ยังไม่ลงปิดโปรเจคในระบบ',
+                        redzoneSourceCategory: 'open_system_late',
+                        data: redZoneYears.map((year) => overdueProjects.filter((record) =>
+                            record.contractEndYearCE === year &&
+                            record.sourceCategory === 'open_system_late'
+                        ).length),
+                        backgroundColor: '#dc2626',
+                    },
+                    {
+                        label: 'ทำงานเกินสัญญาและยังไม่ปิดโปรเจค',
+                        redzoneSourceCategory: 'open_team_late',
+                        data: redZoneYears.map((year) => overdueProjects.filter((record) =>
+                            record.contractEndYearCE === year &&
+                            record.sourceCategory === 'open_team_late'
+                        ).length),
+                        backgroundColor: '#d97706',
+                    },
+                    {
+                        label: 'ทำงานเกินสัญญาแต่ปิดโปรเจคแล้ว',
+                        redzoneSourceCategory: 'closed_late',
+                        data: redZoneYears.map((year) => overdueProjects.filter((record) =>
+                            record.contractEndYearCE === year &&
+                            record.sourceCategory === 'closed_late'
+                        ).length),
+                        backgroundColor: '#7c3aed',
                     }
-                });
-
-                // --- Chart 1: Red Zone Timeline (Overdue + 3/6/9 months) ---
-                const labels = ['เกินกำหนด', '3 เดือน', '6 เดือน', '9 เดือน'];
-                const data = [overdueProjects.length, dueSoon['3'], dueSoon['6'], dueSoon['9']];
-                const colors = ['#b91c1c', '#d97706', '#f59e0b', '#fcd34d'];
+                ];
 
                 const elTimeline = document.getElementById('chartRedZoneTimeline');
                 if (elTimeline) {
+                    Chart.getChart(elTimeline)?.destroy();
+                    const hasTimelineData = timelineDatasets.some((dataset) =>
+                        Array.isArray(dataset.data) && dataset.data.some((value) => Number(value) > 0)
+                    );
+                    if (!hasTimelineData) {
+                        drawEmptyChart(elTimeline);
+                    } else {
                     const barValuePlugin = {
-                        id: 'barValueRedZone',
+                        id: 'barValueRedZoneStacked',
                         afterDatasetsDraw(chart) {
                             const {
                                 ctx,
@@ -5305,23 +5662,25 @@
                                     right
                                 }
                             } = chart;
-                            const meta = chart.getDatasetMeta(0);
-                            const ds = chart.data.datasets[0];
-                            if (!meta || !ds) return;
                             ctx.save();
                             ctx.font = 'bold 11px sans-serif';
                             ctx.fillStyle = '#111827';
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'bottom';
-                            meta.data.forEach((bar, i) => {
-                                const v = Number(ds.data[i] || 0);
-                                if (!isFinite(v) || v <= 0) return;
-                                let x = bar.x;
-                                let y = bar.y - 4;
-                                if (y < top + 8) y = top + 8;
-                                if (x > right - 2) x = right - 2;
-                                ctx.fillText(String(v), x, y);
+
+                            chart.data.datasets.forEach((ds, dsIndex) => {
+                                if (!chart.isDatasetVisible(dsIndex)) return;
+                                chart.getDatasetMeta(dsIndex)?.data?.forEach((bar, i) => {
+                                    const value = Number(ds.data?.[i] || 0);
+                                    if (!bar || !isFinite(value) || value <= 0) return;
+                                    let { x, y } = bar.tooltipPosition();
+                                    y -= 4;
+                                    if (y < top + 8) y = top + 8;
+                                    if (x > right - 2) x = right - 2;
+                                    ctx.fillText(String(value), x, y);
+                                });
                             });
+
                             ctx.restore();
                         }
                     };
@@ -5329,26 +5688,21 @@
                         type: 'bar',
                         data: {
                             labels,
-                            datasets: [{
-                                label: 'จำนวนโครงการ',
-                                data,
-                                backgroundColor: colors
-                            }]
+                            datasets: timelineDatasets
                         },
                         options: {
                             responsive: true,
-                            onClick: (evt, _elements, chart) => handleChartClick(evt?.native || evt, chart),
                             plugins: {
                                 legend: {
-                                    display: false
+                                    position: 'bottom'
                                 },
                                 title: {
                                     display: true,
-                                    text: 'สถานะโครงการเทียบวันครบกำหนดส่ง'
+                                    text: 'ย้อนหลัง 3 ปี: แยกตามประเภทโครงการเกินกำหนด'
                                 },
                                 tooltip: {
                                     callbacks: {
-                                        label: (ctx) => ` ${ctx.raw} โครงการ`
+                                        label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw} โครงการ`
                                     }
                                 }
                             },
@@ -5363,103 +5717,39 @@
                                     ticks: {
                                         precision: 0
                                     }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'ปีสิ้นสุดสัญญา (BC103)'
+                                    }
                                 }
                             }
                         },
                         plugins: [barValuePlugin]
                     });
+                    }
                 }
 
                 // --- Chart 2: Overdue Projects (Gauge) ---
                 const elOverdue = document.getElementById('chartOverdueProjects');
                 if (elOverdue) {
-                    const projectsWithEndDate = rows.filter((project) => getRedZoneInfo(project, now));
-                    const totalProjectsRaw = projectsWithEndDate.length;
+                    const overviewGroups = buildOverdueOverviewSummary(projects, now);
+                    const chartGroups = overviewGroups.filter((group) => group.count > 0);
+                    const totalProjectsRaw = chartGroups.reduce((sum, group) => sum + group.count, 0);
                     const totalProjects = totalProjectsRaw || 1;
-                    const overdueCount = overdueProjects.length;
-                    const remainingCount = Math.max(totalProjectsRaw - overdueCount, 0);
+                    elOverdue.$overdueOverviewKeys = chartGroups.map((group) => group.key);
 
                     // วาดเส้นกิ่งชี้ + ตัวเลขด้านนอกโดนัท
-                    const overdueCalloutPlugin = {
-                        id: 'doughnutCalloutOverdue',
-                        afterDatasetsDraw(chart) {
-                            const {
-                                ctx,
-                                chartArea: {
-                                    left,
-                                    right,
-                                    top,
-                                    bottom
-                                }
-                            } = chart;
-                            const meta = chart.getDatasetMeta(0);
-                            const ds = chart.data.datasets?.[0];
-                            if (!meta || !ds) return;
-
-                            const total = (Array.isArray(ds.data) ? ds.data : [])
-                                .reduce((sum, v) => sum + (Number(v) || 0), 0) || 1;
-
-                            ctx.save();
-                            ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
-                            ctx.textBaseline = 'middle';
-                            ctx.lineWidth = 1.2;
-
-                            meta.data.forEach((arc, i) => {
-                                const v = Number(ds.data[i] || 0);
-                                if (!isFinite(v) || v <= 0) return;
-
-                                const angle = (arc.startAngle + arc.endAngle) / 2;
-                                const cos = Math.cos(angle);
-                                const sin = Math.sin(angle);
-
-                                const sx = arc.x + cos * (arc.outerRadius - 1);
-                                const sy = arc.y + sin * (arc.outerRadius - 1);
-                                const mx = arc.x + cos * (arc.outerRadius + 12);
-                                let my = arc.y + sin * (arc.outerRadius + 12);
-
-                                const pct = ((v / total) * 100).toFixed(1);
-                                const label = `${v} โครงการ (${pct}%)`;
-                                const textWidth = ctx.measureText(label).width;
-                                let tx = mx + (cos >= 0 ? 16 : -16);
-
-                                if (cos >= 0) {
-                                    const maxX = right - textWidth - 4;
-                                    if (tx > maxX) tx = maxX;
-                                    if (tx < left + 4) tx = left + 4;
-                                    ctx.textAlign = 'left';
-                                } else {
-                                    const minX = left + textWidth + 4;
-                                    if (tx < minX) tx = minX;
-                                    if (tx > right - 4) tx = right - 4;
-                                    ctx.textAlign = 'right';
-                                }
-
-                                if (my < top + 10) my = top + 10;
-                                if (my > bottom - 10) my = bottom - 10;
-
-                                const segColor = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : '#64748b';
-                                ctx.strokeStyle = segColor || '#64748b';
-                                ctx.fillStyle = '#0f172a';
-
-                                ctx.beginPath();
-                                ctx.moveTo(sx, sy);
-                                ctx.lineTo(mx, my);
-                                ctx.lineTo(tx + (cos >= 0 ? -4 : 4), my);
-                                ctx.stroke();
-
-                                ctx.fillText(label, tx, my);
-                            });
-                            ctx.restore();
-                        }
-                    };
+                    const overdueCalloutPlugin = createDoughnutCalloutPlugin('doughnutCalloutOverdue');
 
                     new Chart(elOverdue, {
                         type: 'doughnut',
                         data: {
-                            labels: ['เกินกำหนดส่งแล้ว', 'โครงการที่ยังดำเนินการ'],
+                            labels: chartGroups.map((group) => group.label),
                             datasets: [{
-                                data: [overdueCount, remainingCount],
-                                backgroundColor: ['#ef4444', '#38bdf8'],
+                                data: chartGroups.map((group) => group.count),
+                                backgroundColor: chartGroups.map((group) => group.color),
                                 borderColor: '#ffffff',
                                 borderWidth: 2,
                                 hoverOffset: 4
@@ -5468,13 +5758,12 @@
                         options: {
                             responsive: true,
                             cutout: '64%',
-                            onClick: (evt, _elements, chart) => handleChartClick(evt?.native || evt, chart),
                             layout: {
                                 padding: {
-                                    left: 26,
-                                    right: 26,
-                                    top: 14,
-                                    bottom: 14
+                                    left: 36,
+                                    right: 36,
+                                    top: 36,
+                                    bottom: 28
                                 }
                             },
                             plugins: {
@@ -5502,7 +5791,7 @@
                 // --- Overdue Table ---
                 const overdueBadge = document.getElementById('overdueCountBadge');
                 if (overdueBadge) {
-                    overdueBadge.textContent = `${overdueProjects.length} โครงการ`;
+                    overdueBadge.textContent = `${activeOverdueProjects.length} โครงการ`;
                 }
 
                 const tbody = document.getElementById('overdueTableBody');
@@ -5514,7 +5803,10 @@
 
                 function renderOverdueTable() {
                     if (!tbody) return;
-                    const sorted = overdueProjects.sort((a, b) => a.endDate - b.endDate);
+                    const sorted = activeOverdueProjects.slice().sort((a, b) => {
+                        if (b.overdueDays !== a.overdueDays) return b.overdueDays - a.overdueDays;
+                        return a.contractEndDate - b.contractEndDate;
+                    });
                     const total = sorted.length;
                     const totalPages = Math.max(Math.ceil(total / overduePageSize), 1);
                     overduePage = Math.min(Math.max(overduePage, 1), totalPages);
@@ -5525,18 +5817,22 @@
                     tbody.innerHTML = '';
                     if (!pageRows.length) {
                         tbody.innerHTML =
-                            `<tr class="border-t"><td colspan="4" class="p-3 text-center text-gray-500">ไม่มีโครงการที่เกินกำหนดส่ง</td></tr>`;
+                            `<tr class="border-t"><td colspan="6" class="p-3 text-center text-gray-500">ไม่มีโครงการที่เกินกำหนด</td></tr>`;
                     } else {
                         pageRows.forEach(item => {
-                            const overdueDays = Math.ceil(Math.abs(item.diffDays));
                             const row = document.createElement('tr');
                             row.className = 'border-t';
                             row.innerHTML = `
                                 <td class="p-2 text-left text-blue-700 hover:underline" data-label="โครงการ">
                                     <a href="/rm/projects/${item.project.id}" target="_blank" rel="noopener">${item.project.project_name_th || '-'}</a>
+                                    <div class="mt-1 text-[11px] font-normal text-slate-500">${overdueSourceLabel(item)}</div>
                                 </td>
-                                <td class="p-2 text-center" data-label="วันครบกำหนดส่ง">${formatDateTH(item.endDate, item.project.end_date || '-')}</td>
-                                <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนดส่ง (วัน)">${overdueDays}</td>
+                                <td class="p-2 text-center" data-label="วันที่สิ้นสุดสัญญา (พ.ศ.)">${overdueRecordEndDateLabel(item)}</td>
+                                <td class="p-2 text-center" data-label="วันที่สิ้นสุดการทำงานทีม">${overdueRecordTeamEndDateLabel(item)}</td>
+                                <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนด (วัน)">
+                                    <div>${item.overdueDays}</div>
+                                </td>
+                                <td class="p-2 text-center" data-label="สถานะโครงการ">${item.statusLabel || '-'}</td>
                                 <td class="p-2 text-center" data-label="PI">${item.project.pi_name || '-'}</td>
                             `;
                             tbody.appendChild(row);
@@ -6650,8 +6946,8 @@
                 if (!btn || !container) return;
 
                 const chartTitles = {
-                    chartRedZoneTimeline: 'RED ZONE: โครงการใกล้กำหนดส่ง / เกินกำหนด',
-                    chartOverdueProjects: 'โครงการที่เกินกำหนดส่ง (โดนัท)',
+                    chartRedZoneTimeline: 'RED ZONE: ย้อนหลัง 3 ปี',
+                    chartOverdueProjects: 'ภาพรวมสถานะโครงการตามสัญญา',
                     chartCoResearchByUnitWindow: 'Co-Research ตามหน่วยงาน (3/6/12 เดือน)',
                     chartProjectsPerYear: 'จำนวนโครงการรายปี',
                     chartYearlyNewVsTotal: 'โครงการทั้งหมด/ใหม่/กำลังดำเนินการ/ปิดโปรเจค/ยกเลิกโปรเจค (รายปี)',
@@ -6698,24 +6994,26 @@
                 });
                 const generatedBy = window.currentUserName || 'ผู้ใช้ไม่ระบุ';
                 const docTitle = 'Siriraj Health Policy Database Research';
-                const docSubtitle = 'Dashboard Export: กราฟและตารางสถานะโครงการ';
+                const docSubtitle = 'Dashboard Export: กราฟและตารางจากหน้าจอ Dashboard ปัจจุบัน';
 
                 const buildOverdueRows = () => {
+                    const scopedProjects = typeof getFilteredProjects === 'function' ? getFilteredProjects() : projects;
                     const now = new Date();
-                    return projects
-                        .map(p => {
-                            const info = getRedZoneInfo(p, now);
-                            if (!info || info.bucket !== 'เกินกำหนด') return null;
-                            return {
-                                project: p.project_name_th || '-',
-                                endDate: info.endDate,
-                                endDateStr: formatDateTH(info.endDate, '-'),
-                                overdueDays: Math.abs(Math.ceil(info.diffDays)),
-                                pi: p.pi_name || '-'
-                            };
-                        })
-                        .filter(Boolean)
-                        .sort((a, b) => a.endDate - b.endDate);
+                    return buildActiveOverdueRecords(scopedProjects, now)
+                        .map((record) => ({
+                            project: `${record.project?.project_name_th || '-'} (${overdueSourceLabel(record)})`,
+                            contractEndDateTH: overdueRecordEndDateLabel(record),
+                            teamEndDateTH: overdueRecordTeamEndDateLabel(record),
+                            overdueDays: record.overdueDays,
+                            overdueSourceLabel: overdueSourceLabel(record),
+                            status: record.statusLabel || '-',
+                            pi: record.project?.pi_name || '-',
+                            contractEndDate: record.contractEndDate,
+                        }))
+                        .sort((a, b) => {
+                            if (b.overdueDays !== a.overdueDays) return b.overdueDays - a.overdueDays;
+                            return a.contractEndDate - b.contractEndDate;
+                        });
                 };
 
                 const buildIrbRows = () => {
@@ -6819,7 +7117,7 @@
                         <div class="font-semibold mb-2">รายการที่รวมในไฟล์:</div>
                         <ul class="list-disc pl-5 space-y-1">
                             <li>กราฟกลยุทธ์ 2 กราฟต่อหน้า (รวม ${chartOrder.length} กราฟ)</li>
-                            <li>ตารางโครงการเกินกำหนด</li>
+                            <li>ตารางโครงการเกินกำหนดที่ยังต้องติดตาม</li>
                             <li>ตาราง IRB</li>
                             <li>Co-PI / ผู้วิจัยร่วม</li>
                             <li>รายการโครงการตามตัวกรองปัจจุบัน</li>
@@ -6950,20 +7248,35 @@
 
                 function addTablePages() {
                         const tableSets = [{
-                            title: 'ตารางโครงการเกินกำหนดส่ง',
+                            title: 'ตารางโครงการเกินกำหนดที่ยังต้องติดตาม',
                             rows: buildOverdueRows(),
                         columns: [{
                                 key: 'project',
                                 label: 'โครงการ'
                                 },
                                 {
-                                    key: 'endDateStr',
-                                    label: 'วันครบกำหนดส่ง',
+                                    key: 'contractEndDateTH',
+                                    label: 'วันที่สิ้นสุดสัญญา (พ.ศ.)',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'teamEndDateTH',
+                                    label: 'วันที่สิ้นสุดการทำงานทีม',
                                     align: 'center'
                                 },
                                 {
                                     key: 'overdueDays',
-                                    label: 'เกินกำหนดส่ง (วัน)',
+                                    label: 'เกินกำหนด (วัน)',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'overdueSourceLabel',
+                                    label: 'ประเภทการเกินกำหนด',
+                                    align: 'center'
+                                },
+                                {
+                                    key: 'status',
+                                    label: 'สถานะโครงการ',
                                     align: 'center'
                                 },
                                 {
@@ -7083,6 +7396,39 @@
                     });
                 }
 
+                function nextFrame() {
+                    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+                }
+
+                async function settleChartsForPdf() {
+                    const charts = chartOrder
+                        .map((id) => Chart.getChart(document.getElementById(id)))
+                        .filter(Boolean);
+
+                    const originals = charts.map((chart) => ({
+                        chart,
+                        animation: chart.options?.animation
+                    }));
+
+                    originals.forEach(({ chart }) => {
+                        if (!chart.options) return;
+                        chart.options.animation = false;
+                        chart.update('none');
+                    });
+
+                    await nextFrame();
+                    await nextFrame();
+                    await wait(120);
+
+                    return () => {
+                        originals.forEach(({ chart, animation }) => {
+                            if (!chart.options) return;
+                            chart.options.animation = animation;
+                            chart.update('none');
+                        });
+                    };
+                }
+
                 async function renderAndDownload() {
                     if (typeof html2canvas === 'undefined' || !window.jspdf) {
                         alert('ไม่พบตัวช่วยสร้าง PDF (html2canvas / jsPDF)');
@@ -7091,14 +7437,16 @@
                     overlay?.classList.remove('hidden');
                     container.classList.remove('hidden');
                     container.innerHTML = '';
+                    let restoreCharts = null;
 
                     try {
                         window.refreshRealtimeDashboard?.();
-                        await wait(180);
+                        await wait(240);
+                        restoreCharts = await settleChartsForPdf();
                         addCoverPage();
                         addChartPages();
                         addTablePages();
-                        await wait(80); // เผื่อเวลาให้ layout เสร็จ
+                        await wait(140); // เผื่อเวลาให้ layout และภาพกราฟนิ่งก่อน capture
 
                         const pages = Array.from(container.querySelectorAll('.pdf-page'));
                         const { jsPDF } = window.jspdf;
@@ -7129,13 +7477,14 @@
                         const now = new Date();
                         const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
                         const userSlug = (generatedBy || 'user').replace(/\\s+/g, '');
-                        const name = `SiHealthpolicy_overview_${userSlug}_${stamp}.pdf`;
+                        const name = `SiHealthpolicy_dashboard_${userSlug}_${stamp}.pdf`;
                         const blobUrl = pdf.output('bloburl');
                         window.open(blobUrl, '_blank');
                     } catch (err) {
                         console.error('PDF export failed', err);
                         alert('สร้าง PDF ไม่สำเร็จ กรุณาลองอีกครั้ง');
                     } finally {
+                        restoreCharts?.();
                         container.classList.add('hidden');
                         container.innerHTML = '';
                         overlay?.classList.add('hidden');
@@ -8640,32 +8989,51 @@
 
                 function renderRedZoneAndOverdueFiltered(rows) {
                     const now = new Date();
-                    const overdueProjects = [];
-                    const dueSoon = { '3': 0, '6': 0, '9': 0 };
-
-                    rows.forEach((project) => {
-                        const info = getRedZoneInfo(project, now);
-                        if (!info) return;
-                        if (info.bucket === 'เกินกำหนด') {
-                            overdueProjects.push(info);
-                        } else if (info.bucket === '3 เดือน') {
-                            dueSoon['3'] += 1;
-                        } else if (info.bucket === '6 เดือน') {
-                            dueSoon['6'] += 1;
-                        } else if (info.bucket === '9 เดือน') {
-                            dueSoon['9'] += 1;
-                        }
-                    });
-
+                    const overdueProjects = buildOverdueRecords(rows, now);
+                    const activeOverdueProjects = overdueProjects.filter(record =>
+                        record.sourceCategory === 'open_system_late' || record.sourceCategory === 'open_team_late'
+                    );
+                    const redZoneYears = getRedZoneRecentYears(now);
                     const timelineCanvas = document.getElementById('chartRedZoneTimeline');
                     if (timelineCanvas) {
                         Chart.getChart(timelineCanvas)?.destroy();
-                        const timelineData = [overdueProjects.length, dueSoon['3'], dueSoon['6'], dueSoon['9']];
-                        if (!timelineData.some((value) => Number(value) > 0)) {
+                        const timelineDatasets = [
+                            {
+                                label: 'ครบกำหนดแต่ยังไม่ลงปิดโปรเจคในระบบ',
+                                redzoneSourceCategory: 'open_system_late',
+                                data: redZoneYears.map((year) => overdueProjects.filter((record) =>
+                                    record.contractEndYearCE === year &&
+                                    record.sourceCategory === 'open_system_late'
+                                ).length),
+                                backgroundColor: '#dc2626',
+                            },
+                            {
+                                label: 'ทำงานเกินสัญญาและยังไม่ปิดโปรเจค',
+                                redzoneSourceCategory: 'open_team_late',
+                                data: redZoneYears.map((year) => overdueProjects.filter((record) =>
+                                    record.contractEndYearCE === year &&
+                                    record.sourceCategory === 'open_team_late'
+                                ).length),
+                                backgroundColor: '#d97706',
+                            },
+                            {
+                                label: 'ทำงานเกินสัญญาแต่ปิดโปรเจคแล้ว',
+                                redzoneSourceCategory: 'closed_late',
+                                data: redZoneYears.map((year) => overdueProjects.filter((record) =>
+                                    record.contractEndYearCE === year &&
+                                    record.sourceCategory === 'closed_late'
+                                ).length),
+                                backgroundColor: '#7c3aed',
+                            }
+                        ];
+                        const hasTimelineData = timelineDatasets.some((dataset) =>
+                            Array.isArray(dataset.data) && dataset.data.some((value) => Number(value) > 0)
+                        );
+                        if (!hasTimelineData) {
                             drawEmptyChart(timelineCanvas);
                         } else {
                         const barValuePlugin = {
-                            id: 'barValueRedZoneFiltered',
+                            id: 'barValueRedZoneStackedFiltered',
                             afterDatasetsDraw(chart) {
                                 const {
                                     ctx,
@@ -8674,43 +9042,40 @@
                                         right
                                     }
                                 } = chart;
-                                const meta = chart.getDatasetMeta(0);
-                                const ds = chart.data.datasets[0];
-                                if (!meta || !ds) return;
                                 ctx.save();
                                 ctx.font = 'bold 11px sans-serif';
                                 ctx.fillStyle = '#111827';
                                 ctx.textAlign = 'center';
                                 ctx.textBaseline = 'bottom';
-                                meta.data.forEach((bar, i) => {
-                                    const v = Number(ds.data[i] || 0);
-                                    if (!isFinite(v) || v <= 0) return;
-                                    let x = bar.x;
-                                    let y = bar.y - 4;
-                                    if (y < top + 8) y = top + 8;
-                                    if (x > right - 2) x = right - 2;
-                                    ctx.fillText(String(v), x, y);
+
+                                chart.data.datasets.forEach((ds, dsIndex) => {
+                                    if (!chart.isDatasetVisible(dsIndex)) return;
+                                    chart.getDatasetMeta(dsIndex)?.data?.forEach((bar, i) => {
+                                        const value = Number(ds.data?.[i] || 0);
+                                        if (!bar || !isFinite(value) || value <= 0) return;
+                                        let { x, y } = bar.tooltipPosition();
+                                        y -= 4;
+                                        if (y < top + 8) y = top + 8;
+                                        if (x > right - 2) x = right - 2;
+                                        ctx.fillText(String(value), x, y);
+                                    });
                                 });
+
                                 ctx.restore();
                             }
                         };
                         new Chart(timelineCanvas, {
                             type: 'bar',
                             data: {
-                                labels: ['เกินกำหนด', '3 เดือน', '6 เดือน', '9 เดือน'],
-                                datasets: [{
-                                    label: 'จำนวนโครงการ',
-                                    data: timelineData,
-                                    backgroundColor: ['#b91c1c', '#d97706', '#f59e0b', '#fcd34d']
-                                }]
+                                labels: redZoneYears.map(year => yearLabelTH(year)),
+                                datasets: timelineDatasets
                             },
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                onClick: (evt, _elements, chart) => handleChartClick(evt?.native || evt, chart),
                                 plugins: {
                                     legend: {
-                                        display: false
+                                        position: 'bottom'
                                     }
                                 },
                                 scales: {
@@ -8729,91 +9094,22 @@
 
                     const overdueCanvas = document.getElementById('chartOverdueProjects');
                     if (overdueCanvas) {
-                    const projectsWithEndDate = rows.filter((project) => getRedZoneInfo(project, now));
-                        const totalProjects = projectsWithEndDate.length;
+                        const overviewGroups = buildOverdueOverviewSummary(rows, now);
+                        const chartGroups = overviewGroups.filter((group) => group.count > 0);
+                        const totalProjects = chartGroups.reduce((sum, group) => sum + group.count, 0);
                         Chart.getChart(overdueCanvas)?.destroy();
                         if (!totalProjects) {
                             drawEmptyChart(overdueCanvas);
                         } else {
-                        const overdueCalloutPlugin = {
-                            id: 'doughnutCalloutOverdueFiltered',
-                            afterDatasetsDraw(chart) {
-                                const {
-                                    ctx,
-                                    chartArea: {
-                                        left,
-                                        right,
-                                        top,
-                                        bottom
-                                    }
-                                } = chart;
-                                const meta = chart.getDatasetMeta(0);
-                                const ds = chart.data.datasets?.[0];
-                                if (!meta || !ds) return;
-
-                                const total = (Array.isArray(ds.data) ? ds.data : [])
-                                    .reduce((sum, v) => sum + (Number(v) || 0), 0) || 1;
-
-                                ctx.save();
-                                ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
-                                ctx.textBaseline = 'middle';
-                                ctx.lineWidth = 1.2;
-
-                                meta.data.forEach((arc, i) => {
-                                    const v = Number(ds.data[i] || 0);
-                                    if (!isFinite(v) || v <= 0) return;
-
-                                    const angle = (arc.startAngle + arc.endAngle) / 2;
-                                    const cos = Math.cos(angle);
-                                    const sin = Math.sin(angle);
-
-                                    const sx = arc.x + cos * (arc.outerRadius - 1);
-                                    const sy = arc.y + sin * (arc.outerRadius - 1);
-                                    const mx = arc.x + cos * (arc.outerRadius + 12);
-                                    let my = arc.y + sin * (arc.outerRadius + 12);
-
-                                    const pct = ((v / total) * 100).toFixed(1);
-                                    const label = `${v} โครงการ (${pct}%)`;
-                                    const textWidth = ctx.measureText(label).width;
-                                    let tx = mx + (cos >= 0 ? 16 : -16);
-
-                                    if (cos >= 0) {
-                                        const maxX = right - textWidth - 4;
-                                        if (tx > maxX) tx = maxX;
-                                        if (tx < left + 4) tx = left + 4;
-                                        ctx.textAlign = 'left';
-                                    } else {
-                                        const minX = left + textWidth + 4;
-                                        if (tx < minX) tx = minX;
-                                        if (tx > right - 4) tx = right - 4;
-                                        ctx.textAlign = 'right';
-                                    }
-
-                                    if (my < top + 10) my = top + 10;
-                                    if (my > bottom - 10) my = bottom - 10;
-
-                                    const segColor = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : '#64748b';
-                                    ctx.strokeStyle = segColor || '#64748b';
-                                    ctx.fillStyle = '#0f172a';
-
-                                    ctx.beginPath();
-                                    ctx.moveTo(sx, sy);
-                                    ctx.lineTo(mx, my);
-                                    ctx.lineTo(tx + (cos >= 0 ? -4 : 4), my);
-                                    ctx.stroke();
-
-                                    ctx.fillText(label, tx, my);
-                                });
-                                ctx.restore();
-                            }
-                        };
+                        overdueCanvas.$overdueOverviewKeys = chartGroups.map((group) => group.key);
+                        const overdueCalloutPlugin = createDoughnutCalloutPlugin('doughnutCalloutOverdueFiltered');
                         new Chart(overdueCanvas, {
                             type: 'doughnut',
                             data: {
-                                labels: ['เกินกำหนดส่งแล้ว', 'โครงการที่ยังดำเนินการ'],
+                                labels: chartGroups.map((group) => group.label),
                                 datasets: [{
-                                    data: totalProjects ? [overdueProjects.length, Math.max(totalProjects - overdueProjects.length, 0)] : [1],
-                                    backgroundColor: totalProjects ? ['#ef4444', '#38bdf8'] : ['#e5e7eb'],
+                                    data: chartGroups.map((group) => group.count),
+                                    backgroundColor: chartGroups.map((group) => group.color),
                                     borderColor: '#ffffff',
                                     borderWidth: 2
                                 }]
@@ -8822,13 +9118,12 @@
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 cutout: '64%',
-                                onClick: (evt, _elements, chart) => handleChartClick(evt?.native || evt, chart),
                                 layout: {
                                     padding: {
-                                        left: 26,
-                                        right: 26,
-                                        top: 14,
-                                        bottom: 14
+                                        left: 36,
+                                        right: 36,
+                                        top: 36,
+                                        bottom: 28
                                     }
                                 },
                                 plugins: {
@@ -8848,14 +9143,17 @@
                     }
 
                     const overdueBadge = document.getElementById('overdueCountBadge');
-                    if (overdueBadge) overdueBadge.textContent = `${overdueProjects.length} โครงการ`;
+                    if (overdueBadge) overdueBadge.textContent = `${activeOverdueProjects.length} โครงการ`;
                     const overdueDrawerCard = document.querySelector('[data-lux-drawer="overdue"]');
                     if (overdueDrawerCard) {
-                        overdueDrawerCard.classList.toggle('hidden', overdueProjects.length === 0);
+                        overdueDrawerCard.classList.toggle('hidden', activeOverdueProjects.length === 0);
                     }
 
                     const state = window.filteredOverdueTableState || { page: 1, pageSize: 10, bound: false };
-                    state.rows = overdueProjects.slice().sort((a, b) => a.endDate - b.endDate);
+                    state.rows = activeOverdueProjects.slice().sort((a, b) => {
+                        if (b.overdueDays !== a.overdueDays) return b.overdueDays - a.overdueDays;
+                        return a.contractEndDate - b.contractEndDate;
+                    });
                     window.filteredOverdueTableState = state;
 
                     const tbody = document.getElementById('overdueTableBody');
@@ -8872,18 +9170,22 @@
 
                         tbody.innerHTML = '';
                         if (!pageRows.length) {
-                            tbody.innerHTML = `<tr class="border-t"><td colspan="4" class="p-3 text-center text-gray-500">ไม่มีโครงการที่เกินกำหนดส่ง</td></tr>`;
+                            tbody.innerHTML = `<tr class="border-t"><td colspan="6" class="p-3 text-center text-gray-500">ไม่มีโครงการที่เกินกำหนด</td></tr>`;
                         } else {
                             pageRows.forEach((item) => {
-                                const overdueDays = Math.ceil(Math.abs(item.diffDays));
                                 const row = document.createElement('tr');
                                 row.className = 'border-t';
                                 row.innerHTML = `
                                     <td class="p-2 text-left text-blue-700 hover:underline" data-label="โครงการ">
                                         <a href="/rm/projects/${item.project.id}" target="_blank" rel="noopener">${escapeHtml(item.project.project_name_th || '-')}</a>
+                                        <div class="mt-1 text-[11px] font-normal text-slate-500">${escapeHtml(overdueSourceLabel(item))}</div>
                                     </td>
-                                    <td class="p-2 text-center" data-label="วันครบกำหนดส่ง">${escapeHtml(formatDateTH(item.endDate, item.project.end_date || '-'))}</td>
-                                    <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนดส่ง (วัน)">${overdueDays}</td>
+                                    <td class="p-2 text-center" data-label="วันที่สิ้นสุดสัญญา (พ.ศ.)">${escapeHtml(overdueRecordEndDateLabel(item))}</td>
+                                    <td class="p-2 text-center" data-label="วันที่สิ้นสุดการทำงานทีม">${escapeHtml(overdueRecordTeamEndDateLabel(item))}</td>
+                                    <td class="p-2 text-center text-red-600 font-semibold" data-label="เกินกำหนด (วัน)">
+                                        <div>${item.overdueDays}</div>
+                                    </td>
+                                    <td class="p-2 text-center" data-label="สถานะโครงการ">${escapeHtml(item.statusLabel || '-')}</td>
                                     <td class="p-2 text-center" data-label="PI">${escapeHtml(item.project.pi_name || '-')}</td>
                                 `;
                                 tbody.appendChild(row);

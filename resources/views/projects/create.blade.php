@@ -22,7 +22,7 @@
         'นักประชาสัมพันธ์',
         'เจ้าหน้าที่บริหารงานทั่วไป',
     ];
-    $taskDetails = [
+        $taskDetails = [
         'ติดต่อประสานงาน',
         'ประชุมผู้มีส่วนได้ส่วนเสีย (Stakeholder meeting)',
         'review literature',
@@ -33,6 +33,7 @@
         'อบรมพัฒนาศักยภาพ',
         'เก็บข้อมูล',
         'วิเคราะห์ข้อมูล',
+        'จัดทำรายงานความก้าวหน้า',
         'ยืนขอขยายระยะเวลาโครงการ',
         'เขียนเล่มรายงาน',
         'ส่งเล่มรายงาน เเละ แก้ไขตามข้อเสนอเเนะจากผู้ให้ทุน',
@@ -46,7 +47,7 @@
         'จัดทำสื่อ / Communication Assets',
         'สร้างโปรเเกรม ฐานข้อมูล เเละ โปรเเกรมที่เกี่ยวข้องกับงานวิจัย',
         'IT and Technical support',
-         'ที่ปรึกษาโครงการ',
+        'ที่ปรึกษาโครงการ',
         'เบิกงบประมาณทุน'
     ];
 @endphp
@@ -887,8 +888,8 @@
                                     </label>
                                 </div>
 
-                                {{-- JOB + DATES --}}
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {{-- JOB + TASK + DATES --}}
+                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
 
                                     <label>
                                         <span class="block text-sm font-semibold mb-1">
@@ -899,6 +900,18 @@
                                             <option value="">เลือกภาระงาน</option>
                                             @foreach ($jobDetails as $job)
                                                 <option value="{{ $job }}">{{ $job }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+
+                                    <label>
+                                        <span class="block text-sm font-semibold mb-1">
+                                            รายละเอียดงาน <span class="text-red-500">*</span>
+                                        </span>
+                                        <select name="fte_roles[0][task_detail]" class="w-full border p-2 rounded" required>
+                                            <option value="">เลือกรายละเอียดงาน</option>
+                                            @foreach ($taskDetails as $taskDetail)
+                                                <option value="{{ $taskDetail }}">{{ $taskDetail }}</option>
                                             @endforeach
                                         </select>
                                     </label>
@@ -961,19 +974,6 @@
                                         class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0" required
                                         oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
                                         oninput="this.setCustomValidity('')">
-                                </label>
-
-                                {{-- TASK DETAIL --}}
-                                <label>
-                                    <span class="block text-sm font-semibold mb-1">
-                                        รายละเอียดภารกิจ <span class="text-red-500">*</span>
-                                    </span>
-                                    <select name="fte_roles[0][task_detail]" class="w-full border p-2 rounded" required>
-                                        <option value="">เลือกภารกิจ</option>
-                                        @foreach ($taskDetails as $taskDetail)
-                                            <option value="{{ $taskDetail }}">{{ $taskDetail }}</option>
-                                        @endforeach
-                                    </select>
                                 </label>
                             </div>
 
@@ -1052,7 +1052,7 @@
                                     </label>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                                     <label>
                                         <span class="block text-sm font-semibold mb-1">
                                             ภาระงาน <span class="text-red-500">*</span>
@@ -1062,6 +1062,19 @@
                                             <option value="">เลือกภาระงาน</option>
                                             @foreach ($jobDetails as $job)
                                                 <option value="{{ $job }}">{{ $job }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+
+                                    <label>
+                                        <span class="block text-sm font-semibold mb-1">
+                                            รายละเอียดงาน <span class="text-red-500">*</span>
+                                        </span>
+                                        <select name="fte_roles[__i__][task_detail]" class="w-full border p-2 rounded"
+                                            required>
+                                            <option value="">เลือกรายละเอียดงาน</option>
+                                            @foreach ($taskDetails as $taskDetail)
+                                                <option value="{{ $taskDetail }}">{{ $taskDetail }}</option>
                                             @endforeach
                                         </select>
                                     </label>
@@ -1123,19 +1136,6 @@
                                         class="fte-hours w-full border p-2 rounded text-right" required
                                         oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
                                         oninput="this.setCustomValidity('')">
-                                </label>
-
-                                <label>
-                                    <span class="block text-sm font-semibold mb-1">
-                                        รายละเอียดภารกิจ <span class="text-red-500">*</span>
-                                    </span>
-                                    <select name="fte_roles[__i__][task_detail]" class="w-full border p-2 rounded"
-                                        required>
-                                        <option value="">เลือกภารกิจ</option>
-                                        @foreach ($taskDetails as $taskDetail)
-                                            <option value="{{ $taskDetail }}">{{ $taskDetail }}</option>
-                                        @endforeach
-                                    </select>
                                 </label>
                             </div>
 
@@ -1776,6 +1776,30 @@
 
             match = value.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{4})$/);
             if (match) {
+                const [, day, monthText, yearRaw] = match;
+                const thaiMonths = {
+                    มกราคม: 0,
+                    กุมภาพันธ์: 1,
+                    มีนาคม: 2,
+                    เมษายน: 3,
+                    พฤษภาคม: 4,
+                    มิถุนายน: 5,
+                    กรกฎาคม: 6,
+                    สิงหาคม: 7,
+                    กันยายน: 8,
+                    ตุลาคม: 9,
+                    พฤศจิกายน: 10,
+                    ธันวาคม: 11,
+                };
+                const monthIndex = thaiMonths[monthText];
+                const rawYear = Number(yearRaw);
+                const year = rawYear > 2400 ? rawYear - 543 : rawYear;
+
+                if (Number.isInteger(monthIndex) && Number.isFinite(year)) {
+                    const date = new Date(year, monthIndex, Number(day));
+                    return Number.isNaN(date.getTime()) ? null : date;
+                }
+
                 const parsed = new Date(value);
                 return Number.isNaN(parsed.getTime()) ? null : parsed;
             }
@@ -1975,6 +1999,9 @@
                     if (el.type === 'checkbox') data[el.name] = el.checked;
                     else if (el.type === 'radio') {
                         if (el.checked) data[el.name] = el.value;
+                    } else if (el.classList?.contains('fte-shared-datepicker')) {
+                        const parsed = parseLocalDateInput(el.dataset.isoValue || el.value);
+                        data[el.name] = parsed ? toDmyCE(parsed) : '';
                     } else data[el.name] = el.value;
                 });
                 return data;
@@ -2132,6 +2159,11 @@
                                 el._flatpickr.setDate(val, false);
                             }
                         }
+                    } else if (el.classList?.contains('fte-shared-datepicker')) {
+                        const parsed = parseLocalDateValue(value);
+                        const normalized = parsed ? `${String(parsed.getDate()).padStart(2, '0')}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${parsed.getFullYear()}` : String(value ?? '').trim();
+                        el.dataset.isoValue = normalized;
+                        el.value = normalized;
                     } else {
                         el.value = value;
                     }
@@ -2209,6 +2241,8 @@
                 ensureOutputSections(data);
                 applyForm(data);
                 hydrateSharedFteDateInputs();
+                window.reindexFTE?.();
+                window.refreshFteUx?.();
             };
 
 

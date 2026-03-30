@@ -1711,12 +1711,13 @@
         }
 
         .fte-table-grid td:nth-child(3) select,
-        .fte-table-grid td:nth-child(4) select {
+        .fte-table-grid td:nth-child(4) select,
+        .fte-table-grid td:nth-child(5) select {
             font-size: 0.84rem;
         }
 
-        .fte-table-grid td:nth-child(5) input,
-        .fte-table-grid td:nth-child(6) input {
+        .fte-table-grid td:nth-child(6) input,
+        .fte-table-grid td:nth-child(7) input {
             font-size: 0.86rem;
             padding-left: 0.35rem;
             padding-right: 0.35rem;
@@ -3614,18 +3615,18 @@
                     <col style="width:15%">
                     <col style="width:12%">
                     <col style="width:12%">
-                    <col style="width:10%">
-                    <col style="width:10%">
-                    <col style="width:6%">
                     <col style="width:12%">
-                    <col style="width:7%">
+                    <col style="width:10%">
+                    <col style="width:10%">
                     <col style="width:6%">
+                    <col style="width:7%">
+                    <col style="width:8%">
                     <col style="width:5%">
                 </colgroup>
                 <thead>
                     <tr>
-                        <th>ลำดับ</th><th>ชื่อ</th><th>กลุ่ม</th><th>ภาระงาน</th><th>เริ่ม</th><th>สิ้นสุด</th>
-                        <th>ชั่วโมง</th><th>รายละเอียด</th><th>FTE Auto</th><th>FTE หัวหน้า</th><th>ลบ</th>
+                        <th>ลำดับ</th><th>ชื่อ</th><th>กลุ่ม</th><th>ภาระงาน</th><th>รายละเอียดงาน</th><th>เริ่ม</th><th>สิ้นสุด</th>
+                        <th>ชั่วโมง</th><th>FTE Auto</th><th>FTE หัวหน้า</th><th>ลบ</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -3644,6 +3645,7 @@
                 ['input[name^="fte_roles["][name$="[name]"]'],
                 ['select[name^="fte_roles["][name$="[role_group]"]'],
                 ['select[name^="fte_roles["][name$="[job_detail]"]'],
+                ['select[name^="fte_roles["][name$="[task_detail]"]'],
                 ['input[name^="fte_roles["][name$="[start_date]"]', {
                     isDate: true
                 }],
@@ -3653,7 +3655,6 @@
                 ['input[name^="fte_roles["][name$="[hours]"]', {
                     type: 'number'
                 }],
-                ['select[name^="fte_roles["][name$="[task_detail]"]'],
                 ['input[name^="fte_roles["][name$="[fte_value]"]', {
                     readOnly: true
                 }],
@@ -3672,7 +3673,7 @@
             bindTableProxyEndDateMin(
                 getField(row, 'input[name^="fte_roles["][name$="[start_date]"]'),
                 getField(row, 'input[name^="fte_roles["][name$="[end_date]"]'),
-                tr.querySelector('td:nth-child(6) input')
+                tr.querySelector('td:nth-child(7) input')
             );
 
             const removeTd = document.createElement('td');

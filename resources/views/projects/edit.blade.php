@@ -22,7 +22,7 @@
         'นักประชาสัมพันธ์',
         'เจ้าหน้าที่บริหารงานทั่วไป',
     ];
-    $taskDetails = [
+        $taskDetails = [
         'ติดต่อประสานงาน',
         'ประชุมผู้มีส่วนได้ส่วนเสีย (Stakeholder meeting)',
         'review literature',
@@ -33,6 +33,7 @@
         'อบรมพัฒนาศักยภาพ',
         'เก็บข้อมูล',
         'วิเคราะห์ข้อมูล',
+        'จัดทำรายงานความก้าวหน้า',
         'ยืนขอขยายระยะเวลาโครงการ',
         'เขียนเล่มรายงาน',
         'ส่งเล่มรายงาน เเละ แก้ไขตามข้อเสนอเเนะจากผู้ให้ทุน',
@@ -865,8 +866,8 @@
 
                                     </div>
 
-                                    <!-- ภาระงาน + วันที่ -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <!-- ภาระงาน + รายละเอียดงาน + วันที่ -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
 
                                         <label class="w-full">
                                             <span class="block text-sm font-semibold">ภาระงาน <span class="text-red-500">*</span></span>
@@ -879,6 +880,24 @@
                                                 @foreach ($jobDetails as $job)
                                                     <option value="{{ $job }}" @selected($selectedJobDetail == $job)>
                                                         {{ $job }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+
+                                        <label class="w-full">
+                                            <span class="block text-sm font-semibold">รายละเอียดงาน <span class="text-red-500">*</span></span>
+                                            <select name="fte_roles[{{ $i }}][task_detail]"
+                                                class="w-full border p-2 rounded" required
+                                                oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดงาน')"
+                                                oninput="this.setCustomValidity('')">
+                                                <option value="" disabled @selected(blank($selectedTaskDetail))>เลือกรายละเอียดงาน</option>
+                                                @if (filled($selectedTaskDetail) && ! $hasKnownTaskDetail)
+                                                    <option value="{{ $selectedTaskDetail }}" selected>{{ $selectedTaskDetail }}</option>
+                                                @endif
+                                                @foreach ($taskDetails as $taskDetail)
+                                                    <option value="{{ $taskDetail }}" @selected($selectedTaskDetail === $taskDetail)>
+                                                        {{ $taskDetail }}
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -926,25 +945,6 @@
                                             class="fte-hours w-full border p-2 rounded text-right" placeholder="0.0" required
                                             oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
                                             oninput="this.setCustomValidity('')">
-                                    </label>
-
-                                    <!-- รายละเอียดภารกิจ -->
-                                    <label class="w-full">
-                                        <span class="block text-sm font-semibold">รายละเอียดภารกิจ <span class="text-red-500">*</span></span>
-                                        <select name="fte_roles[{{ $i }}][task_detail]"
-                                            class="w-full border p-2 rounded" required
-                                            oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
-                                            oninput="this.setCustomValidity('')">
-                                            <option value="" disabled @selected(blank($selectedTaskDetail))>เลือกภารกิจ</option>
-                                            @if (filled($selectedTaskDetail) && ! $hasKnownTaskDetail)
-                                                <option value="{{ $selectedTaskDetail }}" selected>{{ $selectedTaskDetail }}</option>
-                                            @endif
-                                            @foreach ($taskDetails as $taskDetail)
-                                                <option value="{{ $taskDetail }}" @selected($selectedTaskDetail === $taskDetail)>
-                                                    {{ $taskDetail }}
-                                                </option>
-                                            @endforeach
-                                        </select>
                                     </label>
 
                                 </div>
@@ -1855,8 +1855,8 @@
                 </label>
             </div>
 
-            <!-- ภาระงาน + วันที่ -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- ภาระงาน + รายละเอียดงาน + วันที่ -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
 
                 <label class="w-full">
                     <span class="block text-sm font-semibold text-gray-700 mb-1">ภาระงาน <span class="text-red-500">*</span></span>
@@ -1864,6 +1864,17 @@
                         oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
                         oninput="this.setCustomValidity('')">
                         ${FTE_JOB_DROPDOWN}
+                    </select>
+                </label>
+
+                <label class="w-full">
+                    <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดงาน <span class="text-red-500">*</span></span>
+                    <select name="fte_roles[${index}][task_detail]"
+                        class="w-full border p-2 rounded"
+                        required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดงาน')"
+                        oninput="this.setCustomValidity('')">
+                        ${FTE_TASK_DROPDOWN}
                     </select>
                 </label>
 
@@ -1919,18 +1930,6 @@
                     required
                     oninvalid="this.setCustomValidity('กรุณาระบุชั่วโมงการทำงาน')"
                     oninput="this.setCustomValidity('')">
-            </label>
-
-            <!-- รายละเอียดภารกิจ -->
-            <label class="w-full">
-                <span class="block text-sm font-semibold text-gray-700 mb-1">รายละเอียดภารกิจ <span class="text-red-500">*</span></span>
-                <select name="fte_roles[${index}][task_detail]"
-                    class="w-full border p-2 rounded"
-                    required
-                    oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดภารกิจ')"
-                    oninput="this.setCustomValidity('')">
-                    ${FTE_TASK_DROPDOWN}
-                </select>
             </label>
 
         </div>
