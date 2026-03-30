@@ -22,7 +22,7 @@
         'นักประชาสัมพันธ์',
         'เจ้าหน้าที่บริหารงานทั่วไป',
     ];
-        $taskDetails = [
+    $taskDetails = [
         'ติดต่อประสานงาน',
         'ประชุมผู้มีส่วนได้ส่วนเสีย (Stakeholder meeting)',
         'review literature',
@@ -44,11 +44,13 @@
         'เบิกเงินรางวัลตีพิมพ์/ค่าตอบแทนตีพิมพ์',
         'นำเสนอผลงานวิจัย Oral/Poster presentation',
         'ประชาสัมพันธ์',
+        'จัดนิทรรศการแลกเปลี่ยนเรียนรู้ (Knowledge Sharing)',
         'จัดทำสื่อ / Communication Assets',
         'สร้างโปรเเกรม ฐานข้อมูล เเละ โปรเเกรมที่เกี่ยวข้องกับงานวิจัย',
         'IT and Technical support',
         'ที่ปรึกษาโครงการ',
-        'เบิกงบประมาณทุน'
+        'เบิกงบประมาณทุน',
+        'พัฒนา Scientific Concept note',
     ];
     $piAffiliationList = \App\Models\Project::whereNotNull('pi_affiliation')
         ->whereRaw("TRIM(pi_affiliation) <> ''")

@@ -1246,6 +1246,7 @@
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 mt-6">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">✍️ บทบาทผู้เขียน (First/Co/Corresponding) รายปี</h3>
                     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-3">
                         <div class="flex items-center gap-2">
                             <label class="text-xs text-gray-500">ปี (พ.ศ.):
@@ -1788,6 +1789,20 @@
                 return [p?.planning_status, p?.closure_status, p?.execution_status]
                     .map(v => String(v || '').trim())
                     .find(v => v) || 'ไม่ระบุ';
+            }
+
+            function getStatusYearChartLabel(p) {
+                const statuses = [
+                    'Project Planing (เริ่มต้น - submit IRB)',
+                    'เก็บข้อมูล',
+                    'วิเคราะห์ข้อมูล',
+                    'เขียนรายงานและpublication',
+                    'ปิดโปรเจค',
+                    'ยกเลิกโปรเจค',
+                    'ไม่ระบุสถานะ'
+                ];
+                const rawStatus = String(p?.planning_status || '').trim();
+                return statuses.includes(rawStatus) ? rawStatus : 'ไม่ระบุสถานะ';
             }
 
             function buildOverdueRecord(p, referenceDate = new Date()) {
@@ -3572,7 +3587,7 @@
                 if (id === 'chartStatusYear') {
                     return {
                         title: `สถานะ ${datasetLabel || ''} ปี ${label}`,
-                        projects: projects.filter(p => matchYearLabel(p, label) && (p.planning_status || 'ไม่ระบุ') === datasetLabel)
+                        projects: projects.filter(p => matchYearLabel(p, label) && getStatusYearChartLabel(p) === datasetLabel)
                     };
                 }
 
@@ -4413,8 +4428,7 @@
                 const statusData = {}; // year → status → count
                 projects.forEach(p => {
                     const year = getYear(p);
-                    const rawStatus = p.planning_status || 'ไม่ระบุ';
-                    const status = statuses.includes(rawStatus) ? rawStatus : 'ไม่ระบุสถานะ';
+                    const status = getStatusYearChartLabel(p);
                     if (!statusData[year]) statusData[year] = Object.fromEntries(statuses.map(s => [s, 0]));
                     statusData[year][status]++;
                 });
@@ -8548,8 +8562,7 @@
                     const statusData = {};
                     rows.forEach((project) => {
                         const year = getYearLabel(project);
-                        const rawStatus = project.planning_status || 'ไม่ระบุ';
-                        const status = statuses.includes(rawStatus) ? rawStatus : 'ไม่ระบุสถานะ';
+                        const status = getStatusYearChartLabel(project);
                         statusData[year] = statusData[year] || Object.fromEntries(statuses.map((item) => [item, 0]));
                         statusData[year][status] += 1;
                     });

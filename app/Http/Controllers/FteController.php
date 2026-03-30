@@ -17,10 +17,42 @@ use PDF;
 
 class FteController extends Controller
 {
+private function isFteAdmin(): bool
+{
+    return Auth::user()?->role === 'admin';
+}
+
+private function currentUserFullName(): string
+{
+    $user = Auth::user();
+    return trim(($user?->prefix ?? '') . ' ' . ($user?->name ?? ''));
+}
+
+private function ensureCanViewFtePerson(string $person): void
+{
+    if ($this->isFteAdmin()) {
+        return;
+    }
+
+    abort_unless(trim($person) === $this->currentUserFullName(), 403);
+}
+
+private function ensureCanViewFteProject(Project $project): void
+{
+    if ($this->isFteAdmin()) {
+        return;
+    }
+
+    $fullName = $this->currentUserFullName();
+    $allowed = $project->fteRoles()->where('name', $fullName)->exists();
+
+    abort_unless($allowed, 403);
+}
+
 public function index(Request $request)
 {
     $user = Auth::user();
-    $fullName = trim($user->prefix . ' ' . $user->name);
+    $fullName = $this->currentUserFullName();
 
     $modeInput = trim((string) $request->input('mode', ''));
     $yearInput = $request->input('year');
@@ -30,12 +62,9 @@ public function index(Request $request)
 
     // Project สิทธิ์
     $projectQuery = Project::query();
-    if ($user->role !== 'admin') {
-        $projectQuery->where(function ($q) use ($fullName, $user) {
-            $q->where('user_id', $user->id)
-                ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
-                    $subQ->where('name', $fullName);
-                });
+    if (! $this->isFteAdmin()) {
+        $projectQuery->whereHas('fteRoles', function ($subQ) use ($fullName) {
+            $subQ->where('name', $fullName);
         });
     }
     $projectIds = $projectQuery->pluck('id');
@@ -56,6 +85,10 @@ public function index(Request $request)
         ])
         ->whereIn('project_id', $projectIds);
 
+    if (! $this->isFteAdmin()) {
+        $fteQuery->where('name', $fullName);
+    }
+
     $backOfficeQuery = BackOfficeEntry::query()
         ->select([
             'id',
@@ -68,7 +101,7 @@ public function index(Request $request)
         ])
         ->with(['task:id,title,start_date,end_date,description,created_by']);
 
-    if ($user->role !== 'admin') {
+    if (! $this->isFteAdmin()) {
         $backOfficeQuery->where(function ($q) use ($fullName, $user) {
             $q->where('person_name', $fullName)
                 ->orWhereHas('task', function ($taskQ) use ($user) {
@@ -86,7 +119,7 @@ public function index(Request $request)
         ->pluck('year');
 
     $backOfficeYearsQuery = BackOfficeTask::query();
-    if ($user->role !== 'admin') {
+    if (! $this->isFteAdmin()) {
         $backOfficeYearsQuery->where(function ($q) use ($fullName, $user) {
             $q->where('created_by', $user->id)
                 ->orWhereHas('entries', function ($entryQ) use ($fullName) {
@@ -342,7 +375,7 @@ public function index(Request $request)
 public function projectIndex(Request $request)
 {
     $user = Auth::user();
-    $fullName = trim($user->prefix . ' ' . $user->name);
+    $fullName = $this->currentUserFullName();
 
     $modeInput = trim((string) $request->input('mode', ''));
     $yearInput = $request->input('year');
@@ -351,12 +384,9 @@ public function projectIndex(Request $request)
     $end = $request->input('end');
 
     $projectQuery = Project::query();
-    if ($user->role !== 'admin') {
-        $projectQuery->where(function ($q) use ($fullName, $user) {
-            $q->where('user_id', $user->id)
-                ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
-                    $subQ->where('name', $fullName);
-                });
+    if (! $this->isFteAdmin()) {
+        $projectQuery->whereHas('fteRoles', function ($subQ) use ($fullName) {
+            $subQ->where('name', $fullName);
         });
     }
     $projectList = $projectQuery
@@ -382,8 +412,11 @@ public function projectIndex(Request $request)
     $year = filled($yearInput) ? $yearInput : ($mode === 'year' ? $defaultYearBE : null);
 
     $totalFteMap = [];
-    $allRows = FteRole::whereIn('project_id', $projectIds)
-        ->get(['project_id', 'fte_value', 'start_date', 'end_date', 'hours']);
+    $allRows = FteRole::whereIn('project_id', $projectIds);
+    if (! $this->isFteAdmin()) {
+        $allRows->where('name', $fullName);
+    }
+    $allRows = $allRows->get(['project_id', 'fte_value', 'start_date', 'end_date', 'hours']);
     foreach ($allRows as $row) {
         if (empty($row->start_date) || empty($row->end_date)) {
             continue;
@@ -431,6 +464,10 @@ public function projectIndex(Request $request)
             'hours'
         ])
         ->whereIn('project_id', $projectIds);
+
+    if (! $this->isFteAdmin()) {
+        $fteQuery->where('name', $fullName);
+    }
 
     if ($projectId) {
         $fteQuery->where('project_id', $projectId);
@@ -615,6 +652,7 @@ public function projectIndex(Request $request)
 
 public function detail(Request $request, $person)
 {
+    $this->ensureCanViewFtePerson((string) $person);
     $data = $this->buildFteDetailData($person);
 
     // แบ่งหน้าเดือนละ 10 เดือน (เรียงใหม่ล่าสุดก่อน)
@@ -644,6 +682,7 @@ public function detail(Request $request, $person)
 
     public function projectDetail(Project $project)
     {
+        $this->ensureCanViewFteProject($project);
         $data = $this->buildFteProjectData($project);
 
         // แบ่งหน้าเดือนละ 10 เดือน (ล่าสุดก่อน)
@@ -671,6 +710,7 @@ public function detail(Request $request, $person)
 
 public function projectPdf(Project $project)
 {
+    $this->ensureCanViewFteProject($project);
     $data = $this->buildFteProjectData($project);
     $user = auth()->user();
     $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
@@ -685,6 +725,7 @@ public function projectPdf(Project $project)
 
 public function exportPdf(Request $request, $person)
 {
+    $this->ensureCanViewFtePerson((string) $person);
     $mode = $request->input('mode', 'all');
     $year = $request->input('year');
     $start = $request->input('start');
@@ -933,8 +974,13 @@ private function buildFteDetailData(string $person, array $filter = []): array
 private function buildFteProjectData(Project $project): array
 {
     $fteRoles = FteRole::with('project')
-        ->where('project_id', $project->id)
-        ->get();
+        ->where('project_id', $project->id);
+
+    if (! $this->isFteAdmin()) {
+        $fteRoles->where('name', $this->currentUserFullName());
+    }
+
+    $fteRoles = $fteRoles->get();
 
     $expanded = collect();
 
@@ -1038,6 +1084,8 @@ private function buildFteProjectData(Project $project): array
         if (!$name) {
             return response()->json(['error' => 'Name required'], 400);
         }
+
+        $this->ensureCanViewFtePerson((string) $name);
 
         $query = FteRole::with('project')->where('name', $name);
         $backOfficeQuery = BackOfficeEntry::with('task')->where('person_name', $name);

@@ -954,7 +954,7 @@
                     countEl.textContent = String(visibleCount);
                 }
 
-                if (visibleCount === 0) {
+                if (visibleCount === 0 && pairs.length > 0) {
                     const tr = document.createElement('tr');
                     tr.id = emptyRowId;
                     tr.innerHTML = '<td colspan="4" class="p-8 text-center text-gray-400">ไม่พบข้อมูลตามคำค้นหา</td>';
