@@ -71,6 +71,7 @@ class DashboardController extends Controller
                 'irbs' => fn($query) => $query->select($existingColumns('irbs', [
                     'id', 'project_id', 'code', 'source', 'exp_date',
                 ])),
+                'progressReports',
                 'outputs' => fn($query) => $query
                     ->select($existingColumns('outputs', [
                         'id', 'project_id', 'type', 'title', 'year', 'created_at',
@@ -89,6 +90,7 @@ class DashboardController extends Controller
         $fteRoles        = $projects->flatMap->fteRoles;
         $outputs         = $projects->flatMap->outputs;
         $irbs            = $projects->flatMap->irbs;
+        $progressReports = $projects->flatMap->progressReports;
         $normalizeName = static function (?string $value, bool $squash = false): string {
             $text = mb_strtolower(trim((string) $value), 'UTF-8');
             $text = preg_replace('/\s+/u', ' ', $text) ?: '';
@@ -260,6 +262,25 @@ class DashboardController extends Controller
             ];
         })->values();
 
+        // Keep backward-compatible payloads for the legacy mobile dashboard view.
+        $outputsForJs = $outputs->map(function ($output) use ($projects) {
+            $projectName = $projects->firstWhere('id', $output->project_id)?->project_name_th;
+
+            return [
+                'id' => $output->id,
+                'project_id' => $output->project_id,
+                'project_name' => $projectName,
+                'type' => $output->type,
+                'title' => $output->title,
+                'year' => $output->year,
+                'created_at' => optional($output->created_at)->toDateTimeString(),
+                'authors' => $output->authors->map(fn($author) => [
+                    'name' => $author->name,
+                    'role' => $author->role,
+                ])->values(),
+            ];
+        })->values();
+
         $themes = Project::query()
             ->selectRaw('LOWER(TRIM(theme)) as theme_key, MIN(TRIM(theme)) as theme')
             ->whereNotNull('theme')
@@ -314,7 +335,9 @@ class DashboardController extends Controller
             'coResearches',
             'fteRoles',
             'outputs',
+            'outputsForJs',
             'irbs',
+            'progressReports',
             'fteProfileUrls',
             'themes',
             'typeOptions',
