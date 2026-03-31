@@ -206,7 +206,7 @@
                 <input id="project-mobile-search-input" type="text" name="search"
                     placeholder="ชื่อโครงการ หรือ Project ID (รองรับคำใกล้เคียง)" value="{{ request('search') }}"
                     class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
-                <span class="mt-1 block text-[11px] text-slate-500">ค้นหาทันทีในหน้านี้โดยไม่ reload</span>
+                <span class="mt-1 block text-[11px] text-slate-500">พิมพ์แล้วค้นหาทันทีโดยไม่ reload</span>
             </label>
         </form>
 
@@ -1150,6 +1150,9 @@
                 applyLocalSearchPreview(searchInput.value || '');
                 syncSearchFormState();
                 syncFilterFormsFromSource(filterForm);
+                fetchAndRender(buildUrlFromForms(true), {
+                    updateUrl: true
+                });
             });
             searchInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
@@ -1158,6 +1161,9 @@
                     applyLocalSearchPreview(searchInput.value || '');
                     syncSearchFormState();
                     syncFilterFormsFromSource(filterForm);
+                    fetchAndRender(buildUrlFromForms(true), {
+                        updateUrl: true
+                    });
                 }
             });
             searchInput.addEventListener('compositionstart', () => {
@@ -1169,6 +1175,9 @@
                 applyLocalSearchPreview(searchInput.value || '');
                 syncSearchFormState();
                 syncFilterFormsFromSource(filterForm);
+                fetchAndRender(buildUrlFromForms(true), {
+                    updateUrl: true
+                });
             });
 
             if (drawerSearchInput) {
@@ -1177,6 +1186,9 @@
                     applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
                     applyLocalSearchPreview(drawerSearchInput.value || '');
                     syncFilterFormsFromSource(drawerForm);
+                    fetchAndRender(buildUrlFromForms(true), {
+                        updateUrl: true
+                    });
                 });
                 drawerSearchInput.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter') {
@@ -1184,6 +1196,9 @@
                         applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
                         applyLocalSearchPreview(drawerSearchInput.value || '');
                         syncFilterFormsFromSource(drawerForm);
+                        fetchAndRender(buildUrlFromForms(true), {
+                            updateUrl: true
+                        });
                     }
                 });
                 drawerSearchInput.addEventListener('compositionstart', () => {
@@ -1194,6 +1209,9 @@
                     applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
                     applyLocalSearchPreview(drawerSearchInput.value || '');
                     syncFilterFormsFromSource(drawerForm);
+                    fetchAndRender(buildUrlFromForms(true), {
+                        updateUrl: true
+                    });
                 });
             }
 

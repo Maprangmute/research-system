@@ -1288,6 +1288,7 @@
             let controller = null;
             let requestToken = 0;
             let timer = null;
+            let isSearchComposing = false;
             let drawerOpen = false;
             let previousBodyOverflow = '';
             const baseTableCountText = tableCountEl ? (tableCountEl.childNodes[0]?.textContent || '').trim() : '';
@@ -1563,11 +1564,13 @@
 
                         if (field.matches('input[type="text"], input[type="search"]')) {
                             field.addEventListener('input', () => {
+                                if (isSearchComposing) return;
                                 syncFormsFromSource(targetForm);
                                 updateFilterBadges();
                                 const sourceForm = getPrimaryForm() || targetForm;
                                 const searchField = sourceForm.querySelector('input[name="search"]');
                                 applyLocalSearchPreview(searchField ? searchField.value : '');
+                                fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                             });
                             field.addEventListener('keydown', (event) => {
                                 if (event.key === 'Enter') {
@@ -1576,7 +1579,20 @@
                                     const sourceForm = getPrimaryForm() || targetForm;
                                     const searchField = sourceForm.querySelector('input[name="search"]');
                                     applyLocalSearchPreview(searchField ? searchField.value : '');
+                                    fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                                 }
+                            });
+                            field.addEventListener('compositionstart', () => {
+                                isSearchComposing = true;
+                            });
+                            field.addEventListener('compositionend', () => {
+                                isSearchComposing = false;
+                                syncFormsFromSource(targetForm);
+                                updateFilterBadges();
+                                const sourceForm = getPrimaryForm() || targetForm;
+                                const searchField = sourceForm.querySelector('input[name="search"]');
+                                applyLocalSearchPreview(searchField ? searchField.value : '');
+                                fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                             });
                             field.addEventListener('change', () => {
                                 syncFormsFromSource(targetForm);
@@ -1584,6 +1600,7 @@
                                 const sourceForm = getPrimaryForm() || targetForm;
                                 const searchField = sourceForm.querySelector('input[name="search"]');
                                 applyLocalSearchPreview(searchField ? searchField.value : '');
+                                fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                             });
                             return;
                         }
