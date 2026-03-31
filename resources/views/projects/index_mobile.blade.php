@@ -206,7 +206,7 @@
                 <input id="project-mobile-search-input" type="text" name="search"
                     placeholder="ชื่อโครงการ หรือ Project ID (รองรับคำใกล้เคียง)" value="{{ request('search') }}"
                     class="w-full border border-slate-200 focus:border-indigo-300 focus:ring-indigo-200 focus:ring-2 p-2 rounded-lg">
-                <span class="mt-1 block text-[11px] text-slate-500">ค้นหาแบบ realtime ไม่ต้องกดปุ่ม</span>
+                <span class="mt-1 block text-[11px] text-slate-500">ค้นหาทันทีในหน้านี้โดยไม่ reload</span>
             </label>
         </form>
 
@@ -463,7 +463,8 @@
                         $deleteFormId = "delete-form-{$project->id}";
                         $updated = $project->updated_at ? \Carbon\Carbon::parse($project->updated_at) : null;
                     @endphp
-                    <div class="lux-mobile-card space-y-2">
+                    <div class="lux-mobile-card space-y-2"
+                        data-mobile-search-text="{{ trim(implode(' ', array_filter([$project->project_code, $project->project_name_th, $project->theme, $project->project_type, $project->funding_type, $project->planning_status, $project->start_year]))) }}">
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
                                 <div class="text-xs text-slate-500">{{ $project->project_code }}</div>
@@ -524,6 +525,7 @@
                 @empty
                     <div class="text-center py-10 text-slate-500">ไม่มีข้อมูล</div>
                 @endforelse
+                <div id="project-mobile-empty-search" class="hidden text-center py-10 text-slate-500">ไม่มีข้อมูลตรงกับคำค้นหาในหน้านี้</div>
             </div>
 
             <div id="project-mobile-pagination-wrap" class="py-3">
@@ -750,6 +752,10 @@
             let drawerOpen = false;
             let previousBodyOverflow = '';
             let isSearchComposing = false;
+            const countEl = document.querySelector(countSelector);
+            const paginationWrap = document.querySelector(paginationSelector);
+            const emptySearchEl = document.getElementById('project-mobile-empty-search');
+            const baseMobileCountText = countEl ? countEl.textContent.trim() : '';
 
             const currentUrl = new URL(window.location.href);
             const forcedView = currentUrl.searchParams.get('view');
@@ -801,12 +807,26 @@
                 if (!cards.length) return;
 
                 const term = normalizeSearchTerm(rawValue);
+                let visibleCount = 0;
                 cards.forEach((card) => {
                     const haystack = card.dataset.mobileSearchText || normalizeSearchTerm(card.textContent);
                     card.dataset.mobileSearchText = haystack;
                     const matched = term === '' || haystack.includes(term);
                     card.classList.toggle('hidden', !matched);
+                    if (matched) visibleCount += 1;
                 });
+
+                if (emptySearchEl) {
+                    emptySearchEl.classList.toggle('hidden', !(term !== '' && visibleCount === 0));
+                }
+
+                if (paginationWrap) {
+                    paginationWrap.classList.toggle('hidden', term !== '');
+                }
+
+                if (countEl) {
+                    countEl.textContent = term === '' ? baseMobileCountText : `พบ ${visibleCount} รายการในหน้านี้`;
+                }
             };
 
             const countActiveFilters = () => {
@@ -1130,9 +1150,6 @@
                 applyLocalSearchPreview(searchInput.value || '');
                 syncSearchFormState();
                 syncFilterFormsFromSource(filterForm);
-                fetchDebounced(320, true, {
-                    silent: true
-                });
             });
             searchInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
@@ -1141,7 +1158,6 @@
                     applyLocalSearchPreview(searchInput.value || '');
                     syncSearchFormState();
                     syncFilterFormsFromSource(filterForm);
-                    fetchDebounced(0, true);
                 }
             });
             searchInput.addEventListener('compositionstart', () => {
@@ -1153,9 +1169,6 @@
                 applyLocalSearchPreview(searchInput.value || '');
                 syncSearchFormState();
                 syncFilterFormsFromSource(filterForm);
-                fetchDebounced(320, true, {
-                    silent: true
-                });
             });
 
             if (drawerSearchInput) {
@@ -1164,9 +1177,6 @@
                     applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
                     applyLocalSearchPreview(drawerSearchInput.value || '');
                     syncFilterFormsFromSource(drawerForm);
-                    fetchDebounced(320, true, {
-                        silent: true
-                    });
                 });
                 drawerSearchInput.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter') {
@@ -1174,7 +1184,6 @@
                         applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
                         applyLocalSearchPreview(drawerSearchInput.value || '');
                         syncFilterFormsFromSource(drawerForm);
-                        fetchDebounced(0, true);
                     }
                 });
                 drawerSearchInput.addEventListener('compositionstart', () => {
@@ -1185,9 +1194,6 @@
                     applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
                     applyLocalSearchPreview(drawerSearchInput.value || '');
                     syncFilterFormsFromSource(drawerForm);
-                    fetchDebounced(320, true, {
-                        silent: true
-                    });
                 });
             }
 

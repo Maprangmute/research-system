@@ -94,25 +94,11 @@
                         @if ($output->type)
                             <div class="mt-1 text-slate-500">ประเภท: {{ $output->type }}</div>
                         @endif
-                        <div class="mt-1 text-slate-600">
-                            วันที่จัดส่ง: {{ $output->delivered_at ? $formatDateBE($output->delivered_at) : '-' }}
-                        </div>
                         @if ($output->year)
                             <div class="mt-1 text-slate-600">วันที่เผยแพร่: {{ $output->year }}</div>
                         @endif
                         @if ($output->project_output)
                             <div class="mt-1 text-slate-600">รายละเอียด/ลิงก์: {{ $output->project_output }}</div>
-                        @endif
-                        @if ($output->description)
-                            <div class="mt-1 text-slate-600">รายละเอียดเพิ่มเติม: {{ $output->description }}</div>
-                        @endif
-                        @if ($output->document_link)
-                            <div class="mt-1 text-slate-600">
-                                ลิงก์เอกสาร:
-                                <a href="{{ $output->document_link }}" class="text-sky-700 underline" target="_blank" rel="noopener">
-                                    {{ $output->document_link }}
-                                </a>
-                            </div>
                         @endif
 
                         @php
@@ -171,6 +157,9 @@
                         <div class="text-sm text-slate-500">ผู้รับผิดชอบ</div>
                         <div class="text-lg font-semibold text-slate-900">{{ $entry->person_name }}</div>
                         <div class="text-sm text-slate-500">ประเภท: {{ $entry->category }}</div>
+                        @if ($entry->job_name)
+                            <div class="text-sm text-slate-500">ชื่อภาระงาน: {{ $entry->job_name }}</div>
+                        @endif
                     </div>
                     <div class="grid grid-cols-2 gap-3 text-sm">
                         <div class="rounded-xl bg-slate-50 p-3 text-center">
@@ -186,20 +175,16 @@
 
                 <div class="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
                     <div>
+                        @if ($entry->job_name)
+                            <div class="mb-3">
+                                <div class="text-xs font-semibold text-slate-500">ชื่อภาระงาน</div>
+                                <div class="mt-1 whitespace-pre-wrap text-slate-800">{{ $entry->job_name }}</div>
+                            </div>
+                        @endif
                         <div class="text-xs font-semibold text-slate-500">รายละเอียดงาน</div>
                         <div class="mt-1 whitespace-pre-wrap text-slate-800">{{ $entry->job_detail }}</div>
                     </div>
                     <div class="space-y-2">
-                        <div>
-                            <div class="text-xs font-semibold text-slate-500">ลิงก์เอกสาร</div>
-                            @if ($entry->document_link)
-                                <a href="{{ $entry->document_link }}" class="mt-1 inline-block text-sky-700 underline" target="_blank" rel="noopener">
-                                    {{ $entry->document_link }}
-                                </a>
-                            @else
-                                <div class="mt-1 text-slate-400">-</div>
-                            @endif
-                        </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <div class="text-xs font-semibold text-slate-500">วันที่เริ่ม</div>
@@ -213,38 +198,6 @@
                     </div>
                 </div>
 
-                @if ($entry->outputs->count())
-                    <div class="mt-4 border-t border-slate-100 pt-3 text-sm">
-                        <div class="text-xs font-semibold text-slate-500">ผลงานของภาระงาน</div>
-                        <div class="mt-2 space-y-2">
-                            @foreach ($entry->outputs as $output)
-                                <div class="rounded-xl bg-slate-50 p-3">
-                                    <div class="font-semibold text-slate-800">{{ $output->title }}</div>
-                                    <div class="mt-1 text-slate-600">
-                                        วันที่จัดส่ง: {{ $output->delivered_at ? $formatDateBE($output->delivered_at) : '-' }}
-                                    </div>
-                                    @if ($output->year)
-                                        <div class="mt-1 text-slate-600">วันที่เผยแพร่: {{ $output->year }}</div>
-                                    @endif
-                                    @if ($output->project_output)
-                                        <div class="mt-1 text-slate-600">รายละเอียด/ลิงก์: {{ $output->project_output }}</div>
-                                    @endif
-                                    @if ($output->description)
-                                        <div class="mt-1 text-slate-600">รายละเอียดเพิ่มเติม: {{ $output->description }}</div>
-                                    @endif
-                                    @if ($output->document_link)
-                                        <div class="mt-1 text-slate-600">
-                                            ลิงก์เอกสาร:
-                                            <a href="{{ $output->document_link }}" class="text-sky-700 underline" target="_blank" rel="noopener">
-                                                {{ $output->document_link }}
-                                            </a>
-                                        </div>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
             </article>
         @empty
             <div class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-400">

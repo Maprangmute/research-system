@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BackOfficeEntryOutput;
 use App\Models\BackOfficeTaskOutput;
 use App\Models\Output;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -93,32 +92,10 @@ class OutputController extends Controller
                 });
             });
 
-        $entryOutputQuery = BackOfficeEntryOutput::query()
-            ->with(['entry:id,task_id,job_detail,person_name', 'entry.task:id,title,created_by'])
-            ->when(!$canViewAll, function ($q) use ($user, $fullName) {
-                $q->whereHas('entry.task', function ($taskQ) use ($user, $fullName) {
-                    $taskQ->where('created_by', $user->id)
-                        ->orWhereHas('entries', function ($entryQ) use ($fullName) {
-                            $entryQ->where('person_name', $fullName);
-                        });
-                });
-            });
-
         if ($request->filled('search')) {
             $taskOutputQuery->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
-                    ->orWhere('description', 'like', '%' . $request->search . '%')
                     ->orWhereHas('task', function ($taskQ) use ($request) {
-                        $taskQ->where('title', 'like', '%' . $request->search . '%');
-                    });
-            });
-            $entryOutputQuery->where(function ($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->search . '%')
-                    ->orWhere('description', 'like', '%' . $request->search . '%')
-                    ->orWhereHas('entry', function ($entryQ) use ($request) {
-                        $entryQ->where('job_detail', 'like', '%' . $request->search . '%');
-                    })
-                    ->orWhereHas('entry.task', function ($taskQ) use ($request) {
                         $taskQ->where('title', 'like', '%' . $request->search . '%');
                     });
             });
@@ -127,38 +104,25 @@ class OutputController extends Controller
         if ($request->filled('type')) {
             $type = $request->type;
             if ($type === 'งานนอกโครงการ') {
-                $entryOutputQuery = null;
-            } elseif ($type === 'ผลงานภาระงาน') {
-                $taskOutputQuery = null;
             } else {
                 $taskOutputQuery = null;
-                $entryOutputQuery = null;
             }
         }
 
         if ($request->filled('project_id')) {
             $taskOutputQuery = null;
-            $entryOutputQuery = null;
         }
 
         $taskOutputs = $taskOutputQuery ? $taskOutputQuery->get() : collect();
-        $entryOutputs = $entryOutputQuery ? $entryOutputQuery->get() : collect();
 
-        $taskOutputYears = $taskOutputs->pluck('delivered_at')
+        $taskOutputYears = $taskOutputs->pluck('year')
             ->map(fn($raw) => $parseYear((string) $raw))
             ->filter()
             ->unique();
-        $entryOutputYears = $entryOutputs->pluck('delivered_at')
-            ->map(fn($raw) => $parseYear((string) $raw))
-            ->filter()
-            ->unique();
-        $yearOptions = $yearOptions->merge($taskOutputYears)->merge($entryOutputYears)->unique()->sortDesc()->values();
+        $yearOptions = $yearOptions->merge($taskOutputYears)->unique()->sortDesc()->values();
 
         if ($taskOutputs->isNotEmpty()) {
             $typeOptions = $typeOptions->push('งานนอกโครงการ');
-        }
-        if ($entryOutputs->isNotEmpty()) {
-            $typeOptions = $typeOptions->push('ผลงานภาระงาน');
         }
 
         $normalizeYear = function ($raw) use ($parseYear) {
@@ -190,7 +154,7 @@ class OutputController extends Controller
         }
 
         foreach ($taskOutputs as $output) {
-            $yearBe = $normalizeYear($output->delivered_at ?? '');
+            $yearBe = $normalizeYear($output->year ?? '');
             if ($yearFilterBe && $yearBe !== $yearFilterBe) {
                 continue;
             }
@@ -205,25 +169,6 @@ class OutputController extends Controller
                 'sort_year' => $yearBe ?? 0,
                 'sort_title' => mb_strtolower($output->title ?? ''),
                 'sort_type' => 'งานนอกโครงการ',
-            ]);
-        }
-
-        foreach ($entryOutputs as $output) {
-            $yearBe = $normalizeYear($output->delivered_at ?? '');
-            if ($yearFilterBe && $yearBe !== $yearFilterBe) {
-                continue;
-            }
-            $items->push((object) [
-                'title' => $output->title ?: '-',
-                'type' => 'ผลงานภาระงาน',
-                'year_be' => $yearBe,
-                'project_label' => $output->entry?->task?->title,
-                'detail' => $output->entry?->job_detail,
-                'link' => $output->entry?->task ? route('back_office.show', $output->entry->task->id) : null,
-                'created_at' => $output->created_at,
-                'sort_year' => $yearBe ?? 0,
-                'sort_title' => mb_strtolower($output->title ?? ''),
-                'sort_type' => 'ผลงานภาระงาน',
             ]);
         }
 

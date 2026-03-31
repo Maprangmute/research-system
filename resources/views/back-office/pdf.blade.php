@@ -118,8 +118,8 @@
             <tr>
                 <th>บุคคล</th>
                 <th>ประเภท</th>
-                <th>ภาระงาน</th>
-                <th>ลิงก์เอกสาร</th>
+                <th>ชื่อภาระงาน</th>
+                <th>รายละเอียดงาน</th>
                 <th class="center">วันที่เริ่ม</th>
                 <th class="center">วันที่สิ้นสุด</th>
                 <th class="center">ชั่วโมง</th>
@@ -131,34 +131,13 @@
                 <tr>
                     <td>{{ $entry->person_name }}</td>
                     <td>{{ $entry->category }}</td>
+                    <td>{{ $entry->job_name ?? '-' }}</td>
                     <td>{{ $entry->job_detail }}</td>
-                    <td>{{ $entry->document_link ? $entry->document_link : '-' }}</td>
                     <td class="center">{{ $formatDateBE($entry->start_date) }}</td>
                     <td class="center">{{ $formatDateBE($entry->end_date) }}</td>
                     <td class="center">{{ number_format($entry->hours, 2) }}</td>
                     <td class="center">{{ number_format($entry->fte_value, 8) }}</td>
                 </tr>
-                @if ($entry->outputs->count())
-                    <tr>
-                        <td colspan="8">
-                            <div class="small" style="padding:6px 0;">
-                                <strong>ผลงานของภาระงาน</strong>
-                                <ul style="margin:6px 0 0 16px;">
-                                    @foreach ($entry->outputs as $output)
-                                        <li>
-                                            {{ $output->title }}
-                                            @if ($output->project_output) • {{ $output->project_output }} @endif
-                                            @if ($output->year) • เผยแพร่ {{ $output->year }} @endif
-                                            @if ($output->delivered_at) • ส่ง {{ $formatDateBE($output->delivered_at) }} @endif
-                                            @if ($output->description) • {{ $output->description }} @endif
-                                            @if ($output->document_link) • เอกสาร {{ $output->document_link }} @endif
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                @endif
             @endforeach
         </tbody>
     </table>
@@ -172,9 +151,6 @@
                     <th>ประเภท</th>
                     <th>รายละเอียด/ลิงก์</th>
                     <th class="center">วันที่เผยแพร่</th>
-                    <th class="center">วันที่จัดส่ง</th>
-                    <th>รายละเอียดเพิ่มเติม</th>
-                    <th>เอกสาร</th>
                 </tr>
             </thead>
             <tbody>
@@ -184,9 +160,6 @@
                         <td>{{ $output->type ?? '-' }}</td>
                         <td>{{ $output->project_output ?? '-' }}</td>
                         <td class="center">{{ $output->year ?? '-' }}</td>
-                        <td class="center">{{ $output->delivered_at ? $formatDateBE($output->delivered_at) : '-' }}</td>
-                        <td>{{ $output->description ?? '-' }}</td>
-                        <td>{{ $output->document_link ?? '-' }}</td>
                     </tr>
                     @php
                         $isEA101 = str_starts_with((string) ($output->type ?? ''), 'EA101');
@@ -196,7 +169,7 @@
                     @endphp
                     @if ($isEA101 || $isEA103)
                         <tr>
-                            <td colspan="7">
+                            <td colspan="4">
                                 <div class="small" style="padding:6px 0;">
                                     @if ($isEA101)
                                         <div>Journal: {{ $output->journal ?? '-' }} | Quartile: {{ $output->quartile ?? '-' }} | IF: {{ $output->impact_factor ?? '-' }}</div>

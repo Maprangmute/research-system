@@ -1440,10 +1440,7 @@ class AgentController extends Controller
 
     private function outputMatchesBEYear($output, int $yearBE): bool {
         $yearFromField = $this->beIntFromText($output->year ?? null);
-        if ($yearFromField !== null && $yearFromField === $yearBE) return true;
-
-        $deliveredBE = $this->beIntFromText($output->delivered_at ?? null);
-        return $deliveredBE !== null && $deliveredBE === $yearBE;
+        return $yearFromField !== null && $yearFromField === $yearBE;
     }
 
     private function robustBackOfficeTaskCandidates(string $q, ?int $yearBE = null): array {
@@ -1482,7 +1479,7 @@ class AgentController extends Controller
             $entryTaskIds = DB::table('back_office_entries')
                 ->select('task_id as id')
                 ->when(!empty($likeSets), function ($qB) use ($likeSets) {
-                    $cols = ['person_name', 'category', 'job_detail', 'start_date', 'end_date', 'document_link'];
+                    $cols = ['person_name', 'category', 'job_name', 'job_detail', 'start_date', 'end_date'];
                     $qB->where(function ($W) use ($cols, $likeSets) {
                         foreach ($likeSets as $s) {
                             $W->where(function ($OR) use ($cols, $s) {
@@ -1503,7 +1500,7 @@ class AgentController extends Controller
             $taskOutputIds = DB::table('back_office_task_outputs')
                 ->select('task_id as id')
                 ->when(!empty($likeSets), function ($qB) use ($likeSets) {
-                    $cols = ['title', 'type', 'project_output', 'year', 'journal', 'description', 'document_link'];
+                    $cols = ['title', 'type', 'project_output', 'year', 'journal'];
                     $qB->where(function ($W) use ($cols, $likeSets) {
                         foreach ($likeSets as $s) {
                             $W->where(function ($OR) use ($cols, $s) {
@@ -1520,28 +1517,6 @@ class AgentController extends Controller
             $candidates = $candidates->merge($taskOutputIds);
         }
 
-        if (Schema::hasTable('back_office_entry_outputs') && Schema::hasTable('back_office_entries')) {
-            $entryOutputIds = DB::table('back_office_entry_outputs as beo')
-                ->join('back_office_entries as boe', 'boe.id', '=', 'beo.entry_id')
-                ->select('boe.task_id as id')
-                ->when(!empty($likeSets), function ($qB) use ($likeSets) {
-                    $cols = ['beo.title', 'beo.type', 'beo.project_output', 'beo.year', 'beo.journal', 'beo.description', 'beo.document_link'];
-                    $qB->where(function ($W) use ($cols, $likeSets) {
-                        foreach ($likeSets as $s) {
-                            $W->where(function ($OR) use ($cols, $s) {
-                                foreach ($cols as $c) {
-                                    $OR->orWhere($c, 'like', $s['like']);
-                                    $OR->orWhereRaw("REPLACE($c,' ','') LIKE ?", [$s['noSp']]);
-                                }
-                            });
-                        }
-                    });
-                })
-                ->limit(500)
-                ->pluck('id');
-            $candidates = $candidates->merge($entryOutputIds);
-        }
-
         $ids = $candidates->filter()->unique()->values();
         if ($yearBE === null || $ids->isEmpty()) {
             return $ids->take(250)->all();
@@ -1555,7 +1530,7 @@ class AgentController extends Controller
         if (empty($taskIds) || !Schema::hasTable('back_office_tasks')) return [];
 
         $tasks = BackOfficeTask::query()
-            ->with(['entries.outputs', 'outputs', 'creator'])
+            ->with(['entries', 'outputs', 'creator'])
             ->whereIn('id', $taskIds)
             ->orderByDesc('created_at')
             ->get();
@@ -1566,9 +1541,6 @@ class AgentController extends Controller
 
                 foreach ($task->entries as $entry) {
                     if ($this->taskOverlapsBEYear($entry, $yearBE)) return true;
-                    foreach ($entry->outputs as $output) {
-                        if ($this->outputMatchesBEYear($output, $yearBE)) return true;
-                    }
                 }
 
                 foreach ($task->outputs as $output) {
@@ -1583,15 +1555,13 @@ class AgentController extends Controller
         foreach ($tasks as $task) {
             $entries = $task->entries ?? collect();
             $taskOutputs = $task->outputs ?? collect();
-            $entryOutputs = $entries->flatMap(fn ($entry) => $entry->outputs ?? collect());
-            $allOutputs = $taskOutputs->concat($entryOutputs);
             $leaders = collect($task->leaders ?? [])->filter(fn ($v) => trim((string)$v) !== '')->values();
             $people = $entries->pluck('person_name')->filter(fn ($v) => trim((string)$v) !== '')->unique()->values();
             $categories = $entries
                 ->groupBy(fn ($entry) => trim((string)($entry->category ?: 'ไม่ระบุ')))
                 ->map->count()
                 ->sortDesc();
-            $outputTypes = $allOutputs
+            $outputTypes = $taskOutputs
                 ->groupBy(fn ($output) => trim((string)($output->type ?? $output->project_output ?? 'ไม่ระบุ')))
                 ->map->count()
                 ->sortDesc();
@@ -1610,13 +1580,12 @@ class AgentController extends Controller
                 'hours_sum' => round((float)$entries->sum('hours'), 2),
                 'fte_sum' => round((float)$entries->sum('fte_value'), 6),
                 'task_outputs_count' => (int)$taskOutputs->count(),
-                'entry_outputs_count' => (int)$entryOutputs->count(),
-                'outputs_total' => (int)$allOutputs->count(),
+                'outputs_total' => (int)$taskOutputs->count(),
                 'categories' => $categories->all(),
                 'output_types' => $outputTypes->all(),
                 'categories_brief' => $categories->take(5)->map(fn ($count, $name) => "{$name} ({$count})")->implode('; ') ?: '-',
                 'people_brief' => $people->take(6)->implode('; ') ?: '-',
-                'outputs_brief' => $allOutputs->take(6)->map(function ($output) {
+                'outputs_brief' => $taskOutputs->take(6)->map(function ($output) {
                     $type = trim((string)($output->type ?? $output->project_output ?? 'ไม่ระบุ'));
                     $year = trim((string)($output->year ?? ''));
                     $title = Str::limit((string)($output->title ?? 'ไม่ระบุ'), 80, '…');
@@ -1697,7 +1666,7 @@ class AgentController extends Controller
         if (empty($tokens)) return [];
 
         $tasks = BackOfficeTask::query()
-            ->with(['entries.outputs'])
+            ->with(['entries', 'outputs'])
             ->whereIn('id', $taskIds)
             ->orderByDesc('created_at')
             ->get();
@@ -1712,7 +1681,7 @@ class AgentController extends Controller
                 if ($yearBE === null) return true;
                 if ($this->taskOverlapsBEYear($entry, $yearBE)) return true;
                 if ($this->taskOverlapsBEYear($task, $yearBE)) return true;
-                foreach (($entry->outputs ?? collect()) as $output) {
+                foreach (($task->outputs ?? collect()) as $output) {
                     if ($this->outputMatchesBEYear($output, $yearBE)) return true;
                 }
                 return false;
@@ -1720,7 +1689,7 @@ class AgentController extends Controller
 
             if ($matchedEntries->isEmpty()) continue;
 
-            $matchedOutputs = $matchedEntries->flatMap(fn ($entry) => $entry->outputs ?? collect());
+            $matchedOutputs = $task->outputs ?? collect();
             $categories = $matchedEntries
                 ->groupBy(fn ($entry) => trim((string)($entry->category ?: 'ไม่ระบุ')))
                 ->map->count()

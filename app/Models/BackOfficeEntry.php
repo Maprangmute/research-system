@@ -11,10 +11,10 @@ class BackOfficeEntry extends Model
         'task_id',
         'person_name',
         'category',
+        'job_name',
         'job_detail',
         'start_date',
         'end_date',
-        'document_link',
         'hours',
         'fte_value',
     ];
@@ -27,10 +27,5 @@ class BackOfficeEntry extends Model
     public function task(): BelongsTo
     {
         return $this->belongsTo(BackOfficeTask::class, 'task_id');
-    }
-
-    public function outputs(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(BackOfficeEntryOutput::class, 'entry_id');
     }
 }

@@ -160,6 +160,29 @@
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
         }
 
+        .drawer-header {
+            cursor: pointer;
+        }
+
+        .drawer-header:focus-visible {
+            outline: 2px solid #38bdf8;
+            outline-offset: 4px;
+            border-radius: 16px;
+        }
+
+        .bo-field-invalid {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 4px rgba(254, 202, 202, 0.9) !important;
+            background: #fff5f5 !important;
+        }
+
+        .bo-field-error {
+            margin-top: 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #dc2626;
+        }
+
         @media (max-width: 768px) {
             .bo-editor-panel,
             .bo-editor-subpanel,
@@ -183,9 +206,6 @@
                 <div class="max-w-3xl">
                     <a href="{{ route('back_office.show', $task->id) }}" class="text-sm text-sky-700 hover:underline">← กลับไปหน้ารายละเอียด</a>
                     <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">แก้ไขงานนอกโครงการ</h1>
-                    <p class="mt-3 text-sm leading-6 text-slate-600 md:text-[15px]">
-                        ปรับข้อมูลงานหลัก ภาระงาน ผู้รับผิดชอบ และผลงานประกอบในหน้าเดียว โดยคงโครงสร้างเดิมของงานไว้
-                    </p>
                 </div>
                 <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
                     <a href="{{ route('back_office.index') }}"
@@ -210,18 +230,17 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('back_office.update', $task->id) }}" class="space-y-6">
+        <form method="POST" action="{{ route('back_office.update', $task->id) }}" class="space-y-6" novalidate>
             @csrf
             @method('PUT')
 
             <div class="bo-editor-panel p-6">
                 <div class="flex items-center gap-2 mb-4">
-                    <div class="bo-editor-step is-dark">1</div>
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-800">ข้อมูลงานหลัก</h3>
-                        <p class="text-sm text-slate-500">กำหนดชื่องานและช่วงเวลาโดยรวม</p>
+                        <div class="bo-editor-step is-dark">1</div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-800">ข้อมูลงานหลัก</h3>
+                        </div>
                     </div>
-                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <label class="block">
                         <span class="text-sm font-semibold text-slate-600">ชื่องาน</span>
@@ -254,10 +273,6 @@
                     <div class="block md:col-span-2">
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-semibold text-slate-600">หัวหน้างานผู้รับผิดชอบ (เพิ่มได้หลายคน)</span>
-                            <button type="button" id="add-leader"
-                                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
-                                เพิ่มอีกคน
-                            </button>
                         </div>
                         <div class="bo-editor-helper mt-3">
                             <div class="text-sm font-semibold text-slate-800">วิธีเพิ่มหลายคน</div>
@@ -267,40 +282,48 @@
                             </div>
                         </div>
                         <div id="leaders-body" class="leader-stack mt-3"></div>
+                        <div class="mt-4 flex justify-end">
+                            <button type="button" id="add-leader"
+                                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
+                                เพิ่มอีกคน
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="bo-editor-panel p-6">
-                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+                <div class="flex items-center gap-2 mb-4">
                     <div class="flex items-center gap-2">
                         <div class="bo-editor-step is-blue">2</div>
                         <div>
                             <h3 class="text-lg font-semibold text-slate-800">ภาระงานและผู้รับผิดชอบ</h3>
-                            <p class="text-sm text-slate-500">ใส่รายละเอียดแต่ละภาระงานแบบแยกการ์ด ไม่อึดอัด</p>
                         </div>
                     </div>
-                    <button type="button" id="add-entry"
-                        class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">เพิ่มภาระงาน</button>
                 </div>
 
                 <div id="entries-body" class="space-y-4"></div>
+                <div class="mt-4 flex justify-end">
+                    <button type="button" id="add-entry"
+                        class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">เพิ่มภาระงาน</button>
+                </div>
             </div>
 
             <div class="bo-editor-panel p-6">
-                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+                <div class="flex items-center gap-2 mb-4">
                     <div class="flex items-center gap-2">
                         <div class="bo-editor-step is-green">3</div>
                         <div>
                             <h3 class="text-lg font-semibold text-slate-800">ผลงานของงานนอกโครงการ</h3>
-                            <p class="text-sm text-slate-500">เพิ่มผลงานได้หลายรายการ</p>
                         </div>
                     </div>
-                    <button type="button" id="add-task-output"
-                        class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700">เพิ่มผลงาน</button>
                 </div>
 
                 <div id="task-outputs-body" class="space-y-3"></div>
+                <div class="mt-4 flex justify-end">
+                    <button type="button" id="add-task-output"
+                        class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700">เพิ่มผลงาน</button>
+                </div>
             </div>
 
             <div class="flex items-center justify-end gap-2">
@@ -318,7 +341,7 @@
 
     <template id="entry-template">
         <div class="entry-card border rounded-2xl p-4 bg-slate-50" data-entry>
-            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div class="drawer-header flex flex-col gap-3 md:flex-row md:items-center md:justify-between" data-entry-header tabindex="0" role="button" aria-expanded="true">
                 <div class="flex flex-wrap items-center gap-2">
                     <div class="text-sm font-semibold text-slate-700">ภาระงาน <span class="entry-index"></span></div>
                     <button type="button" class="text-blue-600 text-xs hover:underline toggle-entry">ย่อรายละเอียด</button>
@@ -331,7 +354,7 @@
             </div>
             <div class="entry-body mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">บุคคล</span>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อ-นามสกุล ผู้รับผิดชอบ</span>
                     <input list="person-list" name="entries[__INDEX__][person_name]" required
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="ชื่อ-นามสกุล">
                 </label>
@@ -361,16 +384,15 @@
                     </select>
                 </label>
                 <label class="block md:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">ชื่อภาระงาน</span>
+                    <input name="entries[__INDEX__][job_name]" required
+                        class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="ชื่อภาระงาน">
+                </label>
+                <label class="block md:col-span-2">
                     <span class="text-xs font-semibold text-slate-600">รายละเอียดงาน</span>
                     <textarea name="entries[__INDEX__][job_detail]" required rows="1"
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3 auto-grow"
                         placeholder="รายละเอียดงาน"></textarea>
-                </label>
-                <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ลิงก์เอกสาร</span>
-                    <input name="entries[__INDEX__][document_link]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-3"
-                        placeholder="ลิงก์เอกสาร (Google Drive)">
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">วันที่เริ่ม</span>
@@ -395,13 +417,6 @@
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3 text-right bg-white fte-output" value="0.00000000">
                 </label>
             </div>
-            <div class="mt-4 border-t pt-3">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-slate-600">ผลงานของภาระงาน</span>
-                    <button type="button" class="text-emerald-600 text-xs hover:underline add-entry-output">เพิ่มผลงาน</button>
-                </div>
-                <div class="entry-outputs space-y-2" data-entry-outputs></div>
-            </div>
         </div>
     </template>
 
@@ -415,8 +430,19 @@
     </template>
 
     <template id="task-output-template">
-        <div class="border rounded-xl p-3 bg-slate-50" data-task-output>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="entry-card border rounded-2xl p-4 bg-slate-50" data-task-output>
+            <div class="drawer-header flex flex-col gap-3 md:flex-row md:items-center md:justify-between" data-output-header tabindex="0" role="button" aria-expanded="true">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="text-sm font-semibold text-slate-700">ผลงาน <span class="task-output-index"></span></div>
+                    <button type="button" class="text-emerald-700 text-xs hover:underline toggle-task-output">ย่อรายละเอียด</button>
+                </div>
+                <button type="button" class="text-red-500 text-sm hover:underline remove-task-output">ลบผลงาน</button>
+            </div>
+            <div class="task-output-summary mt-2 text-sm text-slate-600 hidden">
+                <div class="summary-main"></div>
+                <div class="summary-sub text-xs text-slate-500"></div>
+            </div>
+            <div class="task-output-body mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <label class="block md:col-span-2">
                     <span class="text-xs font-semibold text-slate-600">ชื่อผลงาน</span>
                     <input name="outputs[__TINDEX__][title]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" required>
@@ -445,9 +471,9 @@
                     </select>
                 </label>
                 <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">รายละเอียด / ลิงก์ผลงาน</span>
+                    <span class="text-xs font-semibold text-slate-600">รายละเอียด / ลิงค์ผลงาน</span>
                     <input name="outputs[__TINDEX__][project_output]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="รายละเอียด / ลิงก์ผลงาน">
+                        class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="รายละเอียด / ลิงค์ผลงาน">
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">วันที่เผยแพร่</span>
@@ -455,73 +481,14 @@
                         class="w-full mt-1 border border-slate-200 rounded-lg p-2 js-date-be"
                         placeholder="วันที่เผยแพร่" autocomplete="off">
                 </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">วันที่จัดส่ง</span>
-                    <input type="text" name="outputs[__TINDEX__][delivered_at]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-2 js-date-be"
-                        placeholder="วันจัดส่ง" autocomplete="off">
-                </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ลิงก์ไฟล์เอกสาร</span>
-                    <input name="outputs[__TINDEX__][document_link]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="ลิงก์ไฟล์เอกสาร">
-                </label>
-                <label class="block md:col-span-3">
-                    <span class="text-xs font-semibold text-slate-600">รายละเอียดเพิ่มเติม</span>
-                    <input name="outputs[__TINDEX__][description]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="รายละเอียดเพิ่มเติม">
-                </label>
             </div>
             <div class="special-mount mt-3"></div>
-            <div class="mt-2 text-right">
-                <button type="button" class="text-red-500 text-xs hover:underline remove-task-output">ลบผลงาน</button>
-            </div>
-        </div>
-    </template>
-
-    <template id="entry-output-template">
-        <div class="border rounded-xl p-3 bg-slate-50" data-entry-output>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ชื่อผลงาน</span>
-                    <input name="entries[__INDEX__][outputs][__OINDEX__][title]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" required>
-                </label>
-                <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">รายละเอียด / ลิงก์ผลงาน</span>
-                    <input name="entries[__INDEX__][outputs][__OINDEX__][project_output]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="รายละเอียด / ลิงก์ผลงาน">
-                </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">วันที่เผยแพร่</span>
-                    <input type="text" name="entries[__INDEX__][outputs][__OINDEX__][year]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-2 js-date-be"
-                        placeholder="วันที่เผยแพร่" autocomplete="off">
-                </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">วันที่จัดส่ง</span>
-                    <input type="text" name="entries[__INDEX__][outputs][__OINDEX__][delivered_at]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-2 js-date-be"
-                        placeholder="วันจัดส่ง" autocomplete="off">
-                </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ลิงก์ไฟล์เอกสาร</span>
-                    <input name="entries[__INDEX__][outputs][__OINDEX__][document_link]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="ลิงก์ไฟล์เอกสาร">
-                </label>
-                <label class="block md:col-span-3">
-                    <span class="text-xs font-semibold text-slate-600">รายละเอียดเพิ่มเติม</span>
-                    <input name="entries[__INDEX__][outputs][__OINDEX__][description]"
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="รายละเอียดเพิ่มเติม">
-                </label>
-            </div>
-            <div class="mt-2 text-right">
-                <button type="button" class="text-red-500 text-xs hover:underline remove-entry-output">ลบผลงาน</button>
-            </div>
         </div>
     </template>
 
     <script>
         const FTE_RATE = 0.000621;
+        const backOfficeErrorKeys = @json($errors->keys());
         const entriesBody = document.getElementById('entries-body');
         const addEntryBtn = document.getElementById('add-entry');
         const entryTemplate = document.getElementById('entry-template');
@@ -533,8 +500,343 @@
         const addLeaderBtn = document.getElementById('add-leader');
         const taskOutputsBody = document.getElementById('task-outputs-body');
         const taskOutputTemplate = document.getElementById('task-output-template');
-        const entryOutputTemplate = document.getElementById('entry-output-template');
         const addTaskOutputBtn = document.getElementById('add-task-output');
+        const backOfficeForm = document.querySelector('form[action="{{ route('back_office.update', $task->id) }}"]');
+
+        function getVisibleField(input) {
+            if (!(input instanceof HTMLElement)) return null;
+            const altInput = input._flatpickr?.altInput;
+            if (altInput instanceof HTMLElement && altInput.offsetParent !== null) return altInput;
+            return input;
+        }
+
+        function getFieldErrorNode(input) {
+            const field = getVisibleField(input);
+            if (!field) return null;
+            let errorNode = field.parentElement?.querySelector('.bo-field-error');
+            if (!errorNode) {
+                errorNode = document.createElement('div');
+                errorNode.className = 'bo-field-error';
+                field.parentElement?.appendChild(errorNode);
+            }
+            return errorNode;
+        }
+
+        function clearFieldInvalid(input) {
+            const field = getVisibleField(input);
+            field?.classList.remove('bo-field-invalid');
+            input?.classList?.remove('bo-field-invalid');
+            const errorNode = field?.parentElement?.querySelector('.bo-field-error');
+            if (errorNode) errorNode.remove();
+        }
+
+        function markFieldInvalid(input, message) {
+            const field = getVisibleField(input);
+            field?.classList.add('bo-field-invalid');
+            input?.classList?.add('bo-field-invalid');
+            const errorNode = getFieldErrorNode(input);
+            if (errorNode) errorNode.textContent = message || 'กรุณาตรวจสอบข้อมูลนี้';
+        }
+
+        function normalizeLaravelErrorKey(key) {
+            if (!key) return '';
+            return key.replace(/\.(\d+)(?=\.|$)/g, '[$1]').replace(/\.([^.]+)/g, '[$1]');
+        }
+
+        function findInputByErrorKey(key) {
+            const normalized = normalizeLaravelErrorKey(key);
+            return backOfficeForm?.querySelector(`[name="${normalized}"]`) || null;
+        }
+
+        function revealFieldContext(input) {
+            const entryCard = input?.closest?.('[data-entry]');
+            if (entryCard) {
+                collapseAllEntries(entryCard);
+                setCollapsed(entryCard, false);
+            }
+            const outputCard = input?.closest?.('[data-task-output]');
+            if (outputCard) {
+                collapseAllTaskOutputs(outputCard);
+                setTaskOutputCollapsed(outputCard, false);
+            }
+        }
+
+        function scrollToField(input) {
+            const field = getVisibleField(input);
+            if (!field) return;
+            revealFieldContext(input);
+            window.setTimeout(() => {
+                field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                field.focus?.({ preventScroll: true });
+            }, 80);
+        }
+
+        function validateSingleField(input) {
+            if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement || input instanceof HTMLTextAreaElement)) {
+                return true;
+            }
+
+            clearFieldInvalid(input);
+
+            const rawValue = (input.value ?? '').toString().trim();
+            const label = input.closest('label')?.querySelector('span')?.textContent?.trim() || 'ฟิลด์นี้';
+            const isRequired = input.required;
+
+            if (isRequired && rawValue === '') {
+                markFieldInvalid(input, `กรุณากรอก${label}`);
+                return false;
+            }
+
+            if (rawValue !== '' && input.classList.contains('js-date-be') && !parseDateInputValue(rawValue)) {
+                markFieldInvalid(input, `${label}ไม่ถูกต้อง`);
+                return false;
+            }
+
+            if (typeof input.checkValidity === 'function' && !input.checkValidity()) {
+                markFieldInvalid(input, input.validationMessage || `${label}ไม่ถูกต้อง`);
+                return false;
+            }
+
+            return true;
+        }
+
+        function validateBackOfficeForm() {
+            const fields = Array.from(backOfficeForm?.querySelectorAll('input, select, textarea') || [])
+                .filter(field => !field.disabled && !field.closest('template'));
+            const invalidFields = [];
+
+            fields.forEach(field => {
+                if (!validateSingleField(field)) invalidFields.push(field);
+            });
+
+            return invalidFields;
+        }
+
+        async function confirmRemoval(options = {}) {
+            if (window.Swal) {
+                const result = await Swal.fire({
+                    icon: 'warning',
+                    title: options.title || 'ยืนยันการลบ',
+                    text: options.text || 'ต้องการลบรายการนี้ใช่หรือไม่',
+                    showCancelButton: true,
+                    confirmButtonText: options.confirmText || 'ลบรายการ',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                });
+                return result.isConfirmed;
+            }
+
+            return window.confirm(options.text || 'ต้องการลบรายการนี้ใช่หรือไม่');
+        }
+
+        function applyServerValidationState() {
+            const invalidInputs = backOfficeErrorKeys
+                .map(findInputByErrorKey)
+                .filter(Boolean);
+
+            invalidInputs.forEach((input) => {
+                const label = input.closest('label')?.querySelector('span')?.textContent?.trim() || 'ฟิลด์นี้';
+                markFieldInvalid(input, `${label}ไม่ถูกต้องหรือยังไม่ครบ`);
+            });
+
+            if (invalidInputs[0]) {
+                scrollToField(invalidInputs[0]);
+            }
+
+            if (invalidInputs.length && window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อมูลไม่ครบหรือไม่ถูกต้อง',
+                    text: 'กรุณาตรวจสอบช่องที่ไฮไลต์สีแดง',
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#dc2626',
+                });
+            }
+        }
+
+        function syncMainTaskDateField(name) {
+            const input = backOfficeForm?.querySelector(`input[name="${name}"]`);
+            const fp = input?._flatpickr;
+            const selectedDate = fp?.selectedDates?.[0];
+            if (!fp?.altInput || !selectedDate) return;
+
+            const day = selectedDate.getDate();
+            const month = selectedDate.toLocaleDateString('th-TH', { month: 'long' });
+            const year = selectedDate.getFullYear() + 543;
+            fp.altInput.value = `${day} ${month} ${year}`;
+        }
+
+        function syncMainTaskDateCalendarYear(name) {
+            const input = backOfficeForm?.querySelector(`input[name="${name}"]`);
+            const fp = input?._flatpickr;
+            const yearInput = fp?.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
+            if (!yearInput) return;
+
+            const rawYear = parseInt(yearInput.value || '0', 10);
+            if (!Number.isNaN(rawYear) && rawYear > 0 && rawYear < 2400) {
+                yearInput.value = String(rawYear + 543);
+            }
+        }
+
+        function syncMainTaskDateUi(name) {
+            syncMainTaskDateField(name);
+            syncMainTaskDateCalendarYear(name);
+            requestAnimationFrame(() => syncMainTaskDateCalendarYear(name));
+            window.setTimeout(() => syncMainTaskDateCalendarYear(name), 0);
+        }
+
+        function syncDateFieldUi(input) {
+            const fp = input?._flatpickr;
+            const selectedDate = fp?.selectedDates?.[0];
+            if (fp?.altInput && selectedDate) {
+                const day = selectedDate.getDate();
+                const month = selectedDate.toLocaleDateString('th-TH', { month: 'long' });
+                const year = selectedDate.getFullYear() + 543;
+                fp.altInput.value = `${day} ${month} ${year}`;
+            }
+
+            const yearInput = fp?.calendarContainer?.querySelector('.flatpickr-current-month input.cur-year');
+            const rawYear = parseInt(yearInput?.value || '0', 10);
+            if (yearInput && !Number.isNaN(rawYear) && rawYear > 0 && rawYear < 2400) {
+                yearInput.value = String(rawYear + 543);
+            }
+        }
+
+        function bindDateFieldBeSync(input, key, retries = 0) {
+            const fp = input?._flatpickr;
+            if (!fp) {
+                if (retries >= 40) return;
+                window.setTimeout(() => bindDateFieldBeSync(input, key, retries + 1), 80);
+                return;
+            }
+
+            const boundKey = `beSync${key}`;
+            if (!input.dataset[boundKey]) {
+                input.dataset[boundKey] = '1';
+                ['onReady', 'onOpen', 'onMonthChange', 'onYearChange', 'onValueUpdate', 'onChange'].forEach((hook) => {
+                    appendFlatpickrHook(fp, hook, () => {
+                        syncDateFieldUi(input);
+                        requestAnimationFrame(() => syncDateFieldUi(input));
+                    });
+                });
+            }
+
+            syncDateFieldUi(input);
+        }
+
+        function bindMainTaskDateFix(retries = 0) {
+            const startInput = backOfficeForm?.querySelector('input[name="start_date"]');
+            const endInput = backOfficeForm?.querySelector('input[name="end_date"]');
+            const startFp = startInput?._flatpickr;
+            const endFp = endInput?._flatpickr;
+
+            if (!startFp || !endFp) {
+                if (retries >= 40) return;
+                window.setTimeout(() => bindMainTaskDateFix(retries + 1), 80);
+                return;
+            }
+
+            if (!startInput.dataset.beMainDateBound) {
+                startInput.dataset.beMainDateBound = '1';
+                ['onReady', 'onOpen', 'onMonthChange', 'onYearChange', 'onValueUpdate', 'onChange'].forEach((hook) => {
+                    startFp.config[hook].push(() => {
+                        syncMainTaskDateUi('start_date');
+                    });
+                });
+            }
+
+            if (!endInput.dataset.beMainDateBound) {
+                endInput.dataset.beMainDateBound = '1';
+                ['onReady', 'onOpen', 'onMonthChange', 'onYearChange', 'onValueUpdate', 'onChange'].forEach((hook) => {
+                    endFp.config[hook].push(() => {
+                        syncMainTaskDateUi('end_date');
+                    });
+                });
+            }
+
+            syncMainTaskDateUi('start_date');
+            syncMainTaskDateUi('end_date');
+        }
+
+        function bindMinDateFromSource(sourceInput, targetInput, key, retries = 0) {
+            if (!(sourceInput instanceof HTMLElement) || !(targetInput instanceof HTMLElement)) return;
+
+            const sourceFp = sourceInput._flatpickr;
+            const targetFp = targetInput._flatpickr;
+            if (!sourceFp || !targetFp) {
+                if (retries >= 40) return;
+                window.setTimeout(() => bindMinDateFromSource(sourceInput, targetInput, key, retries + 1), 80);
+                return;
+            }
+
+            const updaterKey = `__backOfficeMinDate_${key}`;
+            if (!targetInput[updaterKey]) {
+                targetInput[updaterKey] = () => {
+                    const sourceDate = sourceInput._flatpickr?.selectedDates?.[0]
+                        || parseDateInputValue(sourceInput.value)
+                        || parseDateInputValue(sourceInput._flatpickr?.altInput?.value);
+                    const minDate = sourceDate ? normalizeDateOnly(sourceDate) : null;
+
+                    targetFp.set('minDate', minDate || null);
+                    syncDateFieldUi(targetInput);
+                    requestAnimationFrame(() => syncDateFieldUi(targetInput));
+
+                    const targetDate = targetFp.selectedDates?.[0]
+                        || parseDateInputValue(targetInput.value)
+                        || parseDateInputValue(targetFp.altInput?.value);
+
+                    if (targetDate && minDate && normalizeDateOnly(targetDate) < minDate) {
+                        targetFp.clear();
+                        targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                };
+            }
+
+            if (!targetInput.dataset[`minBound${key}`]) {
+                targetInput.dataset[`minBound${key}`] = '1';
+                sourceInput.addEventListener('change', targetInput[updaterKey]);
+                sourceInput.addEventListener('input', targetInput[updaterKey]);
+                appendFlatpickrHook(sourceFp, 'onChange', targetInput[updaterKey]);
+                appendFlatpickrHook(sourceFp, 'onValueUpdate', targetInput[updaterKey]);
+                appendFlatpickrHook(targetFp, 'onOpen', targetInput[updaterKey]);
+            }
+
+            targetInput[updaterKey]();
+        }
+
+        function bindMainTaskDateMinRules() {
+            const mainStart = backOfficeForm?.querySelector('input[name="start_date"]');
+            const mainEnd = backOfficeForm?.querySelector('input[name="end_date"]');
+            if (mainStart && mainEnd) {
+                bindMinDateFromSource(mainStart, mainEnd, 'main_range');
+            }
+        }
+
+        function bindEntryDateRules(entry, index) {
+            const mainStart = backOfficeForm?.querySelector('input[name="start_date"]');
+            const entryStart = entry.querySelector(`input[name="entries[${index}][start_date]"]`);
+            const entryEnd = entry.querySelector(`input[name="entries[${index}][end_date]"]`);
+
+            if (entryStart) bindDateFieldBeSync(entryStart, `entryStart${index}`);
+            if (entryEnd) bindDateFieldBeSync(entryEnd, `entryEnd${index}`);
+
+            if (entryStart && entryEnd) {
+                bindMinDateFromSource(entryStart, entryEnd, `entry_range_${index}`);
+            }
+            if (mainStart && entryStart) {
+                bindMinDateFromSource(mainStart, entryStart, `entry_main_start_${index}`);
+            }
+        }
+
+        function bindTaskOutputDateRules(row, index) {
+            const mainStart = backOfficeForm?.querySelector('input[name="start_date"]');
+            const outputDate = row.querySelector(`input[name="outputs[${index}][year]"]`);
+            if (outputDate) bindDateFieldBeSync(outputDate, `outputYear${index}`);
+            if (mainStart && outputDate) {
+                bindMinDateFromSource(mainStart, outputDate, `output_main_start_${index}`);
+            }
+        }
 
         function resizeTextarea(textarea) {
             textarea.style.height = 'auto';
@@ -554,32 +856,60 @@
             });
         }
 
+        function updateTaskOutputIndex() {
+            taskOutputsBody.querySelectorAll('[data-task-output]').forEach((output, idx) => {
+                const indexEl = output.querySelector('.task-output-index');
+                if (indexEl) indexEl.textContent = `#${idx + 1}`;
+            });
+        }
+
         function bindEntry(entry) {
             const hoursInput = entry.querySelector('.hours-input');
             const textarea = entry.querySelector('.auto-grow');
             const removeBtn = entry.querySelector('.remove-entry');
             const toggleBtn = entry.querySelector('.toggle-entry');
+            const header = entry.querySelector('[data-entry-header]');
             const inputs = entry.querySelectorAll('input, select, textarea');
-            const addEntryOutputBtn = entry.querySelector('.add-entry-output');
-            const outputsContainer = entry.querySelector('[data-entry-outputs]');
-
             hoursInput?.addEventListener('input', () => updateFte(entry));
             textarea?.addEventListener('input', () => resizeTextarea(textarea));
-            removeBtn?.addEventListener('click', () => {
+            removeBtn?.addEventListener('click', async () => {
+                const person = entry.querySelector('input[name$="[person_name]"]')?.value?.trim() || 'ไม่ระบุผู้รับผิดชอบ';
+                const jobName = entry.querySelector('input[name$="[job_name]"]')?.value?.trim() || 'ไม่มีชื่อภาระงาน';
+                const confirmed = await confirmRemoval({
+                    title: 'ลบภาระงาน',
+                    text: `ต้องการลบภาระงานของ ${person} : ${jobName} ใช่หรือไม่`,
+                    confirmText: 'ลบภาระงาน',
+                });
+                if (!confirmed) return;
                 entry.remove();
                 updateIndex();
             });
-            toggleBtn?.addEventListener('click', () => {
+            const toggleEntry = () => {
+                collapseAllEntries(entry);
                 setCollapsed(entry, !isCollapsed(entry));
+            };
+            toggleBtn?.addEventListener('click', (event) => {
+                event.stopPropagation();
+                toggleEntry();
             });
+            const handleEntryCardClick = (event) => {
+                if (event.target.closest('button, input, select, textarea, a, option, label')) return;
+                if (!isCollapsed(entry) && event.target.closest('.entry-body')) return;
+                toggleEntry();
+            };
+            entry.addEventListener('click', handleEntryCardClick);
+            header?.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                toggleEntry();
+            });
+            removeBtn?.addEventListener('click', event => event.stopPropagation());
             inputs.forEach(input => {
                 input.addEventListener('input', () => updateSummary(entry));
                 input.addEventListener('change', () => updateSummary(entry));
+                input.addEventListener('input', () => clearFieldInvalid(input));
+                input.addEventListener('change', () => clearFieldInvalid(input));
             });
-            addEntryOutputBtn?.addEventListener('click', () => {
-                addEntryOutput(entry, outputsContainer);
-            });
-
             resizeTextarea(textarea);
             updateFte(entry);
             updateSummary(entry);
@@ -760,9 +1090,6 @@
             row.querySelector(`[name="outputs[${index}][type]"]`).value = data.type || '';
             row.querySelector(`[name="outputs[${index}][project_output]"]`).value = data.project_output || '';
             row.querySelector(`[name="outputs[${index}][year]"]`).value = data.year || '';
-            row.querySelector(`[name="outputs[${index}][delivered_at]"]`).value = data.delivered_at || '';
-            row.querySelector(`[name="outputs[${index}][description]"]`).value = data.description || '';
-            row.querySelector(`[name="outputs[${index}][document_link]"]`).value = data.document_link || '';
 
             const typeSelect = row.querySelector('.output-type');
             if (typeSelect) {
@@ -771,32 +1098,13 @@
                 hydrateSpecialFields(row, data);
             }
 
-            row.querySelector('.remove-task-output')?.addEventListener('click', () => row.remove());
+            bindTaskOutput(row);
             taskOutputsBody.appendChild(row);
+            updateTaskOutputIndex();
             if (window.initDateBE) initDateBE(row);
-        }
-
-        function addEntryOutput(entry, outputsContainer, data = {}) {
-            if (!outputsContainer) return;
-            const entryIndex = entry.querySelector('[name^="entries["]')?.name.match(/^entries\[(\d+)\]/)?.[1];
-            if (entryIndex === undefined) return;
-            const outputIndex = outputsContainer.querySelectorAll('[data-entry-output]').length;
-            const html = entryOutputTemplate.innerHTML
-                .replaceAll('__INDEX__', entryIndex)
-                .replaceAll('__OINDEX__', outputIndex);
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = html.trim();
-            const row = wrapper.firstElementChild;
-            row.querySelector(`[name="entries[${entryIndex}][outputs][${outputIndex}][title]"]`).value = data.title || '';
-            row.querySelector(`[name="entries[${entryIndex}][outputs][${outputIndex}][project_output]"]`).value = data.project_output || '';
-            row.querySelector(`[name="entries[${entryIndex}][outputs][${outputIndex}][year]"]`).value = data.year || '';
-            row.querySelector(`[name="entries[${entryIndex}][outputs][${outputIndex}][delivered_at]"]`).value = data.delivered_at || '';
-            row.querySelector(`[name="entries[${entryIndex}][outputs][${outputIndex}][description]"]`).value = data.description || '';
-            row.querySelector(`[name="entries[${entryIndex}][outputs][${outputIndex}][document_link]"]`).value = data.document_link || '';
-
-            row.querySelector('.remove-entry-output')?.addEventListener('click', () => row.remove());
-            outputsContainer.appendChild(row);
-            if (window.initDateBE) initDateBE(row);
+            bindTaskOutputDateRules(row, index);
+            collapseAllTaskOutputs(row);
+            setTaskOutputCollapsed(row, false);
         }
 
         function addEntry(data = {}) {
@@ -808,22 +1116,108 @@
 
             entry.querySelector(`[name="entries[${index}][person_name]"]`).value = data.person_name || '';
             entry.querySelector(`[name="entries[${index}][category]"]`).value = data.category || '{{ $categoryOptions[0] }}';
+            entry.querySelector(`[name="entries[${index}][job_name]"]`).value = data.job_name || '';
             entry.querySelector(`[name="entries[${index}][job_detail]"]`).value = data.job_detail || '';
-            entry.querySelector(`[name="entries[${index}][document_link]"]`).value = data.document_link || '';
             entry.querySelector(`[name="entries[${index}][start_date]"]`).value = data.start_date || '';
             entry.querySelector(`[name="entries[${index}][end_date]"]`).value = data.end_date || '';
             entry.querySelector(`[name="entries[${index}][hours]"]`).value = data.hours ?? 0;
 
             entriesBody.appendChild(entry);
             if (window.initDateBE) initDateBE(entry);
+            bindEntryDateRules(entry, index);
             bindEntry(entry);
             updateIndex();
             collapseAllEntries(entry);
             setCollapsed(entry, false);
-            const outputsContainer = entry.querySelector('[data-entry-outputs]');
-            if (Array.isArray(data.outputs)) {
-                data.outputs.forEach(output => addEntryOutput(entry, outputsContainer, output));
-            }
+        }
+
+        function isTaskOutputCollapsed(row) {
+            return row.dataset.collapsed === '1';
+        }
+
+        function setTaskOutputCollapsed(row, collapsed) {
+            const body = row.querySelector('.task-output-body');
+            const specialMount = row.querySelector('.special-mount');
+            const summary = row.querySelector('.task-output-summary');
+            const toggleBtn = row.querySelector('.toggle-task-output');
+            const header = row.querySelector('[data-output-header]');
+
+            row.dataset.collapsed = collapsed ? '1' : '0';
+            body?.classList.toggle('hidden', collapsed);
+            specialMount?.classList.toggle('hidden', collapsed);
+            summary?.classList.toggle('hidden', !collapsed);
+            if (toggleBtn) toggleBtn.textContent = collapsed ? 'ขยายลิ้นชัก' : 'ย่อรายละเอียด';
+            if (header) header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        }
+
+        function collapseAllTaskOutputs(exceptRow = null) {
+            taskOutputsBody.querySelectorAll('[data-task-output]').forEach(row => {
+                if (row === exceptRow) return;
+                setTaskOutputCollapsed(row, true);
+            });
+        }
+
+        function updateTaskOutputSummary(row) {
+            const title = row.querySelector('input[name$="[title]"]')?.value?.trim() || '';
+            const type = row.querySelector('select[name$="[type]"]')?.value?.trim() || '';
+            const detail = row.querySelector('input[name$="[project_output]"]')?.value?.trim() || '';
+            const year = row.querySelector('input[name$="[year]"]')?.value?.trim() || '';
+            const main = row.querySelector('.task-output-summary .summary-main');
+            const sub = row.querySelector('.task-output-summary .summary-sub');
+
+            const titleText = title || 'ไม่ระบุชื่อผลงาน';
+            const typeText = type || 'ไม่ระบุประเภท';
+            const detailText = detail ? detail.replace(/\s+/g, ' ').slice(0, 80) : 'ไม่มีรายละเอียด/ลิงก์';
+
+            if (main) main.textContent = `${titleText} • ${typeText}`;
+            if (sub) sub.textContent = `${detailText}${year ? ` • ${year}` : ''}`;
+        }
+
+        function bindTaskOutput(row) {
+            const removeBtn = row.querySelector('.remove-task-output');
+            const toggleBtn = row.querySelector('.toggle-task-output');
+            const header = row.querySelector('[data-output-header]');
+            const inputs = row.querySelectorAll('input, select, textarea');
+            const toggleOutput = () => {
+                collapseAllTaskOutputs(row);
+                setTaskOutputCollapsed(row, !isTaskOutputCollapsed(row));
+            };
+
+            removeBtn?.addEventListener('click', async event => {
+                event.stopPropagation();
+                const title = row.querySelector('input[name$="[title]"]')?.value?.trim() || 'ไม่มีชื่อผลงาน';
+                const type = row.querySelector('select[name$="[type]"]')?.value?.trim() || 'ไม่ระบุประเภท';
+                const confirmed = await confirmRemoval({
+                    title: 'ลบผลงาน',
+                    text: `ต้องการลบผลงาน ${title} (${type}) ใช่หรือไม่`,
+                    confirmText: 'ลบผลงาน',
+                });
+                if (!confirmed) return;
+                row.remove();
+                updateTaskOutputIndex();
+            });
+            toggleBtn?.addEventListener('click', event => {
+                event.stopPropagation();
+                toggleOutput();
+            });
+            const handleTaskOutputCardClick = event => {
+                if (event.target.closest('button, input, select, textarea, a, option, label')) return;
+                if (!isTaskOutputCollapsed(row) && event.target.closest('.task-output-body, .special-mount')) return;
+                toggleOutput();
+            };
+            row.addEventListener('click', handleTaskOutputCardClick);
+            header?.addEventListener('keydown', event => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                toggleOutput();
+            });
+            inputs.forEach(input => {
+                input.addEventListener('input', () => updateTaskOutputSummary(row));
+                input.addEventListener('change', () => updateTaskOutputSummary(row));
+                input.addEventListener('input', () => clearFieldInvalid(input));
+                input.addEventListener('change', () => clearFieldInvalid(input));
+            });
+            updateTaskOutputSummary(row);
         }
 
         addEntryBtn?.addEventListener('click', () => addEntry());
@@ -839,6 +1233,10 @@
         if (Array.isArray(initialTaskOutputs) && initialTaskOutputs.length) {
             initialTaskOutputs.forEach(output => addTaskOutput(output));
         }
+
+        bindMainTaskDateFix();
+        bindMainTaskDateMinRules();
+        applyServerValidationState();
 
         function updateLeaderRows() {
             if (!leadersBody) return;
@@ -861,8 +1259,15 @@
             const appendBtn = row.querySelector('.append-leader');
 
             appendBtn?.addEventListener('click', () => addLeader('', true));
-            removeBtn?.addEventListener('click', () => {
+            removeBtn?.addEventListener('click', async () => {
                 if (leadersBody.querySelectorAll('[data-leader-row]').length <= 1) return;
+                const leaderName = input?.value?.trim() || 'หัวหน้างานรายการนี้';
+                const confirmed = await confirmRemoval({
+                    title: 'ลบหัวหน้างาน',
+                    text: `ต้องการลบ ${leaderName} ออกจากรายชื่อหัวหน้างานใช่หรือไม่`,
+                    confirmText: 'ลบรายชื่อ',
+                });
+                if (!confirmed) return;
                 row.remove();
                 updateLeaderRows();
             });
@@ -889,6 +1294,28 @@
             return row;
         }
 
+        backOfficeForm?.querySelectorAll('input, select, textarea').forEach((input) => {
+            input.addEventListener('input', () => clearFieldInvalid(input));
+            input.addEventListener('change', () => clearFieldInvalid(input));
+        });
+
+        backOfficeForm?.addEventListener('submit', (event) => {
+            const invalidFields = validateBackOfficeForm();
+            if (!invalidFields.length) return;
+
+            event.preventDefault();
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ยังบันทึกไม่ได้',
+                    text: 'กรุณากรอกข้อมูลให้ครบและตรวจสอบช่องสีแดง',
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#dc2626',
+                });
+            }
+            scrollToField(invalidFields[0]);
+        });
+
         if (Array.isArray(initialLeaders) && initialLeaders.length) {
             initialLeaders.forEach(name => addLeader(name));
         } else {
@@ -903,13 +1330,13 @@
             const body = entry.querySelector('.entry-body');
             const summary = entry.querySelector('.entry-summary');
             const toggleBtn = entry.querySelector('.toggle-entry');
+            const header = entry.querySelector('[data-entry-header]');
 
             entry.dataset.collapsed = collapsed ? '1' : '0';
             body?.classList.toggle('hidden', collapsed);
             summary?.classList.toggle('hidden', !collapsed);
-            if (toggleBtn) {
-                toggleBtn.textContent = collapsed ? 'ขยายลิ้นชัก' : 'ย่อรายละเอียด';
-            }
+            if (toggleBtn) toggleBtn.textContent = collapsed ? 'ขยายลิ้นชัก' : 'ย่อรายละเอียด';
+            if (header) header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
         }
 
         function collapseAllEntries(exceptEntry = null) {

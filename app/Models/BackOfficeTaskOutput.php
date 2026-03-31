@@ -16,9 +16,6 @@ class BackOfficeTaskOutput extends Model
         'journal',
         'quartile',
         'impact_factor',
-        'delivered_at',
-        'description',
-        'document_link',
         'authors',
         'conferences',
     ];

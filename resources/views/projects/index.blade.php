@@ -646,10 +646,10 @@
         {{-- Table --}}
         <div id="project-table-shell" class="bg-white rounded-2xl shadow-md ring-1 ring-slate-100 overflow-hidden transition-opacity duration-200">
             <div class="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
-                <div class="text-sm text-slate-600">
+                <div id="project-table-count" class="text-sm text-slate-600">
                     แสดงผล {{ $projects->firstItem() ?? 0 }}–{{ $projects->lastItem() ?? 0 }} จากทั้งหมด
                     {{ $projects->total() }} รายการ
-                    <span class="ml-2 text-xs text-slate-500">เรียงลำดับจากข้อมูลที่แก้ไขล่าสุด</span>
+                    <span id="project-table-count-meta" class="ml-2 text-xs text-slate-500">เรียงลำดับจากข้อมูลที่แก้ไขล่าสุด</span>
                 </div>
                 <div class="text-xs text-slate-400">ดับเบิลคลิก = ดูรายละเอียด • คลิกขวา/กดค้าง = เมนูด่วน</div>
             </div>
@@ -711,6 +711,7 @@
                                 data-progress-url="{{ $progressUrl }}" data-fte-project-url="{{ $fteProjectUrl }}"
                                 data-delete-form-id="{{ $deleteFormId }}"
                                 data-project-name="{{ $project->project_name_th }}"
+                                data-project-search-text="{{ trim(implode(' ', array_filter([$project->project_code, $project->project_name_th, $project->theme, $project->project_type, $project->funding_type, $project->planning_status, $project->start_year]))) }}"
                                 oncontextmenu="return openRowMenu(event, this)" ondblclick="goToDetail(this)"
                                 ontouchstart="rowLongPressStart(event, this)" ontouchend="rowLongPressEnd(event)">
                                 <td class="px-4 py-3 text-sm font-mono text-slate-700 whitespace-nowrap">
@@ -771,11 +772,14 @@
                                 <td colspan="7" class="text-center py-10 text-slate-500">ไม่มีข้อมูล</td>
                             </tr>
                         @endforelse
+                        <tr id="project-table-empty-search" class="hidden">
+                            <td colspan="7" class="text-center py-10 text-slate-500">ไม่มีข้อมูลตรงกับคำค้นหาในหน้านี้</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div class="px-4 py-3 border-t bg-slate-50">
+            <div id="project-table-pagination-wrap" class="px-4 py-3 border-t bg-slate-50">
                 {{ $projects->links('vendor.pagination.th') }}
             </div>
         </div>
@@ -1274,6 +1278,10 @@
             const getPrimaryForm = () => query(selectors.primaryForm);
             const getDrawerForm = () => query(selectors.drawerForm);
             const getForms = () => [getPrimaryForm(), getDrawerForm()].filter(Boolean);
+            const tableCountEl = query('#project-table-count');
+            const tableCountMetaEl = query('#project-table-count-meta');
+            const tablePaginationWrapEl = query('#project-table-pagination-wrap');
+            const emptySearchRowEl = query('#project-table-empty-search');
             const form = getPrimaryForm();
             if (!form) return;
 
@@ -1282,6 +1290,53 @@
             let timer = null;
             let drawerOpen = false;
             let previousBodyOverflow = '';
+            const baseTableCountText = tableCountEl ? (tableCountEl.childNodes[0]?.textContent || '').trim() : '';
+
+            const normalizeSearchTerm = (value) => String(value || '')
+                .toLowerCase()
+                .normalize('NFKC')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            const applyLocalSearchPreview = (rawValue) => {
+                const shell = query(selectors.shell);
+                if (!shell) return;
+
+                const rows = queryAll('tbody tr[data-project-search-text]', shell);
+                if (!rows.length) return;
+
+                const term = normalizeSearchTerm(rawValue);
+                let visibleCount = 0;
+
+                rows.forEach((row) => {
+                    const haystack = normalizeSearchTerm(row.dataset.projectSearchText || row.textContent);
+                    const matched = term === '' || haystack.includes(term);
+                    row.classList.toggle('hidden', !matched);
+                    if (matched) visibleCount += 1;
+                });
+
+                if (emptySearchRowEl) {
+                    emptySearchRowEl.classList.toggle('hidden', !(term !== '' && visibleCount === 0));
+                }
+
+                if (tablePaginationWrapEl) {
+                    tablePaginationWrapEl.classList.toggle('hidden', term !== '');
+                }
+
+                if (tableCountEl) {
+                    const message = term === '' ? baseTableCountText : `พบ ${visibleCount} รายการในหน้านี้`;
+                    const textNode = tableCountEl.childNodes[0];
+                    if (textNode) {
+                        textNode.textContent = `${message} `;
+                    } else {
+                        tableCountEl.textContent = message;
+                    }
+                }
+
+                if (tableCountMetaEl) {
+                    tableCountMetaEl.textContent = term === '' ? 'เรียงลำดับจากข้อมูลที่แก้ไขล่าสุด' : 'กรองทันทีโดยไม่ reload';
+                }
+            };
 
             const countActiveFilters = (sourceForm) => {
                 if (!sourceForm) return 0;
@@ -1510,14 +1565,25 @@
                             field.addEventListener('input', () => {
                                 syncFormsFromSource(targetForm);
                                 updateFilterBadges();
-                                submitDebounced(260);
+                                const sourceForm = getPrimaryForm() || targetForm;
+                                const searchField = sourceForm.querySelector('input[name="search"]');
+                                applyLocalSearchPreview(searchField ? searchField.value : '');
                             });
                             field.addEventListener('keydown', (event) => {
                                 if (event.key === 'Enter') {
                                     event.preventDefault();
                                     syncFormsFromSource(targetForm);
-                                    submitDebounced(0);
+                                    const sourceForm = getPrimaryForm() || targetForm;
+                                    const searchField = sourceForm.querySelector('input[name="search"]');
+                                    applyLocalSearchPreview(searchField ? searchField.value : '');
                                 }
+                            });
+                            field.addEventListener('change', () => {
+                                syncFormsFromSource(targetForm);
+                                updateFilterBadges();
+                                const sourceForm = getPrimaryForm() || targetForm;
+                                const searchField = sourceForm.querySelector('input[name="search"]');
+                                applyLocalSearchPreview(searchField ? searchField.value : '');
                             });
                             return;
                         }
@@ -1589,6 +1655,7 @@
             bindForms();
             updateFilterBadges();
             syncFabVisibility();
+            applyLocalSearchPreview(query('#project-search-input')?.value || '');
         })();
     </script>
 @endsection

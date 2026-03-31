@@ -121,13 +121,13 @@ class BackOfficeController extends Controller
                     })
                     ->orWhereHas('entries', function ($entryQ) use ($search) {
                         $entryQ->where('person_name', 'like', '%' . $search . '%')
+                            ->orWhere('job_name', 'like', '%' . $search . '%')
                             ->orWhere('job_detail', 'like', '%' . $search . '%')
                             ->orWhere('category', 'like', '%' . $search . '%');
                     })
                     ->orWhereHas('outputs', function ($outputQ) use ($search) {
                         $outputQ->where('title', 'like', '%' . $search . '%')
-                            ->orWhere('type', 'like', '%' . $search . '%')
-                            ->orWhere('description', 'like', '%' . $search . '%');
+                            ->orWhere('type', 'like', '%' . $search . '%');
                     });
             });
         }
@@ -150,15 +150,11 @@ class BackOfficeController extends Controller
 
         if ($outputState = $request->input('with_output')) {
             if ($outputState === 'yes') {
-                $query->where(function ($q) {
-                    $q->has('outputs')
-                        ->orWhereHas('entries.outputs');
-                });
+                $query->has('outputs');
             }
 
             if ($outputState === 'no') {
-                $query->whereDoesntHave('outputs')
-                    ->whereDoesntHave('entries.outputs');
+                $query->whereDoesntHave('outputs');
             }
         }
 
@@ -249,9 +245,6 @@ class BackOfficeController extends Controller
             'outputs.*.journal' => ['nullable', 'string', 'max:255'],
             'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
             'outputs.*.impact_factor' => ['nullable', 'numeric'],
-            'outputs.*.delivered_at' => ['nullable', 'date_format:d-m-Y'],
-            'outputs.*.description' => ['nullable', 'string', 'max:255'],
-            'outputs.*.document_link' => ['nullable', 'string', 'max:255'],
             'outputs.*.authors' => ['nullable', 'array'],
             'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
@@ -263,29 +256,11 @@ class BackOfficeController extends Controller
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.person_name' => ['required', 'string', 'max:255'],
             'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
+            'entries.*.job_name' => ['required', 'string', 'max:255'],
             'entries.*.job_detail' => ['required', 'string', 'max:255'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.end_date' => ['required', 'date_format:d-m-Y'],
-            'entries.*.document_link' => ['nullable', 'string', 'max:255'],
             'entries.*.hours' => ['required', 'numeric', 'min:0'],
-            'entries.*.outputs' => ['nullable', 'array'],
-            'entries.*.outputs.*.title' => ['required_with:entries.*.outputs', 'string', 'max:255'],
-            'entries.*.outputs.*.project_output' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.year' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.journal' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
-            'entries.*.outputs.*.impact_factor' => ['nullable', 'numeric'],
-            'entries.*.outputs.*.delivered_at' => ['nullable', 'date_format:d-m-Y'],
-            'entries.*.outputs.*.description' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.document_link' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.authors' => ['nullable', 'array'],
-            'entries.*.outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
-            'entries.*.outputs.*.conferences' => ['nullable', 'array'],
-            'entries.*.outputs.*.conferences.*.name' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.conferences.*.presentation_type' => ['nullable', 'string', 'max:100'],
-            'entries.*.outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.conferences.*.note' => ['nullable', 'string', 'max:255'],
         ]);
 
         $startDate = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('d-m-Y');
@@ -323,9 +298,6 @@ class BackOfficeController extends Controller
                         'journal' => $output['journal'] ?? null,
                         'quartile' => $output['quartile'] ?? null,
                         'impact_factor' => $output['impact_factor'] ?? null,
-                        'delivered_at' => $output['delivered_at'] ?? null,
-                        'description' => $output['description'] ?? null,
-                        'document_link' => $output['document_link'] ?? null,
                         'authors' => $output['authors'] ?? null,
                         'conferences' => $output['conferences'] ?? null,
                     ]);
@@ -340,31 +312,14 @@ class BackOfficeController extends Controller
                     'task_id' => $task->id,
                     'person_name' => $entry['person_name'],
                     'category' => $entry['category'],
+                    'job_name' => $entry['job_name'],
                     'job_detail' => $entry['job_detail'],
                     'start_date' => $entry['start_date'],
                     'end_date' => $entry['end_date'],
-                    'document_link' => $entry['document_link'] ?? null,
                     'hours' => $hours,
                     'fte_value' => $fteValue,
                 ]);
 
-                if (!empty($entry['outputs'])) {
-                    foreach ($entry['outputs'] as $output) {
-                        $createdEntry->outputs()->create([
-                            'title' => $output['title'],
-                            'project_output' => $output['project_output'] ?? null,
-                            'year' => $output['year'] ?? null,
-                            'journal' => $output['journal'] ?? null,
-                            'quartile' => $output['quartile'] ?? null,
-                            'impact_factor' => $output['impact_factor'] ?? null,
-                            'delivered_at' => $output['delivered_at'] ?? null,
-                            'description' => $output['description'] ?? null,
-                            'document_link' => $output['document_link'] ?? null,
-                            'authors' => $output['authors'] ?? null,
-                            'conferences' => $output['conferences'] ?? null,
-                        ]);
-                    }
-                }
             }
         });
 
@@ -375,7 +330,7 @@ class BackOfficeController extends Controller
 
     public function show(Request $request, BackOfficeTask $task)
     {
-        $task->load(['entries.outputs', 'outputs', 'creator']);
+        $task->load(['entries', 'outputs', 'creator']);
 
         $summary = [
             'entries' => $task->entries->count(),
@@ -399,7 +354,7 @@ class BackOfficeController extends Controller
 
     public function edit(BackOfficeTask $task)
     {
-        $task->load(['entries.outputs', 'outputs', 'creator']);
+        $task->load(['entries', 'outputs', 'creator']);
 
         $users = User::select('prefix', 'name')->orderBy('name')->get();
         $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
@@ -428,9 +383,6 @@ class BackOfficeController extends Controller
             'outputs.*.journal' => ['nullable', 'string', 'max:255'],
             'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
             'outputs.*.impact_factor' => ['nullable', 'numeric'],
-            'outputs.*.delivered_at' => ['nullable', 'date_format:d-m-Y'],
-            'outputs.*.description' => ['nullable', 'string', 'max:255'],
-            'outputs.*.document_link' => ['nullable', 'string', 'max:255'],
             'outputs.*.authors' => ['nullable', 'array'],
             'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
@@ -442,29 +394,11 @@ class BackOfficeController extends Controller
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.person_name' => ['required', 'string', 'max:255'],
             'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
+            'entries.*.job_name' => ['required', 'string', 'max:255'],
             'entries.*.job_detail' => ['required', 'string', 'max:255'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.end_date' => ['required', 'date_format:d-m-Y'],
-            'entries.*.document_link' => ['nullable', 'string', 'max:255'],
             'entries.*.hours' => ['required', 'numeric', 'min:0'],
-            'entries.*.outputs' => ['nullable', 'array'],
-            'entries.*.outputs.*.title' => ['required_with:entries.*.outputs', 'string', 'max:255'],
-            'entries.*.outputs.*.project_output' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.year' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.journal' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
-            'entries.*.outputs.*.impact_factor' => ['nullable', 'numeric'],
-            'entries.*.outputs.*.delivered_at' => ['nullable', 'date_format:d-m-Y'],
-            'entries.*.outputs.*.description' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.document_link' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.authors' => ['nullable', 'array'],
-            'entries.*.outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
-            'entries.*.outputs.*.conferences' => ['nullable', 'array'],
-            'entries.*.outputs.*.conferences.*.name' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.conferences.*.presentation_type' => ['nullable', 'string', 'max:100'],
-            'entries.*.outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
-            'entries.*.outputs.*.conferences.*.note' => ['nullable', 'string', 'max:255'],
         ]);
 
         $startDate = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('d-m-Y');
@@ -501,9 +435,6 @@ class BackOfficeController extends Controller
                         'journal' => $output['journal'] ?? null,
                         'quartile' => $output['quartile'] ?? null,
                         'impact_factor' => $output['impact_factor'] ?? null,
-                        'delivered_at' => $output['delivered_at'] ?? null,
-                        'description' => $output['description'] ?? null,
-                        'document_link' => $output['document_link'] ?? null,
                         'authors' => $output['authors'] ?? null,
                         'conferences' => $output['conferences'] ?? null,
                     ]);
@@ -519,31 +450,14 @@ class BackOfficeController extends Controller
                 $createdEntry = $task->entries()->create([
                     'person_name' => $entry['person_name'],
                     'category' => $entry['category'],
+                    'job_name' => $entry['job_name'],
                     'job_detail' => $entry['job_detail'],
                     'start_date' => $entry['start_date'],
                     'end_date' => $entry['end_date'],
-                    'document_link' => $entry['document_link'] ?? null,
                     'hours' => $hours,
                     'fte_value' => $fteValue,
                 ]);
 
-                if (!empty($entry['outputs'])) {
-                    foreach ($entry['outputs'] as $output) {
-                        $createdEntry->outputs()->create([
-                            'title' => $output['title'],
-                            'project_output' => $output['project_output'] ?? null,
-                            'year' => $output['year'] ?? null,
-                            'journal' => $output['journal'] ?? null,
-                            'quartile' => $output['quartile'] ?? null,
-                            'impact_factor' => $output['impact_factor'] ?? null,
-                            'delivered_at' => $output['delivered_at'] ?? null,
-                            'description' => $output['description'] ?? null,
-                            'document_link' => $output['document_link'] ?? null,
-                            'authors' => $output['authors'] ?? null,
-                            'conferences' => $output['conferences'] ?? null,
-                        ]);
-                    }
-                }
             }
         });
 
