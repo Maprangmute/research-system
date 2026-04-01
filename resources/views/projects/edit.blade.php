@@ -1087,9 +1087,9 @@
                                         {{ $t === 'EA114 Events / Forum' ? 'selected' : '' }}>
                                         EA114 Events / Forum
                                     </option>
-                                    <option value="EA115 Capacity Building"
-                                        {{ $t === 'EA115 Capacity Building' ? 'selected' : '' }}>
-                                        EA115 Capacity Building
+                                    <option value="EA115 Capacity Building / Knowledge Sharing"
+                                        {{ $t === 'EA115 Capacity Building / Knowledge Sharing' ? 'selected' : '' }}>
+                                        EA115 Capacity Building / Knowledge Sharing
                                     </option>
                                     <option value="EA116 Research Project"
                                         {{ $t === 'EA116 Research Project' ? 'selected' : '' }}>
@@ -1097,6 +1097,10 @@
                                     </option>
                                     <option value="EA117 MOU" {{ $t === 'EA117 MOU' ? 'selected' : '' }}>
                                         EA117 MOU
+                                    </option>
+                                    <option value="EA118 Award and Recognition"
+                                        {{ $t === 'EA118 Award and Recognition' ? 'selected' : '' }}>
+                                        EA118 Award and Recognition
                                     </option>
                                 </select>
                             </label>
@@ -2338,9 +2342,10 @@
             <option value="EA112 Present to Committee Meeting / Policy Maker / Board">EA112 Present to Committee Meeting / Policy Maker / Board</option>
             <option value="EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา">EA113 คำสั่งแต่งตั้ง Committees เน้นที่ SIHP เป็นกรรมการและหรือเลขา</option>
             <option value="EA114 Events / Forum">EA114 Events / Forum</option>
-            <option value="EA115 Capacity Building">EA115 Capacity Building</option>
+            <option value="EA115 Capacity Building / Knowledge Sharing">EA115 Capacity Building / Knowledge Sharing</option>
             <option value="EA116 Research Project">EA116 Research Project</option>
             <option value="EA117 MOU">EA117 MOU</option>
+            <option value="EA118 Award and Recognition">EA118 Award and Recognition</option>
           </select>
         </label>
 

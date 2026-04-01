@@ -465,9 +465,10 @@
                         <option>EA112 Presentation to Committee / Policy Maker / Board</option>
                         <option>EA113 Appointment Orders (SIHP as Committee / Secretary)</option>
                         <option>EA114 Events / Forum</option>
-                        <option>EA115 Capacity Building</option>
+                        <option>EA115 Capacity Building / Knowledge Sharing</option>
                         <option>EA116 Research Project</option>
                         <option>EA117 MOU</option>
+                        <option>EA118 Award and Recognition</option>
                     </select>
                 </label>
                 <label class="block md:col-span-2">
