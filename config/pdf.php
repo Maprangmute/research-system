@@ -9,6 +9,7 @@ return [
     'margin_right' => 10,
     'margin_top' => 10,
     'margin_bottom' => 10,
+    'tempDir' => storage_path('app/mpdf-temp'),
     'font_path' => resource_path('fonts/'),
     'font_data' => [
         'thsarabun' => [

@@ -967,7 +967,7 @@
                             $isEA103 = Str::startsWith((string) ($output->type ?? ''), 'EA103');
                             $typeBadgeStyle = $outputTypeStyle($output->type ?? '');
                         @endphp
-                        <div class="output-block">
+                        <div id="output-{{ $output->id }}" class="output-block">
                             <div class="flex items-start gap-2">
                                 <div class="list-index">{{ $i + 1 }}</div>
                                 <div class="space-y-2 min-w-0 flex-1">
@@ -1044,7 +1044,7 @@
                                             @else
                                                 <div class="sub-list">
                                                     @foreach ($confsReal as $ci => $c)
-                                                        <div class="sub-card">
+                                                        <div id="output-{{ $output->id }}-conference-{{ $c->id }}" class="sub-card">
                                                             <div class="text-xs text-slate-500">#{{ $ci + 1 }}</div>
                                                             <div class="font-semibold">{{ $c->name ?: '-' }}</div>
                                                             <div class="text-sm text-slate-700">ประเภท: {{ $c->presentation_type ?: '-' }}</div>

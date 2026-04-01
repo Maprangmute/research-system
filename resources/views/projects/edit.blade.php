@@ -85,6 +85,11 @@
         <option value="{{ $fullName }}"></option>
     @endforeach
 </datalist>
+<datalist id="outputAuthorNames">
+    @foreach (\App\Models\OutputAuthor::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $authorName)
+        <option value="{{ $authorName }}"></option>
+    @endforeach
+</datalist>
 {{-- ✅ DATAlIST กลาง (ใช้ร่วมกันทุก row) --}}
 <datalist id="fteUsers">
     @foreach ($allUsers as $user)
@@ -1177,9 +1182,6 @@
                                     <div class="space-y-2">
                                         <div class="flex items-center justify-between">
                                             <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
-                                            <button type="button"
-                                                class="add-author-btn px-3 py-1 rounded bg-blue-600 text-white"
-                                                onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
                                         </div>
 
                                         <div class="authors-container space-y-2" id="authors-{{ $i }}">
@@ -1214,13 +1216,13 @@
                                                     </label>
 
                                                     <label class="w-full">
-                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อ-นามสกุล
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล
                                                             ผู้เขียน <span class="required-mark">*</span></span>
                                                         <input
                                                             name="outputs[{{ $i }}][authors][{{ $j }}][name]"
-                                                            type="text" list="userNames" class="w-full border p-2 rounded"
+                                                            type="text" list="outputAuthorNames" class="w-full border p-2 rounded"
                                                             value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}"
-                                                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                                            placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
                                                             oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
                                                             oninput="this.setCustomValidity('')">
                                                     </label>
@@ -1248,11 +1250,11 @@
                                                         </select>
                                                     </label>
                                                     <label class="w-full">
-                                                        <span class="block text-sm text-gray-700 mb-1">คำนำหน้า ชื่อ-สกุล
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล
                                                             ผู้เขียน <span class="required-mark">*</span></span>
                                                         <input name="outputs[{{ $i }}][authors][0][name]"
-                                                            type="text" list="userNames" class="w-full border p-2 rounded"
-                                                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+                                                            type="text" list="outputAuthorNames" class="w-full border p-2 rounded"
+                                                            placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
                                                             oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
                                                             oninput="this.setCustomValidity('')">
                                                     </label>
@@ -1263,6 +1265,11 @@
                                                     </div>
                                                 </div>
                                             @endforelse
+                                        </div>
+                                        <div class="flex justify-end">
+                                            <button type="button"
+                                                class="add-author-btn px-3 py-1 rounded bg-blue-600 text-white"
+                                                onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
                                         </div>
                                     </div>
                                 </div>
@@ -2456,9 +2463,11 @@
     <div class="space-y-2">
       <div class="flex items-center justify-between">
         <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
-        <button type="button" class="add-author-btn px-3 py-1 rounded bg-blue-600 text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
       </div>
       <div class="authors-container space-y-2" id="authors-${idx}"></div>
+      <div class="flex justify-end">
+        <button type="button" class="add-author-btn px-3 py-1 rounded bg-blue-600 text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+      </div>
     </div>
   `;
             return wrap;
@@ -2486,8 +2495,8 @@
         </select>
       </label>
       <label>
-        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน <span class="required-mark">*</span></span>
-        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" list="userNames" class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-สกุล" required
+        <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ) <span class="required-mark">*</span></span>
+        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" list="outputAuthorNames" class="w-full border p-2 rounded" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
                                     oninvalid="this.setCustomValidity('กรุณากรอกชื่อผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
       </label>

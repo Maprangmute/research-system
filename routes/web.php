@@ -209,6 +209,10 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/fte/project/{project}/pdf', [FteController::class, 'projectPdf'])->name('fte.project.pdf');
     Route::get('/fte/{person}/pdf', [FteController::class, 'exportPdf'])->name('fte.pdf');
     Route::get('/outputs', [OutputController::class, 'index'])->name('outputs.index');
+    Route::get('/outputs/papers', [OutputController::class, 'papers'])->name('outputs.papers');
+    Route::get('/outputs/papers/pdf', [OutputController::class, 'papersPdf'])->name('outputs.papers.pdf');
+    Route::get('/outputs/presentations', [OutputController::class, 'presentations'])->name('outputs.presentations');
+    Route::get('/outputs/presentations/pdf', [OutputController::class, 'presentationsPdf'])->name('outputs.presentations.pdf');
     Route::get('/back-office', [BackOfficeController::class, 'index'])->name('back_office.index');
     Route::get('/back-office/create', [BackOfficeController::class, 'create'])->name('back_office.create');
     Route::post('/back-office', [BackOfficeController::class, 'store'])->name('back_office.store');

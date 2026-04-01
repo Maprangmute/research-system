@@ -263,9 +263,29 @@
 
                         <a href="{{ route('back_office.index') }}"
                             class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧾
-                            Back Office</a> <a href="{{ route('outputs.index') }}"
-                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-amber-700 hover:text-amber-800 hover:bg-amber-50">📑
-                            outputs</a>
+                            Back Office</a>
+
+                        <div class="relative" x-data="{ openOutputs: false }">
+                            <button type="button" @click="openOutputs = !openOutputs" @click.away="openOutputs = false"
+                                class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold inline-flex items-center gap-1 text-amber-700 hover:text-amber-800 hover:bg-amber-50 whitespace-nowrap">
+                                📑 outputs
+                                <svg :class="{ 'rotate-180': openOutputs }" class="w-4 h-4 text-amber-600 transition-transform"
+                                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                            <div x-show="openOutputs" x-cloak
+                                class="absolute left-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                                <a href="{{ route('outputs.index') }}"
+                                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                    Output ทั้งหมด
+                                </a>
+                                <a href="{{ route('outputs.papers') }}"
+                                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                    Research Papers / Presentations
+                                </a>
+                            </div>
+                        </div>
 
                         <div class="relative" x-data="{ openFte: false }">
                             <button type="button" @click="openFte = !openFte" @click.away="openFte = false"
@@ -390,7 +410,9 @@
                         <a href="/rm">📋 รายการโปรเจค</a>
                         <a href="{{ route('back_office.index') }}">🧾 Back Office</a>
                         <a href="/rm/create">➕ เพิ่มโครงการ</a>
-                        <a href="{{ route('outputs.index') }}">📑 outputs</a>
+                        <div class="text-gray-700 font-medium">📑 outputs</div>
+                        <a href="{{ route('outputs.index') }}">Output ทั้งหมด</a>
+                        <a href="{{ route('outputs.papers') }}">Research Papers / Presentations</a>
                         <div class="text-gray-700 font-medium">🔥 FTE</div>
                         <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
                         <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>

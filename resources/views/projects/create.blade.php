@@ -61,6 +61,11 @@
         <option value="{{ $fullName }}"></option>
     @endforeach
 </datalist>
+<datalist id="outputAuthorNames">
+    @foreach (\App\Models\OutputAuthor::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $authorName)
+        <option value="{{ $authorName }}"></option>
+    @endforeach
+</datalist>
 {{-- ✅ DATAlIST กลาง (ใช้ร่วมกันทุก row) --}}
 <datalist id="fteUsers">
     @foreach ($allUsers as $user)
@@ -1523,9 +1528,11 @@
     <div class="space-y-2">
       <div class="flex items-center justify-between">
         <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
-        <button type="button" class="px-3 py-1 rounded bg-blue-600 text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
       </div>
       <div class="authors-container space-y-2" data-auth-index="0"></div>
+      <div class="flex justify-end">
+        <button type="button" class="px-3 py-1 rounded bg-blue-600 text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+      </div>
     </div>
   `;
 
@@ -1565,10 +1572,10 @@
     </label>
 
     <label class="w-full">
-      <span class="block text-sm text-gray-700 mb-1">ชื่อ-สกุล ผู้เขียน</span>
-      <input name="outputs[${outputIdx}][authors][${authorIdx}][name]" list="userNames" type="text"
+      <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
+      <input name="outputs[${outputIdx}][authors][${authorIdx}][name]" list="outputAuthorNames" type="text"
              class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-             placeholder="คำนำหน้า ชื่อ-นามสกุล" required
+             placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
                                     oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
     </label>

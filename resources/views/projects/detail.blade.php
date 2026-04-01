@@ -1180,7 +1180,7 @@
                                 $typeBadgeStyle = $outputTypeStyle($output->type ?? '');
                             @endphp
 
-                            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div id="output-{{ $output->id }}" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                 <div class="flex items-start gap-3">
                                     <div class="shrink-0 mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
                                         {{ $i + 1 }}.
@@ -1332,7 +1332,7 @@
                                                             </thead>
                                                             <tbody>
                                                                 @foreach ($confsReal as $ci => $c)
-                                                                    <tr class="border-t">
+                                                                    <tr id="output-{{ $output->id }}-conference-{{ $c->id }}" class="border-t">
                                                                         <td class="px-2 py-2">{{ $ci + 1 }}</td>
                                                                         <td class="px-2 py-2 break-words">
                                                                             {{ $c->name ?: '-' }}

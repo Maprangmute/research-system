@@ -338,6 +338,11 @@
             <option value="{{ $person }}"></option>
         @endforeach
     </datalist>
+    <datalist id="output-author-names">
+        @foreach (\App\Models\OutputAuthor::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $authorName)
+            <option value="{{ $authorName }}"></option>
+        @endforeach
+    </datalist>
 
     <template id="entry-template">
         <div class="entry-card border rounded-2xl p-4 bg-slate-50" data-entry>
@@ -944,9 +949,11 @@
                 <div>
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-xs font-semibold text-slate-600">รายชื่อผู้เขียน (Authors)</span>
-                        <button type="button" class="text-emerald-600 text-xs hover:underline" onclick="addOutputAuthor(this)">เพิ่มผู้เขียน</button>
                     </div>
                     <div class="space-y-2" data-output-authors data-prefix="${prefix}"></div>
+                    <div class="mt-2 flex justify-end">
+                        <button type="button" class="text-emerald-600 text-xs hover:underline" onclick="addOutputAuthor(this)">เพิ่มผู้เขียน</button>
+                    </div>
                 </div>
             `;
             return wrap;
@@ -985,8 +992,8 @@
                     </select>
                 </label>
                 <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ชื่อ-นามสกุล</span>
-                    <input name="${prefix}[authors][${idx}][name]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="ชื่อ-นามสกุล">
+                    <span class="text-xs font-semibold text-slate-600">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
+                    <input name="${prefix}[authors][${idx}][name]" list="output-author-names" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)">
                 </label>
                 <div class="md:col-span-3 text-right">
                     <button type="button" class="text-red-500 text-xs hover:underline" onclick="this.closest('[data-output-author]').remove()">ลบ</button>
