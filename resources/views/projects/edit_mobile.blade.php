@@ -1534,18 +1534,18 @@
                                                             name="outputs[{{ $i }}][conferences][{{ $k }}][presentation_type]"
                                                             class="w-full border p-2 rounded">
                                                             <option value="">เลือก</option>
-                                                            <option value="Oral"
-                                                                {{ $pt === 'Oral' ? 'selected' : '' }}>Oral
+                                                            <option value="Oral Presentation"
+                                                                {{ $pt === 'Oral Presentation' ? 'selected' : '' }}>Oral Presentation
                                                             </option>
                                                             <option
-                                                                value="Poster"{{ $pt === 'Poster' ? 'selected' : '' }}>
-                                                                Poster</option>
-                                                            <option value="Panel"
-                                                                {{ $pt === 'Panel' ? 'selected' : '' }}>Panel
-                                                            </option>
-                                                            <option value="Invited Talk"
-                                                                {{ $pt === 'Invited Talk' ? 'selected' : '' }}>
-                                                                Invited Talk</option>
+                                                                value="Poster Presentation"{{ $pt === 'Poster Presentation' ? 'selected' : '' }}>
+                                                                Poster Presentation</option>
+                                                            <option
+                                                                value="Panel Discussion"{{ $pt === 'Panel Discussion' ? 'selected' : '' }}>
+                                                                Panel Discussion</option>
+                                                            <option
+                                                                value="Keynote Speech"{{ $pt === 'Keynote Speech' ? 'selected' : '' }}>
+                                                                Keynote Speech</option>
                                                         </select>
                                                     </label>
                                                     <label>
@@ -1557,12 +1557,13 @@
                                                             placeholder="เมือง/ประเทศ">
                                                     </label>
                                                     <label>
-                                                        <span class="block text-sm text-gray-700 mb-1">หมายเหตุ</span>
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
                                                         <input
                                                             name="outputs[{{ $i }}][conferences][{{ $k }}][note]"
+                                                            list="userNames"
                                                             class="w-full border p-2 rounded"
                                                             value="{{ old("outputs.$i.conferences.$k.note", $c->note) }}"
-                                                            placeholder="หมายเหตุเพิ่มเติม">
+                                                            placeholder="ชื่อผู้นำเสนอ">
                                                     </label>
                                                 </div>
                                             </div>
@@ -1591,10 +1592,10 @@
                                                             name="outputs[{{ $i }}][conferences][0][presentation_type]"
                                                             class="w-full border p-2 rounded">
                                                             <option value="">เลือก</option>
-                                                            <option value="Oral">Oral</option>
-                                                            <option value="Poster">Poster</option>
-                                                            <option value="Panel">Panel</option>
-                                                            <option value="Invited Talk">Invited Talk</option>
+                                                            <option value="Oral Presentation">Oral Presentation</option>
+                                                            <option value="Poster Presentation">Poster Presentation</option>
+                                                            <option value="Panel Discussion">Panel Discussion</option>
+                                                            <option value="Keynote Speech">Keynote Speech</option>
                                                         </select>
                                                     </label>
                                                     <label>
@@ -1605,10 +1606,11 @@
                                                             placeholder="เมือง/ประเทศ">
                                                     </label>
                                                     <label>
-                                                        <span class="block text-sm text-gray-700 mb-1">หมายเหตุ</span>
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
                                                         <input
                                                             name="outputs[{{ $i }}][conferences][0][note]"
-                                                            class="w-full border p-2 rounded" placeholder="หมายเหตุเพิ่มเติม">
+                                                            list="userNames"
+                                                            class="w-full border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
                                                     </label>
                                                 </div>
                                             </div>
@@ -2860,10 +2862,10 @@
           <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
           <select name="outputs[${idx}][conferences][${cIdx}][presentation_type]" class="w-full border p-2 rounded">
             <option value="">เลือก</option>
-            <option value="Oral">Oral</option>
-            <option value="Poster">Poster</option>
-            <option value="Panel">Panel</option>
-            <option value="Invited Talk">Invited Talk</option>
+            <option value="Oral Presentation">Oral Presentation</option>
+            <option value="Poster Presentation">Poster Presentation</option>
+            <option value="Panel Discussion">Panel Discussion</option>
+            <option value="Keynote Speech">Keynote Speech</option>
           </select>
         </label>
         <label>
@@ -2871,8 +2873,8 @@
           <input name="outputs[${idx}][conferences][${cIdx}][location]" class="w-full border p-2 rounded" placeholder="เมือง/ประเทศ">
         </label>
         <label>
-          <span class="block text-sm text-gray-700 mb-1">หมายเหตุ</span>
-          <input name="outputs[${idx}][conferences][${cIdx}][note]" class="w-full border p-2 rounded" placeholder="หมายเหตุเพิ่มเติม">
+          <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
+          <input name="outputs[${idx}][conferences][${cIdx}][note]" list="userNames" class="w-full border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
         </label>
       </div>
     </div>

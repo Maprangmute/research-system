@@ -1602,7 +1602,7 @@
             <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
             <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
             <th class="px-2 py-2 text-left">สถานที่</th>
-            <th class="px-2 py-2 text-left">หมายเหตุ</th>
+            <th class="px-2 py-2 text-left">ชื่อผู้นำเสนอ</th>
             <th class="px-2 py-2 text-center">ลบ</th>
           </tr>
         </thead>
@@ -1640,17 +1640,17 @@
     <td class="px-2 py-2">
       <select name="outputs[${outputIdx}][conferences][${cIdx}][presentation_type]" class="w-44 border p-2 rounded">
         <option value="">เลือก</option>
-        <option value="Oral">Oral</option>
-        <option value="Poster">Poster</option>
-        <option value="Panel">Panel</option>
-        <option value="Invited Talk">Invited Talk</option>
+        <option value="Oral Presentation">Oral Presentation</option>
+        <option value="Poster Presentation">Poster Presentation</option>
+        <option value="Panel Discussion">Panel Discussion</option>
+        <option value="Keynote Speech">Keynote Speech</option>
       </select>
     </td>
     <td class="px-2 py-2">
       <input name="outputs[${outputIdx}][conferences][${cIdx}][location]" class="w-44 border p-2 rounded" placeholder="เมือง/ประเทศ">
     </td>
     <td class="px-2 py-2">
-      <input name="outputs[${outputIdx}][conferences][${cIdx}][note]" class="w-56 border p-2 rounded" placeholder="หมายเหตุ">
+      <input name="outputs[${outputIdx}][conferences][${cIdx}][note]" list="userNames" class="w-56 border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
     </td>
     <td class="px-2 py-2 text-center">
       <button type="button" class="px-2 py-1 text-red-600 border border-red-300 rounded" onclick="removeConferenceRow(this)">ลบ</button>

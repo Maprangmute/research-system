@@ -1004,10 +1004,10 @@
                     <span class="text-xs font-semibold text-slate-600">ประเภทนำเสนอ</span>
                     <select name="${prefix}[conferences][${idx}][presentation_type]" class="w-full mt-1 border border-slate-200 rounded-lg p-2">
                         <option value="">เลือก</option>
-                        <option value="Oral">Oral</option>
-                        <option value="Poster">Poster</option>
-                        <option value="Panel">Panel</option>
-                        <option value="Invited Talk">Invited Talk</option>
+                        <option value="Oral Presentation">Oral Presentation</option>
+                        <option value="Poster Presentation">Poster Presentation</option>
+                        <option value="Panel Discussion">Panel Discussion</option>
+                        <option value="Keynote Speech">Keynote Speech</option>
                     </select>
                 </label>
                 <label class="block">
@@ -1015,8 +1015,8 @@
                     <input name="${prefix}[conferences][${idx}][location]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เมือง/ประเทศ">
                 </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">หมายเหตุ</span>
-                    <input name="${prefix}[conferences][${idx}][note]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="หมายเหตุ">
+                    <span class="text-xs font-semibold text-slate-600">ชื่อผู้นำเสนอ</span>
+                    <input name="${prefix}[conferences][${idx}][note]" list="person-list" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="ชื่อผู้นำเสนอ">
                 </label>
                 <div class="md:col-span-5 text-right">
                     <button type="button" class="text-red-500 text-xs hover:underline" onclick="this.closest('[data-output-conf]').remove()">ลบ</button>

@@ -1286,7 +1286,7 @@
                                                     <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
                                                     <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
                                                     <th class="px-2 py-2 text-left">สถานที่</th>
-                                                    <th class="px-2 py-2 text-left">หมายเหตุ</th>
+                                                    <th class="px-2 py-2 text-left">ชื่อผู้นำเสนอ</th>
                                                     <th class="px-2 py-2 text-center">ลบ</th>
                                                 </tr>
                                             </thead>
@@ -1310,18 +1310,18 @@
                                                                 name="outputs[{{ $i }}][conferences][{{ $k }}][presentation_type]"
                                                                 class="w-44 border p-2 rounded">
                                                                 <option value="">เลือก</option>
-                                                                <option value="Oral"
-                                                                    {{ $pt === 'Oral' ? 'selected' : '' }}>Oral
+                                                                <option value="Oral Presentation"
+                                                                    {{ $pt === 'Oral Presentation' ? 'selected' : '' }}>Oral Presentation
                                                                 </option>
                                                                 <option
-                                                                    value="Poster"{{ $pt === 'Poster' ? 'selected' : '' }}>
-                                                                    Poster</option>
-                                                                <option value="Panel"
-                                                                    {{ $pt === 'Panel' ? 'selected' : '' }}>Panel
-                                                                </option>
-                                                                <option value="Invited Talk"
-                                                                    {{ $pt === 'Invited Talk' ? 'selected' : '' }}>
-                                                                    Invited Talk</option>
+                                                                    value="Poster Presentation"{{ $pt === 'Poster Presentation' ? 'selected' : '' }}>
+                                                                    Poster Presentation</option>
+                                                                <option
+                                                                    value="Panel Discussion"{{ $pt === 'Panel Discussion' ? 'selected' : '' }}>
+                                                                    Panel Discussion</option>
+                                                                <option
+                                                                    value="Keynote Speech"{{ $pt === 'Keynote Speech' ? 'selected' : '' }}>
+                                                                    Keynote Speech</option>
                                                             </select>
                                                         </td>
                                                         <td class="px-2 py-2">
@@ -1336,7 +1336,8 @@
                                                                 name="outputs[{{ $i }}][conferences][{{ $k }}][note]"
                                                                 class="w-56 border p-2 rounded"
                                                                 value="{{ old("outputs.$i.conferences.$k.note", $c->note) }}"
-                                                                placeholder="หมายเหตุ">
+                                                                list="userNames"
+                                                                placeholder="ชื่อผู้นำเสนอ">
                                                         </td>
                                                         <td class="px-2 py-2 text-center">
                                                             <button type="button"
@@ -1357,10 +1358,10 @@
                                                                 name="outputs[{{ $i }}][conferences][0][presentation_type]"
                                                                 class="w-44 border p-2 rounded">
                                                                 <option value="">เลือก</option>
-                                                                <option value="Oral">Oral</option>
-                                                                <option value="Poster">Poster</option>
-                                                                <option value="Panel">Panel</option>
-                                                                <option value="Invited Talk">Invited Talk</option>
+                                                                <option value="Oral Presentation">Oral Presentation</option>
+                                                                <option value="Poster Presentation">Poster Presentation</option>
+                                                                <option value="Panel Discussion">Panel Discussion</option>
+                                                                <option value="Keynote Speech">Keynote Speech</option>
                                                             </select>
                                                         </td>
                                                         <td class="px-2 py-2">
@@ -1372,7 +1373,8 @@
                                                         <td class="px-2 py-2">
                                                             <input
                                                                 name="outputs[{{ $i }}][conferences][0][note]"
-                                                                class="w-56 border p-2 rounded" placeholder="หมายเหตุ">
+                                                                list="userNames"
+                                                                class="w-56 border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
                                                         </td>
                                                         <td class="px-2 py-2 text-center">
                                                             <button type="button"
@@ -2518,7 +2520,7 @@
             <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
             <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
             <th class="px-2 py-2 text-left">สถานที่</th>
-            <th class="px-2 py-2 text-left">หมายเหตุ</th>
+            <th class="px-2 py-2 text-left">ชื่อผู้นำเสนอ</th>
             <th class="px-2 py-2 text-center">ลบ</th>
           </tr>
         </thead>
@@ -2545,17 +2547,17 @@
       <td class="px-2 py-2">
         <select name="outputs[${idx}][conferences][${cIdx}][presentation_type]" class="w-44 border p-2 rounded">
           <option value="">เลือก</option>
-          <option value="Oral">Oral</option>
-          <option value="Poster">Poster</option>
-          <option value="Panel">Panel</option>
-          <option value="Invited Talk">Invited Talk</option>
+          <option value="Oral Presentation">Oral Presentation</option>
+          <option value="Poster Presentation">Poster Presentation</option>
+          <option value="Panel Discussion">Panel Discussion</option>
+          <option value="Keynote Speech">Keynote Speech</option>
         </select>
       </td>
       <td class="px-2 py-2">
         <input name="outputs[${idx}][conferences][${cIdx}][location]" class="w-44 border p-2 rounded" placeholder="เมือง/ประเทศ">
       </td>
       <td class="px-2 py-2">
-        <input name="outputs[${idx}][conferences][${cIdx}][note]" class="w-56 border p-2 rounded" placeholder="หมายเหตุ">
+        <input name="outputs[${idx}][conferences][${cIdx}][note]" list="userNames" class="w-56 border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
       </td>
       <td class="px-2 py-2 text-center">
         <button type="button" class="px-2 py-1 text-red-600 border border-red-300 rounded" onclick="removeConferenceRow(this)">ลบ</button>

@@ -1327,7 +1327,7 @@
                                                                     </th>
                                                                     <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
                                                                     <th class="px-2 py-2 text-left">สถานที่</th>
-                                                                    <th class="px-2 py-2 text-left">หมายเหตุ</th>
+                                                                    <th class="px-2 py-2 text-left">ชื่อผู้นำเสนอ</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>

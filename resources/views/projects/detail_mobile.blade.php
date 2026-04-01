@@ -1049,7 +1049,7 @@
                                                             <div class="font-semibold">{{ $c->name ?: '-' }}</div>
                                                             <div class="text-sm text-slate-700">ประเภท: {{ $c->presentation_type ?: '-' }}</div>
                                                             <div class="text-sm text-slate-700">สถานที่: {{ $c->location ?: '-' }}</div>
-                                                            <div class="text-sm text-slate-700">หมายเหตุ: {{ $c->note ?: '-' }}</div>
+                                                            <div class="text-sm text-slate-700">ชื่อผู้นำเสนอ: {{ $c->note ?: '-' }}</div>
                                                         </div>
                                                     @endforeach
                                                 </div>

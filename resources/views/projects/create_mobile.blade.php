@@ -1882,10 +1882,10 @@
         <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
         <select name="outputs[${outputIdx}][conferences][${cIdx}][presentation_type]" class="w-full border p-2 rounded">
           <option value="">เลือก</option>
-          <option value="Oral">Oral</option>
-          <option value="Poster">Poster</option>
-          <option value="Panel">Panel</option>
-          <option value="Invited Talk">Invited Talk</option>
+          <option value="Oral Presentation">Oral Presentation</option>
+          <option value="Poster Presentation">Poster Presentation</option>
+          <option value="Panel Discussion">Panel Discussion</option>
+          <option value="Keynote Speech">Keynote Speech</option>
         </select>
       </label>
       <label>
@@ -1893,8 +1893,8 @@
         <input name="outputs[${outputIdx}][conferences][${cIdx}][location]" class="w-full border p-2 rounded" placeholder="เมือง/ประเทศ">
       </label>
       <label>
-        <span class="block text-sm text-gray-700 mb-1">หมายเหตุ</span>
-        <input name="outputs[${outputIdx}][conferences][${cIdx}][note]" class="w-full border p-2 rounded" placeholder="หมายเหตุเพิ่มเติม">
+        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
+        <input name="outputs[${outputIdx}][conferences][${cIdx}][note]" list="userNames" class="w-full border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
       </label>
     </div>
   `;
