@@ -1306,22 +1306,22 @@
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (Top 5)</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 สัดส่วนทุนภายนอกที่ได้รับตามแหล่งทุน</h3>
                     <canvas id="chartExternalBySource" height="250"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายใน แยกตามแหล่งทุน (Top 5)</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏛️ สัดส่วนทุนภายในที่ได้รับตามแหล่งทุน</h3>
                     <canvas id="chartInternalBySource" height="250"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอก แยกตามแหล่งทุน (ต่อปี | Top 8)</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอกตามแหล่งทุน: แนวโน้มรายปี</h3>
                     <canvas id="chartExternalBySourceYear" height="380"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏛️ ทุนภายใน แยกตามแหล่งทุน (ต่อปี | Top 8)</h3>
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">🏛️ ทุนภายในตามแหล่งทุน: แนวโน้มรายปี</h3>
                     <canvas id="chartInternalBySourceYear" height="380"></canvas>
                 </div>
 
@@ -1333,7 +1333,7 @@
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">📚 Publication รายปี (แท่งแนวตั้ง)</h3>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">📚 Publication รายปี</h3>
                     <canvas id="chartPublicationPerYear" height="280"></canvas>
                 </div>
 
@@ -7243,10 +7243,10 @@
                     chartYearlyNewVsTotal: 'โครงการทั้งหมด/ใหม่/กำลังดำเนินการ/ปิดโปรเจค/ยกเลิกโปรเจค (รายปี)',
                     chartFundingSplit: 'สัดส่วนทุน ภายใน/ภายนอก (รายปี)',
                     chartBudgetPerYear: 'งบประมาณรวม (รายปี)',
-                    chartExternalBySource: 'ทุนภายนอก ตามแหล่งทุน (Top 5)',
-                    chartInternalBySource: 'ทุนภายใน ตามแหล่งทุน (Top 5)',
-                    chartExternalBySourceYear: 'ทุนภายนอก แยกตามปี (Top 8)',
-                    chartInternalBySourceYear: 'ทุนภายใน แยกตามปี (Top 8)',
+                    chartExternalBySource: 'สัดส่วนทุนภายนอกที่ได้รับตามแหล่งทุน',
+                    chartInternalBySource: 'สัดส่วนทุนภายในที่ได้รับตามแหล่งทุน',
+                    chartExternalBySourceYear: 'ทุนภายนอกตามแหล่งทุน: แนวโน้มรายปี',
+                    chartInternalBySourceYear: 'ทุนภายในตามแหล่งทุน: แนวโน้มรายปี',
                     chartOutputStacked: 'Output แยกประเภท (รายปี)',
                     chartPublicationPerYear: 'Publication รายปี',
                     chartAuthorRolePerYear: 'บทบาทผู้เขียน (First/Co/Corresponding) รายปี + Top N',

@@ -502,7 +502,7 @@
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Back Office Workspace</p>
                         <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">🧾 งานนอกโครงการ</h1>
                         <p class="mt-3 text-sm leading-6 text-slate-600 md:text-[15px]">
-                            จัดการงานภายในที่ไม่ผูกกับโครงการวิจัย พร้อมสรุปภาระงาน ชั่วโมง และ FTE ในหน้าเดียว
+                            จัดการงานภายในที่ไม่ผูกกับโครงการวิจัย
                         </p>
                     </div>
                     <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
@@ -524,15 +524,9 @@
                         <summary class="flex cursor-pointer flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div class="max-w-3xl">
                                 <h2 class="text-base font-semibold text-slate-900">ตัวกรอง</h2>
-                                <p class="mt-1 text-sm leading-6 text-slate-500">
-                                    เปิดเพื่อค้นหาจากชื่องาน รายละเอียด จุดประสงค์ ผู้บันทึก ผู้ปฏิบัติงาน และช่วงวันที่ โดยผลลัพธ์จะอัปเดตแบบ AJAX
-                                </p>
                             </div>
                             <div class="flex flex-wrap items-center gap-2 md:justify-end">
-                                <div id="backOfficeLoadingIndicator" class="back-office-loading-indicator hidden">
-                                    <span class="back-office-loading-indicator__dot" aria-hidden="true"></span>
-                                    กำลังอัปเดตผลลัพธ์
-                                </div>
+                                <div id="backOfficeLoadingIndicator" class="hidden"></div>
                                 <span class="back-office-chip bg-sky-50 text-sky-800">
                                     ฟิลเตอร์ที่ใช้อยู่
                                     <span id="backOfficeActiveFilterCount" class="font-extrabold text-slate-900">{{ $activeFilterCount }}</span>
@@ -854,11 +848,16 @@
 
             let resultController = null;
             let detailController = null;
+            let requestToken = 0;
             let debounceTimer = null;
+            let isSearchComposing = false;
+            let isSyncingForms = false;
             let filterDrawerOpen = false;
             let detailDrawerOpen = false;
             let bodyLockCount = 0;
             let bodyOverflowValue = '';
+            let baseResultsCountText = '';
+            let baseResultsMetaHtml = '';
 
             const lockBody = () => {
                 if (bodyLockCount === 0) {
@@ -905,6 +904,61 @@
                 fab.classList.toggle('is-visible', rect.bottom < 48);
             };
 
+            const normalizeSearchTerm = (value) => String(value || '')
+                .toLowerCase()
+                .normalize('NFKC')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            const captureResultsMeta = () => {
+                const countEl = query('#backOfficeResultsCount');
+                const metaEl = query('#backOfficeResultsMeta');
+                baseResultsCountText = countEl ? countEl.textContent.trim() : '';
+                baseResultsMetaHtml = metaEl ? metaEl.innerHTML : '';
+            };
+
+            const applyLocalSearchPreview = (rawValue) => {
+                const list = query('#backOfficeResultsList');
+                if (!list) return;
+
+                const cards = queryAll('[data-back-office-search-text]', list);
+                if (!cards.length) return;
+
+                const term = normalizeSearchTerm(rawValue);
+                const emptyState = query('#backOfficeEmptySearchState');
+                const paginationWrap = query('#backOfficePaginationWrap');
+                const countEl = query('#backOfficeResultsCount');
+                const metaEl = query('#backOfficeResultsMeta');
+                let visibleCount = 0;
+
+                cards.forEach((card) => {
+                    const haystack = normalizeSearchTerm(card.dataset.backOfficeSearchText || card.textContent);
+                    const matched = term === '' || haystack.includes(term);
+                    card.classList.toggle('hidden', !matched);
+                    if (matched) visibleCount += 1;
+                });
+
+                if (emptyState) {
+                    emptyState.classList.toggle('hidden', !(term !== '' && visibleCount === 0));
+                }
+
+                if (paginationWrap) {
+                    paginationWrap.classList.toggle('hidden', term !== '');
+                }
+
+                if (countEl) {
+                    countEl.textContent = term === ''
+                        ? baseResultsCountText
+                        : `พบ ${visibleCount} รายการในหน้านี้`;
+                }
+
+                if (metaEl) {
+                    metaEl.innerHTML = term === ''
+                        ? baseResultsMetaHtml
+                        : 'กรองทันทีโดยไม่ reload';
+                }
+            };
+
             const setFieldValue = (field, value) => {
                 if (!field) return;
 
@@ -923,28 +977,38 @@
             const syncFormsFromSource = (sourceForm) => {
                 if (!sourceForm) return;
 
-                getForms().forEach((targetForm) => {
-                    if (!targetForm || targetForm === sourceForm) return;
+                isSyncingForms = true;
+                try {
+                    getForms().forEach((targetForm) => {
+                        if (!targetForm || targetForm === sourceForm) return;
 
-                    queryAll('[name]', sourceForm).forEach((sourceField) => {
-                        if (!sourceField.name) return;
-                        const targetField = targetForm.elements.namedItem(sourceField.name);
-                        if (!targetField) return;
-                        setFieldValue(targetField, sourceField.value);
+                        queryAll('[name]', sourceForm).forEach((sourceField) => {
+                            if (!sourceField.name) return;
+                            const targetField = targetForm.elements.namedItem(sourceField.name);
+                            if (!targetField) return;
+                            setFieldValue(targetField, sourceField.value);
+                        });
                     });
-                });
+                } finally {
+                    isSyncingForms = false;
+                }
             };
 
             const syncFormsWithUrl = (url) => {
-                getForms().forEach((form) => {
-                    queryAll('[name]', form).forEach((field) => {
-                        if (!field.name) return;
-                        const value = field.name === 'sort'
-                            ? (url.searchParams.get(field.name) ?? 'latest')
-                            : (url.searchParams.get(field.name) ?? '');
-                        setFieldValue(field, value);
+                isSyncingForms = true;
+                try {
+                    getForms().forEach((form) => {
+                        queryAll('[name]', form).forEach((field) => {
+                            if (!field.name) return;
+                            const value = field.name === 'sort'
+                                ? (url.searchParams.get(field.name) ?? 'latest')
+                                : (url.searchParams.get(field.name) ?? '');
+                            setFieldValue(field, value);
+                        });
                     });
-                });
+                } finally {
+                    isSyncingForms = false;
+                }
 
                 updateFilterBadges();
             };
@@ -1081,6 +1145,7 @@
 
             const fetchAndRender = async (url, options = {}) => {
                 const { updateUrl = true } = options;
+                const token = ++requestToken;
 
                 if (resultController) resultController.abort();
                 resultController = new AbortController();
@@ -1100,6 +1165,7 @@
                     }
 
                     const html = await response.text();
+                    if (token !== requestToken) return;
                     if (!replaceIndexContent(html)) {
                         throw new Error('Cannot replace back office index content');
                     }
@@ -1109,13 +1175,17 @@
                     }
 
                     syncFormsWithUrl(url);
+                    captureResultsMeta();
+                    applyLocalSearchPreview(query('input[name="search"]', getPrimaryForm() || getFilterDrawerForm())?.value || '');
                     syncFabVisibility();
                 } catch (error) {
                     if (error.name !== 'AbortError') {
                         console.error(error);
                     }
                 } finally {
-                    setLoading(false);
+                    if (token === requestToken) {
+                        setLoading(false);
+                    }
                 }
             };
 
@@ -1146,21 +1216,54 @@
 
                         if (field.matches('input[type="text"], input[type="search"]')) {
                             field.addEventListener('input', () => {
+                                if (isSyncingForms) return;
+                                if (isSearchComposing) return;
                                 syncFormsFromSource(form);
                                 updateFilterBadges();
-                                submitDebounced(260);
+                                const sourceForm = getPrimaryForm() || form;
+                                const searchField = query('input[name="search"]', sourceForm);
+                                applyLocalSearchPreview(searchField ? searchField.value : '');
+                                fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                             });
                             field.addEventListener('keydown', (event) => {
+                                if (isSyncingForms) return;
                                 if (event.key === 'Enter') {
                                     event.preventDefault();
                                     syncFormsFromSource(form);
-                                    submitDebounced(0);
+                                    const sourceForm = getPrimaryForm() || form;
+                                    const searchField = query('input[name="search"]', sourceForm);
+                                    applyLocalSearchPreview(searchField ? searchField.value : '');
+                                    fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                                 }
+                            });
+                            field.addEventListener('compositionstart', () => {
+                                if (isSyncingForms) return;
+                                isSearchComposing = true;
+                            });
+                            field.addEventListener('compositionend', () => {
+                                if (isSyncingForms) return;
+                                isSearchComposing = false;
+                                syncFormsFromSource(form);
+                                updateFilterBadges();
+                                const sourceForm = getPrimaryForm() || form;
+                                const searchField = query('input[name="search"]', sourceForm);
+                                applyLocalSearchPreview(searchField ? searchField.value : '');
+                                fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
+                            });
+                            field.addEventListener('change', () => {
+                                if (isSyncingForms) return;
+                                syncFormsFromSource(form);
+                                updateFilterBadges();
+                                const sourceForm = getPrimaryForm() || form;
+                                const searchField = query('input[name="search"]', sourceForm);
+                                applyLocalSearchPreview(searchField ? searchField.value : '');
+                                fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                             });
                             return;
                         }
 
                         field.addEventListener('change', () => {
+                            if (isSyncingForms) return;
                             syncFormsFromSource(form);
                             updateFilterBadges();
                             submitDebounced(120);
@@ -1253,6 +1356,8 @@
             bindDrawers();
             updateFilterBadges();
             syncFabVisibility();
+            captureResultsMeta();
+            applyLocalSearchPreview(query('input[name="search"]', getPrimaryForm() || getFilterDrawerForm())?.value || '');
         })();
     </script>
 @endsection

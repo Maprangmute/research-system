@@ -46,18 +46,26 @@
         <div class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4 md:flex-row md:items-center md:justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-slate-900">รายการงาน Back Office</h2>
-                <p class="mt-1 text-sm text-slate-500">
+                <p id="backOfficeResultsCount" class="mt-1 text-sm text-slate-500">
                     แสดงผล {{ $tasks->firstItem() ?? 0 }}–{{ $tasks->lastItem() ?? 0 }} จากทั้งหมด {{ $tasks->total() }} รายการ
                 </p>
             </div>
-            <div class="text-xs text-slate-500">
+            <div id="backOfficeResultsMeta" class="text-xs text-slate-500">
                 เรียงตาม <span class="font-semibold text-slate-700">{{ $currentSortLabel ?? 'บันทึกล่าสุด' }}</span>
             </div>
         </div>
 
-        <div class="space-y-4 p-4 md:p-5">
+        <div id="backOfficeResultsList" class="space-y-4 p-4 md:p-5">
             @forelse ($tasks as $task)
-                <article class="back-office-task-card p-5">
+                <article class="back-office-task-card p-5"
+                    data-back-office-search-text="{{ trim(implode(' ', array_filter([
+                        $task->title,
+                        $task->description,
+                        $task->purpose,
+                        is_array($task->leaders) ? implode(' ', array_filter($task->leaders)) : $task->leaders,
+                        $task->creator?->prefix,
+                        $task->creator?->name,
+                    ], fn ($value) => filled($value)))) }}">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div class="min-w-0 flex-1">
                             <h3 class="text-lg font-semibold leading-7 text-slate-900">
@@ -126,10 +134,19 @@
                     <p class="mt-2 text-sm text-slate-500">ลองปรับคำค้นหา ผู้บันทึก บุคคล ประเภท หรือสถานะผลงาน แล้วระบบจะอัปเดตผลลัพธ์ใหม่</p>
                 </div>
             @endforelse
+            <div id="backOfficeEmptySearchState" class="hidden rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm">
+                    <svg class="h-7 w-7 text-slate-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M5 6h14M5 12h14M5 18h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <h3 class="mt-4 text-base font-semibold text-slate-800">ไม่มีข้อมูลตรงกับคำค้นหาในหน้านี้</h3>
+                <p class="mt-2 text-sm text-slate-500">ระบบกำลังกรองรายการในหน้าปัจจุบันทันที ลองพิมพ์ต่อหรือรอผลลัพธ์จากฐานข้อมูลสักครู่</p>
+            </div>
         </div>
 
         @if ($tasks->count() > 0)
-            <div class="border-t border-slate-100 bg-slate-50 px-4 py-3 md:px-5">
+            <div id="backOfficePaginationWrap" class="border-t border-slate-100 bg-slate-50 px-4 py-3 md:px-5">
                 {{ $tasks->links('vendor.pagination.th') }}
             </div>
         @endif

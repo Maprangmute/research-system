@@ -709,23 +709,23 @@ class AiDashboardController extends Controller
                     'stacked (ล้านบาท)','md');
 
             case 'external_by_source':
-                return $mk($id,'chart',$title ?? '🏦 ทุนภายนอก แยกตามแหล่งทุน', $this->chartBarFromPairs($pack['fund_sources']['external_by_source'] ?? [], 'จำนวนโครงการ'), 'Top 20','md');
+                return $mk($id,'chart',$title ?? '🏦 สัดส่วนทุนภายนอกที่ได้รับตามแหล่งทุน', $this->chartBarFromPairs($pack['fund_sources']['external_by_source'] ?? [], 'จำนวนโครงการ'), 'Top 20','md');
 
             case 'internal_by_source':
-                return $mk($id,'chart',$title ?? '🏛️ ทุนภายใน แยกตามแหล่งทุน', $this->chartBarFromPairs($pack['fund_sources']['internal_by_source'] ?? [], 'จำนวนโครงการ'), 'Top 20','md');
+                return $mk($id,'chart',$title ?? '🏛️ สัดส่วนทุนภายในที่ได้รับตามแหล่งทุน', $this->chartBarFromPairs($pack['fund_sources']['internal_by_source'] ?? [], 'จำนวนโครงการ'), 'Top 20','md');
 
             case 'external_by_source_per_year':
-                return $mk($id,'chart',$title ?? '🏦 ทุนภายนอก แยกตามแหล่งทุน (ต่อปี)', $this->chartStackedSourcesPerYear($pack['fund_sources']['external_by_source_per_year'] ?? []), 'stacked','lg');
+                return $mk($id,'chart',$title ?? '🏦 ทุนภายนอกตามแหล่งทุน: แนวโน้มรายปี', $this->chartStackedSourcesPerYear($pack['fund_sources']['external_by_source_per_year'] ?? []), 'stacked','lg');
 
             case 'internal_by_source_per_year':
-                return $mk($id,'chart',$title ?? '🏛️ ทุนภายใน แยกตามแหล่งทุน (ต่อปี)', $this->chartStackedSourcesPerYear($pack['fund_sources']['internal_by_source_per_year'] ?? []), 'stacked','lg');
+                return $mk($id,'chart',$title ?? '🏛️ ทุนภายในตามแหล่งทุน: แนวโน้มรายปี', $this->chartStackedSourcesPerYear($pack['fund_sources']['internal_by_source_per_year'] ?? []), 'stacked','lg');
 
             /* ================= Outputs ================= */
             case 'outputs_per_year':
                 return $mk($id,'chart',$title ?? '📝 Output (รายปี)', $this->chartLineFromKV($pack['outputs']['per_year'] ?? [], 'จำนวน Output'), null,'md');
 
             case 'pub_per_year':
-                return $mk($id,'chart',$title ?? '📚 Publication รายปี', $this->chartBarFromKV($pack['outputs']['pub_per_year'] ?? [], 'จำนวน Publication'), 'แท่งแนวตั้ง','md');
+                return $mk($id,'chart',$title ?? '📚 Publication รายปี', $this->chartBarFromKV($pack['outputs']['pub_per_year'] ?? [], 'จำนวน Publication'), '','md');
 
             case 'author_roles':
                 $ar = $pack['outputs']['author_roles'] ?? ['first'=>0,'co'=>0,'corresponding'=>0];

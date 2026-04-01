@@ -44,6 +44,16 @@ class BackOfficeController extends Controller
 
         $currentSort = $request->input('sort', 'latest');
 
+        $summaryQuery = BackOfficeTask::query();
+        $this->applyVisibilityScope($summaryQuery, $user, $fullName);
+        $this->applyIndexFilters($summaryQuery, $request);
+
+        $summaryTaskIds = (clone $summaryQuery)->select('back_office_tasks.id');
+        $entrySummary = BackOfficeEntry::query()
+            ->whereIn('task_id', $summaryTaskIds)
+            ->selectRaw('COUNT(*) as entries_count, COALESCE(SUM(hours), 0) as hours_sum, COALESCE(SUM(fte_value), 0) as fte_sum')
+            ->first();
+
         $query = BackOfficeTask::query()
             ->with(['creator'])
             ->withCount('entries')
@@ -55,12 +65,11 @@ class BackOfficeController extends Controller
         $this->applyIndexFilters($query, $request);
         $this->applyIndexSorting($query, $currentSort);
 
-        $summaryTasks = (clone $query)->get();
         $summary = [
-            'tasks' => $summaryTasks->count(),
-            'entries' => $summaryTasks->sum('entries_count'),
-            'hours' => $summaryTasks->sum('entries_sum_hours'),
-            'fte' => $summaryTasks->sum('entries_sum_fte_value'),
+            'tasks' => (clone $summaryQuery)->count('back_office_tasks.id'),
+            'entries' => (int) ($entrySummary->entries_count ?? 0),
+            'hours' => (float) ($entrySummary->hours_sum ?? 0),
+            'fte' => (float) ($entrySummary->fte_sum ?? 0),
         ];
 
         $tasks = $query
