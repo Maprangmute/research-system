@@ -971,6 +971,11 @@
                             <div class="flex items-start gap-2">
                                 <div class="list-index">{{ $i + 1 }}</div>
                                 <div class="space-y-2 min-w-0 flex-1">
+                                    @if (!empty($output->output_code))
+                                        <div class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">
+                                            {{ $output->output_code }}
+                                        </div>
+                                    @endif
                                     <div class="font-semibold leading-snug">{{ $output->title ?: '-' }}</div>
                                     <div class="flex flex-wrap items-center gap-2 text-xs">
                                         @if (!empty($output->type))

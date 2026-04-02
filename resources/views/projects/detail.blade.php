@@ -1188,6 +1188,11 @@
 
                                     <div class="grow space-y-2.5">
                                         {{-- ชื่อผลงาน + badge ประเภท --}}
+                                        @if (!empty($output->output_code))
+                                            <div class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">
+                                                {{ $output->output_code }}
+                                            </div>
+                                        @endif
                                         <div class="text-base font-semibold leading-snug text-gray-800 break-words">
                                                 {{ $output->title ?: '-' }}
                                         </div>

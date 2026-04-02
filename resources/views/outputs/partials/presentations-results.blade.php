@@ -59,6 +59,9 @@
                             @endphp
                             <tr class="align-top hover:bg-indigo-50/40">
                                 <td class="px-4 py-4 text-sm text-slate-900">
+                                    @if (!empty($row->output_code))
+                                        <div class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ $row->output_code }}</div>
+                                    @endif
                                     <div class="font-semibold leading-6">{{ $row->title }}</div>
                                     @if ($row->location !== '-')
                                         <div class="mt-1 text-xs text-slate-500">Location: {{ $row->location }}</div>
@@ -68,8 +71,8 @@
                                             รายละเอียด / ลิงก์:
                                             @if (filter_var($row->detail, FILTER_VALIDATE_URL))
                                                 <a href="{{ $row->detail }}" target="_blank" rel="noopener"
-                                                    class="font-medium text-indigo-700 hover:underline">
-                                                    {{ $row->detail }}
+                                                    class="ml-1 inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100">
+                                                    ดูเอกสาร
                                                 </a>
                                             @else
                                                 {{ $row->detail }}
@@ -92,7 +95,7 @@
                                     @if ($row->project_link)
                                         <a href="{{ $row->project_link }}"
                                             class="mt-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50">
-                                            เปิด Project Detail
+                                            {{ $row->project_code ? 'เปิด Project Detail' : 'เปิดรายละเอียด' }}
                                         </a>
                                     @endif
                                 </td>

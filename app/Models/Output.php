@@ -14,6 +14,7 @@ class Output extends Model
      */
     protected $fillable = [
         'project_id',
+        'output_code',
         'type',            // EA101..EA117
         'title',           // ชื่อผลงาน
         'year',            // วันที่ publish (string/date-string)
@@ -66,6 +67,11 @@ public function authors()
     public function isEA101(): bool
     {
         return is_string($this->type) && str_starts_with($this->type, 'EA101');
+    }
+
+    public static function formatOutputCode(int $id): string
+    {
+        return 'pv_' . str_pad((string) $id, 4, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -138,6 +144,12 @@ public function authors()
                 'action'          => 'output_create',
                 'changes'         => ProjectLog::sanitizeChanges($output->toArray()),
             ]);
+
+            if (empty($output->output_code) && $output->id) {
+                $output->forceFill([
+                    'output_code' => self::formatOutputCode((int) $output->id),
+                ])->saveQuietly();
+            }
         });
 
         // Log update (เฉพาะฟิลด์ที่เปลี่ยน)

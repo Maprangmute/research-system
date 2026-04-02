@@ -1064,7 +1064,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <label>
-                                <span class="text-sm">ประเภท <span class="text-red-500">*</span></span>
+                                <span class="text-sm">ประเภทของผลงาน <span class="text-red-500">*</span></span>
                                 <select name="outputs[__i__][type]" class="output-type w-full border p-2 rounded"
                                     onchange="handleOutputType(this)" required>
                                     <option value="">เลือกประเภทของผลงาน</option>
@@ -1091,8 +1091,8 @@
                             </label>
 
                             <label>
-                                <span class="text-sm">หมายเหตุ</span>
-                                <input name="outputs[__i__][project_output]" class="w-full border p-2 rounded" placeholder="เช่น ตีพิมพ์แล้ว / ลิงก์ / รายละเอียดเพิ่มเติม">
+                                <span class="text-sm">รายละเอียด / หมายเหตุ / LINK</span>
+                                <input name="outputs[__i__][project_output]" class="w-full border p-2 rounded" placeholder="รายละเอียด / หมายเหตุ / LINK">
                             </label>
 
                             <x-date-be name="outputs[__i__][year]" label="วันที่ publish" placeholder="เลือกวันที่ publish" required />

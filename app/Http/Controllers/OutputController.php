@@ -3,15 +3,384 @@
 namespace App\Http\Controllers;
 
 use App\Models\BackOfficeTaskOutput;
+use App\Models\ExternalOutput;
 use App\Models\Output;
+use App\Models\OutputAuthor;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use PDF;
 
 class OutputController extends Controller
 {
+    private const EXTERNAL_JOB_CATEGORIES = [
+        'TBA xxxxxx by Aj. V',
+    ];
+
+    public function externalAcademic(Request $request)
+    {
+        $query = ExternalOutput::query()
+            ->with(['authors', 'conferences', 'creator'])
+            ->latest();
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('output_code', 'like', '%' . $search . '%')
+                    ->orWhere('title', 'like', '%' . $search . '%')
+                    ->orWhere('note', 'like', '%' . $search . '%')
+                    ->orWhere('journal', 'like', '%' . $search . '%')
+                    ->orWhereHas('authors', function ($authorQ) use ($search) {
+                        $authorQ->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('role', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('conferences', function ($conferenceQ) use ($search) {
+                        $conferenceQ->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('presentation_type', 'like', '%' . $search . '%')
+                            ->orWhere('location', 'like', '%' . $search . '%')
+                            ->orWhere('presenter_name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $outputs = $query->paginate(12)->withQueryString();
+
+        $statsQuery = ExternalOutput::query();
+        $allCount = (clone $statsQuery)->count();
+        $paperCount = (clone $statsQuery)->where('type', 'EA101')->count();
+        $presentationCount = (clone $statsQuery)->where('type', 'EA103')->count();
+
+        $authorOptions = OutputAuthor::query()
+            ->whereNotNull('name')
+            ->whereRaw("TRIM(name) <> ''")
+            ->selectRaw('TRIM(name) as name')
+            ->distinct()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        $presenterOptions = User::query()
+            ->selectRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) as name")
+            ->whereRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) <> ''")
+            ->orderBy('name')
+            ->pluck('name')
+            ->unique()
+            ->values();
+
+        return view('outputs.external-academic-index', [
+            'outputs' => $outputs,
+            'allCount' => $allCount,
+            'paperCount' => $paperCount,
+            'presentationCount' => $presentationCount,
+            'search' => $request->string('search')->toString(),
+            'type' => $request->string('type')->toString(),
+            'jobCategoryOptions' => self::EXTERNAL_JOB_CATEGORIES,
+        ]);
+    }
+
+    public function externalAcademicCreate()
+    {
+        $authorOptions = OutputAuthor::query()
+            ->whereNotNull('name')
+            ->whereRaw("TRIM(name) <> ''")
+            ->selectRaw('TRIM(name) as name')
+            ->distinct()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        $presenterOptions = User::query()
+            ->selectRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) as name")
+            ->whereRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) <> ''")
+            ->orderBy('name')
+            ->pluck('name')
+            ->unique()
+            ->values();
+
+        return view('outputs.external-academic-create', [
+            'authorOptions' => $authorOptions,
+            'presenterOptions' => $presenterOptions,
+            'jobCategoryOptions' => self::EXTERNAL_JOB_CATEGORIES,
+        ]);
+    }
+
+    public function externalAcademicShow(ExternalOutput $externalOutput)
+    {
+        $externalOutput->load(['authors', 'conferences', 'creator']);
+
+        return view('outputs.external-academic-show', [
+            'externalOutput' => $externalOutput,
+        ]);
+    }
+
+    public function externalAcademicEdit(ExternalOutput $externalOutput)
+    {
+        $authorOptions = OutputAuthor::query()
+            ->whereNotNull('name')
+            ->whereRaw("TRIM(name) <> ''")
+            ->selectRaw('TRIM(name) as name')
+            ->distinct()
+            ->orderBy('name')
+            ->pluck('name')
+            ->values();
+
+        $presenterOptions = User::query()
+            ->selectRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) as name")
+            ->whereRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) <> ''")
+            ->orderBy('name')
+            ->pluck('name')
+            ->unique()
+            ->values();
+
+        $externalOutput->load(['authors', 'conferences']);
+
+        return view('outputs.external-academic-edit', [
+            'externalOutput' => $externalOutput,
+            'authorOptions' => $authorOptions,
+            'presenterOptions' => $presenterOptions,
+            'jobCategoryOptions' => self::EXTERNAL_JOB_CATEGORIES,
+        ]);
+    }
+
+    public function storeExternalAcademic(Request $request): RedirectResponse
+    {
+        $normalizedOutputs = collect($request->input('outputs', []))
+            ->map(function ($item) {
+                $item['publish_date'] = $this->normalizeThaiDateInput($item['publish_date'] ?? null);
+                return $item;
+            })
+            ->values()
+            ->all();
+
+        $request->merge([
+            'outputs' => $normalizedOutputs,
+        ]);
+
+        $validated = $request->validate([
+            'outputs' => ['required', 'array', 'min:1'],
+            'outputs.*.title' => ['required', 'string', 'max:1000'],
+            'outputs.*.type' => ['required', 'in:EA101,EA103'],
+            'outputs.*.job_category' => ['required', 'in:' . implode(',', self::EXTERNAL_JOB_CATEGORIES)],
+            'outputs.*.note' => ['nullable', 'string', 'max:5000'],
+            'outputs.*.publish_date' => ['required', 'date'],
+            'outputs.*.journal' => ['required_if:outputs.*.type,EA101', 'nullable', 'string', 'max:255'],
+            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'outputs.*.impact_factor' => ['nullable', 'numeric', 'min:0', 'max:99999.999'],
+            'outputs.*.authors' => ['nullable', 'array'],
+            'outputs.*.authors.*.role' => ['nullable', 'in:first,co,corresponding'],
+            'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
+            'outputs.*.conferences' => ['nullable', 'array'],
+            'outputs.*.conferences.*.name' => ['required_if:outputs.*.type,EA103', 'nullable', 'string', 'max:255'],
+            'outputs.*.conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Panel Discussion,Keynote Speech'],
+            'outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
+            'outputs.*.conferences.*.presenter_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['outputs'] as $item) {
+                $type = (string) ($item['type'] ?? 'EA101');
+                $output = ExternalOutput::create([
+                    'type' => $type,
+                    'output_code' => null,
+                    'job_category' => $this->nullableTrim($item['job_category'] ?? null),
+                    'title' => trim((string) ($item['title'] ?? '')),
+                    'note' => $this->nullableTrim($item['note'] ?? null),
+                    'publish_date' => $item['publish_date'] ?? null,
+                    'journal' => $type === 'EA101' ? $this->nullableTrim($item['journal'] ?? null) : null,
+                    'quartile' => $type === 'EA101' ? $this->nullableTrim($item['quartile'] ?? null) : null,
+                    'impact_factor' => $type === 'EA101' && ($item['impact_factor'] ?? null) !== null && $item['impact_factor'] !== ''
+                        ? $item['impact_factor']
+                        : null,
+                    'created_by' => auth()->id(),
+                ]);
+
+                if ($type === 'EA101') {
+                    $authors = collect($item['authors'] ?? [])
+                        ->map(function ($author) {
+                            return [
+                                'role' => $this->nullableTrim($author['role'] ?? null),
+                                'name' => $this->nullableTrim($author['name'] ?? null),
+                            ];
+                        })
+                        ->filter(fn ($author) => $author['name'])
+                        ->values()
+                        ->all();
+
+                    if (!empty($authors)) {
+                        $output->authors()->createMany($authors);
+                    }
+                }
+
+                if ($type === 'EA103') {
+                    $conferences = collect($item['conferences'] ?? [])
+                        ->map(function ($conference) {
+                            return [
+                                'name' => $this->nullableTrim($conference['name'] ?? null),
+                                'presentation_type' => $this->nullableTrim($conference['presentation_type'] ?? null),
+                                'location' => $this->nullableTrim($conference['location'] ?? null),
+                                'presenter_name' => $this->nullableTrim($conference['presenter_name'] ?? null),
+                            ];
+                        })
+                        ->filter(fn ($conference) => $conference['name'] || $conference['presentation_type'] || $conference['location'] || $conference['presenter_name'])
+                        ->values()
+                        ->all();
+
+                    if (!empty($conferences)) {
+                        $output->conferences()->createMany($conferences);
+                    }
+                }
+            }
+        });
+
+        return redirect()
+            ->route('outputs.external-academic.create')
+            ->with('success', 'บันทึก Academic Paper / Presentation เรียบร้อยแล้ว');
+    }
+
+    public function updateExternalAcademic(Request $request, ExternalOutput $externalOutput): RedirectResponse
+    {
+        $request->merge([
+            'publish_date' => $this->normalizeThaiDateInput($request->input('publish_date')),
+        ]);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:1000'],
+            'type' => ['required', 'in:EA101,EA103'],
+            'job_category' => ['required', 'in:' . implode(',', self::EXTERNAL_JOB_CATEGORIES)],
+            'note' => ['nullable', 'string', 'max:5000'],
+            'publish_date' => ['required', 'date'],
+            'journal' => ['required_if:type,EA101', 'nullable', 'string', 'max:255'],
+            'quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'impact_factor' => ['nullable', 'numeric', 'min:0', 'max:99999.999'],
+            'authors' => ['nullable', 'array'],
+            'authors.*.role' => ['nullable', 'in:first,co,corresponding'],
+            'authors.*.name' => ['nullable', 'string', 'max:255'],
+            'conferences' => ['nullable', 'array'],
+            'conferences.*.name' => ['required_if:type,EA103', 'nullable', 'string', 'max:255'],
+            'conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Panel Discussion,Keynote Speech'],
+            'conferences.*.location' => ['nullable', 'string', 'max:255'],
+            'conferences.*.presenter_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        DB::transaction(function () use ($validated, $externalOutput) {
+            $type = (string) $validated['type'];
+
+            $externalOutput->update([
+                'type' => $type,
+                'job_category' => $this->nullableTrim($validated['job_category'] ?? null),
+                'title' => trim((string) $validated['title']),
+                'note' => $this->nullableTrim($validated['note'] ?? null),
+                'publish_date' => $validated['publish_date'],
+                'journal' => $type === 'EA101' ? $this->nullableTrim($validated['journal'] ?? null) : null,
+                'quartile' => $type === 'EA101' ? $this->nullableTrim($validated['quartile'] ?? null) : null,
+                'impact_factor' => $type === 'EA101' && ($validated['impact_factor'] ?? null) !== null && $validated['impact_factor'] !== ''
+                    ? $validated['impact_factor']
+                    : null,
+            ]);
+
+            $externalOutput->authors()->delete();
+            $externalOutput->conferences()->delete();
+
+            if ($type === 'EA101') {
+                $authors = collect($validated['authors'] ?? [])
+                    ->map(fn ($author) => [
+                        'role' => $this->nullableTrim($author['role'] ?? null),
+                        'name' => $this->nullableTrim($author['name'] ?? null),
+                    ])
+                    ->filter(fn ($author) => $author['name'])
+                    ->values()
+                    ->all();
+
+                if (!empty($authors)) {
+                    $externalOutput->authors()->createMany($authors);
+                }
+            }
+
+            if ($type === 'EA103') {
+                $conferences = collect($validated['conferences'] ?? [])
+                    ->map(fn ($conference) => [
+                        'name' => $this->nullableTrim($conference['name'] ?? null),
+                        'presentation_type' => $this->nullableTrim($conference['presentation_type'] ?? null),
+                        'location' => $this->nullableTrim($conference['location'] ?? null),
+                        'presenter_name' => $this->nullableTrim($conference['presenter_name'] ?? null),
+                    ])
+                    ->filter(fn ($conference) => $conference['name'] || $conference['presentation_type'] || $conference['location'] || $conference['presenter_name'])
+                    ->values()
+                    ->all();
+
+                if (!empty($conferences)) {
+                    $externalOutput->conferences()->createMany($conferences);
+                }
+            }
+        });
+
+        return redirect()
+            ->route('outputs.external-academic.show', $externalOutput)
+            ->with('success', 'อัปเดต Academic Paper / Presentation เรียบร้อยแล้ว');
+    }
+
+    public function destroyExternalAcademic(ExternalOutput $externalOutput): RedirectResponse
+    {
+        $externalOutput->delete();
+
+        return redirect()
+            ->route('outputs.external-academic')
+            ->with('success', 'ลบรายการเรียบร้อยแล้ว');
+    }
+
+    private function nullableTrim(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    private function normalizeThaiDateInput(mixed $value): ?string
+    {
+        $value = $this->nullableTrim($value);
+        if (!$value) {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value;
+        }
+
+        $normalized = str_replace('/', '-', $value);
+        $parts = array_values(array_filter(explode('-', $normalized), fn ($part) => $part !== ''));
+        if (count($parts) !== 3) {
+            return $value;
+        }
+
+        [$day, $month, $year] = $parts;
+        $day = (int) $day;
+        $month = (int) $month;
+        $year = (int) $year;
+
+        if ($year > 2400) {
+            $year -= 543;
+        }
+
+        if (!checkdate($month, $day, $year)) {
+            return $value;
+        }
+
+        return Carbon::createFromDate($year, $month, $day)->format('Y-m-d');
+    }
+
     public function index(Request $request)
     {
         $query = Output::with('project:id,project_name_th,project_code');
@@ -321,12 +690,18 @@ class OutputController extends Controller
             ->where('type', 'like', 'EA103%')
             ->with(['conferences:id,output_id,name,presentation_type,location,note']);
 
+        $externalQuery = ExternalOutput::query()
+            ->where('type', 'EA103')
+            ->with(['conferences:id,external_output_id,name,presentation_type,location,presenter_name']);
+
         $yearFilter = $this->normalizeYearFilter($request->input('year'));
         if ($yearFilter !== null) {
             $baseQuery->where(function (Builder $q) use ($yearFilter) {
                 $q->where('year', 'like', '%' . $yearFilter . '%')
                     ->orWhere('year', 'like', '%' . ($yearFilter - 543) . '%');
             });
+
+            $externalQuery->whereYear('publish_date', $yearFilter - 543);
         }
 
         $search = trim((string) $request->input('search', ''));
@@ -338,6 +713,7 @@ class OutputController extends Controller
                 return $output->conferences->map(function ($conference) use ($output, $yearBe) {
                     return (object) [
                         'output_id' => $output->id,
+                        'output_code' => $output->output_code,
                         'conference_id' => $conference->id,
                         'title' => $output->title ?: '-',
                         'detail' => $output->project_output ?: null,
@@ -359,10 +735,41 @@ class OutputController extends Controller
                 });
             });
 
+        $externalRows = $externalQuery->get()
+            ->flatMap(function (ExternalOutput $output) {
+                $yearBe = $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
+
+                return $output->conferences->map(function ($conference) use ($output, $yearBe) {
+                    return (object) [
+                        'output_id' => $output->id,
+                        'output_code' => $output->output_code,
+                        'conference_id' => $conference->id,
+                        'title' => $output->title ?: '-',
+                        'detail' => $output->note ?: null,
+                        'year_be' => $yearBe,
+                        'project_label' => $output->job_category ?: '-',
+                        'project_code' => null,
+                        'project_link' => route('outputs.external-academic.show', $output),
+                        'conference_name' => $conference->name ?: '-',
+                        'presentation_type' => $conference->presentation_type ?: '-',
+                        'location' => $conference->location ?: '-',
+                        'presenter_name' => $conference->presenter_name ?: '-',
+                        'displayed_at' => $output->updated_at ?? $output->created_at,
+                        'created_at' => $output->created_at,
+                        'sort_year' => $yearBe ?? 0,
+                        'sort_title' => mb_strtolower((string) $output->title),
+                        'sort_conference' => mb_strtolower((string) $conference->name),
+                        'sort_activity' => mb_strtolower((string) $conference->presentation_type),
+                    ];
+                });
+            });
+
         $rows = $baseRows
+            ->merge($externalRows)
             ->filter(function ($row) use ($search, $activity) {
                 if ($search !== '') {
                     $haystack = mb_strtolower(implode(' ', array_filter([
+                        $row->output_code,
                         $row->title,
                         $row->project_label,
                         $row->project_code,
@@ -482,6 +889,10 @@ class OutputController extends Controller
             ->where('type', 'like', 'EA101%')
             ->with(['authors:id,output_id,role,name']);
 
+        $externalQuery = ExternalOutput::query()
+            ->where('type', 'EA101')
+            ->with(['authors:id,external_output_id,role,name']);
+
         $yearFilter = $this->normalizeYearFilter($request->input('year'));
         $search = trim((string) $request->input('search', ''));
         $role = trim((string) $request->input('role', ''));
@@ -491,6 +902,7 @@ class OutputController extends Controller
         if ($search !== '') {
             $baseQuery->where(function (Builder $q) use ($search) {
                 $q->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('output_code', 'like', '%' . $search . '%')
                     ->orWhere('type', 'like', '%' . $search . '%')
                     ->orWhere('journal', 'like', '%' . $search . '%')
                     ->orWhere('quartile', 'like', '%' . $search . '%')
@@ -514,11 +926,14 @@ class OutputController extends Controller
 
         if ($quartile !== '') {
             $baseQuery->where('quartile', $quartile);
+            $externalQuery->where('quartile', $quartile);
         }
 
         if ($impactMax !== null) {
             $baseQuery->whereNotNull('impact_factor');
             $baseQuery->where('impact_factor', '<=', $impactMax);
+            $externalQuery->whereNotNull('impact_factor');
+            $externalQuery->where('impact_factor', '<=', $impactMax);
         }
 
         if ($yearFilter !== null) {
@@ -526,9 +941,10 @@ class OutputController extends Controller
                 $q->where('year', 'like', '%' . $yearFilter . '%')
                     ->orWhere('year', 'like', '%' . ($yearFilter - 543) . '%');
             });
+            $externalQuery->whereYear('publish_date', $yearFilter - 543);
         }
 
-        $papers = $baseQuery->get()->map(function (Output $output) {
+        $projectPapers = $baseQuery->get()->map(function (Output $output) {
             $yearBe = $this->normalizeYearFilter($output->year);
             $authorsByRole = $output->authors
                 ->groupBy(fn ($author) => strtolower((string) $author->role))
@@ -536,6 +952,7 @@ class OutputController extends Controller
 
             return (object) [
                 'id' => $output->id,
+                'output_code' => $output->output_code,
                 'title' => $output->title ?: '-',
                 'type' => $output->type ?: '-',
                 'year_be' => $yearBe,
@@ -556,6 +973,62 @@ class OutputController extends Controller
                 'sort_year' => $yearBe ?? 0,
             ];
         });
+
+        $externalPapers = $externalQuery->get()
+            ->filter(function (ExternalOutput $output) use ($search, $role) {
+                if ($search !== '') {
+                    $haystack = mb_strtolower(implode(' ', array_filter([
+                        $output->output_code,
+                        $output->title,
+                        $output->journal,
+                        $output->quartile,
+                        $output->note,
+                        $output->job_category,
+                        $output->authors->pluck('name')->implode(' '),
+                    ])), 'UTF-8');
+
+                    if (!str_contains($haystack, mb_strtolower($search, 'UTF-8'))) {
+                        return false;
+                    }
+                }
+
+                if ($role !== '') {
+                    return $output->authors->contains(fn ($author) => strtolower((string) $author->role) === $role);
+                }
+
+                return true;
+            })
+            ->map(function (ExternalOutput $output) {
+                $yearBe = $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
+                $authorsByRole = $output->authors
+                    ->groupBy(fn ($author) => strtolower((string) $author->role))
+                    ->map(fn (Collection $group) => $group->pluck('name')->filter()->values());
+
+                return (object) [
+                    'id' => $output->id,
+                    'output_code' => $output->output_code,
+                    'title' => $output->title ?: '-',
+                    'type' => $output->type ?: '-',
+                    'year_be' => $yearBe,
+                    'journal' => $output->journal ?: '-',
+                    'quartile' => $output->quartile ?: '-',
+                    'impact_factor' => $output->impact_factor,
+                    'detail' => $output->note ?: null,
+                    'project_label' => $output->job_category ?: '-',
+                    'project_code' => null,
+                    'project_link' => route('outputs.external-academic.show', $output),
+                    'authors' => $output->authors->pluck('name')->filter()->values(),
+                    'authors_by_role' => $authorsByRole,
+                    'displayed_at' => $output->updated_at ?? $output->created_at,
+                    'created_at' => $output->created_at,
+                    'sort_title' => mb_strtolower((string) $output->title),
+                    'sort_journal' => mb_strtolower((string) $output->journal),
+                    'sort_quartile' => mb_strtolower((string) $output->quartile),
+                    'sort_year' => $yearBe ?? 0,
+                ];
+            });
+
+        $papers = $projectPapers->merge($externalPapers);
 
         $papers = $this->sortCollection($papers, $sort, $dir, [
             'year' => fn ($item) => $item->sort_year,

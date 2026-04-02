@@ -30,9 +30,12 @@
 
         @if ($outputs->count() > 0)
             <div class="divide-y divide-slate-100 md:hidden">
-                @foreach ($outputs as $paper)
-                    <article class="space-y-3 px-4 py-4">
+                        @foreach ($outputs as $paper)
+                            <article class="space-y-3 px-4 py-4">
                         <div>
+                            @if (!empty($paper->output_code))
+                                <div class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ $paper->output_code }}</div>
+                            @endif
                             <div class="font-semibold leading-6 text-slate-900">{{ $paper->title }}</div>
                             @if ($paper->impact_factor)
                                 <div class="mt-1 text-xs text-slate-500">Impact Factor: {{ $paper->impact_factor }}</div>
@@ -42,8 +45,8 @@
                                     รายละเอียด / ลิงก์:
                                     @if (filter_var($paper->detail, FILTER_VALIDATE_URL))
                                         <a href="{{ $paper->detail }}" target="_blank" rel="noopener"
-                                            class="font-medium text-indigo-700 hover:underline">
-                                            {{ $paper->detail }}
+                                            class="ml-1 inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100">
+                                            ดูเอกสาร
                                         </a>
                                     @else
                                         {{ $paper->detail }}
@@ -86,8 +89,8 @@
                                 @endif
                                 @if ($paper->project_link)
                                     <a href="{{ $paper->project_link }}"
-                                        class="mt-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50">
-                                        เปิด Project Detail
+                                            class="mt-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50">
+                                        {{ $paper->project_code ? 'เปิด Project Detail' : 'เปิดรายละเอียด' }}
                                     </a>
                                 @endif
                             </div>
@@ -126,6 +129,9 @@
                             @endphp
                             <tr class="align-top hover:bg-indigo-50/40">
                                 <td class="px-4 py-4 text-sm text-slate-900">
+                                    @if (!empty($paper->output_code))
+                                        <div class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ $paper->output_code }}</div>
+                                    @endif
                                     <div class="font-semibold leading-6">{{ $paper->title }}</div>
                                     @if ($paper->impact_factor)
                                         <div class="mt-1 text-xs text-slate-500">Impact Factor: {{ $paper->impact_factor }}</div>
@@ -135,8 +141,8 @@
                                             รายละเอียด / ลิงก์:
                                             @if (filter_var($paper->detail, FILTER_VALIDATE_URL))
                                                 <a href="{{ $paper->detail }}" target="_blank" rel="noopener"
-                                                    class="font-medium text-indigo-700 hover:underline">
-                                                    {{ $paper->detail }}
+                                                    class="ml-1 inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100">
+                                                    ดูเอกสาร
                                                 </a>
                                             @else
                                                 {{ $paper->detail }}
@@ -170,7 +176,7 @@
                                     @if ($paper->project_link)
                                         <a href="{{ $paper->project_link }}"
                                             class="mt-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50">
-                                            เปิด Project Detail
+                                            {{ $paper->project_code ? 'เปิด Project Detail' : 'เปิดรายละเอียด' }}
                                         </a>
                                     @endif
                                 </td>

@@ -1,0 +1,21 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::table('external_outputs', function (Blueprint $table) {
+            $table->string('job_category')->nullable()->after('type');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('external_outputs', function (Blueprint $table) {
+            $table->dropColumn('job_category');
+        });
+    }
+};
