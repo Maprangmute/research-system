@@ -213,7 +213,7 @@ class OutputController extends Controller
         $journalOptions = $payload['journalOptions'];
         $yearOptions = $payload['yearOptions'];
 
-        $outputs = $this->paginateCollection($papers, $request, 20);
+        $outputs = $this->paginateCollection($papers, $request, 5);
 
         return view('outputs.papers', [
             'outputs' => $outputs,
@@ -221,6 +221,8 @@ class OutputController extends Controller
             'authorOptions' => $authorOptions,
             'journalOptions' => $journalOptions,
             'yearOptions' => $yearOptions,
+            'impactFactorMax' => $payload['impactFactorMax'],
+            'selectedImpactMax' => $payload['selectedImpactMax'],
             'roleOptions' => collect([
                 'first' => 'First Author',
                 'co' => 'Co Author',
@@ -243,10 +245,11 @@ class OutputController extends Controller
         $reporter = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
         $filters = collect([
             $request->filled('search') ? 'ค้นหา: ' . trim((string) $request->input('search')) : null,
-            $request->filled('person') ? 'Author: ' . trim((string) $request->input('person')) : null,
             $request->filled('role') ? 'Role: ' . trim((string) $request->input('role')) : null,
             $request->filled('quartile') ? 'Quartile: ' . trim((string) $request->input('quartile')) : null,
-            $request->filled('journal') ? 'Journal: ' . trim((string) $request->input('journal')) : null,
+            $request->filled('impact_max')
+                ? 'Impact Factor <= ' . trim((string) $request->input('impact_max'))
+                : null,
             $request->filled('year') ? 'ปี: ' . trim((string) $request->input('year')) : null,
         ])->filter()->values();
 
@@ -491,10 +494,9 @@ class OutputController extends Controller
 
         $yearFilter = $this->normalizeYearFilter($request->input('year'));
         $search = trim((string) $request->input('search', ''));
-        $person = trim((string) $request->input('person', ''));
         $role = trim((string) $request->input('role', ''));
         $quartile = trim((string) $request->input('quartile', ''));
-        $journal = trim((string) $request->input('journal', ''));
+        $impactMax = $request->filled('impact_max') ? (float) $request->input('impact_max') : null;
 
         if ($search !== '') {
             $baseQuery->where(function (Builder $q) use ($search) {
@@ -514,12 +516,6 @@ class OutputController extends Controller
             });
         }
 
-        if ($person !== '') {
-            $baseQuery->whereHas('authors', function (Builder $authorQ) use ($person) {
-                $authorQ->where('name', 'like', '%' . $person . '%');
-            });
-        }
-
         if ($role !== '') {
             $baseQuery->whereHas('authors', function (Builder $authorQ) use ($role) {
                 $authorQ->where('role', $role);
@@ -530,8 +526,9 @@ class OutputController extends Controller
             $baseQuery->where('quartile', $quartile);
         }
 
-        if ($journal !== '') {
-            $baseQuery->where('journal', 'like', '%' . $journal . '%');
+        if ($impactMax !== null) {
+            $baseQuery->whereNotNull('impact_factor');
+            $baseQuery->where('impact_factor', '<=', $impactMax);
         }
 
         if ($yearFilter !== null) {
@@ -561,6 +558,7 @@ class OutputController extends Controller
                 'project_link' => $output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null,
                 'authors' => $output->authors->pluck('name')->filter()->values(),
                 'authors_by_role' => $authorsByRole,
+                'displayed_at' => $output->updated_at ?? $output->created_at,
                 'created_at' => $output->created_at,
                 'sort_title' => mb_strtolower((string) $output->title),
                 'sort_journal' => mb_strtolower((string) $output->journal),
@@ -577,6 +575,14 @@ class OutputController extends Controller
             'created_at' => fn ($item) => $item->created_at?->timestamp ?? 0,
         ]);
 
+        $impactValues = $papers->pluck('impact_factor')
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->map(fn ($value) => (float) $value)
+            ->sort()
+            ->values();
+        $impactFactorMax = $impactValues->isNotEmpty() ? ceil($impactValues->last()) : 10;
+        $selectedImpactMax = $impactMax ?? $impactFactorMax;
+
         return [
             'items' => $papers,
             'summary' => [
@@ -592,6 +598,8 @@ class OutputController extends Controller
             'authorOptions' => $papers->flatMap(fn ($paper) => $paper->authors)->filter()->unique()->sort()->values(),
             'journalOptions' => $papers->pluck('journal')->filter(fn ($j) => $j !== '-' && trim((string) $j) !== '')->unique()->sort()->values(),
             'yearOptions' => $papers->pluck('year_be')->filter()->unique()->sortDesc()->values(),
+            'impactFactorMax' => $impactFactorMax,
+            'selectedImpactMax' => $selectedImpactMax,
         ];
     }
 }

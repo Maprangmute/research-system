@@ -7,7 +7,62 @@
         $toggleDir = fn($field) => $currentSort === $field && $currentDir === 'asc' ? 'desc' : 'asc';
         $sortUrl = fn($field) => request()->fullUrlWithQuery(['sort' => $field, 'dir' => $toggleDir($field), 'page' => 1]);
         $sortIcon = fn($field) => $currentSort !== $field ? '↕' : ($currentDir === 'asc' ? '↑' : '↓');
+        $impactFactorMax = $impactFactorMax ?? 10;
+        $selectedImpactMax = $selectedImpactMax ?? $impactFactorMax;
     @endphp
+
+    <style>
+        .impact-range {
+            position: relative;
+            padding-top: 0.75rem;
+            padding-bottom: 0.25rem;
+        }
+        .impact-range input[type='range'] {
+            width: 100%;
+            appearance: none;
+            background: transparent;
+        }
+        .impact-range input[type='range']::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 9999px;
+            background: #4f46e5;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+            cursor: pointer;
+        }
+        .impact-range input[type='range']::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border: none;
+            border-radius: 9999px;
+            background: #4f46e5;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+            cursor: pointer;
+        }
+        .impact-range input[type='range']::-webkit-slider-runnable-track {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 9999px;
+        }
+        .impact-range input[type='range']::-moz-range-track {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 9999px;
+        }
+        .impact-range-label {
+            font-size: 0.75rem;
+            color: #475569;
+            white-space: nowrap;
+        }
+        .filter-caption {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: #475569;
+        }
+    </style>
 
     <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
         <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
@@ -31,235 +86,129 @@
             </div>
         </section>
 
-        <div id="papers-shell" class="space-y-6">
         <form id="papers-filter-form" method="GET" action="{{ route('outputs.papers') }}"
             class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <input type="hidden" name="dir" value="{{ $currentDir }}">
-            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-                <label class="block xl:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
-                    <input type="text" name="search" value="{{ request('search') }}"
-                        data-paper-live-input="true"
-                        class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm"
-                        placeholder="Paper title / author / journal / project">
-                </label>
 
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">Author</span>
-                    <input type="text" name="person" value="{{ request('person') }}" list="paper-author-list"
-                        data-paper-live-input="true"
-                        class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm"
-                        placeholder="Search author">
-                </label>
-
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">Role</span>
-                    <select name="role" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
-                        <option value="">ทั้งหมด</option>
-                        @foreach ($roleOptions as $value => $label)
-                            <option value="{{ $value }}" @selected(request('role') === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </label>
-
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">Quartile</span>
-                    <select name="quartile" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
-                        <option value="">ทั้งหมด</option>
-                        @foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $quartile)
-                            <option value="{{ $quartile }}" @selected(request('quartile') === $quartile)>{{ $quartile }}</option>
-                        @endforeach
-                    </select>
-                </label>
-
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ปี (พ.ศ.)</span>
-                    <select name="year" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
-                        <option value="">ทั้งหมด</option>
-                        @foreach ($yearOptions as $year)
-                            <option value="{{ $year }}" @selected((string) request('year') === (string) $year)>{{ $year }}</option>
-                        @endforeach
-                    </select>
-                </label>
-
-                <label class="block xl:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">Journal</span>
-                    <input type="text" name="journal" value="{{ request('journal') }}" list="paper-journal-list"
-                        data-paper-live-input="true"
-                        class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm"
-                        placeholder="Journal name">
-                </label>
-
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">เรียงลำดับ</span>
-                    <select name="sort" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
-                        <option value="created_at" @selected($currentSort === 'created_at')>บันทึกล่าสุด</option>
-                        <option value="year" @selected($currentSort === 'year')>ปี</option>
-                        <option value="title" @selected($currentSort === 'title')>ชื่อผลงาน</option>
-                        <option value="journal" @selected($currentSort === 'journal')>Journal</option>
-                        <option value="quartile" @selected($currentSort === 'quartile')>Quartile</option>
-                    </select>
-                </label>
-
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ทิศทาง</span>
-                    <select name="dir" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
-                        <option value="desc" @selected($currentDir === 'desc')>มาก → น้อย</option>
-                        <option value="asc" @selected($currentDir === 'asc')>น้อย → มาก</option>
-                    </select>
-                </label>
-            </div>
-
-            <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex flex-wrap items-center gap-2">
-                    <button type="submit"
-                        class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">
-                        ค้นหา
-                    </button>
-                    <a href="{{ route('outputs.papers') }}" data-papers-reset="true"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                        ล้างฟิลเตอร์
+            <div class="space-y-4">
+                <section class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900">ตัวกรองผลงานตีพิมพ์</h2>
+                        <p class="mt-1 text-sm text-slate-500">ค้นหา title, author, journal หรือ project และปรับเงื่อนไขเสริมได้ทันที</p>
+                    </div>
+                    <a href="{{ route('outputs.papers.pdf', request()->query()) }}"
+                        target="_blank" rel="noopener"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">
+                        Export PDF
                     </a>
-                </div>
+                </section>
 
-                <a href="{{ route('outputs.papers.pdf', request()->query()) }}"
-                    target="_blank" rel="noopener"
-                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">
-                    Export PDF
-                </a>
+                <section>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
+                        <input type="text" name="search" value="{{ request('search') }}"
+                            data-paper-live-input="true"
+                            class="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50"
+                            placeholder="Paper title / author / journal / project">
+                    </label>
+                </section>
+
+                <fieldset class="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+                    <legend class="sr-only">Paper filters</legend>
+                    <section class="space-y-3 md:col-span-2 xl:col-span-2">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">Role</span>
+                            <select name="role" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($roleOptions as $value => $label)
+                                    <option value="{{ $value }}" @selected(request('role') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">Quartile</span>
+                            <select name="quartile" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50">
+                                <option value="">ทั้งหมด</option>
+                                @foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $quartile)
+                                    <option value="{{ $quartile }}" @selected(request('quartile') === $quartile)>{{ $quartile }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                    </section>
+
+                    <section class="space-y-3 md:col-span-2 xl:col-span-2">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">ปี (พ.ศ.)</span>
+                            <select name="year" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50">
+                                <option value="">ทั้งหมด</option>
+                                @foreach ($yearOptions as $year)
+                                    <option value="{{ $year }}" @selected((string) request('year') === (string) $year)>{{ $year }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+
+                        <div class="px-1 py-1">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-xs font-semibold text-slate-600">Impact Factor</span>
+                                <span id="impactMaxLabel" class="text-xs font-semibold text-slate-700">{{ number_format((float) $selectedImpactMax, 2) }}</span>
+                            </div>
+                            <div class="impact-range mt-3">
+                                <input id="impactMaxRange" type="range" min="0" max="{{ $impactFactorMax }}" step="0.1"
+                                    value="{{ $selectedImpactMax }}">
+                            </div>
+                            <div class="mt-1 flex items-center justify-between text-xs text-slate-500">
+                                <span>0.00</span>
+                                <span>ค่าสูงสุด {{ number_format((float) $impactFactorMax, 2) }}</span>
+                            </div>
+                        </div>
+                        <input type="hidden" name="impact_max" id="impactMaxInput" value="{{ $selectedImpactMax }}">
+                    </section>
+
+                    <section class="space-y-3 md:col-span-2 xl:col-span-2">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">เรียงลำดับ</span>
+                            <select name="sort" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50">
+                                <option value="created_at" @selected($currentSort === 'created_at')>บันทึกล่าสุด</option>
+                                <option value="year" @selected($currentSort === 'year')>ปี</option>
+                                <option value="title" @selected($currentSort === 'title')>ชื่อผลงาน</option>
+                                <option value="journal" @selected($currentSort === 'journal')>Journal</option>
+                                <option value="quartile" @selected($currentSort === 'quartile')>Quartile</option>
+                            </select>
+                        </label>
+
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">ทิศทาง</span>
+                            <select name="dir" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50">
+                                <option value="desc" @selected($currentDir === 'desc')>มาก → น้อย</option>
+                                <option value="asc" @selected($currentDir === 'asc')>น้อย → มาก</option>
+                            </select>
+                        </label>
+                    </section>
+                </fieldset>
+
+                <div class="flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="text-xs text-slate-500">เลือก dropdown เพื่ออัปเดตทันที หรือพิมพ์ค้นหาแล้วระบบจะค้นให้อัตโนมัติ</div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="submit"
+                            class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">
+                            ค้นหา
+                        </button>
+                        <a href="{{ route('outputs.papers') }}" data-papers-reset="true"
+                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                            ล้างฟิลเตอร์
+                        </a>
+                    </div>
+                </div>
             </div>
         </form>
-
-        <datalist id="paper-author-list">
-            @foreach ($authorOptions as $author)
-                <option value="{{ $author }}"></option>
-            @endforeach
-        </datalist>
-
-        <datalist id="paper-journal-list">
-            @foreach ($journalOptions as $journal)
-                <option value="{{ $journal }}"></option>
-            @endforeach
-        </datalist>
 
         <div id="papers-loading-indicator" class="hidden items-center gap-2 text-xs text-slate-500">
             <span class="inline-block h-3 w-3 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin"></span>
             กำลังอัปเดตรายการ...
         </div>
 
-        <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Papers</div>
-                <div class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($summary['total_papers']) }}</div>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Unique Authors</div>
-                <div class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($summary['unique_authors']) }}</div>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Top Author</div>
-                <div class="mt-2 text-base font-semibold text-slate-900">{{ $summary['top_author'] ?? '-' }}</div>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Top Journal</div>
-                <div class="mt-2 text-base font-semibold text-slate-900">{{ $summary['top_journal'] ?? '-' }}</div>
-            </article>
-        </section>
-
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
-            <div class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50 px-4 py-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <div class="text-sm font-semibold text-slate-800">รายการบทความ</div>
-                    <div class="mt-1 text-sm text-slate-500">
-                        แสดงผล {{ $outputs->firstItem() ?? 0 }}–{{ $outputs->lastItem() ?? 0 }} จากทั้งหมด {{ $outputs->total() }} รายการ
-                    </div>
-                </div>
-            </div>
-
-            @if ($outputs->count() > 0)
-                <div class="overflow-auto">
-                    <table class="min-w-full table-fixed">
-                        <colgroup>
-                            <col style="width: 24%;">
-                            <col style="width: 25%;">
-                            <col style="width: 16%;">
-                            <col style="width: 8%;">
-                            <col style="width: 8%;">
-                            <col style="width: 19%;">
-                        </colgroup>
-                        <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold text-slate-600">
-                            <tr>
-                                <th class="px-4 py-3"><a href="{{ $sortUrl('title') }}">ชื่อผลงาน <span class="ml-1">{{ $sortIcon('title') }}</span></a></th>
-                                <th class="px-4 py-3">Authors</th>
-                                <th class="px-4 py-3"><a href="{{ $sortUrl('journal') }}">Journal <span class="ml-1">{{ $sortIcon('journal') }}</span></a></th>
-                                <th class="px-4 py-3 text-center"><a href="{{ $sortUrl('quartile') }}">Quartile <span class="ml-1">{{ $sortIcon('quartile') }}</span></a></th>
-                                <th class="px-4 py-3 text-center"><a href="{{ $sortUrl('year') }}">ปี <span class="ml-1">{{ $sortIcon('year') }}</span></a></th>
-                                <th class="px-4 py-3">Project Detail</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @foreach ($outputs as $paper)
-                                <tr class="align-top hover:bg-indigo-50/40">
-                                    <td class="px-4 py-4 text-sm text-slate-900">
-                                        <div class="font-semibold leading-6">{{ $paper->title }}</div>
-                                        @if ($paper->impact_factor)
-                                            <div class="mt-1 text-xs text-slate-500">Impact Factor: {{ $paper->impact_factor }}</div>
-                                        @endif
-                                        @if (!empty($paper->detail))
-                                            <div class="mt-2 text-xs leading-5 text-slate-600 break-words">
-                                                รายละเอียด / ลิงก์:
-                                                @if (filter_var($paper->detail, FILTER_VALIDATE_URL))
-                                                    <a href="{{ $paper->detail }}" target="_blank" rel="noopener"
-                                                        class="font-medium text-indigo-700 hover:underline">
-                                                        {{ $paper->detail }}
-                                                    </a>
-                                                @else
-                                                    {{ $paper->detail }}
-                                                @endif
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-4 text-sm text-slate-700">
-                                        @forelse ($paper->authors_by_role as $role => $names)
-                                            <div class="mb-2">
-                                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                                    {{ ['first' => 'First Author', 'co' => 'Co Author', 'corresponding' => 'Corresponding Author'][$role] ?? ucfirst($role) }}
-                                                </div>
-                                                <div class="mt-1 leading-6">{{ $names->implode(', ') }}</div>
-                                            </div>
-                                        @empty
-                                            -
-                                        @endforelse
-                                    </td>
-                                    <td class="px-4 py-4 text-sm text-slate-700">{{ $paper->journal }}</td>
-                                    <td class="px-4 py-4 text-center text-sm font-semibold text-slate-700">{{ $paper->quartile }}</td>
-                                    <td class="px-4 py-4 text-center text-sm text-slate-700">{{ $paper->year_be ?: '-' }}</td>
-                                    <td class="px-4 py-4 text-sm text-slate-700">
-                                        <div class="font-medium">{{ $paper->project_label }}</div>
-                                        @if ($paper->project_code)
-                                            <div class="mt-1 text-xs text-slate-500">{{ $paper->project_code }}</div>
-                                        @endif
-                                        @if ($paper->project_link)
-                                            <a href="{{ $paper->project_link }}"
-                                                class="mt-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50">
-                                                เปิด Project Detail
-                                            </a>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="border-t border-slate-100 bg-slate-50 px-4 py-3">
-                    {{ $outputs->links('vendor.pagination.th') }}
-                </div>
-            @else
-                <div class="px-4 py-10 text-center text-sm text-slate-500">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</div>
-            @endif
-        </section>
-        </div>
+        @include('outputs.partials.papers-results')
     </div>
 
     <script>
@@ -271,15 +220,16 @@
 
             const query = (selector, scope = document) => scope.querySelector(selector);
             const queryAll = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
-            const getShell = () => query('#papers-shell');
             const getForm = () => query('#papers-filter-form');
             const getLoading = () => query('#papers-loading-indicator');
+            const getResults = () => query('#papers-results');
+            const getListSection = () => query('#papers-results section.overflow-hidden.rounded-2xl.border');
 
             const setLoading = (loading) => {
                 const indicator = getLoading();
-                const shell = getShell();
+                const results = getResults();
                 if (indicator) indicator.classList.toggle('hidden', !loading);
-                if (shell) shell.classList.toggle('opacity-60', loading);
+                if (results) results.classList.toggle('opacity-60', loading);
             };
 
             const buildUrlFromForm = (form, resetPage = true) => {
@@ -295,24 +245,60 @@
                 return url;
             };
 
-            const parseAndReplaceShell = (html) => {
+            const parseAndReplaceResults = (html) => {
                 const parser = new DOMParser();
                 const nextDoc = parser.parseFromString(html, 'text/html');
-                const nextShell = nextDoc.querySelector('#papers-shell');
-                const currentShell = getShell();
-                if (!nextShell || !currentShell) return false;
-                currentShell.innerHTML = nextShell.innerHTML;
+                const nextResults = nextDoc.querySelector('#papers-results');
+                const currentResults = getResults();
+                if (!nextResults || !currentResults) return false;
+                currentResults.innerHTML = nextResults.innerHTML;
                 return true;
             };
 
-            const fetchAndRender = async (url, options = {}) => {
-                const { updateUrl = true } = options;
-                const token = ++requestToken;
-                const activeField = document.activeElement;
-                const activeFieldName = activeField && activeField.form === getForm() ? activeField.getAttribute('name') : null;
-                const activeFieldSelectionStart = activeField && typeof activeField.selectionStart === 'number' ? activeField.selectionStart : null;
-                const activeFieldSelectionEnd = activeField && typeof activeField.selectionEnd === 'number' ? activeField.selectionEnd : null;
+            const scrollToListTop = () => {
+                const section = getListSection();
+                if (!section) return;
+                const top = section.getBoundingClientRect().top + window.scrollY - 16;
+                window.scrollTo({ top, behavior: 'smooth' });
+            };
 
+            const bindImpactRange = () => {
+                const maxRange = query('#impactMaxRange');
+                const maxInput = query('#impactMaxInput');
+                const maxLabel = query('#impactMaxLabel');
+                const form = getForm();
+                if (!maxRange || !maxInput || !maxLabel || !form) return;
+
+                const updateRangeUi = () => {
+                    const maxVal = Number(maxRange.value);
+                    maxInput.value = String(maxVal);
+                    maxLabel.textContent = maxVal.toFixed(2);
+                };
+
+                const triggerFetch = () => {
+                    clearTimeout(liveSearchTimer);
+                    liveSearchTimer = setTimeout(() => {
+                        fetchAndRender(buildUrlFromForm(form, true), { updateUrl: true });
+                    }, 220);
+                };
+
+                if (maxRange.dataset.paperRangeBound === 'true') return;
+                maxRange.dataset.paperRangeBound = 'true';
+                maxRange.addEventListener('input', () => {
+                    updateRangeUi();
+                    triggerFetch();
+                });
+                maxRange.addEventListener('change', () => {
+                    updateRangeUi();
+                    triggerFetch();
+                });
+
+                updateRangeUi();
+            };
+
+            const fetchAndRender = async (url, options = {}) => {
+                const { updateUrl = true, scrollToTop = false } = options;
+                const token = ++requestToken;
                 if (controller) controller.abort();
                 controller = new AbortController();
                 setLoading(true);
@@ -329,24 +315,16 @@
 
                     const html = await res.text();
                     if (token !== requestToken) return;
-                    if (!parseAndReplaceShell(html)) {
-                        throw new Error('Cannot find papers shell in response');
+                    if (!parseAndReplaceResults(html)) {
+                        throw new Error('Cannot find papers results in response');
                     }
 
                     if (updateUrl) {
                         history.replaceState({ ajax: true }, '', `${url.pathname}${url.search}`);
                     }
 
-                    bindPapersInteractions();
-
-                    if (activeFieldName) {
-                        const nextField = getForm()?.querySelector(`[name="${CSS.escape(activeFieldName)}"]`);
-                        if (nextField && typeof nextField.focus === 'function') {
-                            nextField.focus({ preventScroll: true });
-                            if (typeof nextField.setSelectionRange === 'function' && activeFieldSelectionStart !== null && activeFieldSelectionEnd !== null) {
-                                nextField.setSelectionRange(activeFieldSelectionStart, activeFieldSelectionEnd);
-                            }
-                        }
+                    if (scrollToTop) {
+                        scrollToListTop();
                     }
                 } catch (error) {
                     if (error.name !== 'AbortError') {
@@ -403,6 +381,8 @@
                         }, 450);
                     });
                 });
+
+                bindImpactRange();
             };
 
             document.addEventListener('click', (event) => {
@@ -414,7 +394,7 @@
                     return;
                 }
 
-                const link = event.target.closest('#papers-shell a[href]');
+                const link = event.target.closest('#papers-results a[href]');
                 if (!link) return;
                 if (link.target === '_blank') return;
 
@@ -428,7 +408,10 @@
                 if (!isSamePage || !isListInteraction) return;
 
                 event.preventDefault();
-                fetchAndRender(url, { updateUrl: true });
+                fetchAndRender(url, {
+                    updateUrl: true,
+                    scrollToTop: url.searchParams.has('page'),
+                });
             });
 
             window.addEventListener('popstate', () => {
