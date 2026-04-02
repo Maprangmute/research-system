@@ -586,7 +586,7 @@
                     placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
                 <label class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">BC103 - วันที่สิ้นสุด (ตามสัญญา)</span>
+                    <span class="block text-sm text-gray-700 mb-1">BC103 - วันที่สิ้นสุด <strong>(ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)</strong></span>
                     <input name="end_date" type="text"
                         value="{{ old('end_date') }}"
                         class="thai-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"

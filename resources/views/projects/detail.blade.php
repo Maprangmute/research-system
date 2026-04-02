@@ -456,7 +456,7 @@
                         {{ $formatDateBE($project->contract_date ?? null) }}</div>
                     <div><span class="font-semibold">BC102 - วันที่โครงการเริ่ม (ตามสัญญา):</span>
                         {{ $formatDateBE($project->start_date ?? null) }}</div>
-                    <div><span class="font-semibold">BC103 - วันที่สิ้นสุด (ตามสัญญา):</span>
+                    <div><span class="font-semibold">BC103 - วันที่สิ้นสุด <strong>(ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)</strong>:</span>
                         {{ $formatDateBE($project->end_date ?? null) }}</div>
                 </div>
             </div>

@@ -522,7 +522,7 @@
                 <div class="field-value">{{ $formatDateBE($project->start_date ?? null) }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">BC103 สิ้นสุด</div>
+                <div class="field-label">BC103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)</div>
                 <div class="field-value">{{ $formatDateBE($project->end_date ?? null) }}</div>
             </div>
         </div>

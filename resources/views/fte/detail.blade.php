@@ -88,7 +88,7 @@
                     </a>
                     <button type="button" id="openPdfFilterModal"
                         class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                        ดาวน์โหลด PDF
+                        ดาวน์โหลดภาระงาน
                     </button>
                 </div>
             </div>
@@ -98,7 +98,7 @@
             <div class="h-full w-full flex items-center justify-center">
                 <div class="w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-slate-200">
                     <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-                        <h2 class="text-lg font-semibold text-slate-900">เลือกช่วงข้อมูลสำหรับ PDF</h2>
+                        <h2 class="text-lg font-semibold text-slate-900">เลือกช่วงข้อมูลสำหรับดาวน์โหลดภาระงาน</h2>
                         <button type="button" id="closePdfFilterModal"
                             class="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50">✕</button>
                     </div>
@@ -152,11 +152,13 @@
                             </label>
                         </div>
 
-                        <p class="text-xs text-slate-500">หมายเหตุ: ถ้าไม่เลือก filter ระบบจะสร้างรายงาน PDF จากข้อมูลทั้งหมด</p>
+                        <p class="text-xs text-slate-500">หมายเหตุ: ถ้าไม่เลือก filter ระบบจะสร้างรายงานจากข้อมูลทั้งหมด</p>
 
                         <div class="pt-2 flex items-center justify-end gap-2">
                             <button type="button" id="cancelPdfFilterModal"
                                 class="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">ยกเลิก</button>
+                            <button type="submit" formaction="{{ route('fte.word', $person) }}"
+                                class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">ดาวน์โหลด Word</button>
                             <button type="submit"
                                 class="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">เปิด PDF</button>
                         </div>

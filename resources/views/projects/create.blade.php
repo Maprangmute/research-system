@@ -410,7 +410,7 @@
 
                 <div class="w-full">
                     <label class="block text-sm text-gray-700 mb-1" for="date_end_date">
-                        BC103 - วันที่สิ้นสุด (ตามสัญญา)
+                        BC103 - วันที่สิ้นสุด <strong>(ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)</strong>
                     </label>
                     <div class="relative">
                         <input

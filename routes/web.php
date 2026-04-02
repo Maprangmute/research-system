@@ -208,6 +208,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/fte/project/{project}', [FteController::class, 'projectDetail'])->name('fte.project.detail');
     Route::get('/fte/project/{project}/pdf', [FteController::class, 'projectPdf'])->name('fte.project.pdf');
     Route::get('/fte/{person}/pdf', [FteController::class, 'exportPdf'])->name('fte.pdf');
+    Route::get('/fte/{person}/word', [FteController::class, 'exportWord'])->name('fte.word');
     Route::get('/outputs', [OutputController::class, 'index'])->name('outputs.index');
     Route::get('/outputs/papers', [OutputController::class, 'papers'])->name('outputs.papers');
     Route::get('/outputs/papers/pdf', [OutputController::class, 'papersPdf'])->name('outputs.papers.pdf');

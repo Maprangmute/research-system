@@ -749,6 +749,34 @@ public function exportPdf(Request $request, $person)
     return $pdf->stream($filename);
 }
 
+public function exportWord(Request $request, $person)
+{
+    $this->ensureCanViewFtePerson((string) $person);
+    $mode = $request->input('mode', 'all');
+    $year = $request->input('year');
+    $start = $request->input('start');
+    $end = $request->input('end');
+
+    $data = $this->buildFteDetailData($person, [
+        'mode' => $mode,
+        'year' => $year,
+        'start' => $start,
+        'end' => $end,
+    ]);
+
+    $user = auth()->user();
+    $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
+    $safePerson = preg_replace('/[^\pL\pN\-_\s]+/u', '', (string) $data['person']);
+    $filename = "FTE_{$dateStr}_" . trim((string) $safePerson) . ".doc";
+
+    return response()
+        ->view('fte.word', array_merge($data, [
+            'user' => $user,
+        ]))
+        ->header('Content-Type', 'application/msword; charset=UTF-8')
+        ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+}
+
 private function buildFteDetailData(string $person, array $filter = []): array
 {
     $mode = strtolower((string) ($filter['mode'] ?? 'all'));
@@ -763,6 +791,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
     $filterFrom = null;
     $filterTo = null;
     $filterLabel = 'ทั้งหมด';
+    $outputLabel = 'ทั้งหมด';
 
     if ($mode === 'year' && $year) {
         $yearAD = $year > 2500 ? $year - 543 : $year;
@@ -770,19 +799,32 @@ private function buildFteDetailData(string $person, array $filter = []): array
             $filterFrom = Carbon::createFromDate($yearAD, 1, 1)->startOfDay();
             $filterTo = Carbon::createFromDate($yearAD, 12, 31)->endOfDay();
             $filterLabel = 'ปี ' . ($yearAD + 543);
+            $outputLabel = 'ปี ' . ($yearAD + 543);
         } else {
             $mode = 'all';
         }
     } elseif ($mode === 'month') {
         $filterFrom = now()->startOfMonth()->startOfDay();
         $filterTo = now()->endOfMonth()->endOfDay();
-        $filterLabel = 'เดือนปัจจุบัน';
+        $monthYearLabel = $filterFrom->copy()->locale('th')->translatedFormat('F') . ' ' . ($filterFrom->year + 543);
+        $filterLabel = $monthYearLabel;
+        $outputLabel = $monthYearLabel;
     } elseif ($mode === 'custom') {
         [$customFrom, $customTo] = $this->parseDateRange($startInput, $endInput);
         if ($customFrom && $customTo) {
             $filterFrom = $customFrom;
             $filterTo = $customTo;
-            $filterLabel = 'ช่วงวันที่ ' . $customFrom->format('d-m-Y') . ' ถึง ' . $customTo->format('d-m-Y');
+            $filterLabel = 'ช่วงวันที่ '
+                . $customFrom->copy()->locale('th')->translatedFormat('j F') . ' ' . ($customFrom->year + 543)
+                . ' ถึง '
+                . $customTo->copy()->locale('th')->translatedFormat('j F') . ' ' . ($customTo->year + 543);
+            if ($customFrom->format('Y-m') === $customTo->format('Y-m')) {
+                $outputLabel = $customFrom->copy()->locale('th')->translatedFormat('F') . ' ' . ($customFrom->year + 543);
+            } else {
+                $outputLabel = $customFrom->copy()->locale('th')->translatedFormat('j F') . ' ' . ($customFrom->year + 543)
+                    . ' ถึง ' .
+                    $customTo->copy()->locale('th')->translatedFormat('j F') . ' ' . ($customTo->year + 543);
+            }
         } else {
             $mode = 'all';
             $startInput = null;
@@ -796,6 +838,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
         'start' => $filterFrom?->format('d-m-Y'),
         'end' => $filterTo?->format('d-m-Y'),
         'label' => $filterLabel,
+        'output_label' => $outputLabel,
     ];
 
     $profile = \App\Models\User::whereRaw("CONCAT(TRIM(prefix),' ',TRIM(name)) = ?", [$person])->first();

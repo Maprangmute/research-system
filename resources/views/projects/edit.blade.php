@@ -548,7 +548,7 @@
                     placeholder="กรุณาเลือกวันที่เริ่มตามสัญญา" />
 
                 <label class="w-full relative">
-                    <span class="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด (ตามสัญญา)</span>
+                    <span class="block text-sm text-gray-700 mb-1">BC103 - วันที่สิ้นสุด <strong>(ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)</strong></span>
                     <div class="relative">
                         <input id="date_end_date_edit" name="end_date" type="text"
                             value="{{ old('end_date', $project->end_date) }}"

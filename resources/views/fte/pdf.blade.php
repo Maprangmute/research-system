@@ -137,6 +137,15 @@
         .fte-extra-line strong {
             color: #334155;
         }
+        .page-break {
+            page-break-before: always;
+        }
+        .blank-output-space {
+            min-height: 820px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            background: #fff;
+        }
     </style>
 </head>
 <body>
@@ -148,7 +157,8 @@
         $totalHours = $allRows->sum('hours_in_month');
         $position = $profile->position ?? '-';
         $reporter = $user ? trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) : 'ผู้ใช้ระบบ';
-        $reportDate = now()->setTimezone('Asia/Bangkok')->locale('th')->translatedFormat('j F Y เวลา H:i');
+        $reportNow = now()->setTimezone('Asia/Bangkok')->locale('th');
+        $reportDate = $reportNow->translatedFormat('j F') . ' ' . ($reportNow->year + 543) . ' เวลา ' . $reportNow->format('H:i');
         $filterLabel = $pdfFilter['label'] ?? 'ทั้งหมด';
         $wrapPdfText = static function ($value, $targetWidth = 34.0, $slack = 5.0) {
             $text = trim((string) ($value ?? ''));
@@ -336,5 +346,9 @@
     @empty
         <div class="muted">ไม่มีข้อมูล</div>
     @endforelse
+
+    <div class="page-break"></div>
+    <div class="section-title">Output ที่เกิดขึ้น: {{ $pdfFilter['output_label'] ?? $filterLabel }}</div>
+    <div class="blank-output-space"></div>
 </body>
 </html>
