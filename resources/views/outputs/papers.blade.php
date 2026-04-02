@@ -68,7 +68,7 @@
         <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
             <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">📚 Research Papers and Journal Articles</h1>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Research Papers and Journal Articles</h1>
                     <p class="mt-2 text-sm leading-6 text-slate-600 md:text-[15px]">
                         ค้นหาผลงานตีพิมพ์จากชื่อบทความ, author ภาษาอังกฤษ, journal และย้อนกลับไปยัง project detail ได้ทันที
                     </p>
@@ -99,7 +99,7 @@
                     <a href="{{ route('outputs.papers.pdf', request()->query()) }}"
                         target="_blank" rel="noopener"
                         class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">
-                        Export PDF
+                        Export รายการ เป็น PDF
                     </a>
                 </section>
 

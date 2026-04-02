@@ -300,9 +300,7 @@ class OutputController extends Controller
         $reporter = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
         $filters = collect([
             $request->filled('search') ? 'ค้นหา: ' . trim((string) $request->input('search')) : null,
-            $request->filled('person') ? 'ผู้นำเสนอ: ' . trim((string) $request->input('person')) : null,
             $request->filled('activity') ? 'กิจกรรม: ' . trim((string) $request->input('activity')) : null,
-            $request->filled('conference') ? 'Conference: ' . trim((string) $request->input('conference')) : null,
             $request->filled('year') ? 'ปี: ' . trim((string) $request->input('year')) : null,
         ])->filter()->values();
 
@@ -332,11 +330,8 @@ class OutputController extends Controller
         }
 
         $search = trim((string) $request->input('search', ''));
-        $person = trim((string) $request->input('person', ''));
         $activity = trim((string) $request->input('activity', ''));
-        $conference = trim((string) $request->input('conference', ''));
-
-        $rows = $baseQuery->get()
+        $baseRows = $baseQuery->get()
             ->flatMap(function (Output $output) {
                 $yearBe = $this->normalizeYearFilter($output->year);
 
@@ -354,6 +349,7 @@ class OutputController extends Controller
                         'presentation_type' => $conference->presentation_type ?: '-',
                         'location' => $conference->location ?: '-',
                         'presenter_name' => $conference->note ?: '-',
+                        'displayed_at' => $output->updated_at ?? $output->created_at,
                         'created_at' => $output->created_at,
                         'sort_year' => $yearBe ?? 0,
                         'sort_title' => mb_strtolower((string) $output->title),
@@ -361,8 +357,10 @@ class OutputController extends Controller
                         'sort_activity' => mb_strtolower((string) $conference->presentation_type),
                     ];
                 });
-            })
-            ->filter(function ($row) use ($search, $person, $activity, $conference) {
+            });
+
+        $rows = $baseRows
+            ->filter(function ($row) use ($search, $activity) {
                 if ($search !== '') {
                     $haystack = mb_strtolower(implode(' ', array_filter([
                         $row->title,
@@ -380,15 +378,7 @@ class OutputController extends Controller
                     }
                 }
 
-                if ($person !== '' && !str_contains(mb_strtolower((string) $row->presenter_name, 'UTF-8'), mb_strtolower($person, 'UTF-8'))) {
-                    return false;
-                }
-
                 if ($activity !== '' && $row->presentation_type !== $activity) {
-                    return false;
-                }
-
-                if ($conference !== '' && !str_contains(mb_strtolower((string) $row->conference_name, 'UTF-8'), mb_strtolower($conference, 'UTF-8'))) {
                     return false;
                 }
 
@@ -416,9 +406,9 @@ class OutputController extends Controller
                 $rows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()
             ),
             ],
-            'presenterOptions' => $rows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
-            'conferenceOptions' => $rows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
-            'activityOptions' => $rows->pluck('presentation_type')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
+            'presenterOptions' => $baseRows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
+            'conferenceOptions' => $baseRows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
+            'activityOptions' => $baseRows->pluck('presentation_type')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
             'yearOptions' => $rows->pluck('year_be')->filter()->unique()->sortDesc()->values(),
         ];
     }

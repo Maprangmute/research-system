@@ -99,13 +99,12 @@
             <div class="hidden overflow-auto md:block">
                 <table class="min-w-full table-fixed">
                     <colgroup>
-                        <col style="width: 22%;">
                         <col style="width: 23%;">
-                        <col style="width: 14%;">
+                        <col style="width: 23%;">
+                        <col style="width: 15%;">
                         <col style="width: 8%;">
                         <col style="width: 8%;">
-                        <col style="width: 13%;">
-                        <col style="width: 12%;">
+                        <col style="width: 23%;">
                     </colgroup>
                     <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold text-slate-600">
                         <tr>
@@ -114,8 +113,7 @@
                             <th class="px-4 py-3"><a href="{{ $sortUrl('journal') }}">Journal <span class="ml-1">{{ $sortIcon('journal') }}</span></a></th>
                             <th class="px-4 py-3 text-center"><a href="{{ $sortUrl('quartile') }}">Quartile <span class="ml-1">{{ $sortIcon('quartile') }}</span></a></th>
                             <th class="px-4 py-3 text-center"><a href="{{ $sortUrl('year') }}">ปี <span class="ml-1">{{ $sortIcon('year') }}</span></a></th>
-                            <th class="px-4 py-3">วันที่ลงข้อมูล</th>
-                            <th class="px-4 py-3">Project Detail</th>
+                            <th class="px-4 py-3">Project Name</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -145,6 +143,9 @@
                                             @endif
                                         </div>
                                     @endif
+                                    <div class="mt-2 text-xs text-slate-500">
+                                        วันที่ลงข้อมูล: {{ $displayedAtLabel }}
+                                    </div>
                                 </td>
                                 <td class="px-4 py-4 text-sm text-slate-700">
                                     @forelse ($paper->authors_by_role as $role => $names)
@@ -161,7 +162,6 @@
                                 <td class="px-4 py-4 text-sm text-slate-700">{{ $paper->journal }}</td>
                                 <td class="px-4 py-4 text-center text-sm font-semibold text-slate-700">{{ $paper->quartile }}</td>
                                 <td class="px-4 py-4 text-center text-sm text-slate-700">{{ $paper->year_be ?: '-' }}</td>
-                                <td class="px-4 py-4 text-sm text-slate-700">{{ $displayedAtLabel }}</td>
                                 <td class="px-4 py-4 text-sm text-slate-700">
                                     <div class="font-medium">{{ $paper->project_label }}</div>
                                     @if ($paper->project_code)
