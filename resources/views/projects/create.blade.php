@@ -1651,6 +1651,7 @@
         <option value="Poster Presentation">Poster Presentation</option>
         <option value="Panel Discussion">Panel Discussion</option>
         <option value="Keynote Speech">Keynote Speech</option>
+        <option value="World café">World café</option>
       </select>
     </td>
     <td class="px-2 py-2">

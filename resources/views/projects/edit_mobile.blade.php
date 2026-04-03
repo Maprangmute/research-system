@@ -1553,6 +1553,9 @@
                                                             <option
                                                                 value="Keynote Speech"{{ $pt === 'Keynote Speech' ? 'selected' : '' }}>
                                                                 Keynote Speech</option>
+                                                            <option
+                                                                value="World café"{{ $pt === 'World café' ? 'selected' : '' }}>
+                                                                World café</option>
                                                         </select>
                                                     </label>
                                                     <label>
@@ -1603,6 +1606,7 @@
                                                             <option value="Poster Presentation">Poster Presentation</option>
                                                             <option value="Panel Discussion">Panel Discussion</option>
                                                             <option value="Keynote Speech">Keynote Speech</option>
+                                                            <option value="World café">World café</option>
                                                         </select>
                                                     </label>
                                                     <label>
@@ -2875,6 +2879,7 @@
             <option value="Poster Presentation">Poster Presentation</option>
             <option value="Panel Discussion">Panel Discussion</option>
             <option value="Keynote Speech">Keynote Speech</option>
+            <option value="World café">World café</option>
           </select>
         </label>
         <label>

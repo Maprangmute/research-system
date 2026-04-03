@@ -180,7 +180,7 @@ class OutputController extends Controller
             'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.conferences' => ['nullable', 'array'],
             'outputs.*.conferences.*.name' => ['required_if:outputs.*.type,EA103', 'nullable', 'string', 'max:255'],
-            'outputs.*.conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Panel Discussion,Keynote Speech'],
+            'outputs.*.conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Panel Discussion,Keynote Speech,World café'],
             'outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
             'outputs.*.conferences.*.presenter_name' => ['nullable', 'string', 'max:255'],
         ]);
@@ -266,7 +266,7 @@ class OutputController extends Controller
             'authors.*.name' => ['nullable', 'string', 'max:255'],
             'conferences' => ['nullable', 'array'],
             'conferences.*.name' => ['required_if:type,EA103', 'nullable', 'string', 'max:255'],
-            'conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Panel Discussion,Keynote Speech'],
+            'conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Panel Discussion,Keynote Speech,World café'],
             'conferences.*.location' => ['nullable', 'string', 'max:255'],
             'conferences.*.presenter_name' => ['nullable', 'string', 'max:255'],
         ]);
@@ -764,8 +764,9 @@ class OutputController extends Controller
                 });
             });
 
-        $rows = $baseRows
-            ->merge($externalRows)
+        $allRows = $baseRows->merge($externalRows);
+
+        $rows = $allRows
             ->filter(function ($row) use ($search, $activity) {
                 if ($search !== '') {
                     $haystack = mb_strtolower(implode(' ', array_filter([
@@ -813,9 +814,9 @@ class OutputController extends Controller
                 $rows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()
             ),
             ],
-            'presenterOptions' => $baseRows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
-            'conferenceOptions' => $baseRows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
-            'activityOptions' => $baseRows->pluck('presentation_type')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
+            'presenterOptions' => $allRows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
+            'conferenceOptions' => $allRows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
+            'activityOptions' => $allRows->pluck('presentation_type')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
             'yearOptions' => $rows->pluck('year_be')->filter()->unique()->sortDesc()->values(),
         ];
     }

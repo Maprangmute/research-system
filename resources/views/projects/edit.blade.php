@@ -1329,6 +1329,9 @@
                                                                 <option
                                                                     value="Keynote Speech"{{ $pt === 'Keynote Speech' ? 'selected' : '' }}>
                                                                     Keynote Speech</option>
+                                                                <option
+                                                                    value="World café"{{ $pt === 'World café' ? 'selected' : '' }}>
+                                                                    World café</option>
                                                             </select>
                                                         </td>
                                                         <td class="px-2 py-2">
@@ -1369,6 +1372,7 @@
                                                                 <option value="Poster Presentation">Poster Presentation</option>
                                                                 <option value="Panel Discussion">Panel Discussion</option>
                                                                 <option value="Keynote Speech">Keynote Speech</option>
+                                                                <option value="World café">World café</option>
                                                             </select>
                                                         </td>
                                                         <td class="px-2 py-2">
@@ -2560,6 +2564,7 @@
           <option value="Poster Presentation">Poster Presentation</option>
           <option value="Panel Discussion">Panel Discussion</option>
           <option value="Keynote Speech">Keynote Speech</option>
+          <option value="World café">World café</option>
         </select>
       </td>
       <td class="px-2 py-2">

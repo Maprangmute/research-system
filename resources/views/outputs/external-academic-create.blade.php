@@ -284,7 +284,7 @@
                                                     <select name="outputs[{{ $outputIndex }}][conferences][{{ $conferenceIndex }}][presentation_type]"
                                                         class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
                                                         <option value="">เลือก</option>
-                                                        @foreach (['Oral Presentation', 'Poster Presentation', 'Panel Discussion', 'Keynote Speech'] as $presentationType)
+                                                        @foreach (['Oral Presentation', 'Poster Presentation', 'Panel Discussion', 'Keynote Speech', 'World café'] as $presentationType)
                                                             <option value="{{ $presentationType }}" @selected(($conference['presentation_type'] ?? '') === $presentationType)>{{ $presentationType }}</option>
                                                         @endforeach
                                                     </select>
@@ -469,6 +469,7 @@
                         <option value="Poster Presentation">Poster Presentation</option>
                         <option value="Panel Discussion">Panel Discussion</option>
                         <option value="Keynote Speech">Keynote Speech</option>
+                        <option value="World café">World café</option>
                     </select>
                 </label>
                 <label class="block">
