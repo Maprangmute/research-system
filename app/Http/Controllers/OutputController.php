@@ -167,7 +167,7 @@ class OutputController extends Controller
 
         $validated = $request->validate([
             'outputs' => ['required', 'array', 'min:1'],
-            'outputs.*.title' => ['required', 'string', 'max:1000'],
+            'outputs.*.title' => ['required', 'string', 'max:5000'],
             'outputs.*.type' => ['required', 'in:EA101,EA103'],
             'outputs.*.job_category' => ['required', 'in:' . implode(',', self::EXTERNAL_JOB_CATEGORIES)],
             'outputs.*.note' => ['nullable', 'string', 'max:5000'],
@@ -180,7 +180,7 @@ class OutputController extends Controller
             'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.conferences' => ['nullable', 'array'],
             'outputs.*.conferences.*.name' => ['required_if:outputs.*.type,EA103', 'nullable', 'string', 'max:255'],
-            'outputs.*.conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Panel Discussion,Keynote Speech,World café'],
+            'outputs.*.conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Abstract Presentation,Panel Discussion,Keynote Speech,World café'],
             'outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
             'outputs.*.conferences.*.presenter_name' => ['nullable', 'string', 'max:255'],
         ]);
@@ -253,7 +253,7 @@ class OutputController extends Controller
         ]);
 
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:1000'],
+            'title' => ['required', 'string', 'max:5000'],
             'type' => ['required', 'in:EA101,EA103'],
             'job_category' => ['required', 'in:' . implode(',', self::EXTERNAL_JOB_CATEGORIES)],
             'note' => ['nullable', 'string', 'max:5000'],
@@ -266,7 +266,7 @@ class OutputController extends Controller
             'authors.*.name' => ['nullable', 'string', 'max:255'],
             'conferences' => ['nullable', 'array'],
             'conferences.*.name' => ['required_if:type,EA103', 'nullable', 'string', 'max:255'],
-            'conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Panel Discussion,Keynote Speech,World café'],
+            'conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Abstract Presentation,Panel Discussion,Keynote Speech,World café'],
             'conferences.*.location' => ['nullable', 'string', 'max:255'],
             'conferences.*.presenter_name' => ['nullable', 'string', 'max:255'],
         ]);
@@ -802,6 +802,15 @@ class OutputController extends Controller
             'created_at' => fn ($item) => $item->created_at?->timestamp ?? 0,
         ]);
 
+        $defaultActivityOptions = collect([
+            'Oral Presentation',
+            'Poster Presentation',
+            'Abstract Presentation',
+            'Panel Discussion',
+            'Keynote Speech',
+            'World café',
+        ]);
+
         return [
             'items' => $rows,
             'summary' => [
@@ -816,7 +825,11 @@ class OutputController extends Controller
             ],
             'presenterOptions' => $allRows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
             'conferenceOptions' => $allRows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
-            'activityOptions' => $allRows->pluck('presentation_type')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
+            'activityOptions' => $defaultActivityOptions
+                ->merge($allRows->pluck('presentation_type'))
+                ->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')
+                ->unique()
+                ->values(),
             'yearOptions' => $rows->pluck('year_be')->filter()->unique()->sortDesc()->values(),
         ];
     }

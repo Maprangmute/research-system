@@ -1701,6 +1701,9 @@
                                                                 value="Poster Presentation"{{ $pt === 'Poster Presentation' ? 'selected' : '' }}>
                                                                 Poster Presentation</option>
                                                             <option
+                                                                value="Abstract Presentation"{{ $pt === 'Abstract Presentation' ? 'selected' : '' }}>
+                                                                Abstract Presentation</option>
+                                                            <option
                                                                 value="Panel Discussion"{{ $pt === 'Panel Discussion' ? 'selected' : '' }}>
                                                                 Panel Discussion</option>
                                                             <option
@@ -1757,6 +1760,7 @@
                                                             <option value="">เลือก</option>
                                                             <option value="Oral Presentation">Oral Presentation</option>
                                                             <option value="Poster Presentation">Poster Presentation</option>
+                                                            <option value="Abstract Presentation">Abstract Presentation</option>
                                                             <option value="Panel Discussion">Panel Discussion</option>
                                                             <option value="Keynote Speech">Keynote Speech</option>
                                                             <option value="World café">World café</option>
@@ -3464,6 +3468,7 @@
             <option value="">เลือก</option>
             <option value="Oral Presentation">Oral Presentation</option>
             <option value="Poster Presentation">Poster Presentation</option>
+            <option value="Abstract Presentation">Abstract Presentation</option>
             <option value="Panel Discussion">Panel Discussion</option>
             <option value="Keynote Speech">Keynote Speech</option>
             <option value="World café">World café</option>
