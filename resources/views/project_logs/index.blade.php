@@ -235,12 +235,16 @@
                 @forelse($groupedLogs ?? [] as $group)
                     @php
                         $first = $group->first();
+                        $groupKey = 'group_'.$first->id;
                         $thaiDate = \Carbon\Carbon::parse($first->created_at)->setTimezone('Asia/Bangkok')->addYears(543)->format('d/m/Y H:i:s');
                         $projectName = $first->project?->project_name_th ?? $first->project_name_th ?? '-';
                         $userName = $first->user?->prefix . $first->user?->name;
-                        $eventLabels = $group->map(function ($log) {
-                            return $log->entity_label . ': ' . $log->action_label;
-                        })->all();
+                        $verbLabel = (string) ($group->pluck('action_label')->filter()->first() ?? 'แก้ไข');
+                        $entityLabels = $group->pluck('entity_label')->filter()->unique()->values();
+                        $entityText = $entityLabels->implode(', ');
+                        $eventSummary = trim($verbLabel . ' ' . $entityText);
+                        $eventSearchText = trim($group->map(fn ($log) => $log->entity_label . ' ' . $log->action_label)->implode(' '));
+                        $searchText = trim(implode(' ', array_filter([$thaiDate, $projectName, $userName, $eventSummary, $eventSearchText])));
                         $eventItems = $group->map(function ($log) {
                             return [
                                 'id' => $log->id,
@@ -248,7 +252,7 @@
                             ];
                         })->values()->all();
                     @endphp
-                    <tr class="hover:bg-gray-100 transition">
+                    <tr class="hover:bg-gray-100 transition" data-log-search-text="{{ $searchText }}" data-log-row-key="{{ $groupKey }}">
                         <td class="border px-4 py-2 text-xs text-gray-600 whitespace-nowrap">
                             {{ $thaiDate }}
                         </td>
@@ -265,18 +269,15 @@
                             {{ $userName }}
                         </td>
                         <td class="border px-4 py-2">
-                            <div class="flex flex-wrap gap-2">
-                                @foreach($group as $log)
-                                    <span class="inline-block {{ $log->action_color_class }} px-2 py-0.5 rounded text-xs">
-                                        {{ $log->entity_label }}: {{ $log->action_label }}
-                                    </span>
-                                @endforeach
+                            <div class="text-sm text-slate-800 font-medium">
+                                {{ $eventSummary !== '' ? $eventSummary : 'ไม่ระบุเหตุการณ์' }}
                             </div>
                         </td>
                         <td class="border px-4 py-2 text-center">
                             <div class="flex items-center justify-center gap-2">
                                 <span class="text-blue-700 hover:underline text-sm cursor-pointer open-log-drawer"
                                     data-time="{{ $thaiDate }}"
+                                    data-summary="{{ $eventSummary }}"
                                     data-project="{{ $projectName }}"
                                     data-user="{{ $userName }}"
                                     data-events='@json($eventItems)'>
@@ -291,7 +292,7 @@
                             </div>
                         </td>
                     </tr>
-                    <tr class="hidden">
+                    <tr class="hidden" data-log-detail-key="{{ $groupKey }}">
                         <td colspan="5">
                             @foreach($group as $log)
                                 <div id="log-details-content-{{ $log->id }}">
@@ -303,10 +304,13 @@
                 @empty
                     <tr><td colspan="5" class="text-center py-8 text-gray-400">ไม่มี log ในระบบ</td></tr>
                 @endforelse
+                <tr id="project-log-empty-search" class="hidden">
+                    <td colspan="5" class="text-center py-8 text-gray-400">ไม่พบรายการที่ตรงกับคำค้นหาในหน้านี้</td>
+                </tr>
             </tbody>
         </table>
     </div>
-    <div class="mt-4">
+    <div id="project-log-pagination-wrap" class="mt-4">
         {{ $logs->links('vendor.pagination.th') }}
     </div>
     </div>
@@ -523,7 +527,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 bindAjaxControls();
                 bindDrawerControls();
                 bindConfirmForms();
-                renderTopUpdaterChart(document.querySelector(rootSelector));
+                var refreshedRoot = document.querySelector(rootSelector);
+                renderTopUpdaterChart(refreshedRoot);
+                applyLocalSearchFilter(refreshedRoot || document);
             })
             .catch(function() {
                 if (ajaxController && ajaxController.signal.aborted) return;
@@ -567,20 +573,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (searchInput) {
                 searchInput.addEventListener('input', function() {
-                    clearTimeout(suggestDebounceTimer);
-                    clearTimeout(filterDebounceTimer);
-                    suggestDebounceTimer = setTimeout(function() {
-                        fetchSuggestions(root, searchInput.value);
-                    }, 180);
-                    filterDebounceTimer = setTimeout(function() {
-                        ajaxRefresh(buildFormUrl(form));
-                    }, 260);
+                    applyLocalSearchFilter(root);
                 });
                 searchInput.addEventListener('keydown', function(event) {
                     if (event.key !== 'Enter') return;
                     event.preventDefault();
-                    clearTimeout(filterDebounceTimer);
-                    ajaxRefresh(buildFormUrl(form));
+                    applyLocalSearchFilter(root);
                 });
             }
 
@@ -614,6 +612,44 @@ document.addEventListener('DOMContentLoaded', function() {
     var drawerAction = document.getElementById('log-drawer-action');
     var drawerProject = document.getElementById('log-drawer-project');
     var drawerUser = document.getElementById('log-drawer-user');
+
+    function normalizeLocalSearch(value) {
+        return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    function applyLocalSearchFilter(root) {
+        root = root || document;
+        var input = root.querySelector('#project-log-search-input');
+        if (!input) return;
+        var term = normalizeLocalSearch(input.value);
+        var rows = root.querySelectorAll('tbody tr[data-log-search-text]');
+        var visibleCount = 0;
+
+        rows.forEach(function(row) {
+            var rowText = normalizeLocalSearch(row.getAttribute('data-log-search-text') || '');
+            var matched = term === '' || rowText.indexOf(term) !== -1;
+            row.classList.toggle('hidden', !matched);
+
+            var key = row.getAttribute('data-log-row-key');
+            if (key) {
+                var detailRow = root.querySelector('tr[data-log-detail-key="' + key + '"]');
+                if (detailRow && !matched) {
+                    detailRow.classList.add('hidden');
+                }
+            }
+
+            if (matched) visibleCount += 1;
+        });
+
+        var localSearchEmptyEl = root.querySelector('#project-log-empty-search');
+        if (localSearchEmptyEl) {
+            localSearchEmptyEl.classList.toggle('hidden', !(term !== '' && visibleCount === 0));
+        }
+        var localSearchPaginationEl = root.querySelector('#project-log-pagination-wrap');
+        if (localSearchPaginationEl) {
+            localSearchPaginationEl.classList.toggle('hidden', term !== '');
+        }
+    }
 
     function openDrawer(payload) {
         drawerTime.textContent = payload.time || '';
@@ -660,7 +696,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             openDrawer({
                 time: row.getAttribute('data-time'),
-                action: 'เหตุการณ์ทั้งหมด',
+                action: row.getAttribute('data-summary') || 'เหตุการณ์ทั้งหมด',
                 project: row.getAttribute('data-project'),
                 user: row.getAttribute('data-user'),
                 html: bodyHtml
@@ -705,6 +741,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.initDateBE(root);
         }
         renderTopUpdaterChart(root);
+        applyLocalSearchFilter(root);
     }
 });
 </script>

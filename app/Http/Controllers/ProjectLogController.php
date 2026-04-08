@@ -66,12 +66,13 @@ class ProjectLogController extends Controller
         ] = $this->resolveFilterInputs($request);
         $fuzzyProjectIds = $this->findFuzzyProjectIds($search);
         $fuzzyUserIds = $this->findFuzzyUserIds($search);
+        $relatedPersonProjectIds = $this->findRelatedPersonProjectIds($search);
 
         $query = ProjectLog::query()->with([
             'user',
             'project' => fn ($q) => $q->withTrashed(),
         ]);
-        $this->applyLogFilters($query, $entity, $verb, $search, $timeMode, $filterMonth, $filterYear, $startDate, $endDate, $fuzzyProjectIds, $fuzzyUserIds);
+        $this->applyLogFilters($query, $entity, $verb, $search, $timeMode, $filterMonth, $filterYear, $startDate, $endDate, $fuzzyProjectIds, $fuzzyUserIds, $relatedPersonProjectIds);
 
         $sort = $request->input('sort', 'latest');
         $sortMap = [
@@ -95,16 +96,16 @@ class ProjectLogController extends Controller
         }
 
         $statsQuery = ProjectLog::query();
-        $this->applyLogFilters($statsQuery, $entity, $verb, $search, $timeMode, $filterMonth, $filterYear, $startDate, $endDate, $fuzzyProjectIds, $fuzzyUserIds);
+        $this->applyLogFilters($statsQuery, $entity, $verb, $search, $timeMode, $filterMonth, $filterYear, $startDate, $endDate, $fuzzyProjectIds, $fuzzyUserIds, $relatedPersonProjectIds);
 
         $logs = $query->paginate(50)->appends($request->query());
         $groupedLogs = $logs->getCollection()->groupBy(function ($log) {
             $bangkokTime = optional($log->created_at)->copy()->setTimezone('Asia/Bangkok');
-            // รวมกลุ่มแบบย่อ แต่ไม่รวมข้าม action เพื่อกันเคสรายการ "หาย" ตอนเวลาเดียวกัน
+            // รวมแบบอ่านง่าย: เวลาเดียวกัน + project + user + กริยาเดียวกัน (create/update/delete/restore)
             return optional($bangkokTime)->format('Y-m-d H:i:s')
                 . '|' . ($log->project_id ?? '-')
                 . '|' . ($log->user_id ?? '-')
-                . '|' . ($log->action ?? '-');
+                . '|' . ($log->action_verb ?? '-');
         });
         $projectDistinctExpr = "COALESCE(CAST(project_logs.project_id AS CHAR), CONCAT('name:', COALESCE(project_logs.project_name_th, 'ไม่ระบุโครงการ')))";
         $topUpdaters = (clone $statsQuery)
@@ -280,12 +281,13 @@ class ProjectLogController extends Controller
         ] = $this->resolveFilterInputs($request);
         $fuzzyProjectIds = $this->findFuzzyProjectIds($search);
         $fuzzyUserIds = $this->findFuzzyUserIds($search);
+        $relatedPersonProjectIds = $this->findRelatedPersonProjectIds($search);
 
         $query = ProjectLog::query()->with([
             'user',
             'project' => fn ($q) => $q->withTrashed(),
         ]);
-        $this->applyLogFilters($query, $entity, $verb, $search, $timeMode, $filterMonth, $filterYear, $startDate, $endDate, $fuzzyProjectIds, $fuzzyUserIds);
+        $this->applyLogFilters($query, $entity, $verb, $search, $timeMode, $filterMonth, $filterYear, $startDate, $endDate, $fuzzyProjectIds, $fuzzyUserIds, $relatedPersonProjectIds);
         $rows = $query->latest('project_logs.created_at')->limit(15000)->get()->map(function ($log) {
             $log->change_summary = $this->summarizeLogChanges(is_array($log->changes) ? $log->changes : []);
             return $log;
@@ -371,7 +373,7 @@ class ProjectLogController extends Controller
             $bangkokTime = optional($log->created_at)->copy()->setTimezone('Asia/Bangkok');
             return optional($bangkokTime)->format('Y-m-d H:i:s')
                 . '|' . ($log->user_id ?? '-')
-                . '|' . ($log->action ?? '-');
+                . '|' . ($log->action_verb ?? '-');
         });
         $view = $this->resolveView($request, 'project_logs.project');
         return view($view, compact('project', 'logs', 'groupedLogs'));
@@ -426,7 +428,8 @@ class ProjectLogController extends Controller
         string $startDate,
         string $endDate,
         array $fuzzyProjectIds = [],
-        array $fuzzyUserIds = []
+        array $fuzzyUserIds = [],
+        array $relatedPersonProjectIds = []
     ): void {
         if (!empty($entity) && $entity !== 'all') {
             if ($entity === 'project') {
@@ -459,6 +462,9 @@ class ProjectLogController extends Controller
                 }
                 if ($fuzzyUserIds !== []) {
                     $q->orWhereIn('project_logs.user_id', $fuzzyUserIds);
+                }
+                if ($relatedPersonProjectIds !== []) {
+                    $q->orWhereIn('project_logs.project_id', $relatedPersonProjectIds);
                 }
             });
         }
@@ -577,6 +583,46 @@ class ProjectLogController extends Controller
             ->sortByDesc('score')
             ->take(50)
             ->pluck('id')
+            ->values()
+            ->all();
+    }
+
+    private function findRelatedPersonProjectIds(string $search): array
+    {
+        $search = trim($search);
+        if (mb_strlen($search, 'UTF-8') < 2) {
+            return [];
+        }
+
+        $searchLower = mb_strtolower($search, 'UTF-8');
+        $normalized = $this->normalizeText($searchLower);
+        $tokens = array_values(array_filter(explode(' ', preg_replace('/\s+/u', ' ', $normalized))));
+
+        return Project::query()
+            ->withTrashed()
+            ->select('id')
+            ->where(function (Builder $query) use ($search, $searchLower, $normalized, $tokens) {
+                $nameMatcher = function (Builder $rel) use ($search, $searchLower, $normalized, $tokens) {
+                    $rel->where('name', 'like', '%'.$search.'%')
+                        ->orWhereRaw('LOWER(name) like ?', ['%'.$searchLower.'%']);
+
+                    if ($normalized !== '') {
+                        $rel->orWhereRaw("REGEXP_REPLACE(LOWER(TRIM(COALESCE(name, ''))), '[[:space:][:punct:]]+', '') like ?", ['%'.$normalized.'%']);
+                    }
+
+                    foreach ($tokens as $token) {
+                        $rel->orWhereRaw('LOWER(name) like ?', ['%'.$token.'%']);
+                    }
+                };
+
+                $query->whereHas('fteRoles', $nameMatcher)
+                    ->orWhereHas('copis', $nameMatcher)
+                    ->orWhereHas('coResearches', $nameMatcher);
+            })
+            ->limit(300)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
             ->values()
             ->all();
     }

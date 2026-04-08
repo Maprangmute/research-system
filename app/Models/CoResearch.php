@@ -26,7 +26,11 @@ class CoResearch extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $co->project->project_name_th ?? '',
                 'action'          => 'coresearch_create',
-                'changes'         => ProjectLog::sanitizeChanges($co->toArray()),
+                'changes'         => ProjectLog::withRecordContext(
+                    ProjectLog::sanitizeChanges($co->toArray()),
+                    'coresearch',
+                    $co->id
+                ),
             ]);
         });
 
@@ -39,7 +43,7 @@ class CoResearch extends Model
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $co->project->project_name_th ?? '',
                     'action'          => 'coresearch_update',
-                    'changes'         => $changes,
+                    'changes'         => ProjectLog::withRecordContext($changes, 'coresearch', $co->id),
                 ]);
             }
         });
@@ -51,7 +55,11 @@ class CoResearch extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $co->project->project_name_th ?? '',
                 'action'          => 'coresearch_delete',
-                'changes'         => ProjectLog::sanitizeChanges($co->toArray()),
+                'changes'         => ProjectLog::withRecordContext(
+                    ProjectLog::sanitizeChanges($co->toArray()),
+                    'coresearch',
+                    $co->id
+                ),
             ]);
         });
     }

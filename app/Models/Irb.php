@@ -21,7 +21,11 @@ class Irb extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $irb->project->project_name_th ?? '',
                 'action'          => 'irb_create',
-                'changes'         => ProjectLog::sanitizeChanges($irb->toArray()),
+                'changes'         => ProjectLog::withRecordContext(
+                    ProjectLog::sanitizeChanges($irb->toArray()),
+                    'irb',
+                    $irb->id
+                ),
             ]);
         });
 
@@ -34,7 +38,7 @@ class Irb extends Model
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $irb->project->project_name_th ?? '',
                     'action'          => 'irb_update',
-                    'changes'         => $changes,
+                    'changes'         => ProjectLog::withRecordContext($changes, 'irb', $irb->id),
                 ]);
             }
         });
@@ -46,7 +50,11 @@ class Irb extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $irb->project->project_name_th ?? '',
                 'action'          => 'irb_delete',
-                'changes'         => ProjectLog::sanitizeChanges($irb->toArray()),
+                'changes'         => ProjectLog::withRecordContext(
+                    ProjectLog::sanitizeChanges($irb->toArray()),
+                    'irb',
+                    $irb->id
+                ),
             ]);
         });
     }

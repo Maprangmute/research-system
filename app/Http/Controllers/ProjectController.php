@@ -48,7 +48,13 @@ class ProjectController extends Controller
             });
         };
 
-        $query = Project::query()->withCount('outputs');
+        $query = Project::query()
+            ->withCount('outputs')
+            ->with([
+                'fteRoles:id,project_id,name',
+                'copis:id,project_id,name',
+                'coResearches:id,project_id,name',
+            ]);
         $applyPermission($query);
 
         $baseQuery = Project::query();
@@ -63,6 +69,10 @@ class ProjectController extends Controller
         }
         if ($request->filled('pi_name')) {
             $query->whereRaw('TRIM(pi_name) = ?', [$request->pi_name]);
+        }
+        $selectedPersonName = trim((string) $request->input('person_name', ''));
+        if ($selectedPersonName !== '') {
+            $this->applyPersonRoleFilter($query, $selectedPersonName);
         }
         if ($request->filled('funding_source')) {
             $query->whereRaw('TRIM(funding_source) = ?', [$request->funding_source]);
@@ -201,6 +211,10 @@ class ProjectController extends Controller
             ->groupBy('name_key')
             ->orderBy('pi_name')
             ->pluck('pi_name');
+        $personOptions = $this->buildPersonFilterOptions(clone $baseQuery);
+        $personRoleSummary = $selectedPersonName !== ''
+            ? $this->buildPersonRoleSummary($selectedPersonName, $projects->getCollection()->all())
+            : [];
         $fundingSources = (clone $baseQuery)
             ->selectRaw('LOWER(TRIM(funding_source)) as source_key, MIN(TRIM(funding_source)) as funding_source')
             ->whereNotNull('funding_source')
@@ -234,6 +248,9 @@ class ProjectController extends Controller
             'projects' => $projects,
             'missingFTE' => $missingFTE,
             'piOptions' => $piOptions,
+            'personOptions' => $personOptions,
+            'selectedPersonName' => $selectedPersonName,
+            'personRoleSummary' => $personRoleSummary,
             'fundingSources' => $fundingSources,
             'typeOptions' => $typeOptions,
             'statusOptions' => $statusOptions,
@@ -241,6 +258,121 @@ class ProjectController extends Controller
             'budgetMin' => $budgetMin,
             'budgetMax' => $budgetMax,
         ]);
+    }
+
+    private function normalizePersonName(string $value): string
+    {
+        $lower = mb_strtolower(trim($value), 'UTF-8');
+        return preg_replace('/\s+/u', '', $lower) ?: $lower;
+    }
+
+    private function applyPersonRoleFilter(Builder $query, string $personName): void
+    {
+        $variants = $this->buildPersonNameVariants($personName);
+        if ($variants === []) {
+            return;
+        }
+
+        $query->where(function (Builder $inner) use ($variants) {
+            $this->applyNormalizedNameMatchAny($inner, 'pi_name', $variants);
+
+            $inner->orWhereHas('copis', function (Builder $q) use ($variants) {
+                $this->applyNormalizedNameMatchAny($q, 'name', $variants);
+                })
+                ->orWhereHas('coResearches', function (Builder $q) use ($variants) {
+                    $this->applyNormalizedNameMatchAny($q, 'name', $variants);
+                })
+                ->orWhereHas('fteRoles', function (Builder $q) use ($variants) {
+                    $this->applyNormalizedNameMatchAny($q, 'name', $variants);
+                });
+        });
+    }
+
+    private function applyNormalizedNameMatchAny(Builder $query, string $column, array $variants): void
+    {
+        if ($variants === []) {
+            return;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($variants), '?'));
+        $query->whereRaw(
+            "REPLACE(LOWER(TRIM(COALESCE({$column}, ''))), ' ', '') IN ({$placeholders})",
+            $variants
+        );
+    }
+
+    private function buildPersonNameVariants(string $personName): array
+    {
+        $raw = trim($personName);
+        if ($raw === '') {
+            return [];
+        }
+
+        $variants = [ $this->normalizePersonName($raw) ];
+        $parts = preg_split('/\s+/u', $raw) ?: [];
+        if (count($parts) > 1) {
+            $withoutPrefix = trim(implode(' ', array_slice($parts, 1)));
+            if ($withoutPrefix !== '') {
+                $variants[] = $this->normalizePersonName($withoutPrefix);
+            }
+        }
+
+        return collect($variants)->filter()->unique()->values()->all();
+    }
+
+    private function buildPersonFilterOptions(Builder $baseQuery): array
+    {
+        return \App\Models\User::query()
+            ->selectRaw("TRIM(COALESCE(prefix, '')) as person_prefix")
+            ->selectRaw("TRIM(name) as person_name")
+            ->whereNotNull('name')
+            ->whereRaw("TRIM(name) <> ''")
+            ->groupBy('person_prefix', 'person_name')
+            ->orderBy('person_prefix')
+            ->orderBy('person_name')
+            ->get()
+            ->map(function ($row) {
+                $name = trim((string) $row->person_name);
+                $prefix = trim((string) ($row->person_prefix ?? ''));
+                if ($name === '') {
+                    return null;
+                }
+                $fullName = trim($prefix.' '.$name);
+                return [
+                    'value' => $fullName,
+                    'label' => $fullName,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function buildPersonRoleSummary(string $personName, $projects): array
+    {
+        $variants = $this->buildPersonNameVariants($personName);
+        if ($variants === []) {
+            return [];
+        }
+
+        $matchesAny = fn ($value) => in_array($this->normalizePersonName((string) $value), $variants, true);
+        $rows = collect($projects);
+
+        $countRole = function (callable $predicate) use ($rows) {
+            return $rows->filter($predicate)->count();
+        };
+
+        $summary = [];
+        $piCount = $countRole(fn ($p) => $matchesAny($p->pi_name ?? ''));
+        if ($piCount > 0) $summary[] = ['role' => 'PI', 'count' => $piCount];
+        $copiCount = $countRole(fn ($p) => collect($p->copis ?? [])->contains(fn ($r) => $matchesAny($r->name ?? '')));
+        if ($copiCount > 0) $summary[] = ['role' => 'Co-PI', 'count' => $copiCount];
+        $coCount = $countRole(fn ($p) => collect($p->coResearches ?? [])->contains(fn ($r) => $matchesAny($r->name ?? '')));
+        if ($coCount > 0) $summary[] = ['role' => 'Co-Research', 'count' => $coCount];
+        $fteCount = $countRole(fn ($p) => collect($p->fteRoles ?? [])->contains(fn ($r) => $matchesAny($r->name ?? '')));
+        if ($fteCount > 0) $summary[] = ['role' => 'FTE', 'count' => $fteCount];
+
+        return $summary;
     }
 
     public function create(Request $request)
@@ -625,12 +757,12 @@ public function store(Request $request)
             abort(403);
         }
 
-        // ลบความสัมพันธ์ที่เกี่ยวข้องก่อน (ถ้ามี foreign key)
-        $project->fteRoles()->delete();
-        $project->outputs()->delete();
-        $project->copis()->delete();
-        $project->irbs()->delete();
-        $project->coResearches()->delete();
+        // ลบความสัมพันธ์ทีละรายการเพื่อให้ model events ยิงและ ProjectLog ถูกบันทึกครบ
+        $this->deleteModelsWithEvents($project->fteRoles());
+        $this->deleteModelsWithEvents($project->outputs());
+        $this->deleteModelsWithEvents($project->copis());
+        $this->deleteModelsWithEvents($project->irbs());
+        $this->deleteModelsWithEvents($project->coResearches());
 
         // แล้วค่อยลบตัวโปรเจค
         $project->delete();
@@ -1416,7 +1548,7 @@ public function store(Request $request)
         }
 
         if ($deleteIds->isNotEmpty()) {
-            $project->fteRoles()->whereIn('id', $deleteIds)->delete();
+            $this->deleteModelsWithEvents($project->fteRoles()->whereIn('id', $deleteIds));
         }
     }
 
@@ -1429,6 +1561,7 @@ public function store(Request $request)
     {
         $rows = $request->input('outputs', []);
         $keepIds = [];
+        $unmatchedExisting = $project->outputs()->orderBy('id')->get()->keyBy('id');
 
         foreach ($rows as $row) {
             if (! $this->hasAnyOutputData($row)) {
@@ -1460,6 +1593,7 @@ public function store(Request $request)
                 $model = $project->outputs()->whereKey($row['id'])->first();
                 if ($model) {
                     $model->update($payload);
+                    $unmatchedExisting->forget($model->id);
 
                     // relations
                     $this->syncOutputAuthors($model, $row['authors'] ?? null, $isEA101);
@@ -1468,6 +1602,18 @@ public function store(Request $request)
                     $keepIds[] = $model->id;
                 }
             } else {
+                $fallback = $unmatchedExisting->shift();
+                if ($fallback) {
+                    $fallback->update($payload);
+
+                    // relations
+                    $this->syncOutputAuthors($fallback, $row['authors'] ?? null, $isEA101);
+                    $this->syncOutputConferences($fallback, $row['conferences'] ?? null, $isEA103);
+
+                    $keepIds[] = $fallback->id;
+                    continue;
+                }
+
                 $new = $project->outputs()->create($payload);
 
                 // relations
@@ -1478,15 +1624,17 @@ public function store(Request $request)
             }
         }
 
-        $project->outputs()
-            ->when($keepIds, fn ($q) => $q->whereNotIn('id', $keepIds))
-            ->delete();
+        $staleOutputs = $project->outputs();
+        if (!empty($keepIds)) {
+            $staleOutputs->whereNotIn('id', $keepIds);
+        }
+        $this->deleteModelsWithEvents($staleOutputs);
     }
 
     private function syncOutputAuthors(Output $output, ?array $authors, bool $isEA101): void
     {
         if (! $isEA101) {
-            $output->authors()->delete();
+            $this->deleteModelsWithEvents($output->authors());
 
             return;
         }
@@ -1494,7 +1642,7 @@ public function store(Request $request)
         $authors = $authors ?? []; // ป้องกัน null
 
         if (! $authors) {
-            $output->authors()->delete();
+            $this->deleteModelsWithEvents($output->authors());
 
             return;
         }
@@ -1523,14 +1671,14 @@ public function store(Request $request)
         }
 
         if ($ids) {
-            $output->authors()->whereNotIn('id', $ids)->delete();
+            $this->deleteModelsWithEvents($output->authors()->whereNotIn('id', $ids));
         }
     }
 
     private function syncOutputConferences(Output $output, ?array $confs, bool $isEA103): void
     {
         if (! $isEA103) {
-            $output->conferences()->delete();
+            $this->deleteModelsWithEvents($output->conferences());
 
             return;
         }
@@ -1571,7 +1719,7 @@ public function store(Request $request)
         }
 
         if (! empty($ids)) {
-            $output->conferences()->whereNotIn('id', $ids)->delete();
+            $this->deleteModelsWithEvents($output->conferences()->whereNotIn('id', $ids));
         }
     }
 
@@ -1608,17 +1756,29 @@ public function store(Request $request)
     private function syncCopis(Request $request, Project $project): void
     {
         $ids = [];
+        $unmatchedExisting = $project->copis()->orderBy('id')->get()->keyBy('id');
         foreach ($request->copis ?? [] as $copi) {
             if (! empty($copi['id'])) {
-                $copiModel = \App\Models\Copi::find($copi['id']);
+                $copiModel = $project->copis()->whereKey($copi['id'])->first();
                 if ($copiModel) {
                     $copiModel->update([
                         'name' => $copi['name'],
                         'affiliation' => $copi['affiliation'] ?? '',
                     ]);
+                    $unmatchedExisting->forget($copiModel->id);
                     $ids[] = $copiModel->id;
                 }
             } elseif (! empty($copi['name'])) {
+                $fallback = $unmatchedExisting->shift();
+                if ($fallback) {
+                    $fallback->update([
+                        'name' => $copi['name'],
+                        'affiliation' => $copi['affiliation'] ?? '',
+                    ]);
+                    $ids[] = $fallback->id;
+                    continue;
+                }
+
                 $new = \App\Models\Copi::create([
                     'project_id' => $project->id,
                     'name' => $copi['name'],
@@ -1627,24 +1787,41 @@ public function store(Request $request)
                 $ids[] = $new->id;
             }
         }
-        $project->copis()->whereNotIn('id', $ids)->delete();
+        $staleCopis = $project->copis();
+        if (!empty($ids)) {
+            $staleCopis->whereNotIn('id', $ids);
+        }
+        $this->deleteModelsWithEvents($staleCopis);
     }
 
     private function syncIrbs(Request $request, Project $project): void
     {
         $ids = [];
+        $unmatchedExisting = $project->irbs()->orderBy('id')->get()->keyBy('id');
         foreach ($request->irbs ?? [] as $irb) {
             if (! empty($irb['id'])) {
-                $irbModel = \App\Models\Irb::find($irb['id']);
+                $irbModel = $project->irbs()->whereKey($irb['id'])->first();
                 if ($irbModel) {
                     $irbModel->update([
                         'code' => $irb['code'],
                         'exp_date' => $irb['exp_date'],
                         'source' => $irb['source'] ?? '',
                     ]);
+                    $unmatchedExisting->forget($irbModel->id);
                     $ids[] = $irbModel->id;
                 }
             } elseif (! empty($irb['code'])) {
+                $fallback = $unmatchedExisting->shift();
+                if ($fallback) {
+                    $fallback->update([
+                        'code' => $irb['code'],
+                        'exp_date' => $irb['exp_date'],
+                        'source' => $irb['source'] ?? '',
+                    ]);
+                    $ids[] = $fallback->id;
+                    continue;
+                }
+
                 $new = \App\Models\Irb::create([
                     'project_id' => $project->id,
                     'code' => $irb['code'],
@@ -1654,24 +1831,41 @@ public function store(Request $request)
                 $ids[] = $new->id;
             }
         }
-        $project->irbs()->whereNotIn('id', $ids)->delete();
+        $staleIrbs = $project->irbs();
+        if (!empty($ids)) {
+            $staleIrbs->whereNotIn('id', $ids);
+        }
+        $this->deleteModelsWithEvents($staleIrbs);
     }
 
     private function syncCoResearch(Request $request, Project $project): void
     {
         $ids = [];
+        $unmatchedExisting = $project->coResearches()->orderBy('id')->get()->keyBy('id');
         foreach ($request->coresearch ?? [] as $core) {
             if (! empty($core['id'])) {
-                $coreModel = \App\Models\CoResearch::find($core['id']);
+                $coreModel = $project->coResearches()->whereKey($core['id'])->first();
                 if ($coreModel) {
                     $coreModel->update([
                         'name' => $core['name'],
                         'unit_status' => $core['unit_status'],
                         'affiliation' => $core['affiliation'] ?? '',
                     ]);
+                    $unmatchedExisting->forget($coreModel->id);
                     $ids[] = $coreModel->id;
                 }
             } elseif (! empty($core['name'])) {
+                $fallback = $unmatchedExisting->shift();
+                if ($fallback) {
+                    $fallback->update([
+                        'name' => $core['name'],
+                        'unit_status' => $core['unit_status'],
+                        'affiliation' => $core['affiliation'] ?? '',
+                    ]);
+                    $ids[] = $fallback->id;
+                    continue;
+                }
+
                 $new = \App\Models\CoResearch::create([
                     'project_id' => $project->id,
                     'name' => $core['name'],
@@ -1681,7 +1875,18 @@ public function store(Request $request)
                 $ids[] = $new->id;
             }
         }
-        $project->coResearches()->whereNotIn('id', $ids)->delete();
+        $staleCoResearches = $project->coResearches();
+        if (!empty($ids)) {
+            $staleCoResearches->whereNotIn('id', $ids);
+        }
+        $this->deleteModelsWithEvents($staleCoResearches);
+    }
+
+    private function deleteModelsWithEvents($query): void
+    {
+        $query->chunkById(200, function ($models) {
+            $models->each->delete();
+        });
     }
 
     private function applyProjectNameSearch(Builder $query, Builder $searchScope, string $rawSearch): void
@@ -1700,9 +1905,10 @@ public function store(Request $request)
 
         $nameExpr = "REGEXP_REPLACE(LOWER(TRIM(project_name_th)), '[[:space:][:punct:]]+', '')";
         $codeExpr = "REGEXP_REPLACE(LOWER(TRIM(project_code)), '[[:space:][:punct:]]+', '')";
+        $personNameExpr = "REGEXP_REPLACE(LOWER(TRIM(COALESCE(name, ''))), '[[:space:][:punct:]]+', '')";
         $normalizedLike = '%'.$normalizedNeedle.'%';
 
-        $query->where(function (Builder $inner) use ($search, $searchLower, $searchNormalized, $searchNumericId, $tokens, $fuzzyIds, $nameExpr, $codeExpr) {
+        $query->where(function (Builder $inner) use ($search, $searchLower, $searchNormalized, $searchNumericId, $tokens, $fuzzyIds, $nameExpr, $codeExpr, $personNameExpr) {
             $inner->where('project_name_th', 'like', '%'.$search.'%')
                 ->orWhereRaw('LOWER(project_name_th) like ?', ['%'.$searchLower.'%'])
                 ->orWhereRaw('LOWER(project_code) like ?', ['%'.$searchLower.'%']);
@@ -1719,6 +1925,46 @@ public function store(Request $request)
             foreach ($tokens as $token) {
                 $inner->orWhereRaw('LOWER(project_name_th) like ?', ['%'.$token.'%']);
             }
+
+            // ค้นหาชื่อบุคคลที่เกี่ยวข้องในโปรเจกต์
+            $inner->orWhereHas('fteRoles', function (Builder $rel) use ($search, $searchLower, $searchNormalized, $tokens, $personNameExpr) {
+                $rel->where('name', 'like', '%'.$search.'%')
+                    ->orWhereRaw('LOWER(name) like ?', ['%'.$searchLower.'%']);
+
+                if ($searchNormalized !== '') {
+                    $rel->orWhereRaw("$personNameExpr like ?", ['%'.$searchNormalized.'%']);
+                }
+
+                foreach ($tokens as $token) {
+                    $rel->orWhereRaw('LOWER(name) like ?', ['%'.$token.'%']);
+                }
+            });
+
+            $inner->orWhereHas('copis', function (Builder $rel) use ($search, $searchLower, $searchNormalized, $tokens, $personNameExpr) {
+                $rel->where('name', 'like', '%'.$search.'%')
+                    ->orWhereRaw('LOWER(name) like ?', ['%'.$searchLower.'%']);
+
+                if ($searchNormalized !== '') {
+                    $rel->orWhereRaw("$personNameExpr like ?", ['%'.$searchNormalized.'%']);
+                }
+
+                foreach ($tokens as $token) {
+                    $rel->orWhereRaw('LOWER(name) like ?', ['%'.$token.'%']);
+                }
+            });
+
+            $inner->orWhereHas('coResearches', function (Builder $rel) use ($search, $searchLower, $searchNormalized, $tokens, $personNameExpr) {
+                $rel->where('name', 'like', '%'.$search.'%')
+                    ->orWhereRaw('LOWER(name) like ?', ['%'.$searchLower.'%']);
+
+                if ($searchNormalized !== '') {
+                    $rel->orWhereRaw("$personNameExpr like ?", ['%'.$searchNormalized.'%']);
+                }
+
+                foreach ($tokens as $token) {
+                    $rel->orWhereRaw('LOWER(name) like ?', ['%'.$token.'%']);
+                }
+            });
 
             if ($fuzzyIds !== []) {
                 $inner->orWhereIn('id', $fuzzyIds);

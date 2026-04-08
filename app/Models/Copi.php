@@ -23,7 +23,11 @@ class Copi extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $copi->project->project_name_th ?? '',
                 'action'          => 'copi_create',
-                'changes'         => ProjectLog::sanitizeChanges($copi->toArray()),
+                'changes'         => ProjectLog::withRecordContext(
+                    ProjectLog::sanitizeChanges($copi->toArray()),
+                    'copi',
+                    $copi->id
+                ),
             ]);
         });
 
@@ -36,7 +40,7 @@ class Copi extends Model
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $copi->project->project_name_th ?? '',
                     'action'          => 'copi_update',
-                    'changes'         => $changes,
+                    'changes'         => ProjectLog::withRecordContext($changes, 'copi', $copi->id),
                 ]);
             }
         });
@@ -48,7 +52,11 @@ class Copi extends Model
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $copi->project->project_name_th ?? '',
                 'action'          => 'copi_delete',
-                'changes'         => ProjectLog::sanitizeChanges($copi->toArray()),
+                'changes'         => ProjectLog::withRecordContext(
+                    ProjectLog::sanitizeChanges($copi->toArray()),
+                    'copi',
+                    $copi->id
+                ),
             ]);
         });
     }

@@ -44,6 +44,14 @@ class ProjectLog extends Model
         return $changes;
     }
 
+    public static function withRecordContext(array $changes, string $entity, $recordId): array
+    {
+        $changes['record_entity'] = $entity;
+        $changes['record_id'] = $recordId;
+
+        return $changes;
+    }
+
     public function getActionVerbAttribute(): string
     {
         $meta = $this->actionMeta();

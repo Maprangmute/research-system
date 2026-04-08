@@ -142,7 +142,11 @@ public function authors()
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $output->project->project_name_th ?? '',
                 'action'          => 'output_create',
-                'changes'         => ProjectLog::sanitizeChanges($output->toArray()),
+                'changes'         => ProjectLog::withRecordContext(
+                    ProjectLog::sanitizeChanges($output->toArray()),
+                    'output',
+                    $output->id
+                ),
             ]);
 
             if (empty($output->output_code) && $output->id) {
@@ -161,7 +165,7 @@ public function authors()
                     'user_id'         => Auth::id() ?? null,
                     'project_name_th' => $output->project->project_name_th ?? '',
                     'action'          => 'output_update',
-                    'changes'         => $changes,
+                    'changes'         => ProjectLog::withRecordContext($changes, 'output', $output->id),
                 ]);
             }
         });
@@ -174,7 +178,11 @@ public function authors()
                 'user_id'         => Auth::id() ?? null,
                 'project_name_th' => $output->project->project_name_th ?? '',
                 'action'          => 'output_delete',
-                'changes'         => ProjectLog::sanitizeChanges($output->toArray()),
+                'changes'         => ProjectLog::withRecordContext(
+                    ProjectLog::sanitizeChanges($output->toArray()),
+                    'output',
+                    $output->id
+                ),
             ]);
         });
     }

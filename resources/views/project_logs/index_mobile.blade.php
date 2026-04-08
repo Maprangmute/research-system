@@ -226,9 +226,16 @@
     @forelse($groupedLogs ?? [] as $group)
         @php
             $first = $group->first();
+            $groupKey = 'group_'.$first->id;
             $thaiDate = \Carbon\Carbon::parse($first->created_at)->setTimezone('Asia/Bangkok')->addYears(543)->format('d/m/Y H:i:s');
             $projectName = $first->project?->project_name_th ?? $first->project_name_th ?? '-';
             $userName = $first->user?->prefix . $first->user?->name;
+            $verbLabel = (string) ($group->pluck('action_label')->filter()->first() ?? 'แก้ไข');
+            $entityLabels = $group->pluck('entity_label')->filter()->unique()->values();
+            $entityText = $entityLabels->implode(', ');
+            $eventSummary = trim($verbLabel . ' ' . $entityText);
+            $eventSearchText = trim($group->map(fn ($log) => $log->entity_label . ' ' . $log->action_label)->implode(' '));
+            $searchText = trim(implode(' ', array_filter([$thaiDate, $projectName, $userName, $eventSummary, $eventSearchText])));
             $eventItems = $group->map(function ($log) {
                 return [
                     'id' => $log->id,
@@ -236,7 +243,7 @@
                 ];
             })->values()->all();
         @endphp
-        <div class="bg-white border rounded-xl shadow-sm p-4 space-y-2">
+        <div class="bg-white border rounded-xl shadow-sm p-4 space-y-2" data-log-search-text="{{ $searchText }}" data-log-row-key="{{ $groupKey }}">
             <div class="text-xs text-gray-500">{{ $thaiDate }}</div>
             <div class="font-semibold text-gray-800">
                 <a href="{{ route('project_logs.project', $first->project_id) }}" class="text-blue-700 hover:underline">
@@ -244,16 +251,13 @@
                 </a>
             </div>
             <div class="text-sm text-gray-600">โดย {{ $userName }}</div>
-            <div class="flex flex-wrap gap-2 pt-1">
-                @foreach($group as $log)
-                    <span class="inline-block {{ $log->action_color_class }} px-2 py-0.5 rounded text-xs">
-                        {{ $log->entity_label }}: {{ $log->action_label }}
-                    </span>
-                @endforeach
+            <div class="text-sm text-slate-800 font-medium pt-1">
+                {{ $eventSummary !== '' ? $eventSummary : 'ไม่ระบุเหตุการณ์' }}
             </div>
             <div class="flex items-center justify-between pt-2">
                 <span class="text-blue-700 hover:underline text-sm cursor-pointer open-log-drawer"
                     data-time="{{ $thaiDate }}"
+                    data-summary="{{ $eventSummary }}"
                     data-project="{{ $projectName }}"
                     data-user="{{ $userName }}"
                     data-events='@json($eventItems)'>
@@ -273,8 +277,9 @@
     @empty
         <div class="text-center py-10 text-gray-400">ไม่มี log ในระบบ</div>
     @endforelse
+    <div id="project-log-mobile-empty-search" class="hidden text-center py-10 text-gray-400">ไม่พบรายการที่ตรงกับคำค้นหาในหน้านี้</div>
 
-    <div class="mt-4">
+    <div id="project-log-mobile-pagination-wrap" class="mt-4">
         {{ $logs->links('vendor.pagination.th') }}
     </div>
     </div>
@@ -496,7 +501,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 bindAjaxControls();
                 bindDrawerControls();
                 bindConfirmForms();
-                renderTopUpdaterChart(document.querySelector(rootSelector));
+                var refreshedRoot = document.querySelector(rootSelector);
+                renderTopUpdaterChart(refreshedRoot);
+                applyLocalSearchFilter(refreshedRoot || document);
             })
             .catch(function() {
                 if (ajaxController && ajaxController.signal.aborted) return;
@@ -540,20 +547,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (searchInput) {
                 searchInput.addEventListener('input', function() {
-                    clearTimeout(suggestDebounceTimer);
-                    clearTimeout(filterDebounceTimer);
-                    suggestDebounceTimer = setTimeout(function() {
-                        fetchSuggestions(root, searchInput.value);
-                    }, 180);
-                    filterDebounceTimer = setTimeout(function() {
-                        ajaxRefresh(buildFormUrl(form));
-                    }, 260);
+                    applyLocalSearchFilter(root);
                 });
                 searchInput.addEventListener('keydown', function(event) {
                     if (event.key !== 'Enter') return;
                     event.preventDefault();
-                    clearTimeout(filterDebounceTimer);
-                    ajaxRefresh(buildFormUrl(form));
+                    applyLocalSearchFilter(root);
                 });
             }
 
@@ -587,6 +586,35 @@ document.addEventListener('DOMContentLoaded', function() {
     var drawerAction = document.getElementById('log-drawer-action');
     var drawerProject = document.getElementById('log-drawer-project');
     var drawerUser = document.getElementById('log-drawer-user');
+
+    function normalizeLocalSearch(value) {
+        return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    function applyLocalSearchFilter(root) {
+        root = root || document;
+        var input = root.querySelector('#project-log-search-input-mobile');
+        if (!input) return;
+        var term = normalizeLocalSearch(input.value);
+        var cards = root.querySelectorAll('div[data-log-search-text]');
+        var visibleCount = 0;
+
+        cards.forEach(function(card) {
+            var text = normalizeLocalSearch(card.getAttribute('data-log-search-text') || '');
+            var matched = term === '' || text.indexOf(term) !== -1;
+            card.classList.toggle('hidden', !matched);
+            if (matched) visibleCount += 1;
+        });
+
+        var localSearchEmptyEl = root.querySelector('#project-log-mobile-empty-search');
+        if (localSearchEmptyEl) {
+            localSearchEmptyEl.classList.toggle('hidden', !(term !== '' && visibleCount === 0));
+        }
+        var localSearchPaginationEl = root.querySelector('#project-log-mobile-pagination-wrap');
+        if (localSearchPaginationEl) {
+            localSearchPaginationEl.classList.toggle('hidden', term !== '');
+        }
+    }
 
     function openDrawer(payload) {
         drawerTime.textContent = payload.time || '';
@@ -628,7 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             openDrawer({
                 time: button.getAttribute('data-time'),
-                action: 'เหตุการณ์ทั้งหมด',
+                action: button.getAttribute('data-summary') || 'เหตุการณ์ทั้งหมด',
                 project: button.getAttribute('data-project'),
                 user: button.getAttribute('data-user'),
                 html: bodyHtml
@@ -671,6 +699,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (root) {
         initMobileWheelDateInputs(root);
         renderTopUpdaterChart(root);
+        applyLocalSearchFilter(root);
     }
 });
 </script>
