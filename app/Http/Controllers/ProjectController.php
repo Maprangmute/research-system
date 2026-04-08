@@ -386,6 +386,142 @@ public function store(Request $request)
         return view($view, compact('project'));
     }
 
+    public function fteSnapshot(Project $project)
+    {
+        $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
+        $hasPermission = Auth::user()->role === 'admin'
+            || Auth::id() === $project->user_id
+            || Auth::user()->role === 'user_all'
+            || $project->fteRoles->contains('name', $fullName);
+
+        if (! $hasPermission) {
+            abort(403);
+        }
+
+        $project->loadMissing('updatedBy:id,prefix,name');
+        $activityLogs = $this->fetchFteActivityLogs($project);
+        $projectUpdatedByName = trim(((string) optional($project->updatedBy)->prefix).' '.((string) optional($project->updatedBy)->name));
+
+        $rows = $project->fteRoles()
+            ->orderBy('id')
+            ->get()
+            ->map(function ($fte) use ($activityLogs, $projectUpdatedByName) {
+                $activityMeta = $this->resolveFteActivityMeta(optional($fte->updated_at), $activityLogs);
+                $actorName = $activityMeta['actor_name'] ?? ($projectUpdatedByName !== '' ? $projectUpdatedByName : null);
+
+                return [
+                    'id' => $fte->id,
+                    'name' => trim((string) $fte->name),
+                    'role_group' => trim((string) $fte->role_group),
+                    'job_detail' => trim((string) $fte->job_detail),
+                    'task_detail' => trim((string) $fte->task_detail),
+                    'start_date' => trim((string) $fte->start_date),
+                    'end_date' => trim((string) $fte->end_date),
+                    'hours' => $fte->hours === null ? '' : rtrim(rtrim(number_format((float) $fte->hours, 8, '.', ''), '0'), '.'),
+                    'fte_value' => $fte->fte_value === null ? '' : number_format((float) $fte->fte_value, 8, '.', ''),
+                    'fte_value_research' => $fte->fte_value_research === null ? '' : rtrim(rtrim(number_format((float) $fte->fte_value_research, 2, '.', ''), '0'), '.'),
+                    'updated_at' => optional($fte->updated_at)->toIso8601String(),
+                    'updated_by_name' => $actorName,
+                    'updated_logged_at' => $activityMeta['logged_at'] ?? optional($fte->updated_at)->toIso8601String(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'project_id' => $project->id,
+            'project_updated_at' => optional($project->updated_at)->toIso8601String(),
+            'project_updated_by_name' => $projectUpdatedByName !== '' ? $projectUpdatedByName : null,
+            'rows' => $rows,
+        ]);
+    }
+
+    private function buildFteActivityMetaMap(Project $project): array
+    {
+        $logs = $this->fetchFteActivityLogs($project);
+        $metaBySecond = [];
+
+        foreach ($logs as $log) {
+            $secondKey = optional($log->created_at)?->copy()->floorSecond()?->toIso8601String();
+            if (! $secondKey || isset($metaBySecond[$secondKey])) {
+                continue;
+            }
+
+            $metaBySecond[$secondKey] = $this->formatFteActivityMeta($log);
+        }
+
+        return $metaBySecond;
+    }
+
+    private function fetchFteActivityLogs(Project $project)
+    {
+        return \App\Models\ProjectLog::query()
+            ->with('user:id,prefix,name')
+            ->where('project_id', $project->id)
+            ->whereIn('action', ['fte_create', 'fte_update'])
+            ->latest('created_at')
+            ->limit(200)
+            ->get();
+    }
+
+    private function resolveFteActivityMeta($updatedAt, $logs): ?array
+    {
+        if (! $updatedAt || ! $logs || $logs->isEmpty()) {
+            return null;
+        }
+
+        $updatedAtTs = $updatedAt->copy()->floorSecond()->getTimestamp();
+        $bestLog = null;
+        $bestDelta = null;
+        $bestNamedLog = null;
+        $bestNamedDelta = null;
+
+        foreach ($logs as $log) {
+            $logAt = optional($log->created_at)?->copy()->floorSecond();
+            if (! $logAt) {
+                continue;
+            }
+
+            $delta = abs($logAt->getTimestamp() - $updatedAtTs);
+            if ($delta > 15) {
+                continue;
+            }
+
+            if ($bestDelta === null || $delta < $bestDelta) {
+                $bestDelta = $delta;
+                $bestLog = $log;
+            }
+
+            $actorName = trim(((string) optional($log->user)->prefix).' '.((string) optional($log->user)->name));
+            if ($actorName !== '' && ($bestNamedDelta === null || $delta < $bestNamedDelta)) {
+                $bestNamedDelta = $delta;
+                $bestNamedLog = $log;
+            }
+        }
+
+        if ($bestNamedLog) {
+            return $this->formatFteActivityMeta($bestNamedLog);
+        }
+
+        if (! $bestLog) {
+            $bestLog = $logs->first(function ($log) {
+                $actorName = trim(((string) optional($log->user)->prefix).' '.((string) optional($log->user)->name));
+                return $actorName !== '';
+            }) ?? $logs->first();
+        }
+
+        return $bestLog ? $this->formatFteActivityMeta($bestLog) : null;
+    }
+
+    private function formatFteActivityMeta($log): array
+    {
+        $actorName = trim(((string) optional($log->user)->prefix).' '.((string) optional($log->user)->name));
+
+        return [
+            'actor_name' => $actorName !== '' ? $actorName : null,
+            'logged_at' => optional($log->created_at)->toIso8601String(),
+        ];
+    }
+
     public function show(Request $request, Project $project)
     {
         $routeProjectParam = trim((string) ($request->route()?->originalParameter('project') ?? ''));

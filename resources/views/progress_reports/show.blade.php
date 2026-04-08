@@ -59,7 +59,9 @@
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div class="space-y-2">
                     <div class="flex flex-wrap gap-3 text-sm">
-                        <a href="{{ route('projects.show', ['project' => $project] + $modalQuery) }}" class="text-blue-600 hover:underline">← กลับหน้าโครงการ</a>
+                        @unless ($isModalView)
+                            <a href="{{ route('projects.show', ['project' => $project] + $modalQuery) }}" class="text-blue-600 hover:underline">← กลับหน้าโครงการ</a>
+                        @endunless
                         <a href="{{ route('projects.progress_reports.index', ['project' => $project] + $modalQuery) }}" class="text-blue-600 hover:underline">กลับหน้ารายงานความก้าวหน้า</a>
                     </div>
                     <h1 class="text-xl md:text-2xl font-bold text-slate-900">{{ $progressTitle }}</h1>

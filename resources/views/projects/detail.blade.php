@@ -1368,6 +1368,22 @@
 
             @include('projects.partials.progress_section_detail', ['project' => $project])
 
+            <div id="progressReportModal" class="fixed inset-0 z-[90] hidden">
+                <div class="absolute inset-0 bg-slate-900/50" data-progress-modal-close></div>
+                <div class="relative mx-auto h-[100dvh] w-full rounded-none bg-white border border-slate-200 shadow-xl md:mt-3 md:h-[94vh] md:w-[98vw] md:max-w-[1700px] md:rounded-2xl">
+                    <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200">
+                        <h4 id="progressReportModalTitle" class="text-sm md:text-base font-semibold text-slate-900">ความก้าวหน้าของการดำเนินงาน</h4>
+                        <div class="flex items-center gap-2">
+                            <button type="button" data-progress-modal-close
+                                class="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-sm hover:bg-slate-900">
+                                ปิด
+                            </button>
+                        </div>
+                    </div>
+                    <iframe id="progressReportModalFrame" src="about:blank" class="w-full h-[calc(100dvh-57px)] md:h-[calc(94vh-57px)] rounded-none md:rounded-b-2xl"></iframe>
+                </div>
+            </div>
+
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
                 <h3 class="font-semibold text-lg text-blue-700 mb-2">J: ยุทธศาสตร์ Siriraj Health Policy</h3>
                 <table
@@ -1598,6 +1614,77 @@
                 });
             });
         }
+
+        (function() {
+            const modal = document.getElementById('progressReportModal');
+            const frame = document.getElementById('progressReportModalFrame');
+            const title = document.getElementById('progressReportModalTitle');
+            const currentProjectId = Number(@json($project->id));
+            if (!modal || !frame || !title) return;
+
+            const openModal = (url, modalTitle) => {
+                if (!url) return;
+                title.textContent = modalTitle || 'ความก้าวหน้าของการดำเนินงาน';
+                frame.src = url;
+                modal.classList.remove('hidden');
+                document.documentElement.classList.add('overflow-hidden');
+                document.body.classList.add('overflow-hidden');
+            };
+
+            const closeModal = () => {
+                modal.classList.add('hidden');
+                frame.src = 'about:blank';
+                document.documentElement.classList.remove('overflow-hidden');
+                document.body.classList.remove('overflow-hidden');
+            };
+
+            document.querySelectorAll('[data-progress-modal-open]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    openModal(button.dataset.url || '', button.dataset.title || '');
+                });
+            });
+
+            modal.querySelectorAll('[data-progress-modal-close]').forEach((button) => {
+                button.addEventListener('click', closeModal);
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+
+            window.addEventListener('message', (event) => {
+                if (event.origin !== window.location.origin) return;
+
+                const payload = event.data;
+                if (!payload || Number(payload.projectId) !== currentProjectId) return;
+
+                if (payload.type === 'progress-report:close') {
+                    closeModal();
+                    return;
+                }
+
+                if (payload.type !== 'progress-report:updated') return;
+
+                closeModal();
+
+                if (payload.message && window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ!',
+                        text: String(payload.message),
+                        confirmButtonText: 'ตกลง',
+                        timer: 1800
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                    return;
+                }
+
+                window.location.reload();
+            });
+        })();
 
         (function() {
             const fabBtn = document.getElementById('detailFabBtn');

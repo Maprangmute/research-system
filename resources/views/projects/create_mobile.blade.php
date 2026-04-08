@@ -496,6 +496,7 @@
                     <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
                     <select name="funding_type" class="w-full border p-2 rounded">
                         <option value="" disabled selected>กรุณาเลือกประเภทแหล่งทุน</option>
+                        <option value="ไม่มีแหล่งทุน">ไม่มีแหล่งทุน</option>
                         <option value="ภายใน">ภายใน</option>
                         <option value="ภายนอก">ภายนอก</option>
                     </select>
@@ -543,11 +544,11 @@
 
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท)</span>
+                    <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท) <span class="text-red-600">*ใส่ตัวเลขเท่านั้น หากไม่มี ให้เว้นว่างไว้*</span></span>
                     <input id="budgetInput" name="budget" type="text" class="w-full border p-2 rounded"
                         placeholder="ระบุจำนวนเงินที่ได้รับ" inputmode="decimal" pattern="[\d,\.]*"
-                        data-max="1000000000000">
-
+                        data-max="1000000000000" autocomplete="off">
+                    <span id="budgetInputNotice" class="mt-1 hidden text-sm text-red-600">กรุณากรอกตัวเลขเท่านั้น</span>
                 </label>
 
             </div>
@@ -849,8 +850,8 @@
                                     <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">
                                         ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล
                                     </option>
-                                    <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">
-                                        ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ
+                                    <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ">
+                                        ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
                                     </option>
                                 </select>
                             </label>
@@ -1624,15 +1625,20 @@
         // ✅ FORMAT BUDGET
         function setupBudgetInput() {
             const input = document.getElementById('budgetInput');
+            const notice = document.getElementById('budgetInputNotice');
             if (!input) return;
 
             input.addEventListener('input', () => {
-                let value = input.value.replace(/,/g, '');
+                const rawValue = input.value.replace(/,/g, '');
+                const hasInvalidChars = /[^\d.]/.test(rawValue);
+                let value = rawValue.replace(/[^\d.]/g, '');
                 const parts = value.split('.');
-                if (parts.length > 2) value = parts[0] + '.' + parts[1];
+                if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
                 let [intPart, decimalPart] = value.split('.');
+                intPart = (intPart || '').replace(/^0+(?=\d)/, '');
                 intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                 input.value = decimalPart !== undefined ? `${intPart}.${decimalPart}` : intPart;
+                notice?.classList.toggle('hidden', !hasInvalidChars);
             });
 
             input.form?.addEventListener('submit', () => {

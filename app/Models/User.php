@@ -86,4 +86,9 @@ class User extends Authenticatable
     {
         return $this->role === 'admin' || $this->role === 'user_all';
     }
+
+    public function getFullNameAttribute(): string
+    {
+        return trim(((string) $this->prefix) . ' ' . ((string) $this->name));
+    }
 }

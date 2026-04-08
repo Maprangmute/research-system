@@ -45,6 +45,8 @@
     $progressSectionHasError = collect($errors->keys())->contains(fn($key) => str_starts_with($key, 'progress_rows.'));
     $issueSectionHasError = collect($errors->keys())->contains(fn($key) => str_starts_with($key, 'issue_rows.'));
     $submitDateInputId = 'progress_submit_date_' . ($editing ? (string) ($report->id ?? 'edit') : 'new');
+    $progressRowCount = count($progressRows);
+    $issueRowCount = count($issueRows);
 @endphp
 
 <style>
@@ -66,39 +68,68 @@
     .blink-new-row {
         animation: newRowBlink 1.2s ease;
     }
+
+    .report-form-shell {
+        background:
+            radial-gradient(circle at top right, rgba(191, 219, 254, 0.55), transparent 24rem),
+            radial-gradient(circle at bottom left, rgba(199, 210, 254, 0.4), transparent 28rem),
+            linear-gradient(180deg, #f8fbff 0%, #f8fafc 100%);
+    }
+
+    .report-glass-card {
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(12px);
+    }
 </style>
 
-<div class="max-w-6xl mx-auto mt-6 px-3">
-    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6 space-y-6">
-        <div class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 md:p-6">
+<div class="report-form-shell max-w-6xl mx-auto mt-4 md:mt-6 px-3 py-3 md:py-4 rounded-[2rem]">
+    <div class="report-glass-card border border-white/70 ring-1 ring-slate-200/70 rounded-[2rem] shadow-[0_18px_50px_rgba(15,23,42,0.08)] p-4 md:p-7 space-y-6">
+        <div class="relative overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-gradient-to-br from-white via-sky-50/50 to-indigo-50/60 p-5 md:p-7 shadow-sm">
             <div class="absolute -right-14 -top-14 h-40 w-40 rounded-full bg-cyan-100/60 blur-2xl"></div>
             <div class="absolute -left-12 -bottom-16 h-44 w-44 rounded-full bg-indigo-100/50 blur-2xl"></div>
 
             <div class="relative">
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50/90 px-3 py-1 text-[11px] font-semibold tracking-[0.12em] text-blue-700">
                         รายงานความก้าวหน้า
                     </span>
                     @if (!empty($project->project_code))
-                        <span class="inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                        <span class="inline-flex items-center rounded-full border border-slate-300 bg-white/90 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-700">
                             {{ $project->project_code }}
                         </span>
                     @endif
+                    <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/90 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-emerald-700">
+                        {{ $editing ? 'EDIT MODE' : 'NEW REPORT' }}
+                    </span>
                 </div>
 
-                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3 md:py-4 h-full">
-                        <p class="text-xs uppercase tracking-wide text-slate-500">Project</p>
-                        <p class="mt-1 text-xl md:text-2xl font-extrabold leading-snug text-slate-900 break-words">
+                <div class="mt-4 max-w-3xl">
+                    <h1 class="text-xl md:text-3xl font-extrabold tracking-tight leading-snug text-slate-900">
+                        {{ $pageTitle ?? ($editing ? 'แก้ไขรายงานความก้าวหน้า' : 'เพิ่มรายงานความก้าวหน้า') }}
+                    </h1>
+                    <p class="mt-2 text-sm md:text-base text-slate-600 leading-7">
+                        บันทึกความก้าวหน้า ปัญหาอุปสรรค และเอกสารอ้างอิงของโครงการในหน้าฟอร์มเดียว
+                    </p>
+                </div>
+
+                <div class="mt-5 grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div class="rounded-2xl border border-slate-200 bg-white/80 px-4 py-4 md:col-span-2">
+                        <p class="text-[11px] uppercase tracking-[0.16em] text-slate-500">Project</p>
+                        <p class="mt-2 text-lg md:text-2xl font-extrabold leading-snug text-slate-900 break-words">
                             {{ $project->project_name_th }}
                         </p>
                     </div>
 
-                    <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 md:py-4 h-full">
-                        <p class="text-xs uppercase tracking-wide text-slate-500">Report</p>
-                        <h1 class="mt-1 text-sm md:text-base font-semibold leading-snug text-slate-800">
-                            {{ $pageTitle ?? ($editing ? 'แก้ไขรายงานความก้าวหน้า' : 'เพิ่มรายงานความก้าวหน้า') }}
-                        </h1>
+                    <div class="rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-4">
+                        <p class="text-[11px] uppercase tracking-[0.16em] text-blue-600">กิจกรรม</p>
+                        <p class="mt-2 text-2xl font-extrabold text-blue-900">{{ $progressRowCount }}</p>
+                        <p class="text-sm text-blue-700">รายการในฟอร์ม</p>
+                    </div>
+
+                    <div class="rounded-2xl border border-indigo-100 bg-indigo-50/80 px-4 py-4">
+                        <p class="text-[11px] uppercase tracking-[0.16em] text-indigo-600">ปัญหา</p>
+                        <p class="mt-2 text-2xl font-extrabold text-indigo-900">{{ $issueRowCount }}</p>
+                        <p class="text-sm text-indigo-700">รายการในฟอร์ม</p>
                     </div>
                 </div>
             </div>
@@ -119,82 +150,97 @@
                 </div>
             @endif
 
-            <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                    <p class="text-xs text-emerald-700">ผู้จัดทำ (ระบบใส่อัตโนมัติจากผู้ใช้ที่ล็อกอิน)</p>
-                    <p class="mt-1 text-sm font-semibold text-emerald-900">{{ $autoSubmitterName ?: '-' }}</p>
-                </div>
-
-                <label class="block rounded-xl border border-slate-200 bg-slate-50 p-3 md:p-4">
-                    <span class="text-sm text-slate-700">วันที่รายงาน <span class="text-red-500">*</span></span>
-                    <div class="relative">
-                        <input
-                            id="{{ $submitDateInputId }}"
-                            type="text"
-                            name="submit_date"
-                            value="{{ $submitDate }}"
-                            placeholder="กรุณาเลือกวันที่"
-                            readonly
-                            required
-                            data-required-label="วันที่รายงาน"
-                            class="{{ $fieldBaseClass }} {{ $errors->has('submit_date') ? $fieldErrorClass : $fieldNormalClass }} js-date-be pr-10 bg-white cursor-pointer"
-                        >
-                        <button
-                            type="button"
-                            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
-                            data-open-picker
-                            data-target="{{ $submitDateInputId }}"
-                            aria-label="เปิดปฏิทิน"
-                        >
-                            📅
-                        </button>
+            <section class="rounded-[1.6rem] border border-slate-200/80 bg-white/90 p-4 md:p-5 shadow-sm">
+                <div class="flex flex-col gap-4 md:gap-5">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-white">A</div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">ข้อมูลรายงาน</h2>
+                            <p class="text-sm text-slate-500">ข้อมูลหลักของรายงานและไฟล์อ้างอิง</p>
+                        </div>
                     </div>
-                    @error('submit_date')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </label>
 
-                <label class="block md:col-span-2">
-                    <span class="text-sm text-slate-700">หัวข้อรายงาน <span class="text-red-500">*</span></span>
-                    <input
-                        type="text"
-                        name="progress_title"
-                        value="{{ old('progress_title', $editing ? ($report->progress_title ?? '') : '') }}"
-                        required
-                        data-required-label="หัวข้อรายงาน"
-                        class="{{ $fieldBaseClass }} {{ $errors->has('progress_title') ? $fieldErrorClass : $fieldNormalClass }}"
-                        placeholder="เช่น ความก้าวหน้าของการดำเนินงาน (VBHC)"
-                    >
-                    @error('progress_title')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-4 shadow-sm">
+                            <p class="text-[11px] uppercase tracking-[0.14em] text-emerald-700">ผู้จัดทำ</p>
+                            <p class="mt-2 text-base font-bold text-emerald-950">{{ $autoSubmitterName ?: '-' }}</p>
+                            <p class="mt-1 text-xs text-emerald-700">ระบบดึงจากผู้ใช้ที่ล็อกอินอัตโนมัติ</p>
+                        </div>
 
-                <label class="block md:col-span-2">
-                    <span class="text-sm text-slate-700">รายละเอียดไฟล์ / ลิงก์ (ถ้ามี)</span>
-                    <input
-                        type="text"
-                        name="file_info"
-                        value="{{ old('file_info', $editing ? ($report->file_info ?? '') : '') }}"
-                        class="{{ $fieldBaseClass }} {{ $errors->has('file_info') ? $fieldErrorClass : $fieldNormalClass }}"
-                        placeholder="ลิงก์ไฟล์รายงาน หรือหมายเหตุเพิ่มเติม"
-                    >
-                    @error('file_info')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </label>
+                        <label class="block rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm">
+                            <span class="text-sm font-semibold text-slate-700">วันที่รายงาน <span class="text-red-500">*</span></span>
+                            <div class="relative">
+                                <input
+                                    id="{{ $submitDateInputId }}"
+                                    type="text"
+                                    name="submit_date"
+                                    value="{{ $submitDate }}"
+                                    placeholder="กรุณาเลือกวันที่"
+                                    readonly
+                                    required
+                                    data-required-label="วันที่รายงาน"
+                                    class="{{ $fieldBaseClass }} {{ $errors->has('submit_date') ? $fieldErrorClass : $fieldNormalClass }} js-date-be pr-10 bg-white cursor-pointer"
+                                >
+                                <button
+                                    type="button"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                                    data-open-picker
+                                    data-target="{{ $submitDateInputId }}"
+                                    aria-label="เปิดปฏิทิน"
+                                >
+                                    📅
+                                </button>
+                            </div>
+                            @error('submit_date')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                            @enderror
+                        </label>
+
+                        <label class="block md:col-span-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <span class="text-sm font-semibold text-slate-700">หัวข้อรายงาน <span class="text-red-500">*</span></span>
+                            <input
+                                type="text"
+                                name="progress_title"
+                                value="{{ old('progress_title', $editing ? ($report->progress_title ?? '') : '') }}"
+                                required
+                                data-required-label="หัวข้อรายงาน"
+                                class="{{ $fieldBaseClass }} {{ $errors->has('progress_title') ? $fieldErrorClass : $fieldNormalClass }}"
+                                placeholder="เช่น ความก้าวหน้าของการดำเนินงาน (VBHC)"
+                            >
+                            @error('progress_title')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                            @enderror
+                        </label>
+
+                        <label class="block md:col-span-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <span class="text-sm font-semibold text-slate-700">รายละเอียดไฟล์ / ลิงก์</span>
+                            <input
+                                type="text"
+                                name="file_info"
+                                value="{{ old('file_info', $editing ? ($report->file_info ?? '') : '') }}"
+                                class="{{ $fieldBaseClass }} {{ $errors->has('file_info') ? $fieldErrorClass : $fieldNormalClass }}"
+                                placeholder="ลิงก์ไฟล์รายงาน หรือหมายเหตุเพิ่มเติม"
+                            >
+                            @error('file_info')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                            @enderror
+                        </label>
+                    </div>
+                </div>
             </section>
 
-            <section class="space-y-4 rounded-2xl border border-blue-100 bg-gradient-to-b from-blue-50/80 to-white p-4 md:p-5">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h2 class="text-lg md:text-xl font-bold text-slate-900">ความก้าวหน้าของการดำเนินงาน</h2>
-                        <p class="text-sm text-slate-600 mt-1">พิมพ์หรือแก้ไขข้อมูลได้ทันทีในแต่ละช่อง</p>
+            <section class="space-y-4 rounded-[1.6rem] border border-blue-100 bg-gradient-to-b from-blue-50/90 via-white to-white p-4 md:p-5 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-blue-100 bg-white/85 px-4 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-base font-bold text-white">B</div>
+                        <div>
+                            <h2 class="text-lg md:text-xl font-bold text-slate-900">ความก้าวหน้าของการดำเนินงาน</h2>
+                            <p class="text-sm text-slate-600 mt-1">แยกแต่ละกิจกรรมเป็นคนละแถวเพื่อให้อ่านย้อนหลังง่าย</p>
+                        </div>
                     </div>
-                </div>
-
-                <div class="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
-                    แนะนำ: 1 แถว = 1 กิจกรรมหลักของเดือนนั้น
+                    <div class="inline-flex items-center self-start rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                        {{ $progressRowCount }} รายการ
+                    </div>
                 </div>
 
                 @if ($progressSectionHasError)
@@ -209,17 +255,17 @@
                             $alignmentKey = "progress_rows.$i.alignment";
                             $rowHasError = $errors->has($planKey) || $errors->has($actualKey) || $errors->has($alignmentKey);
                         @endphp
-                        <div class="rounded-2xl border p-4 md:p-5 shadow-sm {{ $rowHasError ? 'border-red-300 bg-red-50/50' : 'border-slate-200 bg-white' }}" data-row-item data-row-type="progress" data-row-collapsed="0">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5">
-                                    <span class="text-xs text-slate-500">กิจกรรมที่</span>
+                        <div class="rounded-[1.4rem] border p-4 md:p-5 shadow-sm {{ $rowHasError ? 'border-red-300 bg-red-50/50' : 'border-slate-200 bg-white' }}" data-row-item data-row-type="progress" data-row-collapsed="0">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2">
+                                    <span class="text-[11px] uppercase tracking-[0.12em] text-slate-500">กิจกรรมที่</span>
                                     <span data-row-no class="text-sm font-bold text-slate-900">{{ $loop->iteration }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <button type="button" data-toggle-row class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+                                    <button type="button" data-toggle-row class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
                                         <span data-toggle-label>ย่อ</span>
                                     </button>
-                                    <button type="button" data-remove-row class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">ลบแถวนี้</button>
+                                    <button type="button" data-remove-row class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">ลบแถวนี้</button>
                                 </div>
                             </div>
                             <p data-row-summary class="hidden mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600"></p>
@@ -277,23 +323,25 @@
                     <button
                         type="button"
                         data-add-row="progress"
-                        class="inline-flex items-center justify-center min-w-[220px] px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm md:text-base font-semibold shadow-md hover:bg-blue-700"
+                        class="inline-flex items-center justify-center min-w-[220px] px-5 py-3 rounded-2xl bg-blue-600 text-white text-sm md:text-base font-semibold shadow-md hover:bg-blue-700"
                     >
                         + เพิ่มกิจกรรม
                     </button>
                 </div>
             </section>
 
-            <section class="space-y-4 rounded-2xl border border-indigo-100 bg-gradient-to-b from-indigo-50/80 to-white p-4 md:p-5">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h2 class="text-lg md:text-xl font-bold text-slate-900">ปัญหาอุปสรรค</h2>
-                        <p class="text-sm text-slate-600 mt-1">พิมพ์หรือแก้ไขข้อมูลได้ทันทีในแต่ละช่อง</p>
+            <section class="space-y-4 rounded-[1.6rem] border border-indigo-100 bg-gradient-to-b from-indigo-50/90 via-white to-white p-4 md:p-5 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-indigo-100 bg-white/85 px-4 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-base font-bold text-white">C</div>
+                        <div>
+                            <h2 class="text-lg md:text-xl font-bold text-slate-900">ปัญหาอุปสรรค</h2>
+                            <p class="text-sm text-slate-600 mt-1">บันทึกปัญหา แนวทางแก้ไข และสิ่งที่ต้องขอคำปรึกษาในชุดเดียว</p>
+                        </div>
                     </div>
-                </div>
-
-                <div class="rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
-                    แนะนำ: ระบุปัญหาให้เฉพาะเจาะจง และใส่แนวทางแก้ไขที่ทำได้จริง
+                    <div class="inline-flex items-center self-start rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                        {{ $issueRowCount }} รายการ
+                    </div>
                 </div>
 
                 @if ($issueSectionHasError)
@@ -308,17 +356,17 @@
                             $consultationKey = "issue_rows.$i.consultation";
                             $rowHasError = $errors->has($problemKey) || $errors->has($solutionKey) || $errors->has($consultationKey);
                         @endphp
-                        <div class="rounded-2xl border p-4 md:p-5 shadow-sm {{ $rowHasError ? 'border-red-300 bg-red-50/50' : 'border-slate-200 bg-white' }}" data-row-item data-row-type="issue" data-row-collapsed="0">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5">
-                                    <span class="text-xs text-slate-500">ปัญหาที่</span>
+                        <div class="rounded-[1.4rem] border p-4 md:p-5 shadow-sm {{ $rowHasError ? 'border-red-300 bg-red-50/50' : 'border-slate-200 bg-white' }}" data-row-item data-row-type="issue" data-row-collapsed="0">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2">
+                                    <span class="text-[11px] uppercase tracking-[0.12em] text-slate-500">ปัญหาที่</span>
                                     <span data-row-no class="text-sm font-bold text-slate-900">{{ $loop->iteration }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <button type="button" data-toggle-row class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+                                    <button type="button" data-toggle-row class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
                                         <span data-toggle-label>ย่อ</span>
                                     </button>
-                                    <button type="button" data-remove-row class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">ลบแถวนี้</button>
+                                    <button type="button" data-remove-row class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">ลบแถวนี้</button>
                                 </div>
                             </div>
                             <p data-row-summary class="hidden mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600"></p>
@@ -373,23 +421,29 @@
                     <button
                         type="button"
                         data-add-row="issue"
-                        class="inline-flex items-center justify-center min-w-[220px] px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm md:text-base font-semibold shadow-md hover:bg-indigo-700"
+                        class="inline-flex items-center justify-center min-w-[220px] px-5 py-3 rounded-2xl bg-indigo-600 text-white text-sm md:text-base font-semibold shadow-md hover:bg-indigo-700"
                     >
                         + เพิ่มปัญหา
                     </button>
                 </div>
             </section>
 
-            <div class="sticky bottom-0 z-20 -mx-4 md:-mx-6 border-t border-slate-200 bg-white/95 px-4 py-3 md:px-6 backdrop-blur">
+            <div class="sticky bottom-0 z-20 -mx-4 md:-mx-7 border-t border-slate-200 bg-white/92 px-4 py-3 md:px-7 backdrop-blur supports-[backdrop-filter]:bg-white/82">
                 <div class="flex flex-col sm:flex-row justify-end gap-2">
-                    @if (!$isModalView)
+                    @if ($isModalView)
+                        <button type="button"
+                            data-modal-cancel
+                            class="w-full sm:w-auto px-5 py-3 rounded-2xl border border-slate-300 text-slate-700 text-center font-semibold hover:bg-slate-50">
+                            ยกเลิก
+                        </button>
+                    @else
                         <a href="{{ route('projects.progress_reports.index', ['project' => $project] + $modalQuery) }}"
-                            class="w-full sm:w-auto px-4 py-3 rounded-xl border border-slate-300 text-slate-700 text-center font-semibold hover:bg-slate-50">
+                            class="w-full sm:w-auto px-5 py-3 rounded-2xl border border-slate-300 text-slate-700 text-center font-semibold hover:bg-slate-50">
                             ยกเลิก
                         </a>
                     @endif
                     <button type="submit"
-                        class="w-full sm:w-auto sm:min-w-[260px] px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm md:text-base font-bold shadow-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-200 transition">
+                        class="w-full sm:w-auto sm:min-w-[280px] px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm md:text-base font-bold shadow-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-200 transition">
                         {{ $submitLabel ?? ($editing ? 'บันทึกการแก้ไข' : 'บันทึกรายงาน') }}
                     </button>
                 </div>
@@ -405,17 +459,17 @@
 </datalist>
 
 <template id="progressRowTemplate">
-    <div class="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 shadow-sm" data-row-item data-row-type="progress" data-row-collapsed="0">
-        <div class="flex items-center justify-between mb-3">
-            <div class="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5">
-                <span class="text-xs text-slate-500">กิจกรรมที่</span>
+    <div class="rounded-[1.4rem] border border-slate-200 bg-white p-4 md:p-5 shadow-sm" data-row-item data-row-type="progress" data-row-collapsed="0">
+        <div class="flex items-center justify-between mb-4">
+            <div class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2">
+                <span class="text-[11px] uppercase tracking-[0.12em] text-slate-500">กิจกรรมที่</span>
                 <span data-row-no class="text-sm font-bold text-slate-900"></span>
             </div>
             <div class="flex items-center gap-2">
-                <button type="button" data-toggle-row class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+                <button type="button" data-toggle-row class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
                     <span data-toggle-label>ย่อ</span>
                 </button>
-                <button type="button" data-remove-row class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">ลบแถวนี้</button>
+                <button type="button" data-remove-row class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">ลบแถวนี้</button>
             </div>
         </div>
         <p data-row-summary class="hidden mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600"></p>
@@ -459,17 +513,17 @@
 </template>
 
 <template id="issueRowTemplate">
-    <div class="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 shadow-sm" data-row-item data-row-type="issue" data-row-collapsed="0">
-        <div class="flex items-center justify-between mb-3">
-            <div class="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5">
-                <span class="text-xs text-slate-500">ปัญหาที่</span>
+    <div class="rounded-[1.4rem] border border-slate-200 bg-white p-4 md:p-5 shadow-sm" data-row-item data-row-type="issue" data-row-collapsed="0">
+        <div class="flex items-center justify-between mb-4">
+            <div class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2">
+                <span class="text-[11px] uppercase tracking-[0.12em] text-slate-500">ปัญหาที่</span>
                 <span data-row-no class="text-sm font-bold text-slate-900"></span>
             </div>
             <div class="flex items-center gap-2">
-                <button type="button" data-toggle-row class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+                <button type="button" data-toggle-row class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
                     <span data-toggle-label>ย่อ</span>
                 </button>
-                <button type="button" data-remove-row class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">ลบแถวนี้</button>
+                <button type="button" data-remove-row class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">ลบแถวนี้</button>
             </div>
         </div>
         <p data-row-summary class="hidden mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600"></p>
@@ -512,6 +566,20 @@
 
 <script>
     (function() {
+        document.querySelectorAll('[data-modal-cancel]').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (!window.parent || window.parent === window) {
+                    window.history.back();
+                    return;
+                }
+
+                window.parent.postMessage({
+                    type: 'progress-report:close',
+                    projectId: @json($project->id),
+                }, window.location.origin);
+            });
+        });
+
         const configs = {
             progress: {
                 containerId: 'progressRows',

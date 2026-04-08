@@ -199,6 +199,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
 
     // ✅ แก้ไขโครงการ
     Route::get('/edit/{project}', [ProjectController::class, 'edit'])->name('projects.edit');
+    Route::get('/projects/{project}/fte-snapshot', [ProjectController::class, 'fteSnapshot'])->name('projects.fte.snapshot');
     Route::put('/update/{project}', [ProjectController::class, 'update'])->name('projects.update');
 
     // ✅ เส้นทางอื่น ๆ

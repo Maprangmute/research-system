@@ -1,7 +1,7 @@
 @php
     $latestProgressReport = ($project->progressReports ?? collect())->first();
 @endphp
-<div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
+<div id="projectProgressSection" class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
         <div>
             <h3 class="font-semibold text-lg text-blue-700">I: ความก้าวหน้าของการดำเนินงาน</h3>
@@ -13,23 +13,29 @@
                             (\Carbon\Carbon::parse($latestProgressReport->submit_date)->year + 543)
                         : '-';
                 @endphp
-                <p class="text-sm text-slate-600 mt-1">
+                <p id="progressDetailSummaryText" class="text-sm text-slate-600 mt-1">
                     อ้างอิงรายงานล่าสุดวันที่ {{ $latestSubmitDate }}
                     โดย {{ $latestProgressReport->submitter_name ?: '-' }}
                 </p>
             @else
-                <p class="text-sm text-slate-500 mt-1">ยังไม่มีรายงานความก้าวหน้า</p>
+                <p id="progressDetailSummaryText" class="text-sm text-slate-500 mt-1">ยังไม่มีรายงานความก้าวหน้า</p>
             @endif
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('projects.progress_reports.index', $project) }}"
+            <button type="button"
+                data-progress-modal-open
+                data-url="{{ route('projects.progress_reports.index', ['project' => $project, 'modal' => 1]) }}"
+                data-title="รายงานทั้งหมด"
                 class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 รายงานทั้งหมด
-            </a>
-            <a href="{{ route('projects.progress_reports.create', $project) }}"
+            </button>
+            <button type="button"
+                data-progress-modal-open
+                data-url="{{ route('projects.progress_reports.create', ['project' => $project, 'modal' => 1]) }}"
+                data-title="เพิ่มรายงานความก้าวหน้า"
                 class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-white border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50">
                 เพิ่มรายงาน
-            </a>
+            </button>
         </div>
     </div>
 

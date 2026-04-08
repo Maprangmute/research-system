@@ -66,6 +66,55 @@ class ProgressReportController extends Controller
         return $params;
     }
 
+    private function buildModalSummary(Project $project): array
+    {
+        $latestReport = $project->progressReports()
+            ->orderByDesc('submit_date')
+            ->orderByDesc('id')
+            ->first();
+
+        $formatDateThai = function ($value) {
+            if (!$value) {
+                return '-';
+            }
+
+            try {
+                $d = Carbon::parse($value)->locale('th');
+
+                return $d->translatedFormat('j F') . ' ' . ($d->year + 543);
+            } catch (\Throwable $e) {
+                return (string) $value;
+            }
+        };
+
+        $latestTitle = $latestReport
+            ? (trim((string) ($latestReport->progress_title ?? '')) ?: 'ความก้าวหน้าของการดำเนินงาน')
+            : '';
+
+        return [
+            'count' => $project->progressReports()->count(),
+            'latestDate' => $latestReport ? $formatDateThai($latestReport->submit_date) : '',
+            'submitter' => $latestReport ? (string) ($latestReport->submitter_name ?? '') : '',
+            'title' => $latestTitle,
+            'editUrl' => $latestReport
+                ? route('projects.progress_reports.edit', [
+                    'project' => $project,
+                    'progress_report' => $latestReport->id,
+                    'modal' => 1,
+                ])
+                : '',
+        ];
+    }
+
+    private function modalSuccessResponse(Project $project, string $message)
+    {
+        return response()->view('progress_reports.modal_close', [
+            'project' => $project,
+            'message' => $message,
+            'summary' => $this->buildModalSummary($project),
+        ]);
+    }
+
     private function authorizeProject(Project $project): void
     {
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
@@ -194,6 +243,10 @@ class ProgressReportController extends Controller
 
         ProgressReport::create($data);
 
+        if ($request->boolean('modal')) {
+            return $this->modalSuccessResponse($project, 'เพิ่ม Progress Report สำเร็จ');
+        }
+
         return redirect()->route('projects.progress_reports.index', $this->progressIndexRouteParams($project, $request))
             ->with('success', 'เพิ่ม Progress Report สำเร็จ');
     }
@@ -247,6 +300,10 @@ class ProgressReportController extends Controller
         $data['issue_rows'] = $request->input('issue_rows', []);
 
         $progress_report->update($data);
+
+        if ($request->boolean('modal')) {
+            return $this->modalSuccessResponse($project, 'อัปเดต Progress Report สำเร็จ');
+        }
 
         return redirect()->route('projects.progress_reports.index', $this->progressIndexRouteParams($project, $request))
             ->with('success', 'อัปเดต Progress Report สำเร็จ');

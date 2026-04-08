@@ -5,9 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Research Management</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/sihp-logo.png') }}">
-    <link rel="shortcut icon" href="{{ asset('images/sihp-logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/sihp-logo.png') }}">
+    <link rel="icon" type="image/x-icon" href="{{ asset('images/favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32x32.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ asset('images/site.webmanifest') }}">
+    <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
     <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -454,7 +457,7 @@
     </main>
 
     @php
-        $hideAiChatOnPage = request()->routeIs('projects.create') || request()->routeIs('projects.edit');
+        $hideAiChatOnPage = $isModalView || request()->routeIs('projects.create') || request()->routeIs('projects.edit');
     @endphp
     @unless ($hideAiChatOnPage)
         @include('partials.global-ai-chat')
@@ -1667,6 +1670,41 @@
             display: block;
         }
 
+        .fte-table-log {
+            display: none;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.75rem;
+            margin-top: 0.55rem;
+            color: #111827;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .fte-table-log.is-active {
+            display: flex;
+        }
+
+        .fte-table-log__text {
+            min-width: 0;
+            line-height: 1.35;
+        }
+
+        .fte-table-log__color-green {
+            color: #15803d;
+            font-weight: 700;
+        }
+
+        .fte-table-log__color-yellow {
+            color: #ca8a04;
+            font-weight: 700;
+        }
+
+        .fte-table-log__color-red {
+            color: #be123c;
+            font-weight: 700;
+        }
+
         .fte-table-grid {
             width: 100%;
             border-collapse: collapse;
@@ -1694,6 +1732,49 @@
             vertical-align: middle;
         }
 
+        .fte-table-grid tbody tr {
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-remote-new {
+            background: #ecfdf5;
+            box-shadow: inset 4px 0 0 #22c55e;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-remote-new td {
+            background: #ecfdf5;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-remote-updated {
+            background: #fef9c3;
+            box-shadow: inset 4px 0 0 #eab308;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-remote-updated td {
+            background: #fefce8;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-deleted {
+            background: #fff1f2;
+            box-shadow: inset 4px 0 0 #f43f5e;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-deleted td {
+            position: relative;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-deleted::after {
+            content: '';
+            position: absolute;
+            left: 0.6rem;
+            right: 0.6rem;
+            top: 50%;
+            height: 2px;
+            background: rgba(190, 24, 93, 0.45);
+            transform: rotate(-1deg);
+            pointer-events: none;
+        }
+
         .fte-table-grid input,
         .fte-table-grid select {
             width: 100%;
@@ -1704,6 +1785,18 @@
             font-size: 0.9rem;
             background: #fff;
             box-sizing: border-box;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-remote-new input,
+        .fte-table-grid tbody tr.fte-table-row-remote-new select {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-remote-updated input,
+        .fte-table-grid tbody tr.fte-table-row-remote-updated select {
+            background: #fefce8;
+            border-color: #fde047;
         }
 
         .fte-table-grid .fte-table-index {
@@ -1722,6 +1815,16 @@
             font-size: 0.75rem;
             width: 100%;
             white-space: nowrap;
+        }
+
+        .fte-table-grid tbody tr.fte-table-row-deleted input,
+        .fte-table-grid tbody tr.fte-table-row-deleted select {
+            color: #9f1239;
+            background: #fff1f2;
+            border-color: #fda4af;
+            text-decoration: line-through;
+            text-decoration-color: rgba(190, 24, 93, 0.55);
+            text-decoration-thickness: 2px;
         }
 
         .fte-table-grid td:nth-child(9) input {
@@ -3016,6 +3119,8 @@
         const FTE_SEARCH_ID = 'fte-search-input';
         const FTE_TABLE_MODE_BTN_ID = 'fte-table-mode-btn';
         const FTE_CLEAR_SEARCH_BTN_ID = 'fte-search-clear-btn';
+        const FTE_TABLE_LOG_ID = 'fte-table-log';
+        const FTE_TABLE_LOG_TEXT_ID = 'fte-table-log-text';
         const FTE_TABLE_WRAP_ID = 'fte-table-wrap';
         const FTE_TABLE_MODE_STORAGE_KEY = `fte:table-mode:${window.AUTH_USER_ID || 'guest'}`;
         const isTableModeDisabledOnPage = window.DISABLE_FTE_TABLE_MODE === true;
@@ -3363,6 +3468,12 @@
         };
 
         const getField = (row, selector) => row.querySelector(selector);
+        const getSourceProxyId = (row) => {
+            const field = row?.querySelector(`[${FTE_PROXY_LINK_ATTR}]`) ||
+                row?.querySelector('input[name^="fte_roles["][name$="[name]"]') ||
+                row?.querySelector('select[name^="fte_roles["][name$="[role_group]"]');
+            return field?.getAttribute(FTE_PROXY_LINK_ATTR) || '';
+        };
         const getFieldValue = (el) => {
             if (!el) return '';
             if (el.tagName === 'SELECT') return el.value || '';
@@ -3633,6 +3744,22 @@
             return wrap;
         };
 
+        const ensureTableLog = () => {
+            const wrap = ensureTableWrap();
+            if (!wrap) return null;
+
+            let log = document.getElementById(FTE_TABLE_LOG_ID);
+            if (!log) {
+                log = document.createElement('div');
+                log.id = FTE_TABLE_LOG_ID;
+                log.className = 'fte-table-log';
+                log.innerHTML = `<div id="${FTE_TABLE_LOG_TEXT_ID}" class="fte-table-log__text"></div>`;
+                wrap.insertAdjacentElement('afterend', log);
+            }
+
+            return log;
+        };
+
         const createFteTableShell = () => {
             const table = document.createElement('table');
             table.className = 'fte-table-grid';
@@ -3663,6 +3790,10 @@
 
         const buildFteTableRow = (row, idx) => {
             const tr = document.createElement('tr');
+            const sourceProxyId = getSourceProxyId(row);
+            if (sourceProxyId) {
+                tr.dataset.sourceProxyId = sourceProxyId;
+            }
             const tdIndex = document.createElement('td');
             tdIndex.className = 'fte-table-index';
             tdIndex.textContent = String(idx + 1);
@@ -3718,34 +3849,26 @@
                         null;
                     const sourceRow = sourceField?.closest('.fte-row') || row;
                     if (sourceRow) {
-                        const idInput = sourceRow.querySelector('input[name^="fte_roles["][name$="[id]"]');
-                        const existingId = Number(idInput?.value || 0);
-                        if (existingId > 0) {
-                            const deletedContainer = document.getElementById('fte-deleted-ids');
-                            if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
-                                deletedContainer.insertAdjacentHTML(
-                                    'beforeend',
-                                    `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
-                                );
+                        if (typeof window.removeFteRow === 'function') {
+                            window.removeFteRow(sourceRow.id);
+                        } else {
+                            const idInput = sourceRow.querySelector('input[name^="fte_roles["][name$="[id]"]');
+                            const existingId = Number(idInput?.value || 0);
+                            if (existingId > 0) {
+                                const deletedContainer = document.getElementById('fte-deleted-ids');
+                                if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
+                                    deletedContainer.insertAdjacentHTML(
+                                        'beforeend',
+                                        `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
+                                    );
+                                }
                             }
+                            sourceRow.remove();
                         }
                     }
 
-                    // remove source row directly to avoid duplicate/overridden remove handlers
-                    sourceRow?.remove();
-                    if (typeof window.reindexFTE === 'function') {
-                        window.reindexFTE();
-                    }
-                    suppressNextFteUxRefresh = true;
-                    const tbody = tr.parentElement;
-                    tr.remove();
-                    syncFteTableIndexes(tbody);
-                    if (tbody && tbody.querySelectorAll('tr').length === 0) {
-                        const wrap = ensureTableWrap();
-                        if (wrap) {
-                            wrap.innerHTML = '<div class="fte-table-empty">ไม่พบรายการ FTE</div>';
-                        }
-                    }
+                    applySourceRowStateToTableTr(sourceRow, tr);
+                    syncSingleFteTableRowState(sourceRow);
                 };
 
                 if (window.Swal) {
@@ -3769,7 +3892,28 @@
             });
             removeTd.appendChild(removeBtn);
             tr.appendChild(removeTd);
+            applySourceRowStateToTableTr(row, tr);
             return tr;
+        };
+
+        const applySourceRowStateToTableTr = (sourceRow, tr) => {
+            if (!(sourceRow instanceof HTMLElement) || !(tr instanceof HTMLElement)) return;
+            const isNew = sourceRow.classList.contains('fte-row-remote-new');
+            const isUpdated = sourceRow.classList.contains('fte-row-remote-updated');
+            const isDeleted = sourceRow.dataset.deleted === '1' || sourceRow.dataset.remoteDeleted === '1';
+            tr.classList.toggle('fte-table-row-remote-new', isNew);
+            tr.classList.toggle('fte-table-row-remote-updated', !isNew && isUpdated);
+            tr.classList.toggle('fte-table-row-deleted', isDeleted);
+
+            tr.querySelectorAll('input, select, button').forEach((field) => {
+                if (!(field instanceof HTMLElement)) return;
+                if (field.classList.contains('fte-table-remove-btn')) {
+                    field.textContent = isDeleted ? 'ถูกลบ' : 'ลบ';
+                    field.toggleAttribute('disabled', isDeleted);
+                    return;
+                }
+                field.toggleAttribute('disabled', isDeleted);
+            });
         };
 
         const getFteTableRemovalLabel = (row, tr) => {
@@ -3796,6 +3940,51 @@
                 if (indexCell) indexCell.textContent = String(idx + 1);
             });
         };
+
+        const syncSingleFteTableRowState = (sourceRow) => {
+            if (!window.isFteTableMode?.()) return;
+            const proxyId = getSourceProxyId(sourceRow);
+            if (!proxyId) return;
+            const tr = document.querySelector(`#${FTE_TABLE_WRAP_ID} tr[data-source-proxy-id="${proxyId}"]`);
+            if (!tr) return;
+            applySourceRowStateToTableTr(sourceRow, tr);
+        };
+
+        const syncFteTableOrderFromSource = () => {
+            if (!window.isFteTableMode?.()) return;
+            const tbody = document.querySelector(`#${FTE_TABLE_WRAP_ID} table.fte-table-grid tbody`);
+            if (!tbody) return;
+
+            const sourceRows = getRows();
+            const currentRows = Array.from(tbody.querySelectorAll('tr[data-source-proxy-id]'));
+            const byProxyId = new Map(currentRows.map((tr) => [tr.dataset.sourceProxyId, tr]));
+            const activeQueue = sourceRows
+                .filter((row) => row.dataset.deleted !== '1' && row.dataset.remoteDeleted !== '1')
+                .map((row) => byProxyId.get(getSourceProxyId(row)))
+                .filter(Boolean);
+
+            const nextRows = [];
+            currentRows.forEach((tr) => {
+                const proxyId = tr.dataset.sourceProxyId || '';
+                const sourceRow = proxyId ? sourceRows.find((row) => getSourceProxyId(row) === proxyId) : null;
+                if (sourceRow && (sourceRow.dataset.deleted === '1' || sourceRow.dataset.remoteDeleted === '1')) {
+                    nextRows.push(tr);
+                    return;
+                }
+
+                const replacement = activeQueue.shift();
+                if (replacement) {
+                    nextRows.push(replacement);
+                }
+            });
+
+            activeQueue.forEach((tr) => nextRows.push(tr));
+            nextRows.forEach((tr) => tbody.appendChild(tr));
+
+            syncFteTableIndexes(tbody);
+        };
+        window.syncSingleFteTableRowState = syncSingleFteTableRowState;
+        window.syncFteTableOrderFromSource = syncFteTableOrderFromSource;
 
         const appendFteTableRow = (row) => {
             const wrap = ensureTableWrap();
@@ -3925,6 +4114,8 @@
                 searchInput.focus();
             });
 
+            ensureTableLog();
+
             const tableBtn = document.getElementById(FTE_TABLE_MODE_BTN_ID);
             const setTableBtnState = () => {
                 const active = container.classList.contains('fte-table-mode');
@@ -3964,6 +4155,64 @@
             applyTableModeState();
             window.applyFteRowSearchFilter();
         };
+
+        const clearFteTableLog = () => {
+            const log = ensureTableLog();
+            const text = document.getElementById(FTE_TABLE_LOG_TEXT_ID);
+            if (text) text.textContent = '';
+            log?.classList.remove('is-active');
+        };
+
+        const updateFteTableLog = (html) => {
+            const log = ensureTableLog();
+            const text = document.getElementById(FTE_TABLE_LOG_TEXT_ID);
+            if (!log || !text) return;
+            const nextHtml = String(html || '').trim();
+            text.innerHTML = nextHtml;
+            log.classList.toggle('is-active', nextHtml !== '');
+        };
+
+        const formatFteLogDateTime = (isoString) => {
+            const fallback = new Date();
+            const date = isoString ? new Date(isoString) : fallback;
+            if (Number.isNaN(date.getTime())) return '';
+            const dateText = date.toLocaleDateString('th-TH', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            });
+            const timeText = date.toLocaleTimeString('th-TH', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            });
+            return {
+                dateText,
+                timeText,
+            };
+        };
+
+        document.addEventListener('fte:remote-change', (event) => {
+            const detail = event.detail || {};
+            const actorName = String(detail.actorName || 'ผู้ใช้อื่น');
+            const occurred = formatFteLogDateTime(detail.occurredAt);
+            if (!occurred) {
+                return;
+            }
+            updateFteTableLog(
+                `มีการอัปเดทจาก ${actorName} วันที่ ${occurred.dateText} เวลา ${occurred.timeText} โดย ` +
+                `<span class="fte-table-log__color-green">สีเขียว</span> = เพิ่มใหม่, ` +
+                `<span class="fte-table-log__color-yellow">สีเหลือง</span> = มีการแก้ไข, ` +
+                `<span class="fte-table-log__color-red">สีแดง</span> = ถูกลบ`
+            );
+            if (!window.isFteTableMode?.()) return;
+            const rowId = String(detail.rowId || '');
+            if (!rowId) return;
+            const sourceRow = document.getElementById(rowId);
+            if (!sourceRow) return;
+            syncSingleFteTableRowState(sourceRow);
+            syncFteTableOrderFromSource();
+        });
 
         window.syncFteTableValidationUi = ({
             ensureRender = false

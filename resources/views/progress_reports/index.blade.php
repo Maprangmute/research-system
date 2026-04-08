@@ -28,9 +28,11 @@
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 md:p-6">
             <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
                 <div class="space-y-2 min-w-0">
-                    <a href="{{ route('projects.show', ['project' => $project] + $modalQuery) }}" class="text-blue-600 hover:underline text-sm">
-                        ← กลับหน้าโครงการ
-                    </a>
+                    @unless ($isModalView)
+                        <a href="{{ route('projects.show', ['project' => $project] + $modalQuery) }}" class="text-blue-600 hover:underline text-sm">
+                            ← กลับหน้าโครงการ
+                        </a>
+                    @endunless
                     <h1 class="text-xl md:text-2xl font-bold text-slate-900">
                         รายงานความก้าวหน้าของการดำเนินงาน
                     </h1>

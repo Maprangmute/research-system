@@ -81,7 +81,7 @@
 {{-- datalist ใช้ร่วมทุกแถว --}}
 <datalist id="userNames">
     @foreach ($allUsers as $user)
-        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+        @php $fullName = $user->full_name; @endphp
         <option value="{{ $fullName }}"></option>
     @endforeach
 </datalist>
@@ -93,9 +93,7 @@
 {{-- ✅ DATAlIST กลาง (ใช้ร่วมกันทุก row) --}}
 <datalist id="fteUsers">
     @foreach ($allUsers as $user)
-        @php
-            $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
-        @endphp
+        @php $fullName = $user->full_name; @endphp
         <option value="{{ $fullName }}"></option>
     @endforeach
 </datalist>
@@ -139,6 +137,61 @@
         pointer-events: none;
     }
 
+    .fte-row.fte-row-deleted {
+        position: relative;
+        border-color: #fca5a5;
+        background: #fff1f2;
+        box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.08);
+    }
+
+    .fte-row.fte-row-deleted::after {
+        content: '';
+        position: absolute;
+        left: 1rem;
+        right: 1rem;
+        top: 50%;
+        height: 2px;
+        background: rgba(190, 24, 93, 0.45);
+        transform: rotate(-1.4deg);
+        pointer-events: none;
+    }
+
+    .fte-row.fte-row-deleted .fte-summary-shell {
+        border-color: #fda4af;
+        background: #ffe4e6;
+    }
+
+    .fte-row.fte-row-deleted .fte-summary-toggle,
+    .fte-row.fte-row-deleted .fte-editor-body {
+        opacity: 0.72;
+    }
+
+    .fte-row.fte-row-deleted .fte-summary-name,
+    .fte-row.fte-row-deleted .fte-summary-meta,
+    .fte-row.fte-row-deleted .fte-summary-task,
+    .fte-row.fte-row-deleted .fte-summary-metrics,
+    .fte-row.fte-row-deleted .fte-editor-body {
+        text-decoration: line-through;
+        text-decoration-color: rgba(190, 24, 93, 0.55);
+        text-decoration-thickness: 2px;
+    }
+
+    .fte-row-deleted-banner {
+        display: none;
+        margin-top: 0.75rem;
+        border: 1px solid #fda4af;
+        background: #fff1f2;
+        color: #be123c;
+        border-radius: 0.85rem;
+        padding: 0.75rem 0.9rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .fte-row.fte-row-deleted .fte-row-deleted-banner {
+        display: block;
+    }
+
     .page-loading-card {
         display: flex;
         align-items: center;
@@ -171,10 +224,100 @@
     .fte-row {
         content-visibility: auto;
         contain-intrinsic-size: 120px;
+        position: relative;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     }
 
     .fte-row.row-collapsed {
         contain-intrinsic-size: 88px;
+    }
+
+    .fte-sync-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border-radius: 9999px;
+        border: 1px solid #dbeafe;
+        background: #eff6ff;
+        color: #1d4ed8;
+        padding: 0.25rem 0.7rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .fte-sync-status::before {
+        content: '';
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 9999px;
+        background: currentColor;
+        opacity: 0.75;
+    }
+
+    .fte-row.fte-row-remote-new,
+    .fte-row.fte-row-remote-updated {
+        animation: fte-row-remote-flash 3.2s ease;
+    }
+
+    .fte-row.fte-row-remote-new {
+        border-color: #22c55e;
+        box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.14);
+        background: #f0fdf4;
+    }
+
+    .fte-row.fte-row-remote-updated {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+        background: #eff6ff;
+    }
+
+    .fte-row.fte-row-remote-new::after,
+    .fte-row.fte-row-remote-updated::after {
+        content: attr(data-remote-label);
+        position: absolute;
+        top: 0.7rem;
+        right: 0.85rem;
+        z-index: 3;
+        border-radius: 9999px;
+        padding: 0.22rem 0.6rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .fte-row.fte-row-remote-new::after {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .fte-row.fte-row-remote-updated::after {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .fte-row.fte-row-remote-new .fte-summary-shell,
+    .fte-row.fte-row-remote-new .fte-editor-body {
+        border-color: #86efac;
+        background: rgba(240, 253, 244, 0.78);
+    }
+
+    .fte-row.fte-row-remote-updated .fte-summary-shell,
+    .fte-row.fte-row-remote-updated .fte-editor-body {
+        border-color: #93c5fd;
+        background: rgba(239, 246, 255, 0.86);
+    }
+
+    @keyframes fte-row-remote-flash {
+        0% {
+            background: #dbeafe;
+        }
+        35% {
+            background: #eff6ff;
+        }
+        100% {
+            background: #ffffff;
+        }
     }
 </style>
 
@@ -443,6 +586,10 @@
                             {{ old('funding_type', $project->funding_type) == 'ภายใน' ? 'selected' : '' }}>
                             ภายใน
                         </option>
+                        <option value="ไม่มีแหล่งทุน"
+                            {{ old('funding_type', $project->funding_type) == 'ไม่มีแหล่งทุน' ? 'selected' : '' }}>
+                            ไม่มีแหล่งทุน
+                        </option>
                         <option value="ภายนอก"
                             {{ old('funding_type', $project->funding_type) == 'ภายนอก' ? 'selected' : '' }}>
                             ภายนอก
@@ -496,15 +643,16 @@
 
                 <label class="w-full">
                     <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท)</span>
+                        <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท) <span class="text-red-600">*ใส่ตัวเลขเท่านั้น หากไม่มี ให้เว้นว่างไว้*</span></span>
                         @php
                             $budgetRaw = $project->budget ?? '';
                             $budgetFormatted = is_numeric($budgetRaw) ? number_format($budgetRaw, 2) : $budgetRaw;
                         @endphp
 
                         <input id="budgetInput" name="budget" type="text" inputmode="decimal"
-                            value="{{ old('budget', $budgetFormatted) }}" class="w-full border p-2 rounded">
-
+                            value="{{ old('budget', $budgetFormatted) }}" class="w-full border p-2 rounded"
+                            pattern="[\d,\.]*" autocomplete="off">
+                        <span id="budgetInputNotice" class="mt-1 hidden text-sm text-red-600">กรุณากรอกตัวเลขเท่านั้น</span>
                     </label>
                 </label>
             </div>
@@ -780,9 +928,9 @@
                                         {{ $co->unit_status == 'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล' ? 'selected' : '' }}>
                                         ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล
                                     </option>
-                                    <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ"
-                                        {{ $co->unit_status == 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ' ? 'selected' : '' }}>
-                                        ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ
+                                    <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ"
+                                        {{ in_array($co->unit_status, ['ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ', 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ'], true) ? 'selected' : '' }}>
+                                        ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
                                     </option>
                                 </select>
                             </label>
@@ -812,6 +960,9 @@
                 <div class="mb-2">
                     <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
                 </div>
+                <div class="mb-3">
+                    <span id="fteSyncStatus" class="fte-sync-status">ซิงก์ FTE อัตโนมัติทุก 7 วินาที</span>
+                </div>
 
                 <!-- ========== LIST OF FTE ROWS ========== -->
                 <div id="fte-container" class="space-y-4 mb-4">
@@ -836,7 +987,7 @@
                             $fteValue = data_get($fte, 'fte_value');
                             $fteValueResearch = data_get($fte, 'fte_value_research');
                         @endphp
-                        <div id="fte-{{ $i }}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
+                        <div id="fte-{{ $i }}" class="fte-row p-4 border rounded-lg bg-white shadow-sm" data-deleted="0">
                             <input type="hidden" name="fte_roles[{{ $i }}][id]" value="{{ $fteId }}">
 
                             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
@@ -977,12 +1128,15 @@
                                             class="w-full border p-3 rounded text-right">
                                     </label>
 
-                                    <button type="button" onclick="removeRow('fte-{{ $i }}','fte')"
+                                    <button type="button" onclick="removeFteRow('fte-{{ $i }}')"
                                         class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
                                         ✕ ลบผู้มีส่วนร่วมนี้
                                     </button>
 
                                 </div>
+                            </div>
+                            <div class="fte-row-deleted-banner">
+                                รายการนี้ถูกทำเครื่องหมายเพื่อลบแล้ว และจะไม่ถูกบันทึกการแก้ไขเมื่อกดบันทึก
                             </div>
                         </div>
                     @endforeach
@@ -1818,19 +1972,28 @@
             'นักประชาสัมพันธ์', 'เจ้าหน้าที่บริหารงานทั่วไป'
         ];
         const FTE_TASK_DETAILS = @json($taskDetails);
-        const FTE_GROUP_DROPDOWN = [`<option value="" disabled selected>เลือกกลุ่ม</option>`]
-            .concat(FTE_ROLE_GROUPS.map((group) => `<option value="${group}">${group}</option>`))
-            .join('');
-        const FTE_JOB_DROPDOWN = [`<option value="" disabled selected>เลือกภาระงาน</option>`]
-            .concat(FTE_JOB_DETAILS.map((job) => `<option value="${job}">${job}</option>`))
-            .join('');
-        const FTE_TASK_DROPDOWN = [`<option value="" disabled selected>เลือกภารกิจ</option>`]
-            .concat(FTE_TASK_DETAILS.map((task) => `<option value="${task}">${task}</option>`))
-            .join('');
+        function buildFteSelectOptions(options, selectedValue, placeholder) {
+            const normalizedSelected = String(selectedValue ?? '');
+            const selectedExists = options.some((option) => String(option) === normalizedSelected);
+            const items = [`<option value="" disabled ${normalizedSelected ? '' : 'selected'}>${escapeHtml(placeholder)}</option>`];
+            if (normalizedSelected && !selectedExists) {
+                items.push(`<option value="${escapeHtml(normalizedSelected)}" selected>${escapeHtml(normalizedSelected)}</option>`);
+            }
+            options.forEach((option) => {
+                const selected = String(option) === normalizedSelected ? 'selected' : '';
+                items.push(`<option value="${escapeHtml(option)}" ${selected}>${escapeHtml(option)}</option>`);
+            });
+            return items.join('');
+        }
         let fteNextIndex = document.querySelectorAll('#fte-container .fte-row').length;
 
-        function addFTERow() {
-            if (typeof window.validateFteBeforeAdd === 'function' && !window.validateFteBeforeAdd({
+        function addFTERow(options = {}) {
+            const {
+                skipValidation = false,
+                initialData = null
+            } = options;
+
+            if (!skipValidation && typeof window.validateFteBeforeAdd === 'function' && !window.validateFteBeforeAdd({
                     showAlert: true
                 })) {
                 return;
@@ -1839,11 +2002,16 @@
             const container = document.getElementById('fte-container');
             const index = fteNextIndex++;
             const id = `fte-${index}`;
+            const rowData = initialData || {};
+            const roleDropdown = buildFteSelectOptions(FTE_ROLE_GROUPS, rowData.role_group, 'เลือกกลุ่ม');
+            const jobDropdown = buildFteSelectOptions(FTE_JOB_DETAILS, rowData.job_detail, 'เลือกภาระงาน');
+            const taskDropdown = buildFteSelectOptions(FTE_TASK_DETAILS, rowData.task_detail, 'เลือกภารกิจ');
 
             ensureFteDatalist();
 
             container.insertAdjacentHTML('beforeend', `
-<div id="${id}" class="fte-row p-4 border rounded-lg bg-white shadow-sm">
+<div id="${id}" class="fte-row p-4 border rounded-lg bg-white shadow-sm" data-deleted="0">
+    <input type="hidden" name="fte_roles[${index}][id]" value="${escapeHtml(rowData.id || '')}">
     <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
         <div class="md:col-span-9 space-y-4">
@@ -1857,6 +2025,7 @@
 
                     <input list="${FTE_DATALIST_ID}"
                         name="fte_roles[${index}][name]"
+                        value="${escapeHtml(rowData.name || '')}"
                         class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
                         placeholder="พิมพ์หรือเลือกชื่อ"
                         required
@@ -1869,7 +2038,7 @@
                     <select name="fte_roles[${index}][role_group]" class="w-full border p-2 rounded" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่ม')"
                         oninput="this.setCustomValidity('')">
-                        ${FTE_GROUP_DROPDOWN}
+                        ${roleDropdown}
                     </select>
                 </label>
             </div>
@@ -1882,7 +2051,7 @@
                     <select name="fte_roles[${index}][job_detail]" class="w-full border p-2 rounded" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกภาระงาน')"
                         oninput="this.setCustomValidity('')">
-                        ${FTE_JOB_DROPDOWN}
+                        ${jobDropdown}
                     </select>
                 </label>
 
@@ -1893,7 +2062,7 @@
                         required
                         oninvalid="this.setCustomValidity('กรุณาเลือกรายละเอียดงาน')"
                         oninput="this.setCustomValidity('')">
-                        ${FTE_TASK_DROPDOWN}
+                        ${taskDropdown}
                     </select>
                 </label>
 
@@ -1901,6 +2070,7 @@
                     <span class="block text-sm font-semibold text-gray-700 mb-1">วันเริ่มต้นภาระงาน <span class="text-red-500">*</span></span>
                     <input name="fte_roles[${index}][start_date]"
                         type="text"
+                        value="${escapeHtml(rowData.start_date || '')}"
                         class="fte-shared-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
                         data-date-role="start"
                         placeholder="โปรดใส่วันที่"
@@ -1920,6 +2090,7 @@
                     <span class="block text-sm font-semibold text-gray-700 mb-1">วันสิ้นสุดภาระงาน <span class="text-red-500">*</span></span>
                     <input name="fte_roles[${index}][end_date]"
                         type="text"
+                        value="${escapeHtml(rowData.end_date || '')}"
                         class="fte-shared-datepicker w-full border p-2 rounded pl-10 bg-white cursor-pointer"
                         data-date-role="end"
                         placeholder="โปรดใส่วันที่"
@@ -1944,6 +2115,7 @@
                     step="0.1"
                     min="0"
                     name="fte_roles[${index}][hours]"
+                    value="${escapeHtml(rowData.hours || '')}"
                     class="fte-hours w-full border p-2 rounded text-right"
                     placeholder="0.0"
                     required
@@ -1962,6 +2134,7 @@
                     type="number"
                     step="0.00001"
                     min="0" max="1"
+                    value="${escapeHtml(rowData.fte_value || '')}"
                     placeholder="0.00000"
                     class="fte-value w-full border p-3 rounded text-right bg-gray-100"
                     readonly>
@@ -1974,17 +2147,22 @@
                     type="number"
                     step="0.01"
                     min="0" max="1"
+                    value="${escapeHtml(rowData.fte_value_research || '')}"
                     placeholder="0.00"
                     class="w-full border p-3 rounded text-right">
             </label>
 
             <button type="button"
-                onclick="removeRow('${id}', 'fte')"
+                onclick="removeFteRow('${id}')"
                 class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
                 ✕ ลบผู้มีส่วนร่วมนี้
             </button>
         </div>
 
+    </div>
+
+    <div class="fte-row-deleted-banner">
+        รายการนี้ถูกทำเครื่องหมายเพื่อลบแล้ว และจะไม่ถูกบันทึกการแก้ไขเมื่อกดบันทึก
     </div>
 </div>
 `);
@@ -1994,6 +2172,7 @@
             setFteRowIndex(row, rowNumber);
             keepAddedRowOpen(id);
             window.handleFteRowAdded?.(id);
+            return row;
         }
 
         document.addEventListener("DOMContentLoaded", function() {
@@ -2071,7 +2250,9 @@
             const container = getFteContainer();
             if (!container) return [];
 
-            return Array.from(container.querySelectorAll('.fte-row')).map((row) => {
+            return Array.from(container.querySelectorAll('.fte-row'))
+                .filter((row) => row.dataset.deleted !== '1' && row.dataset.remoteDeleted !== '1')
+                .map((row) => {
                 return {
                     id: getFteSerializedValue(row, 'id'),
                     name: getFteSerializedValue(row, 'name'),
@@ -2116,6 +2297,26 @@
 
         function updateFteRowSummary(row) {
             if (!row) return;
+            if (row.dataset.deleted === '1' || row.dataset.remoteDeleted === '1') {
+                const nameEl = row.querySelector('.fte-summary-name');
+                const metaEl = row.querySelector('.fte-summary-meta');
+                const taskEl = row.querySelector('.fte-summary-task');
+                const metricsEl = row.querySelector('.fte-summary-metrics');
+
+                if (row.dataset.deleted === '1') {
+                    if (nameEl) nameEl.textContent = 'รายการนี้ถูกทำเครื่องหมายเพื่อลบ';
+                    if (metaEl) metaEl.textContent = 'แถวนี้จะถูกลบเมื่อกดบันทึก';
+                    if (taskEl) taskEl.textContent = 'ระบบจะข้ามการบันทึกข้อมูลของแถวนี้';
+                    if (metricsEl) metricsEl.textContent = 'สถานะ: ลบรอบันทึก';
+                } else {
+                    if (nameEl) nameEl.textContent = 'รายการนี้ถูกลบจากผู้ใช้อื่นแล้ว';
+                    if (metaEl) metaEl.textContent = 'ข้อมูลถูกลบบนระบบจากการแก้ไขล่าสุด';
+                    if (taskEl) taskEl.textContent = 'แถวนี้แสดงไว้เพื่อแจ้งสถานะลบจากการซิงก์';
+                    if (metricsEl) metricsEl.textContent = 'สถานะ: ถูกลบจากการซิงก์';
+                }
+                return;
+            }
+
             const summary = getFteSummaryParts(row);
             const nameEl = row.querySelector('.fte-summary-name');
             const metaEl = row.querySelector('.fte-summary-meta');
@@ -2158,6 +2359,13 @@
 
         function setFteRowOpen(row, open) {
             if (!row) return;
+            if (row.dataset.deleted === '1' || row.dataset.remoteDeleted === '1') {
+                mountFteRowBody(row);
+                row.dataset.collapsed = '0';
+                row.classList.add('fte-row-deleted');
+                row.querySelector('.fte-summary-toggle')?.setAttribute('aria-expanded', 'false');
+                return;
+            }
 
             if (open) {
                 const container = getFteContainer();
@@ -2224,11 +2432,93 @@
 
             summary.querySelector('.fte-summary-delete')?.addEventListener('click', (event) => {
                 event.stopPropagation();
-                removeRow(row.id, 'fte');
+                removeFteRow(row.id);
             });
 
             updateFteRowSummary(row);
             setFteRowOpen(row, open);
+        }
+
+        function setFteRowDisabledState(row, disabled) {
+            if (!row) return;
+
+            row.querySelectorAll('input, select, textarea, button').forEach((field) => {
+                if (field.classList.contains('fte-summary-delete')) return;
+                if (field.classList.contains('fte-summary-toggle')) {
+                    field.disabled = disabled;
+                    return;
+                }
+                field.disabled = disabled;
+            });
+        }
+
+        function markFteRowRemoteDeleted(row, meta = {}) {
+            if (!row || row.dataset.remoteDeleted === '1' || row.dataset.deleted === '1') return;
+
+            row.dataset.remoteDeleted = '1';
+            row.dataset.remoteActorName = String(meta.actorName || row.dataset.remoteActorName || '');
+            row.dataset.remoteOccurredAt = String(meta.occurredAt || row.dataset.remoteOccurredAt || '');
+            row.classList.add('fte-row-deleted');
+            mountFteRowBody(row);
+            setFteRowDisabledState(row, true);
+            row.style.background = '#fff1f2';
+            row.style.borderColor = '#fda4af';
+
+            const deleteBtn = row.querySelector('.fte-summary-delete');
+            if (deleteBtn) {
+                deleteBtn.textContent = 'ถูกลบแล้ว';
+                deleteBtn.classList.remove('text-red-600', 'hover:bg-red-50');
+                deleteBtn.classList.add('text-rose-800', 'bg-rose-100', 'border-rose-300');
+                deleteBtn.disabled = true;
+            }
+
+            const banner = row.querySelector('.fte-row-deleted-banner');
+            if (banner) {
+                banner.style.display = 'block';
+                banner.textContent = 'รายการนี้ถูกลบจากผู้ใช้อื่นแล้ว และจะไม่ถูกบันทึกกลับเข้าระบบ';
+            }
+
+            updateFteRowSummary(row);
+            flashRemoteFteRow(row, 'deleted');
+        }
+
+        function markFteRowDeleted(row) {
+            if (!row || row.dataset.deleted === '1') return;
+
+            const idInput = row.querySelector('input[name^="fte_roles["][name$="[id]"]');
+            const existingId = Number(idInput?.value || 0);
+            if (existingId > 0) {
+                const deletedContainer = document.getElementById('fte-deleted-ids');
+                if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
+                    deletedContainer.insertAdjacentHTML(
+                        'beforeend',
+                        `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
+                    );
+                }
+            }
+
+            row.dataset.deleted = '1';
+            row.classList.add('fte-row-deleted');
+            mountFteRowBody(row);
+            setFteRowDisabledState(row, true);
+            row.style.background = '#fff1f2';
+            row.style.borderColor = '#fda4af';
+
+            const deleteBtn = row.querySelector('.fte-summary-delete');
+            if (deleteBtn) {
+                deleteBtn.textContent = 'จะถูกลบ';
+                deleteBtn.classList.remove('text-red-600', 'hover:bg-red-50');
+                deleteBtn.classList.add('text-rose-800', 'bg-rose-100', 'border-rose-300');
+                deleteBtn.disabled = true;
+            }
+
+            const banner = row.querySelector('.fte-row-deleted-banner');
+            if (banner) {
+                banner.style.display = 'block';
+                banner.textContent = 'รายการนี้ถูกทำเครื่องหมายเพื่อลบแล้ว และจะไม่ถูกบันทึกการแก้ไขเมื่อกดบันทึก';
+            }
+
+            updateFteRowSummary(row);
         }
 
         function initFteEditorWindowing() {
@@ -2289,6 +2579,334 @@
                 container.querySelectorAll('.fte-row').forEach((row) => mountFteRowBody(row));
             }, true);
         }
+
+        function readFteRowData(row) {
+            return {
+                id: getFteSerializedValue(row, 'id'),
+                name: getFteSerializedValue(row, 'name'),
+                role_group: getFteSerializedValue(row, 'role_group'),
+                job_detail: getFteSerializedValue(row, 'job_detail'),
+                start_date: getFteSerializedValue(row, 'start_date', {
+                    preferIso: true
+                }),
+                end_date: getFteSerializedValue(row, 'end_date', {
+                    preferIso: true
+                }),
+                hours: getFteSerializedValue(row, 'hours'),
+                fte_value: getFteSerializedValue(row, 'fte_value'),
+                fte_value_research: getFteSerializedValue(row, 'fte_value_research'),
+                task_detail: getFteSerializedValue(row, 'task_detail'),
+            };
+        }
+
+        function buildFteRowSignature(data) {
+            return JSON.stringify([
+                String(data.id ?? ''),
+                String(data.name ?? ''),
+                String(data.role_group ?? ''),
+                String(data.job_detail ?? ''),
+                String(data.task_detail ?? ''),
+                String(data.start_date ?? ''),
+                String(data.end_date ?? ''),
+                String(data.hours ?? ''),
+                String(data.fte_value ?? ''),
+                String(data.fte_value_research ?? ''),
+            ]);
+        }
+
+        function getFteExistingIdSet() {
+            return new Set(
+                Array.from(document.querySelectorAll('#fte-container input[name^="fte_roles["][name$="[id]"]'))
+                    .map((input) => String(input.value || '').trim())
+                    .filter(Boolean)
+            );
+        }
+
+        function setFteFieldValue(row, field, value) {
+            const input = getFteFieldElement(row, field);
+            if (!input) return;
+
+            const normalizedValue = value == null ? '' : String(value);
+            if ((field === 'start_date' || field === 'end_date') && input._flatpickr) {
+                if (normalizedValue) {
+                    input._flatpickr.setDate(normalizedValue, false, 'd-m-Y');
+                    input.value = normalizedValue;
+                    input.dataset.isoValue = normalizedValue;
+                } else {
+                    input._flatpickr.clear(false);
+                    input.value = '';
+                    input.dataset.isoValue = '';
+                }
+                return;
+            }
+
+            input.value = normalizedValue;
+            if (field === 'start_date' || field === 'end_date') {
+                input.dataset.isoValue = normalizedValue;
+            }
+        }
+
+        function applyRemoteFteRowData(row, data) {
+            if (row?.dataset?.deleted === '1' || row?.dataset?.remoteDeleted === '1') return;
+            setFteFieldValue(row, 'id', data.id);
+            setFteFieldValue(row, 'name', data.name);
+            setFteFieldValue(row, 'role_group', data.role_group);
+            setFteFieldValue(row, 'job_detail', data.job_detail);
+            setFteFieldValue(row, 'task_detail', data.task_detail);
+            setFteFieldValue(row, 'start_date', data.start_date);
+            setFteFieldValue(row, 'end_date', data.end_date);
+            setFteFieldValue(row, 'hours', data.hours);
+            setFteFieldValue(row, 'fte_value', data.fte_value);
+            setFteFieldValue(row, 'fte_value_research', data.fte_value_research);
+            updateFteRowSummary(row);
+            row.dataset.remoteActorName = String(data.updated_by_name || '');
+            row.dataset.remoteOccurredAt = String(data.updated_logged_at || data.updated_at || '');
+            row.dataset.remoteSignature = buildFteRowSignature(data);
+            row.dataset.remoteDirty = '0';
+        }
+
+        function flashRemoteFteRow(row, kind) {
+            if (!(row instanceof HTMLElement)) return;
+            const className = kind === 'new'
+                ? 'fte-row-remote-new'
+                : (kind === 'deleted' ? '' : 'fte-row-remote-updated');
+            row.classList.remove('fte-row-remote-new', 'fte-row-remote-updated');
+            if (className) {
+                void row.offsetWidth;
+                row.classList.add(className);
+            }
+            document.dispatchEvent(new CustomEvent('fte:remote-change', {
+                detail: {
+                    rowId: row.id,
+                    kind,
+                    actorName: row.dataset.remoteActorName || 'ผู้ใช้อื่น',
+                    occurredAt: row.dataset.remoteOccurredAt || '',
+                }
+            }));
+            window.syncSingleFteTableRowState?.(row);
+        }
+
+        function isFteRowLockedForRemote(row) {
+            return row?.dataset?.deleted === '1' || row?.dataset?.remoteDeleted === '1' || row?.dataset?.remoteDirty === '1' || row?.contains(document.activeElement);
+        }
+
+        function updateFteSyncStatus(message) {
+            const el = document.getElementById('fteSyncStatus');
+            if (el) el.textContent = message;
+        }
+
+        function reorderFteRowsByServerIds(container, orderedIds) {
+            if (!(container instanceof HTMLElement) || !Array.isArray(orderedIds) || !orderedIds.length) return;
+
+            const idToRow = new Map();
+            const currentRows = Array.from(container.querySelectorAll('.fte-row'));
+
+            currentRows.forEach((row) => {
+                const idValue = getFteSerializedValue(row, 'id');
+                if (idValue) {
+                    idToRow.set(idValue, row);
+                }
+            });
+
+            const orderedRows = orderedIds
+                .map((idValue) => idToRow.get(String(idValue)))
+                .filter(Boolean);
+
+            const unsavedRows = Array.from(container.querySelectorAll('.fte-row'))
+                .filter((row) =>
+                    !getFteSerializedValue(row, 'id') &&
+                    row.dataset.deleted !== '1' &&
+                    row.dataset.remoteDeleted !== '1'
+                );
+
+            const activeQueue = [...orderedRows, ...unsavedRows];
+            const nextRows = [];
+
+            currentRows.forEach((row) => {
+                if (row.dataset.deleted === '1' || row.dataset.remoteDeleted === '1') {
+                    nextRows.push(row);
+                    return;
+                }
+
+                const replacement = activeQueue.shift();
+                if (replacement) {
+                    nextRows.push(replacement);
+                }
+            });
+
+            activeQueue.forEach((row) => nextRows.push(row));
+            nextRows.forEach((row) => container.appendChild(row));
+        }
+
+        function setupFteRealtimeSync() {
+            const container = getFteContainer();
+            const form = document.getElementById('projectForm');
+            const endpoint = @json(route('projects.fte.snapshot', $project));
+            if (!container || !form || !endpoint) return;
+
+            let pollInFlight = false;
+            let pollTimer = null;
+            let stopped = false;
+            let hasCompletedInitialSync = false;
+            const pollIntervalMs = 7000;
+
+            const markDirty = (target) => {
+                if (window.__fteRemoteApplying) return;
+                const row = target?.closest?.('.fte-row');
+                if (!row) return;
+                row.dataset.remoteDirty = '1';
+            };
+
+            container.addEventListener('input', (event) => markDirty(event.target), true);
+            container.addEventListener('change', (event) => markDirty(event.target), true);
+            container.addEventListener('focusin', (event) => markDirty(event.target), true);
+
+            container.querySelectorAll('.fte-row').forEach((row) => {
+                row.dataset.remoteSignature = buildFteRowSignature(readFteRowData(row));
+                row.dataset.remoteDirty = '0';
+            });
+
+            const schedulePoll = (delay = pollIntervalMs) => {
+                if (stopped) return;
+                window.clearTimeout(pollTimer);
+                pollTimer = window.setTimeout(runPoll, delay);
+            };
+
+            const runPoll = async () => {
+                if (stopped || pollInFlight) return;
+                if (document.hidden) {
+                    schedulePoll();
+                    return;
+                }
+
+                pollInFlight = true;
+                try {
+                    const response = await fetch(endpoint, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                    });
+
+                    if (!response.ok) throw new Error(`FTE sync failed: ${response.status}`);
+                    const payload = await response.json();
+                    const rows = Array.isArray(payload.rows) ? payload.rows : [];
+                    const projectActorName = String(payload.project_updated_by_name || '').trim();
+                    const projectOccurredAt = String(payload.project_updated_at || '').trim();
+                    const serverRows = rows.map((row) => ({
+                        id: String(row.id ?? ''),
+                        name: String(row.name ?? ''),
+                        role_group: String(row.role_group ?? ''),
+                        job_detail: String(row.job_detail ?? ''),
+                        task_detail: String(row.task_detail ?? ''),
+                        start_date: String(row.start_date ?? ''),
+                        end_date: String(row.end_date ?? ''),
+                        hours: String(row.hours ?? ''),
+                        fte_value: String(row.fte_value ?? ''),
+                        fte_value_research: String(row.fte_value_research ?? ''),
+                        updated_by_name: String(row.updated_by_name ?? ''),
+                        updated_logged_at: String(row.updated_logged_at ?? row.updated_at ?? ''),
+                        updated_at: String(row.updated_at ?? ''),
+                    })).filter((row) => row.id !== '');
+
+                    const deletedIds = new Set(
+                        Array.from(document.querySelectorAll('#fte-deleted-ids input[name="fte_deleted_ids[]"]'))
+                            .map((input) => String(input.value || '').trim())
+                            .filter(Boolean)
+                    );
+                    const existingById = new Map();
+                    container.querySelectorAll('.fte-row').forEach((row) => {
+                        const idValue = getFteSerializedValue(row, 'id');
+                        if (idValue) existingById.set(idValue, row);
+                    });
+
+                    let hasChange = false;
+                    const seenIds = new Set();
+                    for (const rowData of serverRows) {
+                        seenIds.add(rowData.id);
+                        const remoteSignature = buildFteRowSignature(rowData);
+                        const localRow = existingById.get(rowData.id);
+
+                        if (localRow) {
+                            if (isFteRowLockedForRemote(localRow)) continue;
+                            if (localRow.dataset.remoteSignature === remoteSignature) {
+                                localRow.dataset.remoteDirty = '0';
+                                continue;
+                            }
+
+                            window.__fteRemoteApplying = true;
+                            applyRemoteFteRowData(localRow, rowData);
+                            window.__fteRemoteApplying = false;
+                            if (hasCompletedInitialSync) {
+                                flashRemoteFteRow(localRow, 'updated');
+                            }
+                            hasChange = true;
+                            continue;
+                        }
+
+                        if (deletedIds.has(rowData.id) || getFteExistingIdSet().has(rowData.id)) {
+                            continue;
+                        }
+
+                        window.__fteRemoteApplying = true;
+                        const newRow = addFTERow({
+                            skipValidation: true,
+                            initialData: rowData,
+                        });
+                        window.__fteRemoteApplying = false;
+                        if (newRow) {
+                            newRow.dataset.remoteSignature = remoteSignature;
+                            newRow.dataset.remoteDirty = '0';
+                            if (hasCompletedInitialSync) {
+                                flashRemoteFteRow(newRow, 'new');
+                            }
+                            hasChange = true;
+                        }
+                    }
+
+                    Array.from(existingById.entries()).forEach(([idValue, row]) => {
+                        if (seenIds.has(idValue) || deletedIds.has(idValue) || row.dataset.deleted === '1') {
+                            return;
+                        }
+                        if (row.dataset.remoteDeleted === '1') {
+                            return;
+                        }
+                        markFteRowRemoteDeleted(row, {
+                            actorName: projectActorName,
+                            occurredAt: projectOccurredAt,
+                        });
+                        hasChange = true;
+                    });
+
+                    if (hasChange) {
+                        reorderFteRowsByServerIds(container, serverRows.map((row) => row.id));
+                        reindexFTE();
+                        window.syncFteTableOrderFromSource?.();
+                    }
+
+                    updateFteSyncStatus(`ซิงก์ FTE ล่าสุด ${new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`);
+                    hasCompletedInitialSync = true;
+                } catch (error) {
+                    updateFteSyncStatus('ซิงก์ FTE อัตโนมัติไม่สำเร็จ กำลังลองใหม่');
+                } finally {
+                    window.__fteRemoteApplying = false;
+                    pollInFlight = false;
+                    schedulePoll();
+                }
+            };
+
+            form.addEventListener('submit', () => {
+                stopped = true;
+                window.clearTimeout(pollTimer);
+                updateFteSyncStatus('หยุดซิงก์ FTE ชั่วคราวระหว่างบันทึก');
+            }, true);
+
+            schedulePoll(pollIntervalMs);
+        }
+
+        document.addEventListener('DOMContentLoaded', setupFteRealtimeSync);
 
 
         /* =========================================================
@@ -2688,7 +3306,7 @@
                         <option value="" disabled selected>กรุณาเลือก</option>
                         <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
                         <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>
-                        <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ">ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ</option>
+                        <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ">ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
                     </select>
                 </label>
                 <div class="col-span-12 md:col-span-2 flex justify-end md:pt-6">
@@ -2722,24 +3340,17 @@
             });
         }
 
+        function removeFteRow(id) {
+            const row = document.getElementById(id);
+            if (!row) return;
+            markFteRowDeleted(row);
+        }
+
         function removeRow(id, type) {
             const el = document.getElementById(id);
             const removedIndex = type === 'fte' && el?.parentElement ?
                 Array.from(el.parentElement.children).indexOf(el) :
                 -1;
-            if (el && type === 'fte') {
-                const idInput = el.querySelector('input[name^="fte_roles["][name$="[id]"]');
-                const existingId = Number(idInput?.value || 0);
-                if (existingId > 0) {
-                    const deletedContainer = document.getElementById('fte-deleted-ids');
-                    if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
-                        deletedContainer.insertAdjacentHTML(
-                            'beforeend',
-                            `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
-                        );
-                    }
-                }
-            }
             if (el) el.remove();
             if (type === 'output') reindexOutput();
             if (type === 'copi') reindexCopi?.();
@@ -2926,18 +3537,24 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const input = document.getElementById('budgetInput');
+            const notice = document.getElementById('budgetInputNotice');
+            if (!input) return;
 
             input.addEventListener('input', function() {
-                let value = input.value.replace(/,/g, '');
+                const rawValue = input.value.replace(/,/g, '');
+                const hasInvalidChars = /[^\d.]/.test(rawValue);
+                let value = rawValue.replace(/[^\d.]/g, '');
                 const parts = value.split('.');
 
                 if (parts.length > 2) {
-                    value = parts[0] + '.' + parts[1];
+                    value = parts[0] + '.' + parts.slice(1).join('');
                 }
 
                 let [intPart, decimalPart] = value.split('.');
+                intPart = (intPart || '').replace(/^0+(?=\d)/, '');
                 intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                 input.value = decimalPart !== undefined ? `${intPart}.${decimalPart}` : intPart;
+                notice?.classList.toggle('hidden', !hasInvalidChars);
             });
 
             // ก่อน submit form ให้ลบ comma ออก
@@ -3529,12 +4146,12 @@
     <script>
         // ใช้ Blade render รายชื่อเป็น HTML <option> พร้อม escape
         window.copiOptionsHtml = `{!! collect($allUsers)->map(function ($u) {
-                $name = trim($u->prefix . ' ' . $u->name);
+                $name = $u->full_name;
                 return "<option value=\"{$name}\"></option>";
             })->implode('') !!}`;
 
         window.coresearchOptionsHtml = `{!! collect($allUsers)->map(function ($u) {
-                $name = trim($u->prefix . ' ' . $u->name);
+                $name = $u->full_name;
                 return "<option value=\"{$name}\"></option>";
             })->implode('') !!}`;
     </script>
@@ -3624,8 +4241,14 @@
                 if (event.origin !== window.location.origin) return;
 
                 const payload = event.data;
-                if (!payload || payload.type !== 'progress-report:updated') return;
-                if (Number(payload.projectId) !== currentProjectId) return;
+                if (!payload || Number(payload.projectId) !== currentProjectId) return;
+
+                if (payload.type === 'progress-report:close') {
+                    closeModal();
+                    return;
+                }
+
+                if (payload.type !== 'progress-report:updated') return;
 
                 applyProgressSummary(payload.summary || {});
                 closeModal();
