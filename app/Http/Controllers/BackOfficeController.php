@@ -254,6 +254,11 @@ class BackOfficeController extends Controller
             'outputs.*.journal' => ['nullable', 'string', 'max:255'],
             'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
             'outputs.*.impact_factor' => ['nullable', 'numeric'],
+            'outputs.*.book_title' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.publisher_name' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.chapter_pages' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.book_authors' => ['nullable', 'array'],
+            'outputs.*.book_authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.authors' => ['nullable', 'array'],
             'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
@@ -264,7 +269,7 @@ class BackOfficeController extends Controller
             'outputs.*.conferences.*.note' => ['nullable', 'string', 'max:255'],
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.person_name' => ['required', 'string', 'max:255'],
-            'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
+            'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านติดต่อประสานงาน,งานด้านการลงตารางนัดหมายประชุม,งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
             'entries.*.job_name' => ['required', 'string', 'max:255'],
             'entries.*.job_detail' => ['required', 'string', 'max:255'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],
@@ -307,6 +312,14 @@ class BackOfficeController extends Controller
                         'journal' => $output['journal'] ?? null,
                         'quartile' => $output['quartile'] ?? null,
                         'impact_factor' => $output['impact_factor'] ?? null,
+                        'book_title' => $output['book_title'] ?? null,
+                        'publisher_name' => $output['publisher_name'] ?? null,
+                        'chapter_pages' => $output['chapter_pages'] ?? null,
+                        'book_authors' => collect($output['book_authors'] ?? [])
+                            ->map(fn ($author) => ['name' => trim((string) ($author['name'] ?? ''))])
+                            ->filter(fn ($author) => $author['name'] !== '')
+                            ->values()
+                            ->all(),
                         'authors' => $output['authors'] ?? null,
                         'conferences' => $output['conferences'] ?? null,
                     ]);
@@ -392,6 +405,11 @@ class BackOfficeController extends Controller
             'outputs.*.journal' => ['nullable', 'string', 'max:255'],
             'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
             'outputs.*.impact_factor' => ['nullable', 'numeric'],
+            'outputs.*.book_title' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.publisher_name' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.chapter_pages' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.book_authors' => ['nullable', 'array'],
+            'outputs.*.book_authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.authors' => ['nullable', 'array'],
             'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.authors.*.role' => ['nullable', 'string', 'max:50'],
@@ -402,7 +420,7 @@ class BackOfficeController extends Controller
             'outputs.*.conferences.*.note' => ['nullable', 'string', 'max:255'],
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.person_name' => ['required', 'string', 'max:255'],
-            'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
+            'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านติดต่อประสานงาน,งานด้านการลงตารางนัดหมายประชุม,งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
             'entries.*.job_name' => ['required', 'string', 'max:255'],
             'entries.*.job_detail' => ['required', 'string', 'max:255'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],
@@ -444,6 +462,14 @@ class BackOfficeController extends Controller
                         'journal' => $output['journal'] ?? null,
                         'quartile' => $output['quartile'] ?? null,
                         'impact_factor' => $output['impact_factor'] ?? null,
+                        'book_title' => $output['book_title'] ?? null,
+                        'publisher_name' => $output['publisher_name'] ?? null,
+                        'chapter_pages' => $output['chapter_pages'] ?? null,
+                        'book_authors' => collect($output['book_authors'] ?? [])
+                            ->map(fn ($author) => ['name' => trim((string) ($author['name'] ?? ''))])
+                            ->filter(fn ($author) => $author['name'] !== '')
+                            ->values()
+                            ->all(),
                         'authors' => $output['authors'] ?? null,
                         'conferences' => $output['conferences'] ?? null,
                     ]);

@@ -67,6 +67,8 @@ class ProjectLog extends Model
             'project' => 'โครงการ',
             'output' => 'ผลผลิต',
             'output_author' => 'ผู้เขียนผลงาน',
+            'output_book_author' => 'ผู้เขียนบท/หนังสือ',
+            'output_conference' => 'ข้อมูลการประชุม',
             'fte' => 'FTE',
             'task' => 'งาน',
             'tasklink' => 'ลิงก์งาน',

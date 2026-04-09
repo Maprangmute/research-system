@@ -58,6 +58,13 @@ class FteRoleController extends Controller
             $fte->save();
         }
 
+        $project->updated_by = Auth::id();
+        if ($project->isDirty('updated_by')) {
+            $project->save();
+        } else {
+            $project->touch();
+        }
+
         return back()->with('success', 'บันทึกข้อมูล FTE เรียบร้อย');
     }
 

@@ -8,6 +8,8 @@ use App\Models\ProjectLog;
 
 class OutputAuthor extends Model
 {
+    protected $touches = ['output'];
+
     protected $table = 'output_authors';
 
     protected $fillable = [

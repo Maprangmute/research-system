@@ -9,6 +9,8 @@ use App\Models\ProjectLog;
 
 class CoResearch extends Model
 {
+    protected $touches = ['project'];
+
     protected $fillable = [
         'project_id',
         'name',

@@ -9,6 +9,8 @@ use App\Models\ProjectLog;
 
 class Copi extends Model
 {
+    protected $touches = ['project'];
+
     protected $fillable = [
         'project_id', 'name', 'affiliation'
     ];

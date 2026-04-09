@@ -7879,7 +7879,17 @@
                             type,
                             ...value
                         }))
-                        .sort((a, b) => b.count - a.count);
+                        .sort((a, b) => {
+                            const getOrder = (label) => {
+                                const match = String(label ?? '').trim().match(/^(\d{2})\b/);
+                                return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+                            };
+
+                            const aOrder = getOrder(a.type);
+                            const bOrder = getOrder(b.type);
+                            if (aOrder !== bOrder) return aOrder - bOrder;
+                            return String(a.type ?? '').localeCompare(String(b.type ?? ''), 'th');
+                        });
                 }
 
                 function updateSummary(rows) {

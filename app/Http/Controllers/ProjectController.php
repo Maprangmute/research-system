@@ -495,6 +495,7 @@ public function store(Request $request)
 
         $project->load([
             'outputs.authors',
+            'outputs.bookAuthors',
             'progressReports' => function ($query) {
                 $query->orderByDesc('submit_date')->orderByDesc('id');
             },
@@ -696,6 +697,7 @@ public function store(Request $request)
                 $query->orderByDesc('submit_date')->orderByDesc('id');
             },
             'outputs.authors',
+            'outputs.bookAuthors',
             'outputs.conferences',
             'updatedBy',
             'createdBy',   // ✅ เพิ่มตรงนี้
@@ -731,15 +733,18 @@ public function store(Request $request)
         $project->fill($validated);
         $this->fillStrategies($request, $project);
 
-        // ✅ กำกับตรงทุกครั้งที่มีการแก้ไข
+        // บันทึก parent project เมื่อมี field ระดับโครงการเปลี่ยน
         $project->updated_by = Auth::id();
-        $project->save();
+        if ($project->isDirty()) {
+            $project->save();
+        }
 
         $this->syncFTERoles($request, $project);
         $this->syncOutputs($request, $project);
         $this->syncCopis($request, $project);
         $this->syncIrbs($request, $project);
         $this->syncCoResearch($request, $project);
+        $this->touchProjectTimestamp($project);
 
         return redirect()->route('projects.show', $project)
             ->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
@@ -780,6 +785,7 @@ public function store(Request $request)
                 $query->orderByDesc('submit_date')->orderByDesc('id');
             },
             'outputs.authors',
+            'outputs.bookAuthors',
             'outputs.conferences',
             'updatedBy',
             'createdBy',
@@ -1462,7 +1468,59 @@ public function store(Request $request)
             'outputs.*.conferences.*.presentation_type' => ['nullable', 'string'],
             'outputs.*.conferences.*.location' => ['nullable', 'string'],
             'outputs.*.conferences.*.note' => ['nullable', 'string'],
+
+            // EA119 (Textbook / Book chapter)
+            'outputs.*.book_title' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.publisher_name' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.chapter_pages' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.book_authors' => ['nullable', 'array'],
+            'outputs.*.book_authors.*.id' => ['nullable', 'integer', 'exists:output_book_authors,id'],
+            'outputs.*.book_authors.*.name' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $errors = [];
+        foreach ((array) $request->input('outputs', []) as $index => $row) {
+            $type = trim((string) ($row['type'] ?? ''));
+            if (! str_starts_with($type, 'EA119')) {
+                continue;
+            }
+
+            $requiredEa119Fields = [
+                'book_title' => 'ชื่อหนังสือ',
+                'publisher_name' => 'ชื่อสำนักพิมพ์',
+                'chapter_pages' => 'ชื่อบท / เลขหน้า',
+            ];
+
+            foreach ($requiredEa119Fields as $field => $label) {
+                if (trim((string) ($row[$field] ?? '')) === '') {
+                    $errors["outputs.$index.$field"][] = "กรุณากรอก{$label}";
+                }
+            }
+
+            $seen = [];
+            foreach ((array) ($row['book_authors'] ?? []) as $authorIndex => $author) {
+                $name = trim((string) ($author['name'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+
+                $normalizedName = $this->normalizeAuthorNameForDuplicateCheck($name);
+                if ($normalizedName === '') {
+                    continue;
+                }
+
+                if (isset($seen[$normalizedName])) {
+                    $errors["outputs.$index.book_authors.$authorIndex.name"][] = 'พบชื่อผู้เขียนซ้ำ กรุณาเลือกชื่อที่ไม่ซ้ำ';
+                    continue;
+                }
+
+                $seen[$normalizedName] = true;
+            }
+        }
+
+        if (! empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     private function fillStrategies(Request $request, Project $project): void
@@ -1577,16 +1635,26 @@ public function store(Request $request)
                 'journal' => null,
                 'quartile' => null,
                 'impact_factor' => null,
+                'book_title' => null,
+                'publisher_name' => null,
+                'chapter_pages' => null,
             ];
 
             $type = (string) ($payload['type'] ?? '');
             $isEA101 = str_starts_with($type, 'EA101');
             $isEA103 = str_starts_with($type, 'EA103');
+            $isEA119 = str_starts_with($type, 'EA119');
 
             if ($isEA101) {
                 $payload['journal'] = $row['journal'] ?? null;
                 $payload['quartile'] = $this->normalizeQuartile($row['quartile'] ?? null);
                 $payload['impact_factor'] = $row['impact_factor'] ?? null;
+            }
+
+            if ($isEA119) {
+                $payload['book_title'] = $row['book_title'] ?? null;
+                $payload['publisher_name'] = $row['publisher_name'] ?? null;
+                $payload['chapter_pages'] = $row['chapter_pages'] ?? null;
             }
 
             if (! empty($row['id'])) {
@@ -1597,6 +1665,7 @@ public function store(Request $request)
 
                     // relations
                     $this->syncOutputAuthors($model, $row['authors'] ?? null, $isEA101);
+                    $this->syncOutputBookAuthors($model, $row['book_authors'] ?? null, $isEA119);
                     $this->syncOutputConferences($model, $row['conferences'] ?? null, $isEA103);
 
                     $keepIds[] = $model->id;
@@ -1608,6 +1677,7 @@ public function store(Request $request)
 
                     // relations
                     $this->syncOutputAuthors($fallback, $row['authors'] ?? null, $isEA101);
+                    $this->syncOutputBookAuthors($fallback, $row['book_authors'] ?? null, $isEA119);
                     $this->syncOutputConferences($fallback, $row['conferences'] ?? null, $isEA103);
 
                     $keepIds[] = $fallback->id;
@@ -1618,6 +1688,7 @@ public function store(Request $request)
 
                 // relations
                 $this->syncOutputAuthors($new, $row['authors'] ?? null, $isEA101);
+                $this->syncOutputBookAuthors($new, $row['book_authors'] ?? null, $isEA119);
                 $this->syncOutputConferences($new, $row['conferences'] ?? null, $isEA103);
 
                 $keepIds[] = $new->id;
@@ -1673,6 +1744,89 @@ public function store(Request $request)
         if ($ids) {
             $this->deleteModelsWithEvents($output->authors()->whereNotIn('id', $ids));
         }
+    }
+
+    private function syncOutputBookAuthors(Output $output, ?array $authors, bool $isEA119): void
+    {
+        if (! $isEA119) {
+            $this->deleteModelsWithEvents($output->bookAuthors());
+
+            return;
+        }
+
+        if ($authors === null) {
+            $this->deleteModelsWithEvents($output->bookAuthors());
+
+            return;
+        }
+
+        $existing = $output->bookAuthors()->get();
+        $existingById = $existing->keyBy('id');
+        $existingByNameKey = [];
+        foreach ($existing as $existingAuthor) {
+            $nameKey = $this->normalizeAuthorNameForDuplicateCheck((string) $existingAuthor->name);
+            if ($nameKey === '' || isset($existingByNameKey[$nameKey])) {
+                continue;
+            }
+            $existingByNameKey[$nameKey] = $existingAuthor;
+        }
+
+        $ids = [];
+        $seen = [];
+        foreach ($authors as $author) {
+            $name = trim((string) ($author['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $nameKey = $this->normalizeAuthorNameForDuplicateCheck($name);
+            if ($nameKey === '') {
+                continue;
+            }
+            if (isset($seen[$nameKey])) {
+                continue;
+            }
+            $seen[$nameKey] = true;
+
+            $payload = ['name' => $name];
+            $model = null;
+            $authorId = (int) ($author['id'] ?? 0);
+            if ($authorId > 0) {
+                $model = $existingById->get($authorId);
+            }
+            if (! $model) {
+                $model = $existingByNameKey[$nameKey] ?? null;
+            }
+
+            if ($model) {
+                if ((string) $model->name !== $name) {
+                    $model->update($payload);
+                }
+                $ids[] = $model->id;
+            } else {
+                $new = $output->bookAuthors()->create($payload);
+                $ids[] = $new->id;
+                $existingByNameKey[$nameKey] = $new;
+            }
+        }
+
+        if (! empty($ids)) {
+            $this->deleteModelsWithEvents($output->bookAuthors()->whereNotIn('id', $ids));
+        } else {
+            $this->deleteModelsWithEvents($output->bookAuthors());
+        }
+    }
+
+    private function normalizeAuthorNameForDuplicateCheck(string $name): string
+    {
+        $normalized = preg_replace('/\s+/u', ' ', trim($name)) ?? '';
+        if ($normalized === '') {
+            return '';
+        }
+
+        $normalized = preg_replace('/^(คุณ|นาย|นางสาว|นาง|น\.ส\.|ดร\.?|ผศ\.?|รศ\.?|ศ\.?)\s+/u', '', $normalized) ?? $normalized;
+
+        return mb_strtolower(trim($normalized));
     }
 
     private function syncOutputConferences(Output $output, ?array $confs, bool $isEA103): void
@@ -1733,7 +1887,11 @@ public function store(Request $request)
             ($row['journal'] ?? null) ||
             ($row['quartile'] ?? null) ||
             ($row['impact_factor'] ?? null) ||
-            (! empty($row['authors']))
+            ($row['book_title'] ?? null) ||
+            ($row['publisher_name'] ?? null) ||
+            ($row['chapter_pages'] ?? null) ||
+            (! empty($row['authors'])) ||
+            (! empty($row['book_authors']))
         );
     }
 
@@ -1887,6 +2045,17 @@ public function store(Request $request)
         $query->chunkById(200, function ($models) {
             $models->each->delete();
         });
+    }
+
+    private function touchProjectTimestamp(Project $project): void
+    {
+        $project->updated_by = Auth::id();
+        if ($project->isDirty('updated_by')) {
+            $project->save();
+            return;
+        }
+
+        $project->touch();
     }
 
     private function applyProjectNameSearch(Builder $query, Builder $searchScope, string $rawSearch): void

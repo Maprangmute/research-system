@@ -1177,6 +1177,7 @@
                             @php
                                 $isEA101 = Str::startsWith((string) ($output->type ?? ''), 'EA101');
                                 $isEA103 = Str::startsWith((string) ($output->type ?? ''), 'EA103');
+                                $isEA119 = Str::startsWith((string) ($output->type ?? ''), 'EA119');
                                 $typeBadgeStyle = $outputTypeStyle($output->type ?? '');
                             @endphp
 
@@ -1356,6 +1357,44 @@
                                                         </table>
                                                     </div>
                                                 @endif
+                                            </div>
+                                        @endif
+
+                                        @if ($isEA119)
+                                            @php
+                                                $bookAuthors = $output->bookAuthors ?? collect();
+                                                $bookAuthorsReal = $bookAuthors->filter(function ($a) {
+                                                    return !empty(trim($a->name ?? ''));
+                                                });
+                                            @endphp
+
+                                            <div class="mt-3 border rounded-xl p-4 bg-emerald-50/60">
+                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                                    <div>
+                                                        <div class="text-gray-500">ชื่อหนังสือ</div>
+                                                        <div class="text-gray-800">{{ $output->book_title ?: '-' }}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div class="text-gray-500">ชื่อสำนักพิมพ์</div>
+                                                        <div class="text-gray-800">{{ $output->publisher_name ?: '-' }}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div class="text-gray-500">ชื่อบท / เลขหน้า</div>
+                                                        <div class="text-gray-800">{{ $output->chapter_pages ?: '-' }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <div class="font-semibold text-emerald-800 mb-2">รายชื่อผู้เขียน</div>
+                                                    @if ($bookAuthorsReal->isEmpty())
+                                                        <div class="text-sm text-gray-500">- ไม่มีรายชื่อผู้เขียน -</div>
+                                                    @else
+                                                        <ul class="list-disc list-inside text-sm text-slate-700">
+                                                            @foreach ($bookAuthorsReal as $a)
+                                                                <li>{{ $a->name ?: '-' }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    @endif
+                                                </div>
                                             </div>
                                         @endif
                                     </div>

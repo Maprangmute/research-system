@@ -164,10 +164,12 @@
                     @php
                         $isEA101 = str_starts_with((string) ($output->type ?? ''), 'EA101');
                         $isEA103 = str_starts_with((string) ($output->type ?? ''), 'EA103');
+                        $isEA119 = str_starts_with((string) ($output->type ?? ''), 'EA119');
                         $authors = collect($output->authors ?? []);
                         $confs = collect($output->conferences ?? []);
+                        $bookAuthors = collect($output->book_authors ?? []);
                     @endphp
-                    @if ($isEA101 || $isEA103)
+                    @if ($isEA101 || $isEA103 || $isEA119)
                         <tr>
                             <td colspan="4">
                                 <div class="small" style="padding:6px 0;">
@@ -190,6 +192,18 @@
                                                     @if (!empty($conf['location'])) • {{ $conf['location'] }} @endif
                                                     @if (!empty($conf['note'])) • {{ $conf['note'] }} @endif
                                                     @if (! $loop->last) | @endif
+                                                @endforeach
+                                            @else
+                                                -
+                                            @endif
+                                        </div>
+                                    @endif
+                                    @if ($isEA119)
+                                        <div>ชื่อหนังสือ: {{ $output->book_title ?? '-' }} | ชื่อสำนักพิมพ์: {{ $output->publisher_name ?? '-' }} | ชื่อบท / เลขหน้า: {{ $output->chapter_pages ?? '-' }}</div>
+                                        <div>รายชื่อผู้เขียน:
+                                            @if ($bookAuthors->count())
+                                                @foreach ($bookAuthors as $author)
+                                                    {{ $author['name'] ?? '-' }}@if (! $loop->last), @endif
                                                 @endforeach
                                             @else
                                                 -

@@ -16,11 +16,16 @@ class BackOfficeTaskOutput extends Model
         'journal',
         'quartile',
         'impact_factor',
+        'book_title',
+        'publisher_name',
+        'chapter_pages',
+        'book_authors',
         'authors',
         'conferences',
     ];
 
     protected $casts = [
+        'book_authors' => 'array',
         'authors' => 'array',
         'conferences' => 'array',
     ];

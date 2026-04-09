@@ -9,6 +9,8 @@ use App\Models\ProjectLog;
 
 class FteRole extends Model
 {
+    protected $touches = ['project'];
+
         protected $fillable = [
         'project_id',
         'role_group',           // ถ้ามีไว้ใช้ก็ปล่อยไว้ได้

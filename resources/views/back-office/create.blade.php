@@ -357,6 +357,8 @@
                             'งานบริการด้านทรัพยากรบุคคล',
                             'งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย',
                             'งานบริการขนส่งสินค้าเเละเอกสาร',
+                            'งานด้านติดต่อประสานงาน',
+                            'งานด้านการลงตารางนัดหมายประชุม',
                             'งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์',
                             'งานด้านการสื่อสาร',
                             'งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ',
@@ -459,6 +461,8 @@
                         <option>EA116 Research Project</option>
                         <option>EA117 MOU</option>
                         <option>EA118 Award and Recognition</option>
+                        <option>EA119 Textbook / Book chapter</option>
+                        <option>EA120 Manual / Instruction / Guideline</option>
                     </select>
                 </label>
                 <label class="block md:col-span-2">
@@ -957,6 +961,37 @@
             return wrap;
         }
 
+        function renderEA119Section(prefix) {
+            const wrap = document.createElement('div');
+            wrap.className = 'ea119-section border rounded-lg p-3 bg-emerald-50/60 space-y-3';
+            wrap.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ชื่อหนังสือ</span>
+                        <input name="${prefix}[book_title]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น Textbook of Public Health">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ชื่อสำนักพิมพ์</span>
+                        <input name="${prefix}[publisher_name]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น Elsevier">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ชื่อบท / เลขหน้า</span>
+                        <input name="${prefix}[chapter_pages]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น Chapter 2, pp. 45-66">
+                    </label>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-slate-600">รายชื่อผู้เขียน</span>
+                    </div>
+                    <div class="space-y-2" data-output-book-authors data-prefix="${prefix}"></div>
+                    <div class="mt-2 flex justify-end">
+                        <button type="button" class="text-emerald-600 text-xs hover:underline" onclick="addOutputBookAuthor(this)">เพิ่มผู้เขียน</button>
+                    </div>
+                </div>
+            `;
+            return wrap;
+        }
+
         function addOutputAuthor(btn, data = {}) {
             const section = btn.closest('.ea101-section');
             const container = section?.querySelector('[data-output-authors]');
@@ -1036,6 +1071,37 @@
             container.appendChild(row);
         }
 
+        function addOutputBookAuthor(btn, data = {}) {
+            const section = btn.closest('.ea119-section');
+            const container = section?.querySelector('[data-output-book-authors]');
+            if (!container) return;
+            const prefix = container.dataset.prefix;
+            const idx = container.querySelectorAll('[data-output-book-author]').length;
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-end';
+            row.setAttribute('data-output-book-author', '1');
+            row.innerHTML = `
+                <label class="block md:col-span-3">
+                    <span class="text-xs font-semibold text-slate-600">ชื่อผู้เขียน</span>
+                    <input name="${prefix}[book_authors][${idx}][name]" list="person-list" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เลือกชื่อผู้เขียน">
+                </label>
+                <div class="md:col-span-1 text-right">
+                    <button type="button" class="text-red-500 text-xs hover:underline" onclick="this.closest('[data-output-book-author]').remove()">ลบ</button>
+                </div>
+            `;
+            if (data.name) {
+                row.querySelector(`input[name="${prefix}[book_authors][${idx}][name]"]`).value = data.name;
+            }
+            if (data.id) {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = `${prefix}[book_authors][${idx}][id]`;
+                hidden.value = data.id;
+                row.appendChild(hidden);
+            }
+            container.appendChild(row);
+        }
+
         function handleOutputType(selectEl) {
             const row = selectEl.closest('[data-task-output],[data-entry-output]');
             const mount = row?.querySelector('.special-mount');
@@ -1047,6 +1113,8 @@
                 mount.appendChild(renderEA101Section(prefix));
             } else if (val.startsWith('EA103')) {
                 mount.appendChild(renderEA103Section(prefix));
+            } else if (val.startsWith('EA119')) {
+                mount.appendChild(renderEA119Section(prefix));
             }
         }
 
@@ -1060,6 +1128,12 @@
             if (quartile) quartile.value = data.quartile || '';
             const impact = row.querySelector(`[name="${prefix}[impact_factor]"]`);
             if (impact) impact.value = data.impact_factor ?? '';
+            const bookTitle = row.querySelector(`[name="${prefix}[book_title]"]`);
+            if (bookTitle) bookTitle.value = data.book_title || '';
+            const publisherName = row.querySelector(`[name="${prefix}[publisher_name]"]`);
+            if (publisherName) publisherName.value = data.publisher_name || '';
+            const chapterPages = row.querySelector(`[name="${prefix}[chapter_pages]"]`);
+            if (chapterPages) chapterPages.value = data.chapter_pages || '';
 
             if (Array.isArray(data.authors)) {
                 const btn = row.querySelector('.ea101-section button');
@@ -1068,6 +1142,10 @@
             if (Array.isArray(data.conferences)) {
                 const btn = row.querySelector('.ea103-section button');
                 if (btn) data.conferences.forEach(conf => addOutputConference(btn, conf));
+            }
+            if (Array.isArray(data.book_authors)) {
+                const btn = row.querySelector('.ea119-section button');
+                if (btn) data.book_authors.forEach(author => addOutputBookAuthor(btn, author));
             }
         }
 

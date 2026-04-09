@@ -9,6 +9,8 @@ use App\Models\ProjectLog;
 
 class Irb extends Model
 {
+    protected $touches = ['project'];
+
     protected $fillable = ['project_id', 'code', 'source', 'exp_date'];
 
     // ==== Log ทุก action ที่เกี่ยวกับ IRB ====

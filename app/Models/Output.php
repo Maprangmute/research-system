@@ -9,13 +9,15 @@ use App\Models\ProjectLog;
 
 class Output extends Model
 {
+    protected $touches = ['project'];
+
     /**
      * ฟิลด์ที่กรอกผ่าน mass assignment
      */
     protected $fillable = [
         'project_id',
         'output_code',
-        'type',            // EA101..EA117
+        'type',            // EA101..EA120
         'title',           // ชื่อผลงาน
         'year',            // วันที่ publish (string/date-string)
         'project_output',  // รายละเอียด/หมายเหตุ/ลิงก์
@@ -23,6 +25,10 @@ class Output extends Model
         'journal',
         'quartile',        // Q1..Q4
         'impact_factor',   // decimal(5,3)
+        // EA119 only
+        'book_title',
+        'publisher_name',
+        'chapter_pages',
     ];
 
 
@@ -38,6 +44,11 @@ public function authors()
     return $this->hasMany(\App\Models\OutputAuthor::class, 'output_id', 'id');
 }
 
+public function bookAuthors()
+{
+    return $this->hasMany(\App\Models\OutputBookAuthor::class, 'output_id', 'id');
+}
+
 
     /**
      * ค่า default
@@ -46,6 +57,9 @@ public function authors()
         'journal'       => null,
         'quartile'      => null,
         'impact_factor' => null,
+        'book_title'    => null,
+        'publisher_name'=> null,
+        'chapter_pages' => null,
     ];
 
     // ==== ความสัมพันธ์ ====

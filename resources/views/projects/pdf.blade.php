@@ -632,6 +632,24 @@
                             {{ $output->conferences->pluck('name')->filter()->implode(', ') }}
                         </div>
                     @endif
+
+                    @if (!empty($output->book_title) || !empty($output->publisher_name) || !empty($output->chapter_pages))
+                        <div class="output-meta-row">
+                            <strong>ชื่อหนังสือ:</strong> {{ text_or_dash($output->book_title) }}
+                        </div>
+                        <div class="output-meta-row">
+                            <strong>ชื่อสำนักพิมพ์:</strong> {{ text_or_dash($output->publisher_name) }}
+                            |
+                            <strong>ชื่อบท / เลขหน้า:</strong> {{ text_or_dash($output->chapter_pages) }}
+                        </div>
+                    @endif
+
+                    @if (!empty($output->bookAuthors) && $output->bookAuthors->count())
+                        <div class="output-meta-row">
+                            <strong>Book Authors:</strong>
+                            {{ $output->bookAuthors->pluck('name')->filter()->implode(', ') }}
+                        </div>
+                    @endif
                 </div>
             </div>
         @empty

@@ -104,8 +104,10 @@
                         @php
                             $isEA101 = str_starts_with((string) ($output->type ?? ''), 'EA101');
                             $isEA103 = str_starts_with((string) ($output->type ?? ''), 'EA103');
+                            $isEA119 = str_starts_with((string) ($output->type ?? ''), 'EA119');
                             $authors = collect($output->authors ?? []);
                             $confs = collect($output->conferences ?? []);
+                            $bookAuthors = collect($output->book_authors ?? []);
                         @endphp
 
                         @if ($isEA101)
@@ -140,6 +142,22 @@
                                     </ul>
                                 @else
                                     <div class="mt-1 text-slate-600">- ไม่มีรายการ Conference -</div>
+                                @endif
+                            </div>
+                        @endif
+
+                        @if ($isEA119)
+                            <div class="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs">
+                                <div class="text-slate-700">ชื่อหนังสือ: {{ $output->book_title ?? '-' }}</div>
+                                <div class="text-slate-700">ชื่อสำนักพิมพ์: {{ $output->publisher_name ?? '-' }}</div>
+                                <div class="text-slate-700">ชื่อบท / เลขหน้า: {{ $output->chapter_pages ?? '-' }}</div>
+                                @if ($bookAuthors->count())
+                                    <div class="mt-2 font-semibold text-slate-800">รายชื่อผู้เขียน</div>
+                                    <ul class="mt-1 list-disc list-inside text-slate-700">
+                                        @foreach ($bookAuthors as $author)
+                                            <li>{{ $author['name'] ?? '-' }}</li>
+                                        @endforeach
+                                    </ul>
                                 @endif
                             </div>
                         @endif

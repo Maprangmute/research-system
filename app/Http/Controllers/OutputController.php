@@ -58,6 +58,8 @@ class OutputController extends Controller
         $allCount = (clone $statsQuery)->count();
         $paperCount = (clone $statsQuery)->where('type', 'EA101')->count();
         $presentationCount = (clone $statsQuery)->where('type', 'EA103')->count();
+        $textbookCount = (clone $statsQuery)->where('type', 'EA119')->count();
+        $manualCount = (clone $statsQuery)->where('type', 'EA120')->count();
 
         $authorOptions = OutputAuthor::query()
             ->whereNotNull('name')
@@ -81,6 +83,8 @@ class OutputController extends Controller
             'allCount' => $allCount,
             'paperCount' => $paperCount,
             'presentationCount' => $presentationCount,
+            'textbookCount' => $textbookCount,
+            'manualCount' => $manualCount,
             'search' => $request->string('search')->toString(),
             'type' => $request->string('type')->toString(),
             'jobCategoryOptions' => self::EXTERNAL_JOB_CATEGORIES,
@@ -168,7 +172,7 @@ class OutputController extends Controller
         $validated = $request->validate([
             'outputs' => ['required', 'array', 'min:1'],
             'outputs.*.title' => ['required', 'string', 'max:5000'],
-            'outputs.*.type' => ['required', 'in:EA101,EA103'],
+            'outputs.*.type' => ['required', 'in:EA101,EA103,EA119,EA120'],
             'outputs.*.job_category' => ['required', 'in:' . implode(',', self::EXTERNAL_JOB_CATEGORIES)],
             'outputs.*.note' => ['nullable', 'string', 'max:5000'],
             'outputs.*.publish_date' => ['required', 'date'],
@@ -254,7 +258,7 @@ class OutputController extends Controller
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:5000'],
-            'type' => ['required', 'in:EA101,EA103'],
+            'type' => ['required', 'in:EA101,EA103,EA119,EA120'],
             'job_category' => ['required', 'in:' . implode(',', self::EXTERNAL_JOB_CATEGORIES)],
             'note' => ['nullable', 'string', 'max:5000'],
             'publish_date' => ['required', 'date'],

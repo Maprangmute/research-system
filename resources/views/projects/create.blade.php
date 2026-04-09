@@ -194,29 +194,13 @@
                         oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของโครงการ')"
                         oninput="this.setCustomValidity('')">
                         <option value="" disabled selected>เลือกประเภทของโครงการ</option> <!-- สำหรับ placeholder -->
-                        <option value="01 ผู้สูงอายุ ตามยุทธศาสตร์ศาสตร์สูงอายุของคณะแพทยศาสตร์ศิริราชพยาบาล">01 ผู้สูงอายุ
-                            ตามยุทธศาสตร์ศาสตร์สูงอายุของคณะแพทยศาสตร์ศิริราชพยาบาล</option>
-                        <option
-                            value="02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล">
-                            02 โครงการพัฒนาระบบเพื่อการสร้างเสริมสุขภาพสำหรับพระสงฆ์ โดยทีมสหวิทยาการ
-                            และการมีส่วนร่วมของประชาชนอย่างยั่งยืน : บางกอกน้อยโมเดล</option>
-                        <option value="03 Health System research and HTA">03 Health System research and HTA</option>
-                        <option value="04 การใช้ยาอย่างสมเหตุผล (RDU)">04 การใช้ยาอย่างสมเหตุผล (RDU)</option>
-                        <option
-                            value="05 Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC">05
-                            Health Policy Platform: Prince Mahidol Award Conference (PMAC), Global Health, UHC</option>
-                        <option value="06 Real-world Evidence: E-Health, Health Information system, Digital Health">06
-                            Real-world Evidence: E-Health, Health Information system, Digital Health</option>
-                        <option value="07 Fall prevention + Hip facture preject (VBHC & Registry)">07 Fall prevention + Hip
-                            facture preject (VBHC & Registry)</option>
-                        <option value="08 การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้">08
-                            การพัฒนาศักยภาพบุคลากร และการจัดเก็บองค์ความรู้เพื่อส่งเสริมการเรียนรู้</option>
-                        <option value="09 SIHP Process Improvement (System Support)">09 SIHP Process Improvement (System
-                            Support)</option>
-                        <option value="10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE">10 อื่นๆ ที่ได้รับมอบหมาย ไม่มีค่า FTE
-                        </option>
-                        <option value="11 SIPG">11 SIPG</option>
-                        <option value="12 RDMU">12 RDMU</option>
+                        <option value="01 Ageing and Frailty">01 Ageing and Frailty</option>
+                        <option value="02 Health Systems and HTA">02 Health Systems and HTA</option>
+                        <option value="03 Rational Drug Use (RDU)">03 Rational Drug Use (RDU)</option>
+                        <option value="04 Real-World Evidence (RWE) and Clinical–Technical Cohorts">04 Real-World Evidence
+                            (RWE) and Clinical–Technical Cohorts</option>
+                        <option value="05 Global Health">05 Global Health</option>
+                        <option value="06 Other Areas">06 Other Areas</option>
                     </select>
                 </label>
 
@@ -1227,6 +1211,8 @@
                                     <option>EA116 Research Project</option>
                                     <option>EA117 MOU</option>
                                     <option>EA118 Award and Recognition</option>
+                                    <option>EA119 Textbook / Book chapter</option>
+                                    <option>EA120 Manual / Instruction / Guideline</option>
                                 </select>
                             </label>
 
@@ -1285,6 +1271,8 @@
                                     <option>EA116 Research Project</option>
                                     <option>EA117 MOU</option>
                                     <option>EA118 Award and Recognition</option>
+                                    <option>EA119 Textbook / Book chapter</option>
+                                    <option>EA120 Manual / Instruction / Guideline</option>
                                 </select>
                             </label>
 
@@ -1490,7 +1478,7 @@
             const mount = row.querySelector('.special-mount');
             if (!row || !mount) return;
 
-            // เคลียร์ของเดิม (EA101/EA103)
+            // เคลียร์ของเดิม (EA101/EA103/EA119)
             mount.innerHTML = '';
 
             const idx = parseInt(row.getAttribute('data-index') || '0', 10);
@@ -1500,6 +1488,8 @@
                 mount.appendChild(renderEA101Section(idx));
             } else if (val.startsWith('EA103')) {
                 mount.appendChild(renderEA103Section(idx));
+            } else if (val.startsWith('EA119')) {
+                mount.appendChild(renderEA119Section(idx));
             }
         }
 
@@ -1596,6 +1586,174 @@
         function removeAuthorRow(btnEl) {
             const row = btnEl.closest('.author-row');
             if (row) row.remove();
+        }
+
+        /** ===== EA119 Section (Textbook / Book chapter) ===== */
+        function renderEA119Section(idx) {
+            const wrap = document.createElement('div');
+            wrap.className = 'ea119-section space-y-3 border rounded-xl p-4 bg-emerald-50/60';
+            wrap.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">ชื่อหนังสือ</span>
+        <input name="outputs[${idx}][book_title]" type="text" class="w-full border p-2 rounded" placeholder="เช่น Textbook of Public Health" required
+               oninvalid="this.setCustomValidity('กรุณากรอกชื่อหนังสือ')" oninput="this.setCustomValidity('')">
+      </label>
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">ชื่อสำนักพิมพ์</span>
+        <input name="outputs[${idx}][publisher_name]" type="text" class="w-full border p-2 rounded" placeholder="เช่น Elsevier" required
+               oninvalid="this.setCustomValidity('กรุณากรอกชื่อสำนักพิมพ์')" oninput="this.setCustomValidity('')">
+      </label>
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">ชื่อบท / เลขหน้า</span>
+        <input name="outputs[${idx}][chapter_pages]" type="text" class="w-full border p-2 rounded" placeholder="เช่น Chapter 2, pp. 45-66" required
+               oninvalid="this.setCustomValidity('กรุณากรอกชื่อบท / เลขหน้า')" oninput="this.setCustomValidity('')">
+      </label>
+    </div>
+
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="font-semibold text-emerald-800">รายชื่อผู้เขียน</span>
+      </div>
+      <div class="book-authors-container space-y-2" data-book-auth-index="0"></div>
+      <datalist class="book-author-name-list" id="book-author-name-list-${idx}"></datalist>
+      <div class="flex justify-end">
+        <button type="button" class="px-3 py-1 rounded bg-emerald-600 text-white" onclick="addBookAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+      </div>
+    </div>
+  `;
+
+            const authorsWrap = wrap.querySelector('.book-authors-container');
+            authorsWrap.appendChild(buildBookAuthorRow(idx, 0));
+            refreshBookAuthorDatalistInOutput(wrap);
+            return wrap;
+        }
+
+        function addBookAuthorRow(btnEl) {
+            const section = btnEl.closest('.ea119-section');
+            const outputRow = btnEl.closest('.output-row');
+            const idx = parseInt(outputRow.getAttribute('data-index') || '0', 10);
+
+            const authorsWrap = section.querySelector('.book-authors-container');
+            let aIdx = parseInt(authorsWrap.getAttribute('data-book-auth-index') || '0', 10);
+            aIdx += 1;
+            authorsWrap.setAttribute('data-book-auth-index', aIdx);
+            authorsWrap.appendChild(buildBookAuthorRow(idx, aIdx));
+            refreshBookAuthorDatalistInOutput(section);
+        }
+
+        function buildBookAuthorRow(outputIdx, authorIdx) {
+            const row = document.createElement('div');
+            row.className = 'book-author-row grid grid-cols-1 md:grid-cols-3 gap-3';
+            row.innerHTML = `
+    <label class="w-full md:col-span-2">
+      <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
+      <input name="outputs[${outputIdx}][book_authors][${authorIdx}][name]" type="text" data-book-author-input
+             list="book-author-name-list-${outputIdx}"
+             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+             placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required
+             oninput="refreshBookAuthorDatalistInOutput(this)">
+    </label>
+    <div class="flex items-end">
+      <button type="button" class="px-3 py-2 rounded border text-red-600 border-red-300" onclick="removeBookAuthorRow(this)">ลบผู้เขียน</button>
+    </div>
+  `;
+            return row;
+        }
+
+        function removeBookAuthorRow(btnEl) {
+            const row = btnEl.closest('.book-author-row');
+            const section = btnEl.closest('.ea119-section');
+            if (row) row.remove();
+            refreshBookAuthorDatalistInOutput(section);
+        }
+
+        function getBookAuthorBaseOptions() {
+            if (Array.isArray(window.__bookAuthorBaseOptions) && window.__bookAuthorBaseOptions.length) {
+                return window.__bookAuthorBaseOptions;
+            }
+            const base = Array.from(document.querySelectorAll('#userNames option'))
+                .map((option) => String(option.value || '').trim())
+                .filter(Boolean);
+            window.__bookAuthorBaseOptions = Array.from(new Set(base));
+            return window.__bookAuthorBaseOptions;
+        }
+
+        function refreshBookAuthorDatalistInOutput(sourceEl) {
+            if (!(sourceEl instanceof Element)) return;
+            const section = sourceEl.classList.contains('ea119-section') ? sourceEl : sourceEl.closest('.ea119-section');
+            if (!section) return;
+
+            const list = section.querySelector('.book-author-name-list');
+            if (!(list instanceof HTMLDataListElement)) return;
+
+            const inputs = Array.from(section.querySelectorAll('input[data-book-author-input]'));
+            const activeInput = sourceEl.matches('input[data-book-author-input]') ? sourceEl : null;
+            const selected = new Set(
+                inputs
+                    .map((input) => String(input.value || '').trim())
+                    .filter(Boolean)
+                    .filter((value) => value !== String(activeInput?.value || '').trim())
+            );
+
+            const options = getBookAuthorBaseOptions()
+                .filter((name) => !selected.has(name))
+                .map((name) => `<option value="${name.replace(/"/g, '&quot;')}"></option>`)
+                .join('');
+
+            list.innerHTML = options;
+        }
+
+        function normalizeAuthorNameForDuplicateCheck(name) {
+            return String(name || '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .replace(/^(คุณ|นาย|นางสาว|นาง|น\.ส\.|ดร\.?|ผศ\.?|รศ\.?|ศ\.?)\s+/u, '')
+                .toLowerCase();
+        }
+
+        function validateEA119DuplicateAuthors(form) {
+            const result = {
+                valid: true,
+                field: null,
+                message: '',
+                rows: []
+            };
+
+            form.querySelectorAll('.ea119-section input[data-book-author-input]').forEach((el) => el.classList.remove('border-red-500', 'bg-red-50'));
+
+            form.querySelectorAll('.output-row').forEach((row) => {
+                const typeField = row.querySelector('select[name^="outputs["][name$="[type]"]') || row.querySelector('input[name^="outputs["][name$="[type]"]');
+                const typeValue = String(typeField?.value || '').trim();
+                if (!typeValue.startsWith('EA119')) return;
+
+                const seen = new Map();
+                const inputs = Array.from(row.querySelectorAll('.ea119-section input[data-book-author-input]'));
+                inputs.forEach((input) => {
+                    const raw = String(input.value || '').trim();
+                    if (!raw) return;
+
+                    const key = normalizeAuthorNameForDuplicateCheck(raw);
+                    if (!key) return;
+
+                    if (seen.has(key)) {
+                        const firstInput = seen.get(key);
+                        firstInput?.classList.add('border-red-500', 'bg-red-50');
+                        input.classList.add('border-red-500', 'bg-red-50');
+                        if (result.valid) {
+                            result.valid = false;
+                            result.field = input;
+                            result.message = 'พบชื่อผู้เขียนซ้ำ กรุณาเลือกชื่อที่ไม่ซ้ำ';
+                            result.rows.push(row);
+                        }
+                        return;
+                    }
+
+                    seen.set(key, input);
+                });
+            });
+
+            return result;
         }
 
         /** ===== EA103 Section (Conferences) ===== */
@@ -2349,6 +2507,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const projectForm = document.getElementById('projectForm');
+            document.querySelectorAll('.ea119-section').forEach((section) => refreshBookAuthorDatalistInOutput(section));
 
             function revealFieldIfCollapsed(field) {
                 if (!field || field.closest('template')) return false;
@@ -2408,6 +2567,17 @@
                     };
 
                     window.validateProjectFteDateRanges?.(projectForm);
+
+                    const duplicateAuthorCheck = validateEA119DuplicateAuthors(projectForm);
+                    if (!duplicateAuthorCheck.valid) {
+                        isValid = false;
+                        if (!firstInvalidField) {
+                            firstInvalidField = duplicateAuthorCheck.field;
+                            firstInvalidMessage = duplicateAuthorCheck.message;
+                        }
+                        duplicateAuthorCheck.rows.forEach((row) => invalidRows.add(row));
+                        invalidSections.add('ผลงานวิจัย (Output)');
+                    }
 
                     // 1. ค้นหาทุกช่องที่มีคำว่า required
                     const requiredFields = projectForm.querySelectorAll('[required]');

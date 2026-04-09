@@ -6,8 +6,20 @@
         if (!$date) return '-';
         return $date->day.' '.($months[$date->month] ?? $date->format('m')).' '.($date->year + 543);
     };
-    $typeLabel = $externalOutput->type === 'EA101' ? 'Academic Paper' : 'Presentation';
-    $typeBadge = $externalOutput->type === 'EA101' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700';
+    $typeLabel = match ($externalOutput->type) {
+        'EA101' => 'Academic Paper',
+        'EA103' => 'Presentation',
+        'EA119' => 'Textbook / Book chapter',
+        'EA120' => 'Manual / Instruction / Guideline',
+        default => $externalOutput->type ?: '-',
+    };
+    $typeBadge = match ($externalOutput->type) {
+        'EA101' => 'bg-sky-100 text-sky-700',
+        'EA103' => 'bg-amber-100 text-amber-700',
+        'EA119' => 'bg-emerald-100 text-emerald-700',
+        'EA120' => 'bg-cyan-100 text-cyan-700',
+        default => 'bg-slate-100 text-slate-700',
+    };
 @endphp
 
 @section('content')
@@ -125,7 +137,7 @@
                     @endforelse
                 </div>
             </section>
-        @else
+        @elseif ($externalOutput->type === 'EA103')
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">Presentation Details</h2>
                 <div class="mt-4 space-y-4">

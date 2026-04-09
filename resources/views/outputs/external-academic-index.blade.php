@@ -5,10 +5,18 @@
         return match ($type) {
             'EA101' => 'bg-sky-100 text-sky-700',
             'EA103' => 'bg-amber-100 text-amber-700',
+            'EA119' => 'bg-emerald-100 text-emerald-700',
+            'EA120' => 'bg-cyan-100 text-cyan-700',
             default => 'bg-slate-100 text-slate-700',
         };
     };
-    $typeLabel = fn ($type) => $type === 'EA101' ? 'Academic Paper' : 'Presentation';
+    $typeLabel = fn ($type) => match ($type) {
+        'EA101' => 'Academic Paper',
+        'EA103' => 'Presentation',
+        'EA119' => 'Textbook / Book chapter',
+        'EA120' => 'Manual / Instruction / Guideline',
+        default => $type ?: '-',
+    };
     $thaiDate = function ($date) {
         if (!$date) return '-';
         $months = [1 => 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -24,7 +32,7 @@
         <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
             <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Academic Paper / Presentation นอกเนื่องโครงการวิจัยในหน่วย</h1>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Academic Paper / Presentation / Textbook / Manual นอกเนื่องโครงการวิจัยในหน่วย</h1>
                     <p class="mt-2 text-sm leading-6 text-slate-600 md:text-[15px]">
                         รายการผลงานเพิ่มเติมแบบไม่ผูกกับโครงการ พร้อมค้นหา เปิดดูรายละเอียด และย้อนกลับมาเพิ่มข้อมูลต่อได้ใน flow เดียว
                     </p>
@@ -38,7 +46,7 @@
             </div>
         </section>
 
-        <section class="grid gap-4 md:grid-cols-3">
+        <section class="grid gap-4 md:grid-cols-5">
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="text-sm font-medium text-slate-500">ทั้งหมด</div>
                 <div class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($allCount) }}</div>
@@ -50,6 +58,14 @@
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="text-sm font-medium text-slate-500">Presentation</div>
                 <div class="mt-2 text-3xl font-bold text-amber-700">{{ number_format($presentationCount) }}</div>
+            </article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="text-sm font-medium text-slate-500">Textbook / Book chapter</div>
+                <div class="mt-2 text-3xl font-bold text-emerald-700">{{ number_format($textbookCount) }}</div>
+            </article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="text-sm font-medium text-slate-500">Manual / Instruction / Guideline</div>
+                <div class="mt-2 text-3xl font-bold text-cyan-700">{{ number_format($manualCount) }}</div>
             </article>
         </section>
 
@@ -68,6 +84,8 @@
                         <option value="">ทั้งหมด</option>
                         <option value="EA101" @selected($type === 'EA101')>Academic Paper</option>
                         <option value="EA103" @selected($type === 'EA103')>Presentation</option>
+                        <option value="EA119" @selected($type === 'EA119')>Textbook / Book chapter</option>
+                        <option value="EA120" @selected($type === 'EA120')>Manual / Instruction / Guideline</option>
                     </select>
                 </label>
                 <div class="flex items-end gap-2">
@@ -113,19 +131,37 @@
                                 <div class="rounded-xl bg-slate-50 px-4 py-3">
                                     <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Journal / Conference</div>
                                     <div class="mt-1 text-sm font-medium text-slate-800">
-                                        {{ $output->type === 'EA101' ? ($output->journal ?: '-') : ($output->conferences->pluck('name')->filter()->implode(', ') ?: '-') }}
+                                        {{
+                                            $output->type === 'EA101'
+                                                ? ($output->journal ?: '-')
+                                                : ($output->type === 'EA103'
+                                                    ? ($output->conferences->pluck('name')->filter()->implode(', ') ?: '-')
+                                                    : '-')
+                                        }}
                                     </div>
                                 </div>
                                 <div class="rounded-xl bg-slate-50 px-4 py-3">
                                     <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">People</div>
                                     <div class="mt-1 text-sm font-medium text-slate-800">
-                                        {{ $output->type === 'EA101' ? ($output->authors->pluck('name')->filter()->implode(', ') ?: '-') : ($output->conferences->pluck('presenter_name')->filter()->implode(', ') ?: '-') }}
+                                        {{
+                                            $output->type === 'EA101'
+                                                ? ($output->authors->pluck('name')->filter()->implode(', ') ?: '-')
+                                                : ($output->type === 'EA103'
+                                                    ? ($output->conferences->pluck('presenter_name')->filter()->implode(', ') ?: '-')
+                                                    : '-')
+                                        }}
                                     </div>
                                 </div>
                                 <div class="rounded-xl bg-slate-50 px-4 py-3">
                                     <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quartile / Type</div>
                                     <div class="mt-1 text-sm font-medium text-slate-800">
-                                        {{ $output->type === 'EA101' ? ($output->quartile ?: '-') : ($output->conferences->pluck('presentation_type')->filter()->implode(', ') ?: '-') }}
+                                        {{
+                                            $output->type === 'EA101'
+                                                ? ($output->quartile ?: '-')
+                                                : ($output->type === 'EA103'
+                                                    ? ($output->conferences->pluck('presentation_type')->filter()->implode(', ') ?: '-')
+                                                    : '-')
+                                        }}
                                     </div>
                                 </div>
                                 <div class="rounded-xl bg-slate-50 px-4 py-3">
