@@ -402,9 +402,9 @@
                         <option value="" {{ old('project_type', $project->project_type) ? '' : 'selected' }}>
                             เลือกประเภทของโครงการ
                         </option>
-                        <option value="01 Ageing and Frailty"
-                            {{ old('project_type', $project->project_type) == '01 Ageing and Frailty' ? 'selected' : '' }}>
-                            01 Ageing and Frailty
+                        <option value="01 Aging and Frailty"
+                            {{ old('project_type', $project->project_type) == '01 Aging and Frailty' ? 'selected' : '' }}>
+                            01 Aging and Frailty
                         </option>
                         <option value="02 Health Systems and HTA"
                             {{ old('project_type', $project->project_type) == '02 Health Systems and HTA' ? 'selected' : '' }}>

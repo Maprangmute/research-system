@@ -18,7 +18,7 @@ class RemapProjectTypes extends Command
     private function targetTypes(): array
     {
         return [
-            '01' => '01 Ageing and Frailty',
+            '01' => '01 Aging and Frailty',
             '02' => '02 Health Systems and HTA',
             '03' => '03 Rational Drug Use (RDU)',
             '04' => '04 Real-World Evidence (RWE) and Clinical–Technical Cohorts',

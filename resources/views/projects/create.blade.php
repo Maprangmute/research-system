@@ -194,7 +194,7 @@
                         oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของโครงการ')"
                         oninput="this.setCustomValidity('')">
                         <option value="" disabled selected>เลือกประเภทของโครงการ</option> <!-- สำหรับ placeholder -->
-                        <option value="01 Ageing and Frailty">01 Ageing and Frailty</option>
+                        <option value="01 Aging and Frailty">01 Aging and Frailty</option>
                         <option value="02 Health Systems and HTA">02 Health Systems and HTA</option>
                         <option value="03 Rational Drug Use (RDU)">03 Rational Drug Use (RDU)</option>
                         <option value="04 Real-World Evidence (RWE) and Clinical–Technical Cohorts">04 Real-World Evidence
