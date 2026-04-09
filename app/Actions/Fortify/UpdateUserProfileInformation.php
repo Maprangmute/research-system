@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Support\UserDisplayNameSync;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -17,6 +18,9 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
      */
     public function update(User $user, array $input): void
     {
+        $oldPrefix = (string) ($user->prefix ?? '');
+        $oldName = (string) ($user->name ?? '');
+
         Validator::make($input, [
             'name' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
@@ -38,6 +42,13 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
                 'email' => $input['email'],
             ])->save();
         }
+
+        UserDisplayNameSync::sync(
+            $oldPrefix,
+            $oldName,
+            (string) ($user->prefix ?? ''),
+            (string) ($user->name ?? '')
+        );
     }
 
     /**

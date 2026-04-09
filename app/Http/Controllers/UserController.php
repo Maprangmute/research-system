@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\UserDisplayNameSync;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -119,6 +120,8 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
+        $oldPrefix = (string) ($user->prefix ?? '');
+        $oldName = (string) ($user->name ?? '');
 
         $validated = $request->validate([
             'prefix'   => 'required|string|max:50',
@@ -141,6 +144,12 @@ class UserController extends Controller
         }
 
         $user->update($validated);
+        UserDisplayNameSync::sync(
+            $oldPrefix,
+            $oldName,
+            (string) ($user->prefix ?? ''),
+            (string) ($user->name ?? '')
+        );
 
         return redirect()->route('users.index')->with('success', 'อัปเดตข้อมูลผู้ใช้งานเรียบร้อยแล้ว');
     }
