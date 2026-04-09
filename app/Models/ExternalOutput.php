@@ -16,6 +16,9 @@ class ExternalOutput extends Model
         'journal',
         'quartile',
         'impact_factor',
+        'book_title',
+        'publisher_name',
+        'chapter_pages',
         'created_by',
     ];
 

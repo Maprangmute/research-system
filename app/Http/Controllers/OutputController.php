@@ -179,6 +179,9 @@ class OutputController extends Controller
             'outputs.*.journal' => ['required_if:outputs.*.type,EA101', 'nullable', 'string', 'max:255'],
             'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
             'outputs.*.impact_factor' => ['nullable', 'numeric', 'min:0', 'max:99999.999'],
+            'outputs.*.book_title' => ['required_if:outputs.*.type,EA119', 'nullable', 'string', 'max:1000'],
+            'outputs.*.publisher_name' => ['required_if:outputs.*.type,EA119', 'nullable', 'string', 'max:1000'],
+            'outputs.*.chapter_pages' => ['required_if:outputs.*.type,EA119', 'nullable', 'string', 'max:1000'],
             'outputs.*.authors' => ['nullable', 'array'],
             'outputs.*.authors.*.role' => ['nullable', 'in:first,co,corresponding'],
             'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
@@ -204,10 +207,13 @@ class OutputController extends Controller
                     'impact_factor' => $type === 'EA101' && ($item['impact_factor'] ?? null) !== null && $item['impact_factor'] !== ''
                         ? $item['impact_factor']
                         : null,
+                    'book_title' => $type === 'EA119' ? $this->nullableTrim($item['book_title'] ?? null) : null,
+                    'publisher_name' => $type === 'EA119' ? $this->nullableTrim($item['publisher_name'] ?? null) : null,
+                    'chapter_pages' => $type === 'EA119' ? $this->nullableTrim($item['chapter_pages'] ?? null) : null,
                     'created_by' => auth()->id(),
                 ]);
 
-                if ($type === 'EA101') {
+                if (in_array($type, ['EA101', 'EA119'], true)) {
                     $authors = collect($item['authors'] ?? [])
                         ->map(function ($author) {
                             return [
@@ -265,6 +271,9 @@ class OutputController extends Controller
             'journal' => ['required_if:type,EA101', 'nullable', 'string', 'max:255'],
             'quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
             'impact_factor' => ['nullable', 'numeric', 'min:0', 'max:99999.999'],
+            'book_title' => ['required_if:type,EA119', 'nullable', 'string', 'max:1000'],
+            'publisher_name' => ['required_if:type,EA119', 'nullable', 'string', 'max:1000'],
+            'chapter_pages' => ['required_if:type,EA119', 'nullable', 'string', 'max:1000'],
             'authors' => ['nullable', 'array'],
             'authors.*.role' => ['nullable', 'in:first,co,corresponding'],
             'authors.*.name' => ['nullable', 'string', 'max:255'],
@@ -289,12 +298,15 @@ class OutputController extends Controller
                 'impact_factor' => $type === 'EA101' && ($validated['impact_factor'] ?? null) !== null && $validated['impact_factor'] !== ''
                     ? $validated['impact_factor']
                     : null,
+                'book_title' => $type === 'EA119' ? $this->nullableTrim($validated['book_title'] ?? null) : null,
+                'publisher_name' => $type === 'EA119' ? $this->nullableTrim($validated['publisher_name'] ?? null) : null,
+                'chapter_pages' => $type === 'EA119' ? $this->nullableTrim($validated['chapter_pages'] ?? null) : null,
             ]);
 
             $externalOutput->authors()->delete();
             $externalOutput->conferences()->delete();
 
-            if ($type === 'EA101') {
+            if (in_array($type, ['EA101', 'EA119'], true)) {
                 $authors = collect($validated['authors'] ?? [])
                     ->map(fn ($author) => [
                         'role' => $this->nullableTrim($author['role'] ?? null),

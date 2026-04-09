@@ -99,6 +99,19 @@
                                 {{ $externalOutput->quartile ?: '-' }} / {{ $externalOutput->impact_factor ?: '-' }}
                             </div>
                         </div>
+                    @elseif ($externalOutput->type === 'EA119')
+                        <div class="rounded-xl bg-slate-50 px-4 py-3">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ชื่อหนังสือ</div>
+                            <div class="mt-1 text-sm font-medium text-slate-800">{{ $externalOutput->book_title ?: '-' }}</div>
+                        </div>
+                        <div class="rounded-xl bg-slate-50 px-4 py-3">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ชื่อสำนักพิมพ์</div>
+                            <div class="mt-1 text-sm font-medium text-slate-800">{{ $externalOutput->publisher_name ?: '-' }}</div>
+                        </div>
+                        <div class="rounded-xl bg-slate-50 px-4 py-3 md:col-span-2">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ชื่อบท / เลขหน้า</div>
+                            <div class="mt-1 text-sm font-medium text-slate-800">{{ $externalOutput->chapter_pages ?: '-' }}</div>
+                        </div>
                     @endif
 
                     <div class="rounded-xl bg-slate-50 px-4 py-3 md:col-span-2">
@@ -123,7 +136,7 @@
             </article>
         </section>
 
-        @if ($externalOutput->type === 'EA101')
+        @if (in_array($externalOutput->type, ['EA101', 'EA119'], true))
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">Authors</h2>
                 <div class="mt-4 space-y-3">

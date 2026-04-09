@@ -10,6 +10,9 @@
         'journal' => old('journal', $externalOutput->journal),
         'quartile' => old('quartile', $externalOutput->quartile),
         'impact_factor' => old('impact_factor', $externalOutput->impact_factor),
+        'book_title' => old('book_title', $externalOutput->book_title),
+        'publisher_name' => old('publisher_name', $externalOutput->publisher_name),
+        'chapter_pages' => old('chapter_pages', $externalOutput->chapter_pages),
         'authors' => old('authors', $externalOutput->authors->map(fn($author) => ['role' => $author->role, 'name' => $author->name])->all() ?: [['role' => '', 'name' => '']]),
         'conferences' => old('conferences', $externalOutput->conferences->map(fn($conference) => [
             'name' => $conference->name,
@@ -244,6 +247,60 @@
                         <button type="button" id="addEditConference" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">+ เพิ่มรายการ</button>
                     </div>
                 </div>
+
+                <div data-edit-ea119-section @class(['mt-5 rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4 md:p-5', 'hidden' => $type !== 'EA119'])>
+                    <div class="mb-4 text-lg font-semibold text-slate-900">Textbook / Book chapter</div>
+                    <div class="mb-4 grid gap-4 md:grid-cols-3">
+                        <label class="block">
+                            <span class="text-sm font-semibold text-slate-700">ชื่อหนังสือ <span class="text-rose-500">*</span></span>
+                            <input type="text" name="book_title" value="{{ $formData['book_title'] }}"
+                                data-required-ea119="true"
+                                oninvalid="this.setCustomValidity('กรุณากรอกชื่อหนังสือ')"
+                                oninput="this.setCustomValidity('')"
+                                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                                placeholder="เช่น Textbook of Public Health">
+                        </label>
+                        <label class="block">
+                            <span class="text-sm font-semibold text-slate-700">ชื่อสำนักพิมพ์ <span class="text-rose-500">*</span></span>
+                            <input type="text" name="publisher_name" value="{{ $formData['publisher_name'] }}"
+                                data-required-ea119="true"
+                                oninvalid="this.setCustomValidity('กรุณากรอกชื่อสำนักพิมพ์')"
+                                oninput="this.setCustomValidity('')"
+                                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                                placeholder="เช่น Elsevier">
+                        </label>
+                        <label class="block">
+                            <span class="text-sm font-semibold text-slate-700">ชื่อบท / เลขหน้า <span class="text-rose-500">*</span></span>
+                            <input type="text" name="chapter_pages" value="{{ $formData['chapter_pages'] }}"
+                                data-required-ea119="true"
+                                oninvalid="this.setCustomValidity('กรุณากรอกชื่อบท / เลขหน้า')"
+                                oninput="this.setCustomValidity('')"
+                                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                                placeholder="เช่น Chapter 2, pp. 45-66">
+                        </label>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white/80 p-4">
+                        <div class="mb-3 text-xl font-bold text-blue-700">รายชื่อผู้เขียน (Authors)</div>
+                        <div class="space-y-3" id="editBookAuthorsList">
+                            @foreach ($formData['authors'] as $authorIndex => $author)
+                                <div class="edit-book-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                                    <label class="block">
+                                        <span class="text-sm font-medium text-slate-700">ชื่อผู้เขียน</span>
+                                        <input type="text" list="externalAcademicAuthorNames" name="authors[{{ $authorIndex }}][name]" value="{{ $author['name'] ?? '' }}"
+                                            class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                                            placeholder="เลือกหรือพิมพ์ชื่อผู้เขียน">
+                                    </label>
+                                    <div class="flex items-end">
+                                        <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-book-author>ลบผู้เขียน</button>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="mt-3 flex justify-end">
+                            <button type="button" id="addEditBookAuthor" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">+ เพิ่มผู้เขียน</button>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -309,14 +366,28 @@
         </div>
     </template>
 
+    <template id="editBookAuthorTemplate">
+        <div class="edit-book-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">ชื่อผู้เขียน</span>
+                <input type="text" list="externalAcademicAuthorNames" name="authors[__INDEX__][name]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เลือกหรือพิมพ์ชื่อผู้เขียน">
+            </label>
+            <div class="flex items-end">
+                <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-book-author>ลบผู้เขียน</button>
+            </div>
+        </div>
+    </template>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.querySelector('form[action="{{ route('outputs.external-academic.update', $externalOutput) }}"]');
             const typeSelect = document.querySelector('[data-edit-output-type]');
             const ea101Section = document.querySelector('[data-edit-ea101-section]');
             const ea103Section = document.querySelector('[data-edit-ea103-section]');
+            const ea119Section = document.querySelector('[data-edit-ea119-section]');
             const authorsList = document.getElementById('editAuthorsList');
             const conferencesList = document.getElementById('editConferencesList');
+            const bookAuthorsList = document.getElementById('editBookAuthorsList');
             const getDisplayField = (field) => {
                 if (typeof window.getProjectValidationDisplayTarget === 'function') {
                     return window.getProjectValidationDisplayTarget(field);
@@ -363,14 +434,46 @@
                 const currentType = typeSelect?.value || '';
                 const isPaper = currentType === 'EA101';
                 const isPresentation = currentType === 'EA103';
+                const isTextbook = currentType === 'EA119';
                 document.querySelectorAll('[data-required-ea101="true"]').forEach((field) => {
                     field.required = isPaper;
                 });
                 document.querySelectorAll('[data-required-ea103="true"]').forEach((field) => {
                     field.required = isPresentation;
                 });
-                ea101Section?.classList.toggle('hidden', !isPaper);
-                ea103Section?.classList.toggle('hidden', !isPresentation);
+                document.querySelectorAll('[data-required-ea119="true"]').forEach((field) => {
+                    field.required = isTextbook;
+                });
+
+                const toggleSection = (section, show) => {
+                    if (!section) return;
+                    section.classList.toggle('hidden', !show);
+                    section.querySelectorAll('input, select, textarea, button').forEach((field) => {
+                        field.disabled = !show;
+                    });
+                };
+
+                toggleSection(ea101Section, isPaper);
+                toggleSection(ea103Section, isPresentation);
+                toggleSection(ea119Section, isTextbook);
+            };
+
+            const validateEA119DuplicateAuthors = () => {
+                if ((typeSelect?.value || '') !== 'EA119') return null;
+                const seen = new Set();
+                let invalidField = null;
+                bookAuthorsList?.querySelectorAll('input[name^="authors["][name$="[name]"]').forEach((input) => {
+                    if (invalidField) return;
+                    const value = (input.value || '').trim().toLowerCase();
+                    if (!value) return;
+                    if (seen.has(value)) {
+                        markInvalid(input);
+                        invalidField = input;
+                        return;
+                    }
+                    seen.add(value);
+                });
+                return invalidField;
             };
 
             const reindexRows = () => {
@@ -382,6 +485,11 @@
                 conferencesList?.querySelectorAll('.edit-conference-row').forEach((row, index) => {
                     row.querySelectorAll('[name]').forEach((field) => {
                         field.name = field.name.replace(/conferences\[\d+]/, `conferences[${index}]`);
+                    });
+                });
+                bookAuthorsList?.querySelectorAll('.edit-book-author-row').forEach((row, index) => {
+                    row.querySelectorAll('[name]').forEach((field) => {
+                        field.name = field.name.replace(/authors\[\d+]/, `authors[${index}]`);
                     });
                 });
             };
@@ -398,6 +506,12 @@
                 reindexRows();
             });
 
+            document.getElementById('addEditBookAuthor')?.addEventListener('click', () => {
+                const index = bookAuthorsList.querySelectorAll('.edit-book-author-row').length;
+                bookAuthorsList.insertAdjacentHTML('beforeend', document.getElementById('editBookAuthorTemplate').innerHTML.replaceAll('__INDEX__', index));
+                reindexRows();
+            });
+
             document.addEventListener('click', (event) => {
                 if (event.target.matches('[data-remove-edit-author]')) {
                     if (authorsList.querySelectorAll('.edit-author-row').length > 1) {
@@ -408,6 +522,12 @@
                 if (event.target.matches('[data-remove-edit-conference]')) {
                     if (conferencesList.querySelectorAll('.edit-conference-row').length > 1) {
                         event.target.closest('.edit-conference-row')?.remove();
+                        reindexRows();
+                    }
+                }
+                if (event.target.matches('[data-remove-edit-book-author]')) {
+                    if (bookAuthorsList.querySelectorAll('.edit-book-author-row').length > 1) {
+                        event.target.closest('.edit-book-author-row')?.remove();
                         reindexRows();
                     }
                 }
@@ -447,6 +567,19 @@
                     }
                 });
                 if (!firstInvalid) {
+                    const duplicateAuthorField = validateEA119DuplicateAuthors();
+                    if (!duplicateAuthorField) {
+                        return;
+                    }
+                    event.preventDefault();
+                    duplicateAuthorField.focus({ preventScroll: true });
+                    duplicateAuthorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'รายชื่อผู้เขียนซ้ำ',
+                        text: 'EA119 ไม่สามารถกรอกชื่อผู้เขียนซ้ำในรายการเดียวกันได้',
+                        confirmButtonText: 'ตกลง',
+                    });
                     return;
                 }
 
