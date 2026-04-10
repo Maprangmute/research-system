@@ -29,7 +29,83 @@
         </div>
 
         @if ($outputs->count() > 0)
-            <div class="overflow-auto">
+            <div class="divide-y divide-slate-100 md:hidden">
+                @foreach ($outputs as $row)
+                    @php
+                        $displayedAt = $row->displayed_at ? \Carbon\Carbon::parse($row->displayed_at)->setTimezone('Asia/Bangkok') : null;
+                        $displayedAtLabel = $displayedAt
+                            ? $displayedAt->locale('th')->translatedFormat('j F') . ' ' . ($displayedAt->year + 543) . $displayedAt->translatedFormat(' H:i')
+                            : '-';
+                    @endphp
+                    <article class="space-y-3 px-4 py-4">
+                        <div>
+                            @if (!empty($row->output_code))
+                                <div class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ $row->output_code }}</div>
+                            @endif
+                            <div class="font-semibold leading-6 text-slate-900">{{ $row->title }}</div>
+                            @if ($row->location !== '-')
+                                <div class="mt-1 text-xs text-slate-500">Location: {{ $row->location }}</div>
+                            @endif
+                            @if (!empty($row->detail))
+                                <div class="mt-2 text-xs leading-5 text-slate-600 break-words">
+                                    รายละเอียด / ลิงก์:
+                                    @if (filter_var($row->detail, FILTER_VALIDATE_URL))
+                                        <a href="{{ $row->detail }}" target="_blank" rel="noopener"
+                                            class="ml-1 inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100">
+                                            ดูเอกสาร
+                                        </a>
+                                    @else
+                                        {{ $row->detail }}
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="space-y-2 text-sm text-slate-700">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ผู้นำเสนอ</div>
+                                    <div class="mt-1">{{ $row->presenter_name }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ปี</div>
+                                    <div class="mt-1">{{ $row->year_be ?: '-' }}</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">กิจกรรม</div>
+                                <div class="mt-1">{{ $row->presentation_type }}</div>
+                            </div>
+
+                            <div>
+                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Conference</div>
+                                <div class="mt-1">{{ $row->conference_name }}</div>
+                            </div>
+
+                            <div>
+                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Project Detail</div>
+                                <div class="mt-1 font-medium">{{ $row->project_label }}</div>
+                                @if ($row->project_code)
+                                    <div class="mt-1 text-xs text-slate-500">{{ $row->project_code }}</div>
+                                @endif
+                                @if ($row->project_link)
+                                    <a href="{{ $row->project_link }}"
+                                        class="mt-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50">
+                                        {{ $row->project_code ? 'เปิด Project Detail' : 'เปิดรายละเอียด' }}
+                                    </a>
+                                @endif
+                            </div>
+
+                            <div class="pt-1 text-xs text-slate-500">
+                                วันที่ลงข้อมูล: {{ $displayedAtLabel }}
+                            </div>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+
+            <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full table-fixed">
                     <colgroup>
                         <col style="width: 22%;">

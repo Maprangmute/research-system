@@ -205,7 +205,80 @@
                 </div>
             </div>
 
-            <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+            <div class="mt-4 space-y-4 md:hidden">
+                @forelse(($monthWorkList ?? collect()) as $work)
+                    <article class="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/60 p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">โครงการ/งาน</div>
+                                <div class="mt-1 text-sm font-semibold leading-6 text-slate-800 break-words">
+                                    @if (($work['type'] ?? '') === 'project' && !empty($work['project_id']))
+                                        <a href="{{ route('projects.show', $work['project_id']) }}" target="_blank" rel="noopener"
+                                            class="text-blue-700 hover:underline">
+                                            {{ $work['name'] ?? '-' }}
+                                        </a>
+                                    @elseif (($work['type'] ?? '') === 'back_office' && !empty($work['task_id']))
+                                        <a href="{{ route('back_office.show', $work['task_id']) }}" target="_blank" rel="noopener"
+                                            class="text-blue-700 hover:underline">
+                                            {{ $work['name'] ?? '-' }}
+                                        </a>
+                                    @else
+                                        <span>{{ $work['name'] ?? '-' }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="shrink-0">
+                                <span
+                                    class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold {{ !empty($work['is_completed']) ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800' }}">
+                                    {{ $work['status_label'] ?? '-' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 border-t border-slate-200 pt-3">
+                            <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">รายละเอียดงาน</div>
+                            <div class="mt-2 space-y-2">
+                                @php $detailGroups = collect($work['work_detail_groups'] ?? [])->filter(); @endphp
+                                @if ($detailGroups->isEmpty())
+                                    <div class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">-</div>
+                                @else
+                                    @foreach ($detailGroups as $group)
+                                        <div class="rounded-xl border border-slate-200 bg-white p-3">
+                                            <div class="text-sm font-semibold text-slate-800 break-words">
+                                                {{ $group['job'] ?? 'รายละเอียดงาน' }}
+                                            </div>
+                                            @php $tasks = collect($group['tasks'] ?? [])->filter(); @endphp
+                                            @if ($tasks->isNotEmpty())
+                                                <div class="mt-2 space-y-1.5">
+                                                    @foreach ($tasks as $task)
+                                                        <div class="rounded-lg bg-slate-50 px-2.5 py-2">
+                                                            <div class="text-sm text-slate-700 break-words">{{ $task['task'] ?? '-' }}</div>
+                                                            <div class="mt-0.5 text-xs text-slate-500">{{ $task['range'] ?? '-' }}</div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="mt-3 text-xs text-slate-500">
+                            <span
+                                class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+                                {{ ($work['type'] ?? '') === 'back_office' ? 'งานนอกโครงการ' : 'งานโครงการ' }}
+                            </span>
+                        </div>
+                    </article>
+                @empty
+                    <div class="rounded-xl border border-slate-200 bg-white px-3 py-5 text-center text-sm text-slate-500">
+                        ไม่มีรายการโครงการ/งานในเดือนนี้
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="mt-4 hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
                 <table class="min-w-full table-fixed text-sm">
                     <colgroup>
                         <col class="w-[36%]">
