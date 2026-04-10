@@ -283,6 +283,50 @@
             width: 100%;
         }
 
+        .back-office-mobile-list {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .back-office-mobile-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+            padding: 0.8rem;
+        }
+
+        .back-office-mobile-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.45rem;
+            margin-top: 0.6rem;
+        }
+
+        .back-office-mobile-meta {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .back-office-mobile-meta__label {
+            font-size: 0.66rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+        }
+
+        .back-office-mobile-meta__value {
+            margin-top: 0.2rem;
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
         .back-office-action-primary {
             display: inline-flex;
             align-items: center;
@@ -647,6 +691,8 @@
             }
 
             .back-office-action-cluster {
+                justify-content: flex-start;
+                flex-wrap: wrap;
                 gap: 0.38rem;
             }
 
@@ -660,6 +706,11 @@
                 width: 31px;
                 height: 31px;
                 border-radius: 9px;
+            }
+
+            .back-office-action-menu__panel {
+                left: 0;
+                right: auto;
             }
 
             .back-office-drawer {
@@ -1138,7 +1189,7 @@
                     const haystack = normalizeSearchTerm(card.dataset.backOfficeSearchText || card.textContent);
                     const matched = term === '' || haystack.includes(term);
                     card.classList.toggle('hidden', !matched);
-                    if (matched) visibleCount += 1;
+                    if (matched && card.offsetParent !== null) visibleCount += 1;
                 });
 
                 if (emptyState) {

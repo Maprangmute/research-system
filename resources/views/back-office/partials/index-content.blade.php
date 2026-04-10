@@ -57,97 +57,183 @@
 
         <div id="backOfficeResultsList" class="p-4 md:p-5">
             @if ($tasks->count() > 0)
-                <div class="back-office-table-wrap">
-                    <table class="back-office-table">
-                        <thead>
-                            <tr>
-                                <th class="w-[76px] text-center">ID</th>
-                                <th class="min-w-[320px]">ชื่องาน</th>
-                                <th class="min-w-[220px]">ช่วงเวลา</th>
-                                <th class="hidden w-[100px] text-right lg:table-cell">ภาระงาน</th>
-                                <th class="hidden w-[90px] text-right lg:table-cell">ผลงาน</th>
-                                <th class="hidden w-[130px] text-right xl:table-cell">ชั่วโมงรวม</th>
-                                <th class="hidden w-[130px] text-right xl:table-cell">FTE รวม</th>
-                                <th class="hidden min-w-[210px] xl:table-cell">ผู้บันทึก</th>
-                                <th class="min-w-[240px] text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($tasks as $task)
-                                <tr data-back-office-search-text="{{ trim(implode(' ', array_filter([
-                                    $task->title,
-                                    $task->description,
-                                    $task->purpose,
-                                    is_array($task->leaders) ? implode(' ', array_filter($task->leaders)) : $task->leaders,
-                                    $task->creator?->prefix,
-                                    $task->creator?->name,
-                                ], fn ($value) => filled($value)))) }}">
-                                    <td class="text-center text-sm font-semibold text-slate-600">{{ $task->id }}</td>
-                                    <td>
-                                        <a href="{{ route('back_office.show', $task->id) }}"
-                                            class="text-sm font-semibold text-sky-700 hover:text-sky-800 hover:underline">
-                                            {{ $task->title }}
-                                        </a>
-                                        @if ($task->description)
-                                            <p class="cell-clamp-2 mt-1 text-xs leading-5 text-slate-500">{{ $task->description }}</p>
-                                        @endif
-                                        <div class="mt-2 text-xs text-slate-500 lg:hidden">
-                                            ภาระงาน {{ number_format($task->entries_count) }} | ผลงาน {{ number_format($task->outputs_count ?? 0) }}
-                                        </div>
-                                        <div class="mt-0.5 text-xs text-slate-500 xl:hidden">
-                                            ชั่วโมง {{ number_format($task->entries_sum_hours ?? 0, 2) }} | FTE {{ number_format($task->entries_sum_fte_value ?? 0, 6) }}
-                                        </div>
-                                        <div class="mt-0.5 text-xs text-slate-500 xl:hidden">
-                                            ผู้บันทึก {{ $task->creator?->name ?? '-' }}
-                                        </div>
-                                    </td>
-                                    <td class="text-sm text-slate-700">
-                                        <div>{{ $formatDateBE($task->start_date) }}</div>
-                                        <div class="mt-0.5 text-xs text-slate-500">ถึง {{ $formatDateBE($task->end_date) }}</div>
-                                    </td>
-                                    <td class="hidden text-right text-sm font-semibold text-slate-800 lg:table-cell">{{ number_format($task->entries_count) }}</td>
-                                    <td class="hidden text-right text-sm font-semibold text-slate-800 lg:table-cell">{{ number_format($task->outputs_count ?? 0) }}</td>
-                                    <td class="hidden text-right text-sm font-semibold text-slate-800 xl:table-cell">{{ number_format($task->entries_sum_hours ?? 0, 2) }}</td>
-                                    <td class="hidden text-right text-sm font-semibold text-slate-800 xl:table-cell">{{ number_format($task->entries_sum_fte_value ?? 0, 6) }}</td>
-                                    <td class="hidden text-sm text-slate-700 xl:table-cell">{{ $task->creator?->name ?? '-' }}</td>
-                                    <td>
-                                        <div class="back-office-action-cluster">
-                                            <a href="{{ route('back_office.show', $task->id) }}" data-back-office-open
-                                                class="back-office-action-primary">
-                                                รายละเอียด
+                <div class="back-office-mobile-list md:hidden">
+                    @foreach ($tasks as $task)
+                        <article class="back-office-mobile-card" data-back-office-search-text="{{ trim(implode(' ', array_filter([
+                            $task->title,
+                            $task->description,
+                            $task->purpose,
+                            is_array($task->leaders) ? implode(' ', array_filter($task->leaders)) : $task->leaders,
+                            $task->creator?->prefix,
+                            $task->creator?->name,
+                        ], fn ($value) => filled($value)))) }}">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">ID #{{ $task->id }}</div>
+                                    <a href="{{ route('back_office.show', $task->id) }}" data-back-office-open
+                                        class="mt-1 inline-block text-[0.95rem] font-semibold leading-5 text-sky-700 hover:text-sky-800 hover:underline">
+                                        {{ $task->title }}
+                                    </a>
+                                </div>
+                            </div>
+                            @if ($task->description)
+                                <p class="cell-clamp-2 mt-1.5 text-xs leading-5 text-slate-500">{{ $task->description }}</p>
+                            @endif
+                            <div class="mt-2 text-xs text-slate-600">
+                                {{ $formatDateBE($task->start_date) }} ถึง {{ $formatDateBE($task->end_date) }}
+                            </div>
+
+                            <div class="back-office-mobile-meta-grid">
+                                <div class="back-office-mobile-meta">
+                                    <div class="back-office-mobile-meta__label">ภาระงาน</div>
+                                    <div class="back-office-mobile-meta__value">{{ number_format($task->entries_count) }}</div>
+                                </div>
+                                <div class="back-office-mobile-meta">
+                                    <div class="back-office-mobile-meta__label">ผลงาน</div>
+                                    <div class="back-office-mobile-meta__value">{{ number_format($task->outputs_count ?? 0) }}</div>
+                                </div>
+                                <div class="back-office-mobile-meta">
+                                    <div class="back-office-mobile-meta__label">ชั่วโมง</div>
+                                    <div class="back-office-mobile-meta__value">{{ number_format($task->entries_sum_hours ?? 0, 2) }}</div>
+                                </div>
+                                <div class="back-office-mobile-meta">
+                                    <div class="back-office-mobile-meta__label">FTE</div>
+                                    <div class="back-office-mobile-meta__value">{{ number_format($task->entries_sum_fte_value ?? 0, 6) }}</div>
+                                </div>
+                            </div>
+
+                            <div class="mt-2 text-xs text-slate-500">ผู้บันทึก {{ $task->creator?->name ?? '-' }}</div>
+                            <div class="mt-2.5">
+                                <div class="back-office-action-cluster">
+                                    <a href="{{ route('back_office.show', $task->id) }}" data-back-office-open
+                                        class="back-office-action-primary">
+                                        รายละเอียด
+                                    </a>
+                                    @if (auth()->user()?->role === 'admin' || (int) $task->created_by === (int) auth()->id())
+                                        <form action="{{ route('back_office.destroy', $task->id) }}" method="POST"
+                                            data-back-office-delete-form
+                                            data-record-id="{{ $task->id }}"
+                                            data-record-title="{{ $task->title }}"
+                                            data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="back-office-action-danger border-0">
+                                                ลบ
+                                            </button>
+                                        </form>
+                                    @endif
+                                    <details class="back-office-action-menu">
+                                        <summary aria-label="เมนูเพิ่มเติม">⋯</summary>
+                                        <div class="back-office-action-menu__panel">
+                                            <a href="{{ route('back_office.edit', $task->id) }}"
+                                                class="back-office-action-menu__item">
+                                                แก้ไข
                                             </a>
-                                            @if (auth()->user()?->role === 'admin' || (int) $task->created_by === (int) auth()->id())
-                                                <form action="{{ route('back_office.destroy', $task->id) }}" method="POST"
-                                                    data-back-office-delete-form
-                                                    data-record-id="{{ $task->id }}"
-                                                    data-record-title="{{ $task->title }}"
-                                                    data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="back-office-action-danger border-0">
-                                                        ลบ
-                                                    </button>
-                                                </form>
-                                            @endif
-                                            <details class="back-office-action-menu">
-                                                <summary aria-label="เมนูเพิ่มเติม">⋯</summary>
-                                                <div class="back-office-action-menu__panel">
-                                                    <a href="{{ route('back_office.edit', $task->id) }}"
-                                                        class="back-office-action-menu__item">
-                                                        แก้ไข
-                                                    </a>
-                                                    <a href="{{ route('back_office.pdf', $task->id) }}" target="_blank" rel="noopener"
-                                                        class="back-office-action-menu__item">
-                                                        PDF
-                                                    </a>
-                                                </div>
-                                            </details>
+                                            <a href="{{ route('back_office.pdf', $task->id) }}" target="_blank" rel="noopener"
+                                                class="back-office-action-menu__item">
+                                                PDF
+                                            </a>
                                         </div>
-                                    </td>
+                                    </details>
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+
+                <div class="hidden md:block">
+                    <div class="back-office-table-wrap">
+                        <table class="back-office-table">
+                            <thead>
+                                <tr>
+                                    <th class="w-[76px] text-center">ID</th>
+                                    <th class="min-w-[320px]">ชื่องาน</th>
+                                    <th class="min-w-[220px]">ช่วงเวลา</th>
+                                    <th class="hidden w-[100px] text-right lg:table-cell">ภาระงาน</th>
+                                    <th class="hidden w-[90px] text-right lg:table-cell">ผลงาน</th>
+                                    <th class="hidden w-[130px] text-right xl:table-cell">ชั่วโมงรวม</th>
+                                    <th class="hidden w-[130px] text-right xl:table-cell">FTE รวม</th>
+                                    <th class="hidden min-w-[210px] xl:table-cell">ผู้บันทึก</th>
+                                    <th class="min-w-[240px] text-right">Actions</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach ($tasks as $task)
+                                    <tr data-back-office-search-text="{{ trim(implode(' ', array_filter([
+                                        $task->title,
+                                        $task->description,
+                                        $task->purpose,
+                                        is_array($task->leaders) ? implode(' ', array_filter($task->leaders)) : $task->leaders,
+                                        $task->creator?->prefix,
+                                        $task->creator?->name,
+                                    ], fn ($value) => filled($value)))) }}">
+                                        <td class="text-center text-sm font-semibold text-slate-600">{{ $task->id }}</td>
+                                        <td>
+                                            <a href="{{ route('back_office.show', $task->id) }}"
+                                                class="text-sm font-semibold text-sky-700 hover:text-sky-800 hover:underline">
+                                                {{ $task->title }}
+                                            </a>
+                                            @if ($task->description)
+                                                <p class="cell-clamp-2 mt-1 text-xs leading-5 text-slate-500">{{ $task->description }}</p>
+                                            @endif
+                                            <div class="mt-2 text-xs text-slate-500 lg:hidden">
+                                                ภาระงาน {{ number_format($task->entries_count) }} | ผลงาน {{ number_format($task->outputs_count ?? 0) }}
+                                            </div>
+                                            <div class="mt-0.5 text-xs text-slate-500 xl:hidden">
+                                                ชั่วโมง {{ number_format($task->entries_sum_hours ?? 0, 2) }} | FTE {{ number_format($task->entries_sum_fte_value ?? 0, 6) }}
+                                            </div>
+                                            <div class="mt-0.5 text-xs text-slate-500 xl:hidden">
+                                                ผู้บันทึก {{ $task->creator?->name ?? '-' }}
+                                            </div>
+                                        </td>
+                                        <td class="text-sm text-slate-700">
+                                            <div>{{ $formatDateBE($task->start_date) }}</div>
+                                            <div class="mt-0.5 text-xs text-slate-500">ถึง {{ $formatDateBE($task->end_date) }}</div>
+                                        </td>
+                                        <td class="hidden text-right text-sm font-semibold text-slate-800 lg:table-cell">{{ number_format($task->entries_count) }}</td>
+                                        <td class="hidden text-right text-sm font-semibold text-slate-800 lg:table-cell">{{ number_format($task->outputs_count ?? 0) }}</td>
+                                        <td class="hidden text-right text-sm font-semibold text-slate-800 xl:table-cell">{{ number_format($task->entries_sum_hours ?? 0, 2) }}</td>
+                                        <td class="hidden text-right text-sm font-semibold text-slate-800 xl:table-cell">{{ number_format($task->entries_sum_fte_value ?? 0, 6) }}</td>
+                                        <td class="hidden text-sm text-slate-700 xl:table-cell">{{ $task->creator?->name ?? '-' }}</td>
+                                        <td>
+                                            <div class="back-office-action-cluster">
+                                                <a href="{{ route('back_office.show', $task->id) }}" data-back-office-open
+                                                    class="back-office-action-primary">
+                                                    รายละเอียด
+                                                </a>
+                                                @if (auth()->user()?->role === 'admin' || (int) $task->created_by === (int) auth()->id())
+                                                    <form action="{{ route('back_office.destroy', $task->id) }}" method="POST"
+                                                        data-back-office-delete-form
+                                                        data-record-id="{{ $task->id }}"
+                                                        data-record-title="{{ $task->title }}"
+                                                        data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="back-office-action-danger border-0">
+                                                            ลบ
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                                <details class="back-office-action-menu">
+                                                    <summary aria-label="เมนูเพิ่มเติม">⋯</summary>
+                                                    <div class="back-office-action-menu__panel">
+                                                        <a href="{{ route('back_office.edit', $task->id) }}"
+                                                            class="back-office-action-menu__item">
+                                                            แก้ไข
+                                                        </a>
+                                                        <a href="{{ route('back_office.pdf', $task->id) }}" target="_blank" rel="noopener"
+                                                            class="back-office-action-menu__item">
+                                                            PDF
+                                                        </a>
+                                                    </div>
+                                                </details>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             @else
                 <div class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
