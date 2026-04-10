@@ -478,6 +478,7 @@
                         <option>EA118 Award and Recognition</option>
                         <option>EA119 Textbook / Book chapter</option>
                         <option>EA120 Manual / Instruction / Guideline</option>
+                        <option>EA999 Other Outputs</option>
                     </select>
                 </label>
                 <label class="block md:col-span-2">
@@ -533,6 +534,7 @@
             'EA118 Award and Recognition',
             'EA119 Textbook / Book chapter',
             'EA120 Manual / Instruction / Guideline',
+            'EA999 Other Outputs',
         ];
 
         function ensureOutputTypeOptions(selectEl) {

@@ -48,9 +48,9 @@
 
         .back-office-panel {
             border: 1px solid #e2e8f0;
-            border-radius: 28px;
+            border-radius: 22px;
             background: #ffffff;
-            box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
         }
 
         .back-office-hero {
@@ -88,8 +88,8 @@
             width: 100%;
             border: 1px solid #cbd5e1;
             border-radius: 16px;
-            padding: 0.78rem 0.9rem;
-            font-size: 0.95rem;
+            padding: 0.64rem 0.78rem;
+            font-size: 0.9rem;
             color: #0f172a;
             background: #ffffff;
             transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
@@ -104,9 +104,9 @@
 
         .back-office-stat {
             border: 1px solid #e2e8f0;
-            border-radius: 22px;
+            border-radius: 18px;
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
         }
 
         .back-office-task-card {
@@ -120,6 +120,60 @@
             border: 1px solid #e2e8f0;
             border-radius: 18px;
             background: #f8fafc;
+        }
+
+        .back-office-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+        }
+
+        .back-office-table {
+            width: 100%;
+            min-width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #ffffff;
+        }
+
+        .back-office-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.64rem 0.74rem;
+            white-space: nowrap;
+        }
+
+        .back-office-table tbody td {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.66rem 0.74rem;
+            vertical-align: top;
+        }
+
+        .back-office-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .back-office-table tbody tr:nth-child(even) td {
+            background: #fcfdff;
+        }
+
+        .back-office-table tbody tr:hover td {
+            background: #f0f9ff;
+        }
+
+        @media (min-width: 1280px) {
+            .back-office-table {
+                min-width: 1320px;
+            }
         }
 
         .back-office-chip {
@@ -211,14 +265,134 @@
             align-items: center;
             justify-content: center;
             border-radius: 14px;
-            padding: 0.7rem 1rem;
-            font-size: 0.9rem;
+            padding: 0.56rem 0.84rem;
+            font-size: 0.84rem;
             font-weight: 600;
             transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
         }
 
         .back-office-action:hover {
             transform: translateY(-1px);
+        }
+
+        .back-office-action-cluster {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .back-office-action-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 33px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            padding: 0.38rem 0.7rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+        }
+
+        .back-office-action-primary:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
+        }
+
+        .back-office-action-danger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 33px;
+            border-radius: 10px;
+            border: 1px solid #fecdd3;
+            background: #fff1f2;
+            padding: 0.38rem 0.7rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #be123c;
+            transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+        }
+
+        .back-office-action-danger:hover {
+            background: #ffe4e6;
+            border-color: #fda4af;
+            transform: translateY(-1px);
+        }
+
+        .back-office-action-menu {
+            position: relative;
+        }
+
+        .back-office-action-menu > summary {
+            list-style: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 33px;
+            height: 33px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #334155;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            transition: background-color 0.16s ease, border-color 0.16s ease;
+        }
+
+        .back-office-action-menu > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .back-office-action-menu > summary:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        .back-office-action-menu[open] > summary {
+            border-color: #64748b;
+            background: #f1f5f9;
+        }
+
+        .back-office-action-menu__panel {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.35rem);
+            z-index: 12;
+            min-width: 142px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
+            padding: 0.3rem;
+        }
+
+        .back-office-action-menu__item {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            border-radius: 8px;
+            padding: 0.42rem 0.6rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #334155;
+            text-align: left;
+            border: 0;
+            background: transparent;
+        }
+
+        .back-office-action-menu__item:hover {
+            background: #f8fafc;
+        }
+
+        .back-office-action-menu__item--danger {
+            color: #be123c;
         }
 
         .cell-clamp-2,
@@ -456,7 +630,36 @@
             .back-office-panel,
             .back-office-task-card,
             .back-office-stat {
-                border-radius: 20px;
+                border-radius: 16px;
+            }
+
+            .back-office-input,
+            .back-office-select {
+                border-radius: 12px;
+                padding: 0.56rem 0.68rem;
+                font-size: 0.85rem;
+            }
+
+            .back-office-action {
+                border-radius: 10px;
+                padding: 0.5rem 0.7rem;
+                font-size: 0.78rem;
+            }
+
+            .back-office-action-cluster {
+                gap: 0.38rem;
+            }
+
+            .back-office-action-primary {
+                min-height: 31px;
+                padding: 0.34rem 0.58rem;
+                font-size: 0.74rem;
+            }
+
+            .back-office-action-menu > summary {
+                width: 31px;
+                height: 31px;
+                border-radius: 9px;
             }
 
             .back-office-drawer {
@@ -495,13 +698,13 @@
     </style>
 
     <div class="back-office-shell min-h-screen">
-        <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
+        <div class="container mx-auto mt-7 space-y-5 px-4 pb-6 md:mt-9 md:space-y-6 md:pb-8">
             <section class="back-office-panel back-office-hero">
-                <div class="relative flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
+                <div class="relative flex flex-col gap-4 px-4 py-4 md:px-6 md:py-5 lg:flex-row lg:items-start lg:justify-between">
                     <div class="max-w-3xl">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Back Office Workspace</p>
-                        <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">🧾 งานนอกโครงการ</h1>
-                        <p class="mt-3 text-sm leading-6 text-slate-600 md:text-[15px]">
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">Back Office Workspace</p>
+                        <h1 class="mt-1.5 text-xl font-bold tracking-tight text-slate-900 md:text-2xl">🧾 งานนอกโครงการ</h1>
+                        <p class="mt-2 text-sm leading-5 text-slate-600 md:text-sm">
                             จัดการงานภายในที่ไม่ผูกกับโครงการวิจัย
                         </p>
                     </div>
@@ -518,7 +721,7 @@
                 </div>
             </section>
 
-            <section id="backOfficeFilterAnchor" class="back-office-panel back-office-filter-panel p-5 md:p-6">
+            <section id="backOfficeFilterAnchor" class="back-office-panel back-office-filter-panel p-4 md:p-5">
                 <div class="relative">
                     <details id="backOfficeFilterDetails" class="back-office-filter-details">
                         <summary class="flex cursor-pointer flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -539,8 +742,8 @@
                             </div>
                         </summary>
 
-                        <div class="mt-4 border-t border-slate-100 pt-4">
-                            <div class="mb-4 flex flex-wrap gap-2">
+                        <div class="mt-3 border-t border-slate-100 pt-3">
+                            <div class="mb-3 flex flex-wrap gap-1.5">
                                 @forelse ($activeFilterLabels as $label)
                                     <span class="back-office-chip">{{ $label }}</span>
                                 @empty
@@ -548,8 +751,8 @@
                                 @endforelse
                             </div>
 
-                            <form id="backOfficeFilterForm" method="GET" action="{{ route('back_office.index') }}" class="space-y-4">
-                                <div class="grid grid-cols-1 gap-3 xl:grid-cols-12">
+                            <form id="backOfficeFilterForm" method="GET" action="{{ route('back_office.index') }}" class="space-y-3">
+                                <div class="grid grid-cols-1 gap-2.5 xl:grid-cols-12">
                                     <label class="block xl:col-span-5">
                                         <span class="text-xs font-semibold text-slate-600">ค้นหางาน</span>
                                         <div class="back-office-search-shell mt-1">
@@ -634,7 +837,7 @@
                                     </div>
                                 </div>
 
-                                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
                                     <p class="back-office-filter-note">พิมพ์หรือเลือกค่าแล้วระบบจะอัปเดตรายการ สรุปตัวเลข และ pagination โดยไม่ reload ทั้งหน้า</p>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <a href="{{ route('back_office.index') }}" data-back-office-reset
@@ -1319,6 +1522,51 @@
                 });
             };
 
+            const bindDeleteConfirm = () => {
+                if (window.__backOfficeDeleteConfirmBound) return;
+                window.__backOfficeDeleteConfirmBound = true;
+
+                const escapeHtml = (value) => String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+
+                document.addEventListener('submit', (event) => {
+                    const form = event.target?.closest('form[data-back-office-delete-form]');
+                    if (!form) return;
+
+                    event.preventDefault();
+
+                    const recordId = form.dataset.recordId || '-';
+                    const title = form.dataset.recordTitle || '-';
+                    const creator = form.dataset.recordCreator || '-';
+                    const fallbackText = `ยืนยันลบ Record #${recordId}\nงาน: ${title}\nผู้บันทึก: ${creator}`;
+
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'ยืนยันการลบงาน Back Office',
+                            html: `Record #${escapeHtml(recordId)}<br>งาน: ${escapeHtml(title)}<br>ผู้บันทึก: ${escapeHtml(creator)}`,
+                            showCancelButton: true,
+                            confirmButtonText: 'ลบรายการนี้',
+                            cancelButtonText: 'ยกเลิก',
+                            confirmButtonColor: '#dc2626'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit();
+                            }
+                        });
+                        return;
+                    }
+
+                    if (window.confirm(fallbackText)) {
+                        form.submit();
+                    }
+                });
+            };
+
             const bindDrawers = () => {
                 if (window.__backOfficeDrawersBound) return;
                 window.__backOfficeDrawersBound = true;
@@ -1353,6 +1601,7 @@
             bindForms();
             bindResetLinks();
             bindDelegatedLinks();
+            bindDeleteConfirm();
             bindDrawers();
             updateFilterBadges();
             syncFabVisibility();

@@ -8,9 +8,9 @@
 
         .bo-editor-panel {
             border: 1px solid #e2e8f0;
-            border-radius: 28px;
+            border-radius: 16px;
             background: #ffffff;
-            box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
         }
 
         .bo-editor-hero {
@@ -53,13 +53,14 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            height: 2.75rem;
-            width: 2.75rem;
-            border-radius: 999px;
-            font-size: 1.05rem;
+            min-height: 1.6rem;
+            min-width: 1.6rem;
+            border-radius: 8px;
+            padding: 0 0.45rem;
+            font-size: 0.78rem;
             font-weight: 700;
             color: #ffffff;
-            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14);
+            box-shadow: none;
         }
 
         .bo-editor-step.is-dark {
@@ -76,9 +77,9 @@
 
         .bo-editor-helper {
             border: 1px solid #dbeafe;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
-            padding: 0.95rem 1rem;
+            border-radius: 12px;
+            background: #f8fbff;
+            padding: 0.68rem 0.8rem;
         }
 
         .leader-stack {
@@ -179,7 +180,7 @@
         @media (max-width: 768px) {
             .bo-editor-panel,
             .entry-card {
-                border-radius: 20px;
+                border-radius: 14px;
             }
 
             .leader-row {
@@ -192,14 +193,14 @@
         }
     </style>
 
-    <div class="bo-editor-shell mx-auto max-w-6xl space-y-6 p-4">
+    <div class="bo-editor-shell mx-auto max-w-6xl space-y-5 p-4">
         <section class="bo-editor-panel bo-editor-hero">
-            <div class="relative flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
+            <div class="relative flex flex-col gap-3 px-5 py-5 md:px-7">
                 <div class="max-w-3xl">
                     <a href="{{ route('back_office.index') }}" class="text-sm text-sky-700 hover:underline">← กลับไปรายการงาน</a>
-                    <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">เพิ่มงานนอกโครงการ</h1>
-                    <p class="mt-3 text-sm leading-6 text-slate-600 md:text-[15px]">
-                        สร้างงานใหม่ กำหนดหัวหน้างานหลายคนได้ชัดขึ้น และเพิ่มภาระงานหรือผลงานประกอบได้ในหน้าเดียว
+                    <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-[1.9rem]">เพิ่มงานนอกโครงการ</h1>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">
+                        กรอกข้อมูลจากบนลงล่างในหน้าเดียว แล้วบันทึกได้ทันที
                     </p>
                 </div>
             </div>
@@ -259,17 +260,15 @@
                             <span class="text-sm font-semibold text-slate-600">หัวหน้างานผู้รับผิดชอบ (เพิ่มได้หลายคน)</span>
                         </div>
                         <div class="bo-editor-helper mt-3">
-                            <div class="text-sm font-semibold text-slate-800">วิธีเพิ่มหลายคน</div>
-                            <div class="mt-1 text-xs leading-5 text-slate-600">
-                                พิมพ์ชื่อหัวหน้างานคนแรกในช่องด้านล่าง แล้วกด `เพิ่มถัดไป` หรือกด `Enter`
-                                ระบบจะสร้างช่องใหม่ให้ใส่คนถัดไปทันที
+                            <div class="text-xs leading-5 text-slate-600">
+                                พิมพ์ชื่อหัวหน้างาน แล้วกด <b>เพิ่มถัดไป</b> หรือกด <b>Enter</b> เพื่อสร้างช่องใหม่
                             </div>
                         </div>
                         <div id="leaders-body" class="leader-stack mt-3"></div>
                         <div class="mt-4 flex justify-end">
                             <button type="button" id="add-leader"
                                 class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
-                                เพิ่มอีกคน
+                                เพิ่มหัวหน้างานผู้รับผิดชอบ
                             </button>
                         </div>
                     </div>
@@ -288,8 +287,14 @@
 
                 <div id="entries-body" class="space-y-4"></div>
                 <div class="mt-4 flex justify-end">
-                    <button type="button" id="add-entry"
-                        class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">เพิ่มภาระงาน</button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" id="duplicate-entry"
+                            class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm hover:bg-slate-50">
+                            คัดลอกรายการล่าสุด
+                        </button>
+                        <button type="button" id="add-entry"
+                            class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">เพิ่มภาระงาน</button>
+                    </div>
                 </div>
             </div>
 
@@ -369,8 +374,9 @@
                     @endphp
                     <select name="entries[__INDEX__][category]" required
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3">
-                        @foreach ($categoryOptions as $idx => $option)
-                            <option value="{{ $option }}" @selected($idx === 0)>{{ $option }}</option>
+                        <option value="" selected disabled>กรุณาเลือกประเภทงาน</option>
+                        @foreach ($categoryOptions as $option)
+                            <option value="{{ $option }}">{{ $option }}</option>
                         @endforeach
                     </select>
                 </label>
@@ -463,6 +469,7 @@
                         <option>EA118 Award and Recognition</option>
                         <option>EA119 Textbook / Book chapter</option>
                         <option>EA120 Manual / Instruction / Guideline</option>
+                        <option>EA999 Other Outputs</option>
                     </select>
                 </label>
                 <label class="block md:col-span-2">
@@ -486,6 +493,7 @@
         const backOfficeErrorKeys = @json($errors->keys());
         const entriesBody = document.getElementById('entries-body');
         const addEntryBtn = document.getElementById('add-entry');
+        const duplicateEntryBtn = document.getElementById('duplicate-entry');
         const entryTemplate = document.getElementById('entry-template');
         const initialEntries = @json(old('entries', []));
         const initialTaskOutputs = @json(old('outputs', []));
@@ -1186,7 +1194,7 @@
             const entry = wrapper.firstElementChild;
 
             entry.querySelector(`[name="entries[${index}][person_name]"]`).value = data.person_name || '';
-            entry.querySelector(`[name="entries[${index}][category]"]`).value = data.category || '{{ $categoryOptions[0] }}';
+            entry.querySelector(`[name="entries[${index}][category]"]`).value = data.category || '';
             entry.querySelector(`[name="entries[${index}][job_name]"]`).value = data.job_name || '';
             entry.querySelector(`[name="entries[${index}][job_detail]"]`).value = data.job_detail || '';
             entry.querySelector(`[name="entries[${index}][start_date]"]`).value = data.start_date || '';
@@ -1200,6 +1208,20 @@
             updateIndex();
             collapseAllEntries(entry);
             setCollapsed(entry, false);
+            return entry;
+        }
+
+        function collectEntryData(entry) {
+            if (!entry) return null;
+            return {
+                person_name: entry.querySelector('input[name$="[person_name]"]')?.value || '',
+                category: entry.querySelector('select[name$="[category]"]')?.value || '',
+                job_name: entry.querySelector('input[name$="[job_name]"]')?.value || '',
+                job_detail: entry.querySelector('textarea[name$="[job_detail]"]')?.value || '',
+                start_date: entry.querySelector('input[name$="[start_date]"]')?.value || '',
+                end_date: entry.querySelector('input[name$="[end_date]"]')?.value || '',
+                hours: entry.querySelector('input[name$="[hours]"]')?.value || 0,
+            };
         }
 
         function isTaskOutputCollapsed(row) {
@@ -1292,6 +1314,16 @@
         }
 
         addEntryBtn?.addEventListener('click', () => addEntry());
+        duplicateEntryBtn?.addEventListener('click', () => {
+            const entries = Array.from(entriesBody.querySelectorAll('[data-entry]'));
+            const lastEntry = entries.at(-1);
+            const payload = collectEntryData(lastEntry) || {};
+            const newEntry = addEntry(payload);
+            const personInput = newEntry?.querySelector('input[name$="[person_name]"]');
+            if (personInput) {
+                window.setTimeout(() => personInput.focus(), 0);
+            }
+        });
         addTaskOutputBtn?.addEventListener('click', () => addTaskOutput());
         addLeaderBtn?.addEventListener('click', () => addLeader('', true));
 

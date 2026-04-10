@@ -123,6 +123,19 @@
             word-break: break-word;
         }
 
+        .output-source-badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            border: 1px solid #f9a8d4;
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+            color: #9d174d;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 0.18rem 0.55rem;
+            margin-top: 0.35rem;
+        }
+
         .outputs-filter-anchor {
             scroll-margin-top: 96px;
         }
@@ -463,6 +476,9 @@
                             <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                 <div class="space-y-2">
                                     <h3 class="cell-clamp-3 text-sm font-semibold leading-6 text-slate-900">{{ $output->title ?: '-' }}</h3>
+                                    @if (!empty($output->source_badge))
+                                        <span class="output-source-badge">{{ $output->source_badge }}</span>
+                                    @endif
                                     <span class="output-type-pill rounded-full border px-2.5 py-1 text-[11px] font-semibold" style="{{ $outputTypeStyle($typeLabel) }}">
                                         {{ $typeLabel }}
                                     </span>
@@ -536,6 +552,9 @@
                                     <tr class="transition hover:bg-indigo-50/40">
                                         <td class="px-4 py-4 text-slate-900">
                                             <div class="cell-clamp-3 font-semibold leading-6">{{ $output->title ?: '-' }}</div>
+                                            @if (!empty($output->source_badge))
+                                                <span class="output-source-badge">{{ $output->source_badge }}</span>
+                                            @endif
                                         </td>
                                         <td class="px-4 py-4">
                                             <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold" style="{{ $outputTypeStyle($typeLabel) }}">

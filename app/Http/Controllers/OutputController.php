@@ -399,6 +399,36 @@ class OutputController extends Controller
 
     public function index(Request $request)
     {
+        $extractTypeCode = function ($rawType): ?string {
+            $type = trim((string) ($rawType ?? ''));
+            if ($type === '') {
+                return null;
+            }
+
+            if (preg_match('/EA\d{3}/i', $type, $matches)) {
+                return strtoupper($matches[0]);
+            }
+
+            return null;
+        };
+        $resolveTypeLabel = function ($rawType) use ($extractTypeCode): ?string {
+            $raw = trim((string) ($rawType ?? ''));
+            if ($raw === '') {
+                return null;
+            }
+
+            $code = $extractTypeCode($raw);
+            if (!$code) {
+                return null;
+            }
+
+            if (preg_match('/^' . preg_quote($code, '/') . '\b/i', $raw)) {
+                return $raw;
+            }
+
+            return $code;
+        };
+
         $query = Output::with('project:id,project_name_th,project_code');
         $user = auth()->user();
         $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
@@ -406,6 +436,16 @@ class OutputController extends Controller
 
         if (!$canViewAll) {
             $query->whereHas('project', function ($q) use ($user, $fullName) {
+                $q->where('user_id', $user->id)
+                    ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
+                        $subQ->where('name', $fullName);
+                    });
+            });
+        }
+
+        $projectTypeSourceQuery = Output::query();
+        if (!$canViewAll) {
+            $projectTypeSourceQuery->whereHas('project', function ($q) use ($user, $fullName) {
                 $q->where('user_id', $user->id)
                     ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
                         $subQ->where('name', $fullName);
@@ -425,7 +465,10 @@ class OutputController extends Controller
             });
         }
         if ($request->filled('type')) {
-            $query->where('type', $request->type);
+            $typeCode = $extractTypeCode($request->type);
+            if ($typeCode) {
+                $query->where('type', 'like', $typeCode . '%');
+            }
         }
         if ($request->filled('year')) {
             $year = trim((string) $request->year);
@@ -447,7 +490,7 @@ class OutputController extends Controller
 
         $projectOutputs = $query->orderBy($sort, $dir)->get();
 
-        $typeOptions = Output::select('type')->whereNotNull('type')->distinct()->orderBy('type')->pluck('type');
+        $typeOptions = collect();
 
         $parseYear = function ($raw) {
             if (!is_string($raw)) {
@@ -480,6 +523,16 @@ class OutputController extends Controller
                 });
             });
 
+        $taskTypeSourceQuery = BackOfficeTaskOutput::query()
+            ->when(!$canViewAll, function ($q) use ($user, $fullName) {
+                $q->whereHas('task', function ($taskQ) use ($user, $fullName) {
+                    $taskQ->where('created_by', $user->id)
+                        ->orWhereHas('entries', function ($entryQ) use ($fullName) {
+                            $entryQ->where('person_name', $fullName);
+                        });
+                });
+            });
+
         if ($request->filled('search')) {
             $taskOutputQuery->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
@@ -490,9 +543,9 @@ class OutputController extends Controller
         }
 
         if ($request->filled('type')) {
-            $type = $request->type;
-            if ($type !== 'งานนอกโครงการ') {
-                $taskOutputQuery = null;
+            $typeCode = $extractTypeCode($request->type);
+            if ($typeCode) {
+                $taskOutputQuery->where('type', 'like', $typeCode . '%');
             }
         }
 
@@ -508,9 +561,27 @@ class OutputController extends Controller
             ->unique();
         $yearOptions = $yearOptions->merge($taskOutputYears)->unique()->sortDesc()->values();
 
-        if ($taskOutputs->isNotEmpty()) {
-            $typeOptions = $typeOptions->push('งานนอกโครงการ');
-        }
+        $typeLabelByCode = [
+            'EA999' => 'EA999 Other Outputs',
+        ];
+        $registerTypeLabel = function ($rawType) use (&$typeLabelByCode, $extractTypeCode, $resolveTypeLabel): void {
+            $code = $extractTypeCode($rawType);
+            if (!$code) {
+                return;
+            }
+
+            $label = $resolveTypeLabel($rawType) ?? $code;
+            $current = $typeLabelByCode[$code] ?? '';
+
+            if ($current === '' || mb_strlen($label) > mb_strlen($current)) {
+                $typeLabelByCode[$code] = $label;
+            }
+        };
+
+        $projectTypeSourceQuery->pluck('type')->each($registerTypeLabel);
+        $taskTypeSourceQuery->pluck('type')->each($registerTypeLabel);
+
+        $typeOptions = collect($typeLabelByCode)->sortKeys()->values();
 
         $normalizeYear = function ($raw) use ($parseYear) {
             $y = $parseYear((string) $raw);
@@ -521,17 +592,20 @@ class OutputController extends Controller
 
         foreach ($projectOutputs as $output) {
             $yearBe = $normalizeYear($output->year ?? '');
+            $typeCode = $extractTypeCode($output->type) ?? '-';
+            $typeLabel = $typeLabelByCode[$typeCode] ?? (trim((string) ($output->type ?? '')) ?: $typeCode);
             $items->push((object) [
                 'title' => $output->title ?: '-',
-                'type' => $output->type ?: '-',
+                'type' => $typeLabel,
                 'year_be' => $yearBe,
                 'project_label' => $output->project?->project_name_th,
+                'source_badge' => null,
                 'detail' => null,
                 'link' => $output->project ? route('projects.show', $output->project) : null,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
                 'sort_title' => mb_strtolower($output->title ?? ''),
-                'sort_type' => mb_strtolower($output->type ?? ''),
+                'sort_type' => mb_strtolower($typeCode),
             ]);
         }
 
@@ -545,17 +619,20 @@ class OutputController extends Controller
             if ($yearFilterBe && $yearBe !== $yearFilterBe) {
                 continue;
             }
+            $typeCode = $extractTypeCode($output->type) ?? '-';
+            $typeLabel = $typeLabelByCode[$typeCode] ?? (trim((string) ($output->type ?? '')) ?: $typeCode);
             $items->push((object) [
                 'title' => $output->title ?: '-',
-                'type' => 'งานนอกโครงการ',
+                'type' => $typeLabel,
                 'year_be' => $yearBe,
                 'project_label' => $output->task?->title,
+                'source_badge' => 'งานนอกโครงการวิจัย',
                 'detail' => null,
                 'link' => $output->task ? route('back_office.show', $output->task->id) : null,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
                 'sort_title' => mb_strtolower($output->title ?? ''),
-                'sort_type' => 'งานนอกโครงการ',
+                'sort_type' => mb_strtolower($typeCode),
             ]);
         }
 

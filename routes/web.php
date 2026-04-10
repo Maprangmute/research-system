@@ -228,6 +228,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/back-office/{task}', [BackOfficeController::class, 'show'])->name('back_office.show');
     Route::get('/back-office/{task}/edit', [BackOfficeController::class, 'edit'])->name('back_office.edit');
     Route::put('/back-office/{task}', [BackOfficeController::class, 'update'])->name('back_office.update');
+    Route::delete('/back-office/{task}', [BackOfficeController::class, 'destroy'])->name('back_office.destroy');
     Route::get('/back-office/{task}/pdf', [BackOfficeController::class, 'pdf'])->name('back_office.pdf');
 
 

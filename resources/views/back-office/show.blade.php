@@ -84,6 +84,17 @@
             border-color: #4ade80;
         }
 
+        .back-office-action--delete {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .back-office-action--delete:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
         .back-office-action__icon {
             display: inline-flex;
             align-items: center;
@@ -145,6 +156,19 @@
                             <span class="back-office-action__icon" aria-hidden="true">🖨️</span>
                             <span>ดาวน์โหลด PDF</span>
                         </a>
+                        @if (auth()->user()?->role === 'admin' || (int) $task->created_by === (int) auth()->id())
+                            <form action="{{ route('back_office.destroy', $task->id) }}" method="POST" class="inline-flex"
+                                data-back-office-delete-form
+                                data-record-id="{{ $task->id }}"
+                                data-record-title="{{ $task->title }}"
+                                data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="back-office-action back-office-action--delete border-0">
+                                    ลบ
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             </section>
@@ -156,4 +180,52 @@
             ])
         </div>
     </div>
+
+    <script>
+        (() => {
+            if (window.__backOfficeDeleteConfirmBound) return;
+            window.__backOfficeDeleteConfirmBound = true;
+
+            const escapeHtml = (value) => String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+
+            document.addEventListener('submit', (event) => {
+                const form = event.target?.closest('form[data-back-office-delete-form]');
+                if (!form) return;
+
+                event.preventDefault();
+
+                const recordId = form.dataset.recordId || '-';
+                const title = form.dataset.recordTitle || '-';
+                const creator = form.dataset.recordCreator || '-';
+
+                const fallbackText = `ยืนยันลบ Record #${recordId}\nงาน: ${title}\nผู้บันทึก: ${creator}`;
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'ยืนยันการลบงาน Back Office',
+                        html: `Record #${escapeHtml(recordId)}<br>งาน: ${escapeHtml(title)}<br>ผู้บันทึก: ${escapeHtml(creator)}`,
+                        showCancelButton: true,
+                        confirmButtonText: 'ลบรายการนี้',
+                        cancelButtonText: 'ยกเลิก',
+                        confirmButtonColor: '#dc2626'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                    return;
+                }
+
+                if (window.confirm(fallbackText)) {
+                    form.submit();
+                }
+            });
+        })();
+    </script>
 @endsection

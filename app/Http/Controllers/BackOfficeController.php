@@ -501,6 +501,33 @@ class BackOfficeController extends Controller
             ->with('success', 'อัปเดตงานนอกโครงการเรียบร้อย');
     }
 
+    public function destroy(BackOfficeTask $task)
+    {
+        $user = Auth::user();
+        if (!$this->canManageTask($task, $user)) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($task) {
+            $task->entries()->delete();
+            $task->outputs()->delete();
+            $task->delete();
+        });
+
+        return redirect()
+            ->route('back_office.index')
+            ->with('success', 'ลบงานนอกโครงการเรียบร้อย');
+    }
+
+    private function canManageTask(BackOfficeTask $task, $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return $user->role === 'admin' || (int) $task->created_by === (int) $user->id;
+    }
+
     public function pdf(BackOfficeTask $task)
     {
         $task->load(['entries', 'creator']);
