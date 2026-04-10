@@ -141,6 +141,16 @@
 
 
     <div class="project-form max-w-6xl mx-auto mt-6 bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
+        <aside class="edit-section-nav" aria-label="เมนูลัดหัวข้อ">
+            <button type="button" class="edit-section-dot" data-nav-target="section-a" aria-label="A: ข้อมูลโครงการ"><span class="edit-section-dot__short">A</span><span class="edit-section-dot__full">A: ข้อมูลโครงการ</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-b" aria-label="B: ระยะเวลาดำเนินโครงการ"><span class="edit-section-dot__short">B</span><span class="edit-section-dot__full">B: ระยะเวลาดำเนินโครงการ</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-c" aria-label="C: ข้อมูลแหล่งทุน"><span class="edit-section-dot__short">C</span><span class="edit-section-dot__full">C: ข้อมูลแหล่งทุน</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-d" aria-label="D: Roles and Responsibilities"><span class="edit-section-dot__short">D</span><span class="edit-section-dot__full">D: Roles and Responsibilities</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-e" aria-label="E: รหัส IRB"><span class="edit-section-dot__short">E</span><span class="edit-section-dot__full">E: รหัส IRB</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-f" aria-label="F: รายชื่อผู้มีส่วนร่วมในการทำงาน"><span class="edit-section-dot__short">F</span><span class="edit-section-dot__full">F: รายชื่อผู้มีส่วนร่วมในการทำงาน</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-g" aria-label="G: ผลงานวิจัย (Outputs)"><span class="edit-section-dot__short">G</span><span class="edit-section-dot__full">G: ผลงานวิจัย (Outputs)</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-j" aria-label="I: ยุทธศาสตร์ Siriraj Health Policy"><span class="edit-section-dot__short">I</span><span class="edit-section-dot__full">I: ยุทธศาสตร์ Siriraj Health Policy</span></button>
+        </aside>
         <h2 class="text-xl font-bold mb-6 text-gray-800">📋 เพิ่มข้อมูลโครงการวิจัย</h2>
 
         <div id="autosave-banner" class="hidden mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
@@ -178,7 +188,7 @@
 
             <hr class="my-6 border-t-2 border-gray-300">
             <!-- A: Project Overview -->
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">A: ข้อมูลโครงการ</h3>
+            <h3 id="section-a" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">A: ข้อมูลโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาไทย)</span>
@@ -282,74 +292,10 @@
                     </select>
                 </label>
 
-
-
-
-
-                <!-- Funding Source Section -->
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
-                    <select name="funding_type" class="w-full border p-2 rounded">
-                        <option value="" disabled selected>กรุณาเลือกประเภทแหล่งทุน</option>
-                        <option value="ไม่มีแหล่งทุน">ไม่มีแหล่งทุน</option>
-                        <option value="ภายใน">ภายใน</option>
-                        <option value="ภายนอก">ภายนอก</option>
-                    </select>
-                </label>
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA103 - ชื่อแหล่งทุน</span>
-                    <input name="funding_source" type="text" class="w-full border p-2 rounded"
-                        placeholder="ชื่อหน่วยงานหรือองค์กรที่ให้ทุน">
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
-                    <select name="funding_org_type" class="w-full border p-2 rounded">
-                        <option value="" disabled selected>กรุณาเลือกประเภทองค์กร</option>
-                        <option value="รัฐบาล">รัฐบาล</option>
-                        <option value="เอกชน">เอกชน</option>
-                        <option value="มูลนิธิ">มูลนิธิ</option>
-                    </select>
-                </label>
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA105 - ชื่อทุน</span>
-
-                    <input name="funding_name" list="funding_list" class="w-full border p-2 rounded"
-                        placeholder="พิมพ์ชื่อทุนหรือเลือกจากรายการ">
-
-                    <datalist id="funding_list">
-                        <option value="National University Hospital (Singapore) PTE LTD"></option>
-                        <option value="Roland Berger"></option>
-                        <option value="ทุนพัฒนาการวิจัย"></option>
-                        <option value="บัญชียาหลักแห่งชาติ"></option>
-                        <option value="มูลนิธิโรคมะเร็ง โรงพยาบาลศิริราช"></option>
-                        <option value="ศูนย์ความเป็นเลิศด้านชีววิทยาศาสตร์ (องค์การมหาชน)"></option>
-                        <option value="ศูนย์บริการวิชาการแห่งจุฬาลงกรณ์มหาวิทยาลัย"></option>
-                        <option value="สถาบันวิจัยระบบสาธารณสุข (สวรส.)"></option>
-                        <option
-                            value="สมาคมพฤฒาวิทยาและเวชศาสตร์ผู้สูงอายุไทย (ทุนจากบริษัท เอไซ (ประเทศไทย) มาร์เก็ตติ้ง จำกัด)">
-                        </option>
-                        <option value="สำนักงานกองทุนสนับสนุนการสร้างเสริมสุขภาพ (สสส.)"></option>
-                        <option value="สำนักงานคณะกรรมการอาหารและยา (อย.)"></option>
-                    </datalist>
-                </label>
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท) <span class="text-red-600">*ใส่ตัวเลขเท่านั้น หากไม่มี ให้เว้นว่างไว้*</span></span>
-                    <input id="budgetInput" name="budget" type="text" class="w-full border p-2 rounded"
-                        placeholder="ระบุจำนวนเงินที่ได้รับ" inputmode="decimal" pattern="[\d,\.]*"
-                        data-max="1000000000000" autocomplete="off">
-                    <span id="budgetInputNotice" class="mt-1 hidden text-sm text-red-600">กรุณากรอกตัวเลขเท่านั้น</span>
-                </label>
-
             </div>
 
             <!-- B: ระยะเวลาดำเนินโครงการ -->
-            <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">B: ระยะเวลาดำเนินโครงการ</h3>
+            <h3 id="section-b" class="edit-section-target font-semibold text-lg text-blue-700 mt-6 mb-2">B: ระยะเวลาดำเนินโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 
                 <x-date-be name="team_start_date" label="วันที่โครงการเริ่มทำงานของทีมวิจัย"
@@ -449,85 +395,70 @@
                     @enderror
                 </label>
             </div>
-            <!-- รหัส IRB -->
-            <hr class="my-6 border-t-2 border-gray-300">
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">IRB</h3>
-            <x-repeatable-row id="irb" addText="+ เพิ่ม IRB" addClass="mb-6 px-3 py-1 bg-red-600 text-white rounded">
 
-                {{-- ✅ ต้องมี container --}}
-                <div data-repeatable-container class="space-y-2">
+            <h3 id="section-c" class="edit-section-target font-semibold text-lg text-blue-700 mt-6 mb-2">C: ข้อมูลแหล่งทุน</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
+                    <select name="funding_type" class="w-full border p-2 rounded">
+                        <option value="" disabled selected>กรุณาเลือกประเภทแหล่งทุน</option>
+                        <option value="ไม่มีแหล่งทุน">ไม่มีแหล่งทุน</option>
+                        <option value="ภายใน">ภายใน</option>
+                        <option value="ภายนอก">ภายนอก</option>
+                    </select>
+                </label>
 
-                    {{-- แถวแรก --}}
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-gray-50" data-repeatable-row>
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA103 - ชื่อแหล่งทุน</span>
+                    <input name="funding_source" type="text" class="w-full border p-2 rounded"
+                        placeholder="ชื่อหน่วยงานหรือองค์กรที่ให้ทุน">
+                </label>
 
-                        <div class="col-span-12 md:col-span-1 text-center">
-                            <span data-repeatable-index
-                                class="inline-flex w-8 h-8 items-center justify-center
-                           rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
-                                1
-                            </span>
-                        </div>
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
+                    <select name="funding_org_type" class="w-full border p-2 rounded">
+                        <option value="" disabled selected>กรุณาเลือกประเภทองค์กร</option>
+                        <option value="รัฐบาล">รัฐบาล</option>
+                        <option value="เอกชน">เอกชน</option>
+                        <option value="มูลนิธิ">มูลนิธิ</option>
+                    </select>
+                </label>
 
-                        <div class="col-span-12 md:col-span-3">
-                            <label class="text-sm">รหัส IRB <span class="text-red-500">*</span></label>
-                            <input name="irbs[0][code]" class="w-full border p-2 rounded" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA105 - ชื่อทุน</span>
 
-                        <div class="col-span-12 md:col-span-3">
-                            <label class="text-sm">หน่วยงาน <span class="text-red-500">*</span></label>
-                            <input name="irbs[0][source]" list="irbSourceList" class="w-full border p-2 rounded" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
+                    <input name="funding_name" list="funding_list" class="w-full border p-2 rounded"
+                        placeholder="พิมพ์ชื่อทุนหรือเลือกจากรายการ">
 
-                        <div class="col-span-12 md:col-span-5 flex flex-col sm:flex-row gap-2 items-end">
-                            <x-date-be name="irbs[0][exp_date]" label="วันหมดอายุ IRB" required />
-                            <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
-                        </div>
-                    </div>
+                    <datalist id="funding_list">
+                        <option value="National University Hospital (Singapore) PTE LTD"></option>
+                        <option value="Roland Berger"></option>
+                        <option value="ทุนพัฒนาการวิจัย"></option>
+                        <option value="บัญชียาหลักแห่งชาติ"></option>
+                        <option value="มูลนิธิโรคมะเร็ง โรงพยาบาลศิริราช"></option>
+                        <option value="ศูนย์ความเป็นเลิศด้านชีววิทยาศาสตร์ (องค์การมหาชน)"></option>
+                        <option value="ศูนย์บริการวิชาการแห่งจุฬาลงกรณ์มหาวิทยาลัย"></option>
+                        <option value="สถาบันวิจัยระบบสาธารณสุข (สวรส.)"></option>
+                        <option
+                            value="สมาคมพฤฒาวิทยาและเวชศาสตร์ผู้สูงอายุไทย (ทุนจากบริษัท เอไซ (ประเทศไทย) มาร์เก็ตติ้ง จำกัด)">
+                        </option>
+                        <option value="สำนักงานกองทุนสนับสนุนการสร้างเสริมสุขภาพ (สสส.)"></option>
+                        <option value="สำนักงานคณะกรรมการอาหารและยา (อย.)"></option>
+                    </datalist>
+                </label>
 
-                </div>
-
-                {{-- template --}}
-                <x-slot:template>
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
-
-                        <div class="col-span-12 md:col-span-1 text-center">
-                            <span data-repeatable-index
-                                class="inline-flex w-8 h-8 items-center justify-center
-                           rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
-                                #
-                            </span>
-                        </div>
-
-                        <div class="col-span-12 md:col-span-3">
-                            <label class="text-sm">รหัส IRB <span class="text-red-500">*</span></label>
-                            <input name="irbs[__i__][code]" class="w-full border p-2 rounded" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
-
-                        <div class="col-span-12 md:col-span-3">
-                            <label class="text-sm">หน่วยงาน <span class="text-red-500">*</span></label>
-                            <input name="irbs[__i__][source]" list="irbSourceList" class="w-full border p-2 rounded" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
-
-                        <div class="col-span-12 md:col-span-5 flex flex-col sm:flex-row gap-2 items-end">
-                            <x-date-be name="irbs[__i__][exp_date]" label="วันหมดอายุ IRB" required />
-                            <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
-                        </div>
-                    </div>
-                </x-slot:template>
-
-            </x-repeatable-row>
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท) <span class="text-red-600">*ใส่ตัวเลขเท่านั้น หากไม่มี ให้เว้นว่างไว้*</span></span>
+                    <input id="budgetInput" name="budget" type="text" class="w-full border p-2 rounded"
+                        placeholder="ระบุจำนวนเงินที่ได้รับ" inputmode="decimal" pattern="[\d,\.]*"
+                        data-max="1000000000000" autocomplete="off">
+                    <span id="budgetInputNotice" class="mt-1 hidden text-sm text-red-600">กรุณากรอกตัวเลขเท่านั้น</span>
+                </label>
+            </div>
 
             <hr class="my-6 border-t-2 border-gray-300">
             <!-- C: Roles and Responsibilities -->
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">C: Roles and Responsibilities</h3>
+            <h3 id="section-d" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">D: Roles and Responsibilities</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="block w-full">
                     <span class="block text-sm font-medium text-gray-700 mb-1">
@@ -827,9 +758,85 @@
                 @endforeach
             </datalist>
 
+            <!-- รหัส IRB -->
+            <hr class="my-6 border-t-2 border-gray-300">
+            <h3 id="section-e" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">E: รหัส IRB</h3>
+            <x-repeatable-row id="irb" addText="+ เพิ่ม IRB" addClass="mb-6 px-3 py-1 bg-red-600 text-white rounded">
+
+                {{-- ✅ ต้องมี container --}}
+                <div data-repeatable-container class="space-y-2">
+
+                    {{-- แถวแรก --}}
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-gray-50" data-repeatable-row>
+
+                        <div class="col-span-12 md:col-span-1 text-center">
+                            <span data-repeatable-index
+                                class="inline-flex w-8 h-8 items-center justify-center
+                           rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+                                1
+                            </span>
+                        </div>
+
+                        <div class="col-span-12 md:col-span-3">
+                            <label class="text-sm">รหัส IRB <span class="text-red-500">*</span></label>
+                            <input name="irbs[0][code]" class="w-full border p-2 rounded" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
+                                oninput="this.setCustomValidity('')">
+                        </div>
+
+                        <div class="col-span-12 md:col-span-3">
+                            <label class="text-sm">หน่วยงาน <span class="text-red-500">*</span></label>
+                            <input name="irbs[0][source]" list="irbSourceList" class="w-full border p-2 rounded" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
+                                oninput="this.setCustomValidity('')">
+                        </div>
+
+                        <div class="col-span-12 md:col-span-5 flex flex-col sm:flex-row gap-2 items-end">
+                            <x-date-be name="irbs[0][exp_date]" label="วันหมดอายุ IRB" required />
+                            <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                {{-- template --}}
+                <x-slot:template>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
+
+                        <div class="col-span-12 md:col-span-1 text-center">
+                            <span data-repeatable-index
+                                class="inline-flex w-8 h-8 items-center justify-center
+                           rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+                                #
+                            </span>
+                        </div>
+
+                        <div class="col-span-12 md:col-span-3">
+                            <label class="text-sm">รหัส IRB <span class="text-red-500">*</span></label>
+                            <input name="irbs[__i__][code]" class="w-full border p-2 rounded" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
+                                oninput="this.setCustomValidity('')">
+                        </div>
+
+                        <div class="col-span-12 md:col-span-3">
+                            <label class="text-sm">หน่วยงาน <span class="text-red-500">*</span></label>
+                            <input name="irbs[__i__][source]" list="irbSourceList" class="w-full border p-2 rounded" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
+                                oninput="this.setCustomValidity('')">
+                        </div>
+
+                        <div class="col-span-12 md:col-span-5 flex flex-col sm:flex-row gap-2 items-end">
+                            <x-date-be name="irbs[__i__][exp_date]" label="วันหมดอายุ IRB" required />
+                            <button type="button" class="text-red-500" data-repeatable-remove>✕</button>
+                        </div>
+                    </div>
+                </x-slot:template>
+
+            </x-repeatable-row>
+
             <hr class="my-6 border-t-2 border-gray-300">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
+                <h3 id="section-f" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">F: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
             </div>
 
             <x-repeatable-row id="fte" addText="+ เพิ่มผู้มีส่วนร่วม" addClass="mb-6 px-3 py-1 bg-blue-600 text-white rounded">
@@ -1165,7 +1172,7 @@
 
             <hr class="my-6 border-t-2 border-gray-300">
             <!-- E: ผลงานวิจัย (Output) -->
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
+            <h3 id="section-g" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">G: ผลงานวิจัย (Outputs)</h3>
 
             <x-repeatable-row id="output" addText="+ เพิ่ม Output" addClass="mb-6 px-3 py-1 bg-green-600 text-white rounded">
 
@@ -1186,7 +1193,7 @@
                             <input name="outputs[0][title]" class="w-full border p-2 rounded" required>
                         </label>
 
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <label>
                                 <span class="text-sm">ประเภทของผลงาน <span class="text-red-500">*</span></span>
                                 <select name="outputs[0][type]" class="output-type w-full border p-2 rounded"
@@ -1246,7 +1253,7 @@
                             <input name="outputs[__i__][title]" class="w-full border p-2 rounded" required>
                         </label>
 
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <label>
                                 <span class="text-sm">ประเภทของผลงาน <span class="text-red-500">*</span></span>
                                 <select name="outputs[__i__][type]" class="output-type w-full border p-2 rounded"
@@ -1295,8 +1302,8 @@
 
 
             <hr class="my-6 border-t-2 border-gray-300">
-            <!-- ยุทธศาสตร์ -->
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">ยุทธศาสตร์ Siriraj Health Policy</h3>
+            <!-- I: ยุทธศาสตร์ Siriraj Health Policy -->
+            <h3 id="section-j" class="edit-section-target font-semibold text-lg text-blue-700 mt-6 mb-2">I: ยุทธศาสตร์ Siriraj Health Policy</h3>
             <table class="w-full table-auto text-sm mb-6">
                 <thead>
                     <tr class="bg-gray-100">
@@ -1399,9 +1406,260 @@
         [x-cloak] {
             display: none !important;
         }
+
+        .edit-section-nav {
+            position: fixed;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 55;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.45rem;
+            padding: 0.55rem;
+            border: 1px solid #dbeafe;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(8px);
+        }
+
+        .edit-section-nav::before {
+            content: '';
+            position: absolute;
+            top: 0.85rem;
+            bottom: 0.85rem;
+            left: 1.3rem;
+            width: 2px;
+            background: linear-gradient(180deg, #bfdbfe 0%, #cbd5e1 100%);
+            border-radius: 999px;
+            z-index: 0;
+        }
+
+        .edit-section-dot {
+            position: relative;
+            z-index: 1;
+            width: auto;
+            min-width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 800;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 0.46rem;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 38px;
+            transition: max-width 0.2s ease, padding 0.2s ease, transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+        }
+
+        .edit-section-dot:hover,
+        .edit-section-dot:focus-visible {
+            outline: none;
+            transform: translateY(-1px);
+            border-color: #60a5fa;
+            background: #eff6ff;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.18);
+        }
+
+        .edit-section-dot.is-active {
+            border-color: #2563eb;
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.28);
+        }
+
+        .edit-section-dot__short {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            border-radius: 9px;
+            background: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.65);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .edit-section-dot__full {
+            margin-left: 0.5rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            opacity: 0;
+            transform: translateX(-6px);
+            transition: opacity 0.14s ease, transform 0.14s ease;
+        }
+
+        .edit-section-nav.is-expanded .edit-section-dot {
+            width: 270px;
+            max-width: 270px;
+            padding: 0 0.62rem;
+        }
+
+        .edit-section-nav.is-expanded .edit-section-dot__full {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .edit-section-dot.is-active .edit-section-dot__short {
+            border-color: rgba(191, 219, 254, 0.9);
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+        }
+
+        .edit-section-target {
+            scroll-margin-top: 88px;
+        }
+
+        #projectForm {
+            display: block;
+        }
+
+        #projectForm .project-zone-card {
+            position: relative;
+            margin: 1rem 0 1.15rem;
+            border: 1px solid #dbe5f0;
+            border-radius: 1rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            padding: 1rem 1rem 1.1rem;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        }
+
+        #projectForm .project-zone-card.project-zone-card--alt {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        #projectForm .project-zone-title {
+            margin: 0 0 0.9rem !important;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #dbeafe;
+            border-radius: 0.8rem;
+            background: #eff6ff;
+            color: #1d4ed8 !important;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
+        #projectForm .project-zone-card > :last-child {
+            margin-bottom: 0 !important;
+        }
+
+        @media (max-width: 1280px) {
+            .edit-section-nav {
+                display: none;
+            }
+        }
     </style>
 
     <script>
+        (() => {
+            const form = document.getElementById('projectForm');
+            if (!form || form.dataset.zoneReady === '1') return;
+
+            const topLevelHeadings = Array.from(form.children).filter((el) =>
+                el instanceof HTMLElement && el.matches('h3.edit-section-target')
+            );
+
+            if (!topLevelHeadings.length) return;
+
+            topLevelHeadings.forEach((heading, index) => {
+                const zone = document.createElement('section');
+                zone.className = `project-zone-card${index % 2 === 1 ? ' project-zone-card--alt' : ''}`;
+                zone.dataset.zoneId = heading.id || `zone-${index + 1}`;
+                form.insertBefore(zone, heading);
+                zone.appendChild(heading);
+                heading.classList.add('project-zone-title');
+
+                let cursor = zone.nextSibling;
+                while (cursor) {
+                    const next = cursor.nextSibling;
+                    if (cursor instanceof HTMLElement && cursor.matches('h3.edit-section-target')) {
+                        break;
+                    }
+                    zone.appendChild(cursor);
+                    cursor = next;
+                }
+            });
+
+            form.querySelectorAll('h3.edit-section-target').forEach((heading) => {
+                heading.classList.add('project-zone-title');
+            });
+
+            form.dataset.zoneReady = '1';
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const navDots = Array.from(document.querySelectorAll('.edit-section-dot[data-nav-target]'));
+            if (!navDots.length) return;
+
+            const quickNav = document.querySelector('.edit-section-nav');
+            const sectionById = new Map();
+
+            const expandQuickNav = () => quickNav?.classList.add('is-expanded');
+            const collapseQuickNav = () => quickNav?.classList.remove('is-expanded');
+
+            quickNav?.addEventListener('mouseenter', expandQuickNav);
+            quickNav?.addEventListener('mouseleave', collapseQuickNav);
+            quickNav?.addEventListener('focusin', expandQuickNav);
+            quickNav?.addEventListener('focusout', (event) => {
+                if (!quickNav.contains(event.relatedTarget)) collapseQuickNav();
+            });
+
+            navDots.forEach((dot) => {
+                const targetId = dot.dataset.navTarget || '';
+                const targetEl = document.getElementById(targetId);
+                if (targetEl) {
+                    sectionById.set(targetId, targetEl);
+                }
+
+                dot.addEventListener('click', () => {
+                    if (!targetEl) return;
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    dot.blur();
+                    collapseQuickNav();
+                });
+            });
+
+            const updateActiveDot = () => {
+                let activeId = '';
+                let bestTop = Number.POSITIVE_INFINITY;
+
+                sectionById.forEach((el, id) => {
+                    const rect = el.getBoundingClientRect();
+                    const delta = Math.abs(rect.top - 120);
+                    if (rect.top <= 180 && delta < bestTop) {
+                        bestTop = delta;
+                        activeId = id;
+                    }
+                });
+
+                if (!activeId) {
+                    const firstVisible = Array.from(sectionById.entries())
+                        .find(([, el]) => el.getBoundingClientRect().top > 0);
+                    activeId = firstVisible ? firstVisible[0] : Array.from(sectionById.keys())[0] || '';
+                }
+
+                navDots.forEach((dot) => {
+                    dot.classList.toggle('is-active', dot.dataset.navTarget === activeId);
+                });
+            };
+
+            window.addEventListener('scroll', updateActiveDot, { passive: true });
+            window.addEventListener('resize', updateActiveDot);
+            window.setTimeout(updateActiveDot, 60);
+            updateActiveDot();
+        })();
+
         // ✅ STATUS COLOR
         function updateStatusColor(selectEl) {
             const selected = selectEl.options[selectEl.selectedIndex];

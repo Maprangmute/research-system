@@ -237,6 +237,124 @@
         contain-intrinsic-size: 88px;
     }
 
+    .output-row {
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+
+    .output-summary-shell {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        border: 1px solid #dbe5f0;
+        background: #ffffff;
+        border-radius: 0.9rem;
+        padding: 0.65rem 0.8rem;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    }
+
+    .output-summary-toggle {
+        flex: 1;
+        text-align: left;
+    }
+
+    .output-summary-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.15rem 0.6rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        background: #f8fafc;
+    }
+
+    .output-summary-badge--ea101 {
+        background: #e0f2fe;
+        border-color: #7dd3fc;
+        color: #0369a1;
+    }
+
+    .output-summary-badge--ea103 {
+        background: #fef3c7;
+        border-color: #fcd34d;
+        color: #92400e;
+    }
+
+    .output-summary-badge--ea119 {
+        background: #dcfce7;
+        border-color: #86efac;
+        color: #166534;
+    }
+
+    .output-summary-badge--ea120 {
+        background: #ede9fe;
+        border-color: #c4b5fd;
+        color: #5b21b6;
+    }
+
+    .output-summary-title {
+        margin-top: 0.25rem;
+        font-size: 0.96rem;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.35;
+    }
+
+    .output-summary-meta {
+        margin-top: 0.2rem;
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+
+    .output-summary-status {
+        margin-top: 0.3rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .output-summary-status--ok {
+        color: #166534;
+    }
+
+    .output-summary-status--warn {
+        color: #b45309;
+    }
+
+    .output-summary-chevron {
+        width: 1.85rem;
+        height: 1.85rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid #dbe5f0;
+        color: #334155;
+        background: #f8fafc;
+        transition: transform 0.16s ease;
+        font-size: 0.9rem;
+    }
+
+    .output-row.output-row-open .output-summary-chevron {
+        transform: rotate(0deg);
+    }
+
+    @media (max-width: 640px) {
+        .output-summary-shell {
+            flex-direction: column;
+            gap: 0.55rem;
+            padding: 0.6rem 0.65rem;
+        }
+
+        .output-summary-chevron {
+            align-self: flex-end;
+        }
+
+        .output-summary-title {
+            font-size: 0.92rem;
+        }
+    }
+
     .fte-sync-status {
         display: inline-flex;
         align-items: center;
@@ -313,6 +431,153 @@
         background: rgba(239, 246, 255, 0.86);
     }
 
+    .edit-section-nav {
+        position: fixed;
+        left: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 55;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.45rem;
+        padding: 0.55rem;
+        border: 1px solid #dbeafe;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+        backdrop-filter: blur(8px);
+    }
+
+    .edit-section-nav::before {
+        content: '';
+        position: absolute;
+        top: 0.85rem;
+        bottom: 0.85rem;
+        left: 1.3rem;
+        width: 2px;
+        background: linear-gradient(180deg, #bfdbfe 0%, #cbd5e1 100%);
+        border-radius: 999px;
+        z-index: 0;
+    }
+
+    .edit-section-dot {
+        position: relative;
+        z-index: 1;
+        width: auto;
+        min-width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #0f172a;
+        font-weight: 800;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 0 0.46rem;
+        overflow: hidden;
+        white-space: nowrap;
+        max-width: 38px;
+        transition: max-width 0.2s ease, padding 0.2s ease, transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+    }
+
+    .edit-section-dot:hover,
+    .edit-section-dot:focus-visible {
+        outline: none;
+        transform: translateY(-1px);
+        border-color: #60a5fa;
+        background: #eff6ff;
+        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.18);
+    }
+
+    .edit-section-dot.is-active {
+        border-color: #2563eb;
+        background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff;
+        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.28);
+    }
+
+    .edit-section-dot__short {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        border-radius: 9px;
+        background: #ffffff;
+        border: 1px solid rgba(148, 163, 184, 0.65);
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .edit-section-dot__full {
+        margin-left: 0.5rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        opacity: 0;
+        transform: translateX(-6px);
+        transition: opacity 0.14s ease, transform 0.14s ease;
+    }
+
+    .edit-section-nav.is-expanded .edit-section-dot {
+        width: 270px;
+        max-width: 270px;
+        padding: 0 0.62rem;
+    }
+
+    .edit-section-nav.is-expanded .edit-section-dot__full {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .edit-section-dot.is-active .edit-section-dot__short {
+        border-color: rgba(191, 219, 254, 0.9);
+        background: rgba(255, 255, 255, 0.16);
+        color: #ffffff;
+    }
+
+    .edit-section-target {
+        scroll-margin-top: 88px;
+    }
+
+    #projectForm .project-zone-card {
+        position: relative;
+        margin: 1rem 0 1.15rem;
+        border: 1px solid #dbe5f0;
+        border-radius: 1rem;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        padding: 1rem 1rem 1.1rem;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    #projectForm .project-zone-card.project-zone-card--alt {
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    #projectForm .project-zone-title {
+        margin: 0 0 0.9rem !important;
+        padding: 0.55rem 0.75rem;
+        border: 1px solid #dbeafe;
+        border-radius: 0.8rem;
+        background: #eff6ff;
+        color: #1d4ed8 !important;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    #projectForm .project-zone-card > :last-child {
+        margin-bottom: 0 !important;
+    }
+
+    @media (max-width: 1280px) {
+        .edit-section-nav {
+            display: none;
+        }
+    }
+
     @keyframes fte-row-remote-flash {
         0% {
             background: #dbeafe;
@@ -352,6 +617,18 @@
         </div>
     </div>
 
+    <aside class="edit-section-nav" aria-label="เมนูลัดหัวข้อ">
+        <button type="button" class="edit-section-dot" data-nav-target="section-a" aria-label="A: ข้อมูลโครงการ"><span class="edit-section-dot__short">A</span><span class="edit-section-dot__full">A: ข้อมูลโครงการ</span></button>
+        <button type="button" class="edit-section-dot" data-nav-target="section-b" aria-label="B: ระยะเวลาดำเนินโครงการ"><span class="edit-section-dot__short">B</span><span class="edit-section-dot__full">B: ระยะเวลาดำเนินโครงการ</span></button>
+        <button type="button" class="edit-section-dot" data-nav-target="section-c" aria-label="C: ข้อมูลแหล่งทุน"><span class="edit-section-dot__short">C</span><span class="edit-section-dot__full">C: ข้อมูลแหล่งทุน</span></button>
+        <button type="button" class="edit-section-dot" data-nav-target="section-d" aria-label="D: Roles and Responsibilities"><span class="edit-section-dot__short">D</span><span class="edit-section-dot__full">D: Roles and Responsibilities</span></button>
+        <button type="button" class="edit-section-dot" data-nav-target="section-e" aria-label="E: รหัส IRB"><span class="edit-section-dot__short">E</span><span class="edit-section-dot__full">E: รหัส IRB</span></button>
+        <button type="button" class="edit-section-dot" data-nav-target="section-f" aria-label="F: รายชื่อผู้มีส่วนร่วมในการทำงาน"><span class="edit-section-dot__short">F</span><span class="edit-section-dot__full">F: รายชื่อผู้มีส่วนร่วมในการทำงาน</span></button>
+        <button type="button" class="edit-section-dot" data-nav-target="section-g" aria-label="G: ผลงานวิจัย (Outputs)"><span class="edit-section-dot__short">G</span><span class="edit-section-dot__full">G: ผลงานวิจัย (Outputs)</span></button>
+        <button type="button" class="edit-section-dot" data-nav-target="section-i" aria-label="H: ความก้าวหน้าของการดำเนินงาน"><span class="edit-section-dot__short">H</span><span class="edit-section-dot__full">H: ความก้าวหน้าของการดำเนินงาน</span></button>
+        <button type="button" class="edit-section-dot" data-nav-target="section-j" aria-label="I: ยุทธศาสตร์ Siriraj Health Policy"><span class="edit-section-dot__short">I</span><span class="edit-section-dot__full">I: ยุทธศาสตร์ Siriraj Health Policy</span></button>
+    </aside>
+
     <div class="project-form max-w-6xl mx-auto mt-6 bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
 
         <div class="mb-4">
@@ -383,7 +660,7 @@
             <input type="hidden" name="_form_expected_vars" id="formExpectedVars" value="0">
             <input type="hidden" name="fte_roles_payload" id="fteRolesPayload" value="">
 
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">A: ข้อมูลโครงการ</h3>
+            <h3 id="section-a" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">A: ข้อมูลโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาไทย)</span>
@@ -551,92 +828,9 @@
                         @endfor
                     </select>
                 </label>
-
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
-                    <select name="funding_type" class="w-full border p-2 rounded">
-                        <option value="" disabled
-                            {{ old('funding_type', $project->funding_type) ? '' : 'selected' }}>
-                            กรุณาเลือกประเภทแหล่งทุน
-                        </option>
-                        <option value="ภายใน"
-                            {{ old('funding_type', $project->funding_type) == 'ภายใน' ? 'selected' : '' }}>
-                            ภายใน
-                        </option>
-                        <option value="ไม่มีแหล่งทุน"
-                            {{ old('funding_type', $project->funding_type) == 'ไม่มีแหล่งทุน' ? 'selected' : '' }}>
-                            ไม่มีแหล่งทุน
-                        </option>
-                        <option value="ภายนอก"
-                            {{ old('funding_type', $project->funding_type) == 'ภายนอก' ? 'selected' : '' }}>
-                            ภายนอก
-                        </option>
-                    </select>
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA103 - ชื่อแหล่งทุน</span>
-                    <input name="funding_source" type="text"
-                        value="{{ old('funding_source', $project->funding_source) }}"
-                        class="w-full border p-2 rounded"
-                        placeholder="ชื่อหน่วยงานหรือองค์กรที่ให้ทุน">
-                </label>
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
-                    <select name="funding_org_type" class="w-full border p-2 rounded">
-                        <option value="" disabled
-                            {{ old('funding_org_type', $project->funding_org_type) ? '' : 'selected' }}>
-                            กรุณาเลือกประเภทองค์กร
-                        </option>
-                        <option value="รัฐบาล"
-                            {{ old('funding_org_type', $project->funding_org_type) == 'รัฐบาล' ? 'selected' : '' }}>
-                            รัฐบาล
-                        </option>
-                        <option value="เอกชน"
-                            {{ old('funding_org_type', $project->funding_org_type) == 'เอกชน' ? 'selected' : '' }}>
-                            เอกชน
-                        </option>
-                        <option value="มูลนิธิ"
-                            {{ old('funding_org_type', $project->funding_org_type) == 'มูลนิธิ' ? 'selected' : '' }}>
-                            มูลนิธิ
-                        </option>
-                    </select>
-                </label>
-
-
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA105 - ชื่อทุน</span>
-
-                    <input name="funding_name" list="funding_list"
-                        value="{{ old('funding_name', $project->funding_name) }}" class="w-full border p-2 rounded"
-                        placeholder="พิมพ์ชื่อทุนหรือเลือกจากรายการ">
-                </label>
-
-                <datalist id="funding_list">
-                    @foreach ($fundingNameList as $fundingName)
-                        <option value="{{ $fundingName }}"></option>
-                    @endforeach
-                </datalist>
-
-                <label class="w-full">
-                    <label class="w-full">
-                        <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท) <span class="text-red-600">*ใส่ตัวเลขเท่านั้น หากไม่มี ให้เว้นว่างไว้*</span></span>
-                        @php
-                            $budgetRaw = $project->budget ?? '';
-                            $budgetFormatted = is_numeric($budgetRaw) ? number_format($budgetRaw, 2) : $budgetRaw;
-                        @endphp
-
-                        <input id="budgetInput" name="budget" type="text" inputmode="decimal"
-                            value="{{ old('budget', $budgetFormatted) }}" class="w-full border p-2 rounded"
-                            pattern="[\d,\.]*" autocomplete="off">
-                        <span id="budgetInputNotice" class="mt-1 hidden text-sm text-red-600">กรุณากรอกตัวเลขเท่านั้น</span>
-                    </label>
-                </label>
             </div>
 
-            <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">B: ระยะเวลาดำเนินโครงการ</h3>
+            <h3 id="section-b" class="edit-section-target font-semibold text-lg text-blue-700 mt-6 mb-2">B: ระยะเวลาดำเนินโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <x-date-be name="team_start_date" label="วันที่โครงการเริ่ม (ทีม)"
                     value="{{ old('team_start_date', $project->team_start_date) }}"
@@ -740,60 +934,89 @@
 
 
             </div>
+            <h3 id="section-c" class="edit-section-target font-semibold text-lg text-blue-700 mt-6 mb-2">C: ข้อมูลแหล่งทุน</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
+                    <select name="funding_type" class="w-full border p-2 rounded">
+                        <option value="" disabled
+                            {{ old('funding_type', $project->funding_type) ? '' : 'selected' }}>
+                            กรุณาเลือกประเภทแหล่งทุน
+                        </option>
+                        <option value="ภายใน"
+                            {{ old('funding_type', $project->funding_type) == 'ภายใน' ? 'selected' : '' }}>
+                            ภายใน
+                        </option>
+                        <option value="ไม่มีแหล่งทุน"
+                            {{ old('funding_type', $project->funding_type) == 'ไม่มีแหล่งทุน' ? 'selected' : '' }}>
+                            ไม่มีแหล่งทุน
+                        </option>
+                        <option value="ภายนอก"
+                            {{ old('funding_type', $project->funding_type) == 'ภายนอก' ? 'selected' : '' }}>
+                            ภายนอก
+                        </option>
+                    </select>
+                </label>
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA103 - ชื่อแหล่งทุน</span>
+                    <input name="funding_source" type="text"
+                        value="{{ old('funding_source', $project->funding_source) }}"
+                        class="w-full border p-2 rounded"
+                        placeholder="ชื่อหน่วยงานหรือองค์กรที่ให้ทุน">
+                </label>
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA104 - รัฐบาล / เอกชน / มูลนิธิ</span>
+                    <select name="funding_org_type" class="w-full border p-2 rounded">
+                        <option value="" disabled
+                            {{ old('funding_org_type', $project->funding_org_type) ? '' : 'selected' }}>
+                            กรุณาเลือกประเภทองค์กร
+                        </option>
+                        <option value="รัฐบาล"
+                            {{ old('funding_org_type', $project->funding_org_type) == 'รัฐบาล' ? 'selected' : '' }}>
+                            รัฐบาล
+                        </option>
+                        <option value="เอกชน"
+                            {{ old('funding_org_type', $project->funding_org_type) == 'เอกชน' ? 'selected' : '' }}>
+                            เอกชน
+                        </option>
+                        <option value="มูลนิธิ"
+                            {{ old('funding_org_type', $project->funding_org_type) == 'มูลนิธิ' ? 'selected' : '' }}>
+                            มูลนิธิ
+                        </option>
+                    </select>
+                </label>
 
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">DA105 - ชื่อทุน</span>
 
+                    <input name="funding_name" list="funding_list"
+                        value="{{ old('funding_name', $project->funding_name) }}" class="w-full border p-2 rounded"
+                        placeholder="พิมพ์ชื่อทุนหรือเลือกจากรายการ">
+                </label>
 
+                <datalist id="funding_list">
+                    @foreach ($fundingNameList as $fundingName)
+                        <option value="{{ $fundingName }}"></option>
+                    @endforeach
+                </datalist>
 
-            <hr class="my-6 border-t-2 border-gray-300">
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">IRB</h3>
-            <div id="irb-code-container" class="space-y-2 mb-4">
-                @foreach ($project->irbs ?? [] as $i => $irb)
-                    <div id="irb-{{ $i }}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center p-3 border rounded-lg bg-gray-50">
-                        <div class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span
-                                    class="irb-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span></span>
-                            <input name="irbs[{{ $i }}][code]" value="{{ $irb['code'] }}"
-                                class="w-full border p-2 rounded" placeholder="Eg. 2025xxx" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
-                        <div class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span
-                                    class="irb-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span></span>
-                            <input name="irbs[{{ $i }}][source]" value="{{ $irb['source'] }}"
-                                class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงาน" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
-                        <div class="w-full flex flex-col sm:flex-row gap-2 items-end">
-                            <div class="w-full relative">
-                                <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ <span class="text-red-500">*</span></span>
-                                <input name="irbs[{{ $i }}][exp_date]" value="{{ $irb['exp_date'] ?? '' }}"
-                                    type="text" placeholder="เลือกวันที่"
-                                    class="thai-datepicker w-full border p-2 rounded pl-10" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือกวันหมดอายุ IRB')"
-                                    oninput="this.setCustomValidity('')">
-                                <!-- ไอคอนปฏิทิน -->
-                                <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
-                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                            <button type="button" onclick="removeRow('irb-{{ $i }}', 'irb')"
-                                class="text-red-600 mb-2">✕</button>
-                        </div>
+                <label class="w-full">
+                    <label class="w-full">
+                        <span class="block text-sm text-gray-700 mb-1">DA106 - งบประมาณ (บาท) <span class="text-red-600">*ใส่ตัวเลขเท่านั้น หากไม่มี ให้เว้นว่างไว้*</span></span>
+                        @php
+                            $budgetRaw = $project->budget ?? '';
+                            $budgetFormatted = is_numeric($budgetRaw) ? number_format($budgetRaw, 2) : $budgetRaw;
+                        @endphp
 
-                    </div>
-                @endforeach
+                        <input id="budgetInput" name="budget" type="text" inputmode="decimal"
+                            value="{{ old('budget', $budgetFormatted) }}" class="w-full border p-2 rounded"
+                            pattern="[\d,\.]*" autocomplete="off">
+                        <span id="budgetInputNotice" class="mt-1 hidden text-sm text-red-600">กรุณากรอกตัวเลขเท่านั้น</span>
+                    </label>
+                </label>
             </div>
-            <button type="button" onclick="addIRBCode()" class="mb-6 px-3 py-1 bg-red-600 text-white rounded">+
-                เพิ่มรหัส IRB</button>
-
-
             <hr class="my-6 border-t-2 border-gray-300">
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">C: Roles and Responsibilities</h3>
+            <h3 id="section-d" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">D: Roles and Responsibilities</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI (ผู้วิจัยหลัก) <span class="text-red-500">*</span></span>
@@ -931,13 +1154,66 @@
 
 
 
+
+            <hr class="my-6 border-t-2 border-gray-300">
+            <h3 id="section-e" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">E: รหัส IRB</h3>
+            <div id="irb-code-container" class="space-y-2 mb-4">
+                @foreach ($project->irbs ?? [] as $i => $irb)
+                    <div id="irb-{{ $i }}" class="irb-row grid grid-cols-1 md:grid-cols-3 gap-2 items-center p-3 border rounded-lg bg-gray-50">
+                        <div class="w-full">
+                            <span class="block text-sm text-gray-700 mb-1">รหัส IRB ที่ <span
+                                    class="irb-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span></span>
+                            <input name="irbs[{{ $i }}][code]" value="{{ $irb['code'] }}"
+                                class="w-full border p-2 rounded" placeholder="Eg. 2025xxx" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุรหัส IRB')"
+                                oninput="this.setCustomValidity('')">
+                        </div>
+                        <div class="w-full">
+                            <span class="block text-sm text-gray-700 mb-1">จาก (ชื่อหน่วยงาน) ของรหัส IRB ที่ <span
+                                    class="irb-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span></span>
+                            <input name="irbs[{{ $i }}][source]" value="{{ $irb['source'] }}"
+                                class="w-full border p-2 rounded" placeholder="ชื่อหน่วยงาน" required
+                                oninvalid="this.setCustomValidity('กรุณาระบุหน่วยงาน')"
+                                oninput="this.setCustomValidity('')">
+                        </div>
+                        <div class="w-full flex flex-col sm:flex-row gap-2 items-end">
+                            <div class="w-full relative">
+                                <span class="block text-sm text-gray-700 mb-1">วันที่หมดอายุ <span class="text-red-500">*</span></span>
+                                <input name="irbs[{{ $i }}][exp_date]" value="{{ $irb['exp_date'] ?? '' }}"
+                                    type="text" placeholder="เลือกวันที่"
+                                    class="thai-datepicker w-full border p-2 rounded pl-10" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกวันหมดอายุ IRB')"
+                                    oninput="this.setCustomValidity('')">
+                                <!-- ไอคอนปฏิทิน -->
+                                <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <button type="button" onclick="removeRow('irb-{{ $i }}', 'irb')"
+                                class="text-red-600 mb-2">✕</button>
+                        </div>
+
+                    </div>
+                @endforeach
+            </div>
+            <button type="button" onclick="addIRBCode()" class="mb-6 px-3 py-1 bg-red-600 text-white rounded">+
+                เพิ่มรหัส IRB</button>
+
+
+
+
+
+
             <!-- ========== SECTION D : รายชื่อผู้มีส่วนร่วม (FTE) ========== -->
             <hr class="my-6 border-t-2 border-gray-300">
 
             <div>
 
                 <div class="mb-2">
-                    <h3 class="font-semibold text-lg text-blue-700">D: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
+                    <h3 id="section-f" class="edit-section-target font-semibold text-lg text-blue-700">F: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
                 </div>
                 <div class="mb-3">
                     <span id="fteSyncStatus" class="fte-sync-status">ซิงก์ FTE อัตโนมัติทุก 7 วินาที</span>
@@ -1133,7 +1409,7 @@
 
             {{-- E: ผลงานวิจัย (Output) ========================= --}}
 
-            <h3 class="font-semibold text-lg text-blue-700 mb-2">E: ผลงานวิจัย (Output)</h3>
+            <h3 id="section-g" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">G: ผลงานวิจัย (Outputs)</h3>
 
             <div id="output-container" class="space-y-4 mb-4">
                 @php
@@ -1158,7 +1434,7 @@
                         </label>
 
                         {{-- บรรทัด: ประเภท, หมายเหตุ, วันที่ --}}
-                        <div class="grid grid-cols-3 gap-4 items-end">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                             <label class="w-full">
                                 <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน <span class="text-red-500">*</span></span>
                                 <select name="outputs[{{ $i }}][type]"
@@ -1657,7 +1933,7 @@
                     $latestProgressTitle = trim((string) ($latestProgressReport->progress_title ?? '')) ?: 'ความก้าวหน้าของการดำเนินงาน';
                 }
             @endphp
-            <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">I: ความก้าวหน้าของการดำเนินงาน</h3>
+            <h3 id="section-i" class="edit-section-target font-semibold text-lg text-blue-700 mt-6 mb-2">H: ความก้าวหน้าของการดำเนินงาน</h3>
             <div class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                     <div>
@@ -1717,8 +1993,8 @@
 
 
             <hr class="my-6 border-t-2 border-gray-300">
-            <!-- J: ยุทธศาสตร์ Siriraj Health Policy -->
-            <h3 class="font-semibold text-lg text-blue-700 mt-6 mb-2">J: ยุทธศาสตร์ Siriraj Health Policy</h3>
+            <!-- I: ยุทธศาสตร์ Siriraj Health Policy -->
+            <h3 id="section-j" class="edit-section-target font-semibold text-lg text-blue-700 mt-6 mb-2">I: ยุทธศาสตร์ Siriraj Health Policy</h3>
             <table class="w-full table-auto text-sm mb-6">
                 <thead>
                     <tr class="bg-gray-100">
@@ -3013,6 +3289,107 @@
             bookAuthorIndex[idx] = bWrap ? bWrap.querySelectorAll('.book-author-row').length : 0;
         });
 
+        function extractOutputTypeCode(rawType) {
+            const text = String(rawType || '').trim();
+            const match = text.match(/^(EA\d{3})/i);
+            return match ? match[1].toUpperCase() : '';
+        }
+
+        function getOutputSummaryBadgeClass(typeCode) {
+            const code = String(typeCode || '').toUpperCase();
+            if (code === 'EA101') return 'output-summary-badge--ea101';
+            if (code === 'EA103') return 'output-summary-badge--ea103';
+            if (code === 'EA119') return 'output-summary-badge--ea119';
+            if (code === 'EA120') return 'output-summary-badge--ea120';
+            return '';
+        }
+
+        function getOutputSummaryParts(row) {
+            const idx = Number(row.getAttribute('data-index') || '0') + 1;
+            const title = (row.querySelector('input[name^="outputs["][name$="[title]"]')?.value || '').trim();
+            const typeRaw = (row.querySelector('select[name^="outputs["][name$="[type]"]')?.value || '').trim();
+            const typeCode = extractOutputTypeCode(typeRaw) || 'EA---';
+            const year = (row.querySelector('input[name^="outputs["][name$="[year]"]')?.value || '').trim();
+            const hasTitle = title.length > 0;
+            const hasType = typeRaw.length > 0;
+            return {
+                index: idx,
+                typeCode,
+                typeLabel: typeRaw || 'ยังไม่เลือกประเภท',
+                title: hasTitle ? title : 'ยังไม่ระบุชื่อผลงาน',
+                meta: `${year || 'ยังไม่ระบุวันที่ publish'}${hasType ? '' : ' | ยังไม่เลือกประเภท'}`,
+                isReady: hasTitle && hasType,
+            };
+        }
+
+        function syncOutputSummary(row) {
+            const summary = getOutputSummaryParts(row);
+            const idxEl = row.querySelector('.output-summary-index');
+            const typeEl = row.querySelector('.output-summary-badge');
+            const titleEl = row.querySelector('.output-summary-title');
+            const metaEl = row.querySelector('.output-summary-meta');
+            const statusEl = row.querySelector('.output-summary-status');
+            if (idxEl) idxEl.textContent = summary.index;
+            if (typeEl) {
+                typeEl.textContent = summary.typeLabel;
+                typeEl.classList.remove(
+                    'output-summary-badge--ea101',
+                    'output-summary-badge--ea103',
+                    'output-summary-badge--ea119',
+                    'output-summary-badge--ea120'
+                );
+                const badgeClass = getOutputSummaryBadgeClass(summary.typeCode);
+                if (badgeClass) typeEl.classList.add(badgeClass);
+            }
+            if (titleEl) titleEl.textContent = summary.title;
+            if (metaEl) metaEl.textContent = summary.meta;
+            if (statusEl) {
+                statusEl.textContent = summary.isReady ? 'พร้อมบันทึก' : 'ยังกรอกไม่ครบ';
+                statusEl.classList.toggle('output-summary-status--ok', summary.isReady);
+                statusEl.classList.toggle('output-summary-status--warn', !summary.isReady);
+            }
+        }
+
+        function setOutputRowOpen(row, shouldOpen) {
+            row.classList.add('output-row-open');
+            const toggle = row.querySelector('.output-summary-toggle');
+            if (toggle) toggle.setAttribute('aria-expanded', 'true');
+        }
+
+        function decorateOutputRow(row) {
+            if (!(row instanceof HTMLElement) || row.dataset.summaryReady === '1') return;
+
+            const summary = document.createElement('div');
+            summary.className = 'output-summary-shell';
+            summary.innerHTML = `
+                <button type="button" class="output-summary-toggle" aria-expanded="true">
+                    <div class="text-xs font-semibold text-slate-500">ผลงานที่ <span class="output-summary-index"></span></div>
+                    <div class="output-summary-badge mt-1">EA---</div>
+                    <div class="output-summary-title"></div>
+                    <div class="output-summary-meta"></div>
+                    <div class="output-summary-status"></div>
+                </button>
+                <span class="output-summary-chevron" aria-hidden="true">▾</span>
+            `;
+
+            const bodyHost = document.createElement('div');
+            bodyHost.className = 'output-body-host mt-3';
+
+            const children = Array.from(row.childNodes);
+            children.forEach((child) => bodyHost.appendChild(child));
+
+            row.append(summary, bodyHost);
+
+            summary.querySelector('.output-summary-toggle')?.addEventListener('click', () => {
+                const firstInput = row.querySelector('.output-body-host input, .output-body-host select, .output-body-host textarea');
+                if (firstInput instanceof HTMLElement) firstInput.focus();
+            });
+
+            row.dataset.summaryReady = '1';
+            setOutputRowOpen(row, true);
+            syncOutputSummary(row);
+        }
+
         // ---------- Add Output ----------
         function addOutputRow() {
             const idx = outputIndex;
@@ -3032,7 +3409,7 @@
          placeholder="ชื่อผลงาน">
       </label>
 
-      <div class="grid grid-cols-3 gap-4 items-end">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
         <label class="w-full">
           <span class="block text-sm text-gray-700 mb-1">ประเภทของผลงาน <span class="text-red-500">*</span></span>
           <select name="outputs[${idx}][type]" class="w-full border p-2 rounded output-type" required
@@ -3091,6 +3468,12 @@
             outputIndex++;
             reindexOutput();
             keepAddedRowOpen(id);
+            const row = document.getElementById(id);
+            if (row) {
+                decorateOutputRow(row);
+                setOutputRowOpen(row, true);
+                syncOutputSummary(row);
+            }
             if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
         }
 
@@ -3491,6 +3874,7 @@
                 authorIndex[i] = aWrap ? aWrap.querySelectorAll('.author-row').length : 0;
                 confIndex[i] = cTbody ? cTbody.querySelectorAll('.conference-row').length : 0;
                 bookAuthorIndex[i] = bWrap ? bWrap.querySelectorAll('.book-author-row').length : 0;
+                syncOutputSummary(row);
             });
 
             outputIndex = rows.length;
@@ -3499,6 +3883,12 @@
         // ---------- Init: hook section ให้แสดงถูกต้องตอนโหลด + delegated change ----------
         document.addEventListener('DOMContentLoaded', () => {
             const oc = document.getElementById('output-container');
+
+            document.querySelectorAll('#output-container .output-row').forEach((row, index) => {
+                decorateOutputRow(row);
+                setOutputRowOpen(row, true);
+                syncOutputSummary(row);
+            });
 
             // แสดง section ให้ตรงกับค่าที่โหลดมาเดิม
             document.querySelectorAll('.output-row select.output-type').forEach(selectEl => {
@@ -3510,7 +3900,17 @@
                 oc.addEventListener('change', (e) => {
                     if (e.target && e.target.matches('select.output-type')) {
                         handleTypeChange(e.target);
+                        const row = e.target.closest('.output-row');
+                        if (row) syncOutputSummary(row);
                     }
+                });
+
+                oc.addEventListener('input', (e) => {
+                    const target = e.target;
+                    if (!(target instanceof HTMLElement)) return;
+                    if (!target.matches('input[name*="[title]"], input[name*="[year]"]')) return;
+                    const row = target.closest('.output-row');
+                    if (row) syncOutputSummary(row);
                 });
             }
 
@@ -4554,6 +4954,104 @@
 
     <script>
         (() => {
+            const form = document.getElementById('projectForm');
+            if (!form || form.dataset.zoneReady === '1') return;
+
+            const topLevelHeadings = Array.from(form.children).filter((el) =>
+                el instanceof HTMLElement && el.matches('h3.edit-section-target')
+            );
+
+            if (!topLevelHeadings.length) return;
+
+            topLevelHeadings.forEach((heading, index) => {
+                const zone = document.createElement('section');
+                zone.className = `project-zone-card${index % 2 === 1 ? ' project-zone-card--alt' : ''}`;
+                zone.dataset.zoneId = heading.id || `zone-${index + 1}`;
+                form.insertBefore(zone, heading);
+                zone.appendChild(heading);
+                heading.classList.add('project-zone-title');
+
+                let cursor = zone.nextSibling;
+                while (cursor) {
+                    const next = cursor.nextSibling;
+                    if (cursor instanceof HTMLElement && cursor.matches('h3.edit-section-target')) {
+                        break;
+                    }
+                    zone.appendChild(cursor);
+                    cursor = next;
+                }
+            });
+
+            form.querySelectorAll('h3.edit-section-target').forEach((heading) => {
+                heading.classList.add('project-zone-title');
+            });
+
+            form.dataset.zoneReady = '1';
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const navDots = Array.from(document.querySelectorAll('.edit-section-dot[data-nav-target]'));
+            if (navDots.length) {
+                const quickNav = document.querySelector('.edit-section-nav');
+                const sectionById = new Map();
+
+                const expandQuickNav = () => quickNav?.classList.add('is-expanded');
+                const collapseQuickNav = () => quickNav?.classList.remove('is-expanded');
+
+                quickNav?.addEventListener('mouseenter', expandQuickNav);
+                quickNav?.addEventListener('mouseleave', collapseQuickNav);
+                quickNav?.addEventListener('focusin', expandQuickNav);
+                quickNav?.addEventListener('focusout', (event) => {
+                    if (!quickNav.contains(event.relatedTarget)) collapseQuickNav();
+                });
+
+                navDots.forEach((dot) => {
+                    const targetId = dot.dataset.navTarget || '';
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) {
+                        sectionById.set(targetId, targetEl);
+                    }
+
+                    dot.addEventListener('click', () => {
+                        if (!targetEl) return;
+                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        dot.blur();
+                        collapseQuickNav();
+                    });
+                });
+
+                const updateActiveDot = () => {
+                    let activeId = '';
+                    let bestTop = Number.POSITIVE_INFINITY;
+
+                    sectionById.forEach((el, id) => {
+                        const rect = el.getBoundingClientRect();
+                        const delta = Math.abs(rect.top - 120);
+                        if (rect.top <= 180 && delta < bestTop) {
+                            bestTop = delta;
+                            activeId = id;
+                        }
+                    });
+
+                    if (!activeId) {
+                        const firstVisible = Array.from(sectionById.entries())
+                            .find(([, el]) => el.getBoundingClientRect().top > 0);
+                        activeId = firstVisible ? firstVisible[0] : Array.from(sectionById.keys())[0] || '';
+                    }
+
+                    navDots.forEach((dot) => {
+                        dot.classList.toggle('is-active', dot.dataset.navTarget === activeId);
+                    });
+                };
+
+                window.addEventListener('scroll', updateActiveDot, { passive: true });
+                window.addEventListener('resize', updateActiveDot);
+                window.setTimeout(updateActiveDot, 60);
+                updateActiveDot();
+            }
+
             const formatBe = (date) => {
                 if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
                 const day = date.getDate();

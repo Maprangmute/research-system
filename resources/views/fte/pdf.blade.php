@@ -275,6 +275,61 @@
         </tbody>
     </table>
 
+    <div class="section-title">สถานะโครงการประจำเดือน {{ $monthProjectStats['label'] ?? '-' }}</div>
+    <table>
+        <tbody>
+            <tr>
+                <td>มีโปรเจคทั้งหมด (เดือนนี้)</td>
+                <td class="right">{{ number_format($monthProjectStats['total'] ?? 0) }}</td>
+            </tr>
+            <tr>
+                <td>จำนวนโครงการที่ทำอยู่ในเดือนนี้</td>
+                <td class="right">{{ number_format($monthProjectStats['active'] ?? 0) }}</td>
+            </tr>
+            <tr>
+                <td>จำนวนจบโครงการในเดือนนี้</td>
+                <td class="right">{{ number_format($monthProjectStats['completed'] ?? 0) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width:30%">ชื่อโครงการ/งาน</th>
+                <th style="width:50%">รายละเอียดงาน</th>
+                <th style="width:20%">สถานะ</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse(($monthWorkList ?? collect()) as $work)
+                <tr>
+                    <td>{{ $work['name'] ?? '-' }}</td>
+                    <td>
+                        @php $detailGroups = collect($work['work_detail_groups'] ?? [])->filter(); @endphp
+                        @if ($detailGroups->isEmpty())
+                            -
+                        @else
+                            @foreach ($detailGroups as $group)
+                                <div><strong>• {{ $group['job'] ?? 'รายละเอียดงาน' }}</strong></div>
+                                @php $tasks = collect($group['tasks'] ?? [])->filter(); @endphp
+                                @foreach ($tasks as $task)
+                                    <div style="margin-left: 16px;">- {{ $task['task'] ?? '-' }}</div>
+                                    <div style="margin-left: 32px; color:#64748b;">({{ $task['range'] ?? '-' }})</div>
+                                @endforeach
+                            @endforeach
+                        @endif
+                    </td>
+                    <td class="center">{{ $work['status_label'] ?? '-' }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="3" class="center muted">ไม่มีรายการโครงการ/งานในเดือนนี้</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
     <div class="section-title">รายละเอียดการทำงานรายเดือน</div>
     @forelse ($monthlyFTE as $monthKey => $rows)
         @php

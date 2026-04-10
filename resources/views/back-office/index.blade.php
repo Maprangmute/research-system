@@ -288,6 +288,14 @@
             gap: 0.75rem;
         }
 
+        .back-office-mobile-only {
+            display: block;
+        }
+
+        .back-office-desktop-only {
+            display: none;
+        }
+
         .back-office-mobile-card {
             border: 1px solid #e2e8f0;
             border-radius: 16px;
@@ -744,6 +752,16 @@
                 min-width: 1.2rem;
                 height: 1.2rem;
                 font-size: 0.62rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .back-office-mobile-only {
+                display: none;
+            }
+
+            .back-office-desktop-only {
+                display: block;
             }
         }
     </style>

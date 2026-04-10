@@ -285,11 +285,19 @@
                                 class="absolute left-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
                                 <a href="{{ route('outputs.index') }}"
                                     class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
-                                    Outputs
+                                    Outputs Overview
                                 </a>
                                 <a href="{{ route('outputs.papers') }}"
                                     class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
-                                    Research Papers / Presentations
+                                    Research Papers
+                                </a>
+                                <a href="{{ route('outputs.presentations') }}"
+                                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                    Presentations
+                                </a>
+                                <a href="{{ route('outputs.textbooks') }}"
+                                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                    Textbook / Book chapter
                                 </a>
                             </div>
                         </div>
@@ -419,8 +427,10 @@
                         <a href="{{ route('outputs.external-academic') }}">🧩 Extra</a>
                         <a href="/rm/create">➕ เพิ่มโครงการ</a>
                         <div class="text-gray-700 font-medium">📑 Outputs</div>
-                        <a href="{{ route('outputs.index') }}">Outputs</a>
-                        <a href="{{ route('outputs.papers') }}">Research Papers / Presentations</a>
+                        <a href="{{ route('outputs.index') }}">Outputs Overview</a>
+                        <a href="{{ route('outputs.papers') }}">Research Papers</a>
+                        <a href="{{ route('outputs.presentations') }}">Presentations</a>
+                        <a href="{{ route('outputs.textbooks') }}">Textbook / Book chapter</a>
                         <div class="text-gray-700 font-medium">🔥 FTE</div>
                         <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
                         <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
@@ -1385,9 +1395,9 @@
         z-index: 5;
         font-size: 0.75rem;
         line-height: 1rem;
-        color: #1d4ed8;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
+        color: #334155;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
         padding: 0.15rem 0.6rem;
         border-radius: 9999px;
     }
@@ -1444,6 +1454,95 @@
     .row-collapse-summary-text {
         flex: 1 1 auto;
         min-width: 0;
+    }
+
+    .row-collapse-summary-text .summary-output-card {
+        display: grid;
+        gap: 0.3rem;
+        border-left: 3px solid #cbd5e1;
+        background: transparent;
+        border-radius: 0.6rem;
+        padding: 0.45rem 0.55rem 0.45rem 0.65rem;
+    }
+
+    .row-collapse-summary-text .summary-output-top {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    .row-collapse-summary-text .summary-output-type {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 9999px;
+        border: 1px solid #cbd5e1;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.08rem 0.5rem;
+    }
+
+    .row-collapse-summary-text .summary-output-type--ea101 {
+        background: #e0f2fe;
+        border-color: #7dd3fc;
+        color: #0369a1;
+    }
+
+    .row-collapse-summary-text .summary-output-type--ea103 {
+        background: #fef3c7;
+        border-color: #fcd34d;
+        color: #92400e;
+    }
+
+    .row-collapse-summary-text .summary-output-type--ea119 {
+        background: #dcfce7;
+        border-color: #86efac;
+        color: #166534;
+    }
+
+    .row-collapse-summary-text .summary-output-type--ea120 {
+        background: #ede9fe;
+        border-color: #c4b5fd;
+        color: #5b21b6;
+    }
+
+    .row-collapse-summary-text .summary-output-line {
+        display: flex;
+        gap: 0.35rem;
+        align-items: flex-start;
+        line-height: 1.35;
+        color: #334155;
+    }
+
+    .row-collapse-summary-text .summary-output-key {
+        flex: 0 0 auto;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .row-collapse-summary-text .summary-output-value {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        color: #475569;
+    }
+
+    .row-collapse-summary-text .summary-output-line--title .summary-output-value {
+        font-size: 1.02rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .output-row:nth-of-type(even).row-collapsed {
+        background: #f6f8fb;
+        border-color: #e5eaf2;
+    }
+
+    .output-row:nth-of-type(odd).row-collapsed {
+        background: #ffffff;
+        border-color: #e5eaf2;
     }
 
     .row-collapse-remove {
@@ -1543,6 +1642,33 @@
     }
 
     @media (max-width: 640px) {
+        .output-row.row-collapsed {
+            padding-bottom: 0.8rem;
+        }
+
+        .output-row.row-collapsed .row-collapse-summary {
+            padding-top: 2.05rem;
+            padding-right: 0.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            align-items: stretch;
+        }
+
+        .output-row.row-collapsed .row-collapse-summary .row-collapse-summary-text {
+            width: 100%;
+        }
+
+        .output-row.row-collapsed .row-collapse-summary .summary-output-card {
+            padding: 0.42rem 0.5rem 0.45rem 0.6rem;
+        }
+
+        .output-row.row-collapsed .row-collapse-remove {
+            position: static;
+            margin-left: auto;
+            margin-top: 0.1rem;
+        }
+
         .row-collapse-summary {
             padding-right: 3.5rem;
         }
@@ -1987,7 +2113,7 @@
         function ensureSummary(row) {
             if (isCollapseDisabled()) return;
             if (document.body.classList.contains('no-row-collapse-summary')) return;
-            if (isMobileViewport() && !window.enableRowCollapseSummaryOnMobile) return;
+            if (isMobileViewport() && !window.enableRowCollapseSummaryOnMobile && !row.classList.contains("output-row")) return;
             if (row.querySelector('.row-collapse-summary')) return;
             const summary = document.createElement('div');
             summary.className = 'row-collapse-summary text-sm text-slate-700 mt-2 hidden';
@@ -2417,11 +2543,21 @@
             return normalizeSummaryDateForRowInput(inputEl);
         }
 
+        function getOutputTypeBadgeClass(typeCode) {
+            const code = String(typeCode || '').toUpperCase();
+            if (code === 'EA101') return 'summary-output-type--ea101';
+            if (code === 'EA103') return 'summary-output-type--ea103';
+            if (code === 'EA119') return 'summary-output-type--ea119';
+            if (code === 'EA120') return 'summary-output-type--ea120';
+            return '';
+        }
+
         function updateSummary(row) {
             const summary = row.querySelector('.row-collapse-summary');
             if (!summary) return;
             const summaryText = summary.querySelector('.row-collapse-summary-text');
             if (!summaryText) return;
+            summary.classList.remove('row-collapse-summary--output');
             cacheProjectRowDateSummary(row);
 
             const siblings = getSiblings(row);
@@ -2533,6 +2669,7 @@
             }
 
             if (row.classList.contains('output-row') || hasName(row, (n) => n.startsWith('outputs['))) {
+                summary.classList.add('row-collapse-summary--output');
                 const title = filledOr(
                     getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[title]')),
                     'ยังไม่กรอกชื่อผลงาน'
@@ -2549,11 +2686,29 @@
                     getFieldValueByName(row, (n) => n.startsWith('outputs[') && n.endsWith('[project_output]')),
                     ''
                 );
+                const typeCode = (type.match(/EA\d{3}/i)?.[0] || type || 'EA---').toUpperCase();
+                const typeBadgeClass = getOutputTypeBadgeClass(typeCode);
+                const typeBadgeText = type !== 'ยังไม่เลือกประเภท' ? type : typeCode;
                 summaryText.innerHTML = `
-        <span class="summary-chip summary-primary">Output ${prefix}</span>
-        <span class="summary-chip summary-muted">ชื่อ ${title}</span>
-        <span class="summary-chip summary-muted">ประเภท ${type}${projectOutput ? ` • ${projectOutput}` : ''}</span>
-        <span class="summary-chip summary-muted">วันที่ publish ${publish}</span>
+        <div class="summary-output-card">
+          <div class="summary-output-top">
+            <span class="summary-chip summary-primary">Output ${prefix}</span>
+            <span class="summary-output-type ${typeBadgeClass}">${typeBadgeText}</span>
+          </div>
+          <div class="summary-output-line summary-output-line--title">
+            <span class="summary-output-key">ชื่อ:</span>
+            <span class="summary-output-value">${title}</span>
+          </div>
+          ${projectOutput ? `
+          <div class="summary-output-line">
+            <span class="summary-output-key">ลิงก์/หมายเหตุ:</span>
+            <span class="summary-output-value">${projectOutput}</span>
+          </div>` : ''}
+          <div class="summary-output-line">
+            <span class="summary-output-key">วันที่ publish:</span>
+            <span class="summary-output-value">${publish}</span>
+          </div>
+        </div>
       `;
                 return;
             }

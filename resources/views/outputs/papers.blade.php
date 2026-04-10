@@ -12,6 +12,39 @@
     @endphp
 
     <style>
+        .page-hero {
+            position: relative;
+            overflow: hidden;
+        }
+        .page-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle at 88% 18%, rgba(99, 102, 241, 0.16), transparent 40%);
+        }
+        .page-hero__chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 9999px;
+            padding: 0.25rem 0.65rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            color: #312e81;
+            background: #e0e7ff;
+            border: 1px solid #c7d2fe;
+        }
+        .papers-filter-panel {
+            border-color: #c7d2fe;
+            background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+        }
+        .papers-submit-btn {
+            background: #4338ca;
+        }
+        .papers-submit-btn:hover {
+            background: #3730a3;
+        }
         .impact-range {
             position: relative;
             padding-top: 0.75rem;
@@ -65,29 +98,20 @@
     </style>
 
     <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
-        <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
-            <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
+        <section class="page-hero overflow-hidden rounded-[28px] border border-indigo-200/80 bg-white shadow-sm">
+            <div class="flex flex-col gap-5 px-5 py-6 md:px-7">
                 <div class="max-w-3xl">
+                    <span class="page-hero__chip">EA101 Research Papers</span>
                     <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Research Papers and Journal Articles</h1>
                     <p class="mt-2 text-sm leading-6 text-slate-600 md:text-[15px]">
                         ค้นหาผลงานตีพิมพ์จากชื่อบทความ, author ภาษาอังกฤษ, journal และย้อนกลับไปยัง project detail ได้ทันที
                     </p>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('outputs.papers') }}"
-                        class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm">
-                        Research Papers
-                    </a>
-                    <a href="{{ route('outputs.presentations') }}"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                        Presentations
-                    </a>
-                </div>
             </div>
         </section>
 
         <form id="papers-filter-form" method="GET" action="{{ route('outputs.papers') }}"
-            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            class="papers-filter-panel rounded-2xl border bg-white p-5 shadow-sm">
             <input type="hidden" name="dir" value="{{ $currentDir }}">
 
             <div class="space-y-4">
@@ -191,7 +215,7 @@
                     <div class="text-xs text-slate-500">เลือก dropdown เพื่ออัปเดตทันที หรือพิมพ์ค้นหาแล้วระบบจะค้นให้อัตโนมัติ</div>
                     <div class="flex flex-wrap items-center gap-2">
                         <button type="submit"
-                            class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">
+                            class="papers-submit-btn inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-white shadow-sm transition">
                             ค้นหา
                         </button>
                         <a href="{{ route('outputs.papers') }}" data-papers-reset="true"

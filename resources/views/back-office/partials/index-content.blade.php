@@ -57,7 +57,7 @@
 
         <div id="backOfficeResultsList" class="p-4 md:p-5">
             @if ($tasks->count() > 0)
-                <div class="back-office-mobile-list md:hidden">
+                <div class="back-office-mobile-list back-office-mobile-only">
                     @foreach ($tasks as $task)
                         <article class="back-office-mobile-card" data-back-office-search-text="{{ trim(implode(' ', array_filter([
                             $task->title,
@@ -141,7 +141,7 @@
                     @endforeach
                 </div>
 
-                <div class="hidden md:block">
+                <div class="back-office-desktop-only">
                     <div class="back-office-table-wrap">
                         <table class="back-office-table">
                             <thead>

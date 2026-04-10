@@ -168,6 +168,22 @@
             font-size: 0.95em;
             font-weight: bold;
         }
+
+        .pdf-project-header {
+            color: #0f172a;
+            line-height: 1.2;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
+        }
+
+        .project-name-adaptive {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
+        }
     </style>
 </head>
 <body>
@@ -186,11 +202,24 @@
         $txt = trim((string)($value ?? ''));
         return $txt !== '' ? $txt : '-';
     }
+    if (!function_exists('adaptive_project_font_pt')) {
+        function adaptive_project_font_pt($value) {
+            $len = mb_strlen(trim((string) ($value ?? '')));
+            if ($len >= 170) return 10.5;
+            if ($len >= 140) return 11.5;
+            if ($len >= 110) return 12.5;
+            if ($len >= 85) return 13.5;
+            return 16;
+        }
+    }
+
+    $projectTitle = text_or_dash($project->project_name_th);
+    $projectTitleFontPt = adaptive_project_font_pt($projectTitle);
 @endphp
 {{-- HEADER --}}
 <htmlpageheader name="Header">
-    <div style="font-size: 16pt; color: black; padding-left: 10px;">
-        {{ $project->project_name_th }}
+    <div class="pdf-project-header" style="font-size: {{ $projectTitleFontPt }}pt; padding-left: 10px;">
+        {{ $projectTitle }}
     </div>
 </htmlpageheader>
 
@@ -219,8 +248,8 @@
     {{-- SECTION A --}}
     <div class="section-title">A: ข้อมูลโครงการ</div>
     <ul>
-        <li><strong>ชื่อโครงการ (TH):</strong> {{ text_or_dash($project->project_name_th) }}</li>
-        <li><strong>ชื่อโครงการ (EN):</strong> {{ text_or_dash($project->project_name_en) }}</li>
+        <li><strong>ชื่อโครงการ (TH):</strong> <span class="project-name-adaptive">{{ text_or_dash($project->project_name_th) }}</span></li>
+        <li><strong>ชื่อโครงการ (EN):</strong> <span class="project-name-adaptive">{{ text_or_dash($project->project_name_en) }}</span></li>
         <li><strong>ประเภท:</strong> {{ text_or_dash($project->project_type) }}</li>
         <li><strong>ลักษณะ:</strong> {{ text_or_dash($project->project_list) }}</li>
         <li><strong>Theme:</strong> {{ text_or_dash($project->theme) }}</li>

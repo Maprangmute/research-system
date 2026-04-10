@@ -4,7 +4,7 @@
 <div id="projectProgressSection" class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
         <div>
-            <h3 class="font-semibold text-lg text-blue-700">I: ความก้าวหน้าของการดำเนินงาน</h3>
+            <h3 id="section-i" class="edit-section-target font-semibold text-lg text-blue-700">H: ความก้าวหน้าของการดำเนินงาน</h3>
             @if ($latestProgressReport)
                 @php
                     $latestSubmitDate = $latestProgressReport->submit_date

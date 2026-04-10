@@ -9,30 +9,57 @@
         $sortIcon = fn($field) => $currentSort !== $field ? '↕' : ($currentDir === 'asc' ? '↑' : '↓');
     @endphp
 
+    <style>
+        .presentation-hero {
+            position: relative;
+            overflow: hidden;
+        }
+        .presentation-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle at 86% 16%, rgba(251, 146, 60, 0.18), transparent 40%);
+        }
+        .presentation-chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 9999px;
+            padding: 0.25rem 0.65rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            color: #9a3412;
+            background: #ffedd5;
+            border: 1px solid #fdba74;
+        }
+        .presentation-filter-panel {
+            border-color: #fdba74;
+            background: linear-gradient(180deg, #fffaf3 0%, #ffffff 100%);
+        }
+        .presentation-submit-btn {
+            background: #ea580c;
+        }
+        .presentation-submit-btn:hover {
+            background: #c2410c;
+        }
+    </style>
+
     <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
-        <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
-            <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
+        <section class="presentation-hero overflow-hidden rounded-[28px] border border-orange-200/80 bg-white shadow-sm">
+            <div class="flex flex-col gap-5 px-5 py-6 md:px-7">
                 <div class="max-w-3xl">
+                    <span class="presentation-chip">EA103 Presentations</span>
                     <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Presentations in Academic Conferences</h1>
                     <p class="mt-2 text-sm leading-6 text-slate-600 md:text-[15px]">
                         ค้นหาจากชื่อผลงาน, ชื่อผู้นำเสนอ, ประเภทการนำเสนอ, conference และย้อนกลับไปยัง project detail ได้ทันที
                     </p>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('outputs.papers') }}"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                        Research Papers
-                    </a>
-                    <a href="{{ route('outputs.presentations') }}"
-                        class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm">
-                        Presentations
-                    </a>
-                </div>
             </div>
         </section>
 
         <form id="presentations-filter-form" method="GET" action="{{ route('outputs.presentations') }}"
-            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            class="presentation-filter-panel rounded-2xl border bg-white p-5 shadow-sm">
             <input type="hidden" name="dir" value="{{ $currentDir }}">
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <label class="block xl:col-span-2">
@@ -86,7 +113,7 @@
             <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="submit"
-                        class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">
+                        class="presentation-submit-btn inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-white shadow-sm transition">
                         ค้นหา
                     </button>
                     <a href="{{ route('outputs.presentations') }}" data-presentations-reset="true"

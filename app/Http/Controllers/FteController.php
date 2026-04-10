@@ -852,6 +852,69 @@ private function buildFteDetailData(string $person, array $filter = []): array
         ->get();
 
     $expanded = collect();
+    $currentMonthStart = now()->copy()->startOfMonth()->startOfDay();
+    $currentMonthEnd = now()->copy()->endOfMonth()->endOfDay();
+    $currentMonthLabel = $currentMonthStart->copy()->locale('th')->translatedFormat('F') . ' ' . ($currentMonthStart->year + 543);
+    $monthWorkMap = collect();
+    $upsertMonthWork = function (string $key, array $payload) use ($monthWorkMap): void {
+        $existing = $monthWorkMap->get($key);
+        $incomingJob = trim((string) ($payload['job_detail'] ?? ''));
+        $incomingTask = trim((string) ($payload['task_detail'] ?? ''));
+        $incomingPair = ['job' => $incomingJob, 'task' => $incomingTask];
+
+        if (!$existing) {
+            $payload['detail_pairs'] = (($incomingJob !== '') || ($incomingTask !== '')) ? [$incomingPair] : [];
+            $payload['work_detail_lines'] = [];
+            $payload['work_detail'] = '-';
+            $monthWorkMap->put($key, $payload);
+            $existing = $payload;
+        } else {
+            $detailPairs = collect($existing['detail_pairs'] ?? []);
+            if (($incomingJob !== '') || ($incomingTask !== '')) {
+                $detailPairs->push($incomingPair);
+            }
+            $detailPairs = $detailPairs
+                ->map(function ($pair) {
+                    return [
+                        'job' => trim((string) ($pair['job'] ?? '')),
+                        'task' => trim((string) ($pair['task'] ?? '')),
+                    ];
+                })
+                ->filter(fn($pair) => $pair['job'] !== '' || $pair['task'] !== '')
+                ->unique(fn($pair) => mb_strtolower($pair['job'] . '|' . $pair['task']))
+                ->values();
+            $existing['detail_pairs'] = $detailPairs->all();
+        }
+
+        $isCompleted = (bool) (($existing['is_completed'] ?? false) || ($payload['is_completed'] ?? false));
+        $detailPairs = collect($existing['detail_pairs'] ?? []);
+        $grouped = $detailPairs->groupBy(fn($pair) => $pair['job'] !== '' ? $pair['job'] : '-');
+        $detailLines = $grouped->map(function ($pairs, $job) {
+            $tasks = collect($pairs)
+                ->pluck('task')
+                ->map(fn($task) => trim((string) $task))
+                ->filter()
+                ->unique()
+                ->values();
+
+            if ($job === '-') {
+                return $tasks->isNotEmpty() ? $tasks->implode(', ') : '-';
+            }
+
+            return $tasks->isNotEmpty()
+                ? "{$job}: " . $tasks->implode(', ')
+                : $job;
+        })->filter()->values();
+
+        $existing['is_completed'] = $isCompleted;
+        $existing['status_label'] = $isCompleted ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน';
+        $existing['status_monthly'] = $existing['status_label'];
+        $existing['status_project'] = $existing['status_label'];
+        $existing['work_detail_lines'] = $detailLines->all();
+        $existing['work_detail'] = $detailLines->isNotEmpty() ? $detailLines->implode(' | ') : '-';
+
+        $monthWorkMap->put($key, $existing);
+    };
 
     foreach ($raw as $item) {
         try {
@@ -870,6 +933,29 @@ private function buildFteDetailData(string $person, array $filter = []): array
             }
 
             if ($effectiveStart->gt($effectiveEnd)) continue;
+
+            if ($item->project?->id && $entryStart->lte($currentMonthEnd) && $entryEnd->gte($currentMonthStart)) {
+                $project = $item->project;
+                $projectId = (int) $project->id;
+                $projectEnd = $this->parseInputDate((string) ($project->end_date ?? ''))?->endOfDay();
+                $isCompletedThisMonth = $projectEnd
+                    && $projectEnd->gte($currentMonthStart)
+                    && $projectEnd->lte($currentMonthEnd);
+
+                $upsertMonthWork('project:' . $projectId, [
+                    'key' => 'project:' . $projectId,
+                    'type' => 'project',
+                    'project_id' => $projectId,
+                    'task_id' => null,
+                    'name' => trim((string) ($project->project_name_th ?? '')) ?: ('โครงการ #' . $projectId),
+                    'status_label' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
+                    'status_monthly' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
+                    'status_project' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
+                    'is_completed' => (bool) $isCompletedThisMonth,
+                    'job_detail' => trim((string) ($item->job_detail ?? '')),
+                    'task_detail' => trim((string) ($item->task_detail ?? '')),
+                ]);
+            }
 
             $totalDays  = $this->inclusiveDateOnlyDays($entryStart, $entryEnd);
             if ($totalDays <= 0) continue;
@@ -947,6 +1033,34 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
             if ($effectiveStart->gt($effectiveEnd)) continue;
 
+            if ($entryStart->lte($currentMonthEnd) && $entryEnd->gte($currentMonthStart)) {
+                $taskId = $entry->task?->id;
+                $key = $taskId ? 'backoffice-task:' . $taskId : 'backoffice-entry:' . $entry->id;
+                $taskName = trim((string) ($entry->task?->title ?? ''));
+                if ($taskName === '') {
+                    $taskName = trim((string) ($entry->job_detail ?? '')) ?: 'งานนอกโครงการ';
+                }
+
+                $entryEndDate = $this->parseInputDate((string) $endRaw)?->endOfDay();
+                $isCompletedThisMonth = $entryEndDate
+                    && $entryEndDate->gte($currentMonthStart)
+                    && $entryEndDate->lte($currentMonthEnd);
+
+                $upsertMonthWork($key, [
+                    'key' => $key,
+                    'type' => 'back_office',
+                    'project_id' => null,
+                    'task_id' => $taskId,
+                    'name' => $taskName,
+                    'status_label' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
+                    'status_monthly' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
+                    'status_project' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
+                    'is_completed' => (bool) $isCompletedThisMonth,
+                    'job_detail' => trim((string) ($entry->job_detail ?? '')),
+                    'task_detail' => trim((string) ($entry->task?->title ?? '')),
+                ]);
+            }
+
             $totalDays  = $this->inclusiveDateOnlyDays($entryStart, $entryEnd);
             if ($totalDays <= 0) continue;
 
@@ -1003,6 +1117,165 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
     $chartLabels = $monthlyFTE->keys()->values();
     $chartData   = $monthlyFTE->map(fn($rows) => $rows->sum('fte_value'))->values();
+    $currentMonthKey = $currentMonthStart->format('Y-m');
+    $currentMonthRows = $monthlyFTE->get($currentMonthKey, collect());
+    $formatShortBeDate = static function (?Carbon $date): string {
+        if (!$date) {
+            return '-';
+        }
+        $beYear2 = str_pad((string) (($date->year + 543) % 100), 2, '0', STR_PAD_LEFT);
+        return $date->format('d-m-') . $beYear2;
+    };
+    $formatHours = static function (float $hours): string {
+        $formatted = number_format($hours, 2, '.', '');
+        $formatted = rtrim(rtrim($formatted, '0'), '.');
+        return $formatted === '' ? '0' : $formatted;
+    };
+
+    $monthDetailMap = collect();
+    foreach ($currentMonthRows as $row) {
+        $detailKey = null;
+        if (!empty($row->project?->id)) {
+            $detailKey = 'project:' . (int) $row->project->id;
+        } elseif (!empty($row->task_id)) {
+            $detailKey = 'backoffice-task:' . (int) $row->task_id;
+        } elseif (!empty($row->rounding_key) && str_starts_with((string) $row->rounding_key, 'back-office:')) {
+            $entryId = (int) str_replace('back-office:', '', (string) $row->rounding_key);
+            if ($entryId > 0) {
+                $detailKey = 'backoffice-entry:' . $entryId;
+            }
+        }
+
+        if (!$detailKey) {
+            continue;
+        }
+
+        $job = trim((string) ($row->job_detail ?? ''));
+        $task = trim((string) ($row->task_detail ?? ''));
+        if ($job === '' && $task === '') {
+            continue;
+        }
+
+        $rowStart = $this->parseInputDate((string) ($row->start_date ?? ''))?->startOfDay();
+        $rowEnd = $this->parseInputDate((string) ($row->end_date ?? ''))?->endOfDay();
+        if (!$rowStart || !$rowEnd) {
+            continue;
+        }
+        if ($rowStart->gt($rowEnd)) {
+            [$rowStart, $rowEnd] = [$rowEnd, $rowStart];
+        }
+        $rangeStart = $rowStart->lt($currentMonthStart) ? $currentMonthStart->copy() : $rowStart->copy();
+        $rangeEnd = $rowEnd->gt($currentMonthEnd) ? $currentMonthEnd->copy() : $rowEnd->copy();
+        if ($rangeStart->gt($rangeEnd)) {
+            continue;
+        }
+
+        $rangeLabel = $formatShortBeDate($rangeStart) . ' ถึง ' . $formatShortBeDate($rangeEnd);
+        $hoursValue = (float) ($row->hours_in_month ?? 0);
+
+        $pairs = collect($monthDetailMap->get($detailKey, []));
+        $pairs->push([
+            'job' => $job,
+            'task' => $task,
+            'range' => $rangeLabel,
+            'hours' => $hoursValue,
+        ]);
+        $monthDetailMap->put($detailKey, $pairs->all());
+    }
+    $monthWorkList = $monthWorkMap
+        ->values()
+        ->map(function ($work) use ($monthDetailMap, $formatHours) {
+            $pairs = collect($monthDetailMap->get((string) ($work['key'] ?? ''), []))
+                ->map(function ($pair) {
+                    return [
+                        'job' => trim((string) ($pair['job'] ?? '')),
+                        'task' => trim((string) ($pair['task'] ?? '')),
+                        'range' => trim((string) ($pair['range'] ?? '')),
+                        'hours' => (float) ($pair['hours'] ?? 0),
+                    ];
+                })
+                ->filter(fn($pair) => $pair['job'] !== '' || $pair['task'] !== '')
+                ->values();
+
+            if ($pairs->isNotEmpty()) {
+                $groups = $pairs
+                    ->groupBy(fn($pair) => $pair['job'] !== '' ? $pair['job'] : 'รายละเอียดงาน')
+                    ->map(function ($group, $job) use ($formatHours) {
+                        $taskMap = [];
+                        foreach ($group as $item) {
+                            $taskText = trim((string) ($item['task'] ?? ''));
+                            $rangeText = trim((string) ($item['range'] ?? ''));
+                            $hoursVal = (float) ($item['hours'] ?? 0);
+
+                            $taskLabel = $taskText !== '' ? $taskText : 'งาน';
+                            $rangeLabel = $rangeText !== '' ? $rangeText : '-';
+                            $aggregateKey = mb_strtolower($taskLabel . '|' . $rangeLabel);
+
+                            if (!isset($taskMap[$aggregateKey])) {
+                                $taskMap[$aggregateKey] = [
+                                    'task' => $taskLabel,
+                                    'range' => $rangeLabel,
+                                    'hours' => 0.0,
+                                ];
+                            }
+                            $taskMap[$aggregateKey]['hours'] += $hoursVal;
+                        }
+
+                        $tasks = collect(array_values($taskMap))
+                            ->map(function ($item) use ($formatHours) {
+                                $hoursText = $formatHours((float) ($item['hours'] ?? 0));
+                                return [
+                                    'task' => $item['task'] ?? 'งาน',
+                                    'range' => ($item['range'] ?? '-') . ' | ' . $hoursText . ' ชั่วโมง',
+                                ];
+                            })
+                            ->values();
+
+                        return [
+                            'job' => $job,
+                            'tasks' => $tasks->all(),
+                        ];
+                    })
+                    ->values();
+
+                $work['work_detail_groups'] = $groups->all();
+                $lines = $groups->map(function ($group) {
+                    $taskLines = collect($group['tasks'] ?? [])->map(function ($task) {
+                        return trim((string) ($task['task'] ?? '')) . ' (' . trim((string) ($task['range'] ?? '-')) . ')';
+                    })->implode(', ');
+                    return trim((string) ($group['job'] ?? '')) . ': ' . $taskLines;
+                })->values();
+
+                $work['work_detail_lines'] = $lines->all();
+                $work['work_detail'] = $lines->isNotEmpty() ? $lines->implode(' | ') : '-';
+            }
+
+            if (!isset($work['work_detail']) || trim((string) $work['work_detail']) === '') {
+                $work['work_detail'] = '-';
+            }
+            if (!isset($work['work_detail_lines']) || !is_array($work['work_detail_lines'])) {
+                $work['work_detail_lines'] = $work['work_detail'] !== '-' ? [(string) $work['work_detail']] : [];
+            }
+            if (!isset($work['work_detail_groups']) || !is_array($work['work_detail_groups'])) {
+                $work['work_detail_groups'] = [];
+            }
+            return $work;
+        })
+        ->sortBy([
+            ['is_completed', 'asc'],
+            ['type', 'asc'],
+            ['name', 'asc'],
+        ], SORT_NATURAL | SORT_FLAG_CASE)
+        ->values();
+    $activeCount = $monthWorkList->where('is_completed', false)->count();
+    $completedCount = $monthWorkList->where('is_completed', true)->count();
+
+    $monthProjectStats = [
+        'label' => $currentMonthLabel,
+        'total' => $monthWorkList->count(),
+        'active' => $activeCount,
+        'completed' => $completedCount,
+    ];
 
     return compact(
         'person',
@@ -1010,7 +1283,9 @@ private function buildFteDetailData(string $person, array $filter = []): array
         'monthlyFTE',
         'chartLabels',
         'chartData',
-        'pdfFilter'
+        'pdfFilter',
+        'monthProjectStats',
+        'monthWorkList'
     );
 }
 

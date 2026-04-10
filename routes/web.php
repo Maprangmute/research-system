@@ -222,6 +222,8 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/outputs/papers/pdf', [OutputController::class, 'papersPdf'])->name('outputs.papers.pdf');
     Route::get('/outputs/presentations', [OutputController::class, 'presentations'])->name('outputs.presentations');
     Route::get('/outputs/presentations/pdf', [OutputController::class, 'presentationsPdf'])->name('outputs.presentations.pdf');
+    Route::get('/outputs/textbooks', [OutputController::class, 'textbooks'])->name('outputs.textbooks');
+    Route::get('/outputs/textbooks/pdf', [OutputController::class, 'textbooksPdf'])->name('outputs.textbooks.pdf');
     Route::get('/back-office', [BackOfficeController::class, 'index'])->name('back_office.index');
     Route::get('/back-office/create', [BackOfficeController::class, 'create'])->name('back_office.create');
     Route::post('/back-office', [BackOfficeController::class, 'store'])->name('back_office.store');

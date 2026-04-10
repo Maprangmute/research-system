@@ -36,6 +36,125 @@
             word-break: break-word;
         }
 
+        .project-title-adaptive {
+            line-height: 1.22;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
+        }
+
+        .project-title-adaptive.project-title--normal {
+            font-size: 1.58rem;
+        }
+
+        .project-title-adaptive.project-title--medium {
+            font-size: 1.34rem;
+        }
+
+        .project-title-adaptive.project-title--long {
+            font-size: 1.16rem;
+        }
+
+        .project-title-adaptive.project-title--xlong {
+            font-size: 0.98rem;
+        }
+
+        .project-header-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+            gap: 1rem 1.25rem;
+            align-items: start;
+        }
+
+        .project-header-main {
+            min-width: 0;
+        }
+
+        .project-header-side {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.65rem;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            padding: 0.75rem;
+        }
+
+        .project-status-chip {
+            align-self: flex-end;
+            border-color: #cbd5e1;
+            padding: 0.35rem 0.72rem;
+        }
+
+        .project-header-actions {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+
+        .project-header-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            width: 100%;
+            min-height: 2.5rem;
+            border-radius: 11px;
+            border: 1px solid #dbe5f0;
+            background: #f8fafc;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+            font-size: 0.92rem;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+        }
+
+        .project-header-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+        }
+
+        .project-header-action--edit {
+            background: #fff8e6;
+            border-color: #f5d58b;
+            color: #9a5b12;
+        }
+
+        .project-header-action--progress {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #3730a3;
+        }
+
+        .project-header-action--pdf {
+            background: #eafbf3;
+            border-color: #a7f3d0;
+            color: #0f766e;
+        }
+
+        .project-header-action--fte {
+            background: #ecfeff;
+            border-color: #a5f3fc;
+            color: #0f766e;
+        }
+
+        .project-header-action--gantt {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .project-header-action--delete {
+            background: #fff1f2;
+            border-color: #fecdd3;
+            color: #be123c;
+        }
+
         .project-detail-safe table {
             width: 100%;
             table-layout: fixed;
@@ -73,9 +192,149 @@
             white-space: nowrap;
         }
 
+        .edit-section-nav {
+            position: fixed;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 55;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.45rem;
+            padding: 0.55rem;
+            border: 1px solid #dbeafe;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(8px);
+        }
+
+        .edit-section-nav::before {
+            content: '';
+            position: absolute;
+            top: 0.85rem;
+            bottom: 0.85rem;
+            left: 1.3rem;
+            width: 2px;
+            background: linear-gradient(180deg, #bfdbfe 0%, #cbd5e1 100%);
+            border-radius: 999px;
+            z-index: 0;
+        }
+
+        .edit-section-dot {
+            position: relative;
+            z-index: 1;
+            width: auto;
+            min-width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 800;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 0.46rem;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 38px;
+            transition: max-width 0.2s ease, padding 0.2s ease, transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+        }
+
+        .edit-section-dot:hover,
+        .edit-section-dot:focus-visible {
+            outline: none;
+            transform: translateY(-1px);
+            border-color: #60a5fa;
+            background: #eff6ff;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.18);
+        }
+
+        .edit-section-dot.is-active {
+            border-color: #2563eb;
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.28);
+        }
+
+        .edit-section-dot__short {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            border-radius: 9px;
+            background: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.65);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .edit-section-dot__full {
+            margin-left: 0.5rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            opacity: 0;
+            transform: translateX(-6px);
+            transition: opacity 0.14s ease, transform 0.14s ease;
+        }
+
+        .edit-section-nav.is-expanded .edit-section-dot {
+            width: 270px;
+            max-width: 270px;
+            padding: 0 0.62rem;
+        }
+
+        .edit-section-nav.is-expanded .edit-section-dot__full {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .edit-section-dot.is-active .edit-section-dot__short {
+            border-color: rgba(191, 219, 254, 0.9);
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+        }
+
+        .edit-section-target {
+            scroll-margin-top: 88px;
+        }
+
+        #pageTop .project-zone-card {
+            border: 1px solid #dbe5f0 !important;
+            border-radius: 1rem !important;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05) !important;
+        }
+
+        #pageTop .project-zone-card.project-zone-card--alt {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+        }
+
+        #pageTop .project-zone-title {
+            margin: 0 0 0.9rem !important;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #dbeafe;
+            border-radius: 0.8rem;
+            background: #eff6ff;
+            color: #1d4ed8 !important;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
         @media (max-width: 640px) {
             .project-detail-safe .overflow-x-auto > table {
                 min-width: 620px;
+            }
+        }
+
+        @media (max-width: 1279px) {
+            .edit-section-nav {
+                display: none;
             }
         }
 
@@ -97,8 +356,48 @@
                 font-size: 1.75rem;
             }
 
+            .project-title-adaptive.project-title--normal {
+                font-size: 1.68rem;
+            }
+
+            .project-title-adaptive.project-title--medium {
+                font-size: 1.42rem;
+            }
+
+            .project-title-adaptive.project-title--long {
+                font-size: 1.22rem;
+            }
+
+            .project-title-adaptive.project-title--xlong {
+                font-size: 1.02rem;
+            }
+
             #pageTop.project-detail-safe h3 {
                 font-size: 1.35rem;
+            }
+        }
+
+        @media (max-width: 1240px) {
+            .project-header-layout {
+                grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+            }
+        }
+
+        @media (max-width: 980px) {
+            .project-header-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .project-header-side {
+                align-items: flex-start;
+            }
+
+            .project-status-chip {
+                align-self: flex-start;
+            }
+
+            .project-header-actions {
+                grid-template-columns: 1fr 1fr;
             }
         }
 
@@ -184,6 +483,10 @@
             transition-delay: 0.14s;
         }
 
+        .detail-fab-menu.is-open .detail-fab-item:nth-child(6) {
+            transition-delay: 0.17s;
+        }
+
         .detail-fab-item:hover {
             filter: brightness(0.98);
         }
@@ -201,6 +504,11 @@
         .detail-fab-item--pdf {
             background: #d1fae5;
             color: #065f46;
+        }
+
+        .detail-fab-item--fte {
+            background: #ecfeff;
+            color: #0f766e;
         }
 
         .detail-fab-item--gantt {
@@ -254,6 +562,17 @@
     </style>
 
     <div id="pageTop" class="project-detail-safe mx-auto px-4 py-6 space-y-6">
+        <aside class="edit-section-nav" aria-label="เมนูลัดหัวข้อ">
+            <button type="button" class="edit-section-dot" data-nav-target="section-a" aria-label="A: ข้อมูลโครงการ"><span class="edit-section-dot__short">A</span><span class="edit-section-dot__full">A: ข้อมูลโครงการ</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-b" aria-label="B: ระยะเวลาดำเนินโครงการ"><span class="edit-section-dot__short">B</span><span class="edit-section-dot__full">B: ระยะเวลาดำเนินโครงการ</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-c" aria-label="C: ข้อมูลแหล่งทุน"><span class="edit-section-dot__short">C</span><span class="edit-section-dot__full">C: ข้อมูลแหล่งทุน</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-d" aria-label="D: Roles and Responsibilities"><span class="edit-section-dot__short">D</span><span class="edit-section-dot__full">D: Roles and Responsibilities</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-e" aria-label="E: รหัส IRB"><span class="edit-section-dot__short">E</span><span class="edit-section-dot__full">E: รหัส IRB</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-f" aria-label="F: รายชื่อผู้มีส่วนร่วมในการทำงาน"><span class="edit-section-dot__short">F</span><span class="edit-section-dot__full">F: รายชื่อผู้มีส่วนร่วมในการทำงาน</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-g" aria-label="G: ผลงานวิจัย (Outputs)"><span class="edit-section-dot__short">G</span><span class="edit-section-dot__full">G: ผลงานวิจัย (Outputs)</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-i" aria-label="H: ความก้าวหน้าของการดำเนินงาน"><span class="edit-section-dot__short">H</span><span class="edit-section-dot__full">H: ความก้าวหน้าของการดำเนินงาน</span></button>
+            <button type="button" class="edit-section-dot" data-nav-target="section-j" aria-label="I: ยุทธศาสตร์ Siriraj Health Policy"><span class="edit-section-dot__short">I</span><span class="edit-section-dot__full">I: ยุทธศาสตร์ Siriraj Health Policy</span></button>
+        </aside>
         @php
             $status = $project->planning_status ?? '-';
             // Mapping สีพื้นหลังแต่ละสถานะ
@@ -323,19 +642,27 @@
                     return $raw;
                 }
             };
+            $projectTitle = trim((string) ($project->project_name_th ?? '-'));
+            $projectTitleLength = mb_strlen($projectTitle);
+            $projectTitleClass = match (true) {
+                $projectTitleLength >= 120 => 'project-title--xlong',
+                $projectTitleLength >= 90 => 'project-title--long',
+                $projectTitleLength >= 60 => 'project-title--medium',
+                default => 'project-title--normal',
+            };
         @endphp
 
         <div id="detailHeaderCard" class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="project-header-layout">
 
                 {{-- Left: Title --}}
-                <div>
+                <div class="project-header-main">
                     <a href="{{ route('projects.index') }}"
                         class="inline-flex items-center gap-2 text-blue-700 font-semibold text-sm hover:text-blue-900">
                         ← กลับไปยังรายการโครงการ
                     </a>
-                    <h2 class="text-2xl font-semibold text-slate-900 mt-2">
-                        {{ $project->project_name_th ?? '-' }}
+                    <h2 class="project-title-adaptive {{ $projectTitleClass }} font-semibold text-slate-900 mt-2">
+                        {{ $projectTitle }}
                     </h2>
                     <div class="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600">
                         <span class="font-medium text-slate-500">รหัสโครงการ</span>
@@ -344,25 +671,25 @@
                 </div>
 
                 {{-- Right: Status + Actions --}}
-                <div class="flex flex-col gap-2 w-full md:w-auto">
+                <div class="project-header-side">
 
                     {{-- Status (1 full row) --}}
                     <span
-                        class="self-end mt-2 mb-1 w-fit px-3 py-1 rounded-full text-xs font-semibold {{ $bgClass }} text-slate-900 border border-slate-300">
+                        class="project-status-chip mt-1 mb-1 w-fit rounded-full text-xs font-semibold {{ $bgClass }} text-slate-900 border">
                         สถานะ: {{ $statusText }}
                     </span>
 
 
 
                     {{-- Action buttons (another row) --}}
-                    <div class="flex flex-wrap gap-2">
+                    <div class="project-header-actions">
                         <a href="{{ route('projects.edit', $project) }}"
-                            class="px-3 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm font-semibold hover:bg-amber-200">
+                            class="project-header-action project-header-action--edit">
                             ✏️ แก้ไข
                         </a>
 
                         <a href="{{ route('projects.progress_reports.index', $project) }}"
-                            class="px-3 py-2 rounded-lg bg-indigo-100 text-indigo-800 text-sm font-semibold hover:bg-indigo-200">
+                            class="project-header-action project-header-action--progress">
                             📑 Progress Report
                         </a>
 
@@ -373,14 +700,14 @@
 
                         @if ($isOwner || $isAdmin)
                             <a href="{{ route('projects.pdf', $project) }}" target="_blank"
-                                class="px-3 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200">
+                                class="project-header-action project-header-action--pdf">
                                 🖨️ PDF
                             </a>
                         @endif
 
                         @if ($isOwner || $isAdmin)
                             <a href="{{ route('fte.project.detail', $project) }}" target="_blank"
-                                class="px-3 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200">
+                                class="project-header-action project-header-action--fte">
                                 🔥 FTE project
                             </a>
                         @endif
@@ -388,13 +715,13 @@
                         
 
                         <a href="{{ route('projects.gantt', $project) }}"
-                            class="px-3 py-2 rounded-lg bg-sky-100 text-sky-800 text-sm font-semibold hover:bg-sky-200">
+                            class="project-header-action project-header-action--gantt">
                             📊 Gantt
                         </a>
 
                         {{-- Delete --}}
                         <button type="button" id="deleteProjectBtn"
-                            class="px-3 py-2 rounded-lg bg-rose-100 text-rose-800 text-sm font-semibold hover:bg-rose-200">
+                            class="project-header-action project-header-action--delete">
                             🗑️ ลบ
                         </button>
 
@@ -413,7 +740,7 @@
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-6">
             <!-- 🔵 Section A: ข้อมูลโครงการ -->
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
-                <h3 class="font-semibold text-lg text-blue-700 border-b border-slate-200 pb-3 mb-4">A: ข้อมูลโครงการ</h3>
+                <h3 id="section-a" class="edit-section-target font-semibold text-lg text-blue-700 border-b border-slate-200 pb-3 mb-4">A: ข้อมูลโครงการ</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm text-slate-700">
                     <div><span class="font-semibold">ชื่อโครงการ (TH):</span> {{ $project->project_name_th ?? '-' }}</div>
                     <div><span class="font-semibold">ชื่อโครงการ (EN):</span> {{ $project->project_name_en ?? '-' }}</div>
@@ -442,7 +769,7 @@
 
             <!-- 🟣 Section B: ระยะเวลาดำเนินโครงการ -->
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
-                <h3 class="font-semibold text-lg text-blue-700 border-b border-slate-200 pb-3 mb-4">B:
+                <h3 id="section-b" class="edit-section-target font-semibold text-lg text-blue-700 border-b border-slate-200 pb-3 mb-4">B:
                     ระยะเวลาดำเนินโครงการ
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm text-slate-700">
@@ -463,7 +790,7 @@
 
             <!-- 🟢 Section B: ข้อมูลแหล่งทุน -->
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
-                <h3 class="font-semibold text-lg text-blue-700 border-b border-slate-200 pb-3 mb-4">C: ข้อมูลแหล่งทุน</h3>
+                <h3 id="section-c" class="edit-section-target font-semibold text-lg text-blue-700 border-b border-slate-200 pb-3 mb-4">C: ข้อมูลแหล่งทุน</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm text-slate-700">
                     <div><span class="font-semibold">DA102 - ประเภทแหล่งทุน:</span> {{ $project->funding_type ?? '-' }}
                     </div>
@@ -479,7 +806,7 @@
             </div>
             <!-- 🟢 Section C: ข้อมูลแหล่งทุน -->
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
-                <h3 class="font-semibold text-lg text-blue-700 mb-2">D: Roles and Responsibilities</h3>
+                <h3 id="section-d" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">D: Roles and Responsibilities</h3>
                 <table
                     class="min-w-full bg-white rounded-2xl shadow-lg ring-1 ring-slate-100 border-separate border-spacing-0 mb-6">
                     <thead class="bg-blue-50">
@@ -808,7 +1135,7 @@
 
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-                    <h3 class="font-semibold text-lg text-blue-700">F: รหัส IRB</h3>
+                    <h3 id="section-e" class="edit-section-target font-semibold text-lg text-blue-700">E: รหัส IRB</h3>
                     <div class="flex items-center gap-2 text-xs text-gray-600">
                         <label>ตัวกรอง:
                             <select id="irbFilter" class="ml-1 border rounded px-2 py-1 text-xs">
@@ -876,7 +1203,7 @@
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
-                <h3 class="font-semibold text-lg text-blue-700 mb-3">G: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
+                <h3 id="section-f" class="edit-section-target font-semibold text-lg text-blue-700 mb-3">F: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
 
                 <div class="overflow-x-auto rounded-xl shadow-sm ring-1 ring-slate-200 mb-6 bg-white">
                     <table class="min-w-full text-sm border-separate border-spacing-0">
@@ -1165,7 +1492,7 @@
                 };
             @endphp
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
-                <h3 class="font-semibold text-lg text-blue-700 mb-2">H: ผลงานวิจัย (Outputs)</h3>
+                <h3 id="section-g" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">G: ผลงานวิจัย (Outputs)</h3>
 
                 @if ($outputsReal->isEmpty())
                     <div class="w-full bg-white rounded-2xl shadow-md ring-1 ring-slate-100 p-6 text-center text-gray-500">
@@ -1424,7 +1751,7 @@
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
-                <h3 class="font-semibold text-lg text-blue-700 mb-2">J: ยุทธศาสตร์ Siriraj Health Policy</h3>
+                <h3 id="section-j" class="edit-section-target font-semibold text-lg text-blue-700 mb-2">I: ยุทธศาสตร์ Siriraj Health Policy</h3>
                 <table
                     class="min-w-full bg-white rounded-2xl shadow-s ring-1 ring-slate-100 border-separate border-spacing-0 mb-6 table-fixed text-sm">
                     <thead class="bg-blue-50">
@@ -1563,6 +1890,9 @@
                     <a href="{{ route('projects.pdf', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--pdf">
                         🖨️ PDF
                     </a>
+                    <a href="{{ route('fte.project.detail', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--fte">
+                        🔥 FTE project
+                    </a>
                 @endif
                 <a href="{{ route('projects.gantt', $project) }}" class="detail-fab-item detail-fab-item--gantt">
                     📊 Gantt
@@ -1579,6 +1909,89 @@
 
     </div>
     <script>
+        (() => {
+            const headings = Array.from(document.querySelectorAll('#pageTop .edit-section-target'));
+            if (!headings.length) return;
+
+            headings.forEach((heading, index) => {
+                heading.classList.add('project-zone-title');
+                const sectionCard = heading.closest('.rounded-2xl');
+                if (!sectionCard) return;
+                sectionCard.classList.add('project-zone-card');
+                if (index % 2 === 1) {
+                    sectionCard.classList.add('project-zone-card--alt');
+                }
+            });
+        })();
+    </script>
+    <script>
+        (function() {
+            const navDots = Array.from(document.querySelectorAll('.edit-section-dot[data-nav-target]'));
+            if (!navDots.length) return;
+            const quickNav = document.querySelector('.edit-section-nav');
+            const expandQuickNav = () => quickNav?.classList.add('is-expanded');
+            const collapseQuickNav = () => quickNav?.classList.remove('is-expanded');
+
+            quickNav?.addEventListener('mouseenter', expandQuickNav);
+            quickNav?.addEventListener('mouseleave', collapseQuickNav);
+            quickNav?.addEventListener('focusin', expandQuickNav);
+            quickNav?.addEventListener('focusout', (event) => {
+                if (!quickNav?.contains(event.relatedTarget)) collapseQuickNav();
+            });
+
+            const sectionById = new Map();
+            navDots.forEach((dot) => {
+                const id = dot.dataset.navTarget;
+                const section = id ? document.getElementById(id) : null;
+                if (section) sectionById.set(id, section);
+            });
+
+            if (!sectionById.size) return;
+
+            const getOffset = () => Math.max(78, Math.round(window.innerHeight * 0.14));
+
+            navDots.forEach((dot) => {
+                dot.addEventListener('click', () => {
+                    const targetId = dot.dataset.navTarget;
+                    const targetEl = targetId ? sectionById.get(targetId) : null;
+                    if (!targetEl) return;
+
+                    const y = targetEl.getBoundingClientRect().top + window.scrollY - getOffset();
+                    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+                    dot.blur();
+                    collapseQuickNav();
+                });
+            });
+
+            const updateActive = () => {
+                const offset = getOffset();
+                const entries = Array.from(sectionById.entries());
+                let activeId = '';
+
+                for (let i = entries.length - 1; i >= 0; i -= 1) {
+                    const [id, section] = entries[i];
+                    const top = section.getBoundingClientRect().top;
+                    if (top <= offset + 14) {
+                        activeId = id;
+                        break;
+                    }
+                }
+
+                if (!activeId) {
+                    const firstVisible = entries.find(([, section]) => section.getBoundingClientRect().bottom > 0);
+                    activeId = firstVisible ? firstVisible[0] : entries[0][0];
+                }
+
+                navDots.forEach((dot) => {
+                    dot.classList.toggle('is-active', dot.dataset.navTarget === activeId);
+                });
+            };
+
+            updateActive();
+            window.addEventListener('scroll', updateActive, { passive: true });
+            window.addEventListener('resize', updateActive);
+        })();
+
         (function() {
             const filter = document.getElementById('irbFilter');
             if (!filter) return;

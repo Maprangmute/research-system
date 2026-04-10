@@ -777,6 +777,55 @@ class OutputController extends Controller
         return $pdf->stream('presentations-report.pdf');
     }
 
+    public function textbooks(Request $request)
+    {
+        $sortable = ['created_at', 'year', 'title', 'book_title', 'publisher'];
+        $sort = in_array($request->get('sort'), $sortable, true) ? $request->get('sort') : 'created_at';
+        $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
+        $payload = $this->buildTextbooksPayload($request, $sort, $dir);
+
+        $outputs = $this->paginateCollection($payload['items'], $request, 20);
+
+        return view('outputs.textbooks', [
+            'outputs' => $outputs,
+            'summary' => $payload['summary'],
+            'authorOptions' => $payload['authorOptions'],
+            'publisherOptions' => $payload['publisherOptions'],
+            'yearOptions' => $payload['yearOptions'],
+            'currentSort' => $sort,
+            'currentDir' => $dir,
+        ]);
+    }
+
+    public function textbooksPdf(Request $request)
+    {
+        $sort = in_array($request->get('sort'), ['created_at', 'year', 'title', 'book_title', 'publisher'], true)
+            ? $request->get('sort')
+            : 'created_at';
+        $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
+        $payload = $this->buildTextbooksPayload($request, $sort, $dir);
+
+        $user = auth()->user();
+        $reporter = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
+        $filters = collect([
+            $request->filled('search') ? 'ค้นหา: ' . trim((string) $request->input('search')) : null,
+            $request->filled('author') ? 'Author: ' . trim((string) $request->input('author')) : null,
+            $request->filled('year') ? 'ปี: ' . trim((string) $request->input('year')) : null,
+        ])->filter()->values();
+
+        $pdf = PDF::loadView('outputs.textbooks-pdf', [
+            'textbooks' => $payload['items'],
+            'summary' => $payload['summary'],
+            'reporter' => $reporter !== '' ? $reporter : 'ผู้ใช้ระบบ',
+            'generatedAt' => now()->setTimezone('Asia/Bangkok'),
+            'filters' => $filters,
+            'sort' => $sort,
+            'dir' => $dir,
+        ]);
+
+        return $pdf->stream('textbooks-report.pdf');
+    }
+
     private function buildPresentationsPayload(Request $request, string $sort, string $dir): array
     {
         $baseQuery = $this->visibleProjectOutputsQuery($request)
@@ -939,6 +988,25 @@ class OutputController extends Controller
                 $q->where('user_id', $user->id)
                     ->orWhereHas('fteRoles', function (Builder $subQ) use ($fullName) {
                         $subQ->where('name', $fullName);
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    private function visibleBackOfficeOutputsQuery(): Builder
+    {
+        $query = BackOfficeTaskOutput::query()->with('task:id,title,created_by');
+        $user = auth()->user();
+        $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
+        $canViewAll = $user->role === 'admin' || $user->role === 'user_all';
+
+        if (!$canViewAll) {
+            $query->whereHas('task', function (Builder $q) use ($user, $fullName) {
+                $q->where('created_by', $user->id)
+                    ->orWhereHas('entries', function (Builder $subQ) use ($fullName) {
+                        $subQ->where('person_name', $fullName);
                     });
             });
         }
@@ -1170,6 +1238,240 @@ class OutputController extends Controller
             'yearOptions' => $papers->pluck('year_be')->filter()->unique()->sortDesc()->values(),
             'impactFactorMax' => $impactFactorMax,
             'selectedImpactMax' => $selectedImpactMax,
+        ];
+    }
+
+    private function buildTextbooksPayload(Request $request, string $sort, string $dir): array
+    {
+        $baseQuery = $this->visibleProjectOutputsQuery($request)
+            ->where('type', 'like', 'EA119%')
+            ->with(['bookAuthors:id,output_id,name']);
+
+        $backOfficeQuery = $this->visibleBackOfficeOutputsQuery()
+            ->where('type', 'like', 'EA119%');
+
+        $externalQuery = ExternalOutput::query()
+            ->where('type', 'EA119')
+            ->with(['authors:id,external_output_id,name']);
+
+        $yearFilter = $this->normalizeYearFilter($request->input('year'));
+        if ($yearFilter !== null) {
+            $baseQuery->where(function (Builder $q) use ($yearFilter) {
+                $q->where('year', 'like', '%' . $yearFilter . '%')
+                    ->orWhere('year', 'like', '%' . ($yearFilter - 543) . '%');
+            });
+
+            $backOfficeQuery->where(function (Builder $q) use ($yearFilter) {
+                $q->where('year', 'like', '%' . $yearFilter . '%')
+                    ->orWhere('year', 'like', '%' . ($yearFilter - 543) . '%');
+            });
+
+            $externalQuery->whereYear('publish_date', $yearFilter - 543);
+        }
+
+        $search = trim((string) $request->input('search', ''));
+        $authorFilter = trim((string) $request->input('author', ''));
+
+        $projectRows = $baseQuery->get()
+            ->filter(function (Output $output) use ($search, $authorFilter) {
+                $authors = $output->bookAuthors->pluck('name')->filter();
+
+                if ($authorFilter !== '' && !$authors->contains($authorFilter)) {
+                    return false;
+                }
+
+                if ($search !== '') {
+                    $haystack = mb_strtolower(implode(' ', array_filter([
+                        $output->output_code,
+                        $output->title,
+                        $output->book_title,
+                        $output->publisher_name,
+                        $output->chapter_pages,
+                        $output->project_output,
+                        $output->project?->project_name_th,
+                        $output->project?->project_code,
+                        $authors->implode(' '),
+                    ])), 'UTF-8');
+
+                    if (!str_contains($haystack, mb_strtolower($search, 'UTF-8'))) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->map(function (Output $output) {
+                $yearBe = $this->normalizeYearFilter($output->year);
+                $authors = $output->bookAuthors->pluck('name')->filter()->values();
+
+                return (object) [
+                    'id' => $output->id,
+                    'output_code' => $output->output_code,
+                    'title' => $output->title ?: '-',
+                    'book_title' => $output->book_title ?: '-',
+                    'publisher_name' => $output->publisher_name ?: '-',
+                    'chapter_pages' => $output->chapter_pages ?: '-',
+                    'year_be' => $yearBe,
+                    'detail' => $output->project_output ?: null,
+                    'project_label' => $output->project?->project_name_th ?: '-',
+                    'project_code' => $output->project?->project_code ?: null,
+                    'project_link' => $output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null,
+                    'authors' => $authors,
+                    'displayed_at' => $output->updated_at ?? $output->created_at,
+                    'created_at' => $output->created_at,
+                    'sort_year' => $yearBe ?? 0,
+                    'sort_title' => mb_strtolower((string) $output->title),
+                    'sort_book_title' => mb_strtolower((string) $output->book_title),
+                    'sort_publisher' => mb_strtolower((string) $output->publisher_name),
+                ];
+            });
+
+        $backOfficeRows = $backOfficeQuery->get()
+            ->filter(function (BackOfficeTaskOutput $output) use ($search, $authorFilter) {
+                $authors = collect($output->book_authors ?? [])
+                    ->map(function ($author) {
+                        if (is_array($author)) {
+                            return trim((string) ($author['name'] ?? ''));
+                        }
+                        return trim((string) $author);
+                    })
+                    ->filter()
+                    ->values();
+
+                if ($authorFilter !== '' && !$authors->contains($authorFilter)) {
+                    return false;
+                }
+
+                if ($search !== '') {
+                    $haystack = mb_strtolower(implode(' ', array_filter([
+                        $output->title,
+                        $output->book_title,
+                        $output->publisher_name,
+                        $output->chapter_pages,
+                        $output->project_output,
+                        $output->task?->title,
+                        $authors->implode(' '),
+                    ])), 'UTF-8');
+
+                    if (!str_contains($haystack, mb_strtolower($search, 'UTF-8'))) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->map(function (BackOfficeTaskOutput $output) {
+                $yearBe = $this->normalizeYearFilter($output->year);
+                $authors = collect($output->book_authors ?? [])
+                    ->map(function ($author) {
+                        if (is_array($author)) {
+                            return trim((string) ($author['name'] ?? ''));
+                        }
+                        return trim((string) $author);
+                    })
+                    ->filter()
+                    ->values();
+
+                return (object) [
+                    'id' => $output->id,
+                    'output_code' => null,
+                    'title' => $output->title ?: '-',
+                    'book_title' => $output->book_title ?: '-',
+                    'publisher_name' => $output->publisher_name ?: '-',
+                    'chapter_pages' => $output->chapter_pages ?: '-',
+                    'year_be' => $yearBe,
+                    'detail' => $output->project_output ?: null,
+                    'project_label' => $output->task?->title ?: 'งานนอกโครงการวิจัย',
+                    'project_code' => null,
+                    'project_link' => $output->task ? route('back_office.show', $output->task->id) : null,
+                    'authors' => $authors,
+                    'displayed_at' => $output->updated_at ?? $output->created_at,
+                    'created_at' => $output->created_at,
+                    'sort_year' => $yearBe ?? 0,
+                    'sort_title' => mb_strtolower((string) $output->title),
+                    'sort_book_title' => mb_strtolower((string) $output->book_title),
+                    'sort_publisher' => mb_strtolower((string) $output->publisher_name),
+                ];
+            });
+
+        $externalRows = $externalQuery->get()
+            ->filter(function (ExternalOutput $output) use ($search, $authorFilter) {
+                $authors = $output->authors->pluck('name')->filter();
+
+                if ($authorFilter !== '' && !$authors->contains($authorFilter)) {
+                    return false;
+                }
+
+                if ($search !== '') {
+                    $haystack = mb_strtolower(implode(' ', array_filter([
+                        $output->output_code,
+                        $output->title,
+                        $output->book_title,
+                        $output->publisher_name,
+                        $output->chapter_pages,
+                        $output->note,
+                        $output->job_category,
+                        $authors->implode(' '),
+                    ])), 'UTF-8');
+
+                    if (!str_contains($haystack, mb_strtolower($search, 'UTF-8'))) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->map(function (ExternalOutput $output) {
+                $yearBe = $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
+                $authors = $output->authors->pluck('name')->filter()->values();
+
+                return (object) [
+                    'id' => $output->id,
+                    'output_code' => $output->output_code,
+                    'title' => $output->title ?: '-',
+                    'book_title' => $output->book_title ?: '-',
+                    'publisher_name' => $output->publisher_name ?: '-',
+                    'chapter_pages' => $output->chapter_pages ?: '-',
+                    'year_be' => $yearBe,
+                    'detail' => $output->note ?: null,
+                    'project_label' => $output->job_category ?: '-',
+                    'project_code' => null,
+                    'project_link' => route('outputs.external-academic.show', $output),
+                    'authors' => $authors,
+                    'displayed_at' => $output->updated_at ?? $output->created_at,
+                    'created_at' => $output->created_at,
+                    'sort_year' => $yearBe ?? 0,
+                    'sort_title' => mb_strtolower((string) $output->title),
+                    'sort_book_title' => mb_strtolower((string) $output->book_title),
+                    'sort_publisher' => mb_strtolower((string) $output->publisher_name),
+                ];
+            });
+
+        $rows = $projectRows->merge($backOfficeRows)->merge($externalRows);
+
+        $rows = $this->sortCollection($rows, $sort, $dir, [
+            'year' => fn ($item) => $item->sort_year,
+            'title' => fn ($item) => $item->sort_title,
+            'book_title' => fn ($item) => $item->sort_book_title,
+            'publisher' => fn ($item) => $item->sort_publisher,
+            'created_at' => fn ($item) => $item->created_at?->timestamp ?? 0,
+        ]);
+
+        return [
+            'items' => $rows,
+            'summary' => [
+                'total_textbooks' => $rows->count(),
+                'unique_authors' => $rows->flatMap(fn ($row) => $row->authors)->filter()->unique()->count(),
+                'top_author' => $this->topLabel(
+                    $rows->flatMap(fn ($row) => collect($row->authors)->unique())->countBy()
+                ),
+                'top_publisher' => $this->topLabel(
+                    $rows->pluck('publisher_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()
+                ),
+            ],
+            'authorOptions' => $rows->flatMap(fn ($row) => $row->authors)->filter()->unique()->sort()->values(),
+            'publisherOptions' => $rows->pluck('publisher_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
+            'yearOptions' => $rows->pluck('year_be')->filter()->unique()->sortDesc()->values(),
         ];
     }
 }

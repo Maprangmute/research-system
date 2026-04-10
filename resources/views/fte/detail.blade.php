@@ -187,6 +187,102 @@
         </div>
 
         <div class="bg-white border rounded-2xl p-4 shadow-sm">
+            <div class="text-sm font-semibold text-slate-800">
+                สถานะโครงการประจำเดือน {{ $monthProjectStats['label'] ?? '-' }}
+            </div>
+            <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="text-xs text-slate-500">มีโปรเจคทั้งหมด (เดือนนี้)</div>
+                    <div class="text-2xl font-semibold text-slate-900">{{ number_format($monthProjectStats['total'] ?? 0) }}</div>
+                </div>
+                <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                    <div class="text-xs text-blue-700">จำนวนโครงการที่ทำอยู่ในเดือนนี้</div>
+                    <div class="text-2xl font-semibold text-blue-800">{{ number_format($monthProjectStats['active'] ?? 0) }}</div>
+                </div>
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                    <div class="text-xs text-emerald-700">จำนวนจบโครงการในเดือนนี้</div>
+                    <div class="text-2xl font-semibold text-emerald-800">{{ number_format($monthProjectStats['completed'] ?? 0) }}</div>
+                </div>
+            </div>
+
+            <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+                <table class="min-w-full table-fixed text-sm">
+                    <colgroup>
+                        <col class="w-[36%]">
+                        <col class="w-[44%]">
+                        <col class="w-[20%]">
+                    </colgroup>
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-semibold text-slate-700">ชื่อโครงการ/งาน</th>
+                            <th class="px-3 py-2 text-left font-semibold text-slate-700">รายละเอียดงาน</th>
+                            <th class="px-3 py-2 text-left font-semibold text-slate-700">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse(($monthWorkList ?? collect()) as $work)
+                            <tr>
+                                <td class="px-3 py-2 text-slate-800">
+                                    @if (($work['type'] ?? '') === 'project' && !empty($work['project_id']))
+                                        <a href="{{ route('projects.show', $work['project_id']) }}" target="_blank" rel="noopener"
+                                            class="text-blue-700 hover:underline">
+                                            {{ $work['name'] ?? '-' }}
+                                        </a>
+                                    @elseif (($work['type'] ?? '') === 'back_office' && !empty($work['task_id']))
+                                        <a href="{{ route('back_office.show', $work['task_id']) }}" target="_blank" rel="noopener"
+                                            class="text-blue-700 hover:underline">
+                                            {{ $work['name'] ?? '-' }}
+                                        </a>
+                                    @else
+                                        <span>{{ $work['name'] ?? '-' }}</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2 text-slate-700 break-words">
+                                    @php $detailGroups = collect($work['work_detail_groups'] ?? [])->filter(); @endphp
+                                    @if ($detailGroups->isEmpty())
+                                        -
+                                    @else
+                                        <ul class="space-y-2">
+                                            @foreach ($detailGroups as $group)
+                                                <li class="leading-snug">
+                                                    <div class="font-semibold text-slate-800">
+                                                        <span class="text-slate-400 mr-1">•</span>{{ $group['job'] ?? 'รายละเอียดงาน' }}
+                                                    </div>
+                                                    @php $tasks = collect($group['tasks'] ?? [])->filter(); @endphp
+                                                    @if ($tasks->isNotEmpty())
+                                                        <ul class="mt-1 ml-5 space-y-1 text-slate-700">
+                                                            @foreach ($tasks as $task)
+                                                                <li>
+                                                                    <span class="text-slate-400 mr-1">-</span>
+                                                                    <span>{{ $task['task'] ?? '-' }}</span>
+                                                                    <div class="ml-4 text-slate-500">({{ $task['range'] ?? '-' }})</div>
+                                                                </li>
+                                                            @endforeach
+                                                        </ul>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span
+                                        class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ !empty($work['is_completed']) ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800' }}">
+                                        {{ $work['status_label'] ?? '-' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="px-3 py-5 text-center text-slate-500">ไม่มีรายการโครงการ/งานในเดือนนี้</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white border rounded-2xl p-4 shadow-sm">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-lg font-semibold text-slate-800">📊 สรุป FTE รายเดือน (Stacked)</h3>
             </div>

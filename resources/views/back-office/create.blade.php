@@ -177,6 +177,118 @@
             color: #dc2626;
         }
 
+        .bo-section-nav {
+            position: fixed;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 55;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.45rem;
+            padding: 0.55rem;
+            border: 1px solid #dbeafe;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(8px);
+        }
+
+        .bo-section-nav::before {
+            content: '';
+            position: absolute;
+            top: 0.85rem;
+            bottom: 0.85rem;
+            left: 1.3rem;
+            width: 2px;
+            background: linear-gradient(180deg, #bfdbfe 0%, #cbd5e1 100%);
+            border-radius: 999px;
+            z-index: 0;
+        }
+
+        .bo-section-dot {
+            position: relative;
+            z-index: 1;
+            width: auto;
+            min-width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #0f172a;
+            font-weight: 800;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 0.46rem;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 38px;
+            transition: max-width 0.2s ease, padding 0.2s ease, transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+        }
+
+        .bo-section-dot:hover,
+        .bo-section-dot:focus-visible {
+            outline: none;
+            transform: translateY(-1px);
+            border-color: #60a5fa;
+            background: #eff6ff;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.18);
+        }
+
+        .bo-section-dot.is-active {
+            border-color: #2563eb;
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.28);
+        }
+
+        .bo-section-dot__short {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            border-radius: 9px;
+            background: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.65);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .bo-section-dot__full {
+            margin-left: 0.5rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            opacity: 0;
+            transform: translateX(-6px);
+            transition: opacity 0.14s ease, transform 0.14s ease;
+        }
+
+        .bo-section-nav.is-expanded .bo-section-dot {
+            width: 270px;
+            max-width: 270px;
+            padding: 0 0.62rem;
+        }
+
+        .bo-section-nav.is-expanded .bo-section-dot__full {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .bo-section-dot.is-active .bo-section-dot__short {
+            border-color: rgba(191, 219, 254, 0.9);
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+        }
+
+        .bo-section-target {
+            scroll-margin-top: 88px;
+        }
+
         @media (max-width: 768px) {
             .bo-editor-panel,
             .entry-card {
@@ -191,9 +303,20 @@
                 display: none;
             }
         }
+
+        @media (max-width: 1280px) {
+            .bo-section-nav {
+                display: none;
+            }
+        }
     </style>
 
     <div class="bo-editor-shell mx-auto max-w-6xl space-y-5 p-4">
+        <aside class="bo-section-nav" aria-label="เมนูลัดหัวข้อ">
+            <button type="button" class="bo-section-dot" data-nav-target="bo-section-main" aria-label="1: ข้อมูลงานหลัก"><span class="bo-section-dot__short">1</span><span class="bo-section-dot__full">1: ข้อมูลงานหลัก</span></button>
+            <button type="button" class="bo-section-dot" data-nav-target="bo-section-entries" aria-label="2: ภาระงานและผู้รับผิดชอบ"><span class="bo-section-dot__short">2</span><span class="bo-section-dot__full">2: ภาระงานและผู้รับผิดชอบ</span></button>
+            <button type="button" class="bo-section-dot" data-nav-target="bo-section-outputs" aria-label="3: ผลงานของงานนอกโครงการ"><span class="bo-section-dot__short">3</span><span class="bo-section-dot__full">3: ผลงานของงานนอกโครงการ</span></button>
+        </aside>
         <section class="bo-editor-panel bo-editor-hero">
             <div class="relative flex flex-col gap-3 px-5 py-5 md:px-7">
                 <div class="max-w-3xl">
@@ -219,7 +342,7 @@
         <form method="POST" action="{{ route('back_office.store') }}" class="space-y-6" novalidate>
             @csrf
 
-            <div class="bo-editor-panel p-6">
+            <div id="bo-section-main" class="bo-editor-panel bo-section-target p-6">
                 <div class="flex items-center gap-2 mb-4">
                         <div class="bo-editor-step is-dark">1</div>
                         <div>
@@ -275,7 +398,7 @@
                 </div>
             </div>
 
-            <div class="bo-editor-panel p-6">
+            <div id="bo-section-entries" class="bo-editor-panel bo-section-target p-6">
                 <div class="flex items-center gap-2 mb-4">
                     <div class="flex items-center gap-2">
                         <div class="bo-editor-step is-blue">2</div>
@@ -298,7 +421,7 @@
                 </div>
             </div>
 
-            <div class="bo-editor-panel p-6">
+            <div id="bo-section-outputs" class="bo-editor-panel bo-section-target p-6">
                 <div class="flex items-center gap-2 mb-4">
                     <div class="flex items-center gap-2">
                         <div class="bo-editor-step is-green">3</div>
@@ -1471,5 +1594,66 @@
                 sub.textContent = `${dateText} • ${hours} ชม.`;
             }
         }
+    </script>
+    <script>
+        (() => {
+            const navDots = Array.from(document.querySelectorAll('.bo-section-dot[data-nav-target]'));
+            if (!navDots.length) return;
+
+            const quickNav = document.querySelector('.bo-section-nav');
+            const sectionById = new Map();
+
+            const expandQuickNav = () => quickNav?.classList.add('is-expanded');
+            const collapseQuickNav = () => quickNav?.classList.remove('is-expanded');
+
+            quickNav?.addEventListener('mouseenter', expandQuickNav);
+            quickNav?.addEventListener('mouseleave', collapseQuickNav);
+            quickNav?.addEventListener('focusin', expandQuickNav);
+            quickNav?.addEventListener('focusout', (event) => {
+                if (!quickNav?.contains(event.relatedTarget)) collapseQuickNav();
+            });
+
+            navDots.forEach((dot) => {
+                const targetId = dot.dataset.navTarget || '';
+                const targetEl = document.getElementById(targetId);
+                if (targetEl) sectionById.set(targetId, targetEl);
+
+                dot.addEventListener('click', () => {
+                    if (!targetEl) return;
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    dot.blur();
+                    collapseQuickNav();
+                });
+            });
+
+            const updateActiveDot = () => {
+                let activeId = '';
+                let bestTop = Number.POSITIVE_INFINITY;
+
+                sectionById.forEach((el, id) => {
+                    const rect = el.getBoundingClientRect();
+                    const delta = Math.abs(rect.top - 120);
+                    if (rect.top <= 180 && delta < bestTop) {
+                        bestTop = delta;
+                        activeId = id;
+                    }
+                });
+
+                if (!activeId) {
+                    const firstVisible = Array.from(sectionById.entries())
+                        .find(([, el]) => el.getBoundingClientRect().top > 0);
+                    activeId = firstVisible ? firstVisible[0] : Array.from(sectionById.keys())[0] || '';
+                }
+
+                navDots.forEach((dot) => {
+                    dot.classList.toggle('is-active', dot.dataset.navTarget === activeId);
+                });
+            };
+
+            window.addEventListener('scroll', updateActiveDot, { passive: true });
+            window.addEventListener('resize', updateActiveDot);
+            window.setTimeout(updateActiveDot, 60);
+            updateActiveDot();
+        })();
     </script>
 @endsection

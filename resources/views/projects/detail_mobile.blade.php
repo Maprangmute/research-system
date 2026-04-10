@@ -146,6 +146,29 @@
             flex: 1 1 auto;
         }
 
+        .mobile-project-title {
+            line-height: 1.24;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
+        }
+
+        .mobile-project-title.mobile-project-title--normal {
+            font-size: 1.25rem;
+        }
+
+        .mobile-project-title.mobile-project-title--medium {
+            font-size: 1.12rem;
+        }
+
+        .mobile-project-title.mobile-project-title--long {
+            font-size: 1.02rem;
+        }
+
+        .mobile-project-title.mobile-project-title--xlong {
+            font-size: 0.95rem;
+        }
+
         @media (max-width: 420px) {
             .field-row {
                 grid-template-columns: 92px 1fr;
@@ -251,6 +274,10 @@
             transition-delay: 0.14s;
         }
 
+        .detail-fab-menu.is-open .detail-fab-item:nth-child(6) {
+            transition-delay: 0.17s;
+        }
+
         .detail-fab-item:hover {
             filter: brightness(0.98);
         }
@@ -268,6 +295,11 @@
         .detail-fab-item--pdf {
             background: #d1fae5;
             color: #065f46;
+        }
+
+        .detail-fab-item--fte {
+            background: #ecfeff;
+            color: #0f766e;
         }
 
         .detail-fab-item--gantt {
@@ -389,6 +421,14 @@
                     return $raw;
                 }
             };
+            $projectTitle = trim((string) ($project->project_name_th ?? '-'));
+            $projectTitleLength = mb_strlen($projectTitle);
+            $mobileProjectTitleClass = match (true) {
+                $projectTitleLength >= 140 => 'mobile-project-title--xlong',
+                $projectTitleLength >= 100 => 'mobile-project-title--long',
+                $projectTitleLength >= 70 => 'mobile-project-title--medium',
+                default => 'mobile-project-title--normal',
+            };
         @endphp
 
         <div id="detailHeaderCard" class="mobile-card space-y-3">
@@ -396,7 +436,7 @@
                 class="inline-flex items-center gap-2 text-blue-700 font-semibold text-sm hover:text-blue-900">
                 ← กลับไปยังรายการโครงการ
             </a>
-            <h2 class="text-xl font-semibold text-slate-900">{{ $project->project_name_th ?? '-' }}</h2>
+            <h2 class="mobile-project-title {{ $mobileProjectTitleClass }} font-semibold text-slate-900">{{ $projectTitle }}</h2>
             <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600">
                 <span class="font-medium text-slate-500">รหัสโครงการ</span>
                 <span class="font-semibold text-slate-700">{{ $project->project_code ?: '-' }}</span>
@@ -1216,6 +1256,9 @@
                 @if ($isOwner || $isAdmin)
                     <a href="{{ route('projects.pdf', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--pdf">
                         🖨️ PDF
+                    </a>
+                    <a href="{{ route('fte.project.detail', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--fte">
+                        🔥 FTE project
                     </a>
                 @endif
                 <a href="{{ route('projects.gantt', $project) }}" class="detail-fab-item detail-fab-item--gantt">
