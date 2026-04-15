@@ -8,9 +8,8 @@
     <table class="fte-index-table min-w-[1120px] xl:min-w-full table-auto text-sm">
         <thead class="bg-slate-100 text-slate-700">
             <tr>
-                <th class="px-4 py-3 text-left w-[42%]">ชื่อ</th>
-                <th class="px-4 py-3 text-right w-[18%]">FTE ตามช่วงที่เลือก</th>
-                <th class="px-4 py-3 text-right w-[18%]">FTE เดือนนี้</th>
+                <th class="px-4 py-3 text-left w-[50%]">ชื่อ</th>
+                <th class="px-4 py-3 text-right w-[28%]">{{ $selectedFteLabel ?? 'FTE ตามช่วงที่เลือก' }}</th>
                 <th class="px-4 py-3 text-center w-[22%]">รายละเอียด</th>
             </tr>
         </thead>
@@ -19,7 +18,7 @@
                 <tr class="fte-main-row border-t group hover:bg-blue-50 transition"
                     data-person-name="{{ $row->name }}"
                     data-total-fte="{{ (float) ($row->total_fte ?? 0) }}"
-                    data-month-fte="{{ (float) ($row->fte_this_month ?? 0) }}">
+                    data-month-fte="{{ (float) ($row->fte_selected ?? 0) }}">
                     <td class="px-4 py-2 font-medium flex items-center gap-2" data-label="ชื่อ">
                         @php
                             $profileImage = $profiles[$row->name] ?? null;
@@ -38,11 +37,8 @@
                             {{ $row->name }}
                         </a>
                     </td>
-                    <td class="px-4 py-2 text-right font-semibold text-green-600" data-label="FTE ตามช่วงที่เลือก">
-                        {{ number_format($row->total_fte, 7) }}
-                    </td>
-                    <td class="px-4 py-2 text-right font-semibold text-slate-700" data-label="FTE เดือนนี้">
-                        {{ number_format($row->fte_this_month ?? 0, 7) }}
+                    <td class="px-4 py-2 text-right font-semibold text-green-600" data-label="{{ $selectedFteLabel ?? 'FTE ตามช่วงที่เลือก' }}">
+                        {{ number_format($row->fte_selected ?? 0, 7) }}
                     </td>
                     <td class="px-4 py-2 text-center" data-label="รายละเอียด">
                         <button type="button"
@@ -53,7 +49,7 @@
                 </tr>
 
                 <tr id="detail-row-{{ $loop->index }}" class="fte-detail-row bg-blue-50 animate-fade-in">
-                    <td colspan="4" class="px-6 py-4">
+                    <td colspan="3" class="px-6 py-4">
                         @if (isset($monthlyFTE[$row->name]))
                             @foreach ($monthlyFTE[$row->name] as $month => $items)
                                 @php
@@ -96,6 +92,12 @@
                                                     @endphp
                                                     <tr class="{{ $loop->even ? 'bg-white' : 'bg-gray-50' }}">
                                                         <td class="p-3 break-words whitespace-normal align-top" data-label="โปรเจค/งาน">
+                                                            @php
+                                                                $workloadName = trim((string) ($item->job_name ?? ''));
+                                                                if ($workloadName === '') {
+                                                                    $workloadName = trim((string) ($item->task_detail ?? ''));
+                                                                }
+                                                            @endphp
                                                             @if ($item->project?->id)
                                                                 <a href="{{ route('projects.show', $item->project) }}" class="text-blue-700 underline">
                                                                     {{ $item->project->project_name_th ?? '-' }}
@@ -114,6 +116,9 @@
                                                                 @else
                                                                     <span class="text-slate-800">{{ $backOfficeTitle }}</span>
                                                                 @endif
+                                                                @if ($workloadName !== '' && $workloadName !== trim((string) $backOfficeTitle))
+                                                                    <div class="mt-1 text-sm leading-6">{{ $workloadName }}</div>
+                                                                @endif
                                                                 <div class="text-gray-400 text-xs">งานนอกโครงการ</div>
                                                             @endif
                                                         </td>
@@ -124,15 +129,20 @@
 
                                                         <td class="p-3 break-words whitespace-normal align-top" data-label="รายละเอียดงาน">
                                                             @php
-                                                                $jobDetail = trim((string) ($item->job_detail ?? ''));
-                                                                $taskDetail = trim((string) ($item->task_detail ?? ''));
-                                                                $hasJob = $jobDetail !== '';
-                                                                $hasTask = $taskDetail !== '';
+                                                                $isBackOffice = !$item->project?->id;
+                                                                if ($isBackOffice) {
+                                                                    $workloadDetail = trim((string) ($item->job_detail ?? ''));
+                                                                    if ($workloadDetail === '') {
+                                                                        $workloadDetail = trim((string) ($item->task_detail ?? ''));
+                                                                    }
+                                                                } else {
+                                                                    $workloadDetail = trim((string) ($item->task_detail ?? ''));
+                                                                    if ($workloadDetail === '') {
+                                                                        $workloadDetail = trim((string) ($item->job_detail ?? ''));
+                                                                    }
+                                                                }
                                                             @endphp
-                                                            <div class="text-slate-700">{{ $hasJob ? $jobDetail : '-' }}</div>
-                                                            @if ($hasTask)
-                                                                <div class="text-slate-500 text-sm mt-0.5">{{ $taskDetail }}</div>
-                                                            @endif
+                                                            <div class="text-slate-700">{{ $workloadDetail !== '' ? $workloadDetail : '-' }}</div>
                                                         </td>
 
                                                         <td class="p-3 text-center font-semibold text-slate-700 align-top" data-label="ชั่วโมงการทำงาน">
@@ -160,7 +170,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="4" class="p-8 text-center text-gray-400">ไม่พบข้อมูล</td>
+                    <td colspan="3" class="p-8 text-center text-gray-400">ไม่พบข้อมูล</td>
                 </tr>
             @endforelse
         </tbody>

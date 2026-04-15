@@ -48,6 +48,7 @@
     </style>
     @php
         $allRows = $monthlyFTE->flatten(1);
+        $totalWorkloadCount = $allRows->count();
         $projectCount = $allRows->pluck('project.id')->filter()->unique()->count();
         $monthCount = $monthlyFTE->count();
         $totalFte = $allRows->sum('fte_value');
@@ -169,8 +170,8 @@
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-white border rounded-xl p-4">
-                <div class="text-xs text-slate-500">จำนวนเดือนที่มีงาน</div>
-                <div class="text-2xl font-semibold text-slate-900">{{ number_format($monthCount) }}</div>
+                <div class="text-xs text-slate-500">จำนวนภาระงานทั้งหมด</div>
+                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totalWorkloadCount) }}</div>
             </div>
             <div class="bg-white border rounded-xl p-4">
                 <div class="text-xs text-slate-500">จำนวนโครงการ</div>
@@ -196,11 +197,11 @@
                     <div class="text-2xl font-semibold text-slate-900">{{ number_format($monthProjectStats['total'] ?? 0) }}</div>
                 </div>
                 <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
-                    <div class="text-xs text-blue-700">จำนวนโครงการที่ทำอยู่ในเดือนนี้</div>
+                    <div class="text-xs text-blue-700">จำนวนภาระงานที่ดำเนินการอยู่ในเดือนนี้</div>
                     <div class="text-2xl font-semibold text-blue-800">{{ number_format($monthProjectStats['active'] ?? 0) }}</div>
                 </div>
                 <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                    <div class="text-xs text-emerald-700">จำนวนจบโครงการในเดือนนี้</div>
+                    <div class="text-xs text-emerald-700">จำนวนภาระงานที่เสร็จสิ้นในเดือนนี้</div>
                     <div class="text-2xl font-semibold text-emerald-800">{{ number_format($monthProjectStats['completed'] ?? 0) }}</div>
                 </div>
             </div>
@@ -485,11 +486,17 @@
                                             $oeYear = $oeCarbon->year + 543;
                                             $projectName = $item->project->project_name_th ?? '-';
                                             $roleGroup = $item->role_group ?? '-';
+                                            $workloadNameRaw = trim((string) ($item->job_name ?? ''));
+                                            $workloadName = $workloadNameRaw !== '' ? $workloadNameRaw : trim((string) ($item->task_detail ?? ''));
                                             $jobDetailRaw = trim((string) ($item->job_detail ?? ''));
                                             $taskDetailRaw = trim((string) ($item->task_detail ?? ''));
-                                            $jobDetail = $jobDetailRaw !== '' ? $jobDetailRaw : '-';
-                                            $taskDetail = $taskDetailRaw !== '' ? $taskDetailRaw : '-';
-                                            $combinedJob = trim($jobDetailRaw . ' ' . $taskDetailRaw);
+                                            $isBackOffice = !$item->project?->id;
+                                            if ($isBackOffice) {
+                                                $detailText = $jobDetailRaw !== '' ? $jobDetailRaw : ($taskDetailRaw !== '' ? $taskDetailRaw : '-');
+                                            } else {
+                                                $detailText = $taskDetailRaw !== '' ? $taskDetailRaw : ($jobDetailRaw !== '' ? $jobDetailRaw : '-');
+                                            }
+                                            $combinedJob = trim($workloadName . ' ' . $jobDetailRaw);
                                         @endphp
                                         <tr class="border-b fte-row"
                                             data-project="{{ $projectName }}"
@@ -517,6 +524,9 @@
                                                     @else
                                                         <span class="text-slate-800">{{ $backOfficeTitle }}</span>
                                                     @endif
+                                                    @if ($workloadName !== '' && $workloadName !== trim((string) $backOfficeTitle))
+                                                        <div class="mt-1 text-sm leading-6">{{ $workloadName }}</div>
+                                                    @endif
                                                     <div class="text-xs text-slate-500 mt-1">งานนอกโครงการ</div>
                                                 @endif
                                             </td>
@@ -524,10 +534,7 @@
                                                 {{ $roleGroup }}
                                             </td>
                                             <td class="p-2 break-words whitespace-normal" data-label="รายละเอียดงาน">
-                                                <div class="text-slate-700">{{ $jobDetail }}</div>
-                                                @if ($taskDetail !== '-')
-                                                    <div class="text-slate-500 text-sm mt-0.5">{{ $taskDetail }}</div>
-                                                @endif
+                                                <div class="text-slate-700">{{ $detailText }}</div>
                                             </td>
                                             <td class="p-2 text-center" data-label="ช่วงเวลา">
                                                 {{ $os }} {{ $osYear }} - {{ $oe }} {{ $oeYear }}

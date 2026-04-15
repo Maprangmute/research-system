@@ -257,8 +257,8 @@
     <table>
         <tbody>
             <tr>
-                <td>จำนวนเดือนที่มีงาน</td>
-                <td class="right">{{ number_format($monthCount) }}</td>
+                <td>จำนวนภาระงานทั้งหมด</td>
+                <td class="right">{{ number_format($allRows->count()) }}</td>
             </tr>
             <tr>
                 <td>จำนวนโครงการ</td>
@@ -279,15 +279,15 @@
     <table>
         <tbody>
             <tr>
-                <td>มีโปรเจคทั้งหมด (เดือนนี้)</td>
+                <td>มีภาระงานทั้งหมด (เดือนนี้)</td>
                 <td class="right">{{ number_format($monthProjectStats['total'] ?? 0) }}</td>
             </tr>
             <tr>
-                <td>จำนวนโครงการที่ทำอยู่ในเดือนนี้</td>
+                <td>จำนวนภาระงานที่ดำเนินการอยู่ในเดือนนี้</td>
                 <td class="right">{{ number_format($monthProjectStats['active'] ?? 0) }}</td>
             </tr>
             <tr>
-                <td>จำนวนจบโครงการในเดือนนี้</td>
+                <td>จำนวนภาระงานที่เสร็จสิ้นในเดือนนี้</td>
                 <td class="right">{{ number_format($monthProjectStats['completed'] ?? 0) }}</td>
             </tr>
         </tbody>
@@ -366,12 +366,24 @@
                             $title = $item->project?->id
                                 ? ($item->project->project_name_th ?? '-')
                                 : ($item->task_detail ?? '-');
+                            $workloadNameRaw = trim((string) ($item->job_name ?? ''));
+                            $workloadName = $workloadNameRaw !== '' ? $workloadNameRaw : trim((string) ($item->task_detail ?? ''));
+                            $jobDetailRaw = trim((string) ($item->job_detail ?? ''));
+                            $taskDetailRaw = trim((string) ($item->task_detail ?? ''));
                             $isBackOffice = !$item->project?->id;
+                            if ($isBackOffice) {
+                                $detailText = $jobDetailRaw !== '' ? $jobDetailRaw : ($taskDetailRaw !== '' ? $taskDetailRaw : '-');
+                            } else {
+                                $detailText = $taskDetailRaw !== '' ? $taskDetailRaw : ($jobDetailRaw !== '' ? $jobDetailRaw : '-');
+                            }
                         @endphp
                         <tr>
                             <td class="fte-col-index">{{ $index + 1 }}</td>
                             <td class="fte-col-work">
                                 <div class="fte-work-title">{!! $wrapPdfText($title, 37.0, 4.5) !!}</div>
+                                @if ($isBackOffice && $workloadName !== '' && $workloadName !== trim((string) $title))
+                                    <div>{!! $wrapPdfText($workloadName, 37.0, 4.5) !!}</div>
+                                @endif
                             </td>
                             <td class="fte-col-period center">
                                 <div class="fte-period">
@@ -388,7 +400,7 @@
                             <td class="fte-col-index"></td>
                             <td colspan="6">
                                 <div class="fte-extra-line"><strong>กลุ่ม:</strong> {{ $item->role_group ?? '-' }}</div>
-                                <div class="fte-extra-line"><strong>รายละเอียดงาน:</strong> {{ $item->task_detail ?? $item->job_detail ?? '-' }}</div>
+                                <div class="fte-extra-line"><strong>รายละเอียดงาน:</strong> {{ $detailText }}</div>
                                 @if ($isBackOffice)
                                     <div class="fte-extra-line"><strong>หมายเหตุ:</strong> งานนอกโครงการ</div>
                                 @endif

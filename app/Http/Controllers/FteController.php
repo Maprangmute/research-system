@@ -95,6 +95,7 @@ public function index(Request $request)
             'task_id',
             'person_name',
             'category',
+            'job_name',
             'job_detail',
             'hours',
             'fte_value',
@@ -207,6 +208,7 @@ public function index(Request $request)
             'start_date' => $startDate,
             'end_date' => $endDate,
             'role_group' => $category,
+            'job_name' => $entry->job_name,
             'job_detail' => $entry->job_detail,
             'task_detail' => $task?->title,
             'project' => (object) [
@@ -306,6 +308,7 @@ public function index(Request $request)
                             'month'         => $cursor->format('Y-m'),
                             'project'       => $item->project,
                             'role_group'    => $item->role_group,
+                            'job_name'      => $item->job_name ?? null,
                             'job_detail'    => $item->job_detail,
                             'fte_month'     => $fteMonth,
                             'fte_value'     => $item->fte_value,
@@ -332,19 +335,22 @@ public function index(Request $request)
         return $expanded->groupBy('month')->sortKeys(); // IMPORTANT
     });
 
+    $selectedFteLabel = match ($mode) {
+        'year' => 'FTE รายปี',
+        'month' => 'FTE รายเดือน',
+        'custom' => 'FTE ตามช่วงเวลาที่เลือก',
+        default => 'FTE ตามช่วงที่เลือก',
+    };
+
     // ===== Summary =====
     $fteSummary = $monthlyFTE->map(function ($months, $name) {
         $flatten = $months->flatten();
         $total = $flatten->sum('fte_month');
 
-        $thisMonthKey = now()->format('Y-m');
-        $thisMonth = $months[$thisMonthKey] ?? collect();
-        $fteThisMonth = $thisMonth->sum('fte_month');
-
         return (object)[
             'name'           => $name,
             'total_fte'      => $total,
-            'fte_this_month' => $fteThisMonth,
+            'fte_selected'   => $total,
         ];
     })->sortByDesc('total_fte')->values();
 
@@ -360,6 +366,7 @@ public function index(Request $request)
         'person'     => $person,
         'start'      => $start,
         'end'        => $end,
+        'selectedFteLabel' => $selectedFteLabel,
     ];
 
     if ($request->boolean('partial') || $request->ajax()) {
@@ -937,13 +944,14 @@ private function buildFteDetailData(string $person, array $filter = []): array
             if ($item->project?->id && $entryStart->lte($currentMonthEnd) && $entryEnd->gte($currentMonthStart)) {
                 $project = $item->project;
                 $projectId = (int) $project->id;
-                $projectEnd = $this->parseInputDate((string) ($project->end_date ?? ''))?->endOfDay();
-                $isCompletedThisMonth = $projectEnd
-                    && $projectEnd->gte($currentMonthStart)
-                    && $projectEnd->lte($currentMonthEnd);
+                $entryEndDate = $this->parseInputDate((string) ($item->end_date ?? ''))?->endOfDay();
+                $isCompletedThisMonth = $entryEndDate
+                    && $entryEndDate->gte($currentMonthStart)
+                    && $entryEndDate->lte($currentMonthEnd);
 
-                $upsertMonthWork('project:' . $projectId, [
-                    'key' => 'project:' . $projectId,
+                $workKey = 'fte-role:' . (int) $item->id;
+                $upsertMonthWork($workKey, [
+                    'key' => $workKey,
                     'type' => 'project',
                     'project_id' => $projectId,
                     'task_id' => null,
@@ -987,6 +995,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
                         'month'         => $cursor->format('Y-m'),
                         'project'       => $item->project,
                         'role_group'    => $item->role_group,
+                        'job_name'      => null,
                         'job_detail'    => $item->job_detail,
                         'task_detail'   => $item->task_detail,
                         'days_in_month' => $daysInMonth,
@@ -995,6 +1004,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
                         // ⭐ ฟิลด์ใหม่ที่เพิ่มเข้ามา
                         'hours_in_month' => $hoursInMonth,
+                        'hours_total'   => (float) ($item->hours ?? 0),
 
                         'overlap_start' => $overlapStart->format('d M Y'),
                         'overlap_end'   => $overlapEnd->format('d M Y'),
@@ -1035,7 +1045,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
             if ($entryStart->lte($currentMonthEnd) && $entryEnd->gte($currentMonthStart)) {
                 $taskId = $entry->task?->id;
-                $key = $taskId ? 'backoffice-task:' . $taskId : 'backoffice-entry:' . $entry->id;
+                $key = 'back-office:' . (int) $entry->id;
                 $taskName = trim((string) ($entry->task?->title ?? ''));
                 if ($taskName === '') {
                     $taskName = trim((string) ($entry->job_detail ?? '')) ?: 'งานนอกโครงการ';
@@ -1093,12 +1103,14 @@ private function buildFteDetailData(string $person, array $filter = []): array
                         ],
                         'task_id'       => $entry->task?->id,
                         'role_group'    => $this->backOfficeCategoryLabel($entry->category),
+                        'job_name'      => $entry->job_name,
                         'job_detail'    => $entry->job_detail,
                         'task_detail'   => $entry->task?->title,
                         'days_in_month' => $daysInMonth,
                         'fte_per_day'   => $ftePerDay,
                         'fte_value'     => $fteMonth,
                         'hours_in_month' => $hoursInMonth,
+                        'hours_total'   => (float) ($entry->hours ?? 0),
                         'overlap_start' => $overlapStart->format('d M Y'),
                         'overlap_end'   => $overlapEnd->format('d M Y'),
                         'start_date'    => $startRaw,
@@ -1134,19 +1146,9 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
     $monthDetailMap = collect();
     foreach ($currentMonthRows as $row) {
-        $detailKey = null;
-        if (!empty($row->project?->id)) {
-            $detailKey = 'project:' . (int) $row->project->id;
-        } elseif (!empty($row->task_id)) {
-            $detailKey = 'backoffice-task:' . (int) $row->task_id;
-        } elseif (!empty($row->rounding_key) && str_starts_with((string) $row->rounding_key, 'back-office:')) {
-            $entryId = (int) str_replace('back-office:', '', (string) $row->rounding_key);
-            if ($entryId > 0) {
-                $detailKey = 'backoffice-entry:' . $entryId;
-            }
-        }
+        $detailKey = (string) ($row->rounding_key ?? '');
 
-        if (!$detailKey) {
+        if ($detailKey === '') {
             continue;
         }
 
@@ -1164,14 +1166,10 @@ private function buildFteDetailData(string $person, array $filter = []): array
         if ($rowStart->gt($rowEnd)) {
             [$rowStart, $rowEnd] = [$rowEnd, $rowStart];
         }
-        $rangeStart = $rowStart->lt($currentMonthStart) ? $currentMonthStart->copy() : $rowStart->copy();
-        $rangeEnd = $rowEnd->gt($currentMonthEnd) ? $currentMonthEnd->copy() : $rowEnd->copy();
-        if ($rangeStart->gt($rangeEnd)) {
-            continue;
-        }
 
-        $rangeLabel = $formatShortBeDate($rangeStart) . ' ถึง ' . $formatShortBeDate($rangeEnd);
-        $hoursValue = (float) ($row->hours_in_month ?? 0);
+        $rangeLabel = $formatShortBeDate($rowStart) . ' ถึง ' . $formatShortBeDate($rowEnd);
+        $hoursValue = (float) ($row->hours_total ?? $row->hours_in_month ?? 0);
+        $monthDaysValue = (int) ($row->days_in_month ?? 0);
 
         $pairs = collect($monthDetailMap->get($detailKey, []));
         $pairs->push([
@@ -1179,6 +1177,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
             'task' => $task,
             'range' => $rangeLabel,
             'hours' => $hoursValue,
+            'month_days' => $monthDaysValue,
         ]);
         $monthDetailMap->put($detailKey, $pairs->all());
     }
@@ -1192,6 +1191,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
                         'task' => trim((string) ($pair['task'] ?? '')),
                         'range' => trim((string) ($pair['range'] ?? '')),
                         'hours' => (float) ($pair['hours'] ?? 0),
+                        'month_days' => (int) ($pair['month_days'] ?? 0),
                     ];
                 })
                 ->filter(fn($pair) => $pair['job'] !== '' || $pair['task'] !== '')
@@ -1216,17 +1216,20 @@ private function buildFteDetailData(string $person, array $filter = []): array
                                     'task' => $taskLabel,
                                     'range' => $rangeLabel,
                                     'hours' => 0.0,
+                                    'month_days' => 0,
                                 ];
                             }
                             $taskMap[$aggregateKey]['hours'] += $hoursVal;
+                            $taskMap[$aggregateKey]['month_days'] += (int) ($item['month_days'] ?? 0);
                         }
 
                         $tasks = collect(array_values($taskMap))
                             ->map(function ($item) use ($formatHours) {
                                 $hoursText = $formatHours((float) ($item['hours'] ?? 0));
+                                $monthDaysText = (int) ($item['month_days'] ?? 0);
                                 return [
                                     'task' => $item['task'] ?? 'งาน',
-                                    'range' => ($item['range'] ?? '-') . ' | ' . $hoursText . ' ชั่วโมง',
+                                    'range' => ($item['range'] ?? '-') . ' | เดือนนี้ทำ ' . $monthDaysText . ' วัน  รวม ' . $hoursText . ' ชั่วโมง',
                                 ];
                             })
                             ->values();
@@ -1685,10 +1688,10 @@ private function buildFteProjectData(Project $project): array
             'งานบริการด้านทรัพยากรบุคคล' => 'งานบริการด้านทรัพยากรบุคคล',
             'งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย' => 'งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย',
             'งานบริการขนส่งสินค้าเเละเอกสาร' => 'งานบริการขนส่งสินค้าเเละเอกสาร',
-            'งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์' => 'งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์',
+            'งานด้านออกแบบ เเละผลิตสื่อ' => 'งานด้านออกแบบ เเละผลิตสื่อ',
+            'งานด้านการออกแบบ เเละ สื่อสิ่งพิมพ์' => 'งานด้านออกแบบ เเละผลิตสื่อ',
             'งานด้านการสื่อสาร' => 'งานด้านการสื่อสาร',
             'งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ' => 'งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ',
-            'งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์' => 'งานด้านการออกแบบเเละผลิตสื่อวิดิทัศน์',
             'การจัดงานหรือเข้าร่วมงานนิทรรศการ' => 'การจัดงานหรือเข้าร่วมงานนิทรรศการ',
             'การออกแบบหลักสูตร เเละ การเรียนการสอน' => 'การออกแบบหลักสูตร เเละ การเรียนการสอน',
             'event' => 'event',
