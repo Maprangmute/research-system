@@ -663,6 +663,528 @@ class OutputController extends Controller
         ]);
     }
 
+    public function visualization(Request $request)
+    {
+        $extractTypeCode = function ($rawType): ?string {
+            $type = trim((string) ($rawType ?? ''));
+            if ($type === '') {
+                return null;
+            }
+            if (preg_match('/EA\d{3}/i', $type, $matches)) {
+                return strtoupper($matches[0]);
+            }
+            return null;
+        };
+        $normalizeNames = static function ($items): array {
+            return collect($items)
+                ->map(function ($item) {
+                    if (is_array($item)) {
+                        return trim((string) ($item['name'] ?? ''));
+                    }
+                    return trim((string) $item);
+                })
+                ->filter()
+                ->values()
+                ->all();
+        };
+        $sourceLabelMap = [
+            'project' => 'โครงการวิจัย',
+            'back_office' => 'งานนอกโครงการ',
+            'external' => 'ผลงานภายนอก',
+        ];
+
+        $projectRows = $this->visibleProjectOutputsQuery($request)
+            ->with([
+                'authors:id,output_id,role,name',
+                'bookAuthors:id,output_id,name',
+                'conferences:id,output_id,name,presentation_type,location,note',
+                'project:id,project_name_th,project_type,budget',
+            ])
+            ->select([
+                'id',
+                'project_id',
+                'type',
+                'title',
+                'year',
+                'project_output',
+                'journal',
+                'quartile',
+                'impact_factor',
+                'book_title',
+                'publisher_name',
+                'created_at',
+            ])
+            ->get()
+            ->map(function (Output $output) use ($extractTypeCode, $sourceLabelMap) {
+                $typeCode = $extractTypeCode($output->type) ?? 'OTHER';
+                $authors = $typeCode === 'EA119'
+                    ? $output->bookAuthors->pluck('name')->filter()->values()->all()
+                    : $output->authors->pluck('name')->filter()->values()->all();
+                $fallbackPresenter = $authors[0] ?? '';
+                $conferenceWithPresenter = $output->conferences->first(function ($conferenceItem) {
+                    return trim((string) ($conferenceItem->note ?? '')) !== '';
+                });
+                $conference = $conferenceWithPresenter ?: $output->conferences->first();
+                $conferencePresenter = trim((string) ($conference?->note ?? ''));
+
+                return (object) [
+                    'source' => 'project',
+                    'source_label' => $sourceLabelMap['project'],
+                    'project_id' => $output->project?->id,
+                    'project_name' => trim((string) ($output->project?->project_name_th ?? '')),
+                    'project_type' => trim((string) ($output->project?->project_type ?? '')),
+                    'project_budget' => $output->project?->budget,
+                    'type_code' => $typeCode,
+                    'title' => trim((string) ($output->title ?? '')) ?: '-',
+                    'year_be' => $this->normalizeYearFilter($output->year),
+                    'reference' => trim((string) ($output->project?->project_name_th ?? '')) ?: '-',
+                    'link' => $output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null,
+                    'detail' => trim((string) ($output->project_output ?? '')),
+                    'created_at' => $output->created_at,
+                    'journal' => trim((string) ($output->journal ?? '')),
+                    'quartile' => strtoupper(trim((string) ($output->quartile ?? ''))),
+                    'impact_factor' => $output->impact_factor !== null ? (float) $output->impact_factor : null,
+                    'conference_name' => trim((string) ($conference?->name ?? '')),
+                    'presentation_type' => trim((string) ($conference?->presentation_type ?? '')),
+                    'presenter_name' => $conferencePresenter !== '' ? $conferencePresenter : trim((string) $fallbackPresenter),
+                    'book_title' => trim((string) ($output->book_title ?? '')),
+                    'publisher_name' => trim((string) ($output->publisher_name ?? '')),
+                    'authors' => $authors,
+                ];
+            });
+
+        $backOfficeRows = $this->visibleBackOfficeOutputsQuery()
+            ->select([
+                'id',
+                'task_id',
+                'type',
+                'title',
+                'year',
+                'project_output',
+                'journal',
+                'quartile',
+                'impact_factor',
+                'book_title',
+                'publisher_name',
+                'authors',
+                'book_authors',
+                'conferences',
+                'created_at',
+            ])
+            ->get()
+            ->map(function (BackOfficeTaskOutput $output) use ($extractTypeCode, $sourceLabelMap, $normalizeNames) {
+                $typeCode = $extractTypeCode($output->type) ?? 'OTHER';
+                $conference = collect($output->conferences ?? [])->first();
+                $authors = $typeCode === 'EA119'
+                    ? $normalizeNames($output->book_authors ?? [])
+                    : $normalizeNames($output->authors ?? []);
+                $fallbackPresenter = $authors[0] ?? '';
+
+                return (object) [
+                    'source' => 'back_office',
+                    'source_label' => $sourceLabelMap['back_office'],
+                    'project_id' => null,
+                    'project_name' => '',
+                    'project_type' => '',
+                    'project_budget' => null,
+                    'type_code' => $typeCode,
+                    'title' => trim((string) ($output->title ?? '')) ?: '-',
+                    'year_be' => $this->normalizeYearFilter($output->year),
+                    'reference' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
+                    'link' => $output->task ? route('back_office.show', $output->task->id) : null,
+                    'detail' => trim((string) ($output->project_output ?? '')),
+                    'created_at' => $output->created_at,
+                    'journal' => trim((string) ($output->journal ?? '')),
+                    'quartile' => strtoupper(trim((string) ($output->quartile ?? ''))),
+                    'impact_factor' => $output->impact_factor !== null ? (float) $output->impact_factor : null,
+                    'conference_name' => trim((string) (($conference['name'] ?? '') ?: '')),
+                    'presentation_type' => trim((string) (($conference['presentation_type'] ?? '') ?: '')),
+                    'presenter_name' => trim((string) (($conference['presenter_name'] ?? '') ?: $fallbackPresenter)),
+                    'book_title' => trim((string) ($output->book_title ?? '')),
+                    'publisher_name' => trim((string) ($output->publisher_name ?? '')),
+                    'authors' => $authors,
+                ];
+            });
+
+        $externalRows = $this->visibleExternalOutputsQuery()
+            ->with([
+                'authors:id,external_output_id,role,name',
+                'conferences:id,external_output_id,name,presentation_type,presenter_name',
+            ])
+            ->select([
+                'id',
+                'type',
+                'title',
+                'publish_date',
+                'job_category',
+                'note',
+                'journal',
+                'quartile',
+                'impact_factor',
+                'book_title',
+                'publisher_name',
+                'created_at',
+            ])
+            ->get()
+            ->map(function (ExternalOutput $output) use ($extractTypeCode, $sourceLabelMap) {
+                $typeCode = $extractTypeCode($output->type) ?? 'OTHER';
+                $conference = $output->conferences->first();
+                $authors = $output->authors->pluck('name')->filter()->values()->all();
+                $fallbackPresenter = $authors[0] ?? '';
+                return (object) [
+                    'source' => 'external',
+                    'source_label' => $sourceLabelMap['external'],
+                    'project_id' => null,
+                    'project_name' => '',
+                    'project_type' => '',
+                    'project_budget' => null,
+                    'type_code' => $typeCode,
+                    'title' => trim((string) ($output->title ?? '')) ?: '-',
+                    'year_be' => $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null,
+                    'reference' => trim((string) ($output->job_category ?? '')) ?: 'ผลงานภายนอก',
+                    'link' => route('outputs.external-academic.show', $output),
+                    'detail' => trim((string) ($output->note ?? '')),
+                    'created_at' => $output->created_at,
+                    'journal' => trim((string) ($output->journal ?? '')),
+                    'quartile' => strtoupper(trim((string) ($output->quartile ?? ''))),
+                    'impact_factor' => $output->impact_factor !== null ? (float) $output->impact_factor : null,
+                    'conference_name' => trim((string) ($conference?->name ?? '')),
+                    'presentation_type' => trim((string) ($conference?->presentation_type ?? '')),
+                    'presenter_name' => trim((string) (($conference?->presenter_name ?? '') ?: $fallbackPresenter)),
+                    'book_title' => trim((string) ($output->book_title ?? '')),
+                    'publisher_name' => trim((string) ($output->publisher_name ?? '')),
+                    'authors' => $authors,
+                ];
+            });
+
+        $rows = $projectRows->merge($backOfficeRows)->merge($externalRows);
+
+        $selectedSource = trim((string) $request->input('source', ''));
+        $selectedType = strtoupper(trim((string) $request->input('type', '')));
+        $allKnownYears = $rows->pluck('year_be')
+            ->filter(fn ($year) => is_numeric($year))
+            ->map(fn ($year) => (int) $year)
+            ->unique()
+            ->sort()
+            ->values();
+        $latestKnownYear = $allKnownYears->last();
+        $currentYearBe = (int) now()->setTimezone('Asia/Bangkok')->format('Y') + 543;
+        $latestUpToCurrentYear = $allKnownYears->filter(fn ($year) => (int) $year <= $currentYearBe)->last();
+        $latestClosedYear = $allKnownYears->filter(fn ($year) => (int) $year <= ($currentYearBe - 1))->last();
+        $presentationYear = is_numeric($latestClosedYear)
+            ? (int) $latestClosedYear
+            : (is_numeric($latestUpToCurrentYear) ? (int) $latestUpToCurrentYear : (is_numeric($latestKnownYear) ? (int) $latestKnownYear : null));
+        $hasYearInput = $request->filled('year_from') || $request->filled('year_to');
+        $yearFrom = $this->normalizeYearFilter($request->input('year_from'));
+        $yearTo = $this->normalizeYearFilter($request->input('year_to'));
+        if (!$hasYearInput && $presentationYear !== null) {
+            $yearTo = $presentationYear;
+            $yearFrom = $presentationYear - 1;
+        }
+        if ($yearFrom !== null && $yearTo !== null && $yearFrom > $yearTo) {
+            [$yearFrom, $yearTo] = [$yearTo, $yearFrom];
+        }
+
+        $filtered = $rows->filter(function ($row) use ($selectedSource, $selectedType, $yearFrom, $yearTo) {
+            if ($selectedSource !== '' && $row->source !== $selectedSource) {
+                return false;
+            }
+            if ($selectedType !== '' && strtoupper((string) $row->type_code) !== $selectedType) {
+                return false;
+            }
+            $year = is_numeric($row->year_be) ? (int) $row->year_be : null;
+            if ($yearFrom !== null && ($year === null || $year < $yearFrom)) {
+                return false;
+            }
+            if ($yearTo !== null && ($year === null || $year > $yearTo)) {
+                return false;
+            }
+            return true;
+        })->values();
+
+        $sourceCounts = collect($sourceLabelMap)->mapWithKeys(function ($label, $key) use ($filtered) {
+            return [$key => (int) $filtered->where('source', $key)->count()];
+        });
+
+        $projectTypeLabelByCode = [
+            '01' => '01 Aging and Frailty',
+            '02' => '02 Health Systems and HTA',
+            '03' => '03 Rational Drug Use (RDU)',
+            '04' => '04 Real-World Evidence (RWE) and Clinical-Technical Cohorts',
+            '05' => '05 Global Health',
+            '06' => '06 Other Areas',
+        ];
+
+        $normalizeProjectType = static function (?string $rawType) use ($projectTypeLabelByCode): string {
+            $type = trim((string) $rawType);
+            foreach ($projectTypeLabelByCode as $code => $label) {
+                if (str_starts_with($type, $code)) {
+                    return $label;
+                }
+            }
+            return $projectTypeLabelByCode['06'];
+        };
+
+        $parseBudget = static function ($raw): float {
+            if ($raw === null) {
+                return 0.0;
+            }
+            if (is_numeric($raw)) {
+                return (float) $raw;
+            }
+            $normalized = preg_replace('/[^0-9.\-]/', '', (string) $raw);
+            return is_numeric($normalized) ? (float) $normalized : 0.0;
+        };
+        $extractFirstUrl = static function (?string $text): ?string {
+            $value = trim((string) $text);
+            if ($value === '') {
+                return null;
+            }
+            if (preg_match('/https?:\/\/[^\s<>"\'\]\)]+/iu', $value, $matches) === 1) {
+                return trim((string) ($matches[0] ?? '')) ?: null;
+            }
+            return null;
+        };
+
+        $projectOutputRows = $filtered
+            ->where('source', 'project')
+            ->filter(fn ($row) => is_numeric($row->project_id))
+            ->values();
+
+        $projectTypeTotalOutputs = (int) $projectOutputRows->count();
+        $eaFullNameMap = [
+            'EA101' => 'Research Paper or Journal Article',
+            'EA102' => 'Reports and White Papers',
+            'EA103' => 'Presentations in Academic Conferences',
+            'EA104' => 'Data Sets and Databases',
+            'EA105' => 'Inventions or Innovations (Application / Website)',
+            'EA106' => 'Policy Recommendations',
+            'EA107' => 'Educational Materials',
+            'EA108' => 'Communication Materials (Creations)',
+            'EA109' => 'Change in Practices / Procedures / Policy',
+            'EA110' => 'Number of Participants (Persons)',
+            'EA111' => 'Satisfaction Rating (1-5)',
+            'EA112' => 'Present to Committee Meeting / Policy Maker / Board',
+            'EA113' => 'Appointment Orders (SIHP as Committee / Secretary)',
+            'EA114' => 'Events / Forum',
+            'EA115' => 'Capacity Building / Knowledge Sharing',
+            'EA116' => 'Research Project',
+            'EA117' => 'MOU',
+            'EA118' => 'Award and Recognition',
+            'EA119' => 'Textbook / Book Chapter',
+            'EA120' => 'Manual / Instruction / Guideline',
+            'EA999' => 'Other Outputs',
+            'OTHER' => 'Other Outputs',
+        ];
+        $projectTypeSummary = collect($projectTypeLabelByCode)->map(function ($label) use ($projectOutputRows, $normalizeProjectType, $parseBudget, $projectTypeTotalOutputs, $eaFullNameMap, $extractFirstUrl) {
+            $rows = $projectOutputRows->filter(fn ($row) => $normalizeProjectType($row->project_type) === $label)->values();
+            $outputCount = (int) $rows->count();
+            $projectCount = (int) $rows->pluck('project_id')->filter(fn ($id) => is_numeric($id))->unique()->count();
+            $budgetTotal = (float) $rows->unique(fn ($row) => (int) ($row->project_id ?? 0))->sum(fn ($row) => $parseBudget($row->project_budget));
+            return (object) [
+                'label' => $label,
+                'output_count' => $outputCount,
+                'project_count' => $projectCount,
+                'pct' => $projectTypeTotalOutputs > 0 ? round(($outputCount / $projectTypeTotalOutputs) * 100, 1) : 0.0,
+                'budget_total' => $budgetTotal,
+                'items' => $rows
+                    ->map(function ($row) use ($eaFullNameMap, $extractFirstUrl) {
+                        $typeCode = strtoupper((string) ($row->type_code ?? 'OTHER'));
+                        $detail = trim((string) ($row->detail ?? ''));
+                        $detailLink = $extractFirstUrl($detail);
+                        $sourceLink = trim((string) ($row->link ?? '')) ?: null;
+                        return (object) [
+                            'title' => trim((string) ($row->title ?? '')) ?: '-',
+                            'type_code' => $typeCode,
+                            'type_label' => $eaFullNameMap[$typeCode] ?? ('ประเภท ' . $typeCode),
+                            'link' => $detailLink ?: $sourceLink,
+                            'source_link' => $sourceLink,
+                            'detail' => $detail !== '' ? $detail : null,
+                        ];
+                    })
+                    ->filter(fn ($item) => trim((string) ($item->title ?? '')) !== '')
+                    ->unique()
+                    ->values(),
+            ];
+        })->values();
+
+        $typeCounts = $filtered
+            ->groupBy(fn ($row) => strtoupper((string) ($row->type_code ?: 'OTHER')))
+            ->map(fn (Collection $group) => $group->count())
+            ->sortDesc();
+
+        $knownYears = $filtered->pluck('year_be')->filter(fn ($year) => is_numeric($year))->map(fn ($year) => (int) $year)->unique()->sort()->values();
+        $hasUnknownYear = $filtered->contains(fn ($row) => !is_numeric($row->year_be));
+        $yearAxis = $knownYears->map(fn ($year) => (string) $year)->values();
+        if ($hasUnknownYear) {
+            $yearAxis->push('__unknown__');
+        }
+        $yearAxisLabels = $yearAxis->map(fn ($key) => $key === '__unknown__' ? 'ไม่ระบุปี' : (string) $key)->values();
+        $yearBySource = collect($sourceLabelMap)->mapWithKeys(function ($label, $sourceKey) use ($filtered, $yearAxis) {
+            $series = $yearAxis->map(function ($yearKey) use ($filtered, $sourceKey) {
+                if ($yearKey === '__unknown__') {
+                    return (int) $filtered->where('source', $sourceKey)->filter(fn ($row) => !is_numeric($row->year_be))->count();
+                }
+                return (int) $filtered->where('source', $sourceKey)->where('year_be', (int) $yearKey)->count();
+            })->values();
+            return [$sourceKey => $series];
+        });
+
+        $yearOptions = $rows->pluck('year_be')->filter(fn ($year) => is_numeric($year))->map(fn ($year) => (int) $year)->unique()->sortDesc()->values();
+        $typeOptions = $rows->pluck('type_code')->filter()->map(fn ($type) => strtoupper((string) $type))->unique()->sort()->values();
+
+        $paperRows = $filtered->where('type_code', 'EA101')->values();
+        $presentationRows = $filtered->where('type_code', 'EA103')->values();
+        $textbookRows = $filtered->where('type_code', 'EA119')->values();
+        $categorizedTotal = (int) ($paperRows->count() + $presentationRows->count() + $textbookRows->count());
+
+        $paperQuartileLabels = collect(['Q1', 'Q2', 'Q3', 'Q4', 'ไม่ระบุ']);
+        $paperQuartileValues = $paperQuartileLabels->map(function ($label) use ($paperRows) {
+            if ($label === 'ไม่ระบุ') {
+                return (int) $paperRows->filter(fn ($row) => trim((string) ($row->quartile ?? '')) === '')->count();
+            }
+            return (int) $paperRows->where('quartile', $label)->count();
+        })->values();
+
+        $presentationActivity = $presentationRows
+            ->map(fn ($row) => trim((string) ($row->presentation_type ?? '')) ?: 'ไม่ระบุ')
+            ->countBy()
+            ->sortDesc()
+            ->take(8);
+
+        $textbookPublishers = $textbookRows
+            ->map(fn ($row) => trim((string) ($row->publisher_name ?? '')) ?: 'ไม่ระบุ')
+            ->countBy()
+            ->sortDesc()
+            ->take(8);
+
+        $paperSummary = [
+            'count' => $paperRows->count(),
+            'top_journal' => $paperRows->map(fn ($row) => trim((string) ($row->journal ?? '')))->filter()->countBy()->sortDesc()->keys()->first(),
+            'avg_if' => round((float) $paperRows->pluck('impact_factor')->filter(fn ($v) => is_numeric($v))->avg(), 2),
+            'all' => $paperRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->values(),
+            'latest' => $paperRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->take(5)->values(),
+        ];
+
+        $presentationSummary = [
+            'count' => $presentationRows->count(),
+            'top_conference' => $presentationRows->map(fn ($row) => trim((string) ($row->conference_name ?? '')))->filter()->countBy()->sortDesc()->keys()->first(),
+            'top_presenter' => $presentationRows->map(fn ($row) => trim((string) ($row->presenter_name ?? '')))->filter()->countBy()->sortDesc()->keys()->first(),
+            'all' => $presentationRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->values(),
+            'latest' => $presentationRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->take(5)->values(),
+        ];
+
+        $textbookSummary = [
+            'count' => $textbookRows->count(),
+            'top_publisher' => $textbookRows->map(fn ($row) => trim((string) ($row->publisher_name ?? '')))->filter()->countBy()->sortDesc()->keys()->first(),
+            'unique_authors' => $textbookRows->flatMap(fn ($row) => collect($row->authors ?? []))->filter()->unique()->count(),
+            'latest' => $textbookRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->take(5)->values(),
+        ];
+
+        $yearTotals = $filtered
+            ->pluck('year_be')
+            ->filter(fn ($year) => is_numeric($year))
+            ->map(fn ($year) => (int) $year)
+            ->countBy()
+            ->sortKeys()
+            ->map(fn ($count) => (int) $count);
+
+        $latestYear = $yearTotals->keys()->last();
+        $previousYear = $yearTotals->keys()->slice(-2, 1)->first();
+        $firstYear = $yearTotals->keys()->first();
+        $latestYearCount = is_numeric($latestYear) ? (int) ($yearTotals->get($latestYear) ?? 0) : 0;
+        $previousYearCount = is_numeric($previousYear) ? (int) ($yearTotals->get($previousYear) ?? 0) : 0;
+        $firstYearCount = is_numeric($firstYear) ? (int) ($yearTotals->get($firstYear) ?? 0) : 0;
+        $yearDelta = $latestYearCount - $previousYearCount;
+        $yearGrowthPct = $previousYearCount > 0 ? round(($yearDelta / $previousYearCount) * 100, 1) : null;
+        $knownYearTotal = (int) $yearTotals->sum();
+        $knownYearCount = (int) $yearTotals->count();
+        // "Forward growth" should compare base year to latest year directly.
+        // Using sum(all years) inflates percentage and confuses interpretation.
+        $cumulativeGrowthCount = max(0, $latestYearCount - $firstYearCount);
+        $cumulativeGrowthPct = $firstYearCount > 0
+            ? round(($cumulativeGrowthCount / $firstYearCount) * 100, 1)
+            : null;
+        $avgPerYear = $knownYearCount > 0 ? round($knownYearTotal / $knownYearCount, 1) : 0.0;
+        $peakCount = $yearTotals->max();
+        $peakYear = $peakCount !== null
+            ? $yearTotals->filter(fn ($count) => (int) $count === (int) $peakCount)->keys()->last()
+            : null;
+
+        $totalCount = (int) $filtered->count();
+
+        $sourceShare = collect($sourceLabelMap)->map(function ($label, $sourceKey) use ($sourceCounts, $totalCount) {
+            $count = (int) ($sourceCounts[$sourceKey] ?? 0);
+            return (object) [
+                'source' => $sourceKey,
+                'label' => $label,
+                'count' => $count,
+                'pct' => $totalCount > 0 ? round(($count / $totalCount) * 100, 1) : 0.0,
+            ];
+        })->sortByDesc('count')->values();
+
+        $typeShare = collect([
+            ['code' => 'EA101', 'label' => 'Research Paper', 'count' => (int) $paperRows->count()],
+            ['code' => 'EA103', 'label' => 'Presentation', 'count' => (int) $presentationRows->count()],
+            ['code' => 'EA119', 'label' => 'Textbook', 'count' => (int) $textbookRows->count()],
+        ])->map(function ($item) use ($categorizedTotal) {
+            $item['pct'] = $categorizedTotal > 0
+                ? round((((int) $item['count']) / $categorizedTotal) * 100, 1)
+                : 0.0;
+            return (object) $item;
+        })->sortByDesc('count')->values();
+
+        return view('outputs.visualization', [
+            'rows' => $filtered,
+            'sourceLabelMap' => $sourceLabelMap,
+            'sourceCounts' => $sourceCounts,
+            'typeCounts' => $typeCounts,
+            'yearAxisLabels' => $yearAxisLabels,
+            'yearBySource' => $yearBySource,
+            'yearOptions' => $yearOptions,
+            'typeOptions' => $typeOptions,
+            'selectedSource' => $selectedSource,
+            'selectedType' => $selectedType,
+            'selectedYearFrom' => $yearFrom,
+            'selectedYearTo' => $yearTo,
+            'yearTotals' => $yearTotals,
+            'trendSummary' => [
+                'latest_year' => is_numeric($latestYear) ? (int) $latestYear : null,
+                'previous_year' => is_numeric($previousYear) ? (int) $previousYear : null,
+                'latest_count' => $latestYearCount,
+                'previous_count' => $previousYearCount,
+                'delta' => $yearDelta,
+                'growth_pct' => $yearGrowthPct,
+            ],
+            'forwardSummary' => [
+                'first_year' => is_numeric($firstYear) ? (int) $firstYear : null,
+                'first_count' => $firstYearCount,
+                'latest_year' => is_numeric($latestYear) ? (int) $latestYear : null,
+                'latest_count' => $latestYearCount,
+                'cumulative_growth_count' => $cumulativeGrowthCount,
+                'cumulative_growth_pct' => $cumulativeGrowthPct,
+                'avg_per_year' => $avgPerYear,
+                'peak_year' => is_numeric($peakYear) ? (int) $peakYear : null,
+                'peak_count' => $peakCount !== null ? (int) $peakCount : 0,
+                'known_year_total' => $knownYearTotal,
+                'known_year_count' => $knownYearCount,
+            ],
+            'sourceShare' => $sourceShare,
+            'projectTypeSummary' => $projectTypeSummary,
+            'projectTypeTotalOutputs' => $projectTypeTotalOutputs,
+            'typeShare' => $typeShare,
+            'paperSummary' => $paperSummary,
+            'presentationSummary' => $presentationSummary,
+            'textbookSummary' => $textbookSummary,
+            'paperQuartileLabels' => $paperQuartileLabels,
+            'paperQuartileValues' => $paperQuartileValues,
+            'presentationActivityLabels' => $presentationActivity->keys()->values(),
+            'presentationActivityValues' => $presentationActivity->values()->values(),
+            'textbookPublisherLabels' => $textbookPublishers->keys()->values(),
+            'textbookPublisherValues' => $textbookPublishers->values()->values(),
+        ]);
+    }
+
     public function papers(Request $request)
     {
         $sortable = ['created_at', 'year', 'title', 'journal', 'quartile'];
@@ -1012,6 +1534,11 @@ class OutputController extends Controller
         }
 
         return $query;
+    }
+
+    private function visibleExternalOutputsQuery(): Builder
+    {
+        return ExternalOutput::query();
     }
 
     private function normalizeYearFilter($raw): ?int

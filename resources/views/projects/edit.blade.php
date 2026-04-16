@@ -270,27 +270,27 @@
     }
 
     .output-summary-badge--ea101 {
-        background: #e0f2fe;
-        border-color: #7dd3fc;
-        color: #0369a1;
+        background: #7aa2f71a;
+        border-color: #7aa2f766;
+        color: #7aa2f7;
     }
 
     .output-summary-badge--ea103 {
-        background: #fef3c7;
-        border-color: #fcd34d;
-        color: #92400e;
+        background: #f7b2671a;
+        border-color: #f7b26766;
+        color: #f7b267;
     }
 
     .output-summary-badge--ea119 {
-        background: #dcfce7;
-        border-color: #86efac;
-        color: #166534;
+        background: #f4b1831a;
+        border-color: #f4b18366;
+        color: #f4b183;
     }
 
     .output-summary-badge--ea120 {
-        background: #ede9fe;
-        border-color: #c4b5fd;
-        color: #5b21b6;
+        background: #e8a5a51a;
+        border-color: #e8a5a566;
+        color: #e8a5a5;
     }
 
     .output-summary-title {
@@ -3295,13 +3295,45 @@
             return match ? match[1].toUpperCase() : '';
         }
 
-        function getOutputSummaryBadgeClass(typeCode) {
+        function withHexAlpha(hex, alphaHex) {
+            const raw = String(hex || '').trim().replace('#', '');
+            if (!/^[0-9a-fA-F]{6}$/.test(raw)) return '#cbd5e1';
+            return `#${raw}${alphaHex}`;
+        }
+
+        const OUTPUT_TYPE_BASE_COLORS = {
+            EA101: '#7aa2f7',
+            EA102: '#7dcfb6',
+            EA103: '#f7b267',
+            EA104: '#f79d9d',
+            EA105: '#b39ddb',
+            EA106: '#7ec8e3',
+            EA107: '#9ad29a',
+            EA108: '#9fa8da',
+            EA109: '#f6b26b',
+            EA110: '#f4a6c1',
+            EA111: '#9bb8ff',
+            EA112: '#8fd3c8',
+            EA113: '#c5d86d',
+            EA114: '#c3a6e8',
+            EA115: '#d9b08c',
+            EA116: '#8ecae6',
+            EA117: '#9ccc9c',
+            EA118: '#a5b4fc',
+            EA119: '#f4b183',
+            EA120: '#e8a5a5',
+            EA999: '#82c7b2',
+            OTHER: '#aab2bd',
+        };
+
+        function getOutputSummaryBadgeStyle(typeCode) {
             const code = String(typeCode || '').toUpperCase();
-            if (code === 'EA101') return 'output-summary-badge--ea101';
-            if (code === 'EA103') return 'output-summary-badge--ea103';
-            if (code === 'EA119') return 'output-summary-badge--ea119';
-            if (code === 'EA120') return 'output-summary-badge--ea120';
-            return '';
+            const base = OUTPUT_TYPE_BASE_COLORS[code] || OUTPUT_TYPE_BASE_COLORS.OTHER;
+            return {
+                background: withHexAlpha(base, '1A'),
+                border: withHexAlpha(base, '66'),
+                text: base,
+            };
         }
 
         function getOutputSummaryParts(row) {
@@ -3332,14 +3364,10 @@
             if (idxEl) idxEl.textContent = summary.index;
             if (typeEl) {
                 typeEl.textContent = summary.typeLabel;
-                typeEl.classList.remove(
-                    'output-summary-badge--ea101',
-                    'output-summary-badge--ea103',
-                    'output-summary-badge--ea119',
-                    'output-summary-badge--ea120'
-                );
-                const badgeClass = getOutputSummaryBadgeClass(summary.typeCode);
-                if (badgeClass) typeEl.classList.add(badgeClass);
+                const badgeStyle = getOutputSummaryBadgeStyle(summary.typeCode);
+                typeEl.style.backgroundColor = badgeStyle.background;
+                typeEl.style.borderColor = badgeStyle.border;
+                typeEl.style.color = badgeStyle.text;
             }
             if (titleEl) titleEl.textContent = summary.title;
             if (metaEl) metaEl.textContent = summary.meta;

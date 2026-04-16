@@ -1,14 +1,27 @@
 @extends('layouts.app')
 
 @php
-    $typeBadge = function ($type) {
-        return match ($type) {
-            'EA101' => 'bg-sky-100 text-sky-700',
-            'EA103' => 'bg-amber-100 text-amber-700',
-            'EA119' => 'bg-emerald-100 text-emerald-700',
-            'EA120' => 'bg-cyan-100 text-cyan-700',
-            default => 'bg-slate-100 text-slate-700',
-        };
+    $typeBaseColorMap = [
+        'EA101' => '#7aa2f7',
+        'EA103' => '#f7b267',
+        'EA119' => '#f4b183',
+        'EA120' => '#e8a5a5',
+    ];
+    $withAlpha = static function (string $hex, string $alpha): string {
+        $base = ltrim(trim($hex), '#');
+        if (strlen($base) !== 6) {
+            return '#cbd5e1';
+        }
+        return '#' . $base . $alpha;
+    };
+    $typeBadge = function ($type) use ($typeBaseColorMap, $withAlpha) {
+        $baseColor = $typeBaseColorMap[$type] ?? '#94a3b8';
+        return sprintf(
+            'background-color:%s; border-color:%s; color:%s;',
+            $withAlpha($baseColor, '1A'),
+            $withAlpha($baseColor, '66'),
+            $baseColor
+        );
     };
     $typeLabel = fn ($type) => match ($type) {
         'EA101' => 'Academic Paper',
@@ -53,19 +66,19 @@
             </article>
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="text-sm font-medium text-slate-500">Academic Paper</div>
-                <div class="mt-2 text-3xl font-bold text-sky-700">{{ number_format($paperCount) }}</div>
+                <div class="mt-2 text-3xl font-bold" style="color:#7aa2f7;">{{ number_format($paperCount) }}</div>
             </article>
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="text-sm font-medium text-slate-500">Presentation</div>
-                <div class="mt-2 text-3xl font-bold text-amber-700">{{ number_format($presentationCount) }}</div>
+                <div class="mt-2 text-3xl font-bold" style="color:#f7b267;">{{ number_format($presentationCount) }}</div>
             </article>
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="text-sm font-medium text-slate-500">Textbook / Book chapter</div>
-                <div class="mt-2 text-3xl font-bold text-emerald-700">{{ number_format($textbookCount) }}</div>
+                <div class="mt-2 text-3xl font-bold" style="color:#f4b183;">{{ number_format($textbookCount) }}</div>
             </article>
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="text-sm font-medium text-slate-500">Manual / Instruction / Guideline</div>
-                <div class="mt-2 text-3xl font-bold text-cyan-700">{{ number_format($manualCount) }}</div>
+                <div class="mt-2 text-3xl font-bold" style="color:#e8a5a5;">{{ number_format($manualCount) }}</div>
             </article>
         </section>
 
@@ -107,7 +120,7 @@
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ $typeBadge($output->type) }}">
+                                <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" style="{{ $typeBadge($output->type) }}">
                                     {{ $typeLabel($output->type) }}
                                 </span>
                                 @if ($output->output_code)

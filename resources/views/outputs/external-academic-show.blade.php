@@ -13,13 +13,13 @@
         'EA120' => 'Manual / Instruction / Guideline',
         default => $externalOutput->type ?: '-',
     };
-    $typeBadge = match ($externalOutput->type) {
-        'EA101' => 'bg-sky-100 text-sky-700',
-        'EA103' => 'bg-amber-100 text-amber-700',
-        'EA119' => 'bg-emerald-100 text-emerald-700',
-        'EA120' => 'bg-cyan-100 text-cyan-700',
-        default => 'bg-slate-100 text-slate-700',
-    };
+    $typeBaseColor = $typeBaseColorMap[$externalOutput->type] ?? '#94a3b8';
+    $typeBadge = sprintf(
+        'background-color:%s; border-color:%s; color:%s;',
+        $withAlpha($typeBaseColor, '1A'),
+        $withAlpha($typeBaseColor, '66'),
+        $typeBaseColor
+    );
 @endphp
 
 @section('content')
@@ -28,7 +28,7 @@
             <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-4xl">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ $typeBadge }}">{{ $typeLabel }}</span>
+                        <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" style="{{ $typeBadge }}">{{ $typeLabel }}</span>
                         @if ($externalOutput->output_code)
                             <span class="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
                                 {{ $externalOutput->output_code }}
@@ -183,3 +183,16 @@
         @endif
     </div>
 @endsection
+    $typeBaseColorMap = [
+        'EA101' => '#7aa2f7',
+        'EA103' => '#f7b267',
+        'EA119' => '#f4b183',
+        'EA120' => '#e8a5a5',
+    ];
+    $withAlpha = static function (string $hex, string $alpha): string {
+        $base = ltrim(trim($hex), '#');
+        if (strlen($base) !== 6) {
+            return '#cbd5e1';
+        }
+        return '#' . $base . $alpha;
+    };

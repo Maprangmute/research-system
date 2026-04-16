@@ -435,7 +435,8 @@ public function store(Request $request)
 
     return redirect()
         ->route('projects.show', $project)
-        ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+        ->with('success', 'บันทึกข้อมูลเรียบร้อยแล้ว')
+        ->with('clear_project_create_autosave', true);
 }
 
     private function nextProjectCode(): string
@@ -2205,7 +2206,7 @@ public function store(Request $request)
     {
         $candidates = (clone $scope)
             ->reorder()
-            ->select(['id', 'project_name_th'])
+            ->select(['id', 'project_name_th', 'project_code', 'start_year'])
             ->whereNotNull('project_name_th')
             ->whereRaw("TRIM(project_name_th) <> ''")
             ->get();
@@ -2223,14 +2224,18 @@ public function store(Request $request)
             if ($normalized === '') {
                 continue;
             }
+            $years = $this->collectComparableProjectYears($candidate->start_year, $rawName);
+            $primaryYear = $years[0] ?? '__unknown__';
 
             $prepared[] = [
                 'id' => (int) $candidate->id,
                 'raw' => $rawName,
                 'normalized' => $normalized,
                 'tokens' => $this->tokenizeSearchTerms($rawName),
+                'years' => $years,
+                'start_year' => $this->normalizeComparableYearValue($candidate->start_year),
             ];
-            $exactGroups[$normalized][] = (int) $candidate->id;
+            $exactGroups[$normalized.'|'.$primaryYear][] = (int) $candidate->id;
         }
 
         $duplicateIds = [];
@@ -2267,8 +2272,15 @@ public function store(Request $request)
     {
         $leftName = $left['normalized'] ?? '';
         $rightName = $right['normalized'] ?? '';
+        $leftYears = array_values(array_filter((array) ($left['years'] ?? [])));
+        $rightYears = array_values(array_filter((array) ($right['years'] ?? [])));
 
         if ($leftName === '' || $rightName === '') {
+            return false;
+        }
+
+        // รายการชื่อใกล้เคียงแต่คนละปีไม่ถือว่าเป็นซ้ำ
+        if ($this->yearsConflict($leftYears, $rightYears)) {
             return false;
         }
 
@@ -2321,6 +2333,62 @@ public function store(Request $request)
             && $tokenScore >= 0.8
             && $bigramScore >= 0.86
             && $trigramScore >= 0.72;
+    }
+
+    private function normalizeComparableYearValue($value): ?int
+    {
+        $text = trim((string) ($value ?? ''));
+        if ($text === '' || !preg_match('/(\d{4})/', $text, $match)) {
+            return null;
+        }
+
+        $year = (int) $match[1];
+        if ($year > 2400) {
+            $year -= 543;
+        }
+
+        if ($year < 1900 || $year > 2600) {
+            return null;
+        }
+
+        return $year;
+    }
+
+    private function extractComparableYearsFromText(string $text): array
+    {
+        preg_match_all('/\d{4}/', $text, $matches);
+        $years = [];
+        foreach (($matches[0] ?? []) as $token) {
+            $year = $this->normalizeComparableYearValue($token);
+            if ($year !== null) {
+                $years[] = $year;
+            }
+        }
+
+        return array_values(array_unique($years));
+    }
+
+    private function collectComparableProjectYears($startYear, string $name): array
+    {
+        $years = [];
+
+        $normalizedStartYear = $this->normalizeComparableYearValue($startYear);
+        if ($normalizedStartYear !== null) {
+            $years[] = $normalizedStartYear;
+        }
+
+        $years = array_merge($years, $this->extractComparableYearsFromText($name));
+
+        return array_values(array_unique(array_filter($years, static fn($year) => is_int($year))));
+    }
+
+    private function yearsConflict(array $leftYears, array $rightYears): bool
+    {
+        if ($leftYears === [] || $rightYears === []) {
+            return false;
+        }
+
+        return count(array_intersect($leftYears, $rightYears)) === 0;
     }
 
     private function calculateFuzzyScore(string $needleNormalized, array $tokens, string $candidateName): float

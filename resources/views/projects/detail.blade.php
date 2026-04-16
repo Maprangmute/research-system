@@ -1476,15 +1476,32 @@
                         ->unique()
                         ->sort()
                         ->values();
-                $typeUniverseCount = max($typeUniverse->count(), 1);
-                $typeStyleMap = [];
-                foreach ($typeUniverse as $index => $type) {
-                    $hue = (int) round(fmod(($index * (360 / $typeUniverseCount)), 360));
-                    $typeStyleMap[$type] = sprintf(
-                        'background-color:hsl(%1$d 95%% 96%%); border-color:hsl(%1$d 72%% 78%%); color:hsl(%1$d 48%% 24%%);',
-                        $hue
-                    );
-                }
+                $typePalette = [
+                    '#7aa2f7', '#7dcfb6', '#f7b267', '#f79d9d', '#b39ddb', '#7ec8e3', '#9ad29a', '#9fa8da',
+                    '#f6b26b', '#f4a6c1', '#9bb8ff', '#8fd3c8', '#c5d86d', '#c3a6e8', '#d9b08c', '#8ecae6',
+                    '#9ccc9c', '#a5b4fc', '#f4b183', '#e8a5a5', '#82c7b2', '#aab2bd', '#d7c97a', '#b0bec5',
+                ];
+                $withAlpha = static function (string $hex, string $alpha): string {
+                    $base = ltrim(trim($hex), '#');
+                    if (strlen($base) !== 6) {
+                        return '#cbd5e1';
+                    }
+                    return '#' . $base . $alpha;
+                };
+                $typeBaseColorMap = $typeUniverse
+                    ->values()
+                    ->mapWithKeys(fn($type, $index) => [(string) $type => $typePalette[$index % count($typePalette)]])
+                    ->all();
+                $typeStyleMap = collect($typeBaseColorMap)->mapWithKeys(function ($baseColor, $type) use ($withAlpha) {
+                    return [
+                        (string) $type => sprintf(
+                            'background-color:%s; border-color:%s; color:%s;',
+                            $withAlpha($baseColor, '1A'),
+                            $withAlpha($baseColor, '66'),
+                            $baseColor
+                        ),
+                    ];
+                })->all();
                 $defaultTypeStyle = 'background-color:#f8fafc; border-color:#cbd5e1; color:#334155;';
                 $outputTypeStyle = function ($type) use ($typeStyleMap, $defaultTypeStyle) {
                     $label = trim((string) $type);
