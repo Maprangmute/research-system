@@ -37,27 +37,29 @@
         }
         $pageTitle = $baseTitle . ($titleParts->isNotEmpty() ? ' ' . $titleParts->implode(' ') : '');
 
-        $forwardFirstYear = $forwardSummary['first_year'] ?? null;
-        $forwardFirstCount = (int) ($forwardSummary['first_count'] ?? 0);
-        $forwardLatestYear = $forwardSummary['latest_year'] ?? null;
-        $forwardLatestCount = (int) ($forwardSummary['latest_count'] ?? 0);
-        $forwardCumulativeGrowthCount = (int) ($forwardSummary['cumulative_growth_count'] ?? 0);
-        $forwardCumulativeGrowthPct = $forwardSummary['cumulative_growth_pct'] ?? null;
-        $forwardAvgPerYear = (float) ($forwardSummary['avg_per_year'] ?? 0);
-        $forwardPeakYear = $forwardSummary['peak_year'] ?? null;
-        $forwardPeakCount = (int) ($forwardSummary['peak_count'] ?? 0);
-        $forwardKnownYearCount = (int) ($forwardSummary['known_year_count'] ?? 0);
         $currentYearBe = (int) now()->setTimezone('Asia/Bangkok')->format('Y') + 543;
-        $rangeFromYear = $selectedYearFrom ?? $forwardFirstYear;
-        $rangeToYear = $selectedYearTo ?? $forwardLatestYear;
-        $rangeFromCount = ($rangeFromYear !== null && isset($yearTotals)) ? (int) $yearTotals->get((int) $rangeFromYear, 0) : $forwardFirstCount;
-        $rangeToCount = ($rangeToYear !== null && isset($yearTotals)) ? (int) $yearTotals->get((int) $rangeToYear, 0) : $forwardLatestCount;
-        $rangeDelta = $rangeToCount - $rangeFromCount;
-        $rangeGrowthPct = $rangeFromCount > 0 ? round(($rangeDelta / $rangeFromCount) * 100, 1) : null;
-        $isRollingThreeYears = ($rangeFromYear !== null && $rangeToYear !== null && ((int) $rangeToYear - (int) $rangeFromYear) === 2);
-        $rangeToYearLabel = ((int) ($rangeToYear ?? 0) === $currentYearBe) ? 'ปีนี้' : 'ปีล่าสุด';
+        $trendPreviousYear = $trendSummary['previous_year'] ?? null;
+        $trendLatestYear = $trendSummary['latest_year'] ?? null;
+        $trendPreviousCount = (int) ($trendSummary['previous_count'] ?? 0);
+        $trendLatestCount = (int) ($trendSummary['latest_count'] ?? 0);
+        $trendDelta = (int) ($trendSummary['delta'] ?? 0);
+        $trendGrowthPct = $trendSummary['growth_pct'] ?? null;
+        $trendLatestYearLabel = ((int) ($trendLatestYear ?? 0) === $currentYearBe) ? 'ปีนี้' : 'ปีล่าสุด';
 
-        $sourceShareRows = collect($sourceShare ?? [])->take(5);
+        $projectOutputCount = (int) ($sourceCounts['project'] ?? 0);
+        $nonProjectOutputCount = (int) (($sourceCounts['back_office'] ?? 0) + ($sourceCounts['external'] ?? 0));
+        $graphShareRows = collect([
+            (object) [
+                'label' => 'ผลงานในโครงการวิจัย',
+                'count' => $projectOutputCount,
+                'pct' => $totalCount > 0 ? round(($projectOutputCount / $totalCount) * 100, 1) : 0.0,
+            ],
+            (object) [
+                'label' => 'ผลงานนอกโครงการวิจัย',
+                'count' => $nonProjectOutputCount,
+                'pct' => $totalCount > 0 ? round(($nonProjectOutputCount / $totalCount) * 100, 1) : 0.0,
+            ],
+        ])->values();
         $eaFullNameMap = [
             'EA101' => 'Research Paper or Journal Article',
             'EA102' => 'Reports and White Papers',
@@ -183,7 +185,7 @@
             })
             ->sortByDesc('count')
             ->values();
-        $topSource = $sourceShareRows->first();
+        $topSource = $graphShareRows->sortByDesc('count')->first();
         $topType = $typeBreakdownRows->first();
         $defaultTypeStyle = 'background-color:#f8fafc; border-color:#cbd5e1; color:#334155;';
         $outputTypeStyle = function ($type) use ($typeStyleMap, $defaultTypeStyle, $extractTypeCode) {
@@ -203,16 +205,35 @@
     <style>
         .viz-page {
             font-family: "Sarabun", "Noto Sans Thai", "Segoe UI", sans-serif;
-            background:
-                radial-gradient(1200px 420px at 8% -5%, rgba(14, 116, 144, .08), transparent 70%),
-                radial-gradient(900px 360px at 100% 0%, rgba(30, 64, 175, .07), transparent 68%),
-                #f3f6fb;
+            background: #ffffff;
+            width: 100vw;
+            margin-left: calc(50% - 50vw);
+            margin-right: calc(50% - 50vw);
         }
         .panel {
             background: #fff;
             border: 1px solid #e2e8f0;
             border-radius: 16px;
             box-shadow: 0 8px 24px rgba(15, 23, 42, .04);
+        }
+        .hero-panel {
+            border-radius: 22px;
+            border: 1px solid #ebeef3;
+            background: #ffffff;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, .04);
+        }
+        .hero-title {
+            max-width: 980px;
+            font-size: clamp(22px, 2.4vw, 34px);
+            line-height: 1.2;
+            letter-spacing: -0.03em;
+        }
+        .hero-kicker {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #64748b;
         }
         .metric {
             font-variant-numeric: tabular-nums;
@@ -259,17 +280,15 @@
         .focus-kpi {
             border: 1px solid #cbd5e1;
             border-radius: 12px;
-            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+            background: #ffffff;
         }
         .growth-panel {
-            background:
-                radial-gradient(420px 120px at 0% 0%, rgba(37, 99, 235, .08), transparent 75%),
-                linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            background: #ffffff;
         }
         .growth-summary {
-            border: 1px solid #bfdbfe;
+            border: 1px solid #e5e7eb;
             border-radius: 14px;
-            background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
+            background: #ffffff;
         }
         .scroll-card {
             max-height: 360px;
@@ -436,6 +455,139 @@
             border-radius: 14px;
             background: #ffffff;
         }
+        .filter-shell {
+            background: #ffffff;
+        }
+        .filter-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .filter-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: #475569;
+        }
+        .filter-select {
+            width: 100%;
+            min-height: 50px;
+            border: 1px solid #dbe4f0;
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 12px 14px;
+            font-size: 14px;
+            color: #0f172a;
+            transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+        }
+        .filter-select:hover {
+            border-color: #bfd2ea;
+            background: #fbfdff;
+        }
+        .filter-select:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 4px rgba(96, 165, 250, .14);
+        }
+        .filter-hint {
+            font-size: 12px;
+            color: #64748b;
+        }
+        .filter-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 34px;
+            border-radius: 999px;
+            background: #f3f4f6;
+            padding: 0 14px;
+            font-size: 12px;
+            color: #475569;
+        }
+        .filter-chip strong {
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .filter-summary-card {
+            border: 1px solid #eceff3;
+            border-radius: 16px;
+            background: #ffffff;
+            padding: 14px;
+        }
+        .section-panel {
+            position: relative;
+            overflow: hidden;
+        }
+        .section-panel::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #cbd5e1;
+        }
+        .section-panel--slate::before { background: linear-gradient(90deg, #64748b, #cbd5e1); }
+        .section-panel--teal::before { background: linear-gradient(90deg, #0f766e, #99f6e4); }
+        .section-panel--indigo::before { background: linear-gradient(90deg, #4338ca, #c7d2fe); }
+        .section-panel--amber::before { background: linear-gradient(90deg, #d97706, #fde68a); }
+        .section-panel--rose::before { background: linear-gradient(90deg, #be123c, #fda4af); }
+        .section-panel--emerald::before { background: linear-gradient(90deg, #047857, #a7f3d0); }
+        .section-tag {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            border-radius: 999px;
+            padding: 0 10px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .section-tag--slate {
+            background: #f8fafc;
+            color: #334155;
+        }
+        .section-tag--teal {
+            background: #f0fdfa;
+            color: #0f766e;
+        }
+        .section-tag--amber {
+            background: #fffbeb;
+            color: #c2410c;
+        }
+        .section-tag--indigo {
+            background: #eef2ff;
+            color: #4338ca;
+        }
+        .section-tag--rose {
+            background: #fff1f2;
+            color: #be123c;
+        }
+        .section-tag--emerald {
+            background: #ecfdf5;
+            color: #047857;
+        }
+        .filter-summary-metric {
+            font-variant-numeric: tabular-nums;
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.1;
+            color: #0f172a;
+        }
         .paper-record-scroll {
             max-height: 520px;
             overflow-y: auto;
@@ -492,70 +644,107 @@
                 gap: 6px;
             }
         }
+        @media (min-width: 768px) {
+            .filter-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        @media (min-width: 1280px) {
+            .filter-grid {
+                grid-template-columns: 1.1fr 1.4fr 1fr 1fr auto;
+            }
+        }
     </style>
 
     <div class="viz-page min-h-screen pb-10">
         <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 md:py-8">
-            <section class="fade-up panel p-6 md:p-8">
-                <h1 class="mt-2 text-2xl font-semibold leading-tight text-slate-900 md:text-2xl">{{ $pageTitle }}</h1>
+            <section class="fade-up hero-panel section-panel section-panel--slate p-7 md:p-10">
+                <div class="hero-kicker">Research Outputs Overview</div>
+                <h1 class="hero-title mt-3 font-semibold text-slate-900">{{ $pageTitle }}</h1>
 
-                <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
-                    <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">ทั้งหมด {{ number_format($totalCount) }} ผลงาน</span>
-                    <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">แหล่งหลัก: {{ $topSource?->label ?? '-' }}</span>
-                    <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">ประเภทหลัก: {{ $topType?->label ?? '-' }}</span>
-                </div>
             </section>
 
-            <section class="fade-up panel p-4 md:p-5">
-                <form id="vizFilters" method="GET" action="{{ route('outputs.visualization') }}" class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                    <label class="block">
-                        <span class="text-xs font-semibold text-slate-600">แหล่งข้อมูล</span>
-                        <select name="source" class="js-auto-filter mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">
+            <section class="fade-up panel filter-shell section-panel section-panel--slate p-5 md:p-6">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="max-w-2xl">
+                        <div class="section-tag section-tag--slate">Visualization Filters</div>
+                        <h2 class="mt-2 text-xl font-semibold text-slate-900">เลือกช่วงข้อมูลที่อยากดู</h2>
+                        <p class="mt-1 text-sm leading-relaxed text-slate-600">ตัวกรองนี้จะเปลี่ยนทั้งกราฟ ตัวเลขสรุป และรายการด้านล่างพร้อมกัน โดยประเภท EA จะแสดงชื่อเต็มเพื่ออ่านได้ทันที</p>
+                    </div>
+                    <div class="filter-summary-card lg:w-[280px]">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Active Scope</div>
+                        <div class="filter-summary-metric mt-2">{{ number_format($totalCount) }}</div>
+                        <div class="mt-1 text-sm font-medium text-slate-700">ผลงานในชุดข้อมูลที่เลือก</div>
+                        <div class="mt-2 text-xs text-slate-500">แหล่งหลัก: {{ $topSource?->label ?? '-' }} · ประเภทหลัก: {{ $topType?->label ?? '-' }}</div>
+                    </div>
+                </div>
+
+                {{-- <div class="filter-chip-row mt-4">
+                    <span class="filter-chip"><strong>แหล่งข้อมูล</strong> {{ $selectedSource !== '' ? ($sourceLabelMap[$selectedSource] ?? $selectedSource) : 'ทั้งหมด' }}</span>
+                    <span class="filter-chip"><strong>ประเภท</strong> {{ $selectedType !== '' ? ($selectedType . ' - ' . ($eaFullNameMap[$selectedType] ?? ('ประเภท ' . $selectedType))) : 'ทั้งหมด' }}</span>
+                    <span class="filter-chip"><strong>ปี</strong>
+                        @if (filled($selectedYearFrom) || filled($selectedYearTo))
+                            {{ $selectedYearFrom ?: '...' }} - {{ $selectedYearTo ?: '...' }}
+                        @else
+                            ทั้งหมด
+                        @endif
+                    </span>
+                </div> --}}
+
+                <form id="vizFilters" method="GET" action="{{ route('outputs.visualization') }}" class="filter-grid mt-5">
+                    <label class="filter-field">
+                        <span class="filter-label">แหล่งข้อมูล</span>
+                        <select name="source" class="js-auto-filter filter-select">
                             <option value="">ทั้งหมด</option>
                             @foreach ($sourceLabelMap as $sourceKey => $sourceLabel)
                                 <option value="{{ $sourceKey }}" @selected($selectedSource === $sourceKey)>{{ $sourceLabel }}</option>
                             @endforeach
                         </select>
+                        <span class="filter-hint">เลือกว่าต้องการดูเฉพาะในโครงการ งานนอกโครงการ หรือผลงานภายนอก</span>
                     </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-slate-600">ประเภท (EA)</span>
-                        <select name="type" class="js-auto-filter mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">
+                    <label class="filter-field">
+                        <span class="filter-label">ประเภทผลงาน (EA)</span>
+                        <select name="type" class="js-auto-filter filter-select">
                             <option value="">ทั้งหมด</option>
                             @foreach ($typeOptions as $typeCode)
-                                <option value="{{ $typeCode }}" @selected($selectedType === $typeCode)>{{ $typeCode }}</option>
+                                <option value="{{ $typeCode }}" @selected($selectedType === $typeCode)>{{ $typeCode }} - {{ $eaFullNameMap[$typeCode] ?? ('ประเภท ' . $typeCode) }}</option>
                             @endforeach
                         </select>
+                        <span class="filter-hint">แสดงชื่อเต็มของ EA เพื่อแยกประเภทได้เร็วขึ้นโดยไม่ต้องจำรหัส</span>
                     </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-slate-600">ปีเริ่ม (พ.ศ.)</span>
-                        <select name="year_from" class="js-auto-filter mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">
+                    <label class="filter-field">
+                        <span class="filter-label">ปีเริ่ม (พ.ศ.)</span>
+                        <select name="year_from" class="js-auto-filter filter-select">
                             <option value="">ทั้งหมด</option>
                             @foreach ($yearOptions as $year)
                                 <option value="{{ $year }}" @selected((int) $selectedYearFrom === (int) $year)>{{ $year }}</option>
                             @endforeach
                         </select>
+                        <span class="filter-hint">ใช้กำหนดขอบซ้ายของช่วงเวลา</span>
                     </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-slate-600">ปีสิ้นสุด (พ.ศ.)</span>
-                        <select name="year_to" class="js-auto-filter mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm">
+                    <label class="filter-field">
+                        <span class="filter-label">ปีสิ้นสุด (พ.ศ.)</span>
+                        <select name="year_to" class="js-auto-filter filter-select">
                             <option value="">ทั้งหมด</option>
                             @foreach ($yearOptions as $year)
                                 <option value="{{ $year }}" @selected((int) $selectedYearTo === (int) $year)>{{ $year }}</option>
                             @endforeach
                         </select>
+                        <span class="filter-hint">ใช้กำหนดขอบขวาของช่วงเวลา</span>
                     </label>
-                    <div class="flex items-end justify-between gap-2">
-                        <div id="filterLoading" class="hidden text-xs text-slate-500">กำลังอัปเดต...</div>
-                        <a href="{{ route('outputs.visualization') }}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">ล้าง</a>
+                    <div class="flex flex-col justify-end gap-3">
+                        <div id="filterLoading" class="hidden rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">กำลังอัปเดตข้อมูล...</div>
+                        <a href="{{ route('outputs.visualization') }}" class="inline-flex min-h-[50px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">ล้างตัวกรอง</a>
                     </div>
                 </form>
             </section>
 
-            <section class="fade-up panel p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--teal p-5 md:p-6">
                 <div class="flex flex-wrap items-end justify-between gap-3">
                     <div>
-                        <h2 class="text-lg font-semibold text-slate-900">ประเภทโครงการ (6 กลุ่ม) จาก Output</h2>
-                        <p class="mt-1 text-sm text-slate-500">สรุปจำนวนผลงาน แยกตามประเภทโครงการ พร้อมรายการผลงานในแต่ละกลุ่ม</p>
+                        <div class="section-tag section-tag--teal">Theme Output</div>
+                        <h2 class="text-lg font-semibold text-slate-900">กลุ่มเนื้อหา  (6 กลุ่ม) จาก Output</h2>
+                        <p class="mt-1 text-sm text-slate-500">สรุปจำนวนผลงาน แยกตามกลุ่มเนื้อหา พร้อมรายการผลงานในแต่ละกลุ่ม</p>
                     </div>
                     <div class="focus-kpi px-4 py-2">
                         <div class="text-[11px] uppercase tracking-wide text-slate-500">Total Outputs</div>
@@ -617,8 +806,9 @@
                                                         <div class="text-xs text-slate-700">
                                                             <span class="mr-1 font-semibold text-slate-500">{{ (int) $idx + 1 }}.</span>{{ $item->title }}
                                                         </div>
-                                                        <div class="mt-1">
+                                                        <div class="mt-1 flex flex-wrap items-center gap-2">
                                                             <span class="output-type-chip" style="{{ $outputTypeStyle($item->type_code) }}">{{ $item->type_code }} - {{ $item->type_label }}</span>
+                                                            <span class="text-[11px] font-medium text-slate-500">ปี {{ $item->year_be ?? '-' }}</span>
                                                         </div>
                                                     </div>
                                                     <div class="shrink-0 text-[11px] font-semibold text-slate-500">ดูรายละเอียด</div>
@@ -636,53 +826,54 @@
             </section>
 
             <section class="scene scene--compact grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-                <article class="fade-up panel chart-sticky h-full p-4 md:p-5">
+                <article class="fade-up panel section-panel section-panel--indigo chart-sticky h-full p-4 md:p-5">
+                    <div class="section-tag section-tag--indigo">Output Trend</div>
                     <h2 class="text-base font-semibold text-slate-900">ผลงานที่เกิดขึ้น <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($totalCount) }} รายการ)</span></h2>
                     <div class="mt-4 h-[360px]"><canvas id="chartOutputsByYear"></canvas></div>
                 </article>
-                <article class="fade-up panel growth-panel flex h-full flex-col justify-center p-5 md:p-6">
-                    <h3 class="text-xl font-semibold text-slate-900">ขับเคลื่อนผลงาน</h3>
+                <article class="fade-up panel section-panel section-panel--slate growth-panel flex h-full flex-col justify-center p-5 md:p-6">
+                    <div class="section-tag section-tag--slate">Summary</div>
                     <div class="growth-summary mt-3 px-4 py-3">
                         <div class="metric mt-1 text-2xl font-semibold text-slate-900">
-                            @if ($rangeGrowthPct !== null)
-                                {{ $rangeDelta >= 0 ? 'เพิ่มขึ้น' : 'ลดลง' }} {{ number_format(abs($rangeDelta)) }} รายการ
-                                ({{ number_format(abs((float) $rangeGrowthPct), 1) }}%)
-                            @else
-                                ยังคำนวณการเติบโตในช่วงนำเสนอไม่ได้
-                            @endif
+                            มีผลงานทั้งหมด {{ number_format($totalCount) }} รายการ
                         </div>
                     </div>
                     <p class="mt-3 text-sm leading-relaxed text-slate-600">
-                        @if ($rangeFromYear && $rangeToYear)
-                            @if ($isRollingThreeYears)
-                                ช่วงย้อนหลัง 3 ปี:
-                            @endif
-                            จากปี {{ $rangeFromYear }} ({{ number_format($rangeFromCount) }} รายการ)
-                            ถึง{{ $rangeToYearLabel }} {{ $rangeToYear }} ({{ number_format($rangeToCount) }} รายการ)
-                            {{ $rangeDelta >= 0 ? 'เพิ่มขึ้น' : 'ลดลง' }} {{ number_format(abs($rangeDelta)) }} รายการ
+                        @if ($topSource)
+                            แหล่งข้อมูลหลักคือ {{ $topSource->label }} {{ number_format((int) $topSource->count) }} รายการ
+                            ({{ number_format((float) $topSource->pct, 1) }}%)
                         @else
-                            ข้อมูลปีไม่พอสำหรับคำนวณในช่วงนำเสนอ
+                            ไม่มีข้อมูลในช่วงที่เลือก
                         @endif
                     </p>
-                    <div class="mt-4 grid gap-2 sm:grid-cols-2">
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
-                            <div class="metric text-xl font-semibold text-slate-900">{{ $rangeFromYear ?: '-' }}</div>
-                            <div class="mt-1 text-sm font-semibold text-slate-600">{{ number_format($rangeFromCount) }} รายการ</div>
-                        </div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
-                            <div class="metric text-xl font-semibold text-slate-900">{{ $rangeToYear ?: '-' }}</div>
-                            <div class="mt-1 text-sm font-semibold text-slate-600">{{ number_format($rangeToCount) }} รายการ</div>
-                        </div>
+                    <div class="mt-4 space-y-2">
+                        @forelse ($graphShareRows as $source)
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="text-sm font-semibold text-slate-900">{{ $source->label }}</div>
+                                        <div class="mt-1 text-xs text-slate-500">{{ number_format((float) $source->pct, 1) }}% ของผลรวม</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="metric text-xl font-semibold text-slate-900">{{ number_format((int) $source->count) }}</div>
+                                        <div class="text-xs text-slate-500">รายการ</div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">ไม่มีข้อมูลในช่วงที่เลือก</div>
+                        @endforelse
                     </div>
                 </article>
             </section>
 
             <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-                <article class="fade-up panel chart-sticky h-full p-4 md:p-5">
+                <article class="fade-up panel section-panel section-panel--amber chart-sticky h-full p-4 md:p-5">
+                    <div class="section-tag section-tag--amber">Type Of Output</div>
                     <h2 class="text-base font-semibold text-slate-900">ประเภทผลงานที่เกิดขึ้นจากหลายมิติ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($typeSectionTotal) }} รายการ)</span></h2>
                     <div class="type-chart-wrap mt-4"><canvas id="chartOutputTypes"></canvas></div>
                 </article>
-                <article class="fade-up panel type-right-panel p-5 md:p-6">
+                <article class="fade-up panel section-panel section-panel--amber type-right-panel p-5 md:p-6">
                     <h3 class="text-xl font-semibold text-slate-900">โดยผลงาน</h3>
                     <div class="focus-kpi mt-3 px-4 py-3">
                         <div class="metric mt-1 text-2xl font-semibold text-slate-900">
@@ -711,13 +902,14 @@
             </section>
 
             <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-                <article class="fade-up panel chart-sticky flex h-full flex-col p-4 md:p-5">
+                <article class="fade-up panel section-panel section-panel--rose chart-sticky flex h-full flex-col p-4 md:p-5">
+                    <div class="section-tag section-tag--rose">Publications</div>
                     <h2 class="text-base font-semibold text-slate-900">ผลงานการตีพิมพ์ต่างๆ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($paperCount) }} รายการ)</span></h2>
                     <div class="mt-4 flex flex-1 items-center justify-center">
                         <div class="h-[360px] w-full max-w-[880px]"><canvas id="chartPaperQuartile"></canvas></div>
                     </div>
                 </article>
-                <article class="fade-up panel flex h-full flex-col p-5 md:p-6">
+                <article class="fade-up panel section-panel section-panel--rose flex h-full flex-col p-5 md:p-6">
                     <h3 class="text-xl font-semibold text-slate-900">ตีพิมพ์ไป</h3>
                     <div class="focus-kpi mt-3 px-4 py-3">
                         <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format($paperCount) }} ผลงาน</div>
@@ -726,12 +918,22 @@
                     <p class="mt-1 text-xs text-slate-500">แสดงทั้งหมด {{ number_format((int) (($paperSummary['all'] ?? collect())->count())) }} รายการ</p>
                     <div class="paper-record-scroll mt-4 flex-1 space-y-2">
                         @forelse (($paperSummary['all'] ?? collect()) as $row)
-                            <a href="{{ $row->link ?: '#' }}" class="block rounded-lg border border-slate-200 px-3 py-2.5 text-slate-700 hover:bg-slate-50">
+                            <button
+                                type="button"
+                                class="js-output-item block w-full rounded-lg border border-slate-200 px-3 py-2.5 text-left text-slate-700 hover:bg-slate-50"
+                                data-title="{{ $row->title }}"
+                                data-link="{{ $row->modal_link ?? '' }}"
+                                data-detail="{{ $row->modal_detail ?? '' }}"
+                                data-type="EA101 - Research Paper or Journal Article"
+                            >
                                 <div class="font-medium line-clamp-2">{{ $row->title }}</div>
+                                <div class="mt-1 text-xs text-slate-600">
+                                    ผู้ทำ: {{ collect($row->authors ?? [])->filter()->implode(', ') ?: 'ไม่ระบุผู้ทำ' }}
+                                </div>
                                 <div class="mt-1 text-xs text-slate-500">
                                     {{ $row->journal ?: 'ไม่ระบุวารสาร' }} • {{ $row->quartile ?: 'ไม่ระบุ Quartile' }} • IF {{ is_numeric($row->impact_factor) ? number_format((float) $row->impact_factor, 2) : '-' }} • {{ $row->year_be ?: '-' }}
                                 </div>
-                            </a>
+                            </button>
                         @empty
                             <div class="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">ไม่มีข้อมูล</div>
                         @endforelse
@@ -740,13 +942,14 @@
             </section>
 
             <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-                <article class="fade-up panel chart-sticky flex h-full flex-col p-4 md:p-5">
+                <article class="fade-up panel section-panel section-panel--emerald chart-sticky flex h-full flex-col p-4 md:p-5">
+                    <div class="section-tag section-tag--emerald">Presentations</div>
                     <h2 class="text-base font-semibold text-slate-900">ผลงานการนำเสนอต่างๆ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($presentationCount) }} รายการ)</span></h2>
                     <div class="mt-4 flex flex-1 items-center justify-center">
                         <div class="h-[360px] w-full max-w-[760px]"><canvas id="chartPresentationActivity"></canvas></div>
                     </div>
                 </article>
-                <article class="fade-up panel flex h-full flex-col p-5 md:p-6">
+                <article class="fade-up panel section-panel section-panel--emerald flex h-full flex-col p-5 md:p-6">
                     <h3 class="text-xl font-semibold text-slate-900">นำเสนอไป</h3>
                     <div class="focus-kpi mt-3 px-4 py-3">
                         <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format($presentationCount) }} ผลงาน</div>
@@ -755,10 +958,21 @@
                     <p class="mt-1 text-xs text-slate-500">แสดงทั้งหมด {{ number_format((int) (($presentationSummary['all'] ?? collect())->count())) }} รายการ</p>
                     <div class="paper-record-scroll mt-4 flex-1 space-y-2">
                         @forelse (($presentationSummary['all'] ?? collect()) as $row)
-                            <a href="{{ $row->link ?: '#' }}" class="block rounded-lg border border-slate-200 px-3 py-2.5 text-slate-700 hover:bg-slate-50">
+                            <button
+                                type="button"
+                                class="js-output-item block w-full rounded-lg border border-slate-200 px-3 py-2.5 text-left text-slate-700 hover:bg-slate-50"
+                                data-title="{{ $row->title }}"
+                                data-link="{{ $row->modal_link ?? '' }}"
+                                data-detail="{{ $row->modal_detail ?? '' }}"
+                                data-type="EA103 - Presentations in Academic Conferences"
+                            >
                                 <div class="font-medium line-clamp-2">{{ $row->title }}</div>
-                                <div class="mt-1 text-xs text-slate-500">{{ $row->conference_name ?: 'ไม่ระบุเวที' }} • {{ $row->presentation_type ?: 'ไม่ระบุประเภท' }} • {{ $row->presenter_name ?: 'ไม่ระบุผู้นำเสนอ' }}</div>
-                            </a>
+                                <div class="mt-2 grid gap-1 text-xs">
+                                    <div class="text-slate-500">เวที: <span class="font-medium text-slate-700">{{ $row->conference_name ?: 'ไม่ระบุเวที' }}</span></div>
+                                    <div class="text-slate-500">ประเภท: <span class="font-medium text-slate-700">{{ $row->presentation_type ?: 'ไม่ระบุประเภท' }}</span></div>
+                                    <div class="text-slate-500">ผู้นำเสนอ: <span class="font-medium text-slate-700">{{ $row->presenter_name ?: 'ไม่ระบุผู้นำเสนอ' }}</span></div>
+                                </div>
+                            </button>
                         @empty
                             <div class="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">ไม่มีข้อมูล</div>
                         @endforelse
@@ -767,24 +981,34 @@
             </section>
 
             @if ($textbookCount > 0)
-                <section class="scene grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-                    <article class="fade-up panel chart-sticky p-4 md:p-5">
+                <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+                    <article class="fade-up panel section-panel section-panel--teal chart-sticky flex h-full flex-col p-4 md:p-5">
+                        <div class="section-tag section-tag--teal">Textbooks</div>
                         <h2 class="text-base font-semibold text-slate-900">ผลงาน Textbooks <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($textbookCount) }} รายการ)</span></h2>
-                        <div class="mt-4 h-[340px]"><canvas id="chartTextbookPublisher"></canvas></div>
+                        <div class="mt-4 flex flex-1 items-center">
+                            <div class="h-[340px] w-full"><canvas id="chartTextbookPublisher"></canvas></div>
+                        </div>
                     </article>
-                    <article class="fade-up panel p-5 md:p-6">
-                        <h3 class="text-xl font-semibold text-slate-900">มีผลงาน Textbooks ไป</h3>
+                    <article class="fade-up panel section-panel section-panel--teal flex h-full flex-col p-5 md:p-6">
+                        <h3 class="text-xl font-semibold text-slate-900">มีผลงาน</h3>
                         <div class="focus-kpi mt-3 px-4 py-3">
                             <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format($textbookCount) }} Textbooks</div>
                         </div>
                         <p class="mt-2 text-sm text-slate-600">Top Publisher: {{ $textbookSummary['top_publisher'] ?: '-' }} · ผู้เขียนไม่ซ้ำ: {{ number_format((int) ($textbookSummary['unique_authors'] ?? 0)) }}</p>
                         <p class="mt-1 text-xs text-slate-500">รายการที่แสดงล่าสุด {{ number_format($textbookLatestCount) }} รายการ</p>
-                        <div class="mt-4 space-y-2">
+                        <div class="mt-4 flex-1 space-y-2">
                             @forelse (($textbookSummary['latest'] ?? collect()) as $row)
-                                <a href="{{ $row->link ?: '#' }}" class="block rounded-lg border border-slate-200 px-3 py-2.5 text-slate-700 hover:bg-slate-50">
+                                <button
+                                    type="button"
+                                    class="js-output-item block w-full rounded-lg border border-slate-200 px-3 py-2.5 text-left text-slate-700 hover:bg-slate-50"
+                                    data-title="{{ $row->title }}"
+                                    data-link="{{ $row->modal_link ?? '' }}"
+                                    data-detail="{{ $row->modal_detail ?? '' }}"
+                                    data-type="EA119 - Textbook / Book Chapter"
+                                >
                                     <div class="font-medium line-clamp-2">{{ $row->title }}</div>
                                     <div class="mt-1 text-xs text-slate-500">{{ $row->publisher_name ?: 'ไม่ระบุสำนักพิมพ์' }} • {{ $row->book_title ?: 'ไม่ระบุชื่อหนังสือ' }} • {{ $row->year_be ?: '-' }}</div>
-                                </a>
+                                </button>
                             @empty
                                 <div class="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">ไม่มีข้อมูล</div>
                             @endforelse
@@ -929,6 +1153,8 @@
             const presentationActivityValues = @json($presentationActivityValues);
             const textbookPublisherLabels = @json($textbookPublisherLabels);
             const textbookPublisherValues = @json($textbookPublisherValues);
+            const presentationChartColors = ['#ea580c', '#fb7185', '#16a34a', '#0891b2', '#7c3aed', '#ca8a04', '#0f766e', '#475569'];
+            const presentationChartBorderColors = ['#c2410c', '#e11d48', '#15803d', '#0e7490', '#6d28d9', '#a16207', '#115e59', '#334155'];
 
             const gridColor = 'rgba(148, 163, 184, 0.2)';
             const textColor = '#334155';
@@ -1141,7 +1367,14 @@
                 type: 'doughnut',
                 data: {
                     labels: safeLabels(presentationActivityLabels),
-                    datasets: [{ data: safeValues(presentationActivityValues, 1), backgroundColor: ['#ea580c', '#fb7185', '#16a34a', '#0891b2', '#7c3aed', '#ca8a04'] }]
+                    datasets: [{
+                        data: safeValues(presentationActivityValues, 1),
+                        backgroundColor: safeColors(presentationChartColors),
+                        hoverBackgroundColor: safeColors(presentationChartColors),
+                        borderColor: safeColors(presentationChartBorderColors),
+                        hoverBorderColor: safeColors(presentationChartBorderColors),
+                        borderWidth: 1.25
+                    }]
                 },
                 options: {
                     responsive: true,
@@ -1153,16 +1386,45 @@
                     radius: '86%',
                     cutout: '50%',
                     plugins: {
-                        legend: { position: 'bottom' },
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: textColor,
+                                padding: 10,
+                                boxWidth: 12,
+                                generateLabels: (chart) => {
+                                    const labels = chart.data.labels || [];
+                                    const data = chart.data.datasets?.[0]?.data || [];
+                                    const total = data.reduce((sum, v) => sum + Number(v || 0), 0);
+                                    return labels.map((label, i) => {
+                                        const value = Number(data[i] || 0);
+                                        const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                                        const color = chart.data.datasets[0].backgroundColor[i];
+                                        const stroke = chart.data.datasets[0].borderColor[i] || color;
+                                        return {
+                                            text: `${label} (${value}, ${pct}%)`,
+                                            fillStyle: color,
+                                            strokeStyle: stroke,
+                                            lineWidth: 1,
+                                            hidden: !chart.getDataVisibility(i),
+                                            index: i,
+                                        };
+                                    });
+                                }
+                            }
+                        },
                         datalabels: {
-                            display: false
+                            color: '#ffffff',
+                            font: { weight: '700', size: 11 },
+                            formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
                         },
                         outlabelsWithLines: {
                             enabled: true,
                             minAngleDeg: 16,
-                            minPct: 2.2,
-                            maxLabels: 8,
-                            minGap: 14,
+                            minPct: 1.4,
+                            maxLabels: 10,
+                            minGap: 16,
                             lineColor: '#94a3b8',
                             textColor: '#0f172a'
                         },

@@ -945,6 +945,38 @@ class OutputController extends Controller
             }
             return null;
         };
+        $buildSummaryListItem = static function ($row) use ($extractFirstUrl) {
+            $detail = trim((string) ($row->detail ?? ''));
+            $sourceLink = trim((string) ($row->link ?? '')) ?: null;
+            $detailLink = $extractFirstUrl($detail);
+
+            return (object) array_merge((array) $row, [
+                'modal_link' => $detailLink ?: $sourceLink,
+                'modal_detail' => $detail !== '' ? $detail : null,
+            ]);
+        };
+        $sortRowsNewestFirst = static function (Collection $rows): Collection {
+            return $rows->sort(function ($left, $right) {
+                $leftYear = is_numeric($left->year_be ?? null) ? (int) $left->year_be : PHP_INT_MIN;
+                $rightYear = is_numeric($right->year_be ?? null) ? (int) $right->year_be : PHP_INT_MIN;
+
+                if ($leftYear !== $rightYear) {
+                    return $rightYear <=> $leftYear;
+                }
+
+                $leftCreatedAt = $left->created_at?->timestamp ?? PHP_INT_MIN;
+                $rightCreatedAt = $right->created_at?->timestamp ?? PHP_INT_MIN;
+
+                if ($leftCreatedAt !== $rightCreatedAt) {
+                    return $rightCreatedAt <=> $leftCreatedAt;
+                }
+
+                return strcmp(
+                    trim((string) ($left->title ?? '')),
+                    trim((string) ($right->title ?? ''))
+                );
+            })->values();
+        };
 
         $projectOutputRows = $filtered
             ->where('source', 'project')
@@ -976,7 +1008,7 @@ class OutputController extends Controller
             'EA999' => 'Other Outputs',
             'OTHER' => 'Other Outputs',
         ];
-        $projectTypeSummary = collect($projectTypeLabelByCode)->map(function ($label) use ($projectOutputRows, $normalizeProjectType, $parseBudget, $projectTypeTotalOutputs, $eaFullNameMap, $extractFirstUrl) {
+        $projectTypeSummary = collect($projectTypeLabelByCode)->map(function ($label) use ($projectOutputRows, $normalizeProjectType, $parseBudget, $projectTypeTotalOutputs, $eaFullNameMap, $extractFirstUrl, $sortRowsNewestFirst) {
             $rows = $projectOutputRows->filter(fn ($row) => $normalizeProjectType($row->project_type) === $label)->values();
             $outputCount = (int) $rows->count();
             $projectCount = (int) $rows->pluck('project_id')->filter(fn ($id) => is_numeric($id))->unique()->count();
@@ -987,7 +1019,7 @@ class OutputController extends Controller
                 'project_count' => $projectCount,
                 'pct' => $projectTypeTotalOutputs > 0 ? round(($outputCount / $projectTypeTotalOutputs) * 100, 1) : 0.0,
                 'budget_total' => $budgetTotal,
-                'items' => $rows
+                'items' => $sortRowsNewestFirst($rows)
                     ->map(function ($row) use ($eaFullNameMap, $extractFirstUrl) {
                         $typeCode = strtoupper((string) ($row->type_code ?? 'OTHER'));
                         $detail = trim((string) ($row->detail ?? ''));
@@ -997,6 +1029,7 @@ class OutputController extends Controller
                             'title' => trim((string) ($row->title ?? '')) ?: '-',
                             'type_code' => $typeCode,
                             'type_label' => $eaFullNameMap[$typeCode] ?? ('ประเภท ' . $typeCode),
+                            'year_be' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null,
                             'link' => $detailLink ?: $sourceLink,
                             'source_link' => $sourceLink,
                             'detail' => $detail !== '' ? $detail : null,
@@ -1062,23 +1095,23 @@ class OutputController extends Controller
             'count' => $paperRows->count(),
             'top_journal' => $paperRows->map(fn ($row) => trim((string) ($row->journal ?? '')))->filter()->countBy()->sortDesc()->keys()->first(),
             'avg_if' => round((float) $paperRows->pluck('impact_factor')->filter(fn ($v) => is_numeric($v))->avg(), 2),
-            'all' => $paperRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->values(),
-            'latest' => $paperRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->take(5)->values(),
+            'all' => $sortRowsNewestFirst($paperRows)->map($buildSummaryListItem)->values(),
+            'latest' => $sortRowsNewestFirst($paperRows)->take(5)->map($buildSummaryListItem)->values(),
         ];
 
         $presentationSummary = [
             'count' => $presentationRows->count(),
             'top_conference' => $presentationRows->map(fn ($row) => trim((string) ($row->conference_name ?? '')))->filter()->countBy()->sortDesc()->keys()->first(),
             'top_presenter' => $presentationRows->map(fn ($row) => trim((string) ($row->presenter_name ?? '')))->filter()->countBy()->sortDesc()->keys()->first(),
-            'all' => $presentationRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->values(),
-            'latest' => $presentationRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->take(5)->values(),
+            'all' => $sortRowsNewestFirst($presentationRows)->map($buildSummaryListItem)->values(),
+            'latest' => $sortRowsNewestFirst($presentationRows)->take(5)->map($buildSummaryListItem)->values(),
         ];
 
         $textbookSummary = [
             'count' => $textbookRows->count(),
             'top_publisher' => $textbookRows->map(fn ($row) => trim((string) ($row->publisher_name ?? '')))->filter()->countBy()->sortDesc()->keys()->first(),
             'unique_authors' => $textbookRows->flatMap(fn ($row) => collect($row->authors ?? []))->filter()->unique()->count(),
-            'latest' => $textbookRows->sortByDesc(fn ($row) => $row->created_at?->timestamp ?? 0)->take(5)->values(),
+            'latest' => $sortRowsNewestFirst($textbookRows)->take(5)->map($buildSummaryListItem)->values(),
         ];
 
         $yearTotals = $filtered

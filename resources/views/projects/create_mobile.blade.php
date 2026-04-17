@@ -1736,10 +1736,8 @@
       </label>
       <label class="w-full">
         <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
-        <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded" required
-                                    oninvalid="this.setCustomValidity('กรุณาเลือก Quartile')"
-                                    oninput="this.setCustomValidity('')">
-          <option value=""  >เลือก Quartile</option>
+        <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded">
+          <option value="">เลือก Quartile</option>
           <option value="Q1">Q1</option>
           <option value="Q2">Q2</option>
           <option value="Q3">Q3</option>

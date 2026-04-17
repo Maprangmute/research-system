@@ -1509,7 +1509,7 @@
                                             @php $q = old("outputs.$i.quartile", $out->quartile); @endphp
                                             <select name="outputs[{{ $i }}][quartile]"
                                                 class="w-full border p-2 rounded">
-                                                <option value="" {{ !$q ? 'selected' : '' }} disabled>เลือก
+                                                <option value="" {{ !$q ? 'selected' : '' }}>เลือก
                                                     Quartile</option>
                                                 <option value="Q1" {{ $q === 'Q1' ? 'selected' : '' }}>Q1
                                                 </option>
@@ -3454,7 +3454,7 @@
       <label>
         <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
         <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded">
-          <option value="" disabled selected>เลือก Quartile</option>
+          <option value="" selected>เลือก Quartile</option>
           <option value="Q1">Q1</option>
           <option value="Q2">Q2</option>
           <option value="Q3">Q3</option>
