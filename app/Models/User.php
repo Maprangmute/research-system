@@ -14,6 +14,31 @@ class User extends Authenticatable
 {
     use HasApiTokens;
 
+    public const ROLE_USER = 'user';
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_USER_ALL = 'user_all';
+    public const ROLE_RESEARCH_EXECUTIVE = 'research_executive';
+    public const ROLE_RESIGNED = 'resigned';
+    public const ROLE_UNIT_EXECUTIVE = 'unit_executive';
+
+    public const MANAGERIAL_ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_USER_ALL,
+        self::ROLE_RESEARCH_EXECUTIVE,
+        self::ROLE_UNIT_EXECUTIVE,
+    ];
+
+    public const ADMIN_EQUIVALENT_ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_UNIT_EXECUTIVE,
+    ];
+
+    public const USER_MANAGEMENT_ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_USER_ALL,
+        self::ROLE_RESEARCH_EXECUTIVE,
+    ];
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use HasProfilePhoto;
@@ -84,7 +109,35 @@ class User extends Authenticatable
      */
     public function isAdminLike(): bool
     {
-        return $this->role === 'admin' || $this->role === 'user_all';
+        return in_array($this->role, self::MANAGERIAL_ROLES, true);
+    }
+
+    public function isAdminEquivalent(): bool
+    {
+        return in_array($this->role, self::ADMIN_EQUIVALENT_ROLES, true);
+    }
+
+    public function isAllUserLike(): bool
+    {
+        return in_array($this->role, [
+            self::ROLE_USER_ALL,
+            self::ROLE_RESEARCH_EXECUTIVE,
+        ], true);
+    }
+
+    public function isUnitExecutive(): bool
+    {
+        return $this->role === self::ROLE_UNIT_EXECUTIVE;
+    }
+
+    public function isResigned(): bool
+    {
+        return $this->role === self::ROLE_RESIGNED;
+    }
+
+    public function canAccessUserManagement(): bool
+    {
+        return in_array($this->role, self::USER_MANAGEMENT_ROLES, true);
     }
 
     public function getFullNameAttribute(): string

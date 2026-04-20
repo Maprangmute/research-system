@@ -76,6 +76,26 @@
             opacity: 0.9;
         }
 
+        .login-help-card {
+            border: 1px solid #dbeafe;
+            border-radius: 1rem;
+            background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+            padding: 0.9rem 1rem;
+        }
+
+        .login-help-card__title {
+            color: #1d4ed8;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .login-help-card__body {
+            margin-top: 0.35rem;
+            color: #475569;
+            font-size: 0.82rem;
+            line-height: 1.55;
+        }
+
         @keyframes login-submit-spin {
             to {
                 transform: rotate(360deg);
@@ -94,6 +114,14 @@
         <h2 class="text-lg font-semibold mt-2 mb-2 flex justify-center">เข้าสู่ระบบ</h2>
         <div class="mb-4 text-sm text-gray-600 text-center">
             ใช้อีเมลและรหัสผ่านของหน่วยงานเพื่อเข้าสู่ระบบฐานข้อมูลงานวิจัย
+        </div>
+
+        <div class="login-help-card mb-4">
+            <div class="login-help-card__title">หากเข้าสู่ระบบไม่ได้</div>
+            <div class="login-help-card__body">
+                ตรวจสอบอีเมลหน่วยงานและรหัสผ่านให้ถูกต้อง
+                หากเป็นผู้ที่ออกจากหน่วยงานแล้ว ระบบจะไม่อนุญาตให้เข้าสู่ระบบ
+            </div>
         </div>
 
         @session('status')

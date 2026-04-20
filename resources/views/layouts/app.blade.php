@@ -39,6 +39,7 @@
 
 @php
     $isModalView = request()->boolean('modal');
+    $authUser = Auth::user();
 @endphp
 
 <body class="{{ $isModalView ? 'bg-white text-gray-800' : 'bg-gray-100 text-gray-800' }}">
@@ -365,13 +366,13 @@
                                 <a href="{{ route('user_guide') }}"
                                     class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">📘 คู่มือ</a>
 
-                                @if (Auth::user()->role === 'admin')
+                                @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
                                     <a href="/user" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
                                         👥 จัดการผู้ใช้
                                     </a>
                                 @endif
 
-                                @if (Auth::user()->role === 'admin')
+                                @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
                                     <a href="/project-logs"
                                         class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
                                         📝 Project log
@@ -453,8 +454,10 @@
                         <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
                         <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
                         <a href="{{ route('user_guide') }}">📘 คู่มือ</a>
-                        @if (Auth::user()->role === 'admin')
+                        @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
                             <a href="/user">👥 จัดการผู้ใช้</a>
+                        @endif
+                        @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
                             <a href="/project-logs">📝 Project log</a>
                         @endif
                         <a href="{{ route('profile.show') }}">👤 แก้ไขข้อมูลส่วนตัว</a>
@@ -473,7 +476,10 @@
     @endif
 
     <!-- ✅ main ก็ใช้ container เช่นกัน -->
-    <main class="container mx-auto px-4 {{ $isModalView ? 'pt-4 pb-4' : 'pt-24 pb-6' }}">
+    @php
+        $isFullWidthPage = request()->routeIs('users.index');
+    @endphp
+    <main class="{{ $isModalView ? 'pt-4 pb-4' : 'pt-24 pb-6' }} {{ $isFullWidthPage ? 'w-full px-0' : 'container mx-auto px-4' }}">
         @if (isset($header))
             <div class="mb-4">{{ $header }}</div>
         @endif

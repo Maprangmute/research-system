@@ -87,6 +87,15 @@
                         <option value="user_all" @selected($user->role === 'user_all')>
                             user_all (เข้าถึงทุกข้อมูลเหมือน admin)
                         </option>
+                        <option value="research_executive" @selected($user->role === 'research_executive')>
+                            research_executive (เหมือน user_all)
+                        </option>
+                        <option value="unit_executive" @selected($user->role === 'unit_executive')>
+                            unit_executive (เหมือน admin แต่เข้า /user ไม่ได้)
+                        </option>
+                        <option value="resigned" @selected($user->role === 'resigned')>
+                            resigned (ไม่สามารถ login ได้)
+                        </option>
                     </select>
                 </div>
 

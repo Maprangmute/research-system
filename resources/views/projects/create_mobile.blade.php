@@ -378,11 +378,11 @@
                     <input name="project_name_en" type="text" class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ<span class="text-red-500">*</span></span>
+                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหาหลักของงาน(Content/Theme) <span class="text-red-500">*</span></span>
                     <select name="project_type" id="project_type" class="w-full border p-2 rounded" required
-                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของโครงการ')"
+                        oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหาหลักของงาน')"
                         oninput="this.setCustomValidity('')">
-                        <option value="" disabled selected>เลือกประเภทของโครงการ</option> <!-- สำหรับ placeholder -->
+                        <option value="" disabled selected>กรุณาเลือกกลุ่มเนื้อหาหลักของงาน</option>
                         <option value="01 Aging and Frailty">01 Aging and Frailty</option>
                         <option value="02 Health Systems and HTA">02 Health Systems and HTA</option>
                         <option value="03 Rational Drug Use (RDU)">03 Rational Drug Use (RDU)</option>
@@ -394,10 +394,10 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme) <span class="text-red-500">*</span></span>
-                    <select name="theme" required oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')"
+                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ/กิจกรรม (TYPE) <span class="text-red-500">*</span></span>
+                    <select name="theme" required oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของโครงการ/กิจกรรม')"
                         oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
-                        <option value="">กรุณาเลือกกลุ่มเนื้อหา</option>
+                        <option value="">กรุณาเลือกประเภทของโครงการ / กิจกรรม</option>
                         <option value="T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก">T101_Research_วิจัยที่ Health
                             Policy เป็น ผู้วิจัยหลัก</option>
                         <option value="T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย">T102_Research:

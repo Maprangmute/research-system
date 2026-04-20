@@ -42,7 +42,7 @@ Route::middleware(['auth'])->group(function () {
     // Admin-only Dev Guide
     Route::get('/dev-guide', function () {
         $user = auth()->user();
-        if (!$user || $user->role !== 'admin') {
+        if (!$user || !$user->isAdminEquivalent()) {
             abort(403);
         }
         return view('dev_guide');

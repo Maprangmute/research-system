@@ -118,8 +118,7 @@ class ProgressReportController extends Controller
     private function authorizeProject(Project $project): void
     {
         $fullName = trim(Auth::user()->prefix . ' ' . Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin'
-            || Auth::user()->role === 'user_all'
+        $hasPermission = Auth::user()->isAdminLike()
             || Auth::id() === $project->user_id
             || $project->fteRoles->contains('name', $fullName);
 

@@ -9,6 +9,27 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    private function authorizeUserManagement(): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->canAccessUserManagement()) {
+            abort(403);
+        }
+    }
+
+    private function allowedRoles(): array
+    {
+        return [
+            User::ROLE_USER,
+            User::ROLE_ADMIN,
+            User::ROLE_USER_ALL,
+            User::ROLE_RESEARCH_EXECUTIVE,
+            User::ROLE_RESIGNED,
+            User::ROLE_UNIT_EXECUTIVE,
+        ];
+    }
+
     private function resolveView(Request $request, string $base): string
     {
         $view = $base;
@@ -30,7 +51,19 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::query();
+        $this->authorizeUserManagement();
+
+        $query = User::query()->select([
+            'id',
+            'prefix',
+            'name',
+            'email',
+            'position',
+            'role',
+            'profile_photo_path',
+            'created_at',
+            'updated_at',
+        ]);
 
         $search = trim((string) $request->input('q'));
         if ($search !== '') {
@@ -58,13 +91,51 @@ class UserController extends Controller
         ];
         [$sortField, $sortDir] = $sortMap[$sort] ?? $sortMap['name_asc'];
 
-        $users = $query->orderBy($sortField, $sortDir)->get();
+        $totalUsers = User::count();
+        $matchedUsers = (clone $query)->count();
+        $roleCountsQuery = clone $query;
+        $roleCountsQuery->getQuery()->columns = null;
+        $roleCounts = $roleCountsQuery
+            ->selectRaw('role, COUNT(*) as aggregate')
+            ->groupBy('role')
+            ->pluck('aggregate', 'role')
+            ->all();
+
+        $users = $query->orderBy($sortField, $sortDir)
+            ->paginate(25)
+            ->withQueryString();
+
+        $activeFilterLabels = [];
+        if ($search !== '') {
+            $activeFilterLabels[] = ['label' => 'ค้นหา', 'value' => $search];
+        }
+        if ($role !== '' && $role !== 'all') {
+            $activeFilterLabels[] = ['label' => 'สิทธิ์', 'value' => $role];
+        }
+        if ($sort !== '' && $sort !== 'name_asc') {
+            $activeFilterLabels[] = ['label' => 'เรียงตาม', 'value' => $sort];
+        }
+
+        $stats = [
+            'total_users' => $totalUsers,
+            'matched_users' => $matchedUsers,
+            'admin_users' => (int) ($roleCounts[User::ROLE_ADMIN] ?? 0),
+            'all_user_like' => (int) (($roleCounts[User::ROLE_USER_ALL] ?? 0) + ($roleCounts[User::ROLE_RESEARCH_EXECUTIVE] ?? 0) + ($roleCounts[User::ROLE_UNIT_EXECUTIVE] ?? 0)),
+            'resigned_users' => (int) ($roleCounts[User::ROLE_RESIGNED] ?? 0),
+        ];
+
         $view = $this->resolveView($request, 'users.index');
-        return view($view, compact('users', 'search', 'role', 'sort'));
+        if ($request->ajax()) {
+            return view('users.partials.index-results', compact('users', 'search', 'role', 'sort', 'activeFilterLabels', 'stats'));
+        }
+
+        return view($view, compact('users', 'search', 'role', 'sort', 'activeFilterLabels', 'stats'));
     }
 
     public function manageList(Request $request)
     {
+        $this->authorizeUserManagement();
+
         $users = User::all();
         $view = $this->resolveView($request, 'users.manage');
         return view($view, compact('users'));
@@ -72,8 +143,10 @@ class UserController extends Controller
 
     public function updateRole(Request $request, User $user)
     {
+        $this->authorizeUserManagement();
+
         $request->validate([
-            'role' => 'required|in:user,admin,user_all', // ✅ เพิ่ม user_all
+            'role' => 'required|in:' . implode(',', $this->allowedRoles()),
         ]);
 
         $user->role = $request->role;
@@ -84,18 +157,22 @@ class UserController extends Controller
 
     public function create(Request $request)
     {
+        $this->authorizeUserManagement();
+
         $view = $this->resolveView($request, 'users.create');
         return view($view);
     }
 
     public function store(Request $request)
     {
+        $this->authorizeUserManagement();
+
         $validated = $request->validate([
             'prefix'   => 'nullable|string|max:50',
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users',
             'position' => 'nullable|string|max:255',
-            'role'     => 'required|in:user,admin,user_all', // ✅ เพิ่ม user_all
+            'role'     => 'required|in:' . implode(',', $this->allowedRoles()),
             'password' => 'required|string|min:4|confirmed',
             'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
@@ -112,6 +189,8 @@ class UserController extends Controller
 
     public function edit(Request $request, $id)
     {
+        $this->authorizeUserManagement();
+
         $user = User::findOrFail($id);
         $view = $this->resolveView($request, 'users.edit');
         return view($view, compact('user'));
@@ -119,6 +198,8 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->authorizeUserManagement();
+
         $user = User::findOrFail($id);
         $oldPrefix = (string) ($user->prefix ?? '');
         $oldName = (string) ($user->name ?? '');
@@ -128,7 +209,7 @@ class UserController extends Controller
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'position' => 'nullable|string|max:255',
-            'role'     => 'required|in:user,admin,user_all', // ✅ เพิ่ม user_all
+            'role'     => 'required|in:' . implode(',', $this->allowedRoles()),
             'avatar'   => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'password' => 'nullable|string|min:6|confirmed',
         ]);
@@ -144,7 +225,7 @@ class UserController extends Controller
         }
 
         $user->update($validated);
-        UserDisplayNameSync::sync(
+        UserDisplayNameSync::syncAfterResponse(
             $oldPrefix,
             $oldName,
             (string) ($user->prefix ?? ''),
@@ -156,6 +237,8 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        $this->authorizeUserManagement();
+
         if (auth()->id() === $user->id) {
             return redirect()->route('users.index')->with('error', 'ไม่สามารถลบผู้ใช้งานของคุณเองได้');
         }

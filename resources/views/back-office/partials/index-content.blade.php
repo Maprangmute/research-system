@@ -109,19 +109,17 @@
                                         class="back-office-action-primary">
                                         รายละเอียด
                                     </a>
-                                    @if (auth()->user()?->role === 'admin' || (int) $task->created_by === (int) auth()->id())
-                                        <form action="{{ route('back_office.destroy', $task->id) }}" method="POST"
-                                            data-back-office-delete-form
-                                            data-record-id="{{ $task->id }}"
-                                            data-record-title="{{ $task->title }}"
-                                            data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="back-office-action-danger border-0">
-                                                ลบ
-                                            </button>
-                                        </form>
-                                    @endif
+                                    <form action="{{ route('back_office.destroy', $task->id) }}" method="POST"
+                                        data-back-office-delete-form
+                                        data-record-id="{{ $task->id }}"
+                                        data-record-title="{{ $task->title }}"
+                                        data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="back-office-action-danger border-0">
+                                            ลบ
+                                        </button>
+                                    </form>
                                     <details class="back-office-action-menu">
                                         <summary aria-label="เมนูเพิ่มเติม">⋯</summary>
                                         <div class="back-office-action-menu__panel">
@@ -201,19 +199,17 @@
                                                     class="back-office-action-primary">
                                                     รายละเอียด
                                                 </a>
-                                                @if (auth()->user()?->role === 'admin' || (int) $task->created_by === (int) auth()->id())
-                                                    <form action="{{ route('back_office.destroy', $task->id) }}" method="POST"
-                                                        data-back-office-delete-form
-                                                        data-record-id="{{ $task->id }}"
-                                                        data-record-title="{{ $task->title }}"
-                                                        data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="back-office-action-danger border-0">
-                                                            ลบ
-                                                        </button>
-                                                    </form>
-                                                @endif
+                                                <form action="{{ route('back_office.destroy', $task->id) }}" method="POST"
+                                                    data-back-office-delete-form
+                                                    data-record-id="{{ $task->id }}"
+                                                    data-record-title="{{ $task->title }}"
+                                                    data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="back-office-action-danger border-0">
+                                                        ลบ
+                                                    </button>
+                                                </form>
                                                 <details class="back-office-action-menu">
                                                     <summary aria-label="เมนูเพิ่มเติม">⋯</summary>
                                                     <div class="back-office-action-menu__panel">

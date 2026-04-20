@@ -100,7 +100,10 @@
             <select name="role" class="w-full border p-2 rounded" required>
                 <option value="user">user (เข้าถึงข้อมูลของตนเอง)</option>
                 <option value="admin">admin (เข้าถึงทุกข้อมูล)</option>
-                {{-- <option value="exp">exp (สิทธิ์พิเศษเฉพาะบางกรณี)</option> --}}
+                <option value="user_all">user_all (เข้าถึงทุกข้อมูลเหมือน admin)</option>
+                <option value="research_executive">research_executive (เหมือน user_all)</option>
+                <option value="unit_executive">unit_executive (เหมือน admin แต่เข้า /user ไม่ได้)</option>
+                <option value="resigned">resigned (ไม่สามารถ login ได้)</option>
             </select>
         </div>
 

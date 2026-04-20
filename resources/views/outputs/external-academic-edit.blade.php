@@ -44,6 +44,12 @@
         @endforeach
     </datalist>
 
+    <datalist id="externalAcademicBookAuthorNames">
+        @foreach ($bookAuthorOptions as $authorName)
+            <option value="{{ $authorName }}"></option>
+        @endforeach
+    </datalist>
+
     <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
         <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
             <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
@@ -286,8 +292,9 @@
                                 <div class="edit-book-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
                                     <label class="block">
                                         <span class="text-sm font-medium text-slate-700">ชื่อผู้เขียน</span>
-                                        <input type="text" list="externalAcademicAuthorNames" name="authors[{{ $authorIndex }}][name]" value="{{ $author['name'] ?? '' }}"
+                                        <input type="text" list="externalAcademicBookAuthorNames" name="authors[{{ $authorIndex }}][name]" value="{{ $author['name'] ?? '' }}"
                                             class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                                            onfocus="this.dispatchEvent(new Event('input', { bubbles: true }))"
                                             placeholder="เลือกหรือพิมพ์ชื่อผู้เขียน">
                                     </label>
                                     <div class="flex items-end">
@@ -370,7 +377,7 @@
         <div class="edit-book-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
             <label class="block">
                 <span class="text-sm font-medium text-slate-700">ชื่อผู้เขียน</span>
-                <input type="text" list="externalAcademicAuthorNames" name="authors[__INDEX__][name]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เลือกหรือพิมพ์ชื่อผู้เขียน">
+                <input type="text" list="externalAcademicBookAuthorNames" name="authors[__INDEX__][name]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" onfocus="this.dispatchEvent(new Event('input', { bubbles: true }))" placeholder="เลือกหรือพิมพ์ชื่อผู้เขียน">
             </label>
             <div class="flex items-end">
                 <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-book-author>ลบผู้เขียน</button>

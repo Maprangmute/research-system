@@ -36,7 +36,7 @@ class ProjectController extends Controller
 
         $user = auth()->user();
         $applyPermission = function ($q) use ($user) {
-            if ($user->role === 'admin' || $user->role === 'user_all') {
+            if ($user->isAdminLike()) {
                 return;
             }
             $fullName = trim(($user->prefix ?? '').' '.$user->name);
@@ -481,9 +481,8 @@ public function store(Request $request)
         $canonicalProjectKey = (string) $project->getRouteKey();
 
         $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin'
+        $hasPermission = Auth::user()->isAdminLike()
             || Auth::id() === $project->user_id
-            || Auth::user()->role === 'user_all'
             || $project->fteRoles->contains('name', $fullName);
 
         if (! $hasPermission) {
@@ -523,9 +522,8 @@ public function store(Request $request)
     public function fteSnapshot(Project $project)
     {
         $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin'
+        $hasPermission = Auth::user()->isAdminEquivalent()
             || Auth::id() === $project->user_id
-            || Auth::user()->role === 'user_all'
             || $project->fteRoles->contains('name', $fullName);
 
         if (! $hasPermission) {
@@ -677,10 +675,9 @@ public function store(Request $request)
         }
 
         $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin'
+        $hasPermission = Auth::user()->isAdminLike()
             || Auth::id() === $project->user_id
-            || $project->fteRoles->contains('name', $fullName)
-            || Auth::user()->role === 'user_all';   // all user check
+            || $project->fteRoles->contains('name', $fullName);
 
         if (! $hasPermission) {
             abort(403);
@@ -718,9 +715,8 @@ public function store(Request $request)
     public function update(Request $request, Project $project)
     {
         $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
-        $hasPermission = Auth::user()->role === 'admin'
+        $hasPermission = Auth::user()->isAdminLike()
             || Auth::id() === $project->user_id
-            || Auth::user()->role === 'user_all' // all user check
             || $project->fteRoles->contains('name', $fullName);
 
         if (! $hasPermission) {
@@ -755,7 +751,7 @@ public function store(Request $request)
     {
         $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
 
-        $hasPermission = Auth::user()->role === 'admin'
+        $hasPermission = Auth::user()->isAdminLike()
             || Auth::id() === $project->user_id
             || $project->fteRoles->contains('name', $fullName);
 
@@ -814,7 +810,7 @@ public function store(Request $request)
         $user = auth()->user();
         $query = Project::query();
 
-        if ($user->role !== 'admin' && $user->role !== 'user_all') {
+        if (! $user->isAdminLike()) {
             $fullName = trim(($user->prefix ?? '').' '.$user->name);
             $query->where(function ($inner) use ($fullName, $user) {
                 $inner->where('user_id', $user->id)

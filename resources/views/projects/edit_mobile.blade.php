@@ -585,11 +585,11 @@
                         class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ<span class="text-red-500">*</span></span>
+                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหาหลักของงาน(Content/Theme) <span class="text-red-500">*</span></span>
                     <select name="project_type" id="project_type" class="w-full border p-2 rounded" required
-                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทโครงการ')" oninput="this.setCustomValidity('')">
+                        oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหาหลักของงาน')" oninput="this.setCustomValidity('')">
                         <option value="" {{ old('project_type', $project->project_type) ? '' : 'selected' }}>
-                            เลือกประเภทของโครงการ
+                            กรุณาเลือกกลุ่มเนื้อหาโครงการ
                         </option>
                         <option value="01 Aging and Frailty"
                             {{ old('project_type', $project->project_type) == '01 Aging and Frailty' ? 'selected' : '' }}>
@@ -619,11 +619,11 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">กลุ่มเนื้อหา (Theme) <span class="text-red-500">*</span></span>
+                    <span class="block text-sm text-gray-700 mb-1">ประเภทของโครงการ/กิจกรรม <span class="text-red-500">*</span></span>
                     <select name="theme" class="w-full border p-2 rounded" required
-                        oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')" oninput="this.setCustomValidity('')">
+                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของโครงการ/กิจกรรม')" oninput="this.setCustomValidity('')">
                         <option value="" {{ old('theme', $project->theme) ? '' : 'selected' }}>
-                            กรุณาเลือกกลุ่มเนื้อหา</option>
+                            กรุณาเลือกประเภทของโครงการ/กิจกรรม</option>
                         <option value="T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก"
                             {{ old('theme', $project->theme) == 'T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก' ? 'selected' : '' }}>
                             T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก
@@ -1832,6 +1832,7 @@
                                                             type="text" data-book-author-input list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
                                                             value="{{ old("outputs.$i.book_authors.$j.name", $author->name) }}"
                                                             placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required
+                                                            onfocus="refreshBookAuthorDatalistInOutput(this)"
                                                             oninput="refreshBookAuthorDatalistInOutput(this)">
                                                     </label>
                                                 </div>
@@ -1851,6 +1852,7 @@
                                                         <input name="outputs[{{ $i }}][book_authors][0][name]"
                                                             type="text" data-book-author-input list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
                                                             placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required
+                                                            onfocus="refreshBookAuthorDatalistInOutput(this)"
                                                             oninput="refreshBookAuthorDatalistInOutput(this)">
                                                     </label>
                                                 </div>
@@ -3587,7 +3589,7 @@
       </div>
       <label>
         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
-        <input type="text" name="outputs[${idx}][book_authors][${aIdx}][name]" data-book-author-input list="book-author-name-list-${idx}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required oninput="refreshBookAuthorDatalistInOutput(this)">
+        <input type="text" name="outputs[${idx}][book_authors][${aIdx}][name]" data-book-author-input list="book-author-name-list-${idx}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required onfocus="refreshBookAuthorDatalistInOutput(this)" oninput="refreshBookAuthorDatalistInOutput(this)">
       </label>
     </div>
   `);
@@ -4540,6 +4542,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             const projectForm = document.getElementById('projectForm');
             document.querySelectorAll('.ea119-section').forEach((section) => refreshBookAuthorDatalistInOutput(section));
+            projectForm?.addEventListener('focusin', (event) => {
+                const target = event.target;
+                if (target instanceof HTMLInputElement && target.matches('input[data-book-author-input]')) {
+                    refreshBookAuthorDatalistInOutput(target);
+                }
+            });
 
             function revealFieldIfCollapsed(field) {
                 if (!field || field.closest('template')) return false;

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Auth;
 
 class BackOfficeEntry extends Model
 {
@@ -28,4 +29,5 @@ class BackOfficeEntry extends Model
     {
         return $this->belongsTo(BackOfficeTask::class, 'task_id');
     }
+
 }

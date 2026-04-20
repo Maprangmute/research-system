@@ -197,6 +197,39 @@
             $code = $extractTypeCode($type);
             return $typeCardStyleMap[$code] ?? $defaultTypeCardStyle;
         };
+        $presentationActivityColorMap = [
+            'Panel Discussion' => '#ea580c',
+            'Poster Presentation' => '#fb7185',
+            'Oral Presentation' => '#16a34a',
+            'ไม่ระบุ' => '#0891b2',
+            'Keynote Speech' => '#7c3aed',
+            'World café' => '#ca8a04',
+            'Abstract Presentation' => '#0f766e',
+            'Other' => '#475569',
+        ];
+        $presentationCardStyle = function ($presentationType) use ($presentationActivityColorMap, $withAlpha) {
+            $type = trim((string) $presentationType);
+            $baseColor = $presentationActivityColorMap[$type]
+                ?? ($type === '' ? $presentationActivityColorMap['ไม่ระบุ'] : $presentationActivityColorMap['Other']);
+
+            return sprintf(
+                'background-color:%s; border-color:%s;',
+                $withAlpha($baseColor, '12'),
+                $withAlpha($baseColor, '55')
+            );
+        };
+        $presentationBadgeStyle = function ($presentationType) use ($presentationActivityColorMap, $withAlpha) {
+            $type = trim((string) $presentationType);
+            $baseColor = $presentationActivityColorMap[$type]
+                ?? ($type === '' ? $presentationActivityColorMap['ไม่ระบุ'] : $presentationActivityColorMap['Other']);
+
+            return sprintf(
+                'background-color:%s; border-color:%s; color:%s;',
+                $withAlpha($baseColor, '1A'),
+                $withAlpha($baseColor, '55'),
+                $baseColor
+            );
+        };
     @endphp
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -960,16 +993,23 @@
                         @forelse (($presentationSummary['all'] ?? collect()) as $row)
                             <button
                                 type="button"
-                                class="js-output-item block w-full rounded-lg border border-slate-200 px-3 py-2.5 text-left text-slate-700 hover:bg-slate-50"
+                                class="js-output-item block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
+                                style="{{ $presentationCardStyle($row->presentation_type) }}"
                                 data-title="{{ $row->title }}"
                                 data-link="{{ $row->modal_link ?? '' }}"
                                 data-detail="{{ $row->modal_detail ?? '' }}"
                                 data-type="EA103 - Presentations in Academic Conferences"
                             >
+                                <div class="mb-2 flex flex-wrap items-center gap-2">
+                                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold" style="{{ $presentationBadgeStyle($row->presentation_type) }}">
+                                        {{ $row->presentation_type ?: 'ไม่ระบุประเภท' }}
+                                    </span>
+                                    <span class="text-[11px] font-medium text-slate-500">ปี {{ $row->year_be ?: '-' }}</span>
+                                </div>
                                 <div class="font-medium line-clamp-2">{{ $row->title }}</div>
                                 <div class="mt-2 grid gap-1 text-xs">
                                     <div class="text-slate-500">เวที: <span class="font-medium text-slate-700">{{ $row->conference_name ?: 'ไม่ระบุเวที' }}</span></div>
-                                    <div class="text-slate-500">ประเภท: <span class="font-medium text-slate-700">{{ $row->presentation_type ?: 'ไม่ระบุประเภท' }}</span></div>
+                                    <div class="text-slate-500">ปี: <span class="font-medium text-slate-700">{{ $row->year_be ?: '-' }}</span></div>
                                     <div class="text-slate-500">ผู้นำเสนอ: <span class="font-medium text-slate-700">{{ $row->presenter_name ?: 'ไม่ระบุผู้นำเสนอ' }}</span></div>
                                 </div>
                             </button>

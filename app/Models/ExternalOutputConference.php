@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class ExternalOutputConference extends Model
 {
@@ -18,4 +19,6 @@ class ExternalOutputConference extends Model
     {
         return $this->belongsTo(ExternalOutput::class);
     }
+
+
 }

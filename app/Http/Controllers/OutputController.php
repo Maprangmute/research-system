@@ -25,7 +25,7 @@ class OutputController extends Controller
     public function externalAcademic(Request $request)
     {
         $query = ExternalOutput::query()
-            ->with(['authors', 'conferences', 'creator'])
+            ->with(['authors', 'conferences', 'creator', 'updater'])
             ->latest();
 
         if ($request->filled('search')) {
@@ -102,6 +102,14 @@ class OutputController extends Controller
             ->pluck('name')
             ->values();
 
+        $bookAuthorOptions = User::query()
+            ->selectRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) as name")
+            ->whereRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) <> ''")
+            ->orderBy('name')
+            ->pluck('name')
+            ->unique()
+            ->values();
+
         $presenterOptions = User::query()
             ->selectRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) as name")
             ->whereRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) <> ''")
@@ -112,6 +120,7 @@ class OutputController extends Controller
 
         return view('outputs.external-academic-create', [
             'authorOptions' => $authorOptions,
+            'bookAuthorOptions' => $bookAuthorOptions,
             'presenterOptions' => $presenterOptions,
             'jobCategoryOptions' => self::EXTERNAL_JOB_CATEGORIES,
         ]);
@@ -119,7 +128,7 @@ class OutputController extends Controller
 
     public function externalAcademicShow(ExternalOutput $externalOutput)
     {
-        $externalOutput->load(['authors', 'conferences', 'creator']);
+        $externalOutput->load(['authors', 'conferences', 'creator', 'updater']);
 
         return view('outputs.external-academic-show', [
             'externalOutput' => $externalOutput,
@@ -137,6 +146,14 @@ class OutputController extends Controller
             ->pluck('name')
             ->values();
 
+        $bookAuthorOptions = User::query()
+            ->selectRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) as name")
+            ->whereRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) <> ''")
+            ->orderBy('name')
+            ->pluck('name')
+            ->unique()
+            ->values();
+
         $presenterOptions = User::query()
             ->selectRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) as name")
             ->whereRaw("TRIM(CONCAT(COALESCE(prefix,''), ' ', COALESCE(name,''))) <> ''")
@@ -150,6 +167,7 @@ class OutputController extends Controller
         return view('outputs.external-academic-edit', [
             'externalOutput' => $externalOutput,
             'authorOptions' => $authorOptions,
+            'bookAuthorOptions' => $bookAuthorOptions,
             'presenterOptions' => $presenterOptions,
             'jobCategoryOptions' => self::EXTERNAL_JOB_CATEGORIES,
         ]);
@@ -211,6 +229,7 @@ class OutputController extends Controller
                     'publisher_name' => $type === 'EA119' ? $this->nullableTrim($item['publisher_name'] ?? null) : null,
                     'chapter_pages' => $type === 'EA119' ? $this->nullableTrim($item['chapter_pages'] ?? null) : null,
                     'created_by' => auth()->id(),
+                    'updated_by' => null,
                 ]);
 
                 if (in_array($type, ['EA101', 'EA119'], true)) {
@@ -301,6 +320,7 @@ class OutputController extends Controller
                 'book_title' => $type === 'EA119' ? $this->nullableTrim($validated['book_title'] ?? null) : null,
                 'publisher_name' => $type === 'EA119' ? $this->nullableTrim($validated['publisher_name'] ?? null) : null,
                 'chapter_pages' => $type === 'EA119' ? $this->nullableTrim($validated['chapter_pages'] ?? null) : null,
+                'updated_by' => auth()->id(),
             ]);
 
             $externalOutput->authors()->delete();
@@ -432,7 +452,7 @@ class OutputController extends Controller
         $query = Output::with('project:id,project_name_th,project_code');
         $user = auth()->user();
         $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
-        $canViewAll = $user->role === 'admin' || $user->role === 'user_all';
+        $canViewAll = $user->isAdminLike();
 
         if (!$canViewAll) {
             $query->whereHas('project', function ($q) use ($user, $fullName) {
@@ -867,19 +887,13 @@ class OutputController extends Controller
             ->unique()
             ->sort()
             ->values();
-        $latestKnownYear = $allKnownYears->last();
         $currentYearBe = (int) now()->setTimezone('Asia/Bangkok')->format('Y') + 543;
-        $latestUpToCurrentYear = $allKnownYears->filter(fn ($year) => (int) $year <= $currentYearBe)->last();
-        $latestClosedYear = $allKnownYears->filter(fn ($year) => (int) $year <= ($currentYearBe - 1))->last();
-        $presentationYear = is_numeric($latestClosedYear)
-            ? (int) $latestClosedYear
-            : (is_numeric($latestUpToCurrentYear) ? (int) $latestUpToCurrentYear : (is_numeric($latestKnownYear) ? (int) $latestKnownYear : null));
         $hasYearInput = $request->filled('year_from') || $request->filled('year_to');
         $yearFrom = $this->normalizeYearFilter($request->input('year_from'));
         $yearTo = $this->normalizeYearFilter($request->input('year_to'));
-        if (!$hasYearInput && $presentationYear !== null) {
-            $yearTo = $presentationYear;
-            $yearFrom = $presentationYear - 1;
+        if (!$hasYearInput) {
+            $yearFrom = 2565;
+            $yearTo = $currentYearBe;
         }
         if ($yearFrom !== null && $yearTo !== null && $yearFrom > $yearTo) {
             [$yearFrom, $yearTo] = [$yearTo, $yearFrom];
@@ -1536,7 +1550,7 @@ class OutputController extends Controller
         $query = Output::query()->with('project:id,project_name_th,project_code,user_id');
         $user = auth()->user();
         $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
-        $canViewAll = $user->role === 'admin' || $user->role === 'user_all';
+        $canViewAll = $user->isAdminLike();
 
         if (!$canViewAll) {
             $query->whereHas('project', function (Builder $q) use ($user, $fullName) {
@@ -1555,7 +1569,7 @@ class OutputController extends Controller
         $query = BackOfficeTaskOutput::query()->with('task:id,title,created_by');
         $user = auth()->user();
         $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
-        $canViewAll = $user->role === 'admin' || $user->role === 'user_all';
+        $canViewAll = $user->isAdminLike();
 
         if (!$canViewAll) {
             $query->whereHas('task', function (Builder $q) use ($user, $fullName) {

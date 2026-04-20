@@ -43,7 +43,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             ])->save();
         }
 
-        UserDisplayNameSync::sync(
+        UserDisplayNameSync::syncAfterResponse(
             $oldPrefix,
             $oldName,
             (string) ($user->prefix ?? ''),

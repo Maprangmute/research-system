@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class ExternalOutputAuthor extends Model
 {
@@ -16,4 +17,6 @@ class ExternalOutputAuthor extends Model
     {
         return $this->belongsTo(ExternalOutput::class);
     }
+
+
 }

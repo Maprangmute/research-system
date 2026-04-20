@@ -931,7 +931,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold text-gray-700 block">Theme</label>
+                            <label class="text-xs font-semibold text-gray-700 block">ประเภทของโครงการ/กิจกรรม (TYPE)</label>
                             <select id="filterTheme" class="w-full border rounded px-2 py-1 text-sm">
                                 <option value="">ทั้งหมด</option>
                                 @foreach ($themes as $theme)
@@ -939,21 +939,22 @@
                                 @endforeach
                             </select>
                         </div>
+
                         <div>
-                            <label class="text-xs font-semibold text-gray-700 block">ประเภททุน</label>
-                            <select id="filterFunding" class="w-full border rounded px-2 py-1 text-sm">
-                                <option value="">ทั้งหมด</option>
-                                <option value="ภายใน">ภายใน</option>
-                                <option value="ภายนอก">ภายนอก</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-gray-700 block">ประเภทโครงการ</label>
+                            <label class="text-xs font-semibold text-gray-700 block">กลุ่มเนื้อหาหลักของงาน(Content/Theme)</label>
                             <select id="filterType" class="w-full border rounded px-2 py-1 text-sm">
                                 <option value="">ทั้งหมด</option>
                                 @foreach ($typeOptions as $type)
                                     <option value="{{ $type }}">{{ $type }}</option>
                                 @endforeach
+                            </select>
+                        </div>
+                         <div>
+                            <label class="text-xs font-semibold text-gray-700 block">ประเภททุน</label>
+                            <select id="filterFunding" class="w-full border rounded px-2 py-1 text-sm">
+                                <option value="">ทั้งหมด</option>
+                                <option value="ภายใน">ภายใน</option>
+                                <option value="ภายนอก">ภายนอก</option>
                             </select>
                         </div>
                         <div>
@@ -1101,7 +1102,7 @@
                     <table class="min-w-full text-xs md:text-sm">
                         <thead class="bg-slate-100 text-slate-600">
                             <tr>
-                                <th class="px-3 py-2 text-left">ประเภทโครงการ</th>
+                                <th class="px-3 py-2 text-left">กลุ่มเนื้อหาหลักของงาน(Content/Theme)</th>
                                 <th class="px-3 py-2 text-right">จำนวนโครงการ</th>
                                 <th class="px-3 py-2 text-right">สัดส่วน</th>
                                 <th class="px-3 py-2 text-right">งบรวม</th>
@@ -2439,9 +2440,9 @@
 
             const dashboardFilterFields = [
                 { id: 'filterYear', label: 'ปีเริ่มต้น' },
-                { id: 'filterTheme', label: 'Theme' },
+                { id: 'filterTheme', label: 'กลุ่มเนื้อหาหลักของงาน(Content/Theme)' },
                 { id: 'filterFunding', label: 'ประเภททุน' },
-                { id: 'filterType', label: 'ประเภทโครงการ' },
+                { id: 'filterType', label: 'ประเภทโครงการ/กิจกรรม (TYPE)' },
                 { id: 'filterStatus', label: 'สถานะโครงการ' },
                 { id: 'filterSource', label: 'แหล่งทุน' },
                 { id: 'filterPi', label: 'PI โครงการ' },
@@ -5712,7 +5713,7 @@
                                 },
                                 title: {
                                     display: true,
-                                    text: 'ย้อนหลัง 3 ปี: แยกตามประเภทโครงการเกินกำหนด'
+                                    text: 'ย้อนหลัง 3 ปี: แยกตามเนื้อหาหลักของงานที่เกินกำหนด'
                                 },
                                 tooltip: {
                                     callbacks: {

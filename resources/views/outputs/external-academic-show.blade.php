@@ -20,6 +20,18 @@
         $withAlpha($typeBaseColor, '66'),
         $typeBaseColor
     );
+    $formatDateTimeThai = function ($value) use ($months) {
+        if (!$value) return '';
+        try {
+            $date = \Carbon\Carbon::parse($value)->setTimezone('Asia/Bangkok');
+            return $date->day.' '.($months[$date->month] ?? $date->format('m')).' '.($date->year + 543).' '.$date->format('H:i').' น.';
+        } catch (\Exception $e) {
+            return (string) $value;
+        }
+    };
+    $updatedUser = $externalOutput->updated_by ? $externalOutput->updater : $externalOutput->creator;
+    $updatedBy = $updatedUser ? trim(($updatedUser->prefix ?? '') . ' ' . ($updatedUser->name ?? '')) : '-';
+    $createdBy = $externalOutput->creator ? trim(($externalOutput->creator->prefix ?? '') . ' ' . ($externalOutput->creator->name ?? '')) : '-';
 @endphp
 
 @section('content')
@@ -116,7 +128,11 @@
 
                     <div class="rounded-xl bg-slate-50 px-4 py-3 md:col-span-2">
                         <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">บันทึกโดย</div>
-                        <div class="mt-1 text-sm font-medium text-slate-800">{{ optional($externalOutput->creator)->name ?: '-' }}</div>
+                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $createdBy }}</div>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 px-4 py-3 md:col-span-2">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ข้อมูลล่าสุดโดย</div>
+                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $updatedBy }}</div>
                     </div>
                 </div>
             </article>
@@ -126,11 +142,11 @@
                 <div class="mt-4 space-y-3 text-sm text-slate-700">
                     <div class="rounded-xl bg-slate-50 px-4 py-3">
                         <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">สร้างเมื่อ</div>
-                        <div class="mt-1 font-medium">{{ $thaiDate($externalOutput->created_at?->timezone('Asia/Bangkok')) }}</div>
+                        <div class="mt-1 font-medium">{{ $formatDateTimeThai($externalOutput->created_at) }}</div>
                     </div>
                     <div class="rounded-xl bg-slate-50 px-4 py-3">
                         <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">อัปเดตล่าสุด</div>
-                        <div class="mt-1 font-medium">{{ $thaiDate($externalOutput->updated_at?->timezone('Asia/Bangkok')) }}</div>
+                        <div class="mt-1 font-medium">{{ $formatDateTimeThai($externalOutput->updated_at) }}</div>
                     </div>
                 </div>
             </article>

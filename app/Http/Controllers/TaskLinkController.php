@@ -113,7 +113,7 @@ public function projectLinks($projectId)
             abort(403);
         }
 
-        if ($user->role === 'admin' || $user->role === 'user_all') {
+        if ($user->isAdminLike()) {
             return;
         }
 

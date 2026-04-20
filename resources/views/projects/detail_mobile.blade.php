@@ -459,16 +459,10 @@
                         🔥 FTE project
                 </a>
                        
-                @php
-                    $isOwner = $project->user_id === auth()->id();
-                    $isAdmin = auth()->user() && auth()->user()->role === 'admin';
-                @endphp
-                @if ($isOwner || $isAdmin)
-                    <a href="{{ route('projects.pdf', $project) }}" target="_blank"
-                        class="px-3 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200">
-                        🖨️ PDF
-                    </a>
-                @endif
+                <a href="{{ route('projects.pdf', $project) }}" target="_blank"
+                    class="px-3 py-2 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-semibold hover:bg-emerald-200">
+                    🖨️ PDF
+                </a>
                 <a href="{{ route('projects.gantt', $project) }}"
                     class="px-3 py-2 rounded-lg bg-sky-100 text-sky-800 text-sm font-semibold hover:bg-sky-200">
                     📊 Gantt
@@ -496,17 +490,18 @@
                 <div class="field-value">{{ $project->project_name_en ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">ประเภท</div>
+                <div class="field-label">กลุ่มเนื้อหาหลักของงาน</div>
                 <div class="field-value">{{ $project->project_type ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">ลักษณะ</div>
-                <div class="field-value">{{ $project->project_list ?? '-' }}</div>
-            </div>
-            <div class="field-row">
-                <div class="field-label">Theme</div>
+                <div class="field-label">ประเภทของโครงการ/กิจกรรม</div>
                 <div class="field-value">{{ $project->theme ?? '-' }}</div>
             </div>
+            <div class="field-row">
+                <div class="field-label">ลักษณะโครงการ</div>
+                <div class="field-value">{{ $project->project_list ?? '-' }}</div>
+            </div>
+
             <div class="field-row">
                 <div class="field-label">เอกสารโครงการ (proposal , IRB) : </div>
                 <div class="field-value">
@@ -1270,14 +1265,12 @@
                 <a href="{{ route('projects.progress_reports.index', $project) }}" class="detail-fab-item detail-fab-item--progress">
                     📑 จัดการ Progress Report
                 </a>
-                @if ($isOwner || $isAdmin)
-                    <a href="{{ route('projects.pdf', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--pdf">
-                        🖨️ PDF
-                    </a>
-                    <a href="{{ route('fte.project.detail', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--fte">
-                        🔥 FTE project
-                    </a>
-                @endif
+                <a href="{{ route('projects.pdf', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--pdf">
+                    🖨️ PDF
+                </a>
+                <a href="{{ route('fte.project.detail', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--fte">
+                    🔥 FTE project
+                </a>
                 <a href="{{ route('projects.gantt', $project) }}" class="detail-fab-item detail-fab-item--gantt">
                     📊 Gantt
                 </a>

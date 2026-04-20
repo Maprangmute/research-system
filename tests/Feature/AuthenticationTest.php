@@ -41,4 +41,20 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_resigned_users_can_not_authenticate(): void
+    {
+        $user = User::factory()->create([
+            'role' => User::ROLE_RESIGNED,
+        ]);
+
+        $response = $this->from('/login')->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response->assertRedirect('/login');
+        $response->assertSessionHasErrors('email');
+    }
 }

@@ -41,6 +41,14 @@
             transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
         }
 
+        .bo-editor-shell textarea {
+            min-height: 3.25rem;
+            resize: vertical;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
         .bo-editor-shell input:not([type='checkbox']):not([type='radio']):focus,
         .bo-editor-shell select:focus,
         .bo-editor-shell textarea:focus {
@@ -158,6 +166,14 @@
             border: 1px solid #dbe5f0;
             background: #f8fafc;
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .entry-summary,
+        .entry-summary * {
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .drawer-header {

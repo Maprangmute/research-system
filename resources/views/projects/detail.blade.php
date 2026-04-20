@@ -693,24 +693,15 @@
                             📑 Progress Report
                         </a>
 
-                        @php
-                            $isOwner = $project->user_id === auth()->id();
-                            $isAdmin = auth()->user() && auth()->user()->role === 'admin';
-                        @endphp
+                        <a href="{{ route('projects.pdf', $project) }}" target="_blank"
+                            class="project-header-action project-header-action--pdf">
+                            🖨️ PDF
+                        </a>
 
-                        @if ($isOwner || $isAdmin)
-                            <a href="{{ route('projects.pdf', $project) }}" target="_blank"
-                                class="project-header-action project-header-action--pdf">
-                                🖨️ PDF
-                            </a>
-                        @endif
-
-                        @if ($isOwner || $isAdmin)
-                            <a href="{{ route('fte.project.detail', $project) }}" target="_blank"
-                                class="project-header-action project-header-action--fte">
-                                🔥 FTE project
-                            </a>
-                        @endif
+                        <a href="{{ route('fte.project.detail', $project) }}" target="_blank"
+                            class="project-header-action project-header-action--fte">
+                            🔥 FTE project
+                        </a>
 
                         
 
@@ -744,9 +735,9 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm text-slate-700">
                     <div><span class="font-semibold">ชื่อโครงการ (TH):</span> {{ $project->project_name_th ?? '-' }}</div>
                     <div><span class="font-semibold">ชื่อโครงการ (EN):</span> {{ $project->project_name_en ?? '-' }}</div>
-                    <div><span class="font-semibold">ประเภท:</span> {{ $project->project_type ?? '-' }}</div>
-                    <div><span class="font-semibold">ลักษณะ:</span> {{ $project->project_list ?? '-' }}</div>
-                    <div><span class="font-semibold">Theme:</span> {{ $project->theme ?? '-' }}</div>
+                    <div><span class="font-semibold">กลุ่มเนื้อหาหลักของงาน (Content/Theme):</span> {{ $project->project_type ?? '-' }}</div>
+                    <div><span class="font-semibold">ลักษณะโครงการ:</span> {{ $project->project_list ?? '-' }}</div>
+                    <div><span class="font-semibold">ประเภทของโครงการ/กิจกรรม (TYPE):</span> {{ $project->theme ?? '-' }}</div>
 
                     <div class="md:col-span-2">
                         <span class="font-semibold">เอกสารโครงการ (proposal , IRB) : </span>
@@ -1903,14 +1894,12 @@
                 <a href="{{ route('projects.progress_reports.index', $project) }}" class="detail-fab-item detail-fab-item--progress">
                     📑 จัดการ Progress Report
                 </a>
-                @if ($isOwner || $isAdmin)
-                    <a href="{{ route('projects.pdf', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--pdf">
-                        🖨️ PDF
-                    </a>
-                    <a href="{{ route('fte.project.detail', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--fte">
-                        🔥 FTE project
-                    </a>
-                @endif
+                <a href="{{ route('projects.pdf', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--pdf">
+                    🖨️ PDF
+                </a>
+                <a href="{{ route('fte.project.detail', $project) }}" target="_blank" class="detail-fab-item detail-fab-item--fte">
+                    🔥 FTE project
+                </a>
                 <a href="{{ route('projects.gantt', $project) }}" class="detail-fab-item detail-fab-item--gantt">
                     📊 Gantt
                 </a>

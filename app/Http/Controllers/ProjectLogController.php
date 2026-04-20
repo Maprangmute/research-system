@@ -39,7 +39,7 @@ class ProjectLogController extends Controller
     private function authorizeAdmin(): void
     {
         $user = Auth::user();
-        if (!$user || $user->role !== 'admin') {
+        if (!$user || !$user->isAdminEquivalent()) {
             abort(403);
         }
     }
@@ -128,6 +128,12 @@ class ProjectLogController extends Controller
             'project' => 'โครงการ',
             'output' => 'ผลผลิต',
             'output_author' => 'ผู้เขียนผลงาน',
+            'back_office_task' => 'Back Office',
+            'back_office_entry' => 'ภาระงาน Back Office',
+            'back_office_output' => 'ผลงาน Back Office',
+            'external_output' => 'Extra',
+            'external_output_author' => 'ผู้เขียน Extra',
+            'external_output_conference' => 'การนำเสนอ Extra',
             'fte' => 'FTE',
             'task' => 'งาน',
             'tasklink' => 'ลิงก์งาน',

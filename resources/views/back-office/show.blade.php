@@ -18,6 +18,22 @@
                 }
             }
         };
+        $formatDateTimeThai = function ($value) {
+            if (!$value) {
+                return '';
+            }
+            try {
+                $d = \Carbon\Carbon::parse($value)->setTimezone('Asia/Bangkok')->locale('th');
+                return $d->translatedFormat('j F') . ' ' . ($d->year + 543) . ' ' . $d->format('H:i') . ' น.';
+            } catch (\Exception $e) {
+                return (string) $value;
+            }
+        };
+        $updatedUser = $task->updated_by ? $task->updater : $task->creator;
+        $updatedBy = $updatedUser ? trim(($updatedUser->prefix ?? '') . ' ' . ($updatedUser->name ?? '')) : '-';
+        $createdBy = $task->creator ? trim(($task->creator->prefix ?? '') . ' ' . ($task->creator->name ?? '')) : '-';
+        $updatedAtThai = $formatDateTimeThai($task->updated_at);
+        $createdAtThai = $formatDateTimeThai($task->created_at);
     @endphp
 
     <style>
@@ -144,6 +160,21 @@
                             <span class="font-semibold text-slate-700">หัวหน้างานผู้รับผิดชอบ:</span>
                             {{ !empty($task->leaders) ? implode(', ', $task->leaders) : '-' }}
                         </div>
+
+                        <div class="mt-4 flex flex-col space-y-1">
+                            <div class="text-xs text-slate-500 italic">
+                                ข้อมูลล่าสุดโดย {{ $updatedBy }}
+                                @if ($updatedAtThai)
+                                    | อัปเดทเมื่อ {{ $updatedAtThai }}
+                                @endif
+                            </div>
+                            <div class="text-xs text-slate-400 italic">
+                                สร้างโดย {{ $createdBy }}
+                                @if ($createdAtThai)
+                                    | สร้างเมื่อ {{ $createdAtThai }}
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
@@ -156,19 +187,17 @@
                             <span class="back-office-action__icon" aria-hidden="true">🖨️</span>
                             <span>ดาวน์โหลด PDF</span>
                         </a>
-                        @if (auth()->user()?->role === 'admin' || (int) $task->created_by === (int) auth()->id())
-                            <form action="{{ route('back_office.destroy', $task->id) }}" method="POST" class="inline-flex"
-                                data-back-office-delete-form
-                                data-record-id="{{ $task->id }}"
-                                data-record-title="{{ $task->title }}"
-                                data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="back-office-action back-office-action--delete border-0">
-                                    ลบ
-                                </button>
-                            </form>
-                        @endif
+                        <form action="{{ route('back_office.destroy', $task->id) }}" method="POST" class="inline-flex"
+                            data-back-office-delete-form
+                            data-record-id="{{ $task->id }}"
+                            data-record-title="{{ $task->title }}"
+                            data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="back-office-action back-office-action--delete border-0">
+                                ลบ
+                            </button>
+                        </form>
                     </div>
                 </div>
             </section>

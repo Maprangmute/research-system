@@ -35,6 +35,6 @@ class FteRolePolicy
      */
     private function isAdminLike(User $user): bool
     {
-        return $user->role === 'admin' || $user->role === 'user_all';
+        return $user->isAdminLike();
     }
 }

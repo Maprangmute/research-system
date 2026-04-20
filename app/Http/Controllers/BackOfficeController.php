@@ -104,16 +104,7 @@ class BackOfficeController extends Controller
 
     private function applyVisibilityScope($query, $user, string $fullName): void
     {
-        if ($user->role === 'admin') {
-            return;
-        }
-
-        $query->where(function ($q) use ($fullName, $user) {
-            $q->where('created_by', $user->id)
-                ->orWhereHas('entries', function ($entryQ) use ($fullName) {
-                    $entryQ->where('person_name', $fullName);
-                });
-        });
+        // Back Office เปิดให้ผู้ใช้ที่ล็อกอินทุกคนเข้าถึงข้อมูลร่วมกัน
     }
 
     private function applyIndexFilters($query, Request $request): void
@@ -271,7 +262,7 @@ class BackOfficeController extends Controller
             'entries.*.person_name' => ['required', 'string', 'max:255'],
             'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านติดต่อประสานงาน,งานด้านการลงตารางนัดหมายประชุม,งานด้านออกแบบ เเละผลิตสื่อ,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
             'entries.*.job_name' => ['required', 'string', 'max:255'],
-            'entries.*.job_detail' => ['required', 'string', 'max:255'],
+            'entries.*.job_detail' => ['required', 'string','max:1000'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.end_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.hours' => ['required', 'numeric', 'min:0'],
@@ -300,6 +291,7 @@ class BackOfficeController extends Controller
                 'purpose' => $data['purpose'] ?? null,
                 'leaders' => $data['leaders'] ?? null,
                 'created_by' => Auth::id(),
+                'updated_by' => null,
             ]);
 
             if (!empty($data['outputs'])) {
@@ -352,7 +344,7 @@ class BackOfficeController extends Controller
 
     public function show(Request $request, BackOfficeTask $task)
     {
-        $task->load(['entries', 'outputs', 'creator']);
+        $task->load(['entries', 'outputs', 'creator', 'updater']);
 
         $summary = [
             'entries' => $task->entries->count(),
@@ -376,7 +368,7 @@ class BackOfficeController extends Controller
 
     public function edit(BackOfficeTask $task)
     {
-        $task->load(['entries', 'outputs', 'creator']);
+        $task->load(['entries', 'outputs', 'creator', 'updater']);
 
         $users = User::select('prefix', 'name')->orderBy('name')->get();
         $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
@@ -422,7 +414,7 @@ class BackOfficeController extends Controller
             'entries.*.person_name' => ['required', 'string', 'max:255'],
             'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านติดต่อประสานงาน,งานด้านการลงตารางนัดหมายประชุม,งานด้านออกแบบ เเละผลิตสื่อ,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
             'entries.*.job_name' => ['required', 'string', 'max:255'],
-            'entries.*.job_detail' => ['required', 'string', 'max:255'],
+            'entries.*.job_detail' => ['required', 'string', 'max:1000'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.end_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.hours' => ['required', 'numeric', 'min:0'],
@@ -449,6 +441,7 @@ class BackOfficeController extends Controller
                 'description' => $data['description'] ?? null,
                 'purpose' => $data['purpose'] ?? null,
                 'leaders' => $data['leaders'] ?? null,
+                'updated_by' => Auth::id(),
             ]);
 
             $task->outputs()->delete();
@@ -521,16 +514,12 @@ class BackOfficeController extends Controller
 
     private function canManageTask(BackOfficeTask $task, $user): bool
     {
-        if (!$user) {
-            return false;
-        }
-
-        return $user->role === 'admin' || (int) $task->created_by === (int) $user->id;
+        return (bool) $user;
     }
 
     public function pdf(BackOfficeTask $task)
     {
-        $task->load(['entries', 'creator']);
+        $task->load(['entries', 'creator', 'updater']);
 
         $summary = [
             'entries' => $task->entries->count(),

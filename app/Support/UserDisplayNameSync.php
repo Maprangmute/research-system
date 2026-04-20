@@ -8,6 +8,18 @@ use Illuminate\Support\Facades\Schema;
 
 class UserDisplayNameSync
 {
+    public static function syncAfterResponse(string $oldPrefix, string $oldName, string $newPrefix, string $newName): void
+    {
+        if (app()->runningInConsole()) {
+            self::sync($oldPrefix, $oldName, $newPrefix, $newName);
+            return;
+        }
+
+        app()->terminating(static function () use ($oldPrefix, $oldName, $newPrefix, $newName): void {
+            self::sync($oldPrefix, $oldName, $newPrefix, $newName);
+        });
+    }
+
     public static function sync(string $oldPrefix, string $oldName, string $newPrefix, string $newName): void
     {
         $oldPrefix = trim($oldPrefix);

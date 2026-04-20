@@ -27,7 +27,7 @@ class OverviewController extends Controller
             'user_id',
         ]);
 
-        if (Auth::user()?->role !== 'admin') {
+        if (!Auth::user()?->isAdminEquivalent()) {
             $projectsQuery->where('user_id', Auth::id());
         }
 

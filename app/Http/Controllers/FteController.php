@@ -19,7 +19,7 @@ class FteController extends Controller
 {
 private function isFteAdmin(): bool
 {
-    return Auth::user()?->role === 'admin';
+    return Auth::user()?->isAdminEquivalent() ?? false;
 }
 
 private function currentUserFullName(): string
@@ -97,6 +97,8 @@ public function index(Request $request)
             'category',
             'job_name',
             'job_detail',
+            'start_date',
+            'end_date',
             'hours',
             'fte_value',
         ])
@@ -195,8 +197,6 @@ public function index(Request $request)
 
     $backOfficeRows = $backOfficeQuery->get()->map(function ($entry) {
         $task = $entry->task;
-        $startDate = $entry->start_date ?: ($task?->start_date);
-        $endDate = $entry->end_date ?: ($task?->end_date);
         $category = $this->backOfficeCategoryLabel($entry->category);
         return (object) [
             'id' => 'bo-' . $entry->id,
@@ -205,8 +205,8 @@ public function index(Request $request)
             'name' => $entry->person_name,
             'fte_value' => $entry->fte_value,
             'hours' => $entry->hours,
-            'start_date' => $startDate,
-            'end_date' => $endDate,
+            'start_date' => $entry->start_date,
+            'end_date' => $entry->end_date,
             'role_group' => $category,
             'job_name' => $entry->job_name,
             'job_detail' => $entry->job_detail,
@@ -1021,8 +1021,8 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
     foreach ($backOffice as $entry) {
         try {
-            $startRaw = $entry->start_date ?: ($entry->task?->start_date);
-            $endRaw = $entry->end_date ?: ($entry->task?->end_date);
+            $startRaw = $entry->start_date;
+            $endRaw = $entry->end_date;
             if (!$startRaw || !$endRaw) {
                 continue;
             }
