@@ -46,9 +46,9 @@
         <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
             <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Academic Paper / Presentation / Textbook / Manual นอกเนื่องโครงการวิจัยในหน่วย</h1>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Academic Paper / Presentation / Award / Textbook / Manual นอกเนื่องโครงการวิจัยในหน่วย</h1>
                     <p class="mt-2 text-sm leading-6 text-slate-600 md:text-[15px]">
-                        บันทึกผลงานเพิ่มเติมแบบไม่ผูกกับโครงการ โดยใช้โครง EA101, EA103, EA119 และ EA120 ให้ครบในหน้าเดียว
+                        บันทึกผลงานเพิ่มเติมแบบไม่ผูกกับโครงการ โดยใช้โครง EA101, EA103, EA118, EA119 และ EA120 ให้ครบในหน้าเดียว
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -83,7 +83,7 @@
             <div id="externalOutputsList" class="space-y-5">
                 @foreach ($oldOutputs as $outputIndex => $output)
                     @php
-                        $type = in_array(($output['type'] ?? ''), ['EA101', 'EA103', 'EA119', 'EA120'], true) ? $output['type'] : '';
+                        $type = in_array(($output['type'] ?? ''), ['EA101', 'EA103', 'EA118', 'EA119', 'EA120'], true) ? $output['type'] : '';
                         $authors = $output['authors'] ?? [['role' => '', 'name' => '']];
                         $conferences = $output['conferences'] ?? [[
                             'name' => '',
@@ -138,6 +138,7 @@
                                         <option value="">เลือกประเภทผลงาน</option>
                                         <option value="EA101" @selected($type === 'EA101')>EA101 Research Paper or Journal Article</option>
                                         <option value="EA103" @selected($type === 'EA103')>EA103 Presentations in Academic Conferences</option>
+                                        <option value="EA118" @selected($type === 'EA118')>EA118 Award and Recognition</option>
                                         <option value="EA119" @selected($type === 'EA119')>EA119 Textbook / Book chapter</option>
                                         <option value="EA120" @selected($type === 'EA120')>EA120 Manual / Instruction / Guideline</option>
                                     </select>
@@ -454,6 +455,7 @@
                             <option value="">เลือกประเภทผลงาน</option>
                             <option value="EA101">EA101 Research Paper or Journal Article</option>
                             <option value="EA103">EA103 Presentations in Academic Conferences</option>
+                            <option value="EA118">EA118 Award and Recognition</option>
                             <option value="EA119">EA119 Textbook / Book chapter</option>
                             <option value="EA120">EA120 Manual / Instruction / Guideline</option>
                         </select>

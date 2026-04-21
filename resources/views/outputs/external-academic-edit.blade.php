@@ -26,7 +26,7 @@
             'presenter_name' => '',
         ]]),
     ];
-    $type = in_array(($formData['type'] ?? ''), ['EA101', 'EA103', 'EA119', 'EA120'], true)
+    $type = in_array(($formData['type'] ?? ''), ['EA101', 'EA103', 'EA118', 'EA119', 'EA120'], true)
         ? $formData['type']
         : 'EA101';
 @endphp
@@ -54,9 +54,9 @@
         <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
             <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">แก้ไข Academic Paper / Presentation / Textbook / Manual นอกเนื่องโครงการวิจัยในหน่วย</h1>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">แก้ไข Academic Paper / Presentation / Award / Textbook / Manual นอกเนื่องโครงการวิจัยในหน่วย</h1>
                     <p class="mt-2 text-sm leading-6 text-slate-600 md:text-[15px]">
-                        ปรับข้อมูลผลงานเพิ่มเติม และแก้รายละเอียด EA101, EA103, EA119 หรือ EA120 ได้ในหน้าจอเดียว
+                        ปรับข้อมูลผลงานเพิ่มเติม และแก้รายละเอียด EA101, EA103, EA118, EA119 หรือ EA120 ได้ในหน้าจอเดียว
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -94,7 +94,7 @@
                         <p class="mt-1 text-sm text-slate-500">ปรับข้อมูลหลักและรายละเอียดการเผยแพร่ในรายการนี้</p>
                     </div>
                     <span class="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                        {{ $type === 'EA101' ? 'Academic Paper' : ($type === 'EA103' ? 'Presentation' : ($type === 'EA119' ? 'Textbook / Book chapter' : 'Manual / Instruction / Guideline')) }}
+                        {{ $type === 'EA101' ? 'Academic Paper' : ($type === 'EA103' ? 'Presentation' : ($type === 'EA118' ? 'Award and Recognition' : ($type === 'EA119' ? 'Textbook / Book chapter' : 'Manual / Instruction / Guideline'))) }}
                     </span>
                 </div>
 
@@ -116,6 +116,7 @@
                             <select name="type" required oninvalid="this.setCustomValidity('กรุณาเลือกประเภทผลงาน')" oninput="this.setCustomValidity('')" @if ($errors->has('type')) data-server-invalid="1" @endif class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm{{ $errors->has('type') ? ' border-red-500 bg-red-50 ' : '' }}" data-edit-output-type>
                                 <option value="EA101" @selected($type === 'EA101')>EA101 Research Paper or Journal Article</option>
                                 <option value="EA103" @selected($type === 'EA103')>EA103 Presentations in Academic Conferences</option>
+                                <option value="EA118" @selected($type === 'EA118')>EA118 Award and Recognition</option>
                                 <option value="EA119" @selected($type === 'EA119')>EA119 Textbook / Book chapter</option>
                                 <option value="EA120" @selected($type === 'EA120')>EA120 Manual / Instruction / Guideline</option>
                             </select>

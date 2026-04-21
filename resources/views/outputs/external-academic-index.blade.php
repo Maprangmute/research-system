@@ -4,6 +4,7 @@
     $typeBaseColorMap = [
         'EA101' => '#7aa2f7',
         'EA103' => '#f7b267',
+        'EA118' => '#a78bfa',
         'EA119' => '#f4b183',
         'EA120' => '#e8a5a5',
     ];
@@ -26,6 +27,7 @@
     $typeLabel = fn ($type) => match ($type) {
         'EA101' => 'Academic Paper',
         'EA103' => 'Presentation',
+        'EA118' => 'Award and Recognition',
         'EA119' => 'Textbook / Book chapter',
         'EA120' => 'Manual / Instruction / Guideline',
         default => $type ?: '-',
@@ -59,7 +61,7 @@
             </div>
         </section>
 
-        <section class="grid gap-4 md:grid-cols-5">
+        <section class="grid gap-4 md:grid-cols-6">
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="text-sm font-medium text-slate-500">ทั้งหมด</div>
                 <div class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($allCount) }}</div>
@@ -71,6 +73,10 @@
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="text-sm font-medium text-slate-500">Presentation</div>
                 <div class="mt-2 text-3xl font-bold" style="color:#f7b267;">{{ number_format($presentationCount) }}</div>
+            </article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="text-sm font-medium text-slate-500">Award and Recognition</div>
+                <div class="mt-2 text-3xl font-bold" style="color:#a78bfa;">{{ number_format($awardCount) }}</div>
             </article>
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="text-sm font-medium text-slate-500">Textbook / Book chapter</div>
@@ -97,6 +103,7 @@
                         <option value="">ทั้งหมด</option>
                         <option value="EA101" @selected($type === 'EA101')>Academic Paper</option>
                         <option value="EA103" @selected($type === 'EA103')>Presentation</option>
+                        <option value="EA118" @selected($type === 'EA118')>Award and Recognition</option>
                         <option value="EA119" @selected($type === 'EA119')>Textbook / Book chapter</option>
                         <option value="EA120" @selected($type === 'EA120')>Manual / Instruction / Guideline</option>
                     </select>

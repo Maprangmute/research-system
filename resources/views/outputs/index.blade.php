@@ -45,6 +45,7 @@
             'type' => 'ประเภท',
             'title' => 'ชื่อผลงาน',
         ][$currentSort] ?? 'บันทึกล่าสุด';
+        $currentWorkStatus = request('work_status', '');
 
         $typeUniverse = collect($typeOptions)
             ->filter(fn($type) => trim((string) $type) !== '')
@@ -400,7 +401,7 @@
                     </div>
                 </div>
 
-                <form id="outputsPrimaryFilterForm" method="GET" action="{{ route('outputs.index') }}" class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <form id="outputsPrimaryFilterForm" method="GET" action="{{ route('outputs.index') }}" class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                     <input type="hidden" name="dir" value="{{ $currentDir }}">
 
                     <label class="block xl:col-span-2">
@@ -427,6 +428,16 @@
                             <option value="">ทั้งหมด</option>
                             @foreach ($yearOptions as $year)
                                 <option value="{{ $year }}" @selected(request('year') == $year)>{{ $year }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ลักษณะผลงาน</span>
+                        <select name="work_status" data-output-live="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($workStatusOptions as $statusValue => $statusLabel)
+                                <option value="{{ $statusValue }}" @selected($currentWorkStatus === $statusValue)>{{ $statusLabel }}</option>
                             @endforeach
                         </select>
                     </label>
@@ -665,6 +676,16 @@
                             <option value="">ทั้งหมด</option>
                             @foreach ($yearOptions as $year)
                                 <option value="{{ $year }}" @selected(request('year') == $year)>{{ $year }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ลักษณะผลงาน</span>
+                        <select name="work_status" data-output-live="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($workStatusOptions as $statusValue => $statusLabel)
+                                <option value="{{ $statusValue }}" @selected($currentWorkStatus === $statusValue)>{{ $statusLabel }}</option>
                             @endforeach
                         </select>
                     </label>

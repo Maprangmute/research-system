@@ -58,6 +58,7 @@ class OutputController extends Controller
         $allCount = (clone $statsQuery)->count();
         $paperCount = (clone $statsQuery)->where('type', 'EA101')->count();
         $presentationCount = (clone $statsQuery)->where('type', 'EA103')->count();
+        $awardCount = (clone $statsQuery)->where('type', 'EA118')->count();
         $textbookCount = (clone $statsQuery)->where('type', 'EA119')->count();
         $manualCount = (clone $statsQuery)->where('type', 'EA120')->count();
 
@@ -83,6 +84,7 @@ class OutputController extends Controller
             'allCount' => $allCount,
             'paperCount' => $paperCount,
             'presentationCount' => $presentationCount,
+            'awardCount' => $awardCount,
             'textbookCount' => $textbookCount,
             'manualCount' => $manualCount,
             'search' => $request->string('search')->toString(),
@@ -190,7 +192,7 @@ class OutputController extends Controller
         $validated = $request->validate([
             'outputs' => ['required', 'array', 'min:1'],
             'outputs.*.title' => ['required', 'string', 'max:5000'],
-            'outputs.*.type' => ['required', 'in:EA101,EA103,EA119,EA120'],
+            'outputs.*.type' => ['required', 'in:EA101,EA103,EA118,EA119,EA120'],
             'outputs.*.job_category' => ['required', 'in:' . implode(',', self::EXTERNAL_JOB_CATEGORIES)],
             'outputs.*.note' => ['nullable', 'string', 'max:5000'],
             'outputs.*.publish_date' => ['required', 'date'],
@@ -283,7 +285,7 @@ class OutputController extends Controller
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:5000'],
-            'type' => ['required', 'in:EA101,EA103,EA119,EA120'],
+            'type' => ['required', 'in:EA101,EA103,EA118,EA119,EA120'],
             'job_category' => ['required', 'in:' . implode(',', self::EXTERNAL_JOB_CATEGORIES)],
             'note' => ['nullable', 'string', 'max:5000'],
             'publish_date' => ['required', 'date'],
@@ -612,12 +614,14 @@ class OutputController extends Controller
 
         foreach ($projectOutputs as $output) {
             $yearBe = $normalizeYear($output->year ?? '');
+            $workStatus = $yearBe ? 'completed' : 'in_progress';
             $typeCode = $extractTypeCode($output->type) ?? '-';
             $typeLabel = $typeLabelByCode[$typeCode] ?? (trim((string) ($output->type ?? '')) ?: $typeCode);
             $items->push((object) [
                 'title' => $output->title ?: '-',
                 'type' => $typeLabel,
                 'year_be' => $yearBe,
+                'work_status' => $workStatus,
                 'project_label' => $output->project?->project_name_th,
                 'source_badge' => null,
                 'detail' => null,
@@ -639,12 +643,14 @@ class OutputController extends Controller
             if ($yearFilterBe && $yearBe !== $yearFilterBe) {
                 continue;
             }
+            $workStatus = $yearBe ? 'completed' : 'in_progress';
             $typeCode = $extractTypeCode($output->type) ?? '-';
             $typeLabel = $typeLabelByCode[$typeCode] ?? (trim((string) ($output->type ?? '')) ?: $typeCode);
             $items->push((object) [
                 'title' => $output->title ?: '-',
                 'type' => $typeLabel,
                 'year_be' => $yearBe,
+                'work_status' => $workStatus,
                 'project_label' => $output->task?->title,
                 'source_badge' => 'งานนอกโครงการวิจัย',
                 'detail' => null,
@@ -654,6 +660,13 @@ class OutputController extends Controller
                 'sort_title' => mb_strtolower($output->title ?? ''),
                 'sort_type' => mb_strtolower($typeCode),
             ]);
+        }
+
+        if ($request->filled('work_status')) {
+            $workStatus = trim((string) $request->input('work_status'));
+            if (in_array($workStatus, ['in_progress', 'completed'], true)) {
+                $items = $items->filter(fn ($item) => ($item->work_status ?? null) === $workStatus)->values();
+            }
         }
 
         $items = $items->sortBy(function ($item) use ($sort) {
@@ -680,6 +693,10 @@ class OutputController extends Controller
             'outputs' => $outputs,
             'typeOptions' => $typeOptions->unique()->sort()->values(),
             'yearOptions' => $yearOptions,
+            'workStatusOptions' => collect([
+                'in_progress' => 'อยู่ระหว่างการดำเนินงาน',
+                'completed' => 'เสร็จแล้ว',
+            ]),
         ]);
     }
 

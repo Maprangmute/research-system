@@ -1,6 +1,20 @@
 @extends('layouts.app')
 
 @php
+    $typeBaseColorMap = [
+        'EA101' => '#7aa2f7',
+        'EA103' => '#f7b267',
+        'EA118' => '#a78bfa',
+        'EA119' => '#f4b183',
+        'EA120' => '#e8a5a5',
+    ];
+    $withAlpha = static function (string $hex, string $alpha): string {
+        $base = ltrim(trim($hex), '#');
+        if (strlen($base) !== 6) {
+            return '#cbd5e1';
+        }
+        return '#' . $base . $alpha;
+    };
     $months = [1 => 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
     $thaiDate = function ($date) use ($months) {
         if (!$date) return '-';
@@ -9,6 +23,7 @@
     $typeLabel = match ($externalOutput->type) {
         'EA101' => 'Academic Paper',
         'EA103' => 'Presentation',
+        'EA118' => 'Award and Recognition',
         'EA119' => 'Textbook / Book chapter',
         'EA120' => 'Manual / Instruction / Guideline',
         default => $externalOutput->type ?: '-',
@@ -199,16 +214,3 @@
         @endif
     </div>
 @endsection
-    $typeBaseColorMap = [
-        'EA101' => '#7aa2f7',
-        'EA103' => '#f7b267',
-        'EA119' => '#f4b183',
-        'EA120' => '#e8a5a5',
-    ];
-    $withAlpha = static function (string $hex, string $alpha): string {
-        $base = ltrim(trim($hex), '#');
-        if (strlen($base) !== 6) {
-            return '#cbd5e1';
-        }
-        return '#' . $base . $alpha;
-    };
