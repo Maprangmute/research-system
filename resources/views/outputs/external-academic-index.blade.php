@@ -40,66 +40,78 @@
         $year = $date->year + 543;
         return "{$day} {$month} {$year}";
     };
+    $hasValue = static function ($value): bool {
+        if ($value === null) {
+            return false;
+        }
+        if (is_string($value)) {
+            return trim($value) !== '';
+        }
+        if (is_array($value)) {
+            return count($value) > 0;
+        }
+        return true;
+    };
 @endphp
 
 @section('content')
-    <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
-        <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
-            <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
+    <div class="container mx-auto mt-8 space-y-4 px-4 pb-8">
+        <section class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+            <div class="flex flex-col gap-4 px-5 py-5 md:px-6 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Academic Paper / Presentation / Textbook / Manual นอกเนื่องโครงการวิจัยในหน่วย</h1>
-                    <p class="mt-2 text-sm leading-6 text-slate-600 md:text-[15px]">
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">Academic Paper / Presentation / Textbook / Manual นอกเนื่องโครงการวิจัยในหน่วย</h1>
+                    <p class="mt-1.5 text-sm leading-6 text-slate-600">
                         รายการผลงานเพิ่มเติมแบบไม่ผูกกับโครงการ พร้อมค้นหา เปิดดูรายละเอียด และย้อนกลับมาเพิ่มข้อมูลต่อได้ใน flow เดียว
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <a href="{{ route('outputs.external-academic.create') }}"
-                        class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm">
+                        class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm">
                         เพิ่มรายการใหม่
                     </a>
                 </div>
             </div>
         </section>
 
-        <section class="grid gap-4 md:grid-cols-6">
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="text-sm font-medium text-slate-500">ทั้งหมด</div>
-                <div class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($allCount) }}</div>
+        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="text-xs font-medium uppercase tracking-wide text-slate-500">ทั้งหมด</div>
+                <div class="mt-1.5 text-2xl font-bold text-slate-900">{{ number_format($allCount) }}</div>
             </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="text-sm font-medium text-slate-500">Academic Paper</div>
-                <div class="mt-2 text-3xl font-bold" style="color:#7aa2f7;">{{ number_format($paperCount) }}</div>
+            <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Academic Paper</div>
+                <div class="mt-1.5 text-2xl font-bold" style="color:#7aa2f7;">{{ number_format($paperCount) }}</div>
             </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="text-sm font-medium text-slate-500">Presentation</div>
-                <div class="mt-2 text-3xl font-bold" style="color:#f7b267;">{{ number_format($presentationCount) }}</div>
+            <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Presentation</div>
+                <div class="mt-1.5 text-2xl font-bold" style="color:#f7b267;">{{ number_format($presentationCount) }}</div>
             </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="text-sm font-medium text-slate-500">Award and Recognition</div>
-                <div class="mt-2 text-3xl font-bold" style="color:#a78bfa;">{{ number_format($awardCount) }}</div>
+            <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Award and Recognition</div>
+                <div class="mt-1.5 text-2xl font-bold" style="color:#a78bfa;">{{ number_format($awardCount) }}</div>
             </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="text-sm font-medium text-slate-500">Textbook / Book chapter</div>
-                <div class="mt-2 text-3xl font-bold" style="color:#f4b183;">{{ number_format($textbookCount) }}</div>
+            <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Textbook / Book chapter</div>
+                <div class="mt-1.5 text-2xl font-bold" style="color:#f4b183;">{{ number_format($textbookCount) }}</div>
             </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="text-sm font-medium text-slate-500">Manual / Instruction / Guideline</div>
-                <div class="mt-2 text-3xl font-bold" style="color:#e8a5a5;">{{ number_format($manualCount) }}</div>
+            <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Manual / Instruction / Guideline</div>
+                <div class="mt-1.5 text-2xl font-bold" style="color:#e8a5a5;">{{ number_format($manualCount) }}</div>
             </article>
         </section>
 
         <form method="GET" action="{{ route('outputs.external-academic') }}"
-            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px_auto]">
+            class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
                     <input type="text" name="search" value="{{ $search }}"
-                        class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm"
+                        class="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
                         placeholder="ชื่อผลงาน / journal / author / presenter / conference">
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ประเภท</span>
-                    <select name="type" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm">
+                    <select name="type" class="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm">
                         <option value="">ทั้งหมด</option>
                         <option value="EA101" @selected($type === 'EA101')>Academic Paper</option>
                         <option value="EA103" @selected($type === 'EA103')>Presentation</option>
@@ -110,11 +122,11 @@
                 </label>
                 <div class="flex items-end gap-2">
                     <button type="submit"
-                        class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white shadow-sm">
+                        class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm">
                         ค้นหา
                     </button>
                     <a href="{{ route('outputs.external-academic') }}"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
+                        class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700">
                         ล้าง
                     </a>
                 </div>
@@ -123,84 +135,101 @@
 
         <section class="space-y-4">
             @forelse ($outputs as $output)
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+                @php
+                    $creatorName = trim(((optional($output->creator)->prefix ?? '') . ' ' . (optional($output->creator)->name ?? '')));
+                    $summaryItems = collect([
+                        ['label' => 'ประเภทของงาน', 'value' => $output->job_category],
+                        ['label' => 'Journal', 'value' => $output->type === 'EA101' ? $output->journal : null],
+                        [
+                            'label' => 'Author',
+                            'value' => in_array($output->type, ['EA101', 'EA119'], true)
+                                ? $output->authors->pluck('name')->filter()->implode(', ')
+                                : null,
+                        ],
+                        [
+                            'label' => 'Award Recipient',
+                            'value' => $output->type === 'EA118'
+                                ? $output->authors->pluck('name')->filter()->implode(', ')
+                                : null,
+                        ],
+                        [
+                            'label' => 'Quartile / IF',
+                            'value' => $output->type === 'EA101' && ($hasValue($output->quartile) || $hasValue($output->impact_factor))
+                                ? collect([$output->quartile, $output->impact_factor])->filter($hasValue(...))->implode(' / ')
+                                : null,
+                        ],
+                        [
+                            'label' => 'Conference',
+                            'value' => $output->type === 'EA103'
+                                ? $output->conferences->pluck('name')->filter()->implode(', ')
+                                : null,
+                        ],
+                        [
+                            'label' => 'Presentation Type',
+                            'value' => $output->type === 'EA103'
+                                ? $output->conferences->pluck('presentation_type')->filter()->implode(', ')
+                                : null,
+                        ],
+                        [
+                            'label' => 'Presenter',
+                            'value' => $output->type === 'EA103'
+                                ? $output->conferences->pluck('presenter_name')->filter()->implode(', ')
+                                : null,
+                        ],
+                        [
+                            'label' => 'Location',
+                            'value' => $output->type === 'EA103'
+                                ? $output->conferences->pluck('location')->filter()->implode(', ')
+                                : null,
+                        ],
+                        ['label' => 'ชื่อหนังสือ', 'value' => $output->type === 'EA119' ? $output->book_title : null],
+                        ['label' => 'ชื่อสำนักพิมพ์', 'value' => $output->type === 'EA119' ? $output->publisher_name : null],
+                        ['label' => 'ชื่อบท / เลขหน้า', 'value' => $output->type === 'EA119' ? $output->chapter_pages : null],
+                        ['label' => 'บันทึกโดย', 'value' => $creatorName ?: null],
+                    ])->filter(fn ($item) => $hasValue($item['value'] ?? null))->values();
+                @endphp
+                <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" style="{{ $typeBadge($output->type) }}">
+                                <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold" style="{{ $typeBadge($output->type) }}">
                                     {{ $typeLabel($output->type) }}
                                 </span>
                                 @if ($output->output_code)
-                                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700">
                                         {{ $output->output_code }}
                                     </span>
                                 @endif
-                                <span class="text-xs font-medium text-slate-500">เผยแพร่ {{ $thaiDate($output->publish_date) }}</span>
+                                @if ($output->publish_date)
+                                    <span class="text-[11px] font-medium text-slate-500">เผยแพร่ {{ $thaiDate($output->publish_date) }}</span>
+                                @endif
                             </div>
-                            <h2 class="mt-3 text-lg font-bold leading-7 text-slate-900">{{ $output->title }}</h2>
+                            <h2 class="mt-2 text-base font-bold leading-6 text-slate-900">{{ $output->title }}</h2>
 
                             @if ($output->note)
-                                <p class="mt-2 text-sm leading-6 text-slate-600">{{ $output->note }}</p>
+                                <p class="mt-1.5 line-clamp-2 text-sm leading-6 text-slate-600">{{ $output->note }}</p>
                             @endif
 
-                            <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                <div class="rounded-xl bg-slate-50 px-4 py-3">
-                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ประเภทของงาน</div>
-                                    <div class="mt-1 text-sm font-medium text-slate-800">{{ $output->job_category ?: '-' }}</div>
+                            @if ($summaryItems->isNotEmpty())
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    @foreach ($summaryItems as $item)
+                                        <div class="min-w-[180px] flex-1 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+                                            <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{{ $item['label'] }}</div>
+                                            <div class="mt-0.5 text-sm font-medium leading-5 text-slate-800">{{ $item['value'] }}</div>
+                                        </div>
+                                    @endforeach
                                 </div>
-                                <div class="rounded-xl bg-slate-50 px-4 py-3">
-                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Journal / Conference</div>
-                                    <div class="mt-1 text-sm font-medium text-slate-800">
-                                        {{
-                                            $output->type === 'EA101'
-                                                ? ($output->journal ?: '-')
-                                                : ($output->type === 'EA103'
-                                                    ? ($output->conferences->pluck('name')->filter()->implode(', ') ?: '-')
-                                                    : '-')
-                                        }}
-                                    </div>
-                                </div>
-                                <div class="rounded-xl bg-slate-50 px-4 py-3">
-                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">People</div>
-                                    <div class="mt-1 text-sm font-medium text-slate-800">
-                                        {{
-                                            $output->type === 'EA101'
-                                                ? ($output->authors->pluck('name')->filter()->implode(', ') ?: '-')
-                                                : ($output->type === 'EA103'
-                                                    ? ($output->conferences->pluck('presenter_name')->filter()->implode(', ') ?: '-')
-                                                    : '-')
-                                        }}
-                                    </div>
-                                </div>
-                                <div class="rounded-xl bg-slate-50 px-4 py-3">
-                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quartile / Type</div>
-                                    <div class="mt-1 text-sm font-medium text-slate-800">
-                                        {{
-                                            $output->type === 'EA101'
-                                                ? ($output->quartile ?: '-')
-                                                : ($output->type === 'EA103'
-                                                    ? ($output->conferences->pluck('presentation_type')->filter()->implode(', ') ?: '-')
-                                                    : '-')
-                                        }}
-                                    </div>
-                                </div>
-                                <div class="rounded-xl bg-slate-50 px-4 py-3">
-                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">บันทึกโดย</div>
-                                    <div class="mt-1 text-sm font-medium text-slate-800">
-                                        {{ optional($output->creator)->name ?: '-' }}
-                                    </div>
-                                </div>
-                            </div>
+                            @endif
                         </div>
 
                         <div class="flex shrink-0 items-start">
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 <a href="{{ route('outputs.external-academic.show', $output) }}"
-                                    class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                    class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
                                     ดูรายละเอียด
                                 </a>
                                 <a href="{{ route('outputs.external-academic.edit', $output) }}"
-                                    class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                    class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
                                     แก้ไข
                                 </a>
                                 <form method="POST" action="{{ route('outputs.external-academic.destroy', $output) }}"
@@ -208,7 +237,7 @@
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
-                                        class="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+                                        class="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                                         ลบ
                                     </button>
                                 </form>
@@ -217,7 +246,7 @@
                     </div>
                 </article>
             @empty
-                <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-sm">
+                <div class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center shadow-sm">
                     <div class="text-lg font-semibold text-slate-800">ยังไม่มีรายการ</div>
                     <p class="mt-2 text-sm text-slate-500">เริ่มต้นบันทึกรายการเพิ่มเติมได้จากปุ่มเพิ่มรายการใหม่</p>
                 </div>
@@ -225,7 +254,7 @@
         </section>
 
         @if ($outputs->hasPages())
-            <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 {{ $outputs->links() }}
             </section>
         @endif

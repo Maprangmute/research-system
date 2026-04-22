@@ -42,15 +42,22 @@
             </div>
             <div>
                 <label class="block text-xs text-gray-700 font-medium">ชื่อ - นามสกุล</label>
-                <input type="text" name="name" class="w-full border p-2 rounded text-sm" required>
+                <input type="text" name="name" value="{{ old('name') }}" class="w-full border p-2 rounded text-sm" required>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-700 font-medium">ชื่อแสดงผลภาษาอังกฤษ</label>
+                <div class="space-y-2">
+                    <input type="text" name="prefix_en" value="{{ old('prefix_en') }}" class="w-full border p-2 rounded text-sm" placeholder="เช่น Dr.">
+                    <input type="text" name="name_en" value="{{ old('name_en') }}" class="w-full border p-2 rounded text-sm" placeholder="เช่น Jane Smith">
+                </div>
             </div>
             <div>
                 <label class="block text-xs text-gray-700 font-medium">ตำแหน่ง</label>
-                <input type="text" name="position" class="w-full border p-2 rounded text-sm">
+                <input type="text" name="position" value="{{ old('position') }}" class="w-full border p-2 rounded text-sm">
             </div>
             <div>
                 <label class="block text-xs text-gray-700 font-medium">อีเมล</label>
-                <input type="email" name="email" class="w-full border p-2 rounded text-sm" required>
+                <input type="email" name="email" value="{{ old('email') }}" class="w-full border p-2 rounded text-sm" required>
             </div>
             <div>
                 <label class="block text-xs text-gray-700 font-medium">รหัสผ่าน</label>

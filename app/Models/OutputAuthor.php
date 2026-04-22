@@ -14,6 +14,7 @@ class OutputAuthor extends Model
 
     protected $fillable = [
         'output_id',
+        'user_id',
         'role', // first|co|corresponding
         'name',
     ];
@@ -21,6 +22,11 @@ class OutputAuthor extends Model
     public function output()
     {
         return $this->belongsTo(\App\Models\Output::class, 'output_id', 'id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id');
     }
 
     // สะดวกเรียก filter ตาม role

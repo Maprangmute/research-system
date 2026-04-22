@@ -70,6 +70,16 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm text-gray-700 font-medium">ชื่อแสดงผลภาษาอังกฤษ</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" name="prefix_en" value="{{ old('prefix_en', $user->prefix_en) }}"
+                            class="w-full border p-2 rounded" placeholder="เช่น Dr.">
+                        <input type="text" name="name_en" value="{{ old('name_en', $user->name_en) }}"
+                            class="w-full border p-2 rounded" placeholder="เช่น Jane Smith">
+                    </div>
+                </div>
+
+                <div>
                     <label class="block text-sm text-gray-700 font-medium">อีเมล</label>
                     <input type="email" name="email" value="{{ old('email', $user->email) }}"
                         class="w-full border p-2 rounded" required>

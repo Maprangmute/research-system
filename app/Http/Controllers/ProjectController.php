@@ -1455,12 +1455,14 @@ public function store(Request $request)
 
             'outputs.*.authors' => ['nullable', 'array'],
             'outputs.*.authors.*.id' => ['nullable', 'integer', 'exists:output_authors,id'],
+            'outputs.*.authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.authors.*.role' => ['nullable', 'string'],
             'outputs.*.authors.*.name' => ['nullable', 'string'],
 
             // EA103 (Conferences)
             'outputs.*.conferences' => ['nullable', 'array'],
             'outputs.*.conferences.*.id' => ['nullable', 'integer', 'exists:output_conferences,id'],
+            'outputs.*.conferences.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.conferences.*.name' => ['nullable', 'string'],
             'outputs.*.conferences.*.presentation_type' => ['nullable', 'string'],
             'outputs.*.conferences.*.location' => ['nullable', 'string'],
@@ -1472,6 +1474,7 @@ public function store(Request $request)
             'outputs.*.chapter_pages' => ['nullable', 'string', 'max:1000'],
             'outputs.*.book_authors' => ['nullable', 'array'],
             'outputs.*.book_authors.*.id' => ['nullable', 'integer', 'exists:output_book_authors,id'],
+            'outputs.*.book_authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.book_authors.*.name' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -1640,6 +1643,7 @@ public function store(Request $request)
             $type = (string) ($payload['type'] ?? '');
             $isEA101 = str_starts_with($type, 'EA101');
             $isEA103 = str_starts_with($type, 'EA103');
+            $isEA118 = str_starts_with($type, 'EA118');
             $isEA119 = str_starts_with($type, 'EA119');
 
             if ($isEA101) {
@@ -1661,7 +1665,7 @@ public function store(Request $request)
                     $unmatchedExisting->forget($model->id);
 
                     // relations
-                    $this->syncOutputAuthors($model, $row['authors'] ?? null, $isEA101);
+                    $this->syncOutputAuthors($model, $row['authors'] ?? null, $isEA101 || $isEA118, $isEA118);
                     $this->syncOutputBookAuthors($model, $row['book_authors'] ?? null, $isEA119);
                     $this->syncOutputConferences($model, $row['conferences'] ?? null, $isEA103);
 
@@ -1673,7 +1677,7 @@ public function store(Request $request)
                     $fallback->update($payload);
 
                     // relations
-                    $this->syncOutputAuthors($fallback, $row['authors'] ?? null, $isEA101);
+                    $this->syncOutputAuthors($fallback, $row['authors'] ?? null, $isEA101 || $isEA118, $isEA118);
                     $this->syncOutputBookAuthors($fallback, $row['book_authors'] ?? null, $isEA119);
                     $this->syncOutputConferences($fallback, $row['conferences'] ?? null, $isEA103);
 
@@ -1684,7 +1688,7 @@ public function store(Request $request)
                 $new = $project->outputs()->create($payload);
 
                 // relations
-                $this->syncOutputAuthors($new, $row['authors'] ?? null, $isEA101);
+                $this->syncOutputAuthors($new, $row['authors'] ?? null, $isEA101 || $isEA118, $isEA118);
                 $this->syncOutputBookAuthors($new, $row['book_authors'] ?? null, $isEA119);
                 $this->syncOutputConferences($new, $row['conferences'] ?? null, $isEA103);
 
@@ -1699,9 +1703,9 @@ public function store(Request $request)
         $this->deleteModelsWithEvents($staleOutputs);
     }
 
-    private function syncOutputAuthors(Output $output, ?array $authors, bool $isEA101): void
+    private function syncOutputAuthors(Output $output, ?array $authors, bool $supportsAuthors, bool $isEA118 = false): void
     {
-        if (! $isEA101) {
+        if (! $supportsAuthors) {
             $this->deleteModelsWithEvents($output->authors());
 
             return;
@@ -1717,13 +1721,23 @@ public function store(Request $request)
 
         $ids = [];
         foreach ($authors as $author) {
-            if (empty($author['name']) || empty($author['role'])) {
+            $name = trim((string) ($author['name'] ?? ''));
+            $role = $isEA118 ? 'awardee' : strtolower(trim((string) ($author['role'] ?? '')));
+
+            if ($name === '' || $role === '') {
+                continue;
+            }
+
+            if (! in_array($role, ['first', 'co', 'corresponding', 'awardee'], true)) {
                 continue;
             }
 
             $payload = [
-                'role' => strtolower(trim($author['role'])),
-                'name' => trim($author['name']),
+                'role' => $role,
+                'name' => $name,
+                'user_id' => (($author['user_id'] ?? null) !== null && (int) $author['user_id'] > 0)
+                    ? (int) $author['user_id']
+                    : null,
             ];
 
             if (! empty($author['id'])) {
@@ -1740,7 +1754,10 @@ public function store(Request $request)
 
         if ($ids) {
             $this->deleteModelsWithEvents($output->authors()->whereNotIn('id', $ids));
+            return;
         }
+
+        $this->deleteModelsWithEvents($output->authors());
     }
 
     private function syncOutputBookAuthors(Output $output, ?array $authors, bool $isEA119): void
@@ -1785,7 +1802,12 @@ public function store(Request $request)
             }
             $seen[$nameKey] = true;
 
-            $payload = ['name' => $name];
+            $payload = [
+                'name' => $name,
+                'user_id' => (($author['user_id'] ?? null) !== null && (int) $author['user_id'] > 0)
+                    ? (int) $author['user_id']
+                    : null,
+            ];
             $model = null;
             $authorId = (int) ($author['id'] ?? 0);
             if ($authorId > 0) {
@@ -1845,6 +1867,9 @@ public function store(Request $request)
                 'presentation_type' => $conf['presentation_type'] ?? null,
                 'location' => $conf['location'] ?? null,
                 'note' => $conf['note'] ?? null,
+                'user_id' => (($conf['user_id'] ?? null) !== null && (int) $conf['user_id'] > 0)
+                    ? (int) $conf['user_id']
+                    : null,
             ];
 
             // ว่างหมดก็ข้าม

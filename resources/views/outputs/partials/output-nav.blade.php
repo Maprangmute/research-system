@@ -22,6 +22,10 @@
             class="inline-flex items-center rounded-xl border px-3 py-2 text-sm font-medium {{ $tabClass($isActive('outputs.index')) }}">
             รายการทั้งหมด
         </a>
+        <a href="{{ route('outputs.people') }}"
+            class="inline-flex items-center rounded-xl border px-3 py-2 text-sm font-medium {{ $tabClass($isActive(['outputs.people', 'outputs.people.*'])) }}">
+            Outputs รายบุคคล
+        </a>
         <a href="{{ route('outputs.visualization') }}"
             class="inline-flex items-center rounded-xl border px-3 py-2 text-sm font-medium {{ $tabClass($isActive('outputs.visualization')) }}">
             Visualization

@@ -47,6 +47,37 @@
     $updatedUser = $externalOutput->updated_by ? $externalOutput->updater : $externalOutput->creator;
     $updatedBy = $updatedUser ? trim(($updatedUser->prefix ?? '') . ' ' . ($updatedUser->name ?? '')) : '-';
     $createdBy = $externalOutput->creator ? trim(($externalOutput->creator->prefix ?? '') . ' ' . ($externalOutput->creator->name ?? '')) : '-';
+    $hasValue = static function ($value): bool {
+        if ($value === null) {
+            return false;
+        }
+        if (is_string($value)) {
+            return trim($value) !== '';
+        }
+        if (is_array($value)) {
+            return count($value) > 0;
+        }
+        return true;
+    };
+    $detailItems = collect([
+        ['label' => 'รหัสผลงาน', 'value' => $externalOutput->output_code],
+        ['label' => 'ประเภท', 'value' => $typeLabel],
+        ['label' => 'ประเภทของงาน', 'value' => $externalOutput->job_category],
+        ['label' => 'วันที่ publish', 'value' => $externalOutput->publish_date ? $thaiDate($externalOutput->publish_date) : null],
+        ['label' => 'Journal', 'value' => $externalOutput->type === 'EA101' ? $externalOutput->journal : null],
+        [
+            'label' => 'Quartile / IF',
+            'value' => $externalOutput->type === 'EA101' && ($hasValue($externalOutput->quartile) || $hasValue($externalOutput->impact_factor))
+                ? collect([$externalOutput->quartile, $externalOutput->impact_factor])->filter($hasValue(...))->implode(' / ')
+                : null,
+        ],
+        ['label' => 'ชื่อหนังสือ', 'value' => $externalOutput->type === 'EA119' ? $externalOutput->book_title : null],
+        ['label' => 'ชื่อสำนักพิมพ์', 'value' => $externalOutput->type === 'EA119' ? $externalOutput->publisher_name : null],
+        ['label' => 'ชื่อบท / เลขหน้า', 'value' => $externalOutput->type === 'EA119' ? $externalOutput->chapter_pages : null, 'full' => true],
+        ['label' => 'บันทึกโดย', 'value' => $createdBy, 'full' => true],
+        ['label' => 'ข้อมูลล่าสุดโดย', 'value' => $updatedBy, 'full' => true],
+    ])->filter(fn ($item) => $hasValue($item['value'] ?? null))->values();
+    $authorSectionTitle = 'Author';
 @endphp
 
 @section('content')
@@ -61,7 +92,9 @@
                                 {{ $externalOutput->output_code }}
                             </span>
                         @endif
-                        <span class="text-xs font-medium text-slate-500">เผยแพร่ {{ $thaiDate($externalOutput->publish_date) }}</span>
+                        @if ($externalOutput->publish_date)
+                            <span class="text-xs font-medium text-slate-500">เผยแพร่ {{ $thaiDate($externalOutput->publish_date) }}</span>
+                        @endif
                     </div>
                     <h1 class="mt-3 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">{{ $externalOutput->title }}</h1>
                     @if ($externalOutput->note)
@@ -98,57 +131,12 @@
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">รายละเอียดผลงาน</h2>
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
-                    <div class="rounded-xl bg-slate-50 px-4 py-3">
-                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">รหัสผลงาน</div>
-                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $externalOutput->output_code ?: '-' }}</div>
-                    </div>
-                    <div class="rounded-xl bg-slate-50 px-4 py-3">
-                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ประเภท</div>
-                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $typeLabel }}</div>
-                    </div>
-                    <div class="rounded-xl bg-slate-50 px-4 py-3">
-                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ประเภทของงาน</div>
-                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $externalOutput->job_category ?: '-' }}</div>
-                    </div>
-                    <div class="rounded-xl bg-slate-50 px-4 py-3">
-                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">วันที่ publish</div>
-                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $thaiDate($externalOutput->publish_date) }}</div>
-                    </div>
-
-                    @if ($externalOutput->type === 'EA101')
-                        <div class="rounded-xl bg-slate-50 px-4 py-3">
-                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Journal</div>
-                            <div class="mt-1 text-sm font-medium text-slate-800">{{ $externalOutput->journal ?: '-' }}</div>
+                    @foreach ($detailItems as $item)
+                        <div class="rounded-xl bg-slate-50 px-4 py-3 {{ !empty($item['full']) ? 'md:col-span-2' : '' }}">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $item['label'] }}</div>
+                            <div class="mt-1 text-sm font-medium text-slate-800">{{ $item['value'] }}</div>
                         </div>
-                        <div class="rounded-xl bg-slate-50 px-4 py-3">
-                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Quartile / IF</div>
-                            <div class="mt-1 text-sm font-medium text-slate-800">
-                                {{ $externalOutput->quartile ?: '-' }} / {{ $externalOutput->impact_factor ?: '-' }}
-                            </div>
-                        </div>
-                    @elseif ($externalOutput->type === 'EA119')
-                        <div class="rounded-xl bg-slate-50 px-4 py-3">
-                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ชื่อหนังสือ</div>
-                            <div class="mt-1 text-sm font-medium text-slate-800">{{ $externalOutput->book_title ?: '-' }}</div>
-                        </div>
-                        <div class="rounded-xl bg-slate-50 px-4 py-3">
-                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ชื่อสำนักพิมพ์</div>
-                            <div class="mt-1 text-sm font-medium text-slate-800">{{ $externalOutput->publisher_name ?: '-' }}</div>
-                        </div>
-                        <div class="rounded-xl bg-slate-50 px-4 py-3 md:col-span-2">
-                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ชื่อบท / เลขหน้า</div>
-                            <div class="mt-1 text-sm font-medium text-slate-800">{{ $externalOutput->chapter_pages ?: '-' }}</div>
-                        </div>
-                    @endif
-
-                    <div class="rounded-xl bg-slate-50 px-4 py-3 md:col-span-2">
-                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">บันทึกโดย</div>
-                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $createdBy }}</div>
-                    </div>
-                    <div class="rounded-xl bg-slate-50 px-4 py-3 md:col-span-2">
-                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">ข้อมูลล่าสุดโดย</div>
-                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $updatedBy }}</div>
-                    </div>
+                    @endforeach
                 </div>
             </article>
 
@@ -167,48 +155,54 @@
             </article>
         </section>
 
-        @if (in_array($externalOutput->type, ['EA101', 'EA119'], true))
+        @if (in_array($externalOutput->type, ['EA101', 'EA118', 'EA119'], true) && $externalOutput->authors->isNotEmpty())
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 class="text-lg font-semibold text-slate-900">Authors</h2>
+                <h2 class="text-lg font-semibold text-slate-900">{{ $externalOutput->type === 'EA118' ? 'Award Recipients' : $authorSectionTitle }}</h2>
                 <div class="mt-4 space-y-3">
-                    @forelse ($externalOutput->authors as $author)
+                    @foreach ($externalOutput->authors as $author)
                         <div class="rounded-xl border border-slate-200 px-4 py-3">
-                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $author->role ?: 'Author' }}</div>
+                            @if ($author->role && $author->role !== 'awardee')
+                                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $author->role }}</div>
+                            @endif
                             <div class="mt-1 text-sm font-medium text-slate-800">{{ $author->name }}</div>
                         </div>
-                    @empty
-                        <div class="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500">ยังไม่มีรายชื่อผู้เขียน</div>
-                    @endforelse
+                    @endforeach
                 </div>
             </section>
-        @elseif ($externalOutput->type === 'EA103')
+        @elseif ($externalOutput->type === 'EA103' && $externalOutput->conferences->isNotEmpty())
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">Presentation Details</h2>
                 <div class="mt-4 space-y-4">
-                    @forelse ($externalOutput->conferences as $conference)
+                    @foreach ($externalOutput->conferences as $conference)
                         <div class="rounded-2xl border border-slate-200 p-4">
                             <div class="grid gap-3 md:grid-cols-2">
-                                <div>
-                                    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Conference</div>
-                                    <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->name ?: '-' }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Presentation Type</div>
-                                    <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->presentation_type ?: '-' }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Location</div>
-                                    <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->location ?: '-' }}</div>
-                                </div>
-                                <div>
-                                    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Presenter</div>
-                                    <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->presenter_name ?: '-' }}</div>
-                                </div>
+                                @if ($conference->name)
+                                    <div>
+                                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Conference</div>
+                                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->name }}</div>
+                                    </div>
+                                @endif
+                                @if ($conference->presentation_type)
+                                    <div>
+                                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Presentation Type</div>
+                                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->presentation_type }}</div>
+                                    </div>
+                                @endif
+                                @if ($conference->location)
+                                    <div>
+                                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Location</div>
+                                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->location }}</div>
+                                    </div>
+                                @endif
+                                @if ($conference->presenter_name)
+                                    <div>
+                                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Presenter</div>
+                                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->presenter_name }}</div>
+                                    </div>
+                                @endif
                             </div>
                         </div>
-                    @empty
-                        <div class="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500">ยังไม่มีรายละเอียดการนำเสนอ</div>
-                    @endforelse
+                    @endforeach
                 </div>
             </section>
         @endif

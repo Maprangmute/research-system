@@ -650,7 +650,7 @@
 
                     @if (!empty($output->authors) && $output->authors->count())
                         <div class="output-meta-row">
-                            <strong>Authors:</strong>
+                            <strong>{{ str_starts_with((string) ($output->type ?? ''), 'EA118') ? 'Award Recipients' : 'Authors' }}:</strong>
                             {{ $output->authors->pluck('name')->filter()->implode(', ') }}
                         </div>
                     @endif

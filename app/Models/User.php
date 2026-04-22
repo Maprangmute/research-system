@@ -52,6 +52,8 @@ class User extends Authenticatable
      */
   protected $fillable = [
     'name',
+    'prefix_en',
+    'name_en',
     'email',
     'password',
     'prefix',
@@ -143,5 +145,12 @@ class User extends Authenticatable
     public function getFullNameAttribute(): string
     {
         return trim(((string) $this->prefix) . ' ' . ((string) $this->name));
+    }
+
+    public function getResearchDisplayNameAttribute(): string
+    {
+        $englishName = trim(((string) ($this->prefix_en ?? '')) . ' ' . ((string) ($this->name_en ?? '')));
+
+        return $englishName !== '' ? $englishName : $this->full_name;
     }
 }

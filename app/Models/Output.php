@@ -111,9 +111,10 @@ public function bookAuthors()
         $clean = array_values(array_filter(array_map(function ($a) {
             $role = isset($a['role']) ? strtolower(trim((string) $a['role'])) : null;
             $name = isset($a['name']) ? trim((string) $a['name']) : null;
+            $userId = isset($a['user_id']) ? (int) $a['user_id'] : null;
             if (!$role || !$name) return null;
-            if (!in_array($role, ['first','co','corresponding'], true)) return null;
-            return ['role' => $role, 'name' => $name];
+            if (!in_array($role, ['first','co','corresponding','awardee'], true)) return null;
+            return ['role' => $role, 'name' => $name, 'user_id' => $userId > 0 ? $userId : null];
         }, $authors)));
 
         // ลบของเดิมแล้วเพิ่มใหม่ (มี unique(output_id,role,name) กันซ้ำใน DB)

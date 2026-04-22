@@ -3,9 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\BackOfficeTaskOutput;
+use App\Models\CoResearch;
 use App\Models\ExternalOutput;
+use App\Models\ExternalOutputAuthor;
+use App\Models\ExternalOutputConference;
+use App\Models\FteRole;
 use App\Models\Output;
 use App\Models\OutputAuthor;
+use App\Models\OutputBookAuthor;
+use App\Models\OutputConference;
+use App\Models\Project;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -95,6 +102,8 @@ class OutputController extends Controller
 
     public function externalAcademicCreate()
     {
+        $userDirectory = $this->buildOutputUserDirectory();
+
         $authorOptions = OutputAuthor::query()
             ->whereNotNull('name')
             ->whereRaw("TRIM(name) <> ''")
@@ -124,6 +133,7 @@ class OutputController extends Controller
             'authorOptions' => $authorOptions,
             'bookAuthorOptions' => $bookAuthorOptions,
             'presenterOptions' => $presenterOptions,
+            'userDirectory' => $userDirectory,
             'jobCategoryOptions' => self::EXTERNAL_JOB_CATEGORIES,
         ]);
     }
@@ -139,6 +149,8 @@ class OutputController extends Controller
 
     public function externalAcademicEdit(ExternalOutput $externalOutput)
     {
+        $userDirectory = $this->buildOutputUserDirectory();
+
         $authorOptions = OutputAuthor::query()
             ->whereNotNull('name')
             ->whereRaw("TRIM(name) <> ''")
@@ -171,6 +183,7 @@ class OutputController extends Controller
             'authorOptions' => $authorOptions,
             'bookAuthorOptions' => $bookAuthorOptions,
             'presenterOptions' => $presenterOptions,
+            'userDirectory' => $userDirectory,
             'jobCategoryOptions' => self::EXTERNAL_JOB_CATEGORIES,
         ]);
     }
@@ -203,12 +216,14 @@ class OutputController extends Controller
             'outputs.*.publisher_name' => ['required_if:outputs.*.type,EA119', 'nullable', 'string', 'max:1000'],
             'outputs.*.chapter_pages' => ['required_if:outputs.*.type,EA119', 'nullable', 'string', 'max:1000'],
             'outputs.*.authors' => ['nullable', 'array'],
-            'outputs.*.authors.*.role' => ['nullable', 'in:first,co,corresponding'],
+            'outputs.*.authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'outputs.*.authors.*.role' => ['nullable', 'in:first,co,corresponding,awardee'],
             'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.conferences' => ['nullable', 'array'],
             'outputs.*.conferences.*.name' => ['required_if:outputs.*.type,EA103', 'nullable', 'string', 'max:255'],
             'outputs.*.conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Abstract Presentation,Panel Discussion,Keynote Speech,World café'],
             'outputs.*.conferences.*.location' => ['nullable', 'string', 'max:255'],
+            'outputs.*.conferences.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.conferences.*.presenter_name' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -234,11 +249,16 @@ class OutputController extends Controller
                     'updated_by' => null,
                 ]);
 
-                if (in_array($type, ['EA101', 'EA119'], true)) {
+                if (in_array($type, ['EA101', 'EA118', 'EA119'], true)) {
                     $authors = collect($item['authors'] ?? [])
-                        ->map(function ($author) {
+                        ->map(function ($author) use ($type) {
                             return [
-                                'role' => $this->nullableTrim($author['role'] ?? null),
+                                'user_id' => (($author['user_id'] ?? null) !== null && (int) $author['user_id'] > 0)
+                                    ? (int) $author['user_id']
+                                    : null,
+                                'role' => $type === 'EA118'
+                                    ? 'awardee'
+                                    : $this->nullableTrim($author['role'] ?? null),
                                 'name' => $this->nullableTrim($author['name'] ?? null),
                             ];
                         })
@@ -258,6 +278,9 @@ class OutputController extends Controller
                                 'name' => $this->nullableTrim($conference['name'] ?? null),
                                 'presentation_type' => $this->nullableTrim($conference['presentation_type'] ?? null),
                                 'location' => $this->nullableTrim($conference['location'] ?? null),
+                                'user_id' => (($conference['user_id'] ?? null) !== null && (int) $conference['user_id'] > 0)
+                                    ? (int) $conference['user_id']
+                                    : null,
                                 'presenter_name' => $this->nullableTrim($conference['presenter_name'] ?? null),
                             ];
                         })
@@ -296,12 +319,14 @@ class OutputController extends Controller
             'publisher_name' => ['required_if:type,EA119', 'nullable', 'string', 'max:1000'],
             'chapter_pages' => ['required_if:type,EA119', 'nullable', 'string', 'max:1000'],
             'authors' => ['nullable', 'array'],
-            'authors.*.role' => ['nullable', 'in:first,co,corresponding'],
+            'authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'authors.*.role' => ['nullable', 'in:first,co,corresponding,awardee'],
             'authors.*.name' => ['nullable', 'string', 'max:255'],
             'conferences' => ['nullable', 'array'],
             'conferences.*.name' => ['required_if:type,EA103', 'nullable', 'string', 'max:255'],
             'conferences.*.presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Abstract Presentation,Panel Discussion,Keynote Speech,World café'],
             'conferences.*.location' => ['nullable', 'string', 'max:255'],
+            'conferences.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'conferences.*.presenter_name' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -328,10 +353,15 @@ class OutputController extends Controller
             $externalOutput->authors()->delete();
             $externalOutput->conferences()->delete();
 
-            if (in_array($type, ['EA101', 'EA119'], true)) {
+            if (in_array($type, ['EA101', 'EA118', 'EA119'], true)) {
                 $authors = collect($validated['authors'] ?? [])
                     ->map(fn ($author) => [
-                        'role' => $this->nullableTrim($author['role'] ?? null),
+                        'user_id' => (($author['user_id'] ?? null) !== null && (int) $author['user_id'] > 0)
+                            ? (int) $author['user_id']
+                            : null,
+                        'role' => $type === 'EA118'
+                            ? 'awardee'
+                            : $this->nullableTrim($author['role'] ?? null),
                         'name' => $this->nullableTrim($author['name'] ?? null),
                     ])
                     ->filter(fn ($author) => $author['name'])
@@ -349,6 +379,9 @@ class OutputController extends Controller
                         'name' => $this->nullableTrim($conference['name'] ?? null),
                         'presentation_type' => $this->nullableTrim($conference['presentation_type'] ?? null),
                         'location' => $this->nullableTrim($conference['location'] ?? null),
+                        'user_id' => (($conference['user_id'] ?? null) !== null && (int) $conference['user_id'] > 0)
+                            ? (int) $conference['user_id']
+                            : null,
                         'presenter_name' => $this->nullableTrim($conference['presenter_name'] ?? null),
                     ])
                     ->filter(fn ($conference) => $conference['name'] || $conference['presentation_type'] || $conference['location'] || $conference['presenter_name'])
@@ -451,7 +484,7 @@ class OutputController extends Controller
             return $code;
         };
 
-        $query = Output::with('project:id,project_name_th,project_code');
+        $query = Output::with(['project:id,project_name_th,project_code', 'authors:id,output_id,role,name']);
         $user = auth()->user();
         $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
         $canViewAll = $user->isAdminLike();
@@ -577,11 +610,59 @@ class OutputController extends Controller
 
         $taskOutputs = $taskOutputQuery ? $taskOutputQuery->get() : collect();
 
+        $externalOutputQuery = $this->visibleExternalOutputsQuery()->with(['authors:id,external_output_id,name']);
+        $externalTypeSourceQuery = $this->visibleExternalOutputsQuery();
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $externalOutputQuery->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('type', 'like', '%' . $search . '%')
+                    ->orWhere('output_code', 'like', '%' . $search . '%')
+                    ->orWhere('job_category', 'like', '%' . $search . '%')
+                    ->orWhere('journal', 'like', '%' . $search . '%')
+                    ->orWhere('note', 'like', '%' . $search . '%')
+                    ->orWhereHas('authors', function ($authorQ) use ($search) {
+                        $authorQ->where('name', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('conferences', function ($conferenceQ) use ($search) {
+                        $conferenceQ->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('presentation_type', 'like', '%' . $search . '%')
+                            ->orWhere('location', 'like', '%' . $search . '%')
+                            ->orWhere('presenter_name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        if ($request->filled('type')) {
+            $typeCode = $extractTypeCode($request->type);
+            if ($typeCode) {
+                $externalOutputQuery->where('type', 'like', $typeCode . '%');
+            }
+        }
+
+        if ($request->filled('year')) {
+            $year = trim((string) $request->year);
+            $yearBe = $parseYear($year);
+            if ($yearBe) {
+                $externalOutputQuery->whereYear('publish_date', $yearBe - 543);
+            }
+        }
+
+        if ($request->filled('project_id')) {
+            $externalOutputQuery = null;
+        }
+
+        $externalOutputs = $externalOutputQuery ? $externalOutputQuery->get() : collect();
+
         $taskOutputYears = $taskOutputs->pluck('year')
             ->map(fn($raw) => $parseYear((string) $raw))
             ->filter()
             ->unique();
-        $yearOptions = $yearOptions->merge($taskOutputYears)->unique()->sortDesc()->values();
+        $externalOutputYears = $externalOutputs->map(function (ExternalOutput $output) {
+            return $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
+        })->filter()->unique();
+        $yearOptions = $yearOptions->merge($taskOutputYears)->merge($externalOutputYears)->unique()->sortDesc()->values();
 
         $typeLabelByCode = [
             'EA999' => 'EA999 Other Outputs',
@@ -602,6 +683,7 @@ class OutputController extends Controller
 
         $projectTypeSourceQuery->pluck('type')->each($registerTypeLabel);
         $taskTypeSourceQuery->pluck('type')->each($registerTypeLabel);
+        $externalTypeSourceQuery->pluck('type')->each($registerTypeLabel);
 
         $typeOptions = collect($typeLabelByCode)->sortKeys()->values();
 
@@ -617,6 +699,15 @@ class OutputController extends Controller
             $workStatus = $yearBe ? 'completed' : 'in_progress';
             $typeCode = $extractTypeCode($output->type) ?? '-';
             $typeLabel = $typeLabelByCode[$typeCode] ?? (trim((string) ($output->type ?? '')) ?: $typeCode);
+            $awardees = $typeCode === 'EA118'
+                ? $output->authors->pluck('name')->filter()->implode(', ')
+                : '';
+            $detail = trim((string) ($output->project_output ?? ''));
+            if ($awardees !== '') {
+                $detail = $detail !== ''
+                    ? 'ผู้ได้รับรางวัล: ' . $awardees . ' | ' . $detail
+                    : 'ผู้ได้รับรางวัล: ' . $awardees;
+            }
             $items->push((object) [
                 'title' => $output->title ?: '-',
                 'type' => $typeLabel,
@@ -624,7 +715,7 @@ class OutputController extends Controller
                 'work_status' => $workStatus,
                 'project_label' => $output->project?->project_name_th,
                 'source_badge' => null,
-                'detail' => null,
+                'detail' => $detail !== '' ? $detail : null,
                 'link' => $output->project ? route('projects.show', $output->project) : null,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
@@ -655,6 +746,41 @@ class OutputController extends Controller
                 'source_badge' => 'งานนอกโครงการวิจัย',
                 'detail' => null,
                 'link' => $output->task ? route('back_office.show', $output->task->id) : null,
+                'created_at' => $output->created_at,
+                'sort_year' => $yearBe ?? 0,
+                'sort_title' => mb_strtolower($output->title ?? ''),
+                'sort_type' => mb_strtolower($typeCode),
+            ]);
+        }
+
+        foreach ($externalOutputs as $output) {
+            $yearBe = $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
+            if ($yearFilterBe && $yearBe !== $yearFilterBe) {
+                continue;
+            }
+            $workStatus = $yearBe ? 'completed' : 'in_progress';
+            $typeCode = $extractTypeCode($output->type) ?? '-';
+            $typeLabel = $typeLabelByCode[$typeCode] ?? (trim((string) ($output->type ?? '')) ?: $typeCode);
+            $referenceLabel = trim((string) ($output->job_category ?? '')) ?: 'ผลงานภายนอก';
+            $awardees = $typeCode === 'EA118'
+                ? $output->authors->pluck('name')->filter()->implode(', ')
+                : '';
+            $detail = trim((string) ($output->note ?? ''));
+            if ($awardees !== '') {
+                $detail = $detail !== ''
+                    ? 'ผู้ได้รับรางวัล: ' . $awardees . ' | ' . $detail
+                    : 'ผู้ได้รับรางวัล: ' . $awardees;
+            }
+
+            $items->push((object) [
+                'title' => $output->title ?: '-',
+                'type' => $typeLabel,
+                'year_be' => $yearBe,
+                'work_status' => $workStatus,
+                'project_label' => $referenceLabel,
+                'source_badge' => 'Extra',
+                'detail' => $detail !== '' ? $detail : null,
+                'link' => route('outputs.external-academic.show', $output),
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
                 'sort_title' => mb_strtolower($output->title ?? ''),
@@ -1247,6 +1373,86 @@ class OutputController extends Controller
             'textbookPublisherLabels' => $textbookPublishers->keys()->values(),
             'textbookPublisherValues' => $textbookPublishers->values()->values(),
         ]);
+    }
+
+    public function people(Request $request)
+    {
+        $viewer = $request->user();
+        $canViewAll = $this->canViewAllPersonalOutputs($viewer);
+        $search = trim((string) $request->input('search', ''));
+
+        $usersQuery = User::query()
+            ->select(['id', 'prefix', 'name', 'prefix_en', 'name_en', 'email', 'role', 'position', 'profile_photo_path'])
+            ->where('role', '!=', User::ROLE_RESIGNED)
+            ->orderBy('name');
+
+        if (! $canViewAll) {
+            $usersQuery->whereKey($viewer->id);
+        }
+
+        if ($search !== '') {
+            $usersQuery->where(function (Builder $query) use ($search) {
+                $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('prefix', 'like', '%' . $search . '%')
+                    ->orWhere('name_en', 'like', '%' . $search . '%')
+                    ->orWhere('prefix_en', 'like', '%' . $search . '%')
+                    ->orWhere('email', 'like', '%' . $search . '%')
+                    ->orWhere('position', 'like', '%' . $search . '%');
+            });
+        }
+
+        $users = $usersQuery->get()->values();
+        $statsMap = $this->buildPersonalUserStatsMap($users);
+
+        $people = $users->map(function (User $user) use ($statsMap) {
+            $stats = $statsMap->get($user->id, $this->emptyPersonalStats());
+
+            return (object) [
+                'user' => $user,
+                'stats' => $stats,
+                'display_name' => $user->full_name,
+                'display_name_en' => $user->research_display_name !== $user->full_name ? $user->research_display_name : null,
+                'profile_photo_url' => $this->resolveUserProfilePhotoUrl($user),
+            ];
+        })->filter(function ($item) {
+            return ($item->stats['total_outputs'] ?? 0) > 0
+                || ($item->stats['total_projects'] ?? 0) > 0;
+        })->sortByDesc(fn ($item) => $item->stats['total_outputs'] + $item->stats['pi_projects'] + $item->stats['co_pi_projects'] + $item->stats['co_research_projects'])
+            ->values();
+
+        return view('outputs.people-index', [
+            'people' => $people,
+            'canViewAll' => $canViewAll,
+            'search' => $search,
+        ]);
+    }
+
+    public function personShow(Request $request, string $person)
+    {
+        $user = $this->resolvePersonalOutputUser($person);
+        $this->authorizePersonalOutputAccess($request->user(), $user);
+
+        $payload = $this->buildPersonalOutputPayload($user);
+        return view('outputs.people-show', $payload);
+    }
+
+    public function personPdf(Request $request, string $person)
+    {
+        $user = $this->resolvePersonalOutputUser($person);
+        $viewer = $request->user();
+        $this->authorizePersonalOutputAccess($viewer, $user);
+
+        $payload = $this->buildPersonalOutputPayload($user);
+        $generatedAt = now()->setTimezone('Asia/Bangkok');
+        $reporter = trim((string) $viewer->full_name) !== '' ? $viewer->full_name : 'ผู้ใช้ระบบ';
+
+        $pdf = PDF::loadView('outputs.people-pdf', array_merge($payload, [
+            'generatedAt' => $generatedAt,
+            'reporter' => $reporter,
+            'profilePhotoDataUri' => $this->resolveUserProfilePhotoDataUriForPdf($user),
+        ]));
+
+        return $pdf->stream('personal-output-' . $user->id . '.pdf');
     }
 
     public function papers(Request $request)
@@ -2064,5 +2270,599 @@ class OutputController extends Controller
             'publisherOptions' => $rows->pluck('publisher_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
             'yearOptions' => $rows->pluck('year_be')->filter()->unique()->sortDesc()->values(),
         ];
+    }
+
+    private function canViewAllPersonalOutputs(?User $user): bool
+    {
+        return $user?->isAdminEquivalent() ?? false;
+    }
+
+    private function authorizePersonalOutputAccess(?User $viewer, User $subject): void
+    {
+        if (! $viewer) {
+            abort(403);
+        }
+
+        if ($this->canViewAllPersonalOutputs($viewer)) {
+            return;
+        }
+
+        if ((int) $viewer->id !== (int) $subject->id) {
+            abort(403);
+        }
+    }
+
+    private function buildPersonalUserStatsMap(Collection $users): Collection
+    {
+        return $users->mapWithKeys(function (User $user) {
+            return [
+                (int) $user->id => $this->buildPersonalOutputPayload($user)['stats'],
+            ];
+        });
+    }
+
+    private function buildPersonalOutputPayload(User $user): array
+    {
+        $projectRows = $this->buildPersonalProjectRows($user);
+        $researchRows = $this->buildPersonalResearchRows($user);
+        $presentationRows = $this->buildPersonalPresentationRows($user);
+        $textbookRows = $this->buildPersonalTextbookRows($user);
+        $awardRows = $this->buildPersonalAwardRows($user);
+
+        $stats = [
+            'pi_projects' => (int) $projectRows->filter(fn ($row) => in_array('PI', $row->roles, true))->count(),
+            'co_pi_projects' => (int) $projectRows->filter(fn ($row) => in_array('Co-PI', $row->roles, true))->count(),
+            'co_research_projects' => (int) $projectRows->filter(fn ($row) => in_array('Co-Researcher', $row->roles, true))->count(),
+            'research_outputs' => (int) $researchRows->count(),
+            'presentation_outputs' => (int) $presentationRows->count(),
+            'textbook_outputs' => (int) $textbookRows->count(),
+            'award_outputs' => (int) $awardRows->count(),
+        ];
+        $stats['total_outputs'] = $stats['research_outputs'] + $stats['presentation_outputs'] + $stats['textbook_outputs'] + $stats['award_outputs'];
+        $stats['total_projects'] = (int) $projectRows->count();
+
+        return [
+            'subject' => $user,
+            'subjectRouteKey' => $this->personalOutputRouteKey($user),
+            'stats' => $stats,
+            'projectRows' => $projectRows,
+            'researchRows' => $researchRows,
+            'presentationRows' => $presentationRows,
+            'textbookRows' => $textbookRows,
+            'awardRows' => $awardRows,
+            'profilePhotoUrl' => $this->resolveUserProfilePhotoUrl($user),
+        ];
+    }
+
+    private function buildPersonalProjectRows(User $user): Collection
+    {
+        $rows = collect();
+        $matchesUser = fn (?string $value) => $this->matchesUserThaiName($value, $user);
+
+        Project::query()
+            ->select([
+                'id',
+                'project_code',
+                'project_name_th',
+                'start_year',
+                'start_date',
+                'execution_status',
+                'planning_status',
+                'review_status',
+                'closure_status',
+                'pi_name',
+            ])
+            ->get()
+            ->filter(fn (Project $project) => $matchesUser($project->pi_name))
+            ->each(function (Project $project) use (&$rows) {
+                $rows->push($this->formatPersonalProjectRow($project, 'PI'));
+            });
+
+        Project::query()
+            ->select([
+                'id',
+                'project_code',
+                'project_name_th',
+                'start_year',
+                'start_date',
+                'execution_status',
+                'planning_status',
+                'review_status',
+                'closure_status',
+            ])
+            ->with('copis:id,project_id,name')
+            ->get()
+            ->filter(function (Project $project) use ($matchesUser) {
+                return $project->copis->contains(fn ($copi) => $matchesUser($copi->name));
+            })
+            ->each(function (Project $project) use (&$rows) {
+                $rows->push($this->formatPersonalProjectRow($project, 'Co-PI'));
+            });
+
+        Project::query()
+            ->select([
+                'id',
+                'project_code',
+                'project_name_th',
+                'start_year',
+                'start_date',
+                'execution_status',
+                'planning_status',
+                'review_status',
+                'closure_status',
+            ])
+            ->with('coResearches:id,project_id,name')
+            ->get()
+            ->filter(function (Project $project) use ($matchesUser) {
+                return $project->coResearches->contains(fn ($coResearch) => $matchesUser($coResearch->name));
+            })
+            ->each(function (Project $project) use (&$rows) {
+                $rows->push($this->formatPersonalProjectRow($project, 'Co-Researcher'));
+            });
+
+        return $rows
+            ->groupBy('project_id')
+            ->map(function (Collection $group) {
+                $first = $group->first();
+                $first->roles = $group->pluck('role')->unique()->values()->all();
+
+                return $first;
+            })
+            ->sortByDesc(fn ($row) => $row->sort_year)
+            ->values();
+    }
+
+    private function buildPersonalResearchRows(User $user): Collection
+    {
+        $projectRows = Output::query()
+            ->where('type', 'like', 'EA101%')
+            ->whereHas('authors', function (Builder $query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->with([
+                'authors:id,output_id,user_id,role,name',
+                'project:id,project_name_th,project_code',
+            ])
+            ->get()
+            ->map(function (Output $output) use ($user) {
+                $userRoles = $output->authors
+                    ->where('user_id', $user->id)
+                    ->pluck('role')
+                    ->filter()
+                    ->map(fn ($role) => $this->formatAuthorRoleLabel((string) $role))
+                    ->unique()
+                    ->values();
+
+                return (object) [
+                    'title' => trim((string) ($output->title ?? '')) ?: '-',
+                    'year_be' => $this->normalizeYearFilter($output->year),
+                    'journal' => trim((string) ($output->journal ?? '')) ?: '-',
+                    'quartile' => trim((string) ($output->quartile ?? '')) ?: '-',
+                    'impact_factor' => $output->impact_factor,
+                    'roles' => $userRoles,
+                    'author_line' => $output->authors->pluck('name')->filter()->implode(', '),
+                    'source_label' => 'Project',
+                    'reference_label' => trim((string) ($output->project?->project_name_th ?? '')) ?: '-',
+                    'link' => $this->extractFirstUrlFromText($output->project_output)
+                        ?: ($output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null),
+                    'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
+                ];
+            });
+
+        $externalRows = ExternalOutput::query()
+            ->where('type', 'EA101')
+            ->whereHas('authors', function (Builder $query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->with(['authors:id,external_output_id,user_id,role,name'])
+            ->get()
+            ->map(function (ExternalOutput $output) use ($user) {
+                $userRoles = $output->authors
+                    ->where('user_id', $user->id)
+                    ->pluck('role')
+                    ->filter()
+                    ->map(fn ($role) => $this->formatAuthorRoleLabel((string) $role))
+                    ->unique()
+                    ->values();
+                $yearBe = $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
+
+                return (object) [
+                    'title' => trim((string) ($output->title ?? '')) ?: '-',
+                    'year_be' => $yearBe,
+                    'journal' => trim((string) ($output->journal ?? '')) ?: '-',
+                    'quartile' => trim((string) ($output->quartile ?? '')) ?: '-',
+                    'impact_factor' => $output->impact_factor,
+                    'roles' => $userRoles,
+                    'author_line' => $output->authors->pluck('name')->filter()->implode(', '),
+                    'source_label' => 'Extra',
+                    'reference_label' => trim((string) ($output->job_category ?? '')) ?: 'External Academic',
+                    'link' => $this->extractFirstUrlFromText($output->note)
+                        ?: route('outputs.external-academic.show', $output),
+                    'sort_year' => $yearBe ?? 0,
+                ];
+            });
+
+        return collect($projectRows)->concat($externalRows)
+            ->sortByDesc(fn ($row) => $row->sort_year)
+            ->values();
+    }
+
+    private function buildPersonalPresentationRows(User $user): Collection
+    {
+        $projectRows = OutputConference::query()
+            ->where('user_id', $user->id)
+            ->whereHas('output', function (Builder $query) {
+                $query->where('type', 'like', 'EA103%');
+            })
+            ->with(['output:id,project_id,title,year,project_output', 'output.project:id,project_name_th,project_code'])
+            ->get()
+            ->map(function (OutputConference $item) {
+                $yearBe = $this->normalizeYearFilter($item->output?->year);
+
+                return (object) [
+                    'title' => trim((string) ($item->output?->title ?? '')) ?: '-',
+                    'conference_name' => trim((string) ($item->name ?? '')) ?: '-',
+                    'presentation_type' => trim((string) ($item->presentation_type ?? '')) ?: '-',
+                    'location' => trim((string) ($item->location ?? '')) ?: null,
+                    'presenter_name' => trim((string) ($item->note ?? '')) ?: $item->output?->project?->project_name_th,
+                    'year_be' => $yearBe,
+                    'source_label' => 'Project',
+                    'reference_label' => trim((string) ($item->output?->project?->project_name_th ?? '')) ?: '-',
+                    'link' => $this->extractFirstUrlFromText($item->output?->project_output)
+                        ?: ($item->output?->project ? route('projects.show', $item->output->project) . '#output-' . $item->output->id : null),
+                    'sort_year' => $yearBe ?? 0,
+                ];
+            });
+
+        $externalRows = ExternalOutputConference::query()
+            ->where('user_id', $user->id)
+            ->whereHas('externalOutput', function (Builder $query) {
+                $query->where('type', 'EA103');
+            })
+            ->with(['externalOutput:id,title,publish_date,job_category,note'])
+            ->get()
+            ->map(function (ExternalOutputConference $item) {
+                $yearBe = $item->externalOutput?->publish_date ? ((int) $item->externalOutput->publish_date->format('Y')) + 543 : null;
+
+                return (object) [
+                    'title' => trim((string) ($item->externalOutput?->title ?? '')) ?: '-',
+                    'conference_name' => trim((string) ($item->name ?? '')) ?: '-',
+                    'presentation_type' => trim((string) ($item->presentation_type ?? '')) ?: '-',
+                    'location' => trim((string) ($item->location ?? '')) ?: null,
+                    'presenter_name' => trim((string) ($item->presenter_name ?? '')) ?: $user->full_name,
+                    'year_be' => $yearBe,
+                    'source_label' => 'Extra',
+                    'reference_label' => trim((string) ($item->externalOutput?->job_category ?? '')) ?: 'External Academic',
+                    'link' => $this->extractFirstUrlFromText($item->externalOutput?->note)
+                        ?: ($item->externalOutput ? route('outputs.external-academic.show', $item->externalOutput) : null),
+                    'sort_year' => $yearBe ?? 0,
+                ];
+            });
+
+        return collect($projectRows)->concat($externalRows)
+            ->sortByDesc(fn ($row) => $row->sort_year)
+            ->values();
+    }
+
+    private function buildPersonalTextbookRows(User $user): Collection
+    {
+        $projectRows = OutputBookAuthor::query()
+            ->where('user_id', $user->id)
+            ->whereHas('output', function (Builder $query) {
+                $query->where('type', 'like', 'EA119%');
+            })
+            ->with(['output:id,project_id,title,year,book_title,publisher_name,chapter_pages,project_output', 'output.project:id,project_name_th,project_code'])
+            ->get()
+            ->map(function (OutputBookAuthor $item) {
+                $yearBe = $this->normalizeYearFilter($item->output?->year);
+
+                return (object) [
+                    'title' => trim((string) ($item->output?->title ?? '')) ?: '-',
+                    'book_title' => trim((string) ($item->output?->book_title ?? '')) ?: '-',
+                    'publisher_name' => trim((string) ($item->output?->publisher_name ?? '')) ?: '-',
+                    'chapter_pages' => trim((string) ($item->output?->chapter_pages ?? '')) ?: null,
+                    'year_be' => $yearBe,
+                    'source_label' => 'Project',
+                    'reference_label' => trim((string) ($item->output?->project?->project_name_th ?? '')) ?: '-',
+                    'link' => $this->extractFirstUrlFromText($item->output?->project_output)
+                        ?: ($item->output?->project ? route('projects.show', $item->output->project) . '#output-' . $item->output->id : null),
+                    'sort_year' => $yearBe ?? 0,
+                ];
+            });
+
+        $externalRows = ExternalOutputAuthor::query()
+            ->where('user_id', $user->id)
+            ->whereHas('externalOutput', function (Builder $query) {
+                $query->where('type', 'EA119');
+            })
+            ->with(['externalOutput:id,title,publish_date,job_category,book_title,publisher_name,chapter_pages,note'])
+            ->get()
+            ->map(function (ExternalOutputAuthor $item) {
+                $yearBe = $item->externalOutput?->publish_date ? ((int) $item->externalOutput->publish_date->format('Y')) + 543 : null;
+
+                return (object) [
+                    'title' => trim((string) ($item->externalOutput?->title ?? '')) ?: '-',
+                    'book_title' => trim((string) ($item->externalOutput?->book_title ?? '')) ?: '-',
+                    'publisher_name' => trim((string) ($item->externalOutput?->publisher_name ?? '')) ?: '-',
+                    'chapter_pages' => trim((string) ($item->externalOutput?->chapter_pages ?? '')) ?: null,
+                    'year_be' => $yearBe,
+                    'source_label' => 'Extra',
+                    'reference_label' => trim((string) ($item->externalOutput?->job_category ?? '')) ?: 'External Academic',
+                    'link' => $this->extractFirstUrlFromText($item->externalOutput?->note)
+                        ?: ($item->externalOutput ? route('outputs.external-academic.show', $item->externalOutput) : null),
+                    'sort_year' => $yearBe ?? 0,
+                ];
+            });
+
+        return collect($projectRows)->concat($externalRows)
+            ->sortByDesc(fn ($row) => $row->sort_year)
+            ->values();
+    }
+
+    private function buildPersonalAwardRows(User $user): Collection
+    {
+        $projectRows = OutputAuthor::query()
+            ->where('user_id', $user->id)
+            ->where('role', 'awardee')
+            ->whereHas('output', function (Builder $query) {
+                $query->where('type', 'like', 'EA118%');
+            })
+            ->with(['output:id,project_id,title,year,project_output', 'output.project:id,project_name_th,project_code'])
+            ->get()
+            ->map(function (OutputAuthor $item) {
+                $yearBe = $this->normalizeYearFilter($item->output?->year);
+
+                return (object) [
+                    'title' => trim((string) ($item->output?->title ?? '')) ?: '-',
+                    'note' => trim((string) ($item->output?->project_output ?? '')) ?: null,
+                    'recipient_name' => trim((string) ($item->name ?? '')) ?: null,
+                    'year_be' => $yearBe,
+                    'source_label' => 'Project',
+                    'reference_label' => trim((string) ($item->output?->project?->project_name_th ?? '')) ?: '-',
+                    'link' => $this->extractFirstUrlFromText($item->output?->project_output)
+                        ?: ($item->output?->project ? route('projects.show', $item->output->project) . '#output-' . $item->output->id : null),
+                    'sort_year' => $yearBe ?? 0,
+                ];
+            });
+
+        $externalRows = ExternalOutputAuthor::query()
+            ->where('user_id', $user->id)
+            ->where('role', 'awardee')
+            ->whereHas('externalOutput', function (Builder $query) {
+                $query->where('type', 'EA118');
+            })
+            ->with(['externalOutput:id,title,publish_date,job_category,note'])
+            ->get()
+            ->map(function (ExternalOutputAuthor $item) {
+                $yearBe = $item->externalOutput?->publish_date ? ((int) $item->externalOutput->publish_date->format('Y')) + 543 : null;
+
+                return (object) [
+                    'title' => trim((string) ($item->externalOutput?->title ?? '')) ?: '-',
+                    'note' => trim((string) ($item->externalOutput?->note ?? '')) ?: null,
+                    'recipient_name' => trim((string) ($item->name ?? '')) ?: null,
+                    'year_be' => $yearBe,
+                    'source_label' => 'Extra',
+                    'reference_label' => trim((string) ($item->externalOutput?->job_category ?? '')) ?: 'External Academic',
+                    'link' => $this->extractFirstUrlFromText($item->externalOutput?->note)
+                        ?: ($item->externalOutput ? route('outputs.external-academic.show', $item->externalOutput) : null),
+                    'sort_year' => $yearBe ?? 0,
+                ];
+            });
+
+        return collect($projectRows)->concat($externalRows)
+            ->sortByDesc(fn ($row) => $row->sort_year)
+            ->values();
+    }
+
+    private function formatPersonalProjectRow(Project $project, string $role): object
+    {
+        $yearBe = $this->extractProjectYearBe($project);
+
+        return (object) [
+            'project_id' => (int) $project->id,
+            'project_name' => trim((string) ($project->project_name_th ?? '')) ?: '-',
+            'project_code' => trim((string) ($project->project_code ?? '')) ?: null,
+            'year_be' => $yearBe,
+            'execution_status' => $this->resolveProjectStatusLabel($project),
+            'role' => $role,
+            'roles' => [$role],
+            'sort_year' => $yearBe ?? 0,
+            'link' => route('projects.show', $project),
+        ];
+    }
+
+    private function extractProjectYearBe(Project $project): ?int
+    {
+        $startYear = $this->normalizeYearFilter($project->start_year);
+        if ($startYear !== null) {
+            return $startYear;
+        }
+
+        $startDate = trim((string) ($project->start_date ?? ''));
+        if ($startDate === '') {
+            return null;
+        }
+
+        try {
+            $year = Carbon::parse($startDate)->year;
+            return $year < 2400 ? $year + 543 : $year;
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
+
+    private function formatAuthorRoleLabel(string $role): string
+    {
+        return match (strtolower(trim($role))) {
+            'first' => 'First Author',
+            'co' => 'Co-Author',
+            'corresponding' => 'Corresponding Author',
+            'awardee' => 'Awardee',
+            default => ucfirst($role),
+        };
+    }
+
+    private function emptyPersonalStats(): array
+    {
+        return [
+            'pi_projects' => 0,
+            'co_pi_projects' => 0,
+            'co_research_projects' => 0,
+            'research_outputs' => 0,
+            'presentation_outputs' => 0,
+            'textbook_outputs' => 0,
+            'award_outputs' => 0,
+            'total_outputs' => 0,
+            'total_projects' => 0,
+        ];
+    }
+
+    private function matchesUserThaiName(?string $candidate, User $user): bool
+    {
+        $normalizedCandidate = $this->normalizePersonNameForMatch($candidate);
+        if ($normalizedCandidate === '') {
+            return false;
+        }
+
+        return in_array($normalizedCandidate, [
+            $this->normalizePersonNameForMatch($user->full_name),
+            $this->normalizePersonNameForMatch((string) $user->name),
+        ], true);
+    }
+
+    private function normalizePersonNameForMatch(?string $value): string
+    {
+        $value = mb_strtolower(trim((string) $value), 'UTF-8');
+        $value = preg_replace('/\s+/u', '', $value) ?? '';
+
+        return $value;
+    }
+
+    private function extractFirstUrlFromText(?string $text): ?string
+    {
+        $value = trim((string) $text);
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/https?:\/\/[^\s<>"\'\]\)]+/iu', $value, $matches) === 1) {
+            return trim((string) ($matches[0] ?? '')) ?: null;
+        }
+
+        return null;
+    }
+
+    private function resolveProjectStatusLabel(Project $project): ?string
+    {
+        foreach ([
+            $project->execution_status ?? null,
+            $project->planning_status ?? null,
+            $project->review_status ?? null,
+            $project->closure_status ?? null,
+        ] as $candidate) {
+            $value = trim((string) $candidate);
+            if ($value !== '' && ! is_numeric($value)) {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function resolvePersonalOutputUser(string $person): User
+    {
+        $lookup = trim($person);
+
+        if ($lookup === '') {
+            abort(404);
+        }
+
+        if (ctype_digit($lookup)) {
+            return User::query()->findOrFail((int) $lookup);
+        }
+
+        $matchedUsers = User::query()
+            ->select(['id', 'prefix', 'name', 'prefix_en', 'name_en', 'role', 'position', 'profile_photo_path', 'updated_at'])
+            ->get()
+            ->filter(fn (User $user) => trim((string) $user->full_name) === $lookup)
+            ->values();
+
+        if ($matchedUsers->count() === 1) {
+            return $matchedUsers->first();
+        }
+
+        abort(404);
+    }
+
+    private function personalOutputRouteKey(User $user): string
+    {
+        return trim((string) $user->full_name);
+    }
+
+    private function resolveUserProfilePhotoPathForPdf(User $user): ?string
+    {
+        $relativePath = trim((string) ($user->profile_photo_path ?? ''));
+        $candidates = [];
+
+        if ($relativePath !== '') {
+            $candidates = [
+                storage_path('app/public/' . ltrim($relativePath, '/')),
+                public_path('storage/' . ltrim($relativePath, '/')),
+            ];
+        }
+
+        $candidates[] = public_path('images/default-avatar.png');
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveUserProfilePhotoDataUriForPdf(User $user): ?string
+    {
+        $path = $this->resolveUserProfilePhotoPathForPdf($user);
+        if (! $path || ! is_file($path)) {
+            return null;
+        }
+
+        $mime = mime_content_type($path) ?: 'image/png';
+        $contents = @file_get_contents($path);
+
+        if ($contents === false) {
+            return null;
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode($contents);
+    }
+
+    private function resolveUserProfilePhotoUrl(User $user): string
+    {
+        $relativePath = trim((string) ($user->profile_photo_path ?? ''));
+
+        if ($relativePath !== '') {
+            return asset('storage/' . ltrim($relativePath, '/')) . '?v=' . optional($user->updated_at)->timestamp;
+        }
+
+        return 'https://ui-avatars.com/api/?name=' . urlencode($user->full_name) . '&background=0F172A&color=fff&size=128';
+    }
+
+    private function buildOutputUserDirectory(): Collection
+    {
+        return User::query()
+            ->select(['id', 'prefix', 'name', 'prefix_en', 'name_en'])
+            ->orderBy('name')
+            ->get()
+            ->map(function (User $user) {
+                return [
+                    'id' => $user->id,
+                    'full_name' => $user->full_name,
+                    'research_display_name' => $user->research_display_name,
+                ];
+            })
+            ->values();
     }
 }

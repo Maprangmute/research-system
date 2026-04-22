@@ -56,7 +56,9 @@ class UserController extends Controller
         $query = User::query()->select([
             'id',
             'prefix',
+            'prefix_en',
             'name',
+            'name_en',
             'email',
             'position',
             'role',
@@ -69,6 +71,8 @@ class UserController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('name_en', 'like', "%{$search}%")
+                    ->orWhere('prefix_en', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('position', 'like', "%{$search}%")
                     ->orWhere('prefix', 'like', "%{$search}%");
@@ -169,7 +173,9 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'prefix'   => 'nullable|string|max:50',
+            'prefix_en' => 'nullable|string|max:50',
             'name'     => 'required|string|max:255',
+            'name_en'  => 'nullable|string|max:255',
             'email'    => 'required|email|unique:users',
             'position' => 'nullable|string|max:255',
             'role'     => 'required|in:' . implode(',', $this->allowedRoles()),
@@ -206,7 +212,9 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'prefix'   => 'required|string|max:50',
+            'prefix_en' => 'nullable|string|max:50',
             'name'     => 'required|string|max:255',
+            'name_en'  => 'nullable|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'position' => 'nullable|string|max:255',
             'role'     => 'required|in:' . implode(',', $this->allowedRoles()),

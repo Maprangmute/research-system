@@ -24,9 +24,15 @@
 @endphp
 
 @section('content')
+    <script>
+        window.outputUserDirectory = @json($userDirectory);
+    </script>
     <datalist id="externalAcademicAuthorNames">
         @foreach ($authorOptions as $authorName)
             <option value="{{ $authorName }}"></option>
+        @endforeach
+        @foreach ($userDirectory as $userOption)
+            <option value="{{ $userOption['research_display_name'] }}"></option>
         @endforeach
     </datalist>
 
@@ -34,11 +40,24 @@
         @foreach ($presenterOptions as $presenterName)
             <option value="{{ $presenterName }}"></option>
         @endforeach
+        @foreach ($userDirectory as $userOption)
+            <option value="{{ $userOption['full_name'] }}"></option>
+        @endforeach
     </datalist>
 
     <datalist id="externalAcademicBookAuthorNames">
         @foreach ($bookAuthorOptions as $authorName)
             <option value="{{ $authorName }}"></option>
+        @endforeach
+    </datalist>
+
+    <datalist id="externalAcademicAwardRecipientNames">
+        <option value="หน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ"></option>
+        @foreach ($presenterOptions as $recipientName)
+            <option value="{{ $recipientName }}"></option>
+        @endforeach
+        @foreach ($userDirectory as $userOption)
+            <option value="{{ $userOption['full_name'] }}"></option>
         @endforeach
     </datalist>
 
@@ -244,10 +263,12 @@
                                                 </label>
                                                 <label class="block">
                                                     <span class="text-sm font-medium text-slate-700">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
+                                                    <input type="hidden" name="outputs[{{ $outputIndex }}][authors][{{ $authorIndex }}][user_id]" value="{{ $author['user_id'] ?? '' }}" data-user-id-hidden>
                                                     <input type="text"
                                                         list="externalAcademicAuthorNames"
                                                         name="outputs[{{ $outputIndex }}][authors][{{ $authorIndex }}][name]"
                                                         value="{{ $author['name'] ?? '' }}"
+                                                        data-user-lookup="research"
                                                         class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                                                         placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)">
                                                 </label>
@@ -311,10 +332,12 @@
                                                 </label>
                                                 <label class="block">
                                                     <span class="text-sm font-medium text-slate-700">ชื่อผู้นำเสนอ</span>
+                                                    <input type="hidden" name="outputs[{{ $outputIndex }}][conferences][{{ $conferenceIndex }}][user_id]" value="{{ $conference['user_id'] ?? '' }}" data-user-id-hidden>
                                                     <input type="text"
                                                         list="externalAcademicPresenterNames"
                                                         name="outputs[{{ $outputIndex }}][conferences][{{ $conferenceIndex }}][presenter_name]"
                                                         value="{{ $conference['presenter_name'] ?? '' }}"
+                                                        data-user-lookup="full"
                                                         class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                                                         placeholder="ชื่อผู้นำเสนอ">
                                                 </label>
@@ -335,6 +358,48 @@
                                         data-add-conference>
                                         + เพิ่มรายการ
                                     </button>
+                                </div>
+                            </div>
+
+                            <div data-ea118-section @class([
+                                'rounded-2xl border p-4 md:p-5',
+                                'border-violet-200 bg-violet-50/50' => true,
+                                'hidden' => $type !== 'EA118',
+                            ])>
+                                <div class="mt-1 rounded-2xl border border-slate-200 bg-white/80 p-4">
+                                    <div class="mb-3 text-xl font-bold text-violet-700">ผู้ได้รับรางวัล (Award Recipients)</div>
+                                    <div class="space-y-3" data-award-recipients-list>
+                                        @foreach ($authors as $authorIndex => $author)
+                                            <div class="award-recipient-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                                                <input type="hidden" name="outputs[{{ $outputIndex }}][authors][{{ $authorIndex }}][role]" value="awardee">
+                                                <label class="block">
+                                                    <span class="text-sm font-medium text-slate-700">ชื่อผู้ได้รับรางวัล</span>
+                                                    <input type="hidden" name="outputs[{{ $outputIndex }}][authors][{{ $authorIndex }}][user_id]" value="{{ $author['user_id'] ?? '' }}" data-user-id-hidden>
+                                                    <input type="text"
+                                                        list="externalAcademicAwardRecipientNames"
+                                                        name="outputs[{{ $outputIndex }}][authors][{{ $authorIndex }}][name]"
+                                                        value="{{ $author['name'] ?? '' }}"
+                                                        data-user-lookup="full"
+                                                        class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                                                        placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+                                                </label>
+                                                <div class="flex items-end">
+                                                    <button type="button"
+                                                        class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                                                        data-remove-award-recipient>
+                                                        ลบรายชื่อ
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <div class="mt-3 flex justify-end">
+                                        <button type="button"
+                                            class="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
+                                            data-add-award-recipient>
+                                            + เพิ่มผู้ได้รับรางวัล
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -520,6 +585,16 @@
                     </div>
                 </div>
 
+                <div data-ea118-section class="hidden rounded-2xl border border-violet-200 bg-violet-50/50 p-4 md:p-5">
+                    <div class="mt-1 rounded-2xl border border-slate-200 bg-white/80 p-4">
+                        <div class="mb-3 text-xl font-bold text-violet-700">ผู้ได้รับรางวัล (Award Recipients)</div>
+                        <div class="space-y-3" data-award-recipients-list></div>
+                        <div class="mt-3 flex justify-end">
+                            <button type="button" class="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-violet-700" data-add-award-recipient>+ เพิ่มผู้ได้รับรางวัล</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div data-ea119-section class="hidden rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4 md:p-5">
                     <div class="grid gap-4 md:grid-cols-3">
                         <label class="block">
@@ -560,7 +635,8 @@
             </label>
             <label class="block">
                 <span class="text-sm font-medium text-slate-700">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
-                <input type="text" list="externalAcademicAuthorNames" name="outputs[__OUTPUT_INDEX__][authors][__AUTHOR_INDEX__][name]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)">
+                <input type="hidden" name="outputs[__OUTPUT_INDEX__][authors][__AUTHOR_INDEX__][user_id]" data-user-id-hidden>
+                <input type="text" list="externalAcademicAuthorNames" name="outputs[__OUTPUT_INDEX__][authors][__AUTHOR_INDEX__][name]" data-user-lookup="research" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)">
             </label>
             <div class="flex items-end">
                 <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-author>ลบผู้เขียน</button>
@@ -592,7 +668,8 @@
                 </label>
                 <label class="block">
                     <span class="text-sm font-medium text-slate-700">ชื่อผู้นำเสนอ</span>
-                    <input type="text" list="externalAcademicPresenterNames" name="outputs[__OUTPUT_INDEX__][conferences][__CONFERENCE_INDEX__][presenter_name]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อผู้นำเสนอ">
+                    <input type="hidden" name="outputs[__OUTPUT_INDEX__][conferences][__CONFERENCE_INDEX__][user_id]" data-user-id-hidden>
+                    <input type="text" list="externalAcademicPresenterNames" name="outputs[__OUTPUT_INDEX__][conferences][__CONFERENCE_INDEX__][presenter_name]" data-user-lookup="full" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อผู้นำเสนอ">
                 </label>
             </div>
             <div class="mt-3 flex justify-end">
@@ -613,6 +690,20 @@
         </div>
     </template>
 
+    <template id="externalAwardRecipientTemplate">
+        <div class="award-recipient-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+            <input type="hidden" name="outputs[__OUTPUT_INDEX__][authors][__AUTHOR_INDEX__][role]" value="awardee">
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">ชื่อผู้ได้รับรางวัล</span>
+                <input type="hidden" name="outputs[__OUTPUT_INDEX__][authors][__AUTHOR_INDEX__][user_id]" data-user-id-hidden>
+                <input type="text" list="externalAcademicAwardRecipientNames" name="outputs[__OUTPUT_INDEX__][authors][__AUTHOR_INDEX__][name]" data-user-lookup="full" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+            </label>
+            <div class="flex items-end">
+                <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-award-recipient>ลบรายชื่อ</button>
+            </div>
+        </div>
+    </template>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const outputsList = document.getElementById('externalOutputsList');
@@ -622,6 +713,8 @@
             const authorTemplate = document.getElementById('externalAuthorTemplate');
             const conferenceTemplate = document.getElementById('externalConferenceTemplate');
             const bookAuthorTemplate = document.getElementById('externalBookAuthorTemplate');
+            const awardRecipientTemplate = document.getElementById('externalAwardRecipientTemplate');
+            const userDirectory = Array.isArray(window.outputUserDirectory) ? window.outputUserDirectory : [];
             function getDisplayField(field) {
                 if (typeof window.getProjectValidationDisplayTarget === 'function') {
                     return window.getProjectValidationDisplayTarget(field);
@@ -714,6 +807,48 @@
                 }
             }
 
+            function findMatchedUser(input) {
+                const value = (input?.value || '').trim();
+                const mode = input?.dataset?.userLookup || 'full';
+
+                if (value === '') {
+                    return null;
+                }
+
+                return userDirectory.find((user) => {
+                    if (mode === 'research') {
+                        return (user.research_display_name || '').trim() === value;
+                    }
+
+                    return (user.full_name || '').trim() === value;
+                }) || null;
+            }
+
+            function syncUserLookupInput(input) {
+                const hidden = input?.closest('label, .author-row, .conference-row, .award-recipient-row')?.querySelector('[data-user-id-hidden]');
+                if (!hidden) {
+                    return;
+                }
+
+                const matchedUser = findMatchedUser(input);
+                hidden.value = matchedUser ? String(matchedUser.id) : '';
+            }
+
+            function bindUserLookup(scope = document) {
+                scope.querySelectorAll('input[data-user-lookup]').forEach((input) => {
+                    if (input.dataset.userLookupBound === '1') {
+                        syncUserLookupInput(input);
+                        return;
+                    }
+
+                    input.dataset.userLookupBound = '1';
+                    ['input', 'change', 'blur'].forEach((eventName) => {
+                        input.addEventListener(eventName, () => syncUserLookupInput(input));
+                    });
+                    syncUserLookupInput(input);
+                });
+            }
+
             function syncCardFieldIndexes(card, outputIndex) {
                 card.querySelectorAll('[name]').forEach((field) => {
                     field.name = field.name
@@ -729,6 +864,12 @@
                 });
 
                 card.querySelectorAll('.book-author-row').forEach((row, authorIndex) => {
+                    row.querySelectorAll('[name]').forEach((field) => {
+                        field.name = field.name.replace(/\[authors]\[\d+]/, `[authors][${authorIndex}]`);
+                    });
+                });
+
+                card.querySelectorAll('.award-recipient-row').forEach((row, authorIndex) => {
                     row.querySelectorAll('[name]').forEach((field) => {
                         field.name = field.name.replace(/\[authors]\[\d+]/, `[authors][${authorIndex}]`);
                     });
@@ -752,10 +893,12 @@
                 const typeInput = card.querySelector('[data-output-type]');
                 const ea101 = card.querySelector('[data-ea101-section]');
                 const ea103 = card.querySelector('[data-ea103-section]');
+                const ea118 = card.querySelector('[data-ea118-section]');
                 const ea119 = card.querySelector('[data-ea119-section]');
                 const currentType = typeInput?.value || '';
                 const isPaper = currentType === 'EA101';
                 const isPresentation = currentType === 'EA103';
+                const isAward = currentType === 'EA118';
                 const isTextbook = currentType === 'EA119';
                 card.querySelectorAll('[data-required-ea101="true"]').forEach((field) => {
                     field.required = isPaper;
@@ -777,6 +920,7 @@
 
                 toggleSection(ea101, isPaper);
                 toggleSection(ea103, isPresentation);
+                toggleSection(ea118, isAward);
                 toggleSection(ea119, isTextbook);
             }
 
@@ -788,6 +932,7 @@
                     OUTPUT_INDEX: outputIndex,
                     AUTHOR_INDEX: authorIndex,
                 }));
+                bindUserLookup(authorsList);
                 syncAllIndexes();
             }
 
@@ -799,6 +944,7 @@
                     OUTPUT_INDEX: outputIndex,
                     CONFERENCE_INDEX: conferenceIndex,
                 }));
+                bindUserLookup(conferencesList);
                 syncAllIndexes();
             }
 
@@ -810,6 +956,18 @@
                     OUTPUT_INDEX: outputIndex,
                     AUTHOR_INDEX: authorIndex,
                 }));
+                syncAllIndexes();
+            }
+
+            function addAwardRecipientRow(card) {
+                const outputIndex = Array.from(outputsList.children).indexOf(card);
+                const recipientsList = card.querySelector('[data-award-recipients-list]');
+                const authorIndex = recipientsList.querySelectorAll('.award-recipient-row').length;
+                recipientsList.insertAdjacentHTML('beforeend', replacePlaceholders(awardRecipientTemplate, {
+                    OUTPUT_INDEX: outputIndex,
+                    AUTHOR_INDEX: authorIndex,
+                }));
+                bindUserLookup(recipientsList);
                 syncAllIndexes();
             }
 
@@ -826,6 +984,7 @@
                 card.querySelector('[data-add-author]')?.addEventListener('click', () => addAuthorRow(card));
                 card.querySelector('[data-add-conference]')?.addEventListener('click', () => addConferenceRow(card));
                 card.querySelector('[data-add-book-author]')?.addEventListener('click', () => addBookAuthorRow(card));
+                card.querySelector('[data-add-award-recipient]')?.addEventListener('click', () => addAwardRecipientRow(card));
                 card.addEventListener('click', (event) => {
                     if (event.target.matches('[data-remove-author]')) {
                         if (card.querySelectorAll('.author-row').length > 1) {
@@ -845,9 +1004,16 @@
                             syncAllIndexes();
                         }
                     }
+                    if (event.target.matches('[data-remove-award-recipient]')) {
+                        if (card.querySelectorAll('.award-recipient-row').length > 1) {
+                            event.target.closest('.award-recipient-row')?.remove();
+                            syncAllIndexes();
+                        }
+                    }
                 });
                 syncType(card);
                 reinitThaiDatePicker(card);
+                bindUserLookup(card);
             }
 
             addOutputBtn?.addEventListener('click', () => {
@@ -860,6 +1026,7 @@
                 bindCard(card);
                 addAuthorRow(card);
                 addConferenceRow(card);
+                addAwardRecipientRow(card);
                 addBookAuthorRow(card);
                 syncAllIndexes();
                 card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -868,6 +1035,7 @@
             outputsList.querySelectorAll('[data-output-card]').forEach((card) => bindCard(card));
             syncAllIndexes();
             reinitThaiDatePicker(document);
+            bindUserLookup(document);
             form?.querySelectorAll('[data-server-invalid="1"]').forEach((field) => markInvalid(field));
 
             form?.querySelectorAll('input, select, textarea').forEach((field) => {

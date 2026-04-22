@@ -11,6 +11,7 @@ class OutputConference extends Model
 
     protected $fillable = [
         'output_id',
+        'user_id',
         'name',
         'presentation_type',
         'location',
@@ -20,6 +21,11 @@ class OutputConference extends Model
     public function output()
     {
         return $this->belongsTo(Output::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     protected static function booted()

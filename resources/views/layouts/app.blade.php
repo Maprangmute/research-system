@@ -40,6 +40,13 @@
 @php
     $isModalView = request()->boolean('modal');
     $authUser = Auth::user();
+    $personalOutputsRoute = null;
+
+    if ($authUser) {
+        $personalOutputsRoute = $authUser->isAdminEquivalent()
+            ? route('outputs.people')
+            : route('outputs.people.show', ['person' => $authUser->full_name]);
+    }
 @endphp
 
 <body class="{{ $isModalView ? 'bg-white text-gray-800' : 'bg-gray-100 text-gray-800' }}">
@@ -300,7 +307,12 @@
                                     class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
                                     Outputs Overview
                                 </a>
-                               
+                                @if ($personalOutputsRoute)
+                                    <a href="{{ $personalOutputsRoute }}"
+                                        class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                        Outputs รายบุคคล
+                                    </a>
+                                @endif
                                 <a href="{{ route('outputs.papers') }}"
                                     class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
                                     Research Papers
@@ -446,6 +458,9 @@
                         <a href="/rm/create">➕ เพิ่มโครงการ</a>
                         <div class="text-gray-700 font-medium">📑 Outputs</div>
                         <a href="{{ route('outputs.index') }}">Outputs Overview</a>
+                        @if ($personalOutputsRoute)
+                            <a href="{{ $personalOutputsRoute }}">Outputs รายบุคคล</a>
+                        @endif
                         <a href="{{ route('outputs.papers') }}">Research Papers</a>
                         <a href="{{ route('outputs.presentations') }}">Presentations</a>
                         <a href="{{ route('outputs.textbooks') }}">Textbook / Book chapter</a>

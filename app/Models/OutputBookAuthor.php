@@ -13,12 +13,18 @@ class OutputBookAuthor extends Model
 
     protected $fillable = [
         'output_id',
+        'user_id',
         'name',
     ];
 
     public function output()
     {
         return $this->belongsTo(Output::class, 'output_id', 'id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     protected static function booted()

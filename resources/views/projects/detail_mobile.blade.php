@@ -1017,6 +1017,7 @@
                         @php
                             $isEA101 = Str::startsWith((string) ($output->type ?? ''), 'EA101');
                             $isEA103 = Str::startsWith((string) ($output->type ?? ''), 'EA103');
+                            $isEA118 = Str::startsWith((string) ($output->type ?? ''), 'EA118');
                             $isEA119 = Str::startsWith((string) ($output->type ?? ''), 'EA119');
                             $typeBadgeStyle = $outputTypeStyle($output->type ?? '');
                         @endphp
@@ -1078,6 +1079,29 @@
                                                             <div class="text-xs text-slate-500">#{{ $ai + 1 }}</div>
                                                             <div class="font-semibold">{{ $a->name ?: '-' }}</div>
                                                             <div class="text-sm text-slate-700">{{ $roleLabel }}</div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    @if ($isEA118)
+                                        @php
+                                            $awardees = ($output->authors ?? collect())->filter(function ($a) {
+                                                return !empty(trim($a->name ?? ''));
+                                            });
+                                        @endphp
+                                        <div class="mt-3 rounded-xl border bg-violet-50/60 p-3">
+                                            <div class="font-semibold text-violet-800 text-sm">ผู้ได้รับรางวัล (Award Recipients)</div>
+                                            @if ($awardees->isEmpty())
+                                                <div class="mt-2 text-sm text-gray-500">- ไม่มีรายชื่อผู้ได้รับรางวัล -</div>
+                                            @else
+                                                <div class="mt-2 space-y-2">
+                                                    @foreach ($awardees as $ai => $awardee)
+                                                        <div class="rounded-lg border bg-white px-3 py-2 text-sm text-slate-800">
+                                                            <span class="font-semibold text-violet-700">{{ $ai + 1 }}.</span>
+                                                            {{ $awardee->name }}
                                                         </div>
                                                     @endforeach
                                                 </div>

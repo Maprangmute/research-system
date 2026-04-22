@@ -9,6 +9,7 @@ class ExternalOutputConference extends Model
 {
     protected $fillable = [
         'external_output_id',
+        'user_id',
         'name',
         'presentation_type',
         'location',
@@ -20,5 +21,9 @@ class ExternalOutputConference extends Model
         return $this->belongsTo(ExternalOutput::class);
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
 }

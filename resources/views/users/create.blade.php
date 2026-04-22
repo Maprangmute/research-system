@@ -70,18 +70,26 @@
 
              <div>
                 <label class="block text-sm text-gray-700 font-medium">ชื่อ - นามสกุล</label>
-                <input type="text" name="name" class="w-full border p-2 rounded" required>
+                <input type="text" name="name" value="{{ old('name') }}" class="w-full border p-2 rounded" required>
+            </div>
+
+            <div>
+                <label class="block text-sm text-gray-700 font-medium">ชื่อแสดงผลภาษาอังกฤษ</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" name="prefix_en" value="{{ old('prefix_en') }}" class="w-full border p-2 rounded" placeholder="เช่น Dr.">
+                    <input type="text" name="name_en" value="{{ old('name_en') }}" class="w-full border p-2 rounded" placeholder="เช่น Jane Smith">
+                </div>
             </div>
 
             <div>
                 <label class="block text-sm text-gray-700 font-medium">ตำแหน่ง</label>
-                <input type="text" name="position" class="w-full border p-2 rounded">
+                <input type="text" name="position" value="{{ old('position') }}" class="w-full border p-2 rounded">
             </div>
 
 
             <div>
                 <label class="block text-sm text-gray-700 font-medium">อีเมล</label>
-                <input type="email" name="email" class="w-full border p-2 rounded" required>
+                <input type="email" name="email" value="{{ old('email') }}" class="w-full border p-2 rounded" required>
             </div>
 
             <div>

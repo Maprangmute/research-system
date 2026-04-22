@@ -16,6 +16,11 @@
 
 @php
     $allUsers = \App\Models\User::orderBy('name')->get();
+    $projectUserDirectory = $allUsers->map(fn($user) => [
+        'id' => $user->id,
+        'full_name' => $user->full_name,
+        'research_display_name' => $user->research_display_name,
+    ])->values();
     $roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
     $jobDetails = [
         'Researcher',
@@ -69,6 +74,16 @@
     @foreach (\App\Models\OutputAuthor::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $authorName)
         <option value="{{ $authorName }}"></option>
     @endforeach
+    @foreach ($projectUserDirectory as $userOption)
+        <option value="{{ $userOption['research_display_name'] }}"></option>
+    @endforeach
+</datalist>
+<datalist id="awardRecipientNames">
+    <option value="หน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ"></option>
+    @foreach ($allUsers as $user)
+        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
+        <option value="{{ $fullName }}"></option>
+    @endforeach
 </datalist>
 {{-- ✅ DATAlIST กลาง (ใช้ร่วมกันทุก row) --}}
 <datalist id="fteUsers">
@@ -87,6 +102,7 @@
     window.enableRowCollapseSummaryOnMobile = true;
     window.PROJECT_CARD_DATE_MODE = 'create';
     window.PROJECT_MOBILE_WHEEL_DATE = true;
+    window.projectUserDirectory = @json($projectUserDirectory);
 </script>
 
 @php
@@ -1700,6 +1716,8 @@
                     handleTypeChange(e.target);
                 }
             });
+
+            bindProjectUserLookup(document);
         });
 
 
@@ -1709,7 +1727,7 @@
             const mount = row.querySelector('.special-mount');
             if (!row || !mount) return;
 
-            // เคลียร์ของเดิม (EA101/EA103/EA119)
+            // เคลียร์ของเดิม (EA101/EA103/EA118/EA119)
             mount.innerHTML = '';
 
             const idx = parseInt(row.getAttribute('data-index') || '0', 10);
@@ -1719,6 +1737,8 @@
                 mount.appendChild(renderEA101Section(idx));
             } else if (val.startsWith('EA103')) {
                 mount.appendChild(renderEA103Section(idx));
+            } else if (val.startsWith('EA118')) {
+                mount.appendChild(renderEA118Section(idx));
             } else if (val.startsWith('EA119')) {
                 mount.appendChild(renderEA119Section(idx));
             }
@@ -1808,7 +1828,9 @@
 
       <label class="w-full">
         <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
+        <input type="hidden" name="outputs[${outputIdx}][authors][${authorIdx}][user_id]" data-user-id-hidden>
         <input name="outputs[${outputIdx}][authors][${authorIdx}][name]" list="outputAuthorNames" type="text"
+             data-user-lookup="research"
              class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
              placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
                                     oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้เขียน')"
@@ -1816,6 +1838,7 @@
       </label>
     </div>
   `;
+            bindProjectUserLookup(row);
             return row;
         }
 
@@ -1825,6 +1848,68 @@
             confirmProjectMobileRemoval(() => {
                 row?.remove();
                 reindexAuthorRows(authorsWrap);
+            });
+        }
+
+        function renderEA118Section(idx) {
+            const wrap = document.createElement('div');
+            wrap.className = 'ea118-section space-y-3 rounded-xl border border-slate-200 bg-violet-50/60 p-4';
+            wrap.innerHTML = `
+    <div class="space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <span class="font-semibold text-violet-800">ผู้ได้รับรางวัล (Award Recipients)</span>
+      </div>
+      <div class="award-recipients-container space-y-3" data-award-index="0"></div>
+      <div class="flex justify-end">
+        <button type="button" class="lux-mobile-add-row-btn whitespace-nowrap px-3 py-2 rounded-lg bg-violet-600 text-sm font-semibold text-white" onclick="addAwardRecipientRow(this)">+ เพิ่มผู้ได้รับรางวัล</button>
+      </div>
+    </div>
+  `;
+
+            const recipientsWrap = wrap.querySelector('.award-recipients-container');
+            recipientsWrap.appendChild(buildAwardRecipientRow(idx, 0));
+            return wrap;
+        }
+
+        function addAwardRecipientRow(btnEl) {
+            const section = btnEl.closest('.ea118-section');
+            const outputRow = btnEl.closest('.output-row');
+            const idx = parseInt(outputRow.getAttribute('data-index') || '0', 10);
+
+            const recipientsWrap = section.querySelector('.award-recipients-container');
+            let aIdx = parseInt(recipientsWrap.getAttribute('data-award-index') || '0', 10);
+            aIdx += 1;
+            recipientsWrap.setAttribute('data-award-index', aIdx);
+            recipientsWrap.appendChild(buildAwardRecipientRow(idx, aIdx));
+        }
+
+        function buildAwardRecipientRow(outputIdx, authorIdx) {
+            const row = document.createElement('div');
+            row.className = 'award-recipient-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3';
+            row.innerHTML = `
+    <input type="hidden" name="outputs[${outputIdx}][authors][${authorIdx}][role]" value="awardee">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
+        <input type="hidden" name="outputs[${outputIdx}][authors][${authorIdx}][user_id]" data-user-id-hidden>
+        <input name="outputs[${outputIdx}][authors][${authorIdx}][name]" list="awardRecipientNames" type="text"
+             data-user-lookup="full"
+             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+             placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+      </label>
+      <div class="flex items-end">
+        <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeAwardRecipientRow(this)">ลบ</button>
+      </div>
+    </div>
+  `;
+            bindProjectUserLookup(row);
+            return row;
+        }
+
+        function removeAwardRecipientRow(btnEl) {
+            const row = btnEl.closest('.award-recipient-row');
+            confirmProjectMobileRemoval(() => {
+                row?.remove();
             });
         }
 
@@ -1900,14 +1985,17 @@
     <div>
       <label class="w-full">
         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
+        <input type="hidden" name="outputs[${outputIdx}][book_authors][${authorIdx}][user_id]" data-user-id-hidden>
         <input name="outputs[${outputIdx}][book_authors][${authorIdx}][name]" type="text" data-book-author-input
              list="book-author-name-list-${outputIdx}"
+             data-user-lookup="full"
              class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
              placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required
              oninput="refreshBookAuthorDatalistInOutput(this)">
       </label>
     </div>
   `;
+            bindProjectUserLookup(row);
             return row;
         }
 
@@ -1930,6 +2018,38 @@
                 .filter(Boolean);
             window.__bookAuthorBaseOptions = Array.from(new Set(base));
             return window.__bookAuthorBaseOptions;
+        }
+
+        function findProjectMatchedUser(input) {
+            const value = String(input?.value || '').trim();
+            const mode = input?.dataset?.userLookup || 'full';
+            const users = Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [];
+            if (!value) return null;
+            return users.find((user) => mode === 'research'
+                ? String(user.research_display_name || '').trim() === value
+                : String(user.full_name || '').trim() === value) || null;
+        }
+
+        function syncProjectUserLookupInput(input) {
+            const hidden = input?.closest('label, .author-row, .award-recipient-row, .conference-row')?.querySelector('[data-user-id-hidden]');
+            if (!hidden) return;
+            const matched = findProjectMatchedUser(input);
+            hidden.value = matched ? String(matched.id) : '';
+        }
+
+        function bindProjectUserLookup(scope = document) {
+            scope.querySelectorAll('input[data-user-lookup], .conference-row input[name$="[note]"]').forEach((input) => {
+                if (!input.dataset.userLookup) input.dataset.userLookup = 'full';
+                if (input.dataset.userLookupBound === '1') {
+                    syncProjectUserLookupInput(input);
+                    return;
+                }
+                input.dataset.userLookupBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    input.addEventListener(eventName, () => syncProjectUserLookupInput(input));
+                });
+                syncProjectUserLookupInput(input);
+            });
         }
 
         function refreshBookAuthorDatalistInOutput(sourceEl) {
@@ -2076,10 +2196,12 @@
       </label>
       <label>
         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
-        <input name="outputs[${outputIdx}][conferences][${cIdx}][note]" list="userNames" class="w-full border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
+        <input type="hidden" name="outputs[${outputIdx}][conferences][${cIdx}][user_id]" data-user-id-hidden>
+        <input name="outputs[${outputIdx}][conferences][${cIdx}][note]" list="userNames" data-user-lookup="full" class="w-full border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
       </label>
     </div>
   `;
+            bindProjectUserLookup(row);
             return row;
         }
 

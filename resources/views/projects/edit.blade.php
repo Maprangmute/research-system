@@ -12,6 +12,11 @@
 
 @php
     $allUsers = \App\Models\User::orderBy('name')->get();
+    $projectUserDirectory = $allUsers->map(fn($user) => [
+        'id' => $user->id,
+        'full_name' => $user->full_name,
+        'research_display_name' => $user->research_display_name,
+    ])->values();
     $bookAuthorNameOptions = $allUsers
         ->map(fn($user) => trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')))
         ->filter()
@@ -94,6 +99,16 @@
     @foreach (\App\Models\OutputAuthor::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $authorName)
         <option value="{{ $authorName }}"></option>
     @endforeach
+    @foreach ($projectUserDirectory as $userOption)
+        <option value="{{ $userOption['research_display_name'] }}"></option>
+    @endforeach
+</datalist>
+<datalist id="awardRecipientNames">
+    <option value="หน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ"></option>
+    @foreach ($allUsers as $user)
+        @php $fullName = $user->full_name; @endphp
+        <option value="{{ $fullName }}"></option>
+    @endforeach
 </datalist>
 {{-- ✅ DATAlIST กลาง (ใช้ร่วมกันทุก row) --}}
 <datalist id="fteUsers">
@@ -106,6 +121,7 @@
 <script>
     window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
     window.PROJECT_CARD_DATE_MODE = 'edit';
+    window.projectUserDirectory = @json($projectUserDirectory);
     document.documentElement.classList.add('page-loading-lock');
 </script>
 
@@ -1635,9 +1651,10 @@
                                                     <label class="w-full">
                                                         <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล
                                                             ผู้เขียน <span class="required-mark">*</span></span>
+                                                        <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][user_id]" value="{{ old("outputs.$i.authors.$j.user_id", $auth->user_id) }}" data-user-id-hidden>
                                                         <input
                                                             name="outputs[{{ $i }}][authors][{{ $j }}][name]"
-                                                            type="text" list="outputAuthorNames" class="w-full border p-2 rounded"
+                                                            type="text" list="outputAuthorNames" data-user-lookup="research" class="w-full border p-2 rounded"
                                                             value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}"
                                                             placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
                                                             oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
@@ -1669,8 +1686,9 @@
                                                     <label class="w-full">
                                                         <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล
                                                             ผู้เขียน <span class="required-mark">*</span></span>
+                                                        <input type="hidden" name="outputs[{{ $i }}][authors][0][user_id]" data-user-id-hidden>
                                                         <input name="outputs[{{ $i }}][authors][0][name]"
-                                                            type="text" list="outputAuthorNames" class="w-full border p-2 rounded"
+                                                            type="text" list="outputAuthorNames" data-user-lookup="research" class="w-full border p-2 rounded"
                                                             placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
                                                             oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
                                                             oninput="this.setCustomValidity('')">
@@ -1687,6 +1705,52 @@
                                             <button type="button"
                                                 class="add-author-btn px-3 py-1 rounded bg-blue-600 text-white"
                                                 onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if (str_starts_with($t, 'EA118'))
+                                @php $awardees = $out->authors ?? collect(); @endphp
+                                <div class="ea118-section space-y-3 border rounded-xl p-4 bg-violet-50/60">
+                                    <div class="space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-semibold text-violet-800">ผู้ได้รับรางวัล (Award Recipients)</span>
+                                        </div>
+
+                                        <div class="award-recipients-container space-y-2" id="award-recipients-{{ $i }}">
+                                            @forelse($awardees as $j => $awardee)
+                                                <div class="award-recipient-row grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][id]" value="{{ $awardee->id }}">
+                                                    <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][role]" value="awardee">
+                                                    <label class="w-full">
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
+                                                        <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][user_id]" value="{{ old("outputs.$i.authors.$j.user_id", $awardee->user_id) }}" data-user-id-hidden>
+                                                        <input name="outputs[{{ $i }}][authors][{{ $j }}][name]" type="text" list="awardRecipientNames" data-user-lookup="full" class="w-full border p-2 rounded"
+                                                            value="{{ old("outputs.$i.authors.$j.name", $awardee->name) }}"
+                                                            placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+                                                    </label>
+                                                    <div class="flex items-end">
+                                                        <button type="button" class="px-3 py-2 rounded border text-red-600 border-red-300" onclick="removeAwardRecipientRow(this)">ลบรายชื่อ</button>
+                                                    </div>
+                                                </div>
+                                            @empty
+                                                <div class="award-recipient-row grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <input type="hidden" name="outputs[{{ $i }}][authors][0][role]" value="awardee">
+                                                    <label class="w-full">
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
+                                                        <input type="hidden" name="outputs[{{ $i }}][authors][0][user_id]" data-user-id-hidden>
+                                                        <input name="outputs[{{ $i }}][authors][0][name]" type="text" list="awardRecipientNames" data-user-lookup="full" class="w-full border p-2 rounded"
+                                                            placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+                                                    </label>
+                                                    <div class="flex items-end">
+                                                        <button type="button" class="px-3 py-2 rounded border text-red-600 border-red-300" onclick="removeAwardRecipientRow(this)">ลบรายชื่อ</button>
+                                                    </div>
+                                                </div>
+                                            @endforelse
+                                        </div>
+                                        <div class="flex justify-end">
+                                            <button type="button" class="add-award-recipient-btn px-3 py-1 rounded bg-violet-600 text-white" onclick="addAwardRecipientRow(this)">+ เพิ่มผู้ได้รับรางวัล</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1762,10 +1826,12 @@
                                                                 placeholder="เมือง/ประเทศ">
                                                         </td>
                                                         <td class="px-2 py-2">
+                                                            <input type="hidden" name="outputs[{{ $i }}][conferences][{{ $k }}][user_id]" value="{{ old("outputs.$i.conferences.$k.user_id", $c->user_id) }}" data-user-id-hidden>
                                                             <input
                                                                 name="outputs[{{ $i }}][conferences][{{ $k }}][note]"
                                                                 class="w-56 border p-2 rounded"
                                                                 value="{{ old("outputs.$i.conferences.$k.note", $c->note) }}"
+                                                                data-user-lookup="full"
                                                                 list="userNames"
                                                                 placeholder="ชื่อผู้นำเสนอ">
                                                         </td>
@@ -1803,9 +1869,11 @@
                                                                 placeholder="เมือง/ประเทศ">
                                                         </td>
                                                         <td class="px-2 py-2">
+                                                            <input type="hidden" name="outputs[{{ $i }}][conferences][0][user_id]" data-user-id-hidden>
                                                             <input
                                                                 name="outputs[{{ $i }}][conferences][0][note]"
                                                                 list="userNames"
+                                                                data-user-lookup="full"
                                                                 class="w-56 border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
                                                         </td>
                                                         <td class="px-2 py-2 text-center">
@@ -1863,11 +1931,12 @@
                                             @forelse($bookAuthors as $j => $author)
                                                 <div class="book-author-row grid grid-cols-1 md:grid-cols-3 gap-3">
                                                     <input type="hidden" name="outputs[{{ $i }}][book_authors][{{ $j }}][id]" value="{{ $author->id }}">
+                                                    <input type="hidden" name="outputs[{{ $i }}][book_authors][{{ $j }}][user_id]" value="{{ old("outputs.$i.book_authors.$j.user_id", $author->user_id) }}" data-user-id-hidden>
                                                     <label class="md:col-span-2">
                                                         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
                                                         <input
                                                             name="outputs[{{ $i }}][book_authors][{{ $j }}][name]"
-                                                            type="text" data-book-author-input list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
+                                                            type="text" data-book-author-input data-user-lookup="full" list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
                                                             value="{{ old("outputs.$i.book_authors.$j.name", $author->name) }}"
                                                             placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required
                                                             onfocus="refreshBookAuthorDatalistInOutput(this)"
@@ -1883,8 +1952,9 @@
                                                 <div class="book-author-row grid grid-cols-1 md:grid-cols-3 gap-3">
                                                     <label class="md:col-span-2">
                                                         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
+                                                        <input type="hidden" name="outputs[{{ $i }}][book_authors][0][user_id]" data-user-id-hidden>
                                                         <input name="outputs[{{ $i }}][book_authors][0][name]"
-                                                            type="text" data-book-author-input list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
+                                                            type="text" data-book-author-input data-user-lookup="full" list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
                                                             placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required
                                                             onfocus="refreshBookAuthorDatalistInOutput(this)"
                                                             oninput="refreshBookAuthorDatalistInOutput(this)">
@@ -3272,6 +3342,7 @@
         // เก็บตัวนับ nested ต่อ output แยกกัน
         const authorIndex = {}; // authors ต่อ output
         const confIndex = {}; // conferences ต่อ output
+        const awardRecipientIndex = {}; // award recipients ต่อ output
         const bookAuthorIndex = {}; // book_authors ต่อ output
 
         // ---------- Bootstrap counter จาก DOM ที่ render มาแล้ว ----------
@@ -3285,6 +3356,10 @@
             // conferences
             const cTbody = row.querySelector('.conference-tbody');
             confIndex[idx] = cTbody ? cTbody.querySelectorAll('.conference-row').length : 0;
+
+            // award recipients
+            const rWrap = row.querySelector('.award-recipients-container');
+            awardRecipientIndex[idx] = rWrap ? rWrap.querySelectorAll('.award-recipient-row').length : 0;
 
             // book authors
             const bWrap = row.querySelector('.book-authors-container');
@@ -3544,6 +3619,14 @@
                 }
                 confIndex[idx] = row.querySelectorAll('.conference-row').length;
 
+            } else if (val.startsWith('EA118')) {
+                if (!mount.querySelector('.ea118-section')) {
+                    mount.innerHTML = '';
+                    const section = renderEA118Section(idx);
+                    mount.appendChild(section);
+                }
+                awardRecipientIndex[idx] = row.querySelectorAll('.award-recipient-row').length;
+
             } else if (val.startsWith('EA119')) {
                 if (!mount.querySelector('.ea119-section')) {
                     mount.innerHTML = '';
@@ -3558,7 +3641,7 @@
                 bookAuthorIndex[idx] = row.querySelectorAll('.book-author-row').length;
 
             } else {
-                // ไม่ใช่ EA101/EA103/EA119 -> ล้างทิ้ง
+                // ไม่ใช่ EA101/EA103/EA118/EA119 -> ล้างทิ้ง
                 mount.innerHTML = '';
             }
         }
@@ -3626,7 +3709,8 @@
       </label>
       <label>
         <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ) <span class="required-mark">*</span></span>
-        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" list="outputAuthorNames" class="w-full border p-2 rounded" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
+        <input type="hidden" name="outputs[${idx}][authors][${aIdx}][user_id]" data-user-id-hidden>
+        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" list="outputAuthorNames" data-user-lookup="research" class="w-full border p-2 rounded" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
                                     oninvalid="this.setCustomValidity('กรุณากรอกชื่อผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
       </label>
@@ -3635,12 +3719,59 @@
       </div>
     </div>
   `);
+            bindProjectUserLookup(authorsWrap);
 
             authorIndex[idx] = aIdx + 1;
         }
 
         function removeAuthorRow(btnEl) {
             btnEl.closest('.author-row')?.remove();
+        }
+
+        function renderEA118Section(idx) {
+            const wrap = document.createElement('div');
+            wrap.className = 'ea118-section space-y-3 border rounded-xl p-4 bg-violet-50/60';
+            wrap.innerHTML = `
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="font-semibold text-violet-800">ผู้ได้รับรางวัล (Award Recipients)</span>
+      </div>
+      <div class="award-recipients-container space-y-2" id="award-recipients-${idx}"></div>
+      <div class="flex justify-end">
+        <button type="button" class="add-award-recipient-btn px-3 py-1 rounded bg-violet-600 text-white" onclick="addAwardRecipientRow(this)">+ เพิ่มผู้ได้รับรางวัล</button>
+      </div>
+    </div>
+  `;
+            return wrap;
+        }
+
+        function addAwardRecipientRow(btnEl) {
+            const outputRow = btnEl.closest('.output-row');
+            const idx = outputRow.getAttribute('data-index');
+            const recipientsWrap = outputRow.querySelector(`#award-recipients-${idx}`);
+            if (!recipientsWrap) return;
+
+            const aIdx = awardRecipientIndex[idx] || 0;
+            recipientsWrap.insertAdjacentHTML('beforeend', `
+    <div class="award-recipient-row grid grid-cols-1 md:grid-cols-2 gap-3">
+      <input type="hidden" name="outputs[${idx}][authors][${aIdx}][role]" value="awardee">
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
+        <input type="hidden" name="outputs[${idx}][authors][${aIdx}][user_id]" data-user-id-hidden>
+        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" list="awardRecipientNames" data-user-lookup="full" class="w-full border p-2 rounded" placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+      </label>
+      <div class="flex items-end">
+        <button type="button" onclick="removeAwardRecipientRow(this)" class="px-3 py-2 rounded border text-red-600 border-red-300">ลบรายชื่อ</button>
+      </div>
+    </div>
+  `);
+            bindProjectUserLookup(recipientsWrap);
+
+            awardRecipientIndex[idx] = aIdx + 1;
+        }
+
+        function removeAwardRecipientRow(btnEl) {
+            btnEl.closest('.award-recipient-row')?.remove();
         }
 
         /* ===== EA119: Textbook / Book chapter ===== */
@@ -3691,7 +3822,8 @@
     <div class="book-author-row grid grid-cols-1 md:grid-cols-3 gap-3">
       <label class="md:col-span-2">
         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
-        <input type="text" name="outputs[${idx}][book_authors][${aIdx}][name]" data-book-author-input list="book-author-name-list-${idx}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required onfocus="refreshBookAuthorDatalistInOutput(this)" oninput="refreshBookAuthorDatalistInOutput(this)">
+        <input type="hidden" name="outputs[${idx}][book_authors][${aIdx}][user_id]" data-user-id-hidden>
+        <input type="text" name="outputs[${idx}][book_authors][${aIdx}][name]" data-book-author-input data-user-lookup="full" list="book-author-name-list-${idx}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required onfocus="refreshBookAuthorDatalistInOutput(this)" oninput="refreshBookAuthorDatalistInOutput(this)">
       </label>
       <div class="flex items-end">
         <button type="button" onclick="removeBookAuthorRow(this)" class="px-3 py-2 rounded border text-red-600 border-red-300">ลบ</button>
@@ -3699,6 +3831,7 @@
     </div>
   `);
             bookAuthorIndex[idx] = aIdx + 1;
+            bindProjectUserLookup(authorsWrap);
             refreshBookAuthorDatalistInOutput(outputRow);
         }
 
@@ -3718,6 +3851,38 @@
                 .filter(Boolean);
             window.__bookAuthorBaseOptions = Array.from(new Set(base));
             return window.__bookAuthorBaseOptions;
+        }
+
+        function findProjectMatchedUser(input) {
+            const value = String(input?.value || '').trim();
+            const mode = input?.dataset?.userLookup || 'full';
+            const users = Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [];
+            if (!value) return null;
+            return users.find((user) => mode === 'research'
+                ? String(user.research_display_name || '').trim() === value
+                : String(user.full_name || '').trim() === value) || null;
+        }
+
+        function syncProjectUserLookupInput(input) {
+            const hidden = input?.closest('label, .author-row, .award-recipient-row, .conference-row')?.querySelector('[data-user-id-hidden]');
+            if (!hidden) return;
+            const matched = findProjectMatchedUser(input);
+            hidden.value = matched ? String(matched.id) : '';
+        }
+
+        function bindProjectUserLookup(scope = document) {
+            scope.querySelectorAll('input[data-user-lookup], .conference-row input[name$="[note]"]').forEach((input) => {
+                if (!input.dataset.userLookup) input.dataset.userLookup = 'full';
+                if (input.dataset.userLookupBound === '1') {
+                    syncProjectUserLookupInput(input);
+                    return;
+                }
+                input.dataset.userLookupBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    input.addEventListener(eventName, () => syncProjectUserLookupInput(input));
+                });
+                syncProjectUserLookupInput(input);
+            });
         }
 
         function refreshBookAuthorDatalistInOutput(sourceEl) {
@@ -3852,13 +4017,15 @@
         <input name="outputs[${idx}][conferences][${cIdx}][location]" class="w-44 border p-2 rounded" placeholder="เมือง/ประเทศ">
       </td>
       <td class="px-2 py-2">
-        <input name="outputs[${idx}][conferences][${cIdx}][note]" list="userNames" class="w-56 border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
+        <input type="hidden" name="outputs[${idx}][conferences][${cIdx}][user_id]" data-user-id-hidden>
+        <input name="outputs[${idx}][conferences][${cIdx}][note]" list="userNames" data-user-lookup="full" class="w-56 border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
       </td>
       <td class="px-2 py-2 text-center">
         <button type="button" class="px-2 py-1 text-red-600 border border-red-300 rounded" onclick="removeConferenceRow(this)">ลบ</button>
       </td>
     </tr>
   `);
+            bindProjectUserLookup(tbody);
 
             confIndex[idx] = cIdx + 1;
         }
@@ -3946,6 +4113,7 @@
 
             // ถ้ามี datepicker ไทยให้เรียก init ที่นี่ (ถ้าไม่มี ฟังก์ชันนี้จะถูกข้าม)
             if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
+            bindProjectUserLookup(document);
         });
 
 

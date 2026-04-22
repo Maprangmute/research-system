@@ -1512,6 +1512,7 @@
                             @php
                                 $isEA101 = Str::startsWith((string) ($output->type ?? ''), 'EA101');
                                 $isEA103 = Str::startsWith((string) ($output->type ?? ''), 'EA103');
+                                $isEA118 = Str::startsWith((string) ($output->type ?? ''), 'EA118');
                                 $isEA119 = Str::startsWith((string) ($output->type ?? ''), 'EA119');
                                 $typeBadgeStyle = $outputTypeStyle($output->type ?? '');
                             @endphp
@@ -1638,6 +1639,41 @@
                                                         </div>
                                                     @endif
                                                 </div>
+                                            </div>
+                                        @endif
+
+                                        @if ($isEA118)
+                                            @php
+                                                $awardees = ($output->authors ?? collect())->filter(function ($a) {
+                                                    return !empty(trim($a->name ?? ''));
+                                                });
+                                            @endphp
+
+                                            <div class="mt-3 border rounded-xl p-4 bg-violet-50/60">
+                                                <div class="font-semibold text-violet-800 mb-2">ผู้ได้รับรางวัล (Award Recipients)</div>
+
+                                                @if ($awardees->isEmpty())
+                                                    <div class="text-sm text-gray-500">- ไม่มีรายชื่อผู้ได้รับรางวัล -</div>
+                                                @else
+                                                    <div class="overflow-x-auto">
+                                                        <table class="min-w-full text-sm border bg-white">
+                                                            <thead class="bg-violet-100">
+                                                                <tr>
+                                                                    <th class="px-2 py-2 text-left">#</th>
+                                                                    <th class="px-2 py-2 text-left">ชื่อ-นามสกุล / หน่วยงาน</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach ($awardees as $ai => $awardee)
+                                                                    <tr class="border-t">
+                                                                        <td class="px-2 py-2">{{ $ai + 1 }}</td>
+                                                                        <td class="px-2 py-2 break-words">{{ $awardee->name }}</td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                @endif
                                             </div>
                                         @endif
 
