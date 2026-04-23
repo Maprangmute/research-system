@@ -37,6 +37,20 @@ class BackfillOutputUserIds extends Command
                 'name_column' => 'name',
             ],
             [
+                'key' => 'output_award_recipients',
+                'table' => 'output_award_recipients',
+                'id_column' => 'id',
+                'user_id_column' => 'user_id',
+                'name_column' => 'name',
+            ],
+            [
+                'key' => 'external_output_award_recipients',
+                'table' => 'external_output_award_recipients',
+                'id_column' => 'id',
+                'user_id_column' => 'user_id',
+                'name_column' => 'name',
+            ],
+            [
                 'key' => 'output_book_authors',
                 'table' => 'output_book_authors',
                 'id_column' => 'id',
@@ -44,18 +58,25 @@ class BackfillOutputUserIds extends Command
                 'name_column' => 'name',
             ],
             [
-                'key' => 'output_conferences',
-                'table' => 'output_conferences',
+                'key' => 'external_output_book_authors',
+                'table' => 'external_output_book_authors',
                 'id_column' => 'id',
                 'user_id_column' => 'user_id',
-                'name_column' => 'note',
+                'name_column' => 'name',
             ],
             [
-                'key' => 'external_output_conferences',
-                'table' => 'external_output_conferences',
+                'key' => 'output_conference_presenters',
+                'table' => 'output_conference_presenters',
                 'id_column' => 'id',
                 'user_id_column' => 'user_id',
-                'name_column' => 'presenter_name',
+                'name_column' => 'name',
+            ],
+            [
+                'key' => 'external_output_conference_presenters',
+                'table' => 'external_output_conference_presenters',
+                'id_column' => 'id',
+                'user_id_column' => 'user_id',
+                'name_column' => 'name',
             ],
         ];
     }

@@ -29,6 +29,7 @@ class Output extends Model
         'book_title',
         'publisher_name',
         'chapter_pages',
+        'isbn',
     ];
 
 
@@ -37,11 +38,28 @@ public function conferences()
     return $this->hasMany(OutputConference::class);
 }
 
+public function conferencePresenters()
+{
+    return $this->hasManyThrough(
+        \App\Models\OutputConferencePresenter::class,
+        \App\Models\OutputConference::class,
+        'output_id',
+        'output_conference_id',
+        'id',
+        'id'
+    );
+}
+
 
   // ความสัมพันธ์กับ OutputAuthor (ใหม่)
 public function authors()
 {
     return $this->hasMany(\App\Models\OutputAuthor::class, 'output_id', 'id');
+}
+
+public function awardRecipients()
+{
+    return $this->hasMany(\App\Models\OutputAwardRecipient::class, 'output_id', 'id');
 }
 
 public function bookAuthors()
@@ -60,6 +78,7 @@ public function bookAuthors()
         'book_title'    => null,
         'publisher_name'=> null,
         'chapter_pages' => null,
+        'isbn'          => null,
     ];
 
     // ==== ความสัมพันธ์ ====
@@ -113,7 +132,7 @@ public function bookAuthors()
             $name = isset($a['name']) ? trim((string) $a['name']) : null;
             $userId = isset($a['user_id']) ? (int) $a['user_id'] : null;
             if (!$role || !$name) return null;
-            if (!in_array($role, ['first','co','corresponding','awardee'], true)) return null;
+            if (!in_array($role, ['first','co','corresponding'], true)) return null;
             return ['role' => $role, 'name' => $name, 'user_id' => $userId > 0 ? $userId : null];
         }, $authors)));
 

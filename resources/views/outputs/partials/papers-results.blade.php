@@ -1,4 +1,14 @@
 <div id="papers-results" class="space-y-6">
+    @php
+        $matchedRoleBadgeClass = static function (string $roleLabel): string {
+            return match ($roleLabel) {
+                'First Author' => 'border-emerald-200 bg-emerald-50 text-emerald-800',
+                'Co-Author' => 'border-amber-200 bg-amber-50 text-amber-800',
+                'Corresponding Author' => 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-800',
+                default => 'border-slate-200 bg-slate-50 text-slate-700',
+            };
+        };
+    @endphp
     <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
             <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Papers</div>
@@ -58,6 +68,15 @@
                         <div class="space-y-2 text-sm text-slate-700">
                             <div>
                                 <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Authors</div>
+                                @if (request('author') && !empty($paper->matched_author_roles) && collect($paper->matched_author_roles)->isNotEmpty())
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        @foreach (collect($paper->matched_author_roles) as $matchedRole)
+                                            <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold {{ $matchedRoleBadgeClass((string) $matchedRole) }}">
+                                                {{ $matchedRole }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
                                 @forelse ($paper->authors_by_role as $role => $names)
                                     <div class="mt-1">
                                         <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -154,6 +173,15 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 text-sm text-slate-700">
+                                    @if (request('author') && !empty($paper->matched_author_roles) && collect($paper->matched_author_roles)->isNotEmpty())
+                                        <div class="mb-3 flex flex-wrap gap-2">
+                                            @foreach (collect($paper->matched_author_roles) as $matchedRole)
+                                                <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold {{ $matchedRoleBadgeClass((string) $matchedRole) }}">
+                                                    {{ $matchedRole }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                     @forelse ($paper->authors_by_role as $role => $names)
                                         <div class="mb-2">
                                             <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">

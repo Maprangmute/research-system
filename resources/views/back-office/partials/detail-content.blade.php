@@ -131,14 +131,20 @@
                                 <div class="font-semibold text-slate-800">Conferences</div>
                                 @if ($confs->count())
                                     <ul class="mt-1 list-disc list-inside text-slate-700">
-                                        @foreach ($confs as $conf)
-                                            <li>
-                                                {{ $conf['name'] ?? '-' }}
-                                                @if (!empty($conf['presentation_type'])) • {{ $conf['presentation_type'] }} @endif
-                                                @if (!empty($conf['location'])) • {{ $conf['location'] }} @endif
-                                                @if (!empty($conf['note'])) • {{ $conf['note'] }} @endif
-                                            </li>
-                                        @endforeach
+                                                @foreach ($confs as $conf)
+                                                    <li>
+                                                        {{ $conf['name'] ?? '-' }}
+                                                        @if (!empty($conf['presentation_type'])) • {{ $conf['presentation_type'] }} @endif
+                                                        @if (!empty($conf['location'])) • {{ $conf['location'] }} @endif
+                                                        @php
+                                                            $presenterNames = collect($conf['presenters'] ?? [])->pluck('name')->filter()->values()->all();
+                                                            $presenterDisplay = !empty($presenterNames)
+                                                                ? implode(', ', $presenterNames)
+                                                                : ($conf['note'] ?? '');
+                                                        @endphp
+                                                        @if (!empty($presenterDisplay)) • {{ $presenterDisplay }} @endif
+                                                    </li>
+                                                @endforeach
                                     </ul>
                                 @else
                                     <div class="mt-1 text-slate-600">- ไม่มีรายการ Conference -</div>

@@ -21,6 +21,9 @@
         'full_name' => $user->full_name,
         'research_display_name' => $user->research_display_name,
     ])->values();
+    $piInternalAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
+    $internalCoresearchUnit = 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
+    $internalCoresearchAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
     $bookAuthorNameOptions = $allUsers
         ->map(fn($user) => trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')))
         ->filter()
@@ -78,14 +81,26 @@
         ->distinct()
         ->orderBy('funding_name')
         ->pluck('funding_name');
+    $coresearchNameList = \App\Models\CoResearch::whereNotNull('name')
+        ->whereRaw("TRIM(name) <> ''")
+        ->where(function ($query) use ($internalCoresearchUnit) {
+            $query->whereNull('unit_status')
+                ->orWhereRaw("TRIM(unit_status) <> ?", [$internalCoresearchUnit]);
+        })
+        ->selectRaw('TRIM(name) as name')
+        ->distinct()
+        ->orderBy('name')
+        ->pluck('name');
     $coresearchAffiliationList = \App\Models\CoResearch::whereNotNull('affiliation')
         ->whereRaw("TRIM(affiliation) <> ''")
+        ->whereRaw("TRIM(affiliation) <> ?", [$internalCoresearchAffiliation])
         ->selectRaw('TRIM(affiliation) as affiliation')
         ->distinct()
         ->orderBy('affiliation')
         ->pluck('affiliation');
     $copiAffiliationList = \App\Models\Copi::whereNotNull('affiliation')
         ->whereRaw("TRIM(affiliation) <> ''")
+        ->whereRaw("TRIM(affiliation) <> ?", [$piInternalAffiliation])
         ->selectRaw('TRIM(affiliation) as affiliation')
         ->distinct()
         ->orderBy('affiliation')
@@ -103,15 +118,15 @@
     @foreach (\App\Models\OutputAuthor::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $authorName)
         <option value="{{ $authorName }}"></option>
     @endforeach
-    @foreach ($projectUserDirectory as $userOption)
-        <option value="{{ $userOption['research_display_name'] }}"></option>
-    @endforeach
 </datalist>
 <datalist id="awardRecipientNames">
-    <option value="หน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ"></option>
-    @foreach ($allUsers as $user)
-        @php $fullName = $user->full_name; @endphp
-        <option value="{{ $fullName }}"></option>
+    @foreach (\App\Models\OutputAwardRecipient::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $awardeeName)
+        <option value="{{ $awardeeName }}"></option>
+    @endforeach
+</datalist>
+<datalist id="bookAuthorNames">
+    @foreach (\App\Models\OutputBookAuthor::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $bookAuthorName)
+        <option value="{{ $bookAuthorName }}"></option>
     @endforeach
 </datalist>
 {{-- ✅ DATAlIST กลาง (ใช้ร่วมกันทุก row) --}}
@@ -119,6 +134,11 @@
     @foreach ($allUsers as $user)
         @php $fullName = $user->full_name; @endphp
         <option value="{{ $fullName }}"></option>
+    @endforeach
+</datalist>
+<datalist id="coresearchUsers">
+    @foreach ($coresearchNameList as $coresearchName)
+        <option value="{{ $coresearchName }}"></option>
     @endforeach
 </datalist>
 
@@ -1002,17 +1022,20 @@
             <h3 class="font-semibold text-lg text-blue-700 mb-2">C: Roles and Responsibilities</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">CA101 - ชื่อ PI (ผู้วิจัยหลัก) <span class="text-red-500">*</span></span>
-                    <input name="pi_name" list="userNames" value="{{ old('pi_name', $project->pi_name) }}"
-                        class="w-full border p-2 rounded" placeholder="ยศ-ชื่อ PI" required
-                        oninvalid="this.setCustomValidity('กรุณาเลือกกลุ่มเนื้อหา')" oninput="this.setCustomValidity('')">
+                    <span class="block text-sm text-gray-700 mb-1">CA101 - ประเภท PI (ผู้วิจัยหลัก) <span class="text-red-500">*</span></span>
+                    <select name="pi_person_type" data-pi-person-type class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทผู้วิจัยหลัก')" oninput="this.setCustomValidity('')">
+                        <option value="">กรุณาเลือก</option>
+                        <option value="internal" {{ old('pi_person_type', $project->pi_user_id ? 'internal' : 'external') === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="external" {{ old('pi_person_type', $project->pi_user_id ? 'internal' : 'external') === 'external' ? 'selected' : '' }}>คนนอก</option>
+                    </select>
                 </label>
 
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัดผู้วิจัยหลัก <span class="text-red-500">*</span></span>
 
-                    <input name="pi_affiliation" value="{{ old('pi_affiliation', $project->pi_affiliation ?? '') }}"
-                        class="w-full border p-2 rounded" placeholder="สังกัด PI" list="pi_affiliation_list" required
+                    <input name="pi_affiliation" value="{{ old('pi_affiliation', $project->pi_affiliation ?? '') }}" data-pi-affiliation
+                        class="w-full border p-2 rounded" placeholder="เลือกประเภทผู้วิจัยหลักก่อน" list="pi_affiliation_list" required
                         oninvalid="this.setCustomValidity('กรุณาระบุสังกัดผู้วิจัยหลัก')"
                         oninput="this.setCustomValidity('')">
 
@@ -1032,6 +1055,28 @@
                         @endforeach
                     </datalist>
                 </label>
+
+                <label class="w-full md:col-span-2" data-pi-manual-wrap>
+                    <span class="block text-sm text-gray-700 mb-1">CA102 - ชื่อ PI (ผู้วิจัยหลัก) <span class="text-red-500">*</span></span>
+                    <input type="hidden" name="pi_user_id" value="{{ old('pi_user_id', $project->pi_user_id) }}" data-pi-user-id>
+                    <input type="hidden" name="pi_name" value="{{ old('pi_name', $project->pi_name) }}" data-pi-name-hidden>
+                    <input data-pi-manual-name value="{{ old('pi_name', $project->pi_name) }}"
+                        class="w-full border p-2 rounded" placeholder="เลือกประเภทผู้วิจัยหลักก่อน"
+                        oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้วิจัยหลัก')" oninput="this.setCustomValidity('')">
+                </label>
+
+                <label class="w-full md:col-span-2 hidden" data-pi-user-wrap>
+                    <span class="block text-sm text-gray-700 mb-1">CA102 - เลือก PI จากรายชื่อบุคลากร <span class="text-red-500">*</span></span>
+                    <select data-pi-user-select class="w-full border p-2 rounded"
+                        oninvalid="this.setCustomValidity('กรุณาเลือกผู้วิจัยหลักจากรายการ')" oninput="this.setCustomValidity('')">
+                        <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                        @foreach ($allUsers as $user)
+                            <option value="{{ $user->id }}" {{ (string) old('pi_user_id', $project->pi_user_id) === (string) $user->id ? 'selected' : '' }}>
+                                {{ trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </label>
             </div>
 
 
@@ -1041,28 +1086,63 @@
             <h3 class="text-balance text-blue-700 mb-2">รายชื่อผู้ร่วมวิจัย (COPI)</h3>
             <div id="copi-container" class="space-y-2 mb-4">
                 @foreach ($project->copis ?? [] as $i => $copi)
-                    <div id="copi-{{ $i }}" class="copi-row grid grid-cols-1 md:grid-cols-2 gap-4 items-center p-3 border rounded-lg bg-gray-50">
-                        <label class="w-full">
-                            <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ {{ $i + 1 }} <span class="text-red-500">*</span></span>
-                            <input name="copis[{{ $i }}][name]"
-                                value="{{ old('copis.' . $i . '.name', $copi['name']) }}"
-                                list="userNames" class="w-full border p-2 rounded"
-                                placeholder="ยศ ชื่อ-นามสกุล COPI" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
-                                oninput="this.setCustomValidity('')">
-                        </label>
+                    <div id="copi-{{ $i }}" class="copi-row space-y-2 p-4 border rounded-lg bg-gray-50">
+                        <input type="hidden" name="copis[{{ $i }}][id]" value="{{ $copi['id'] ?? $copi->id ?? '' }}">
+                        <input type="hidden" name="copis[{{ $i }}][name]" value="{{ old('copis.' . $i . '.name', $copi['name']) }}" data-copi-name>
+                        <input type="hidden" name="copis[{{ $i }}][user_id]" value="{{ old('copis.' . $i . '.user_id', $copi['user_id'] ?? '') }}" data-copi-user-id>
 
-                        <div class="flex flex-col sm:flex-row gap-2 w-full">
-                            <label class="w-full">
-                                <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่
-                                    {{ $i + 1 }} <span class="text-red-500">*</span></span>
-                                <input name="copis[{{ $i }}][affiliation]" value="{{ $copi['affiliation'] }}"
-                                    class="w-full border p-2 rounded" placeholder="สังกัด COPI" list="copiAffiliationList" required
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-slate-600">ลำดับ</span>
+                            <span class="inline-flex px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold copi-index">{{ $i + 1 }}</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <label class="col-span-12 md:col-span-5">
+                                <span class="block text-sm text-gray-700 mb-1">คนใน / คนนอก <span class="text-red-500">*</span></span>
+                                <select name="copis[{{ $i }}][person_type]" data-copi-person-type class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภท COPI')"
+                                    oninput="this.setCustomValidity('')">
+                                    <option value="">กรุณาเลือก</option>
+                                    <option value="internal" {{ old('copis.' . $i . '.person_type', !empty($copi['user_id'] ?? null) ? 'internal' : 'external') === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                    <option value="external" {{ old('copis.' . $i . '.person_type', !empty($copi['user_id'] ?? null) ? 'internal' : 'external') === 'external' ? 'selected' : '' }}>คนนอก</option>
+                                </select>
+                            </label>
+
+                            <label class="col-span-12 md:col-span-5">
+                                <span class="block text-sm text-gray-700 mb-1">สังกัด COPI <span class="text-red-500">*</span></span>
+                                <input name="copis[{{ $i }}][affiliation]" value="{{ old('copis.' . $i . '.affiliation', $copi['affiliation']) }}"
+                                    data-copi-affiliation class="w-full border p-2 rounded" placeholder="เลือกประเภท COPI ก่อน" list="copiAffiliationList"
                                     oninvalid="this.setCustomValidity('กรุณาระบุสังกัด COPI')"
                                     oninput="this.setCustomValidity('')">
                             </label>
-                            <button type="button" onclick="removeRow('copi-{{ $i }}', 'copi')"
-                                class="text-red-600 mt-6">✕</button>
+
+                            <div class="col-span-12 md:col-span-2 flex justify-end md:pt-6">
+                                <button type="button" onclick="removeRow('copi-{{ $i }}', 'copi')"
+                                    class="text-red-600 text-xl">✕</button>
+                            </div>
+
+                            <label class="col-span-12" data-copi-manual-wrap>
+                                <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI <span class="text-red-500">*</span></span>
+                                <input value="{{ old('copis.' . $i . '.name', $copi['name']) }}"
+                                    list="userNames" data-copi-manual-name class="w-full border p-2 rounded"
+                                    placeholder="เลือกประเภท COPI ก่อน"
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
+                                    oninput="this.setCustomValidity('')">
+                            </label>
+
+                            <label class="col-span-12 hidden" data-copi-user-wrap>
+                                <span class="block text-sm text-gray-700 mb-1">เลือก COPI จากรายชื่อบุคลากร <span class="text-red-500">*</span></span>
+                                <select data-copi-user-select class="w-full border p-2 rounded"
+                                    oninvalid="this.setCustomValidity('กรุณาเลือก COPI จากรายการ')"
+                                    oninput="this.setCustomValidity('')">
+                                    <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                                    @foreach ($allUsers as $user)
+                                        <option value="{{ $user->id }}" {{ (string) old('copis.' . $i . '.user_id', $copi['user_id'] ?? '') === (string) $user->id ? 'selected' : '' }}>
+                                            {{ $user->full_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </label>
                         </div>
                     </div>
                 @endforeach
@@ -1075,31 +1155,18 @@
             <div id="coresearch-container" class="space-y-4 mb-4">
                 @foreach ($project->coResearches ?? [] as $i => $co)
                     <div id="coresearch-{{ $i }}" class="coresearch-row space-y-2 p-4 border rounded-lg bg-gray-50">
-                        <!-- ชื่อ -->
-                        <label class="block w-full">
-                            <span class="block text-sm text-gray-700 mb-1">
-                                ชื่อ Co-Researcher คนที่ <span class="coresearch-index">{{ $i + 1 }}</span> <span class="text-red-500">*</span>
-                            </span>
-                            <input name="coresearch[{{ $i }}][name]"
-                                value="{{ old('coresearch.' . $i . '.name', $co->name) }}"
-                                list="userNames" class="w-full border p-2 rounded"
-                                placeholder="ยศ ชื่อ-นามสกุล" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
-                                oninput="this.setCustomValidity('')">
-                        </label>
+                        <input type="hidden" name="coresearch[{{ $i }}][id]" value="{{ $co->id }}">
+                        <input type="hidden" name="coresearch[{{ $i }}][name]" value="{{ old('coresearch.' . $i . '.name', $co->name) }}" data-coresearch-name>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-slate-600">ลำดับ</span>
+                            <span class="inline-flex px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold coresearch-index">{{ $i + 1 }}</span>
+                        </div>
                         <!-- สังกัด + สถานะ + ปุ่มลบ -->
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                             <label class="col-span-12 md:col-span-5">
-                                <span class="block text-sm text-gray-700 mb-1">สังกัด <span class="text-red-500">*</span></span>
-                                <input name="coresearch[{{ $i }}][affiliation]"
-                                    value="{{ $co->affiliation }}" class="w-full border p-2 rounded"
-                                    placeholder="สังกัด" list="coresearchAffiliationList" required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
-                                    oninput="this.setCustomValidity('')">
-                            </label>
-                            <label class="col-span-12 md:col-span-5">
                                 <span class="block text-sm text-gray-700 mb-1">คนภายนอก / ภายใน <span class="text-red-500">*</span></span>
                                 <select name="coresearch[{{ $i }}][unit_status]"
+                                    data-coresearch-unit-status
                                     class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณเลือกสถานะของ Co-Researcher')"
                                     oninput="this.setCustomValidity('')">
@@ -1113,17 +1180,47 @@
                                         {{ $co->unit_status == 'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล' ? 'selected' : '' }}>
                                         ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล
                                     </option>
-                                    <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ"
-                                        {{ in_array($co->unit_status, ['ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ', 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ'], true) ? 'selected' : '' }}>
-                                        ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
+                                    <option value="{{ $internalCoresearchUnit }}"
+                                        {{ in_array(old('coresearch.' . $i . '.unit_status', $co->unit_status), [$internalCoresearchUnit, 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ'], true) ? 'selected' : '' }}>
+                                        {{ $internalCoresearchUnit }}
                                     </option>
                                 </select>
+                            </label>
+                            <label class="col-span-12 md:col-span-5" data-coresearch-affiliation-wrap>
+                                <span class="block text-sm text-gray-700 mb-1">สังกัด <span class="text-red-500">*</span></span>
+                                <input name="coresearch[{{ $i }}][affiliation]"
+                                    value="{{ old('coresearch.' . $i . '.affiliation', $co->affiliation) }}" data-coresearch-affiliation class="w-full border p-2 rounded"
+                                    placeholder="เลือกคนภายนอก / ภายในก่อน" list="coresearchAffiliationList"
+                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
+                                    oninput="this.setCustomValidity('')">
                             </label>
                             <div class="col-span-12 md:col-span-2 flex justify-end md:pt-6">
                                 <button type="button"
                                     onclick="removeRow('coresearch-{{ $i }}', 'coresearch')"
                                     class="text-red-600 text-xl">✕</button>
                             </div>
+                            <label class="col-span-12" data-coresearch-manual-wrap>
+                                <span class="block text-sm text-gray-700 mb-1">ชื่อ Co-Researcher <span class="text-red-500">*</span></span>
+                                <input
+                                    value="{{ old('coresearch.' . $i . '.name', $co->name) }}"
+                                    list="coresearchUsers" data-coresearch-manual-name class="w-full border p-2 rounded"
+                                    placeholder="เลือกคนภายนอก / ภายในก่อน"
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
+                                    oninput="this.setCustomValidity('')">
+                            </label>
+                            <label class="col-span-12 hidden" data-coresearch-user-wrap>
+                                <span class="block text-sm text-gray-700 mb-1">เลือกบุคลากรภายในหน่วยวิจัย <span class="text-red-500">*</span></span>
+                                <select name="coresearch[{{ $i }}][user_id]" data-coresearch-user-select class="w-full border p-2 rounded"
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกบุคลากรภายในหน่วยวิจัยจากรายการ')"
+                                    oninput="this.setCustomValidity('')">
+                                    <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                                    @foreach ($allUsers as $user)
+                                        <option value="{{ $user->id }}" {{ (string) old('coresearch.' . $i . '.user_id', $co->user_id) === (string) $user->id ? 'selected' : '' }}>
+                                            {{ $user->full_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </label>
                         </div>
                     </div>
                 @endforeach
@@ -1512,7 +1609,7 @@
                             {{-- EA101 --}}
                             @if (str_starts_with($t, 'EA101'))
                                 <div class="ea101-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <label>
                                             <span class="block text-sm text-gray-700 mb-1">Journal</span>
                                             <input name="outputs[{{ $i }}][journal]" type="text"
@@ -1593,18 +1690,44 @@
                                                             </select>
                                                         </label>
 
+                                                        @php $authorPersonType = old("outputs.$i.authors.$j.person_type", $auth->user_id ? 'internal' : 'external'); @endphp
                                                         <label class="w-full">
-                                                            <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล
-                                                                ผู้เขียน <span class="required-mark">*</span></span>
-                                                            <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][user_id]" value="{{ old("outputs.$i.authors.$j.user_id", $auth->user_id) }}" data-user-id-hidden>
+                                                            <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก
+                                                                <span class="required-mark">*</span></span>
+                                                            <select
+                                                                name="outputs[{{ $i }}][authors][{{ $j }}][person_type]"
+                                                                data-output-author-person-type class="w-full border p-2 rounded" required
+                                                                oninvalid="this.setCustomValidity('กรุณาเลือกประเภทผู้เขียน')"
+                                                                oninput="this.setCustomValidity('')">
+                                                                <option value="" {{ !$authorPersonType ? 'selected' : '' }}>กรุณาเลือก</option>
+                                                                <option value="internal" {{ $authorPersonType === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                                <option value="external" {{ $authorPersonType === 'external' ? 'selected' : '' }}>คนนอก</option>
+                                                            </select>
+                                                        </label>
+                                                    </div>
+                                                    <div class="space-y-2">
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล
+                                                            ผู้เขียน <span class="required-mark">*</span></span>
+                                                        <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][user_id]" value="{{ old("outputs.$i.authors.$j.user_id", $auth->user_id) }}" data-user-id-hidden>
+                                                        <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][name]" value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}" data-output-author-name-hidden>
+                                                        <div data-output-author-manual-wrap>
                                                             <input
-                                                                name="outputs[{{ $i }}][authors][{{ $j }}][name]"
-                                                                type="text" list="outputAuthorNames" data-user-lookup="research" class="w-full border p-2 rounded"
+                                                                type="text" list="outputAuthorNames" data-output-author-manual-name class="w-full border p-2 rounded"
                                                                 value="{{ old("outputs.$i.authors.$j.name", $auth->name) }}"
-                                                                placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
+                                                                placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)"
                                                                 oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
                                                                 oninput="this.setCustomValidity('')">
-                                                        </label>
+                                                        </div>
+                                                        <div data-output-author-user-wrap class="hidden" style="display:none;">
+                                                            <select data-output-author-user-select class="w-full border p-2 rounded">
+                                                                <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>
+                                                                @foreach ($allUsers as $user)
+                                                                    <option value="{{ $user->id }}" {{ (string) old("outputs.$i.authors.$j.user_id", $auth->user_id) === (string) $user->id ? 'selected' : '' }}>
+                                                                        {{ $user->research_display_name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             @empty
@@ -1634,15 +1757,37 @@
                                                             </select>
                                                         </label>
                                                         <label class="w-full">
-                                                            <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล
-                                                                ผู้เขียน <span class="required-mark">*</span></span>
-                                                            <input type="hidden" name="outputs[{{ $i }}][authors][0][user_id]" data-user-id-hidden>
-                                                            <input name="outputs[{{ $i }}][authors][0][name]"
-                                                                type="text" list="outputAuthorNames" data-user-lookup="research" class="w-full border p-2 rounded"
-                                                                placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
+                                                            <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก
+                                                                <span class="required-mark">*</span></span>
+                                                            <select name="outputs[{{ $i }}][authors][0][person_type]"
+                                                                data-output-author-person-type class="w-full border p-2 rounded" required
+                                                                oninvalid="this.setCustomValidity('กรุณาเลือกประเภทผู้เขียน')"
+                                                                oninput="this.setCustomValidity('')">
+                                                                <option value="">กรุณาเลือก</option>
+                                                                <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                                <option value="external">คนนอก</option>
+                                                            </select>
+                                                        </label>
+                                                    </div>
+                                                    <div class="space-y-2">
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล
+                                                            ผู้เขียน <span class="required-mark">*</span></span>
+                                                        <input type="hidden" name="outputs[{{ $i }}][authors][0][user_id]" data-user-id-hidden>
+                                                        <input type="hidden" name="outputs[{{ $i }}][authors][0][name]" data-output-author-name-hidden>
+                                                        <div data-output-author-manual-wrap>
+                                                            <input type="text" list="outputAuthorNames" data-output-author-manual-name class="w-full border p-2 rounded"
+                                                                placeholder="เลือกประเภทผู้เขียนก่อน"
                                                                 oninvalid="this.setCustomValidity('กรุณากรอกชื่อ-นามสกุล ผู้เขียน')"
                                                                 oninput="this.setCustomValidity('')">
-                                                        </label>
+                                                        </div>
+                                                        <div data-output-author-user-wrap class="hidden" style="display:none;">
+                                                            <select data-output-author-user-select class="w-full border p-2 rounded">
+                                                                <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>
+                                                                @foreach ($allUsers as $user)
+                                                                    <option value="{{ $user->id }}">{{ $user->research_display_name }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             @endforelse
@@ -1657,7 +1802,7 @@
                             @endif
 
                             @if (str_starts_with($t, 'EA118'))
-                                @php $awardees = $out->authors ?? collect(); @endphp
+                                @php $awardees = $out->awardRecipients ?? collect(); @endphp
                                 <div class="ea118-section space-y-3 rounded-xl border border-slate-200 bg-violet-50/60 p-4">
                                     <div class="space-y-3">
                                         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -1666,16 +1811,43 @@
 
                                         <div class="award-recipients-container space-y-3" id="award-recipients-{{ $i }}">
                                             @forelse($awardees as $j => $awardee)
+                                                @php
+                                                    $awardeePersonType = old("outputs.$i.award_recipients.$j.person_type");
+                                                    if ($awardeePersonType === null) {
+                                                        $awardeePersonType = $awardee->user_id
+                                                            ? 'internal'
+                                                            : (trim((string) ($awardee->name ?? '')) === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ' ? 'unit' : 'external');
+                                                    }
+                                                @endphp
                                                 <div class="award-recipient-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
-                                                    <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][id]" value="{{ $awardee->id }}">
-                                                    <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][role]" value="awardee">
-                                                    <input type="hidden" name="outputs[{{ $i }}][authors][{{ $j }}][user_id]" value="{{ old("outputs.$i.authors.$j.user_id", $awardee->user_id) }}" data-user-id-hidden>
-                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <input type="hidden" name="outputs[{{ $i }}][award_recipients][{{ $j }}][id]" value="{{ $awardee->id }}">
+                                                    <input type="hidden" name="outputs[{{ $i }}][award_recipients][{{ $j }}][user_id]" value="{{ old("outputs.$i.award_recipients.$j.user_id", $awardee->user_id) }}" data-user-id-hidden>
+                                                    <div class="space-y-3">
+                                                        <label class="w-full">
+                                                            <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก / หน่วยงาน</span>
+                                                            <select name="outputs[{{ $i }}][award_recipients][{{ $j }}][person_type]" data-award-recipient-person-type class="w-full border p-2 rounded" required>
+                                                                <option value="">กรุณาเลือก</option>
+                                                                <option value="unit" {{ $awardeePersonType === 'unit' ? 'selected' : '' }}>หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                                <option value="internal" {{ $awardeePersonType === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                                <option value="external" {{ $awardeePersonType === 'external' ? 'selected' : '' }}>คนนอก</option>
+                                                            </select>
+                                                        </label>
                                                         <label class="w-full">
                                                             <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
-                                                            <input name="outputs[{{ $i }}][authors][{{ $j }}][name]" type="text" list="awardRecipientNames" data-user-lookup="full" class="w-full border p-2 rounded"
-                                                                value="{{ old("outputs.$i.authors.$j.name", $awardee->name) }}"
-                                                                placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+                                                            <input type="hidden" name="outputs[{{ $i }}][award_recipients][{{ $j }}][name]" value="{{ old("outputs.$i.award_recipients.$j.name", $awardee->name) }}" data-award-recipient-name-hidden>
+                                                            <div data-award-recipient-manual-wrap>
+                                                                <input type="text" list="awardRecipientNames" data-award-recipient-manual-name class="w-full border p-2 rounded"
+                                                                    value="{{ old("outputs.$i.award_recipients.$j.name", $awardee->name) }}"
+                                                                    placeholder="เลือกประเภทผู้ได้รับรางวัลก่อน">
+                                                            </div>
+                                                            <div data-award-recipient-user-wrap class="hidden" style="display:none;">
+                                                                <select data-award-recipient-user-select class="w-full border p-2 rounded">
+                                                                    <option value="">พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล</option>
+                                                                    @foreach ($allUsers as $user)
+                                                                        <option value="{{ $user->id }}" {{ (string) old("outputs.$i.award_recipients.$j.user_id", $awardee->user_id) === (string) $user->id ? 'selected' : '' }}>{{ $user->full_name }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
                                                         </label>
                                                         <div class="flex items-end">
                                                             <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeAwardRecipientRow(this)">ลบ</button>
@@ -1684,13 +1856,33 @@
                                                 </div>
                                             @empty
                                                 <div class="award-recipient-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
-                                                    <input type="hidden" name="outputs[{{ $i }}][authors][0][role]" value="awardee">
-                                                    <input type="hidden" name="outputs[{{ $i }}][authors][0][user_id]" data-user-id-hidden>
-                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <input type="hidden" name="outputs[{{ $i }}][award_recipients][0][id]" value="">
+                                                    <input type="hidden" name="outputs[{{ $i }}][award_recipients][0][user_id]" data-user-id-hidden>
+                                                    <div class="space-y-3">
+                                                        <label class="w-full">
+                                                            <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก / หน่วยงาน</span>
+                                                            <select name="outputs[{{ $i }}][award_recipients][0][person_type]" data-award-recipient-person-type class="w-full border p-2 rounded" required>
+                                                                <option value="">กรุณาเลือก</option>
+                                                                <option value="unit">หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                                <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                                <option value="external">คนนอก</option>
+                                                            </select>
+                                                        </label>
                                                         <label class="w-full">
                                                             <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
-                                                            <input name="outputs[{{ $i }}][authors][0][name]" type="text" list="awardRecipientNames" data-user-lookup="full" class="w-full border p-2 rounded"
-                                                                placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+                                                            <input type="hidden" name="outputs[{{ $i }}][award_recipients][0][name]" data-award-recipient-name-hidden>
+                                                            <div data-award-recipient-manual-wrap>
+                                                                <input type="text" list="awardRecipientNames" data-award-recipient-manual-name class="w-full border p-2 rounded"
+                                                                    placeholder="เลือกประเภทผู้ได้รับรางวัลก่อน">
+                                                            </div>
+                                                            <div data-award-recipient-user-wrap class="hidden" style="display:none;">
+                                                                <select data-award-recipient-user-select class="w-full border p-2 rounded">
+                                                                    <option value="">พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล</option>
+                                                                    @foreach ($allUsers as $user)
+                                                                        <option value="{{ $user->id }}">{{ $user->full_name }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
                                                         </label>
                                                         <div class="flex items-end">
                                                             <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeAwardRecipientRow(this)">ลบ</button>
@@ -1699,7 +1891,7 @@
                                                 </div>
                                             @endforelse
                                         </div>
-                                        <div class="flex justify-end">
+                                        <div class="flex justify-center">
                                             <button type="button" class="lux-mobile-add-row-btn add-award-recipient-btn whitespace-nowrap px-3 py-2 rounded-lg bg-violet-600 text-sm font-semibold text-white" onclick="addAwardRecipientRow(this)">+ เพิ่มผู้ได้รับรางวัล</button>
                                         </div>
                                     </div>
@@ -1709,139 +1901,112 @@
                             {{-- EA103 --}}
                             @if (str_starts_with($t, 'EA103'))
                                 <div class="ea103-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                    <div class="flex flex-wrap items-center justify-between gap-2">
-                                        <span class="font-semibold text-slate-800">Conferences</span>
-                                        <button type="button"
-                                            class="lux-mobile-add-row-btn add-conf-btn whitespace-nowrap px-3 py-2 rounded-lg bg-amber-600 text-sm font-semibold text-white"
-                                            onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
+                                    @php
+                                        $confs = $out->conferences ?? collect();
+                                        $primaryConf = $confs->first();
+                                        $presenters = collect($primaryConf?->presenters ?? [])->values();
+                                    @endphp
+                                    <input type="hidden" name="outputs[{{ $i }}][conference_id]" value="{{ old("outputs.$i.conference_id", $primaryConf?->id) }}">
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <label>
+                                            <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
+                                            <input name="outputs[{{ $i }}][conference_name]" class="w-full border p-2 rounded"
+                                                value="{{ old("outputs.$i.conference_name", $primaryConf?->name) }}"
+                                                placeholder="เช่น PMAC 2025">
+                                        </label>
+                                        <label>
+                                            <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
+                                            @php $pt = old("outputs.$i.conference_presentation_type", $primaryConf?->presentation_type); @endphp
+                                            <select name="outputs[{{ $i }}][conference_presentation_type]" class="w-full border p-2 rounded">
+                                                <option value="">เลือก</option>
+                                                <option value="Oral Presentation" {{ $pt === 'Oral Presentation' ? 'selected' : '' }}>Oral Presentation</option>
+                                                <option value="Poster Presentation" {{ $pt === 'Poster Presentation' ? 'selected' : '' }}>Poster Presentation</option>
+                                                <option value="Abstract Presentation" {{ $pt === 'Abstract Presentation' ? 'selected' : '' }}>Abstract Presentation</option>
+                                                <option value="Panel Discussion" {{ $pt === 'Panel Discussion' ? 'selected' : '' }}>Panel Discussion</option>
+                                                <option value="Keynote Speech" {{ $pt === 'Keynote Speech' ? 'selected' : '' }}>Keynote Speech</option>
+                                                <option value="World café" {{ $pt === 'World café' ? 'selected' : '' }}>World café</option>
+                                            </select>
+                                        </label>
+                                        <label>
+                                            <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
+                                            <input name="outputs[{{ $i }}][conference_location]" class="w-full border p-2 rounded"
+                                                value="{{ old("outputs.$i.conference_location", $primaryConf?->location) }}"
+                                                placeholder="เมือง/ประเทศ">
+                                        </label>
                                     </div>
 
-                                    @php $confs = $out->conferences ?? collect(); @endphp
-                                    <div class="conference-tbody space-y-3" id="confs-{{ $i }}"
-                                        data-conf-index="{{ max($confs->count() - 1, 0) }}">
-                                        @forelse($confs as $k => $c)
-                                            <div class="conference-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
-                                                <input type="hidden"
-                                                    name="outputs[{{ $i }}][conferences][{{ $k }}][id]"
-                                                    value="{{ $c->id }}">
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="conference-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-700">{{ $k + 1 }}</span>
-                                                        <span class="text-sm font-semibold text-slate-700">Conference</span>
-                                                    </div>
-                                                    <button type="button"
-                                                        class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600"
-                                                        onclick="removeConferenceRow(this)">ลบ</button>
-                                                </div>
-                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div class="space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-semibold text-slate-800">รายชื่อผู้นำเสนอ</span>
+                                        </div>
+                                        <div class="conference-presenters-container space-y-3" id="confs-{{ $i }}" data-conf-presenter-index="{{ max($presenters->count() - 1, 0) }}">
+                                            @forelse($presenters as $k => $c)
+                                                @php
+                                                    $personType = old("outputs.$i.conference_presenters.$k.person_type");
+                                                    if ($personType === null) {
+                                                        $personType = $c->user_id ? 'internal' : 'external';
+                                                    }
+                                                @endphp
+                                                <div class="conference-presenter-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
+                                                    <input type="hidden" name="outputs[{{ $i }}][conference_presenters][{{ $k }}][id]" value="{{ $c->id }}">
+                                                    <input type="hidden" name="outputs[{{ $i }}][conference_presenters][{{ $k }}][user_id]" value="{{ old("outputs.$i.conference_presenters.$k.user_id", $c->user_id) }}" data-conference-presenter-user-id>
+                                                    <input type="hidden" name="outputs[{{ $i }}][conference_presenters][{{ $k }}][note]" value="{{ old("outputs.$i.conference_presenters.$k.note", $c->name) }}" data-conference-presenter-note-hidden>
                                                     <label>
-                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
-                                                        <input
-                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][name]"
-                                                            class="w-full border p-2 rounded"
-                                                            value="{{ old("outputs.$i.conferences.$k.name", $c->name) }}"
-                                                            placeholder="เช่น PMAC 2025">
-                                                    </label>
-                                                    <label>
-                                                        <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
-                                                        @php $pt = old("outputs.$i.conferences.$k.presentation_type", $c->presentation_type); @endphp
-                                                        <select
-                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][presentation_type]"
-                                                            class="w-full border p-2 rounded">
-                                                            <option value="">เลือก</option>
-                                                            <option value="Oral Presentation"
-                                                                {{ $pt === 'Oral Presentation' ? 'selected' : '' }}>Oral Presentation
-                                                            </option>
-                                                            <option
-                                                                value="Poster Presentation"{{ $pt === 'Poster Presentation' ? 'selected' : '' }}>
-                                                                Poster Presentation</option>
-                                                            <option
-                                                                value="Abstract Presentation"{{ $pt === 'Abstract Presentation' ? 'selected' : '' }}>
-                                                                Abstract Presentation</option>
-                                                            <option
-                                                                value="Panel Discussion"{{ $pt === 'Panel Discussion' ? 'selected' : '' }}>
-                                                                Panel Discussion</option>
-                                                            <option
-                                                                value="Keynote Speech"{{ $pt === 'Keynote Speech' ? 'selected' : '' }}>
-                                                                Keynote Speech</option>
-                                                            <option
-                                                                value="World café"{{ $pt === 'World café' ? 'selected' : '' }}>
-                                                                World café</option>
+                                                        <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+                                                        <select name="outputs[{{ $i }}][conference_presenters][{{ $k }}][person_type]" data-conference-presenter-person-type class="w-full border p-2 rounded" required>
+                                                            <option value="">กรุณาเลือก</option>
+                                                            <option value="internal" {{ $personType === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                            <option value="external" {{ $personType === 'external' ? 'selected' : '' }}>คนนอก</option>
                                                         </select>
                                                     </label>
-                                                    <label>
-                                                        <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
-                                                        <input
-                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][location]"
-                                                            class="w-full border p-2 rounded"
-                                                            value="{{ old("outputs.$i.conferences.$k.location", $c->location) }}"
-                                                            placeholder="เมือง/ประเทศ">
-                                                    </label>
-                                                    <label>
+                                                    <label data-conference-presenter-manual-wrap>
                                                         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
-                                                        <input type="hidden" name="outputs[{{ $i }}][conferences][{{ $k }}][user_id]" value="{{ old("outputs.$i.conferences.$k.user_id", $c->user_id) }}" data-user-id-hidden>
-                                                        <input
-                                                            name="outputs[{{ $i }}][conferences][{{ $k }}][note]"
-                                                            list="userNames"
-                                                            data-user-lookup="full"
-                                                            class="w-full border p-2 rounded"
-                                                            value="{{ old("outputs.$i.conferences.$k.note", $c->note) }}"
-                                                            placeholder="ชื่อผู้นำเสนอ">
+                                                        <input type="text" data-conference-presenter-manual-name class="w-full border p-2 rounded"
+                                                            value="{{ old("outputs.$i.conference_presenters.$k.note", $c->name) }}"
+                                                            placeholder="ยศ ชื่อ นามสกุล">
                                                     </label>
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <div class="conference-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="conference-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-700">1</span>
-                                                        <span class="text-sm font-semibold text-slate-700">Conference</span>
-                                                    </div>
-                                                    <button type="button"
-                                                        class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600"
-                                                        onclick="removeConferenceRow(this)">ลบ</button>
-                                                </div>
-                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                    <label>
-                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
-                                                        <input
-                                                            name="outputs[{{ $i }}][conferences][0][name]"
-                                                            class="w-full border p-2 rounded"
-                                                            placeholder="เช่น PMAC 2025">
-                                                    </label>
-                                                    <label>
-                                                        <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
-                                                        <select
-                                                            name="outputs[{{ $i }}][conferences][0][presentation_type]"
-                                                            class="w-full border p-2 rounded">
-                                                            <option value="">เลือก</option>
-                                                            <option value="Oral Presentation">Oral Presentation</option>
-                                                            <option value="Poster Presentation">Poster Presentation</option>
-                                                            <option value="Abstract Presentation">Abstract Presentation</option>
-                                                            <option value="Panel Discussion">Panel Discussion</option>
-                                                            <option value="Keynote Speech">Keynote Speech</option>
-                                                            <option value="World café">World café</option>
+                                                    <label class="hidden" data-conference-presenter-user-wrap>
+                                                        <span class="block text-sm text-gray-700 mb-1">เลือกผู้นำเสนอจากรายชื่อบุคลากร</span>
+                                                        <select data-conference-presenter-user-select class="w-full border p-2 rounded">
+                                                            <option value="">พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ</option>
+                                                            @foreach ($allUsers as $user)
+                                                                <option value="{{ $user->id }}" {{ (string) old("outputs.$i.conference_presenters.$k.user_id", $c->user_id) === (string) $user->id ? 'selected' : '' }}>{{ $user->full_name }}</option>
+                                                            @endforeach
                                                         </select>
                                                     </label>
-                                                    <label>
-                                                        <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
-                                                        <input
-                                                            name="outputs[{{ $i }}][conferences][0][location]"
-                                                            class="w-full border p-2 rounded"
-                                                            placeholder="เมือง/ประเทศ">
-                                                    </label>
-                                                    <label>
-                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
-                                                        <input type="hidden" name="outputs[{{ $i }}][conferences][0][user_id]" data-user-id-hidden>
-                                                        <input
-                                                            name="outputs[{{ $i }}][conferences][0][note]"
-                                                            list="userNames"
-                                                            data-user-lookup="full"
-                                                            class="w-full border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
-                                                    </label>
+                                                    <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeConferencePresenterRow(this)">ลบ</button>
                                                 </div>
-                                            </div>
-                                        @endforelse
+                                            @empty
+                                                <div class="conference-presenter-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
+                                                    <input type="hidden" name="outputs[{{ $i }}][conference_presenters][0][id]" value="">
+                                                    <input type="hidden" name="outputs[{{ $i }}][conference_presenters][0][user_id]" value="" data-conference-presenter-user-id>
+                                                    <input type="hidden" name="outputs[{{ $i }}][conference_presenters][0][note]" value="" data-conference-presenter-note-hidden>
+                                                    <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+                                                        <select name="outputs[{{ $i }}][conference_presenters][0][person_type]" data-conference-presenter-person-type class="w-full border p-2 rounded" required>
+                                                            <option value="">กรุณาเลือก</option>
+                                                            <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                            <option value="external">คนนอก</option>
+                                                        </select>
+                                                    </label>
+                                                    <label data-conference-presenter-manual-wrap>
+                                                        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
+                                                        <input type="text" data-conference-presenter-manual-name class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล">
+                                                    </label>
+                                                    <label class="hidden" data-conference-presenter-user-wrap>
+                                                        <span class="block text-sm text-gray-700 mb-1">เลือกผู้นำเสนอจากรายชื่อบุคลากร</span>
+                                                        <select data-conference-presenter-user-select class="w-full border p-2 rounded">
+                                                            <option value="">พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ</option>
+                                                            @foreach ($allUsers as $user)
+                                                                <option value="{{ $user->id }}">{{ $user->full_name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </label>
+                                                    <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeConferencePresenterRow(this)">ลบ</button>
+                                                </div>
+                                            @endforelse
+                                        </div>
+                                        <button type="button" class="lux-mobile-add-row-btn whitespace-nowrap px-3 py-2 rounded-lg bg-amber-600 text-sm font-semibold text-white" onclick="addConferencePresenterRow(this)">+ เพิ่มผู้นำเสนอ</button>
                                     </div>
                                 </div>
                             @endif
@@ -1849,7 +2014,7 @@
                             {{-- EA119 --}}
                             @if (str_starts_with($t, 'EA119'))
                                 <div class="ea119-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <label>
                                             <span class="block text-sm text-gray-700 mb-1">ชื่อหนังสือ</span>
                                             <input name="outputs[{{ $i }}][book_title]" type="text"
@@ -1877,6 +2042,13 @@
                                                 oninvalid="this.setCustomValidity('กรุณากรอกชื่อบท / เลขหน้า')"
                                                 oninput="this.setCustomValidity('')">
                                         </label>
+                                        <label>
+                                            <span class="block text-sm text-gray-700 mb-1">เลข ISBN</span>
+                                            <input name="outputs[{{ $i }}][isbn]" type="text"
+                                                class="w-full border p-2 rounded"
+                                                value="{{ old("outputs.$i.isbn", $out->isbn) }}"
+                                                placeholder="เช่น 978-3-16-148410-0">
+                                        </label>
                                     </div>
 
                                     @php $bookAuthors = $out->bookAuthors ?? collect(); @endphp
@@ -1886,6 +2058,12 @@
                                         </div>
                                         <div class="book-authors-container space-y-3" id="book-authors-{{ $i }}">
                                             @forelse($bookAuthors as $j => $author)
+                                                @php
+                                                    $bookAuthorPersonType = old("outputs.$i.book_authors.$j.person_type");
+                                                    if ($bookAuthorPersonType === null) {
+                                                        $bookAuthorPersonType = $author->user_id ? 'internal' : 'external';
+                                                    }
+                                                @endphp
                                                 <div class="book-author-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
                                                     <input type="hidden" name="outputs[{{ $i }}][book_authors][{{ $j }}][id]" value="{{ $author->id }}">
                                                     <input type="hidden" name="outputs[{{ $i }}][book_authors][{{ $j }}][user_id]" value="{{ old("outputs.$i.book_authors.$j.user_id", $author->user_id) }}" data-user-id-hidden>
@@ -1899,14 +2077,31 @@
                                                             onclick="removeBookAuthorRow(this)">ลบ</button>
                                                     </div>
                                                     <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+                                                        <select name="outputs[{{ $i }}][book_authors][{{ $j }}][person_type]" data-book-author-person-type class="w-full border p-2 rounded" required>
+                                                            <option value="">กรุณาเลือก</option>
+                                                            <option value="internal" {{ $bookAuthorPersonType === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                            <option value="external" {{ $bookAuthorPersonType === 'external' ? 'selected' : '' }}>คนนอก</option>
+                                                        </select>
+                                                    </label>
+                                                    <label>
                                                         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
-                                                        <input
-                                                            name="outputs[{{ $i }}][book_authors][{{ $j }}][name]"
-                                                            type="text" data-book-author-input data-user-lookup="full" list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
-                                                            value="{{ old("outputs.$i.book_authors.$j.name", $author->name) }}"
-                                                            placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required
-                                                            onfocus="refreshBookAuthorDatalistInOutput(this)"
-                                                            oninput="refreshBookAuthorDatalistInOutput(this)">
+                                                        <input type="hidden" name="outputs[{{ $i }}][book_authors][{{ $j }}][name]" value="{{ old("outputs.$i.book_authors.$j.name", $author->name) }}" data-book-author-name-hidden>
+                                                        <div data-book-author-manual-wrap>
+                                                            <input type="text" data-book-author-input data-book-author-manual-name list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
+                                                                value="{{ old("outputs.$i.book_authors.$j.name", $author->name) }}"
+                                                                placeholder="เลือกประเภทผู้เขียนก่อน"
+                                                                onfocus="refreshBookAuthorDatalistInOutput(this)"
+                                                                oninput="refreshBookAuthorDatalistInOutput(this)">
+                                                        </div>
+                                                        <div data-book-author-user-wrap class="hidden" style="display:none;">
+                                                            <select data-book-author-user-select class="w-full border p-2 rounded">
+                                                                <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>
+                                                                @foreach ($allUsers as $user)
+                                                                    <option value="{{ $user->id }}" {{ (string) old("outputs.$i.book_authors.$j.user_id", $author->user_id) === (string) $user->id ? 'selected' : '' }}>{{ $user->full_name }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
                                                     </label>
                                                 </div>
                                             @empty
@@ -1922,18 +2117,36 @@
                                                             onclick="removeBookAuthorRow(this)">ลบ</button>
                                                     </div>
                                                     <label>
+                                                        <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+                                                        <select name="outputs[{{ $i }}][book_authors][0][person_type]" data-book-author-person-type class="w-full border p-2 rounded" required>
+                                                            <option value="">กรุณาเลือก</option>
+                                                            <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                                            <option value="external">คนนอก</option>
+                                                        </select>
+                                                    </label>
+                                                    <label>
                                                         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
-                                                        <input name="outputs[{{ $i }}][book_authors][0][name]"
-                                                            type="text" data-book-author-input data-user-lookup="full" list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
-                                                            placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required
-                                                            onfocus="refreshBookAuthorDatalistInOutput(this)"
-                                                            oninput="refreshBookAuthorDatalistInOutput(this)">
+                                                        <input type="hidden" name="outputs[{{ $i }}][book_authors][0][name]" data-book-author-name-hidden>
+                                                        <div data-book-author-manual-wrap>
+                                                            <input type="text" data-book-author-input data-book-author-manual-name list="book-author-name-list-{{ $i }}" class="w-full border p-2 rounded"
+                                                                placeholder="เลือกประเภทผู้เขียนก่อน"
+                                                                onfocus="refreshBookAuthorDatalistInOutput(this)"
+                                                                oninput="refreshBookAuthorDatalistInOutput(this)">
+                                                        </div>
+                                                        <div data-book-author-user-wrap class="hidden" style="display:none;">
+                                                            <select data-book-author-user-select class="w-full border p-2 rounded">
+                                                                <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>
+                                                                @foreach ($allUsers as $user)
+                                                                    <option value="{{ $user->id }}">{{ $user->full_name }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
                                                     </label>
                                                 </div>
                                             @endforelse
                                         </div>
                                         <datalist class="book-author-name-list" id="book-author-name-list-{{ $i }}"></datalist>
-                                        <div class="flex justify-end">
+                                        <div class="flex justify-center">
                                             <button type="button"
                                                 class="lux-mobile-add-row-btn add-book-author-btn whitespace-nowrap px-3 py-2 rounded-lg bg-emerald-600 text-sm font-semibold text-white"
                                                 onclick="addBookAuthorRow(this)">+ เพิ่มผู้เขียน</button>
@@ -2239,8 +2452,18 @@
         }
 
         function confirmProjectMobileRemoval(callback) {
-            if (typeof window.confirmProjectRowRemoval === 'function') {
-                window.confirmProjectRowRemoval(callback);
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ยืนยันการลบ',
+                    text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
+                    showCancelButton: true,
+                    confirmButtonText: 'ลบ',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#dc2626'
+                }).then((result) => {
+                    if (result.isConfirmed) callback();
+                });
                 return;
             }
             callback();
@@ -2255,7 +2478,7 @@
         }
 
         function reindexConferenceRows(container) {
-            container?.querySelectorAll('.conference-row').forEach((row, index) => {
+            container?.querySelectorAll('.conference-presenter-row').forEach((row, index) => {
                 row.querySelectorAll('.conference-index').forEach((el) => {
                     el.textContent = index + 1;
                 });
@@ -2367,23 +2590,52 @@
             const labelNum = copiIndex + 1;
 
             container.insertAdjacentHTML('beforeend', `
-        <div id="${id}" class="copi-row grid grid-cols-1 md:grid-cols-2 gap-4 items-center p-3 border rounded-lg bg-white">
-            <label class="w-full">
-                <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI คนที่ <span class="copi-index">${labelNum}</span> <span class="text-red-500">*</span></span>
-                <input name="copis[${copiIndex}][name]" list="userNames" type="text"
-                    class="w-full border p-2 rounded" placeholder="คำนำหน้า ชื่อ-นามสกุล" required
-                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
-                    oninput="this.setCustomValidity('')">
-            </label>
-            <div class="flex flex-col sm:flex-row gap-2 w-full">
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">สังกัด COPI คนที่ <span class="copi-index">${labelNum}</span> <span class="text-red-500">*</span></span>
-                    <input name="copis[${copiIndex}][affiliation]" type="text" list="copiAffiliationList"
-                        class="w-full border p-2 rounded" placeholder="สังกัด COPI" required
+        <div id="${id}" class="copi-row space-y-2 p-4 border rounded-lg bg-white">
+            <input type="hidden" name="copis[${copiIndex}][name]" data-copi-name>
+            <input type="hidden" name="copis[${copiIndex}][user_id]" data-copi-user-id>
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-slate-600">ลำดับ</span>
+                <span class="inline-flex px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold copi-index">${labelNum}</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <label class="col-span-12 md:col-span-5">
+                    <span class="block text-sm text-gray-700 mb-1">คนใน / คนนอก <span class="text-red-500">*</span></span>
+                    <select name="copis[${copiIndex}][person_type]" data-copi-person-type class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภท COPI')"
+                        oninput="this.setCustomValidity('')">
+                        <option value="">กรุณาเลือก</option>
+                        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="external">คนนอก</option>
+                    </select>
+                </label>
+                <label class="col-span-12 md:col-span-5">
+                    <span class="block text-sm text-gray-700 mb-1">สังกัด COPI <span class="text-red-500">*</span></span>
+                    <input name="copis[${copiIndex}][affiliation]" type="text" list="copiAffiliationList" data-copi-affiliation
+                        class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" placeholder="เลือกประเภท COPI ก่อน" disabled
                         oninvalid="this.setCustomValidity('กรุณาระบุสังกัด COPI')"
                         oninput="this.setCustomValidity('')">
                 </label>
-                <button type="button" onclick="removeRow('${id}', 'copi')" class="text-red-600 mt-6">✕</button>
+                <div class="col-span-12 md:col-span-2 flex justify-end md:pt-6">
+                    <button type="button" onclick="removeRow('${id}', 'copi')" class="text-red-600 text-xl">✕</button>
+                </div>
+                <label class="col-span-12" data-copi-manual-wrap>
+                    <span class="block text-sm text-gray-700 mb-1">ชื่อ COPI <span class="text-red-500">*</span></span>
+                    <input list="userNames" data-copi-manual-name class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed"
+                        placeholder="เลือกประเภท COPI ก่อน" disabled
+                        oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
+                        oninput="this.setCustomValidity('')">
+                </label>
+                <label class="col-span-12 hidden" data-copi-user-wrap>
+                    <span class="block text-sm text-gray-700 mb-1">เลือก COPI จากรายชื่อบุคลากร <span class="text-red-500">*</span></span>
+                    <select data-copi-user-select class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" disabled
+                        oninvalid="this.setCustomValidity('กรุณาเลือก COPI จากรายการ')"
+                        oninput="this.setCustomValidity('')">
+                        <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                        @foreach ($allUsers as $user)
+                            <option value="{{ $user->id }}">{{ $user->full_name }}</option>
+                        @endforeach
+                    </select>
+                </label>
             </div>
         </div>
             `);
@@ -3359,7 +3611,7 @@
 
         // เก็บตัวนับ nested ต่อ output แยกกัน
         const authorIndex = {}; // authors ต่อ output
-        const confIndex = {}; // conferences ต่อ output
+        const confIndex = {}; // presenters ต่อ output
         const awardRecipientIndex = {}; // award recipients ต่อ output
         const bookAuthorIndex = {}; // book_authors ต่อ output
 
@@ -3372,8 +3624,8 @@
             authorIndex[idx] = aWrap ? aWrap.querySelectorAll('.author-row').length : 0;
 
             // conferences
-            const cTbody = row.querySelector('.conference-tbody');
-            confIndex[idx] = cTbody ? cTbody.querySelectorAll('.conference-row').length : 0;
+            const cWrap = row.querySelector('.conference-presenters-container');
+            confIndex[idx] = cWrap ? cWrap.querySelectorAll('.conference-presenter-row').length : 0;
             // award recipients
             const rWrap = row.querySelector('.award-recipients-container');
             awardRecipientIndex[idx] = rWrap ? rWrap.querySelectorAll('.award-recipient-row').length : 0;
@@ -3495,12 +3747,12 @@
                     const section = renderEA103Section(idx);
                     mount.appendChild(section);
 
-                    if (!row.querySelector('.conference-row')) {
-                        const addBtn = section.querySelector('.add-conf-btn');
-                        if (addBtn) addConferenceRow(addBtn);
+                    if (!row.querySelector('.conference-presenter-row')) {
+                        const addBtn = section.querySelector('button[onclick*="addConferencePresenterRow"]');
+                        if (addBtn) addConferencePresenterRow(addBtn);
                     }
                 }
-                confIndex[idx] = row.querySelectorAll('.conference-row').length;
+                confIndex[idx] = row.querySelectorAll('.conference-presenter-row').length;
 
             } else if (val.startsWith('EA118')) {
                 if (!mount.querySelector('.ea118-section')) {
@@ -3535,7 +3787,7 @@
             const wrap = document.createElement('div');
             wrap.className = 'ea101-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4';
             wrap.innerHTML = `
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <label>
         <span class="block text-sm text-gray-700 mb-1">Journal</span>
         <input name="outputs[${idx}][journal]" class="w-full border p-2 rounded" placeholder="เช่น IEEE Access">
@@ -3576,17 +3828,20 @@
             if (!authorsWrap) return;
 
             const aIdx = authorIndex[idx] || 0;
-
-            authorsWrap.insertAdjacentHTML('beforeend', `
-    <div class="author-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <span class="author-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-100 px-2 text-xs font-bold text-blue-700"></span>
-          <span class="text-sm font-semibold text-slate-700">ผู้เขียน</span>
-        </div>
-        <button type="button" onclick="removeAuthorRow(this)" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600">ลบ</button>
+            const userOptions = (Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [])
+                .map((user) => `<option value="${String(user.id)}">${String(user.research_display_name || '').replace(/"/g, '&quot;')}</option>`)
+                .join('');
+            const row = document.createElement('div');
+            row.className = 'author-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3';
+            row.innerHTML = `
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="author-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-100 px-2 text-xs font-bold text-blue-700"></span>
+        <span class="text-sm font-semibold text-slate-700">ผู้เขียน</span>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <button type="button" onclick="removeAuthorRow(this)" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600">ลบ</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <label>
         <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน <span class="required-mark">*</span></span>
         <select name="outputs[${idx}][authors][${aIdx}][role]" class="w-full border p-2 rounded" required
@@ -3599,18 +3854,37 @@
         </select>
       </label>
       <label>
-        <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ) <span class="required-mark">*</span></span>
-        <input type="hidden" name="outputs[${idx}][authors][${aIdx}][user_id]" data-user-id-hidden>
-        <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" list="outputAuthorNames" data-user-lookup="research" class="w-full border p-2 rounded" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
+        <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก <span class="required-mark">*</span></span>
+        <select name="outputs[${idx}][authors][${aIdx}][person_type]" data-output-author-person-type class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทผู้เขียน')"
+                                    oninput="this.setCustomValidity('')">
+          <option value="">กรุณาเลือก</option>
+          <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+          <option value="external">คนนอก</option>
+        </select>
+      </label>
+    </div>
+    <div class="space-y-2">
+      <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ) <span class="required-mark">*</span></span>
+      <input type="hidden" name="outputs[${idx}][authors][${aIdx}][user_id]" data-user-id-hidden>
+      <input type="hidden" name="outputs[${idx}][authors][${aIdx}][name]" data-output-author-name-hidden>
+      <div data-output-author-manual-wrap>
+        <input type="text" list="outputAuthorNames" data-output-author-manual-name class="w-full border p-2 rounded" placeholder="เลือกประเภทผู้เขียนก่อน"
                                     oninvalid="this.setCustomValidity('กรุณากรอกชื่อผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
-      </label>
+      </div>
+      <div data-output-author-user-wrap class="hidden" style="display:none;">
+        <select data-output-author-user-select class="w-full border p-2 rounded">
+          <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>
+          ${userOptions}
+        </select>
       </div>
     </div>
-  `);
+  `;
+            authorsWrap.appendChild(row);
 
             authorIndex[idx] = aIdx + 1;
-            bindProjectUserLookup(authorsWrap);
+            bindOutputAuthorRow(row);
             reindexAuthorRows(authorsWrap);
         }
 
@@ -3632,7 +3906,7 @@
         <span class="font-semibold text-violet-800">ผู้ได้รับรางวัล (Award Recipients)</span>
       </div>
       <div class="award-recipients-container space-y-3" id="award-recipients-${idx}"></div>
-      <div class="flex justify-end">
+      <div class="flex justify-center">
         <button type="button" class="lux-mobile-add-row-btn add-award-recipient-btn whitespace-nowrap px-3 py-2 rounded-lg bg-violet-600 text-sm font-semibold text-white" onclick="addAwardRecipientRow(this)">+ เพิ่มผู้ได้รับรางวัล</button>
       </div>
     </div>
@@ -3647,24 +3921,10 @@
             if (!recipientsWrap) return;
 
             const aIdx = awardRecipientIndex[idx] || 0;
-            recipientsWrap.insertAdjacentHTML('beforeend', `
-    <div class="award-recipient-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
-      <input type="hidden" name="outputs[${idx}][authors][${aIdx}][role]" value="awardee">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <label>
-          <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
-          <input type="hidden" name="outputs[${idx}][authors][${aIdx}][user_id]" data-user-id-hidden>
-          <input type="text" name="outputs[${idx}][authors][${aIdx}][name]" list="awardRecipientNames" data-user-lookup="full" class="w-full border p-2 rounded" placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
-        </label>
-        <div class="flex items-end">
-          <button type="button" onclick="removeAwardRecipientRow(this)" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600">ลบ</button>
-        </div>
-      </div>
-    </div>
-  `);
-
+            const row = buildAwardRecipientRow(idx, aIdx);
+            recipientsWrap.appendChild(row);
             awardRecipientIndex[idx] = aIdx + 1;
-            bindProjectUserLookup(recipientsWrap);
+            bindAwardRecipientRow(row);
         }
 
         function removeAwardRecipientRow(btnEl) {
@@ -3672,6 +3932,44 @@
             confirmProjectMobileRemoval(() => {
                 row?.remove();
             });
+        }
+
+        function buildAwardRecipientRow(outputIdx, authorIdx) {
+            const row = document.createElement('div');
+            row.className = 'award-recipient-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3';
+            const userOptions = (Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [])
+                .map((user) => `<option value="${String(user.id)}">${String(user.full_name || '').replace(/"/g, '&quot;')}</option>`)
+                .join('');
+            row.innerHTML = `
+    <input type="hidden" name="outputs[${outputIdx}][award_recipients][${authorIdx}][id]" value="">
+    <label class="w-full">
+      <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก / หน่วยงาน</span>
+      <select name="outputs[${outputIdx}][award_recipients][${authorIdx}][person_type]" data-award-recipient-person-type class="w-full border p-2 rounded" required>
+        <option value="">กรุณาเลือก</option>
+        <option value="unit">หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+        <option value="external">คนนอก</option>
+      </select>
+    </label>
+    <div>
+      <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
+      <input type="hidden" name="outputs[${outputIdx}][award_recipients][${authorIdx}][user_id]" data-user-id-hidden>
+      <input type="hidden" name="outputs[${outputIdx}][award_recipients][${authorIdx}][name]" data-award-recipient-name-hidden>
+      <div data-award-recipient-manual-wrap>
+        <input type="text" list="awardRecipientNames" data-award-recipient-manual-name class="w-full border p-2 rounded" placeholder="เลือกประเภทผู้ได้รับรางวัลก่อน">
+      </div>
+      <div data-award-recipient-user-wrap class="hidden" style="display:none;">
+        <select data-award-recipient-user-select class="w-full border p-2 rounded">
+          <option value="">พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล</option>
+          ${userOptions}
+        </select>
+      </div>
+    </div>
+    <div class="flex items-end">
+      <button type="button" onclick="removeAwardRecipientRow(this)" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600">ลบ</button>
+    </div>
+  `;
+            return row;
         }
 
         /* ===== EA119: Textbook / Book chapter ===== */
@@ -3695,6 +3993,10 @@
         <input name="outputs[${idx}][chapter_pages]" class="w-full border p-2 rounded" placeholder="เช่น Chapter 2, pp. 45-66" required
           oninvalid="this.setCustomValidity('กรุณากรอกชื่อบท / เลขหน้า')" oninput="this.setCustomValidity('')">
       </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">เลข ISBN</span>
+        <input name="outputs[${idx}][isbn]" class="w-full border p-2 rounded" placeholder="เช่น 978-3-16-148410-0">
+      </label>
     </div>
 
     <div class="space-y-3">
@@ -3703,7 +4005,7 @@
       </div>
       <div class="book-authors-container space-y-3" id="book-authors-${idx}"></div>
       <datalist class="book-author-name-list" id="book-author-name-list-${idx}"></datalist>
-      <div class="flex justify-end">
+      <div class="flex justify-center">
         <button type="button" class="lux-mobile-add-row-btn add-book-author-btn whitespace-nowrap px-3 py-2 rounded-lg bg-emerald-600 text-sm font-semibold text-white" onclick="addBookAuthorRow(this)">+ เพิ่มผู้เขียน</button>
       </div>
     </div>
@@ -3718,24 +4020,10 @@
             if (!authorsWrap) return;
 
             const aIdx = bookAuthorIndex[idx] || 0;
-            authorsWrap.insertAdjacentHTML('beforeend', `
-    <div class="book-author-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <span class="book-author-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-emerald-100 px-2 text-xs font-bold text-emerald-700"></span>
-          <span class="text-sm font-semibold text-slate-700">ผู้เขียน</span>
-        </div>
-        <button type="button" onclick="removeBookAuthorRow(this)" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600">ลบ</button>
-      </div>
-      <label>
-        <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
-        <input type="hidden" name="outputs[${idx}][book_authors][${aIdx}][user_id]" data-user-id-hidden>
-        <input type="text" name="outputs[${idx}][book_authors][${aIdx}][name]" data-book-author-input data-user-lookup="full" list="book-author-name-list-${idx}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required onfocus="refreshBookAuthorDatalistInOutput(this)" oninput="refreshBookAuthorDatalistInOutput(this)">
-      </label>
-    </div>
-  `);
+            const row = buildBookAuthorRow(idx, aIdx);
+            authorsWrap.appendChild(row);
             bookAuthorIndex[idx] = aIdx + 1;
-            bindProjectUserLookup(authorsWrap);
+            bindBookAuthorRow(row);
             reindexBookAuthorRows(authorsWrap);
             refreshBookAuthorDatalistInOutput(outputRow);
         }
@@ -3750,11 +4038,51 @@
             });
         }
 
+        function buildBookAuthorRow(outputIdx, authorIdx) {
+            const row = document.createElement('div');
+            row.className = 'book-author-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3';
+            const userOptions = (Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [])
+                .map((user) => `<option value="${String(user.id)}">${String(user.full_name || '').replace(/"/g, '&quot;')}</option>`)
+                .join('');
+            row.innerHTML = `
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="book-author-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-emerald-100 px-2 text-xs font-bold text-emerald-700"></span>
+        <span class="text-sm font-semibold text-slate-700">ผู้เขียน</span>
+      </div>
+      <button type="button" onclick="removeBookAuthorRow(this)" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600">ลบ</button>
+    </div>
+    <label>
+      <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+      <select name="outputs[${outputIdx}][book_authors][${authorIdx}][person_type]" data-book-author-person-type class="w-full border p-2 rounded" required>
+        <option value="">กรุณาเลือก</option>
+        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+        <option value="external">คนนอก</option>
+      </select>
+    </label>
+    <label>
+      <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
+      <input type="hidden" name="outputs[${outputIdx}][book_authors][${authorIdx}][user_id]" data-user-id-hidden>
+      <input type="hidden" name="outputs[${outputIdx}][book_authors][${authorIdx}][name]" data-book-author-name-hidden>
+      <div data-book-author-manual-wrap>
+        <input type="text" data-book-author-input data-book-author-manual-name list="book-author-name-list-${outputIdx}" class="w-full border p-2 rounded" placeholder="เลือกประเภทผู้เขียนก่อน" onfocus="refreshBookAuthorDatalistInOutput(this)" oninput="refreshBookAuthorDatalistInOutput(this)">
+      </div>
+      <div data-book-author-user-wrap class="hidden" style="display:none;">
+        <select data-book-author-user-select class="w-full border p-2 rounded">
+          <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>
+          ${userOptions}
+        </select>
+      </div>
+    </label>
+  `;
+            return row;
+        }
+
         function getBookAuthorBaseOptions() {
             if (Array.isArray(window.__bookAuthorBaseOptions) && window.__bookAuthorBaseOptions.length) {
                 return window.__bookAuthorBaseOptions;
             }
-            const base = Array.from(document.querySelectorAll('#userNames option'))
+            const base = Array.from(document.querySelectorAll('#bookAuthorNames option'))
                 .map((option) => String(option.value || '').trim())
                 .filter(Boolean);
             window.__bookAuthorBaseOptions = Array.from(new Set(base));
@@ -3772,14 +4100,14 @@
         }
 
         function syncProjectUserLookupInput(input) {
-            const hidden = input?.closest('label, .author-row, .award-recipient-row, .conference-row')?.querySelector('[data-user-id-hidden]');
+            const hidden = input?.closest('label, .author-row, .award-recipient-row')?.querySelector('[data-user-id-hidden]');
             if (!hidden) return;
             const matched = findProjectMatchedUser(input);
             hidden.value = matched ? String(matched.id) : '';
         }
 
         function bindProjectUserLookup(scope = document) {
-            scope.querySelectorAll('input[data-user-lookup], .conference-row input[name$="[note]"]').forEach((input) => {
+            scope.querySelectorAll('input[data-user-lookup]').forEach((input) => {
                 if (!input.dataset.userLookup) input.dataset.userLookup = 'full';
                 if (input.dataset.userLookupBound === '1') {
                     syncProjectUserLookupInput(input);
@@ -3793,6 +4121,1015 @@
             });
         }
 
+        function ensureOutputFullNameTomSelect(select, placeholder) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder,
+                searchPlaceholder: placeholder,
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function syncAwardRecipientRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+            const UNIT_AWARD_RECIPIENT_NAME = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
+            const typeSelect = row.querySelector('[data-award-recipient-person-type]');
+            const manualWrap = row.querySelector('[data-award-recipient-manual-wrap]');
+            const manualInput = row.querySelector('[data-award-recipient-manual-name]');
+            const userWrap = row.querySelector('[data-award-recipient-user-wrap]');
+            const userSelect = row.querySelector('[data-award-recipient-user-select]');
+            const userIdInput = row.querySelector('[data-user-id-hidden]');
+            const nameHidden = row.querySelector('[data-award-recipient-name-hidden]');
+            if (!(typeSelect instanceof HTMLSelectElement) || !(manualWrap instanceof HTMLElement) || !(manualInput instanceof HTMLInputElement) || !(userWrap instanceof HTMLElement) || !(userSelect instanceof HTMLSelectElement) || !(userIdInput instanceof HTMLInputElement) || !(nameHidden instanceof HTMLInputElement)) return;
+            ensureOutputFullNameTomSelect(userSelect, 'พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล');
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.awardRecipientMode || '';
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const tom = userSelect.tomselect || null;
+            const matchedUser = Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim()) : null;
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+            if (mode === 'internal' && !userSelect.value && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+            if (mode === 'unit') {
+                if (modeChanged) {
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                    userIdInput.value = '';
+                    manualInput.value = UNIT_AWARD_RECIPIENT_NAME;
+                }
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, true, 'ชื่อหน่วยงานผู้ได้รับรางวัล');
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                manualInput.value = UNIT_AWARD_RECIPIENT_NAME;
+                nameHidden.value = UNIT_AWARD_RECIPIENT_NAME;
+                manualInput.disabled = true;
+                manualInput.readOnly = true;
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                }
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value ? String(selectedOption.textContent || '').trim() : '';
+                setOutputAuthorWrapVisible(manualWrap, false);
+                setOutputAuthorWrapVisible(userWrap, true);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกชื่อผู้ได้รับรางวัลจากรายชื่อบุคลากร');
+                manualInput.disabled = true;
+                manualInput.readOnly = true;
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                }
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, false, 'ชื่อผู้ได้รับรางวัล');
+                manualInput.disabled = false;
+                manualInput.readOnly = false;
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกประเภทผู้ได้รับรางวัลก่อน');
+                manualInput.disabled = true;
+                manualInput.readOnly = true;
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+            row.dataset.awardRecipientMode = mode;
+        }
+
+        function bindAwardRecipientRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+            const typeSelect = row.querySelector('[data-award-recipient-person-type]');
+            const manualInput = row.querySelector('[data-award-recipient-manual-name]');
+            const userSelect = row.querySelector('[data-award-recipient-user-select]');
+            if (!(typeSelect instanceof HTMLSelectElement) || !(manualInput instanceof HTMLInputElement) || !(userSelect instanceof HTMLSelectElement)) return;
+            if (typeSelect.dataset.awardRecipientBound !== '1') {
+                typeSelect.dataset.awardRecipientBound = '1';
+                typeSelect.addEventListener('change', () => syncAwardRecipientRow(row));
+            }
+            if (manualInput.dataset.awardRecipientBound !== '1') {
+                manualInput.dataset.awardRecipientBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => manualInput.addEventListener(eventName, () => syncAwardRecipientRow(row)));
+            }
+            if (userSelect.dataset.awardRecipientBound !== '1') {
+                userSelect.dataset.awardRecipientBound = '1';
+                ['change', 'blur'].forEach((eventName) => userSelect.addEventListener(eventName, () => syncAwardRecipientRow(row)));
+            }
+            syncAwardRecipientRow(row);
+        }
+
+        function initAwardRecipientRows(scope = document) {
+            scope.querySelectorAll('.award-recipient-row').forEach((row) => bindAwardRecipientRow(row));
+        }
+
+        function syncBookAuthorRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+            const typeSelect = row.querySelector('[data-book-author-person-type]');
+            const manualWrap = row.querySelector('[data-book-author-manual-wrap]');
+            const manualInput = row.querySelector('[data-book-author-manual-name]');
+            const userWrap = row.querySelector('[data-book-author-user-wrap]');
+            const userSelect = row.querySelector('[data-book-author-user-select]');
+            const userIdInput = row.querySelector('[data-user-id-hidden]');
+            const nameHidden = row.querySelector('[data-book-author-name-hidden]');
+            if (!(typeSelect instanceof HTMLSelectElement) || !(manualWrap instanceof HTMLElement) || !(manualInput instanceof HTMLInputElement) || !(userWrap instanceof HTMLElement) || !(userSelect instanceof HTMLSelectElement) || !(userIdInput instanceof HTMLInputElement) || !(nameHidden instanceof HTMLInputElement)) return;
+            ensureOutputFullNameTomSelect(userSelect, 'พิมพ์เพื่อค้นหาชื่อผู้เขียน');
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.bookAuthorMode || '';
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const tom = userSelect.tomselect || null;
+            const matchedUser = Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim()) : null;
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+            if (mode === 'internal' && !userSelect.value && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                }
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value ? String(selectedOption.textContent || '').trim() : '';
+                setOutputAuthorWrapVisible(manualWrap, false);
+                setOutputAuthorWrapVisible(userWrap, true);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกชื่อผู้เขียนจากรายชื่อบุคลากร');
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                }
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, false, 'ชื่อผู้เขียน');
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกประเภทผู้เขียนก่อน');
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+            refreshBookAuthorDatalistInOutput(row);
+            row.dataset.bookAuthorMode = mode;
+        }
+
+        function bindBookAuthorRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+            const typeSelect = row.querySelector('[data-book-author-person-type]');
+            const manualInput = row.querySelector('[data-book-author-manual-name]');
+            const userSelect = row.querySelector('[data-book-author-user-select]');
+            if (!(typeSelect instanceof HTMLSelectElement) || !(manualInput instanceof HTMLInputElement) || !(userSelect instanceof HTMLSelectElement)) return;
+            if (typeSelect.dataset.bookAuthorBound !== '1') {
+                typeSelect.dataset.bookAuthorBound = '1';
+                typeSelect.addEventListener('change', () => syncBookAuthorRow(row));
+            }
+            if (manualInput.dataset.bookAuthorBound !== '1') {
+                manualInput.dataset.bookAuthorBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => manualInput.addEventListener(eventName, () => syncBookAuthorRow(row)));
+            }
+            if (userSelect.dataset.bookAuthorBound !== '1') {
+                userSelect.dataset.bookAuthorBound = '1';
+                ['change', 'blur'].forEach((eventName) => userSelect.addEventListener(eventName, () => syncBookAuthorRow(row)));
+            }
+            syncBookAuthorRow(row);
+        }
+
+        function initBookAuthorRows(scope = document) {
+            scope.querySelectorAll('.book-author-row').forEach((row) => bindBookAuthorRow(row));
+        }
+
+        function bindProjectSearchSelectGuards(scope = document) {
+            scope.querySelectorAll('.project-search-select').forEach((element) => {
+                if (!(element instanceof HTMLElement) || element.dataset.guardBound === '1') return;
+                element.dataset.guardBound = '1';
+                ['mousedown', 'click'].forEach((eventName) => {
+                    element.addEventListener(eventName, (event) => {
+                        event.stopPropagation();
+                    });
+                });
+            });
+        }
+
+        function applySearchTomSelectStyles(tom) {
+            return tom;
+        }
+
+        function ensureOutputAuthorTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อผู้เขียน',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้เขียน',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function setOutputAuthorWrapVisible(element, visible) {
+            if (!(element instanceof HTMLElement)) return;
+            element.classList.toggle('hidden', !visible);
+            element.hidden = !visible;
+            element.style.display = visible ? '' : 'none';
+        }
+
+        function toggleOutputAuthorFieldState(input, disabled, placeholder) {
+            if (!(input instanceof HTMLElement)) return;
+            if ('disabled' in input) input.disabled = disabled;
+            input.classList.toggle('bg-slate-100', disabled);
+            input.classList.toggle('text-slate-400', disabled);
+            input.classList.toggle('cursor-not-allowed', disabled);
+            if (typeof placeholder === 'string' && 'placeholder' in input) {
+                input.placeholder = placeholder;
+            }
+        }
+
+        function syncOutputAuthorRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-output-author-person-type]');
+            const manualWrap = row.querySelector('[data-output-author-manual-wrap]');
+            const manualInput = row.querySelector('[data-output-author-manual-name]');
+            const userWrap = row.querySelector('[data-output-author-user-wrap]');
+            const userSelect = row.querySelector('[data-output-author-user-select]');
+            const userIdInput = row.querySelector('[data-user-id-hidden]');
+            const nameHidden = row.querySelector('[data-output-author-name-hidden]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualWrap instanceof HTMLElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userWrap instanceof HTMLElement) ||
+                !(userSelect instanceof HTMLSelectElement) ||
+                !(userIdInput instanceof HTMLInputElement) ||
+                !(nameHidden instanceof HTMLInputElement)) {
+                return;
+            }
+
+            ensureOutputAuthorTomSelect(userSelect);
+
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.outputAuthorMode || '';
+            const tom = userSelect.tomselect || null;
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.research_display_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+
+            if (mode === 'internal' && !userSelect.value && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                }
+
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value
+                    ? String(selectedOption.textContent || '').trim()
+                    : '';
+
+                setOutputAuthorWrapVisible(manualWrap, false);
+                setOutputAuthorWrapVisible(userWrap, true);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกชื่อผู้เขียนจากรายชื่อบุคลากร');
+
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                }
+
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, false, 'ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)');
+
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกประเภทผู้เขียนก่อน');
+
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            row.dataset.outputAuthorMode = mode;
+        }
+
+        function bindOutputAuthorRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-output-author-person-type]');
+            const manualInput = row.querySelector('[data-output-author-manual-name]');
+            const userSelect = row.querySelector('[data-output-author-user-select]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            if (typeSelect.dataset.outputAuthorBound !== '1') {
+                typeSelect.dataset.outputAuthorBound = '1';
+                typeSelect.addEventListener('change', () => syncOutputAuthorRow(row));
+            }
+
+            if (manualInput.dataset.outputAuthorBound !== '1') {
+                manualInput.dataset.outputAuthorBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    manualInput.addEventListener(eventName, () => syncOutputAuthorRow(row));
+                });
+            }
+
+            if (userSelect.dataset.outputAuthorBound !== '1') {
+                userSelect.dataset.outputAuthorBound = '1';
+                ['change', 'blur'].forEach((eventName) => {
+                    userSelect.addEventListener(eventName, () => syncOutputAuthorRow(row));
+                });
+            }
+
+            syncOutputAuthorRow(row);
+        }
+
+        function initOutputAuthorRows(scope = document) {
+            scope.querySelectorAll('.author-row').forEach((row) => bindOutputAuthorRow(row));
+        }
+
+        const PI_INTERNAL_AFFILIATION = @json($piInternalAffiliation);
+        const CORESEARCH_INTERNAL_UNIT = @json($internalCoresearchUnit);
+        const CORESEARCH_INTERNAL_AFFILIATION = @json($internalCoresearchAffiliation);
+
+        function ensurePiTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function togglePiFieldState(input, disabled, placeholder) {
+            if (!(input instanceof HTMLElement)) return;
+            if ('disabled' in input) input.disabled = disabled;
+            input.classList.toggle('bg-gray-100', disabled);
+            input.classList.toggle('text-gray-400', disabled);
+            input.classList.toggle('cursor-not-allowed', disabled);
+            if (typeof placeholder === 'string' && 'placeholder' in input) {
+                input.placeholder = placeholder;
+            }
+        }
+
+        function setPiWrapVisible(element, visible) {
+            if (!(element instanceof HTMLElement)) return;
+            element.classList.toggle('hidden', !visible);
+            element.hidden = !visible;
+            element.style.display = visible ? '' : 'none';
+        }
+
+        function setTomSelectWrapperState(select, visible, disabled) {
+            const wrapper = select?.tomselect?.wrapper;
+            if (!(wrapper instanceof HTMLElement)) return;
+            wrapper.classList.toggle('hidden', !visible);
+            wrapper.hidden = !visible;
+            wrapper.style.display = visible ? '' : 'none';
+            wrapper.classList.toggle('opacity-60', !!disabled);
+            wrapper.classList.toggle('pointer-events-none', !!disabled);
+        }
+
+        function syncPiPersonFields(scope = document) {
+            const typeSelect = scope.querySelector('[data-pi-person-type]');
+            const affiliationInput = scope.querySelector('[data-pi-affiliation]');
+            const manualWrap = scope.querySelector('[data-pi-manual-wrap]');
+            const manualInput = scope.querySelector('[data-pi-manual-name]');
+            const userWrap = scope.querySelector('[data-pi-user-wrap]');
+            const userSelect = scope.querySelector('[data-pi-user-select]');
+            const userIdInput = scope.querySelector('[data-pi-user-id]');
+            const nameHidden = scope.querySelector('[data-pi-name-hidden]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(affiliationInput instanceof HTMLInputElement) ||
+                !(manualWrap instanceof HTMLElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userWrap instanceof HTMLElement) ||
+                !(userSelect instanceof HTMLSelectElement) ||
+                !(userIdInput instanceof HTMLInputElement) ||
+                !(nameHidden instanceof HTMLInputElement)) {
+                return;
+            }
+
+            ensurePiTomSelect(userSelect);
+
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = typeSelect.dataset.piMode || '';
+            const tom = userSelect.tomselect || null;
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                }
+
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value
+                    ? String(selectedOption.textContent || '').trim()
+                    : '';
+
+                setPiWrapVisible(manualWrap, false);
+                setPiWrapVisible(userWrap, true);
+                togglePiFieldState(manualInput, true, 'เลือก PI จากรายชื่อบุคลากร');
+                togglePiFieldState(affiliationInput, false, PI_INTERNAL_AFFILIATION);
+
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+                affiliationInput.required = false;
+                affiliationInput.readOnly = true;
+                affiliationInput.value = PI_INTERNAL_AFFILIATION;
+                affiliationInput.removeAttribute('list');
+
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                    affiliationInput.value = '';
+                }
+
+                setPiWrapVisible(manualWrap, true);
+                setPiWrapVisible(userWrap, false);
+                togglePiFieldState(manualInput, false, 'ยศ ชื่อ นามสกุล');
+                togglePiFieldState(affiliationInput, false, 'สังกัดผู้วิจัยหลัก');
+
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                affiliationInput.required = true;
+                affiliationInput.readOnly = false;
+                affiliationInput.setAttribute('list', 'pi_affiliation_list');
+
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+
+                setPiWrapVisible(manualWrap, true);
+                setPiWrapVisible(userWrap, false);
+                togglePiFieldState(manualInput, true, 'เลือกประเภทผู้วิจัยหลักก่อน');
+                togglePiFieldState(affiliationInput, true, 'เลือกประเภทผู้วิจัยหลักก่อน');
+
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                affiliationInput.required = false;
+                affiliationInput.readOnly = false;
+                affiliationInput.setAttribute('list', 'pi_affiliation_list');
+
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+                affiliationInput.value = '';
+
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            typeSelect.dataset.piMode = mode;
+        }
+
+        function bindPiPersonControl(scope = document) {
+            const typeSelect = scope.querySelector('[data-pi-person-type]');
+            const manualInput = scope.querySelector('[data-pi-manual-name]');
+            const userSelect = scope.querySelector('[data-pi-user-select]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            if (typeSelect.dataset.piBound !== '1') {
+                typeSelect.dataset.piBound = '1';
+                typeSelect.addEventListener('change', () => syncPiPersonFields(scope));
+            }
+
+            if (manualInput.dataset.piBound !== '1') {
+                manualInput.dataset.piBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    manualInput.addEventListener(eventName, () => syncPiPersonFields(scope));
+                });
+            }
+
+            if (userSelect.dataset.piBound !== '1') {
+                userSelect.dataset.piBound = '1';
+                ['change', 'blur'].forEach((eventName) => {
+                    userSelect.addEventListener(eventName, () => syncPiPersonFields(scope));
+                });
+            }
+
+            syncPiPersonFields(scope);
+        }
+
+        function ensureCopiTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function setCopiWrapVisible(element, visible) {
+            if (!(element instanceof HTMLElement)) return;
+            element.classList.toggle('hidden', !visible);
+            element.hidden = !visible;
+            element.style.display = visible ? '' : 'none';
+        }
+
+        function toggleCopiFieldState(input, disabled, placeholder) {
+            if (!(input instanceof HTMLElement)) return;
+            if ('disabled' in input) input.disabled = disabled;
+            input.classList.toggle('bg-slate-100', disabled);
+            input.classList.toggle('text-slate-400', disabled);
+            input.classList.toggle('cursor-not-allowed', disabled);
+            if (typeof placeholder === 'string' && 'placeholder' in input) {
+                input.placeholder = placeholder;
+            }
+        }
+
+        function syncCopiRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-copi-person-type]');
+            const affiliationInput = row.querySelector('[data-copi-affiliation]');
+            const manualWrap = row.querySelector('[data-copi-manual-wrap]');
+            const manualInput = row.querySelector('[data-copi-manual-name]');
+            const userWrap = row.querySelector('[data-copi-user-wrap]');
+            const userSelect = row.querySelector('[data-copi-user-select]');
+            const userIdInput = row.querySelector('[data-copi-user-id]');
+            const nameHidden = row.querySelector('[data-copi-name]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(affiliationInput instanceof HTMLInputElement) ||
+                !(manualWrap instanceof HTMLElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userWrap instanceof HTMLElement) ||
+                !(userSelect instanceof HTMLSelectElement) ||
+                !(userIdInput instanceof HTMLInputElement) ||
+                !(nameHidden instanceof HTMLInputElement)) {
+                return;
+            }
+
+            ensureCopiTomSelect(userSelect);
+
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.copiMode || '';
+            const tom = userSelect.tomselect || null;
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (mode === 'internal' && userIdInput.value && String(userSelect.value || '').trim() !== String(userIdInput.value).trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+
+            if (mode === 'internal' && !userSelect.value && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                }
+
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value
+                    ? String(selectedOption.textContent || '').trim()
+                    : '';
+
+                setCopiWrapVisible(manualWrap, false);
+                setCopiWrapVisible(userWrap, true);
+                toggleCopiFieldState(manualInput, true, 'เลือก COPI จากรายชื่อบุคลากร');
+                toggleCopiFieldState(affiliationInput, false, PI_INTERNAL_AFFILIATION);
+
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+                affiliationInput.required = false;
+                affiliationInput.readOnly = true;
+                affiliationInput.value = PI_INTERNAL_AFFILIATION;
+                affiliationInput.removeAttribute('list');
+
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                    affiliationInput.value = '';
+                }
+
+                setCopiWrapVisible(manualWrap, true);
+                setCopiWrapVisible(userWrap, false);
+                toggleCopiFieldState(manualInput, false, 'ยศ ชื่อ นามสกุล');
+                toggleCopiFieldState(affiliationInput, false, 'สังกัด COPI');
+
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                affiliationInput.required = true;
+                affiliationInput.readOnly = false;
+                affiliationInput.setAttribute('list', 'copiAffiliationList');
+
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+
+                setCopiWrapVisible(manualWrap, true);
+                setCopiWrapVisible(userWrap, false);
+                toggleCopiFieldState(manualInput, true, 'เลือกประเภท COPI ก่อน');
+                toggleCopiFieldState(affiliationInput, true, 'เลือกประเภท COPI ก่อน');
+
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                affiliationInput.required = false;
+                affiliationInput.readOnly = false;
+                affiliationInput.setAttribute('list', 'copiAffiliationList');
+
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+                affiliationInput.value = '';
+
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            row.dataset.copiMode = mode;
+        }
+
+        function bindCopiRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-copi-person-type]');
+            const manualInput = row.querySelector('[data-copi-manual-name]');
+            const userSelect = row.querySelector('[data-copi-user-select]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            if (typeSelect.dataset.copiBound !== '1') {
+                typeSelect.dataset.copiBound = '1';
+                typeSelect.addEventListener('change', () => syncCopiRow(row));
+            }
+
+            if (manualInput.dataset.copiBound !== '1') {
+                manualInput.dataset.copiBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    manualInput.addEventListener(eventName, () => syncCopiRow(row));
+                });
+            }
+
+            if (userSelect.dataset.copiBound !== '1') {
+                userSelect.dataset.copiBound = '1';
+                ['change', 'blur'].forEach((eventName) => {
+                    userSelect.addEventListener(eventName, () => syncCopiRow(row));
+                });
+            }
+
+            syncCopiRow(row);
+        }
+
+        function initCopiRows(scope = document) {
+            scope.querySelectorAll('.copi-row').forEach((row) => bindCopiRow(row));
+
+            const container = scope.querySelector('#copi-container');
+            if (!(container instanceof HTMLElement) || container.dataset.copiObserverBound === '1') {
+                return;
+            }
+
+            container.dataset.copiObserverBound = '1';
+            new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node instanceof HTMLElement && node.matches('.copi-row')) {
+                            bindCopiRow(node);
+                        }
+                    });
+                });
+            }).observe(container, { childList: true });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            bindProjectUserLookup(document);
+            initOutputAuthorRows(document);
+            initAwardRecipientRows(document);
+            initBookAuthorRows(document);
+            initAwardRecipientRows(document);
+            initBookAuthorRows(document);
+            bindPiPersonControl(document);
+            initCopiRows(document);
+            initCoresearchRows(document);
+        });
+
+        function ensureCoresearchTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function syncCoresearchRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const statusSelect = row.querySelector('[data-coresearch-unit-status]');
+            const nameHidden = row.querySelector('[data-coresearch-name]');
+            const manualWrap = row.querySelector('[data-coresearch-manual-wrap]');
+            const manualInput = row.querySelector('[data-coresearch-manual-name]');
+            const userWrap = row.querySelector('[data-coresearch-user-wrap]');
+            const userSelect = row.querySelector('[data-coresearch-user-select]');
+            const affiliationInput = row.querySelector('[data-coresearch-affiliation]');
+
+            if (!(statusSelect instanceof HTMLSelectElement) || !(nameHidden instanceof HTMLInputElement) || !(manualInput instanceof HTMLInputElement) || !(userSelect instanceof HTMLSelectElement) || !(affiliationInput instanceof HTMLInputElement)) {
+                return;
+            }
+
+            const isInternal = String(statusSelect.value || '').trim() === CORESEARCH_INTERNAL_UNIT;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (isInternal && !String(userSelect.value || '').trim() && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+            }
+
+            const hasStatus = !!String(statusSelect.value || '').trim();
+            const wasInternal = row.dataset.coresearchMode === 'internal';
+
+            const setWrapVisibility = (wrap, visible) => {
+                if (!(wrap instanceof HTMLElement)) return;
+                wrap.classList.toggle('hidden', !visible);
+                wrap.hidden = !visible;
+                wrap.style.display = visible ? '' : 'none';
+            };
+
+            setWrapVisibility(manualWrap, !isInternal);
+            setWrapVisibility(userWrap, isInternal);
+            manualInput.required = !isInternal && hasStatus;
+            manualInput.disabled = isInternal || !hasStatus;
+            userSelect.disabled = !isInternal;
+            userSelect.required = isInternal;
+            affiliationInput.required = hasStatus && !isInternal;
+            affiliationInput.disabled = !hasStatus;
+
+            const setDisabledStyle = (field, disabled, placeholderWhenDisabled = 'เลือกคนภายนอก / ภายในก่อน', placeholderWhenEnabled = null) => {
+                if (!field) return;
+                field.classList.toggle('bg-slate-100', disabled);
+                field.classList.toggle('text-slate-400', disabled);
+                field.classList.toggle('cursor-not-allowed', disabled);
+                if ('placeholder' in field) {
+                    field.placeholder = disabled ? placeholderWhenDisabled : (placeholderWhenEnabled ?? field.placeholder);
+                }
+            };
+
+            if (isInternal) {
+                ensureCoresearchTomSelect(userSelect);
+                const selectedOption = userSelect.options[userSelect.selectedIndex] ?? null;
+                nameHidden.value = selectedOption && userSelect.value ? String(selectedOption.text || '').trim() : '';
+                affiliationInput.value = CORESEARCH_INTERNAL_AFFILIATION;
+                affiliationInput.readOnly = true;
+                affiliationInput.required = false;
+                setDisabledStyle(affiliationInput, false, 'เลือกคนภายนอก / ภายในก่อน', CORESEARCH_INTERNAL_AFFILIATION);
+                setDisabledStyle(manualInput, true);
+                if (userSelect.tomselect?.wrapper) {
+                    userSelect.tomselect.wrapper.classList.remove('opacity-60', 'pointer-events-none');
+                    userSelect.tomselect.wrapper.style.display = '';
+                }
+            } else {
+                if (wasInternal) {
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                    if (affiliationInput.value === CORESEARCH_INTERNAL_AFFILIATION) {
+                        affiliationInput.value = '';
+                    }
+                }
+                userSelect.required = false;
+                userSelect.disabled = true;
+                if (userSelect.tomselect) {
+                    userSelect.tomselect.clear(true);
+                } else {
+                    userSelect.value = '';
+                }
+                nameHidden.value = manualInput.value;
+                affiliationInput.readOnly = false;
+                setDisabledStyle(manualInput, !hasStatus, 'เลือกคนภายนอก / ภายในก่อน', 'ยศ ชื่อ-นามสกุล');
+                setDisabledStyle(affiliationInput, !hasStatus, 'เลือกคนภายนอก / ภายในก่อน', 'สังกัด');
+                if (userSelect.tomselect?.wrapper) {
+                    userSelect.tomselect.wrapper.classList.add('opacity-60', 'pointer-events-none');
+                    userSelect.tomselect.wrapper.style.display = 'none';
+                }
+                if (!hasStatus) {
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                    affiliationInput.value = '';
+                }
+            }
+
+            row.dataset.coresearchMode = isInternal ? 'internal' : 'manual';
+        }
+
+        function bindCoresearchRow(row) {
+            if (!(row instanceof HTMLElement) || row.dataset.coresearchBound === '1') return;
+
+            row.dataset.coresearchBound = '1';
+            row.querySelector('[data-coresearch-unit-status]')?.addEventListener('change', () => syncCoresearchRow(row));
+            row.querySelector('[data-coresearch-manual-name]')?.addEventListener('input', () => syncCoresearchRow(row));
+            row.querySelector('[data-coresearch-user-select]')?.addEventListener('change', () => syncCoresearchRow(row));
+
+            if (row.querySelector('[data-coresearch-user-select]')?.tomselect?.wrapper) {
+                row.querySelector('[data-coresearch-user-select]').tomselect.wrapper.style.display = 'none';
+            }
+            syncCoresearchRow(row);
+        }
+
+        function initCoresearchRows(scope = document) {
+            scope.querySelectorAll('.coresearch-row').forEach((row) => bindCoresearchRow(row));
+        }
+
         function refreshBookAuthorDatalistInOutput(sourceEl) {
             if (!(sourceEl instanceof Element)) return;
             const section = sourceEl.classList.contains('ea119-section') ? sourceEl : sourceEl.closest('.ea119-section');
@@ -3801,8 +5138,8 @@
             const list = section.querySelector('.book-author-name-list');
             if (!(list instanceof HTMLDataListElement)) return;
 
-            const inputs = Array.from(section.querySelectorAll('input[data-book-author-input]'));
-            const activeInput = sourceEl.matches('input[data-book-author-input]') ? sourceEl : null;
+            const inputs = Array.from(section.querySelectorAll('input[data-book-author-manual-name]'));
+            const activeInput = sourceEl.matches('input[data-book-author-manual-name]') ? sourceEl : null;
             const selected = new Set(
                 inputs
                     .map((input) => String(input.value || '').trim())
@@ -3834,7 +5171,7 @@
                 rows: []
             };
 
-            form.querySelectorAll('.ea119-section input[data-book-author-input]').forEach((el) => el.classList.remove('border-red-500', 'bg-red-50'));
+            form.querySelectorAll('.ea119-section input[data-book-author-manual-name], .ea119-section select[data-book-author-user-select]').forEach((el) => el.classList.remove('border-red-500', 'bg-red-50'));
 
             form.querySelectorAll('.output-row').forEach((row) => {
                 const typeField = row.querySelector('select[name^="outputs["][name$="[type]"]') || row.querySelector('input[name^="outputs["][name$="[type]"]');
@@ -3842,9 +5179,13 @@
                 if (!typeValue.startsWith('EA119')) return;
 
                 const seen = new Map();
-                const inputs = Array.from(row.querySelectorAll('.ea119-section input[data-book-author-input]'));
-                inputs.forEach((input) => {
-                    const raw = String(input.value || '').trim();
+                const rows = Array.from(row.querySelectorAll('.ea119-section .book-author-row'));
+                rows.forEach((bookAuthorRow) => {
+                    const hiddenInput = bookAuthorRow.querySelector('[data-book-author-name-hidden]');
+                    const manualInput = bookAuthorRow.querySelector('[data-book-author-manual-name]');
+                    const userSelect = bookAuthorRow.querySelector('[data-book-author-user-select]');
+                    const displayTarget = window.getProjectValidationDisplayTarget?.(userSelect?.disabled ? manualInput : userSelect) || (userSelect?.disabled ? manualInput : userSelect);
+                    const raw = String(hiddenInput?.value || manualInput?.value || '').trim();
                     if (!raw) return;
 
                     const key = normalizeAuthorNameForDuplicateCheck(raw);
@@ -3853,96 +5194,245 @@
                     if (seen.has(key)) {
                         const firstInput = seen.get(key);
                         firstInput?.classList.add('border-red-500', 'bg-red-50');
-                        input.classList.add('border-red-500', 'bg-red-50');
+                        displayTarget?.classList.add('border-red-500', 'bg-red-50');
                         if (result.valid) {
                             result.valid = false;
-                            result.field = input;
+                            result.field = displayTarget;
                             result.message = 'พบชื่อผู้เขียนซ้ำ กรุณาเลือกชื่อที่ไม่ซ้ำ';
                             result.rows.push(row);
                         }
                         return;
                     }
 
-                    seen.set(key, input);
+                    seen.set(key, displayTarget);
                 });
             });
 
             return result;
         }
 
-        /* ===== EA103: Conferences ===== */
+        function ensureConferencePresenterTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function setConferencePresenterWrapVisible(element, visible) {
+            if (!(element instanceof HTMLElement)) return;
+            element.classList.toggle('hidden', !visible);
+            element.hidden = !visible;
+            element.style.display = visible ? '' : 'none';
+        }
+
+        function toggleConferencePresenterFieldState(input, disabled, placeholder) {
+            if (!(input instanceof HTMLElement)) return;
+            if ('disabled' in input) input.disabled = disabled;
+            input.classList.toggle('bg-slate-100', disabled);
+            input.classList.toggle('text-slate-400', disabled);
+            input.classList.toggle('cursor-not-allowed', disabled);
+            if (typeof placeholder === 'string' && 'placeholder' in input) input.placeholder = placeholder;
+        }
+
+        function syncConferencePresenterRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+            const typeSelect = row.querySelector('[data-conference-presenter-person-type]');
+            const manualWrap = row.querySelector('[data-conference-presenter-manual-wrap]');
+            const manualInput = row.querySelector('[data-conference-presenter-manual-name]');
+            const userWrap = row.querySelector('[data-conference-presenter-user-wrap]');
+            const userSelect = row.querySelector('[data-conference-presenter-user-select]');
+            const userIdInput = row.querySelector('[data-conference-presenter-user-id]');
+            const noteHidden = row.querySelector('[data-conference-presenter-note-hidden]');
+            if (!(typeSelect instanceof HTMLSelectElement) || !(manualWrap instanceof HTMLElement) || !(manualInput instanceof HTMLInputElement) || !(userWrap instanceof HTMLElement) || !(userSelect instanceof HTMLSelectElement) || !(userIdInput instanceof HTMLInputElement) || !(noteHidden instanceof HTMLInputElement)) return;
+
+            ensureConferencePresenterTomSelect(userSelect);
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.conferencePresenterMode || '';
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const tom = userSelect.tomselect || null;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(noteHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+            if (mode === 'internal' && !String(userSelect.value || '').trim() && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    noteHidden.value = '';
+                    if (tom) tom.clear(true); else userSelect.value = '';
+                }
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                noteHidden.value = selectedOption && userIdInput.value ? String(selectedOption.textContent || '').trim() : '';
+                setConferencePresenterWrapVisible(manualWrap, false);
+                setConferencePresenterWrapVisible(userWrap, true);
+                toggleConferencePresenterFieldState(manualInput, true, 'เลือกผู้นำเสนอจากรายชื่อบุคลากร');
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) tom.clear(true); else userSelect.value = '';
+                    userIdInput.value = '';
+                    noteHidden.value = '';
+                    manualInput.value = '';
+                }
+                setConferencePresenterWrapVisible(manualWrap, true);
+                setConferencePresenterWrapVisible(userWrap, false);
+                toggleConferencePresenterFieldState(manualInput, false, 'ยศ ชื่อ นามสกุล');
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                noteHidden.value = String(manualInput.value || '').trim();
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+                setConferencePresenterWrapVisible(manualWrap, true);
+                setConferencePresenterWrapVisible(userWrap, false);
+                toggleConferencePresenterFieldState(manualInput, true, 'เลือกประเภทผู้นำเสนอก่อน');
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                noteHidden.value = '';
+                manualInput.value = '';
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            row.dataset.conferencePresenterMode = mode;
+        }
+
+        function bindConferencePresenterRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+            const typeSelect = row.querySelector('[data-conference-presenter-person-type]');
+            const manualInput = row.querySelector('[data-conference-presenter-manual-name]');
+            const userSelect = row.querySelector('[data-conference-presenter-user-select]');
+            if (!(typeSelect instanceof HTMLSelectElement) || !(manualInput instanceof HTMLInputElement) || !(userSelect instanceof HTMLSelectElement)) return;
+            if (typeSelect.dataset.conferencePresenterBound !== '1') {
+                typeSelect.dataset.conferencePresenterBound = '1';
+                typeSelect.addEventListener('change', () => syncConferencePresenterRow(row));
+            }
+            if (manualInput.dataset.conferencePresenterBound !== '1') {
+                manualInput.dataset.conferencePresenterBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => manualInput.addEventListener(eventName, () => syncConferencePresenterRow(row)));
+            }
+            if (userSelect.dataset.conferencePresenterBound !== '1') {
+                userSelect.dataset.conferencePresenterBound = '1';
+                ['change', 'blur'].forEach((eventName) => userSelect.addEventListener(eventName, () => syncConferencePresenterRow(row)));
+            }
+            syncConferencePresenterRow(row);
+        }
+
+        function initConferencePresenterRows(scope = document) {
+            scope.querySelectorAll('.conference-presenter-row').forEach((row) => bindConferencePresenterRow(row));
+        }
+
+        window.syncConferencePresenterRow = syncConferencePresenterRow;
+
+        /* ===== EA103: Conference + Presenters ===== */
         function renderEA103Section(idx) {
             const wrap = document.createElement('div');
             wrap.className = 'ea103-section space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4';
             wrap.innerHTML = `
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <span class="font-semibold text-slate-800">Conferences</span>
-      <button type="button" class="lux-mobile-add-row-btn add-conf-btn whitespace-nowrap px-3 py-2 rounded-lg bg-amber-600 text-sm font-semibold text-white" onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
+    <input type="hidden" name="outputs[${idx}][conference_id]" value="">
+    <div class="grid grid-cols-1 gap-3">
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
+        <input name="outputs[${idx}][conference_name]" class="w-full border p-2 rounded" placeholder="เช่น PMAC 2025">
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
+        <select name="outputs[${idx}][conference_presentation_type]" class="w-full border p-2 rounded">
+          <option value="">เลือก</option>
+          <option value="Oral Presentation">Oral Presentation</option>
+          <option value="Poster Presentation">Poster Presentation</option>
+          <option value="Abstract Presentation">Abstract Presentation</option>
+          <option value="Panel Discussion">Panel Discussion</option>
+          <option value="Keynote Speech">Keynote Speech</option>
+          <option value="World café">World café</option>
+        </select>
+      </label>
+      <label>
+        <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
+        <input name="outputs[${idx}][conference_location]" class="w-full border p-2 rounded" placeholder="เมือง/ประเทศ">
+      </label>
     </div>
-    <div class="conference-tbody space-y-3" id="confs-${idx}" data-conf-index="0"></div>
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="font-semibold text-slate-800">รายชื่อผู้นำเสนอ</span>
+      </div>
+      <div class="conference-presenters-container space-y-3" id="confs-${idx}" data-conf-presenter-index="0"></div>
+      <button type="button" class="lux-mobile-add-row-btn whitespace-nowrap px-3 py-2 rounded-lg bg-amber-600 text-sm font-semibold text-white" onclick="addConferencePresenterRow(this)">+ เพิ่มผู้นำเสนอ</button>
+    </div>
   `;
             return wrap;
         }
 
-        function addConferenceRow(btnEl) {
+        function addConferencePresenterRow(btnEl) {
             const outputRow = btnEl.closest('.output-row');
             const idx = outputRow.getAttribute('data-index');
-            const tbody = outputRow.querySelector(`#confs-${idx}`);
-            if (!tbody) return;
-
-            const cIdx = confIndex[idx] || 0;
-
-            tbody.insertAdjacentHTML('beforeend', `
-    <div class="conference-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <span class="conference-index inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-bold text-amber-700"></span>
-          <span class="text-sm font-semibold text-slate-700">Conference</span>
-        </div>
-        <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeConferenceRow(this)">ลบ</button>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <label>
-          <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
-          <input name="outputs[${idx}][conferences][${cIdx}][name]" class="w-full border p-2 rounded" placeholder="เช่น PMAC 2025">
-        </label>
-        <label>
-          <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
-          <select name="outputs[${idx}][conferences][${cIdx}][presentation_type]" class="w-full border p-2 rounded">
-            <option value="">เลือก</option>
-            <option value="Oral Presentation">Oral Presentation</option>
-            <option value="Poster Presentation">Poster Presentation</option>
-            <option value="Abstract Presentation">Abstract Presentation</option>
-            <option value="Panel Discussion">Panel Discussion</option>
-            <option value="Keynote Speech">Keynote Speech</option>
-            <option value="World café">World café</option>
-          </select>
-        </label>
-        <label>
-          <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
-          <input name="outputs[${idx}][conferences][${cIdx}][location]" class="w-full border p-2 rounded" placeholder="เมือง/ประเทศ">
-        </label>
+            const presentersWrap = outputRow.querySelector(`#confs-${idx}`);
+            if (!presentersWrap) return;
+            const pIdx = confIndex[idx] || 0;
+            const userOptions = (Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [])
+                .map((user) => `<option value="${String(user.id)}">${String(user.full_name || '').replace(/"/g, '&quot;')}</option>`)
+                .join('');
+            presentersWrap.insertAdjacentHTML('beforeend', `
+    <div class="conference-presenter-row rounded-lg border border-slate-200 bg-white p-3 shadow-sm space-y-3">
+      <input type="hidden" name="outputs[${idx}][conference_presenters][${pIdx}][id]" value="">
+      <input type="hidden" name="outputs[${idx}][conference_presenters][${pIdx}][user_id]" value="" data-conference-presenter-user-id>
+      <input type="hidden" name="outputs[${idx}][conference_presenters][${pIdx}][note]" value="" data-conference-presenter-note-hidden>
       <label>
+        <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+        <select name="outputs[${idx}][conference_presenters][${pIdx}][person_type]" data-conference-presenter-person-type class="w-full border p-2 rounded" required>
+          <option value="">กรุณาเลือก</option>
+          <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+          <option value="external">คนนอก</option>
+        </select>
+      </label>
+      <label data-conference-presenter-manual-wrap>
         <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
-          <input type="hidden" name="outputs[${idx}][conferences][${cIdx}][user_id]" data-user-id-hidden>
-          <input name="outputs[${idx}][conferences][${cIdx}][note]" list="userNames" data-user-lookup="full" class="w-full border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
-        </label>
-      </div>
+        <input type="text" data-conference-presenter-manual-name class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" placeholder="เลือกประเภทผู้นำเสนอก่อน" disabled>
+      </label>
+      <label class="hidden" data-conference-presenter-user-wrap>
+        <span class="block text-sm text-gray-700 mb-1">เลือกผู้นำเสนอจากรายชื่อบุคลากร</span>
+        <select data-conference-presenter-user-select class="w-full border p-2 rounded" disabled>
+          <option value="">พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ</option>
+          ${userOptions}
+        </select>
+      </label>
+      <button type="button" class="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600" onclick="removeConferencePresenterRow(this)">ลบ</button>
     </div>
   `);
 
-            confIndex[idx] = cIdx + 1;
-            bindProjectUserLookup(tbody);
-            reindexConferenceRows(tbody);
+            confIndex[idx] = pIdx + 1;
+            const row = presentersWrap.lastElementChild;
+            if (row instanceof HTMLElement) bindConferencePresenterRow(row);
+            bindProjectSearchSelectGuards(document);
         }
 
-        function removeConferenceRow(btn) {
-            const row = btn.closest('.conference-row');
-            const container = row?.parentElement;
-            confirmProjectMobileRemoval(() => {
-                row?.remove();
-                reindexConferenceRows(container);
-            });
+        function removeConferencePresenterRow(btn) {
+            btn.closest('.conference-presenter-row')?.remove();
         }
 
         // ---------- ลบ Output + reindex ----------
@@ -3985,14 +5475,14 @@
                 // sync id ของ containers ให้ตรง index ใหม่
                 const aWrap = row.querySelector('.authors-container');
                 if (aWrap) aWrap.id = `authors-${i}`;
-                const cTbody = row.querySelector('.conference-tbody');
-                if (cTbody) cTbody.id = `confs-${i}`;
+                const cWrap = row.querySelector('.conference-presenters-container');
+                if (cWrap) cWrap.id = `confs-${i}`;
                 const bWrap = row.querySelector('.book-authors-container');
                 if (bWrap) bWrap.id = `book-authors-${i}`;
 
                 // นับใหม่ให้ตัวนับ
                 authorIndex[i] = aWrap ? aWrap.querySelectorAll('.author-row').length : 0;
-                confIndex[i] = cTbody ? cTbody.querySelectorAll('.conference-row').length : 0;
+                confIndex[i] = cWrap ? cWrap.querySelectorAll('.conference-presenter-row').length : 0;
                 bookAuthorIndex[i] = bWrap ? bWrap.querySelectorAll('.book-author-row').length : 0;
             });
 
@@ -4020,6 +5510,16 @@
             // ถ้ามี datepicker ไทยให้เรียก init ที่นี่ (ถ้าไม่มี ฟังก์ชันนี้จะถูกข้าม)
             if (typeof initThaiDatepickers === 'function') initThaiDatepickers();
             bindProjectUserLookup(document);
+            bindProjectSearchSelectGuards(document);
+            initOutputAuthorRows(document);
+            initAwardRecipientRows(document);
+            initBookAuthorRows(document);
+            initAwardRecipientRows(document);
+            initBookAuthorRows(document);
+            initConferencePresenterRows(document);
+            bindPiPersonControl(document);
+            initCopiRows(document);
+            initCoresearchRows(document);
         });
 
 
@@ -4034,40 +5534,56 @@
             const container = document.getElementById('coresearch-container');
             const id = `coresearch-${coResearchIndex}`;
             const labelNum = coResearchIndex + 1;
+            const userOptions = (Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [])
+                .map((user) => `<option value="${String(user.id)}">${String(user.full_name || '').replace(/"/g, '&quot;')}</option>`)
+                .join('');
 
             container.insertAdjacentHTML('beforeend', `
         <div id="${id}" class="coresearch-row space-y-2 p-4 border rounded-lg bg-white">
-            <label class="block w-full">
-                <span class="block text-sm text-gray-700 mb-1">
-                    ชื่อ Co-Researcher คนที่ <span class="coresearch-index">${labelNum}</span> <span class="text-red-500">*</span>
-                </span>
-                <input name="coresearch[${coResearchIndex}][name]" list="userNames" type="text"
-                    class="w-full border p-2 rounded" placeholder="ยศ ชื่อ-นามสกุล" required
-                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
-                    oninput="this.setCustomValidity('')">
-            </label>
+            <input type="hidden" name="coresearch[${coResearchIndex}][name]" data-coresearch-name>
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-slate-600">ลำดับ</span>
+                <span class="inline-flex px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold coresearch-index">${labelNum}</span>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                 <label class="col-span-12 md:col-span-5">
-                    <span class="block text-sm text-gray-700 mb-1">สังกัด <span class="text-red-500">*</span></span>
-                    <input name="coresearch[${coResearchIndex}][affiliation]" type="text" list="coresearchAffiliationList"
-                        class="w-full border p-2 rounded" placeholder="ป สังกัด" required
-                        oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
-                        oninput="this.setCustomValidity('')">
-                </label>
-                <label class="col-span-12 md:col-span-5">
                     <span class="block text-sm text-gray-700 mb-1">คนภายนอก / ภายใน <span class="text-red-500">*</span></span>
-                    <select name="coresearch[${coResearchIndex}][unit_status]" class="w-full border p-2 rounded" required
+                    <select name="coresearch[${coResearchIndex}][unit_status]" data-coresearch-unit-status class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกสถานะหน่วยงาน')"
                                     oninput="this.setCustomValidity('')">
                         <option value="" disabled selected>กรุณาเลือก</option>
                         <option value="ภายในคณะแพทยศาสตร์ศิริราชพยาบาล">ภายในคณะแพทยศาสตร์ศิริราชพยาบาล</option>
                         <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล</option>
-                        <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ">ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="${CORESEARCH_INTERNAL_UNIT}">${CORESEARCH_INTERNAL_UNIT}</option>
                     </select>
+                </label>
+                <label class="col-span-12 md:col-span-5" data-coresearch-affiliation-wrap>
+                    <span class="block text-sm text-gray-700 mb-1">สังกัด <span class="text-red-500">*</span></span>
+                    <input name="coresearch[${coResearchIndex}][affiliation]" type="text" list="coresearchAffiliationList" data-coresearch-affiliation
+                        class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" placeholder="เลือกคนภายนอก / ภายในก่อน" disabled
+                        oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
+                        oninput="this.setCustomValidity('')">
                 </label>
                 <div class="col-span-12 md:col-span-2 flex justify-end md:pt-6">
                     <button type="button" onclick="removeRow('${id}', 'coresearch')" class="text-red-600 text-xl">✕</button>
+                </div>
+                <label class="col-span-12" data-coresearch-manual-wrap>
+                    <span class="block text-sm text-gray-700 mb-1">ชื่อ Co-Researcher <span class="text-red-500">*</span></span>
+                    <input type="text" list="coresearchUsers" data-coresearch-manual-name
+                        class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" placeholder="เลือกคนภายนอก / ภายในก่อน" disabled
+                        oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
+                        oninput="this.setCustomValidity('')">
+                </label>
+                <label class="col-span-12 hidden" data-coresearch-user-wrap>
+                    <span class="block text-sm text-gray-700 mb-1">เลือกบุคลากรภายในหน่วยวิจัย <span class="text-red-500">*</span></span>
+                    <select name="coresearch[${coResearchIndex}][user_id]" data-coresearch-user-select class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" disabled
+                        oninvalid="this.setCustomValidity('กรุณาเลือกบุคลากรภายในหน่วยวิจัยจากรายการ')"
+                        oninput="this.setCustomValidity('')">
+                        <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                        ${userOptions}
+                    </select>
+                </label>
         </div>
     </div>
     <div class="fte-mobile-delete-note">
@@ -4079,6 +5595,7 @@
             coResearchIndex++;
             reindexCoResearch();
             keepAddedRowOpen(id);
+            initCoresearchRows(container);
         }
 
 
@@ -4729,6 +6246,8 @@
             function revealFieldIfCollapsed(field) {
                 if (!field || field.closest('template')) return false;
 
+                const displayTarget = window.getProjectValidationDisplayTarget?.(field) || field;
+
                 let node = field.parentElement;
                 let changed = false;
 
@@ -4765,7 +6284,7 @@
                     node = node.parentElement;
                 }
 
-                return changed || field.offsetParent !== null;
+                return changed || field.offsetParent !== null || displayTarget.offsetParent !== null;
             }
 
             if (projectForm) {
@@ -4804,21 +6323,20 @@
 
                     requiredFields.forEach(field => {
                         if (field.disabled || field.type === 'hidden' || field.closest('template')) return;
-                        if (field.offsetParent === null) {
+                        const displayTarget = window.getProjectValidationDisplayTarget?.(field) || field;
+                        const fieldVisible = field.offsetParent !== null || field.getClientRects().length > 0;
+                        const displayVisible = displayTarget.offsetParent !== null || displayTarget.getClientRects().length > 0;
+                        if (!fieldVisible && !displayVisible) {
                             const visibleNow = revealFieldIfCollapsed(field);
                             if (!visibleNow) return;
                         }
 
-                        const val = field.value.trim();
+                        const val = String(field.value ?? '').trim();
                         const invalid = !val || !field.checkValidity();
-                        const displayTarget = window.getProjectValidationDisplayTarget?.(field) || field;
 
                         if (invalid) {
                             isValid = false;
-                            displayTarget.classList.add('border-red-500', 'bg-red-50');
-                            if (field !== displayTarget) {
-                                field.classList.add('border-red-500', 'bg-red-50');
-                            }
+                            window.syncProjectValidationClasses?.(field, true);
                             if (field.name === 'planning_status') {
                                 displayTarget.style.backgroundColor = '#fef2f2';
                                 displayTarget.style.color = '#991b1b';
@@ -4836,10 +6354,7 @@
                                 if (sectionNameById[id]) invalidSections.add(sectionNameById[id]);
                             }
                         } else {
-                            displayTarget.classList.remove('border-red-500', 'bg-red-50');
-                            if (field !== displayTarget) {
-                                field.classList.remove('border-red-500', 'bg-red-50');
-                            }
+                            window.syncProjectValidationClasses?.(field, false);
                             if (field.name === 'planning_status') {
                                 updateStatusColor(displayTarget);
                             }

@@ -70,6 +70,20 @@
                         placeholder="Output / presenter / conference / project">
                 </label>
 
+                <label class="block xl:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">ชื่อผู้นำเสนอ</span>
+                    <select name="presenter"
+                        data-presentation-auto-submit="true"
+                        data-presentation-presenter-search="true"
+                        data-search-placeholder="เลือกชื่อผู้นำเสนอ"
+                        class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
+                        <option value="">ทั้งหมด</option>
+                        @foreach ($presenterOptions as $option)
+                            <option value="{{ $option }}" @selected(request('presenter') === $option)>{{ $option }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">กิจกรรม</span>
                     <select name="activity" data-presentation-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
@@ -276,6 +290,20 @@
                 });
             };
 
+            const bindPresentationPresenterSearchSelect = () => {
+                const select = query('[data-presentation-presenter-search="true"]');
+                if (!(select instanceof HTMLSelectElement) || typeof ensureProjectSearchDropdown !== 'function') {
+                    return;
+                }
+
+                const dropdown = ensureProjectSearchDropdown(select, {
+                    placeholder: 'ทั้งหมด',
+                    searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ'
+                });
+
+                dropdown?.refreshOptions?.();
+            };
+
             document.addEventListener('click', (event) => {
                 const resetLink = event.target.closest('[data-presentations-reset="true"]');
                 if (resetLink) {
@@ -306,6 +334,7 @@
             });
 
             bindPresentationInteractions();
+            bindPresentationPresenterSearchSelect();
         });
     </script>
 @endsection

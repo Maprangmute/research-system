@@ -47,7 +47,8 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             $oldPrefix,
             $oldName,
             (string) ($user->prefix ?? ''),
-            (string) ($user->name ?? '')
+            (string) ($user->name ?? ''),
+            $user->id
         );
     }
 

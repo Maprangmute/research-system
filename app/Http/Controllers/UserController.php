@@ -237,7 +237,8 @@ class UserController extends Controller
             $oldPrefix,
             $oldName,
             (string) ($user->prefix ?? ''),
-            (string) ($user->name ?? '')
+            (string) ($user->name ?? ''),
+            $user->id
         );
 
         return redirect()->route('users.index')->with('success', 'อัปเดตข้อมูลผู้ใช้งานเรียบร้อยแล้ว');

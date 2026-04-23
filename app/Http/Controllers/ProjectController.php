@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Output;
 use App\Models\Project;
+use App\Models\User;
 // ⬅️ เพิ่ม
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -17,6 +18,15 @@ use PDF;
 
 class ProjectController extends Controller
 {
+    private const CO_RESEARCH_INTERNAL_UNIT = 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
+    private const CO_RESEARCH_INTERNAL_AFFILIATION = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
+    private const PI_INTERNAL_AFFILIATION = self::CO_RESEARCH_INTERNAL_AFFILIATION;
+    private const CO_RESEARCH_ALLOWED_UNIT_STATUSES = [
+        'ภายในคณะแพทยศาสตร์ศิริราชพยาบาล',
+        'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล',
+        self::CO_RESEARCH_INTERNAL_UNIT,
+    ];
+
     public function index(Request $request)
     {
         $view = 'projects.index';
@@ -52,7 +62,7 @@ class ProjectController extends Controller
             ->withCount('outputs')
             ->with([
                 'fteRoles:id,project_id,name',
-                'copis:id,project_id,name',
+                'copis:id,project_id,user_id,name,affiliation',
                 'coResearches:id,project_id,name',
             ]);
         $applyPermission($query);
@@ -495,7 +505,9 @@ public function store(Request $request)
 
         $project->load([
             'outputs.authors',
+            'outputs.awardRecipients',
             'outputs.bookAuthors',
+            'outputs.conferences.presenters',
             'progressReports' => function ($query) {
                 $query->orderByDesc('submit_date')->orderByDesc('id');
             },
@@ -695,8 +707,9 @@ public function store(Request $request)
                 $query->orderByDesc('submit_date')->orderByDesc('id');
             },
             'outputs.authors',
+            'outputs.awardRecipients',
             'outputs.bookAuthors',
-            'outputs.conferences',
+            'outputs.conferences.presenters',
             'updatedBy',
             'createdBy',   // ✅ เพิ่มตรงนี้
         ]);
@@ -782,8 +795,9 @@ public function store(Request $request)
                 $query->orderByDesc('submit_date')->orderByDesc('id');
             },
             'outputs.authors',
+            'outputs.awardRecipients',
             'outputs.bookAuthors',
-            'outputs.conferences',
+            'outputs.conferences.presenters',
             'updatedBy',
             'createdBy',
         ]); // ⬅️ authors
@@ -944,6 +958,8 @@ public function store(Request $request)
             'team_start_date' => 'nullable|string',
             'team_end_date' => 'nullable|string',
             'pi_name' => 'nullable|string',
+            'pi_user_id' => 'nullable|integer|exists:users,id',
+            'pi_person_type' => 'nullable|string|in:internal,external',
             'pi_affiliation' => 'nullable|string',
             'planning_status' => 'required|string',
             'proposal_date' => 'nullable|string',
@@ -964,6 +980,18 @@ public function store(Request $request)
             'fte_roles.*.fte_value' => 'nullable|numeric|min:0',
             'fte_roles.*.fte_value_research' => 'nullable|numeric|min:0|max:1',
             'fte_roles.*.hours' => 'nullable|numeric|min:0',
+            'copis' => 'nullable|array',
+            'copis.*.id' => 'nullable|integer',
+            'copis.*.name' => 'nullable|string|max:255',
+            'copis.*.affiliation' => 'nullable|string|max:255',
+            'copis.*.person_type' => 'nullable|string|in:internal,external',
+            'copis.*.user_id' => 'nullable|integer|exists:users,id',
+            'coresearch' => 'nullable|array',
+            'coresearch.*.id' => 'nullable|integer',
+            'coresearch.*.name' => 'nullable|string|max:255',
+            'coresearch.*.affiliation' => 'nullable|string|max:255',
+            'coresearch.*.unit_status' => 'nullable|string|max:255',
+            'coresearch.*.user_id' => 'nullable|integer|exists:users,id',
         ], [
             'planning_status.required' => 'กรุณาเลือก Project Status',
             'fte_roles.*.fte_value.numeric' => 'ค่า FTE (ผู้วิจัย) ต้องเป็นตัวเลข',
@@ -979,7 +1007,33 @@ public function store(Request $request)
         $this->validateRequiredFteFields($request);
         $this->validateNoPastProjectDates($request);
 
-        return $this->normalizeValidatedProjectDates($validated, $request);
+        $validated = $this->normalizeValidatedProjectDates($validated, $request);
+
+        return $this->normalizeValidatedPi($validated, $request);
+    }
+
+    private function normalizeValidatedPi(array $validated, Request $request): array
+    {
+        $piPersonType = trim((string) $request->input('pi_person_type', ''));
+        $piUserId = $request->input('pi_user_id');
+        $piUserId = $piUserId !== null && $piUserId !== '' ? (int) $piUserId : null;
+
+        if ($piPersonType !== 'internal' || ! $piUserId) {
+            $validated['pi_user_id'] = null;
+            return $validated;
+        }
+
+        $user = User::query()->find($piUserId);
+        if (! $user) {
+            $validated['pi_user_id'] = null;
+            return $validated;
+        }
+
+        $validated['pi_user_id'] = $user->id;
+        $validated['pi_name'] = $user->full_name;
+        $validated['pi_affiliation'] = self::PI_INTERNAL_AFFILIATION;
+
+        return $validated;
     }
 
     private function normalizeValidatedProjectDates(array $validated, Request $request): array
@@ -1455,23 +1509,32 @@ public function store(Request $request)
 
             'outputs.*.authors' => ['nullable', 'array'],
             'outputs.*.authors.*.id' => ['nullable', 'integer', 'exists:output_authors,id'],
+            'outputs.*.authors.*.person_type' => ['nullable', 'in:internal,external'],
             'outputs.*.authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.authors.*.role' => ['nullable', 'string'],
             'outputs.*.authors.*.name' => ['nullable', 'string'],
+            'outputs.*.award_recipients' => ['nullable', 'array'],
+            'outputs.*.award_recipients.*.id' => ['nullable', 'integer', 'exists:output_award_recipients,id'],
+            'outputs.*.award_recipients.*.person_type' => ['nullable', 'in:unit,internal,external'],
+            'outputs.*.award_recipients.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'outputs.*.award_recipients.*.name' => ['nullable', 'string'],
 
-            // EA103 (Conferences)
-            'outputs.*.conferences' => ['nullable', 'array'],
-            'outputs.*.conferences.*.id' => ['nullable', 'integer', 'exists:output_conferences,id'],
-            'outputs.*.conferences.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'outputs.*.conferences.*.name' => ['nullable', 'string'],
-            'outputs.*.conferences.*.presentation_type' => ['nullable', 'string'],
-            'outputs.*.conferences.*.location' => ['nullable', 'string'],
-            'outputs.*.conferences.*.note' => ['nullable', 'string'],
+            // EA103 (Conference + Presenters)
+            'outputs.*.conference_id' => ['nullable', 'integer', 'exists:output_conferences,id'],
+            'outputs.*.conference_name' => ['nullable', 'string'],
+            'outputs.*.conference_presentation_type' => ['nullable', 'string'],
+            'outputs.*.conference_location' => ['nullable', 'string'],
+            'outputs.*.conference_presenters' => ['nullable', 'array'],
+            'outputs.*.conference_presenters.*.id' => ['nullable', 'integer', 'exists:output_conference_presenters,id'],
+            'outputs.*.conference_presenters.*.person_type' => ['nullable', 'in:internal,external'],
+            'outputs.*.conference_presenters.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'outputs.*.conference_presenters.*.note' => ['nullable', 'string'],
 
             // EA119 (Textbook / Book chapter)
             'outputs.*.book_title' => ['nullable', 'string', 'max:1000'],
             'outputs.*.publisher_name' => ['nullable', 'string', 'max:1000'],
             'outputs.*.chapter_pages' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.isbn' => ['nullable', 'string', 'max:1000'],
             'outputs.*.book_authors' => ['nullable', 'array'],
             'outputs.*.book_authors.*.id' => ['nullable', 'integer', 'exists:output_book_authors,id'],
             'outputs.*.book_authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
@@ -1489,6 +1552,7 @@ public function store(Request $request)
                 'book_title' => 'ชื่อหนังสือ',
                 'publisher_name' => 'ชื่อสำนักพิมพ์',
                 'chapter_pages' => 'ชื่อบท / เลขหน้า',
+                'isbn' => 'เลข ISBN',
             ];
 
             foreach ($requiredEa119Fields as $field => $label) {
@@ -1638,6 +1702,7 @@ public function store(Request $request)
                 'book_title' => null,
                 'publisher_name' => null,
                 'chapter_pages' => null,
+                'isbn' => null,
             ];
 
             $type = (string) ($payload['type'] ?? '');
@@ -1656,6 +1721,7 @@ public function store(Request $request)
                 $payload['book_title'] = $row['book_title'] ?? null;
                 $payload['publisher_name'] = $row['publisher_name'] ?? null;
                 $payload['chapter_pages'] = $row['chapter_pages'] ?? null;
+                $payload['isbn'] = $row['isbn'] ?? null;
             }
 
             if (! empty($row['id'])) {
@@ -1665,9 +1731,10 @@ public function store(Request $request)
                     $unmatchedExisting->forget($model->id);
 
                     // relations
-                    $this->syncOutputAuthors($model, $row['authors'] ?? null, $isEA101 || $isEA118, $isEA118);
+                    $this->syncOutputAuthors($model, $row['authors'] ?? null, $isEA101);
+                    $this->syncOutputAwardRecipients($model, $row['award_recipients'] ?? null, $isEA118);
                     $this->syncOutputBookAuthors($model, $row['book_authors'] ?? null, $isEA119);
-                    $this->syncOutputConferences($model, $row['conferences'] ?? null, $isEA103);
+                    $this->syncOutputConferences($model, $row, $isEA103);
 
                     $keepIds[] = $model->id;
                 }
@@ -1677,9 +1744,10 @@ public function store(Request $request)
                     $fallback->update($payload);
 
                     // relations
-                    $this->syncOutputAuthors($fallback, $row['authors'] ?? null, $isEA101 || $isEA118, $isEA118);
+                    $this->syncOutputAuthors($fallback, $row['authors'] ?? null, $isEA101);
+                    $this->syncOutputAwardRecipients($fallback, $row['award_recipients'] ?? null, $isEA118);
                     $this->syncOutputBookAuthors($fallback, $row['book_authors'] ?? null, $isEA119);
-                    $this->syncOutputConferences($fallback, $row['conferences'] ?? null, $isEA103);
+                    $this->syncOutputConferences($fallback, $row, $isEA103);
 
                     $keepIds[] = $fallback->id;
                     continue;
@@ -1688,9 +1756,10 @@ public function store(Request $request)
                 $new = $project->outputs()->create($payload);
 
                 // relations
-                $this->syncOutputAuthors($new, $row['authors'] ?? null, $isEA101 || $isEA118, $isEA118);
+                $this->syncOutputAuthors($new, $row['authors'] ?? null, $isEA101);
+                $this->syncOutputAwardRecipients($new, $row['award_recipients'] ?? null, $isEA118);
                 $this->syncOutputBookAuthors($new, $row['book_authors'] ?? null, $isEA119);
-                $this->syncOutputConferences($new, $row['conferences'] ?? null, $isEA103);
+                $this->syncOutputConferences($new, $row, $isEA103);
 
                 $keepIds[] = $new->id;
             }
@@ -1703,7 +1772,7 @@ public function store(Request $request)
         $this->deleteModelsWithEvents($staleOutputs);
     }
 
-    private function syncOutputAuthors(Output $output, ?array $authors, bool $supportsAuthors, bool $isEA118 = false): void
+    private function syncOutputAuthors(Output $output, ?array $authors, bool $supportsAuthors): void
     {
         if (! $supportsAuthors) {
             $this->deleteModelsWithEvents($output->authors());
@@ -1721,23 +1790,27 @@ public function store(Request $request)
 
         $ids = [];
         foreach ($authors as $author) {
-            $name = trim((string) ($author['name'] ?? ''));
-            $role = $isEA118 ? 'awardee' : strtolower(trim((string) ($author['role'] ?? '')));
+            $userId = (($author['user_id'] ?? null) !== null && (int) $author['user_id'] > 0)
+                ? (int) $author['user_id']
+                : null;
+            $role = strtolower(trim((string) ($author['role'] ?? '')));
+            $linkedUser = $userId ? User::find($userId) : null;
+            $name = $linkedUser
+                ? trim((string) $linkedUser->research_display_name)
+                : trim((string) ($author['name'] ?? ''));
 
             if ($name === '' || $role === '') {
                 continue;
             }
 
-            if (! in_array($role, ['first', 'co', 'corresponding', 'awardee'], true)) {
+            if (! in_array($role, ['first', 'co', 'corresponding'], true)) {
                 continue;
             }
 
             $payload = [
                 'role' => $role,
                 'name' => $name,
-                'user_id' => (($author['user_id'] ?? null) !== null && (int) $author['user_id'] > 0)
-                    ? (int) $author['user_id']
-                    : null,
+                'user_id' => $userId,
             ];
 
             if (! empty($author['id'])) {
@@ -1758,6 +1831,60 @@ public function store(Request $request)
         }
 
         $this->deleteModelsWithEvents($output->authors());
+    }
+
+    private function syncOutputAwardRecipients(Output $output, ?array $recipients, bool $isEA118): void
+    {
+        if (! $isEA118) {
+            $this->deleteModelsWithEvents($output->awardRecipients());
+
+            return;
+        }
+
+        $recipients = $recipients ?? [];
+        if (! $recipients) {
+            $this->deleteModelsWithEvents($output->awardRecipients());
+
+            return;
+        }
+
+        $ids = [];
+        foreach ($recipients as $recipient) {
+            $userId = (($recipient['user_id'] ?? null) !== null && (int) $recipient['user_id'] > 0)
+                ? (int) $recipient['user_id']
+                : null;
+            $linkedUser = $userId ? User::find($userId) : null;
+            $name = $linkedUser
+                ? trim((string) $linkedUser->full_name)
+                : trim((string) ($recipient['name'] ?? ''));
+
+            if ($name === '') {
+                continue;
+            }
+
+            $payload = [
+                'name' => $name,
+                'user_id' => $userId,
+            ];
+
+            if (! empty($recipient['id'])) {
+                $model = $output->awardRecipients()->find($recipient['id']);
+                if ($model) {
+                    $model->update($payload);
+                    $ids[] = $model->id;
+                }
+            } else {
+                $new = $output->awardRecipients()->create($payload);
+                $ids[] = $new->id;
+            }
+        }
+
+        if ($ids) {
+            $this->deleteModelsWithEvents($output->awardRecipients()->whereNotIn('id', $ids));
+            return;
+        }
+
+        $this->deleteModelsWithEvents($output->awardRecipients());
     }
 
     private function syncOutputBookAuthors(Output $output, ?array $authors, bool $isEA119): void
@@ -1788,7 +1915,13 @@ public function store(Request $request)
         $ids = [];
         $seen = [];
         foreach ($authors as $author) {
-            $name = trim((string) ($author['name'] ?? ''));
+            $userId = (($author['user_id'] ?? null) !== null && (int) $author['user_id'] > 0)
+                ? (int) $author['user_id']
+                : null;
+            $linkedUser = $userId ? User::find($userId) : null;
+            $name = $linkedUser
+                ? trim((string) $linkedUser->full_name)
+                : trim((string) ($author['name'] ?? ''));
             if ($name === '') {
                 continue;
             }
@@ -1804,9 +1937,7 @@ public function store(Request $request)
 
             $payload = [
                 'name' => $name,
-                'user_id' => (($author['user_id'] ?? null) !== null && (int) $author['user_id'] > 0)
-                    ? (int) $author['user_id']
-                    : null,
+                'user_id' => $userId,
             ];
             $model = null;
             $authorId = (int) ($author['id'] ?? 0);
@@ -1848,55 +1979,129 @@ public function store(Request $request)
         return mb_strtolower(trim($normalized));
     }
 
-    private function syncOutputConferences(Output $output, ?array $confs, bool $isEA103): void
+    private function syncOutputConferences(Output $output, array $row, bool $isEA103): void
     {
         if (! $isEA103) {
             $this->deleteModelsWithEvents($output->conferences());
 
             return;
         }
-        if ($confs === null) {
-            // ไม่ได้แตะ conferences -> ไม่ทำอะไร
+
+        $conferenceId = (($row['conference_id'] ?? null) !== null && (int) $row['conference_id'] > 0)
+            ? (int) $row['conference_id']
+            : null;
+        $conferenceName = trim((string) ($row['conference_name'] ?? ''));
+        $presentationType = trim((string) ($row['conference_presentation_type'] ?? ''));
+        $location = trim((string) ($row['conference_location'] ?? ''));
+        $presenters = is_array($row['conference_presenters'] ?? null) ? $row['conference_presenters'] : [];
+
+        $hasConferencePayload = $conferenceName !== '' || $presentationType !== '' || $location !== '';
+        $hasPresenterPayload = collect($presenters)->contains(function ($presenter) {
+            return trim((string) ($presenter['note'] ?? '')) !== ''
+                || (int) ($presenter['user_id'] ?? 0) > 0
+                || trim((string) ($presenter['person_type'] ?? '')) !== '';
+        });
+
+        if (! $hasConferencePayload && ! $hasPresenterPayload) {
+            $this->deleteModelsWithEvents($output->conferences());
+
             return;
         }
 
-        $ids = [];
-        foreach ($confs as $conf) {
-            $payload = [
-                'name' => $conf['name'] ?? null,
-                'presentation_type' => $conf['presentation_type'] ?? null,
-                'location' => $conf['location'] ?? null,
-                'note' => $conf['note'] ?? null,
-                'user_id' => (($conf['user_id'] ?? null) !== null && (int) $conf['user_id'] > 0)
-                    ? (int) $conf['user_id']
-                    : null,
-            ];
+        $conference = null;
+        if ($conferenceId) {
+            $conference = $output->conferences()->whereKey($conferenceId)->first();
+        }
+        if (! $conference) {
+            $conference = $output->conferences()->orderBy('id')->first();
+        }
+        if (! $conference) {
+            $conference = $output->conferences()->make();
+        }
 
-            // ว่างหมดก็ข้าม
-            if (
-                empty($payload['name']) &&
-                empty($payload['presentation_type']) &&
-                empty($payload['location']) &&
-                empty($payload['note'])
-            ) {
+        $conference->fill([
+            'name' => $conferenceName !== '' ? $conferenceName : null,
+            'presentation_type' => $presentationType !== '' ? $presentationType : null,
+            'location' => $location !== '' ? $location : null,
+        ]);
+        $conference->output()->associate($output);
+        $conference->save();
+
+        $presenterIds = [];
+        foreach ($presenters as $index => $presenter) {
+            $personType = trim((string) ($presenter['person_type'] ?? ''));
+            $userId = (($presenter['user_id'] ?? null) !== null && (int) $presenter['user_id'] > 0)
+                ? (int) $presenter['user_id']
+                : null;
+            $presenterName = trim((string) ($presenter['note'] ?? ''));
+
+            if ($personType === 'internal') {
+                $user = $this->resolveOutputConferenceUser($userId, $presenterName);
+                if (! $user) {
+                    throw ValidationException::withMessages([
+                        "conference_presenters.$index.user_id" => 'กรุณาเลือกผู้นำเสนอจากรายชื่อบุคลากร',
+                    ]);
+                }
+
+                $userId = $user->id;
+                $presenterName = $user->full_name;
+            } elseif ($personType === 'external') {
+                $userId = null;
+            }
+
+            if ($presenterName === '' && ! $userId) {
                 continue;
             }
 
-            if (! empty($conf['id'])) {
-                $m = $output->conferences()->whereKey($conf['id'])->first();
+            $payload = [
+                'user_id' => $userId,
+                'name' => $presenterName !== '' ? $presenterName : null,
+            ];
+
+            if (! empty($presenter['id'])) {
+                $m = $conference->presenters()->whereKey($presenter['id'])->first();
                 if ($m) {
                     $m->update($payload);
-                    $ids[] = $m->id;
+                    $presenterIds[] = $m->id;
                 }
             } else {
-                $new = $output->conferences()->create($payload);
-                $ids[] = $new->id;
+                $new = $conference->presenters()->create($payload);
+                $presenterIds[] = $new->id;
             }
         }
 
-        if (! empty($ids)) {
-            $this->deleteModelsWithEvents($output->conferences()->whereNotIn('id', $ids));
+        if (! empty($presenterIds)) {
+            $this->deleteModelsWithEvents($conference->presenters()->whereNotIn('id', $presenterIds));
+        } else {
+            $this->deleteModelsWithEvents($conference->presenters());
         }
+
+        $extraConferenceIds = $output->conferences()
+            ->where('id', '!=', $conference->id)
+            ->pluck('id');
+        if ($extraConferenceIds->isNotEmpty()) {
+            $this->deleteModelsWithEvents($output->conferences()->whereIn('id', $extraConferenceIds->all()));
+        }
+    }
+
+    private function resolveOutputConferenceUser(?int $userId, string $name): ?User
+    {
+        if ($userId) {
+            $user = User::query()->find($userId);
+            if ($user) {
+                return $user;
+            }
+        }
+
+        $name = trim($name);
+        if ($name === '') {
+            return null;
+        }
+
+        return User::query()
+            ->whereRaw("TRIM(CONCAT(COALESCE(prefix, ''), ' ', COALESCE(name, ''))) = ?", [$name])
+            ->orWhereRaw('TRIM(name) = ?', [$name])
+            ->first();
     }
 
     private function hasAnyOutputData(array $row): bool
@@ -1912,7 +2117,9 @@ public function store(Request $request)
             ($row['book_title'] ?? null) ||
             ($row['publisher_name'] ?? null) ||
             ($row['chapter_pages'] ?? null) ||
+            ($row['isbn'] ?? null) ||
             (! empty($row['authors'])) ||
+            (! empty($row['award_recipients'])) ||
             (! empty($row['book_authors']))
         );
     }
@@ -1937,41 +2144,105 @@ public function store(Request $request)
     {
         $ids = [];
         $unmatchedExisting = $project->copis()->orderBy('id')->get()->keyBy('id');
-        foreach ($request->copis ?? [] as $copi) {
+        $errors = [];
+
+        foreach ($request->copis ?? [] as $idx => $copi) {
+            $payload = $this->buildCopiPayload($copi, (int) $idx, $errors);
+            if ($payload === null) {
+                continue;
+            }
+
             if (! empty($copi['id'])) {
                 $copiModel = $project->copis()->whereKey($copi['id'])->first();
                 if ($copiModel) {
-                    $copiModel->update([
-                        'name' => $copi['name'],
-                        'affiliation' => $copi['affiliation'] ?? '',
-                    ]);
+                    $copiModel->update($payload);
                     $unmatchedExisting->forget($copiModel->id);
                     $ids[] = $copiModel->id;
                 }
-            } elseif (! empty($copi['name'])) {
+            } else {
                 $fallback = $unmatchedExisting->shift();
                 if ($fallback) {
-                    $fallback->update([
-                        'name' => $copi['name'],
-                        'affiliation' => $copi['affiliation'] ?? '',
-                    ]);
+                    $fallback->update($payload);
                     $ids[] = $fallback->id;
                     continue;
                 }
 
-                $new = \App\Models\Copi::create([
+                $new = \App\Models\Copi::create(array_merge($payload, [
                     'project_id' => $project->id,
-                    'name' => $copi['name'],
-                    'affiliation' => $copi['affiliation'] ?? '',
-                ]);
+                ]));
                 $ids[] = $new->id;
             }
         }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
         $staleCopis = $project->copis();
         if (!empty($ids)) {
             $staleCopis->whereNotIn('id', $ids);
         }
         $this->deleteModelsWithEvents($staleCopis);
+    }
+
+    private function buildCopiPayload(array $copi, int $idx, array &$errors): ?array
+    {
+        $rowErrors = [];
+        $personType = trim((string) ($copi['person_type'] ?? ''));
+        $name = trim((string) ($copi['name'] ?? ''));
+        $affiliation = trim((string) ($copi['affiliation'] ?? ''));
+        $userId = isset($copi['user_id']) && $copi['user_id'] !== '' ? (int) $copi['user_id'] : null;
+
+        $hasAnyValue = $personType !== '' || $name !== '' || $affiliation !== '' || $userId !== null;
+        if (! $hasAnyValue) {
+            return null;
+        }
+
+        if ($personType === '') {
+            $rowErrors["copis.$idx.person_type"] = 'กรุณาเลือกประเภท COPI';
+            $errors = array_merge($errors, $rowErrors);
+            return null;
+        }
+
+        if ($personType === 'internal') {
+            if (! $userId) {
+                $rowErrors["copis.$idx.user_id"] = 'กรุณาเลือก COPI จากรายชื่อบุคลากร';
+                $errors = array_merge($errors, $rowErrors);
+                return null;
+            }
+
+            $user = User::query()->find($userId);
+            if (! $user) {
+                $rowErrors["copis.$idx.user_id"] = 'ไม่พบข้อมูลบุคลากรที่เลือก';
+                $errors = array_merge($errors, $rowErrors);
+                return null;
+            }
+
+            return [
+                'user_id' => $user->id,
+                'name' => $user->full_name,
+                'affiliation' => self::PI_INTERNAL_AFFILIATION,
+            ];
+        }
+
+        if ($name === '') {
+            $rowErrors["copis.$idx.name"] = 'กรุณาระบุชื่อ COPI';
+        }
+
+        if ($affiliation === '') {
+            $rowErrors["copis.$idx.affiliation"] = 'กรุณาระบุสังกัด COPI';
+        }
+
+        if ($rowErrors !== []) {
+            $errors = array_merge($errors, $rowErrors);
+            return null;
+        }
+
+        return [
+            'user_id' => null,
+            'name' => $name,
+            'affiliation' => $affiliation,
+        ];
     }
 
     private function syncIrbs(Request $request, Project $project): void
@@ -2022,35 +2293,30 @@ public function store(Request $request)
     {
         $ids = [];
         $unmatchedExisting = $project->coResearches()->orderBy('id')->get()->keyBy('id');
-        foreach ($request->coresearch ?? [] as $core) {
+        foreach ($request->coresearch ?? [] as $idx => $core) {
+            $payload = $this->buildCoResearchPayload($core, $idx);
+            if ($payload === null) {
+                continue;
+            }
+
             if (! empty($core['id'])) {
                 $coreModel = $project->coResearches()->whereKey($core['id'])->first();
                 if ($coreModel) {
-                    $coreModel->update([
-                        'name' => $core['name'],
-                        'unit_status' => $core['unit_status'],
-                        'affiliation' => $core['affiliation'] ?? '',
-                    ]);
+                    $coreModel->update($payload);
                     $unmatchedExisting->forget($coreModel->id);
                     $ids[] = $coreModel->id;
                 }
-            } elseif (! empty($core['name'])) {
+            } else {
                 $fallback = $unmatchedExisting->shift();
                 if ($fallback) {
-                    $fallback->update([
-                        'name' => $core['name'],
-                        'unit_status' => $core['unit_status'],
-                        'affiliation' => $core['affiliation'] ?? '',
-                    ]);
+                    $fallback->update($payload);
                     $ids[] = $fallback->id;
                     continue;
                 }
 
                 $new = \App\Models\CoResearch::create([
                     'project_id' => $project->id,
-                    'name' => $core['name'],
-                    'unit_status' => $core['unit_status'],
-                    'affiliation' => $core['affiliation'] ?? '',
+                    ...$payload,
                 ]);
                 $ids[] = $new->id;
             }
@@ -2060,6 +2326,96 @@ public function store(Request $request)
             $staleCoResearches->whereNotIn('id', $ids);
         }
         $this->deleteModelsWithEvents($staleCoResearches);
+    }
+
+    private function buildCoResearchPayload(array $core, int $idx): ?array
+    {
+        $name = trim((string) ($core['name'] ?? ''));
+        $affiliation = trim((string) ($core['affiliation'] ?? ''));
+        $unitStatus = $this->normalizeCoResearchUnitStatus($core['unit_status'] ?? null);
+        $userId = isset($core['user_id']) && $core['user_id'] !== '' ? (int) $core['user_id'] : null;
+
+        $hasAnyValue = $name !== '' || $affiliation !== '' || $unitStatus !== '' || $userId !== null;
+        if (! $hasAnyValue) {
+            return null;
+        }
+
+        $errors = [];
+
+        if ($unitStatus === '') {
+            $errors["coresearch.$idx.unit_status"] = 'กรุณาเลือกสถานะ Co-Researcher';
+        } elseif (! in_array($unitStatus, self::CO_RESEARCH_ALLOWED_UNIT_STATUSES, true)) {
+            $errors["coresearch.$idx.unit_status"] = 'สถานะ Co-Researcher ไม่ถูกต้อง';
+        }
+
+        if ($unitStatus === self::CO_RESEARCH_INTERNAL_UNIT) {
+            $user = $this->resolveCoResearchUser($userId, $name);
+
+            if (! $user) {
+                $errors["coresearch.$idx.user_id"] = 'กรุณาเลือกบุคลากรภายในหน่วยวิจัยจากรายการ';
+            }
+
+            if (! empty($errors)) {
+                throw ValidationException::withMessages($errors);
+            }
+
+            return [
+                'user_id' => $user->id,
+                'name' => $user->full_name,
+                'unit_status' => self::CO_RESEARCH_INTERNAL_UNIT,
+                'affiliation' => self::CO_RESEARCH_INTERNAL_AFFILIATION,
+            ];
+        }
+
+        if ($name === '') {
+            $errors["coresearch.$idx.name"] = 'กรุณาระบุชื่อ Co-Researcher';
+        }
+
+        if ($affiliation === '') {
+            $errors["coresearch.$idx.affiliation"] = 'กรุณาระบุสังกัด Co-Researcher';
+        }
+
+        if (! empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return [
+            'user_id' => null,
+            'name' => $name,
+            'unit_status' => $unitStatus,
+            'affiliation' => $affiliation,
+        ];
+    }
+
+    private function normalizeCoResearchUnitStatus(?string $value): string
+    {
+        $normalized = trim((string) $value);
+
+        if ($normalized === 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ') {
+            return self::CO_RESEARCH_INTERNAL_UNIT;
+        }
+
+        return $normalized;
+    }
+
+    private function resolveCoResearchUser(?int $userId, string $name): ?User
+    {
+        if ($userId) {
+            $user = User::query()->find($userId);
+            if ($user) {
+                return $user;
+            }
+        }
+
+        $name = trim($name);
+        if ($name === '') {
+            return null;
+        }
+
+        return User::query()
+            ->whereRaw("TRIM(CONCAT(COALESCE(prefix, ''), ' ', COALESCE(name, ''))) = ?", [$name])
+            ->orWhereRaw('TRIM(name) = ?', [$name])
+            ->first();
     }
 
     private function deleteModelsWithEvents($query): void

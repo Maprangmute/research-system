@@ -116,6 +116,28 @@
             background: #eef6ff;
         }
 
+        .output-open-link-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.38rem;
+            border-radius: 999px;
+            border: 1px solid #c7d2fe;
+            background: #eef2ff;
+            color: #4338ca;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            padding: 0.48rem 0.82rem;
+            transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+
+        .output-open-link-btn:hover {
+            background: #e0e7ff;
+            border-color: #a5b4fc;
+            color: #3730a3;
+        }
+
         .cell-clamp-2,
         .cell-clamp-3 {
             display: -webkit-box;
@@ -527,10 +549,19 @@
                                             @endif
                                         </dd>
                                     </div>
-                                    @if (!empty($output->detail))
+                                    @if (!empty($output->detail) || !empty($output->related_link))
                                         <div class="space-y-1">
-                                            <dt class="text-slate-500">ภาระงาน</dt>
-                                            <dd class="cell-clamp-2 text-slate-700">{{ $output->detail }}</dd>
+                                            <dt class="text-slate-500">ผลงานที่เกี่ยวข้อง</dt>
+                                            <dd class="space-y-2">
+                                                @if (!empty($output->detail))
+                                                    <div class="cell-clamp-2 text-slate-700">{{ $output->detail }}</div>
+                                                @endif
+                                                @if (!empty($output->related_link))
+                                                    <a href="{{ $output->related_link }}" target="_blank" rel="noopener noreferrer" class="output-open-link-btn">
+                                                        เปิดผลงานที่เกี่ยวข้อง
+                                                    </a>
+                                                @endif
+                                            </dd>
                                         </div>
                                     @endif
                                     <div class="flex justify-between gap-3 border-t border-slate-100 pt-2 text-xs">
@@ -547,10 +578,10 @@
                     <div class="outputs-desktop-table overflow-auto">
                         <table class="output-table min-w-full">
                             <colgroup>
-                                <col style="width: 34%;">
-                                <col style="width: 16%;">
-                                <col style="width: 10%;">
-                                <col style="width: 26%;">
+                                <col style="width: 30%;">
+                                <col style="width: 18%;">
+                                <col style="width: 9%;">
+                                <col style="width: 29%;">
                                 <col style="width: 14%;">
                             </colgroup>
                             <thead class="border-b border-slate-200 bg-slate-50">
@@ -564,7 +595,7 @@
                                     <th class="px-4 py-3 text-center">
                                         <a href="{{ $sortUrl('year') }}" class="hover:text-indigo-700">ปี (พ.ศ.) <span class="ml-1">{{ $sortIcon('year') }}</span></a>
                                     </th>
-                                    <th class="px-4 py-3">โครงการ / งานอ้างอิง</th>
+                                    <th class="px-4 py-3">รายการอ้างอิง / ผลงานที่เกี่ยวข้อง</th>
                                     <th class="px-4 py-3 text-center">
                                         <a href="{{ $sortUrl('created_at') }}" class="hover:text-indigo-700">วันที่ลงข้อมูล <span class="ml-1">{{ $sortIcon('created_at') }}</span></a>
                                     </th>
@@ -590,16 +621,27 @@
                                         </td>
                                         <td class="px-4 py-4 text-center text-slate-700">{{ $output->year_be ?: '-' }}</td>
                                         <td class="px-4 py-4 text-slate-700">
-                                            @if ($output->link && $output->project_label)
-                                                <a href="{{ $output->link }}" class="font-medium text-indigo-700 hover:underline">
-                                                    {{ $output->project_label }}
-                                                </a>
-                                            @else
-                                                -
-                                            @endif
-                                            @if (!empty($output->detail))
-                                                <div class="mt-1 text-xs text-slate-500">ภาระงาน: {{ $output->detail }}</div>
-                                            @endif
+                                            <div class="space-y-2">
+                                                <div>
+                                                    @if ($output->link && $output->project_label)
+                                                        <a href="{{ $output->link }}" class="font-medium leading-6 text-indigo-700 hover:underline">
+                                                            {{ $output->project_label }}
+                                                        </a>
+                                                    @else
+                                                        <span class="text-slate-400">-</span>
+                                                    @endif
+                                                </div>
+                                                @if (!empty($output->detail))
+                                                    <div class="text-xs leading-5 text-slate-500">{{ $output->detail }}</div>
+                                                @endif
+                                                @if (!empty($output->related_link))
+                                                    <div>
+                                                        <a href="{{ $output->related_link }}" target="_blank" rel="noopener noreferrer" class="output-open-link-btn">
+                                                            เปิดผลงานที่เกี่ยวข้อง
+                                                        </a>
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td class="px-4 py-4 text-center text-sm text-slate-500">
                                             {{ $created ? $created->locale('th')->translatedFormat('j F') . ' ' . ($created->year + 543) : '-' }}

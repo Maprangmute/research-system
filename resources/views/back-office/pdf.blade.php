@@ -187,10 +187,16 @@
                                         <div>Conferences:
                                             @if ($confs->count())
                                                 @foreach ($confs as $conf)
+                                                    @php
+                                                        $presenterNames = collect($conf['presenters'] ?? [])->pluck('name')->filter()->values()->all();
+                                                        $presenterDisplay = !empty($presenterNames)
+                                                            ? implode(', ', $presenterNames)
+                                                            : ($conf['note'] ?? '');
+                                                    @endphp
                                                     {{ $conf['name'] ?? '-' }}
                                                     @if (!empty($conf['presentation_type'])) • {{ $conf['presentation_type'] }} @endif
                                                     @if (!empty($conf['location'])) • {{ $conf['location'] }} @endif
-                                                    @if (!empty($conf['note'])) • {{ $conf['note'] }} @endif
+                                                    @if (!empty($presenterDisplay)) • {{ $presenterDisplay }} @endif
                                                     @if (! $loop->last) | @endif
                                                 @endforeach
                                             @else

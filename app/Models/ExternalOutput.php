@@ -20,6 +20,7 @@ class ExternalOutput extends Model
         'book_title',
         'publisher_name',
         'chapter_pages',
+        'isbn',
         'created_by',
         'updated_by',
     ];
@@ -37,6 +38,28 @@ class ExternalOutput extends Model
     public function conferences()
     {
         return $this->hasMany(ExternalOutputConference::class);
+    }
+
+    public function awardRecipients()
+    {
+        return $this->hasMany(ExternalOutputAwardRecipient::class, 'external_output_id', 'id');
+    }
+
+    public function bookAuthors()
+    {
+        return $this->hasMany(ExternalOutputBookAuthor::class, 'external_output_id', 'id');
+    }
+
+    public function conferencePresenters()
+    {
+        return $this->hasManyThrough(
+            ExternalOutputConferencePresenter::class,
+            ExternalOutputConference::class,
+            'external_output_id',
+            'external_output_conference_id',
+            'id',
+            'id'
+        );
     }
 
     public function creator()

@@ -43,6 +43,7 @@ class Project extends Model
         'team_start_date',
         'team_end_date',
         'pi_name',
+        'pi_user_id',
         'pi_affiliation',
         'task_detail',
         // Strategy flags
@@ -235,6 +236,11 @@ public function updatedBy() { return $this->belongsTo(User::class, 'updated_by')
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function piUser()
+    {
+        return $this->belongsTo(User::class, 'pi_user_id');
     }
     // app/Models/Project.php
     public function progressReports()

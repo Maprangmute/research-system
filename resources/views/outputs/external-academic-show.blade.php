@@ -74,6 +74,7 @@
         ['label' => 'ชื่อหนังสือ', 'value' => $externalOutput->type === 'EA119' ? $externalOutput->book_title : null],
         ['label' => 'ชื่อสำนักพิมพ์', 'value' => $externalOutput->type === 'EA119' ? $externalOutput->publisher_name : null],
         ['label' => 'ชื่อบท / เลขหน้า', 'value' => $externalOutput->type === 'EA119' ? $externalOutput->chapter_pages : null, 'full' => true],
+        ['label' => 'เลข ISBN', 'value' => $externalOutput->type === 'EA119' ? $externalOutput->isbn : null],
         ['label' => 'บันทึกโดย', 'value' => $createdBy, 'full' => true],
         ['label' => 'ข้อมูลล่าสุดโดย', 'value' => $updatedBy, 'full' => true],
     ])->filter(fn ($item) => $hasValue($item['value'] ?? null))->values();
@@ -155,11 +156,16 @@
             </article>
         </section>
 
-        @if (in_array($externalOutput->type, ['EA101', 'EA118', 'EA119'], true) && $externalOutput->authors->isNotEmpty())
+        @php
+            $displayPeople = $externalOutput->type === 'EA118'
+                ? $externalOutput->awardRecipients
+                : ($externalOutput->type === 'EA119' ? $externalOutput->bookAuthors : $externalOutput->authors);
+        @endphp
+        @if (in_array($externalOutput->type, ['EA101', 'EA118', 'EA119'], true) && $displayPeople->isNotEmpty())
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">{{ $externalOutput->type === 'EA118' ? 'Award Recipients' : $authorSectionTitle }}</h2>
                 <div class="mt-4 space-y-3">
-                    @foreach ($externalOutput->authors as $author)
+                    @foreach ($displayPeople as $author)
                         <div class="rounded-xl border border-slate-200 px-4 py-3">
                             @if ($author->role && $author->role !== 'awardee')
                                 <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $author->role }}</div>
@@ -194,10 +200,10 @@
                                         <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->location }}</div>
                                     </div>
                                 @endif
-                                @if ($conference->presenter_name)
+                                @if ($conference->presenterDisplay())
                                     <div>
                                         <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Presenter</div>
-                                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->presenter_name }}</div>
+                                        <div class="mt-1 text-sm font-medium text-slate-800">{{ $conference->presenterDisplay() }}</div>
                                     </div>
                                 @endif
                             </div>

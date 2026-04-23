@@ -28,6 +28,30 @@ class OutputConference extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function presenters()
+    {
+        return $this->hasMany(OutputConferencePresenter::class, 'output_conference_id');
+    }
+
+    public function presenterNames(): array
+    {
+        $names = $this->relationLoaded('presenters')
+            ? $this->presenters->pluck('name')->filter()->values()->all()
+            : $this->presenters()->pluck('name')->filter()->values()->all();
+
+        if ($names !== []) {
+            return $names;
+        }
+
+        $fallback = trim((string) ($this->note ?? ''));
+        return $fallback !== '' ? [$fallback] : [];
+    }
+
+    public function presenterDisplay(): string
+    {
+        return implode(', ', $this->presenterNames());
+    }
+
     protected static function booted()
     {
         static::created(function ($conference) {

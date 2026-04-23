@@ -17,6 +17,9 @@
         'full_name' => $user->full_name,
         'research_display_name' => $user->research_display_name,
     ])->values();
+    $piInternalAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
+    $internalCoresearchUnit = 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
+    $internalCoresearchAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
     $roleGroups = ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'];
     $jobDetails = [
         'Researcher',
@@ -70,15 +73,15 @@
     @foreach (\App\Models\OutputAuthor::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $authorName)
         <option value="{{ $authorName }}"></option>
     @endforeach
-    @foreach ($projectUserDirectory as $userOption)
-        <option value="{{ $userOption['research_display_name'] }}"></option>
-    @endforeach
 </datalist>
 <datalist id="awardRecipientNames">
-    <option value="หน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ"></option>
-    @foreach ($allUsers as $user)
-        @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-        <option value="{{ $fullName }}"></option>
+    @foreach (\App\Models\OutputAwardRecipient::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $awardeeName)
+        <option value="{{ $awardeeName }}"></option>
+    @endforeach
+</datalist>
+<datalist id="bookAuthorNames">
+    @foreach (\App\Models\OutputBookAuthor::query()->whereNotNull('name')->whereRaw("TRIM(name) <> ''")->selectRaw('TRIM(name) as name')->distinct()->orderBy('name')->pluck('name') as $bookAuthorName)
+        <option value="{{ $bookAuthorName }}"></option>
     @endforeach
 </datalist>
 {{-- ✅ DATAlIST กลาง (ใช้ร่วมกันทุก row) --}}
@@ -111,8 +114,20 @@
         ->orderBy('pi_affiliation')
         ->pluck('pi_affiliation');
 
+    $coresearchNameList = \App\Models\CoResearch::whereNotNull('name')
+        ->whereRaw("TRIM(name) <> ''")
+        ->where(function ($query) use ($internalCoresearchUnit) {
+            $query->whereNull('unit_status')
+                ->orWhereRaw("TRIM(unit_status) <> ?", [$internalCoresearchUnit]);
+        })
+        ->selectRaw('TRIM(name) as name')
+        ->distinct()
+        ->orderBy('name')
+        ->pluck('name');
+
     $coresearchAffiliationList = \App\Models\CoResearch::whereNotNull('affiliation')
         ->whereRaw("TRIM(affiliation) <> ''")
+        ->whereRaw("TRIM(affiliation) <> ?", [$internalCoresearchAffiliation])
         ->selectRaw('TRIM(affiliation) as affiliation')
         ->distinct()
         ->orderBy('affiliation')
@@ -120,6 +135,7 @@
 
     $copiAffiliationList = \App\Models\Copi::whereNotNull('affiliation')
         ->whereRaw("TRIM(affiliation) <> ''")
+        ->whereRaw("TRIM(affiliation) <> ?", [$piInternalAffiliation])
         ->selectRaw('TRIM(affiliation) as affiliation')
         ->distinct()
         ->orderBy('affiliation')
@@ -478,36 +494,65 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="block w-full">
                     <span class="block text-sm font-medium text-gray-700 mb-1">
-                        CA101 - ชื่อ PI (ผู้วิจัยหลัก) <span class="text-red-500">*</span>
+                        CA101 - ประเภท PI (ผู้วิจัยหลัก) <span class="text-red-500">*</span>
                     </span>
+                    <select name="pi_person_type" data-pi-person-type
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                        required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทผู้วิจัยหลัก')"
+                        oninput="this.setCustomValidity('')">
+                        <option value="">กรุณาเลือก</option>
+                        <option value="internal" {{ old('pi_person_type') === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="external" {{ old('pi_person_type', 'external') === 'external' ? 'selected' : '' }}>คนนอก</option>
+                    </select>
+                </label>
+
+                <label class="w-full">
+                    <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัดผู้วิจัยหลัก <span class="text-red-500">*</span></span>
                     <div class="relative">
-                        <input name="pi_name" list="userNames" type="text"
+                        <input name="pi_affiliation" type="text" list="piaffiliationList" data-pi-affiliation
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                            placeholder="คำนำหน้า ชื่อ-นามสกุล" required
-                            oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้วิจัยหลัก')"
+                            value="{{ old('pi_affiliation', '') }}"
+                            placeholder="เลือกประเภทผู้วิจัยหลักก่อน" required disabled
+                            oninvalid="this.setCustomValidity('กรุณาระบุสังกัดผู้วิจัยหลัก')"
                             oninput="this.setCustomValidity('')">
-                        <datalist id="userNames">
-                            @foreach ($allUsers as $user)
-                                @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-                                <option value="{{ $fullName }}"></option>
-                            @endforeach
-                        </datalist>
                     </div>
+                    @error('pi_affiliation')
+                        <span class="text-sm text-red-500">{{ $message }}</span>
+                    @enderror
+                </label>
+
+                <label class="block w-full md:col-span-2" data-pi-manual-wrap>
+                    <span class="block text-sm font-medium text-gray-700 mb-1">
+                        CA102 - ชื่อ PI (ผู้วิจัยหลัก) <span class="text-red-500">*</span>
+                    </span>
+                    <input type="hidden" name="pi_user_id" value="{{ old('pi_user_id') }}" data-pi-user-id>
+                    <input type="hidden" name="pi_name" value="{{ old('pi_name') }}" data-pi-name-hidden>
+                    <input type="text" list="userNames" data-pi-manual-name
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                        value="{{ old('pi_name', '') }}"
+                        placeholder="เลือกประเภทผู้วิจัยหลักก่อน" disabled
+                        oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้วิจัยหลัก')"
+                        oninput="this.setCustomValidity('')">
                     @error('pi_name')
                         <span class="text-sm text-red-500 mt-1">{{ $message }}</span>
                     @enderror
                 </label>
 
-
-                <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">CA103 - สังกัดผู้วิจัยหลัก</span>
-                    <input name="pi_affiliation" type="text" list="piaffiliationList"
-                        class="w-full border p-2 rounded" value="" placeholder="สังกัดผู้วิจัยหลัก" required
-                        oninvalid="this.setCustomValidity('กรุณาระบุสังกัดผู้วิจัยหลัก')"
+                <label class="block w-full md:col-span-2 hidden" data-pi-user-wrap>
+                    <span class="block text-sm font-medium text-gray-700 mb-1">
+                        CA102 - เลือก PI จากรายชื่อบุคลากร <span class="text-red-500">*</span>
+                    </span>
+                    <select data-pi-user-select
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                        disabled
+                        oninvalid="this.setCustomValidity('กรุณาเลือกผู้วิจัยหลักจากรายการ')"
                         oninput="this.setCustomValidity('')">
-                    @error('pi_affiliation')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
+                        <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                        @foreach ($allUsers as $user)
+                            <option value="{{ $user->id }}">{{ trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) }}</option>
+                        @endforeach
+                    </select>
                 </label>
 
                 <datalist id="piaffiliationList">
@@ -544,47 +589,74 @@
                 <div data-repeatable-container class="space-y-3 mb-4">
 
                     {{-- ================== แถวแรก ================== --}}
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end p-3 border rounded-lg bg-gray-50" data-repeatable-row>
+                    <div class="copi-row space-y-2 p-4 border rounded-lg bg-gray-50" data-repeatable-row>
+                        <input type="hidden" name="copis[0][name]" data-copi-name>
+                        <input type="hidden" name="copis[0][user_id]" data-copi-user-id>
 
-                        {{-- เลขลำดับ --}}
-                        <div class="col-span-12 md:col-span-1 text-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-slate-600">ลำดับ</span>
                             <span data-repeatable-index
-                                class="inline-flex w-8 h-8 items-center justify-center
-                             rounded-full bg-yellow-100 text-yellow-700
-                             text-sm font-semibold">
+                                class="inline-flex ml-1 px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold">
                                 1
                             </span>
                         </div>
 
-                        {{-- ชื่อ COPI --}}
-                        <div class="col-span-12 md:col-span-5">
-                            <label class="block text-sm text-gray-700 mb-1">
-                                ชื่อ COPI <span class="text-red-500">*</span>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <label class="col-span-12 md:col-span-5">
+                                <span class="block text-sm text-gray-700 mb-1">
+                                    คนใน / คนนอก <span class="text-red-500">*</span>
+                                </span>
+                                <select name="copis[0][person_type]" data-copi-person-type
+                                    class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภท COPI')"
+                                    oninput="this.setCustomValidity('')">
+                                    <option value="">กรุณาเลือก</option>
+                                    <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                    <option value="external">คนนอก</option>
+                                </select>
                             </label>
-                            <input name="copis[0][name]" list="userNames" type="text"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                           focus:ring-2 focus:ring-yellow-500"
-                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
 
-                        {{-- สังกัด --}}
-                        <div class="col-span-12 md:col-span-5">
-                            <label class="block text-sm text-gray-700 mb-1">
-                                สังกัด COPI <span class="text-red-500">*</span>
+                            <label class="col-span-12 md:col-span-5">
+                                <span class="block text-sm text-gray-700 mb-1">
+                                    สังกัด COPI <span class="text-red-500">*</span>
+                                </span>
+                                <input name="copis[0][affiliation]" type="text" list="copiAffiliationList" data-copi-affiliation
+                                    class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    placeholder="เลือกประเภท COPI ก่อน" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด COPI')"
+                                    oninput="this.setCustomValidity('')">
                             </label>
-                            <input name="copis[0][affiliation]" type="text" list="copiAffiliationList" class="w-full border p-2 rounded"
-                                placeholder="สังกัด COPI" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุสังกัด COPI')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
 
-                        {{-- ลบ --}}
-                        <div class="col-span-12 md:col-span-1 flex justify-end md:justify-center">
-                            <button type="button" class="text-red-600" data-repeatable-remove>
-                                ✕
-                            </button>
+                            <div class="col-span-12 md:col-span-2 flex justify-end md:pt-6">
+                                <button type="button" class="text-red-600 text-xl" data-repeatable-remove>
+                                    ✕
+                                </button>
+                            </div>
+
+                            <label class="col-span-12" data-copi-manual-wrap>
+                                <span class="block text-sm text-gray-700 mb-1">
+                                    ชื่อ COPI <span class="text-red-500">*</span>
+                                </span>
+                                <input type="text" list="userNames" data-copi-manual-name
+                                    class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    placeholder="เลือกประเภท COPI ก่อน" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
+                                    oninput="this.setCustomValidity('')">
+                            </label>
+
+                            <label class="col-span-12 hidden" data-copi-user-wrap>
+                                <span class="block text-sm text-gray-700 mb-1">
+                                    เลือก COPI จากรายชื่อบุคลากร <span class="text-red-500">*</span>
+                                </span>
+                                <select data-copi-user-select class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาเลือก COPI จากรายการ')"
+                                    oninput="this.setCustomValidity('')">
+                                    <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                                    @foreach ($allUsers as $user)
+                                        <option value="{{ $user->id }}">{{ $user->full_name }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
                         </div>
                     </div>
 
@@ -592,43 +664,73 @@
 
                 {{-- ================== template ================== --}}
                 <x-slot:template>
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end p-3 border rounded-lg bg-white" data-repeatable-row>
+                    <div class="copi-row space-y-2 p-4 border rounded-lg bg-white" data-repeatable-row>
+                        <input type="hidden" name="copis[__i__][name]" data-copi-name>
+                        <input type="hidden" name="copis[__i__][user_id]" data-copi-user-id>
 
-                        <div class="col-span-12 md:col-span-1 text-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-slate-600">ลำดับ</span>
                             <span data-repeatable-index
-                                class="inline-flex w-8 h-8 items-center justify-center
-                             rounded-full bg-yellow-100 text-yellow-700
-                             text-sm font-semibold">
+                                class="inline-flex ml-1 px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold">
                                 #
                             </span>
                         </div>
 
-                        <div class="col-span-12 md:col-span-5">
-                            <label class="block text-sm text-gray-700 mb-1">
-                                ชื่อ COPI <span class="text-red-500">*</span>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <label class="col-span-12 md:col-span-5">
+                                <span class="block text-sm text-gray-700 mb-1">
+                                    คนใน / คนนอก <span class="text-red-500">*</span>
+                                </span>
+                                <select name="copis[__i__][person_type]" data-copi-person-type class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภท COPI')"
+                                    oninput="this.setCustomValidity('')">
+                                    <option value="">กรุณาเลือก</option>
+                                    <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                    <option value="external">คนนอก</option>
+                                </select>
                             </label>
-                            <input name="copis[__i__][name]" list="userNames" type="text"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg
-                           focus:ring-2 focus:ring-yellow-500"
-                                placeholder="คำนำหน้า ชื่อ-นามสกุล" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
 
-                        <div class="col-span-12 md:col-span-5">
-                            <label class="block text-sm text-gray-700 mb-1">
-                                สังกัด COPI <span class="text-red-500">*</span>
+                            <label class="col-span-12 md:col-span-5">
+                                <span class="block text-sm text-gray-700 mb-1">
+                                    สังกัด COPI <span class="text-red-500">*</span>
+                                </span>
+                                <input name="copis[__i__][affiliation]" type="text" list="copiAffiliationList" data-copi-affiliation
+                                    class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    placeholder="เลือกประเภท COPI ก่อน" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด COPI')"
+                                    oninput="this.setCustomValidity('')">
                             </label>
-                            <input name="copis[__i__][affiliation]" type="text" list="copiAffiliationList" class="w-full border p-2 rounded"
-                                placeholder="สังกัด COPI" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุสังกัด COPI')"
-                                oninput="this.setCustomValidity('')">
-                        </div>
 
-                        <div class="col-span-12 md:col-span-1 flex justify-end md:justify-center">
-                            <button type="button" class="text-red-600" data-repeatable-remove>
-                                ✕
-                            </button>
+                            <div class="col-span-12 md:col-span-2 flex justify-end md:pt-6">
+                                <button type="button" class="text-red-600 text-xl" data-repeatable-remove>
+                                    ✕
+                                </button>
+                            </div>
+
+                            <label class="col-span-12" data-copi-manual-wrap>
+                                <span class="block text-sm text-gray-700 mb-1">
+                                    ชื่อ COPI <span class="text-red-500">*</span>
+                                </span>
+                                <input type="text" list="userNames" data-copi-manual-name
+                                    class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    placeholder="เลือกประเภท COPI ก่อน" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ COPI')"
+                                    oninput="this.setCustomValidity('')">
+                            </label>
+
+                            <label class="col-span-12 hidden" data-copi-user-wrap>
+                                <span class="block text-sm text-gray-700 mb-1">
+                                    เลือก COPI จากรายชื่อบุคลากร <span class="text-red-500">*</span>
+                                </span>
+                                <select data-copi-user-select class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาเลือก COPI จากรายการ')"
+                                    oninput="this.setCustomValidity('')">
+                                    <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                                    @foreach ($allUsers as $user)
+                                        <option value="{{ $user->id }}">{{ $user->full_name }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
                         </div>
                     </div>
                 </x-slot:template>
@@ -643,41 +745,24 @@
                 <div data-repeatable-container class="space-y-4 mb-4">
 
                     {{-- ================== แถวแรก ================== --}}
-                    <div class="space-y-2 p-4 border rounded-lg bg-gray-50" data-repeatable-row>
+                    <div class="space-y-2 p-4 border rounded-lg bg-gray-50 coresearch-row" data-repeatable-row>
 
-                        {{-- แถวชื่อ --}}
-                        <label class="block w-full">
-                            <span class="block text-sm mb-1">
-                                ชื่อ Co-Researcher คนที่ <span class="text-red-500">*</span>
-                                <span data-repeatable-index
-                                    class="inline-flex ml-1 px-2 py-0.5 rounded-full
-                                 bg-purple-100 text-purple-700 text-xs font-semibold">
-                                    1
-                                </span>
+                        <input type="hidden" name="coresearch[0][name]" data-coresearch-name>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-slate-600">ลำดับ</span>
+                            <span data-repeatable-index
+                                class="inline-flex ml-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
+                                1
                             </span>
-
-                            <input name="coresearch[0][name]" list="coresearchUsers" type="text"
-                                class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
-                                oninput="this.setCustomValidity('')">
-                        </label>
+                        </div>
 
                         {{-- แถวสังกัด + สถานะ + ลบ --}}
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-
-                            <label class="col-span-12 md:col-span-5">
-                                <span class="block text-sm mb-1">สังกัด <span class="text-red-500">*</span></span>
-                                <input name="coresearch[0][affiliation]" type="text" list="coresearchAffiliationList" class="w-full border p-2 rounded"
-                                    placeholder="สังกัด" required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
-                                    oninput="this.setCustomValidity('')">
-                            </label>
-
                             <label class="col-span-12 md:col-span-5">
                                 <span class="block text-sm mb-1">
                                     คนภายนอก / ภายใน <span class="text-red-500">*</span>
                                 </span>
-                                <select name="coresearch[0][unit_status]" required
+                                <select name="coresearch[0][unit_status]" data-coresearch-unit-status required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกคนภายนอก/ภายใน')"
                                     oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
                                     <option value="">กรุณาเลือก</option>
@@ -687,10 +772,19 @@
                                     <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">
                                         ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล
                                     </option>
-                                    <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ">
-                                        ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
+                                    <option value="{{ $internalCoresearchUnit }}">
+                                        {{ $internalCoresearchUnit }}
                                     </option>
                                 </select>
+                            </label>
+
+                            <label class="col-span-12 md:col-span-5" data-coresearch-affiliation-wrap>
+                                <span class="block text-sm mb-1">สังกัด <span class="text-red-500">*</span></span>
+                                <input name="coresearch[0][affiliation]" type="text" list="coresearchAffiliationList" data-coresearch-affiliation
+                                    class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    placeholder="เลือกคนภายนอก / ภายในก่อน" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
+                                    oninput="this.setCustomValidity('')">
                             </label>
 
                             <div class="col-span-12 md:col-span-2 flex items-center justify-end md:pt-6">
@@ -698,6 +792,27 @@
                                     ✕
                                 </button>
                             </div>
+
+                            <label class="col-span-12" data-coresearch-manual-wrap>
+                                <span class="block text-sm mb-1">ชื่อ Co-Researcher <span class="text-red-500">*</span></span>
+                                <input type="text" list="coresearchUsers" data-coresearch-manual-name
+                                    class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    placeholder="เลือกคนภายนอก / ภายในก่อน" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
+                                    oninput="this.setCustomValidity('')">
+                            </label>
+
+                            <label class="col-span-12 hidden" data-coresearch-user-wrap>
+                                <span class="block text-sm mb-1">เลือกบุคลากรภายในหน่วยวิจัย <span class="text-red-500">*</span></span>
+                                <select name="coresearch[0][user_id]" data-coresearch-user-select class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกบุคลากรภายในหน่วยวิจัยจากรายการ')"
+                                    oninput="this.setCustomValidity('')">
+                                    <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                                    @foreach ($allUsers as $user)
+                                        <option value="{{ $user->id }}">{{ $user->full_name }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
 
                         </div>
                     </div>
@@ -706,39 +821,23 @@
 
                 {{-- ================== template ================== --}}
                 <x-slot:template>
-                    <div class="space-y-2 p-4 border rounded-lg bg-white" data-repeatable-row>
+                    <div class="space-y-2 p-4 border rounded-lg bg-white coresearch-row" data-repeatable-row>
 
-                        <label class="block w-full">
-                            <span class="block text-sm mb-1">
-                                ชื่อ Co-Researcher คนที่ <span class="text-red-500">*</span>
-                                <span data-repeatable-index
-                                    class="inline-flex ml-1 px-2 py-0.5 rounded-full
-                                 bg-purple-100 text-purple-700 text-xs font-semibold">
-                                    #
-                                </span>
+                        <input type="hidden" name="coresearch[__i__][name]" data-coresearch-name>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-slate-600">ลำดับ</span>
+                            <span data-repeatable-index
+                                class="inline-flex ml-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
+                                #
                             </span>
-
-                            <input name="coresearch[__i__][name]" list="coresearchUsers" type="text"
-                                class="w-full border p-2 rounded" placeholder="ยศ ชื่อ นามสกุล" required
-                                oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
-                                oninput="this.setCustomValidity('')">
-                        </label>
+                        </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-
-                            <label class="col-span-12 md:col-span-5">
-                                <span class="block text-sm mb-1">สังกัด <span class="text-red-500">*</span></span>
-                                <input name="coresearch[__i__][affiliation]" type="text" list="coresearchAffiliationList"
-                                    class="w-full border p-2 rounded" placeholder="สังกัด" required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
-                                    oninput="this.setCustomValidity('')">
-                            </label>
-
                             <label class="col-span-12 md:col-span-5">
                                 <span class="block text-sm mb-1">
                                     คนภายนอก / ภายใน <span class="text-red-500">*</span>
                                 </span>
-                                <select name="coresearch[__i__][unit_status]" required
+                                <select name="coresearch[__i__][unit_status]" data-coresearch-unit-status required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกคนภายนอก/ภายใน')"
                                     oninput="this.setCustomValidity('')" class="w-full border p-2 rounded">
                                     <option value="">กรุณาเลือก</option>
@@ -748,10 +847,19 @@
                                     <option value="ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล">
                                         ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล
                                     </option>
-                                    <option value="ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ">
-                                        ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
+                                    <option value="{{ $internalCoresearchUnit }}">
+                                        {{ $internalCoresearchUnit }}
                                     </option>
                                 </select>
+                            </label>
+
+                            <label class="col-span-12 md:col-span-5" data-coresearch-affiliation-wrap>
+                                <span class="block text-sm mb-1">สังกัด <span class="text-red-500">*</span></span>
+                                <input name="coresearch[__i__][affiliation]" type="text" list="coresearchAffiliationList" data-coresearch-affiliation
+                                    class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    placeholder="เลือกคนภายนอก / ภายในก่อน" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาระบุสังกัด')"
+                                    oninput="this.setCustomValidity('')">
                             </label>
 
                             <div class="col-span-12 md:col-span-2 flex items-center justify-end md:pt-6">
@@ -759,6 +867,27 @@
                                     ✕
                                 </button>
                             </div>
+
+                            <label class="col-span-12" data-coresearch-manual-wrap>
+                                <span class="block text-sm mb-1">ชื่อ Co-Researcher <span class="text-red-500">*</span></span>
+                                <input type="text" list="coresearchUsers" data-coresearch-manual-name
+                                    class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    placeholder="เลือกคนภายนอก / ภายในก่อน" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อ Co-Researcher')"
+                                    oninput="this.setCustomValidity('')">
+                            </label>
+
+                            <label class="col-span-12 hidden" data-coresearch-user-wrap>
+                                <span class="block text-sm mb-1">เลือกบุคลากรภายในหน่วยวิจัย <span class="text-red-500">*</span></span>
+                                <select name="coresearch[__i__][user_id]" data-coresearch-user-select class="w-full border p-2 rounded bg-slate-100 text-slate-400 cursor-not-allowed" disabled
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกบุคลากรภายในหน่วยวิจัยจากรายการ')"
+                                    oninput="this.setCustomValidity('')">
+                                    <option value="">พิมพ์เพื่อค้นหาชื่อบุคลากร</option>
+                                    @foreach ($allUsers as $user)
+                                        <option value="{{ $user->id }}">{{ $user->full_name }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
 
                         </div>
                     </div>
@@ -768,9 +897,8 @@
 
             {{-- datalist ใช้ร่วมทุกแถว --}}
             <datalist id="coresearchUsers">
-                @foreach ($allUsers as $user)
-                    @php $fullName = trim($user->prefix . ' ' . $user->name); @endphp
-                    <option value="{{ $fullName }}"></option>
+                @foreach ($coresearchNameList as $coresearchName)
+                    <option value="{{ $coresearchName }}"></option>
                 @endforeach
             </datalist>
 
@@ -1709,18 +1837,38 @@
             });
         }
         // ✅ REMOVE & REINDEX
-        function removeRow(id, type) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
+        function confirmProjectDesktopRemoval(callback) {
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ยืนยันการลบ',
+                    text: 'ต้องการลบรายการนี้ใช่หรือไม่?',
+                    showCancelButton: true,
+                    confirmButtonText: 'ลบ',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#dc2626'
+                }).then((result) => {
+                    if (result.isConfirmed) callback();
+                });
+                return;
+            }
+            if (window.confirm('ยืนยันการลบรายการนี้หรือไม่?')) callback();
+        }
 
-            const map = {
-                fte: reindexFTE,
-                copi: reindexCopi,
-                irb: reindexIRB,
-                output: reindexOutput,
-                coresearch: reindexCoResearch
-            };
-            map[type]?.();
+        function removeRow(id, type) {
+            confirmProjectDesktopRemoval(() => {
+                const el = document.getElementById(id);
+                if (el) el.remove();
+
+                const map = {
+                    fte: reindexFTE,
+                    copi: reindexCopi,
+                    irb: reindexIRB,
+                    output: reindexOutput,
+                    coresearch: reindexCoResearch
+                };
+                map[type]?.();
+            });
         }
 
 
@@ -1735,6 +1883,7 @@
         let outputIndex = 1;
 
         document.addEventListener('DOMContentLoaded', () => {
+            reindexOutput();
             const container = document.getElementById('output-container');
             if (!container) return;
 
@@ -1745,6 +1894,27 @@
             });
 
             bindProjectUserLookup(document);
+            initOutputAuthorRows(document);
+            initAwardRecipientRows(document);
+            initBookAuthorRows(document);
+            bindPiPersonControl(document);
+            initCopiRows(document);
+            initCoresearchRows(document);
+
+            const coresearchContainer = document.getElementById('coresearch-container');
+            if (coresearchContainer) {
+                new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node instanceof HTMLElement && node.matches('.coresearch-row')) {
+                                bindCoresearchRow(node);
+                            }
+                        });
+                    });
+                }).observe(coresearchContainer, {
+                    childList: true,
+                });
+            }
         });
 
 
@@ -1802,7 +1972,7 @@
         <span class="font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</span>
       </div>
       <div class="authors-container space-y-2" data-auth-index="0"></div>
-      <div class="flex justify-end">
+      <div class="flex justify-center">
         <button type="button" class="px-3 py-1 rounded bg-blue-600 text-white" onclick="addAuthorRow(this)">+ เพิ่มผู้เขียน</button>
       </div>
     </div>
@@ -1829,9 +1999,12 @@
 
         function buildAuthorRow(outputIdx, authorIdx) {
             const row = document.createElement('div');
-            row.className = 'author-row grid grid-cols-1 md:grid-cols-3 gap-3';
+            row.className = 'author-row grid grid-cols-1 md:grid-cols-12 gap-3 items-end';
+            const userOptions = (Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [])
+                .map((user) => `<option value="${String(user.id)}">${String(user.research_display_name || '').replace(/"/g, '&quot;')}</option>`)
+                .join('');
             row.innerHTML = `
-    <label class="w-full">
+    <label class="w-full md:col-span-3">
       <span class="block text-sm text-gray-700 mb-1">บทบาทผู้เขียน (Role)</span>
       <select name="outputs[${outputIdx}][authors][${authorIdx}][role]" class="w-full border p-2 rounded" required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกบทบาทผู้เขียน')"
@@ -1843,28 +2016,49 @@
       </select>
     </label>
 
-    <label class="w-full">
-      <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
-      <input type="hidden" name="outputs[${outputIdx}][authors][${authorIdx}][user_id]" data-user-id-hidden>
-      <input name="outputs[${outputIdx}][authors][${authorIdx}][name]" list="outputAuthorNames" type="text"
-             data-user-lookup="research"
-             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-             placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" required
-                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้เขียน')"
+    <label class="w-full md:col-span-3">
+      <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+      <select name="outputs[${outputIdx}][authors][${authorIdx}][person_type]" data-output-author-person-type class="w-full border p-2 rounded" required
+                                    oninvalid="this.setCustomValidity('กรุณาเลือกประเภทผู้เขียน')"
                                     oninput="this.setCustomValidity('')">
+        <option value="">กรุณาเลือก</option>
+        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+        <option value="external">คนนอก</option>
+      </select>
     </label>
 
-    <div class="flex items-end">
-      <button type="button" class="px-3 py-2 rounded border text-red-600 border-red-300" onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
+    <div class="w-full md:col-span-5">
+      <span class="block text-sm text-gray-700 mb-1">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
+      <input type="hidden" name="outputs[${outputIdx}][authors][${authorIdx}][user_id]" data-user-id-hidden>
+      <input type="hidden" name="outputs[${outputIdx}][authors][${authorIdx}][name]" data-output-author-name-hidden>
+      <div data-output-author-manual-wrap>
+        <input list="outputAuthorNames" type="text" data-output-author-manual-name
+             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+             placeholder="เลือกประเภทผู้เขียนก่อน"
+                                    oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้เขียน')"
+                                    oninput="this.setCustomValidity('')">
+      </div>
+      <div data-output-author-user-wrap class="hidden" style="display:none;">
+        <select data-output-author-user-select class="w-full border p-2 rounded">
+          <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>
+          ${userOptions}
+        </select>
+      </div>
+    </div>
+
+    <div class="flex items-end md:col-span-1">
+      <button type="button" class="w-full md:w-auto px-3 py-2 rounded border text-red-600 border-red-300 whitespace-nowrap" onclick="removeAuthorRow(this)">ลบผู้เขียน</button>
     </div>
   `;
-            bindProjectUserLookup(row);
+            bindOutputAuthorRow(row);
             return row;
         }
 
         function removeAuthorRow(btnEl) {
-            const row = btnEl.closest('.author-row');
-            if (row) row.remove();
+            confirmProjectDesktopRemoval(() => {
+                const row = btnEl.closest('.author-row');
+                if (row) row.remove();
+            });
         }
 
         function renderEA118Section(idx) {
@@ -1876,7 +2070,7 @@
         <span class="font-semibold text-violet-800">ผู้ได้รับรางวัล (Award Recipients)</span>
       </div>
       <div class="award-recipients-container space-y-2" data-award-index="0"></div>
-      <div class="flex justify-end">
+      <div class="flex justify-center">
         <button type="button" class="px-3 py-1 rounded bg-violet-600 text-white" onclick="addAwardRecipientRow(this)">+ เพิ่มผู้ได้รับรางวัล</button>
       </div>
     </div>
@@ -1903,28 +2097,50 @@
 
         function buildAwardRecipientRow(outputIdx, authorIdx) {
             const row = document.createElement('div');
-            row.className = 'award-recipient-row grid grid-cols-1 md:grid-cols-2 gap-3';
+            row.className = 'award-recipient-row grid grid-cols-1 md:grid-cols-12 gap-3 items-end';
+            const userOptions = (Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [])
+                .map((user) => `<option value="${String(user.id)}">${String(user.full_name || '').replace(/"/g, '&quot;')}</option>`)
+                .join('');
             row.innerHTML = `
-    <input type="hidden" name="outputs[${outputIdx}][authors][${authorIdx}][role]" value="awardee">
-    <label class="w-full">
-      <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
-      <input type="hidden" name="outputs[${outputIdx}][authors][${authorIdx}][user_id]" data-user-id-hidden>
-      <input name="outputs[${outputIdx}][authors][${authorIdx}][name]" list="awardRecipientNames" type="text"
-             data-user-lookup="full"
-             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-             placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+    <input type="hidden" name="outputs[${outputIdx}][award_recipients][${authorIdx}][id]" value="">
+    <label class="w-full md:col-span-3">
+      <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+      <select name="outputs[${outputIdx}][award_recipients][${authorIdx}][person_type]" data-award-recipient-person-type class="w-full border p-2 rounded" required>
+        <option value="">กรุณาเลือก</option>
+        <option value="unit">หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+        <option value="external">คนนอก</option>
+      </select>
     </label>
-    <div class="flex items-end">
+    <div class="w-full md:col-span-8">
+      <span class="block text-sm text-gray-700 mb-1">ชื่อผู้ได้รับรางวัล</span>
+      <input type="hidden" name="outputs[${outputIdx}][award_recipients][${authorIdx}][user_id]" data-user-id-hidden>
+      <input type="hidden" name="outputs[${outputIdx}][award_recipients][${authorIdx}][name]" data-award-recipient-name-hidden>
+      <div data-award-recipient-manual-wrap>
+        <input list="awardRecipientNames" type="text" data-award-recipient-manual-name
+             class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+             placeholder="เลือกประเภทผู้ได้รับรางวัลก่อน">
+      </div>
+      <div data-award-recipient-user-wrap class="hidden" style="display:none;">
+        <select data-award-recipient-user-select class="w-full border p-2 rounded">
+          <option value="">พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล</option>
+          ${userOptions}
+        </select>
+      </div>
+    </div>
+    <div class="flex items-end md:col-span-1">
       <button type="button" class="px-3 py-2 rounded border text-red-600 border-red-300" onclick="removeAwardRecipientRow(this)">ลบรายชื่อ</button>
     </div>
   `;
-            bindProjectUserLookup(row);
+            bindAwardRecipientRow(row);
             return row;
         }
 
         function removeAwardRecipientRow(btnEl) {
-            const row = btnEl.closest('.award-recipient-row');
-            if (row) row.remove();
+            confirmProjectDesktopRemoval(() => {
+                const row = btnEl.closest('.award-recipient-row');
+                if (row) row.remove();
+            });
         }
 
         /** ===== EA119 Section (Textbook / Book chapter) ===== */
@@ -1932,7 +2148,7 @@
             const wrap = document.createElement('div');
             wrap.className = 'ea119-section space-y-3 border rounded-xl p-4 bg-emerald-50/60';
             wrap.innerHTML = `
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <label class="w-full">
         <span class="block text-sm text-gray-700 mb-1">ชื่อหนังสือ</span>
         <input name="outputs[${idx}][book_title]" type="text" class="w-full border p-2 rounded" placeholder="เช่น Textbook of Public Health" required
@@ -1948,6 +2164,10 @@
         <input name="outputs[${idx}][chapter_pages]" type="text" class="w-full border p-2 rounded" placeholder="เช่น Chapter 2, pp. 45-66" required
                oninvalid="this.setCustomValidity('กรุณากรอกชื่อบท / เลขหน้า')" oninput="this.setCustomValidity('')">
       </label>
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">เลข ISBN</span>
+        <input name="outputs[${idx}][isbn]" type="text" class="w-full border p-2 rounded" placeholder="เช่น 978-3-16-148410-0">
+      </label>
     </div>
 
     <div class="space-y-2">
@@ -1956,7 +2176,7 @@
       </div>
       <div class="book-authors-container space-y-2" data-book-auth-index="0"></div>
       <datalist class="book-author-name-list" id="book-author-name-list-${idx}"></datalist>
-      <div class="flex justify-end">
+      <div class="flex justify-center">
         <button type="button" class="px-3 py-1 rounded bg-emerald-600 text-white" onclick="addBookAuthorRow(this)">+ เพิ่มผู้เขียน</button>
       </div>
     </div>
@@ -1983,38 +2203,59 @@
 
         function buildBookAuthorRow(outputIdx, authorIdx) {
             const row = document.createElement('div');
-            row.className = 'book-author-row grid grid-cols-1 md:grid-cols-3 gap-3';
+            row.className = 'book-author-row grid grid-cols-1 md:grid-cols-12 gap-3 items-end';
+            const userOptions = (Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [])
+                .map((user) => `<option value="${String(user.id)}">${String(user.full_name || '').replace(/"/g, '&quot;')}</option>`)
+                .join('');
             row.innerHTML = `
-    <label class="w-full md:col-span-2">
+    <label class="w-full md:col-span-3">
+      <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+      <select name="outputs[${outputIdx}][book_authors][${authorIdx}][person_type]" data-book-author-person-type class="w-full border p-2 rounded" required>
+        <option value="">กรุณาเลือก</option>
+        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+        <option value="external">คนนอก</option>
+      </select>
+    </label>
+    <div class="w-full md:col-span-8">
       <span class="block text-sm text-gray-700 mb-1">ชื่อผู้เขียน</span>
       <input type="hidden" name="outputs[${outputIdx}][book_authors][${authorIdx}][user_id]" data-user-id-hidden>
-      <input name="outputs[${outputIdx}][book_authors][${authorIdx}][name]" type="text" data-book-author-input
+      <input type="hidden" name="outputs[${outputIdx}][book_authors][${authorIdx}][name]" data-book-author-name-hidden>
+      <div data-book-author-manual-wrap>
+        <input type="text" data-book-author-manual-name data-book-author-input
              list="book-author-name-list-${outputIdx}"
-             data-user-lookup="full"
              class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-             placeholder="พิมพ์หรือเลือกชื่อผู้เขียน" required
+             placeholder="เลือกประเภทผู้เขียนก่อน"
              oninput="refreshBookAuthorDatalistInOutput(this)">
-    </label>
-    <div class="flex items-end">
+      </div>
+      <div data-book-author-user-wrap class="hidden" style="display:none;">
+        <select data-book-author-user-select class="w-full border p-2 rounded">
+          <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>
+          ${userOptions}
+        </select>
+      </div>
+    </div>
+    <div class="flex items-end md:col-span-1">
       <button type="button" class="px-3 py-2 rounded border text-red-600 border-red-300" onclick="removeBookAuthorRow(this)">ลบผู้เขียน</button>
     </div>
   `;
-            bindProjectUserLookup(row);
+            bindBookAuthorRow(row);
             return row;
         }
 
         function removeBookAuthorRow(btnEl) {
-            const row = btnEl.closest('.book-author-row');
-            const section = btnEl.closest('.ea119-section');
-            if (row) row.remove();
-            refreshBookAuthorDatalistInOutput(section);
+            confirmProjectDesktopRemoval(() => {
+                const row = btnEl.closest('.book-author-row');
+                const section = btnEl.closest('.ea119-section');
+                if (row) row.remove();
+                refreshBookAuthorDatalistInOutput(section);
+            });
         }
 
         function getBookAuthorBaseOptions() {
             if (Array.isArray(window.__bookAuthorBaseOptions) && window.__bookAuthorBaseOptions.length) {
                 return window.__bookAuthorBaseOptions;
             }
-            const base = Array.from(document.querySelectorAll('#userNames option'))
+            const base = Array.from(document.querySelectorAll('#bookAuthorNames option'))
                 .map((option) => String(option.value || '').trim())
                 .filter(Boolean);
             window.__bookAuthorBaseOptions = Array.from(new Set(base));
@@ -2037,14 +2278,14 @@
         }
 
         function syncProjectUserLookupInput(input) {
-            const hidden = input?.closest('label, .author-row, .award-recipient-row, .conference-row')?.querySelector('[data-user-id-hidden]');
+            const hidden = input?.closest('label, .author-row, .award-recipient-row')?.querySelector('[data-user-id-hidden]');
             if (!hidden) return;
             const matched = findProjectMatchedUser(input);
             hidden.value = matched ? String(matched.id) : '';
         }
 
         function bindProjectUserLookup(scope = document) {
-            scope.querySelectorAll('input[data-user-lookup], .conference-row input[name$="[note]"]').forEach((input) => {
+            scope.querySelectorAll('input[data-user-lookup]').forEach((input) => {
                 if (!input.dataset.userLookup) {
                     input.dataset.userLookup = 'full';
                 }
@@ -2060,6 +2301,1084 @@
             });
         }
 
+        function ensureOutputFullNameTomSelect(select, placeholder) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder,
+                searchPlaceholder: placeholder,
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function syncAwardRecipientRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+            const UNIT_AWARD_RECIPIENT_NAME = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
+
+            const typeSelect = row.querySelector('[data-award-recipient-person-type]');
+            const manualWrap = row.querySelector('[data-award-recipient-manual-wrap]');
+            const manualInput = row.querySelector('[data-award-recipient-manual-name]');
+            const userWrap = row.querySelector('[data-award-recipient-user-wrap]');
+            const userSelect = row.querySelector('[data-award-recipient-user-select]');
+            const userIdInput = row.querySelector('[data-user-id-hidden]');
+            const nameHidden = row.querySelector('[data-award-recipient-name-hidden]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualWrap instanceof HTMLElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userWrap instanceof HTMLElement) ||
+                !(userSelect instanceof HTMLSelectElement) ||
+                !(userIdInput instanceof HTMLInputElement) ||
+                !(nameHidden instanceof HTMLInputElement)) {
+                return;
+            }
+
+            ensureOutputFullNameTomSelect(userSelect, 'พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล');
+
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.awardRecipientMode || '';
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const tom = userSelect.tomselect || null;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+
+            if (mode === 'internal' && !userSelect.value && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+
+            if (mode === 'unit') {
+                if (modeChanged) {
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                    userIdInput.value = '';
+                    manualInput.value = UNIT_AWARD_RECIPIENT_NAME;
+                }
+
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, true, 'ชื่อหน่วยงานผู้ได้รับรางวัล');
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                manualInput.value = UNIT_AWARD_RECIPIENT_NAME;
+                nameHidden.value = UNIT_AWARD_RECIPIENT_NAME;
+                manualInput.disabled = true;
+                manualInput.readOnly = true;
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                }
+
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value
+                    ? String(selectedOption.textContent || '').trim()
+                    : '';
+
+                setOutputAuthorWrapVisible(manualWrap, false);
+                setOutputAuthorWrapVisible(userWrap, true);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกชื่อผู้ได้รับรางวัลจากรายชื่อบุคลากร');
+                manualInput.disabled = true;
+                manualInput.readOnly = true;
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                }
+
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, false, 'ชื่อผู้ได้รับรางวัล');
+                manualInput.disabled = false;
+                manualInput.readOnly = false;
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกประเภทผู้ได้รับรางวัลก่อน');
+                manualInput.disabled = true;
+                manualInput.readOnly = true;
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            row.dataset.awardRecipientMode = mode;
+        }
+
+        function bindAwardRecipientRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-award-recipient-person-type]');
+            const manualInput = row.querySelector('[data-award-recipient-manual-name]');
+            const userSelect = row.querySelector('[data-award-recipient-user-select]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            if (typeSelect.dataset.awardRecipientBound !== '1') {
+                typeSelect.dataset.awardRecipientBound = '1';
+                typeSelect.addEventListener('change', () => syncAwardRecipientRow(row));
+            }
+
+            if (manualInput.dataset.awardRecipientBound !== '1') {
+                manualInput.dataset.awardRecipientBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    manualInput.addEventListener(eventName, () => syncAwardRecipientRow(row));
+                });
+            }
+
+            if (userSelect.dataset.awardRecipientBound !== '1') {
+                userSelect.dataset.awardRecipientBound = '1';
+                ['change', 'blur'].forEach((eventName) => {
+                    userSelect.addEventListener(eventName, () => syncAwardRecipientRow(row));
+                });
+            }
+
+            syncAwardRecipientRow(row);
+        }
+
+        function initAwardRecipientRows(scope = document) {
+            scope.querySelectorAll('.award-recipient-row').forEach((row) => bindAwardRecipientRow(row));
+        }
+
+        function syncBookAuthorRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-book-author-person-type]');
+            const manualWrap = row.querySelector('[data-book-author-manual-wrap]');
+            const manualInput = row.querySelector('[data-book-author-manual-name]');
+            const userWrap = row.querySelector('[data-book-author-user-wrap]');
+            const userSelect = row.querySelector('[data-book-author-user-select]');
+            const userIdInput = row.querySelector('[data-user-id-hidden]');
+            const nameHidden = row.querySelector('[data-book-author-name-hidden]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualWrap instanceof HTMLElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userWrap instanceof HTMLElement) ||
+                !(userSelect instanceof HTMLSelectElement) ||
+                !(userIdInput instanceof HTMLInputElement) ||
+                !(nameHidden instanceof HTMLInputElement)) {
+                return;
+            }
+
+            ensureOutputFullNameTomSelect(userSelect, 'พิมพ์เพื่อค้นหาชื่อผู้เขียน');
+
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.bookAuthorMode || '';
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const tom = userSelect.tomselect || null;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+
+            if (mode === 'internal' && !userSelect.value && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                }
+
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value
+                    ? String(selectedOption.textContent || '').trim()
+                    : '';
+
+                setOutputAuthorWrapVisible(manualWrap, false);
+                setOutputAuthorWrapVisible(userWrap, true);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกชื่อผู้เขียนจากรายชื่อบุคลากร');
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) tom.clear(true);
+                    else userSelect.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                }
+
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, false, 'ชื่อผู้เขียน');
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกประเภทผู้เขียนก่อน');
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            refreshBookAuthorDatalistInOutput(row);
+            row.dataset.bookAuthorMode = mode;
+        }
+
+        function bindBookAuthorRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-book-author-person-type]');
+            const manualInput = row.querySelector('[data-book-author-manual-name]');
+            const userSelect = row.querySelector('[data-book-author-user-select]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            if (typeSelect.dataset.bookAuthorBound !== '1') {
+                typeSelect.dataset.bookAuthorBound = '1';
+                typeSelect.addEventListener('change', () => syncBookAuthorRow(row));
+            }
+
+            if (manualInput.dataset.bookAuthorBound !== '1') {
+                manualInput.dataset.bookAuthorBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    manualInput.addEventListener(eventName, () => syncBookAuthorRow(row));
+                });
+            }
+
+            if (userSelect.dataset.bookAuthorBound !== '1') {
+                userSelect.dataset.bookAuthorBound = '1';
+                ['change', 'blur'].forEach((eventName) => {
+                    userSelect.addEventListener(eventName, () => syncBookAuthorRow(row));
+                });
+            }
+
+            syncBookAuthorRow(row);
+        }
+
+        function initBookAuthorRows(scope = document) {
+            scope.querySelectorAll('.book-author-row').forEach((row) => bindBookAuthorRow(row));
+        }
+
+        function bindProjectSearchSelectGuards(scope = document) {
+            scope.querySelectorAll('.project-search-select').forEach((element) => {
+                if (!(element instanceof HTMLElement) || element.dataset.guardBound === '1') return;
+                element.dataset.guardBound = '1';
+                ['mousedown', 'click'].forEach((eventName) => {
+                    element.addEventListener(eventName, (event) => {
+                        event.stopPropagation();
+                    });
+                });
+            });
+        }
+
+        function applySearchTomSelectStyles(tom) {
+            return tom;
+        }
+
+        function ensureOutputAuthorTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อผู้เขียน',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้เขียน',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function setOutputAuthorWrapVisible(element, visible) {
+            if (!(element instanceof HTMLElement)) return;
+            element.classList.toggle('hidden', !visible);
+            element.hidden = !visible;
+            element.style.display = visible ? '' : 'none';
+        }
+
+        function toggleOutputAuthorFieldState(input, disabled, placeholder) {
+            if (!(input instanceof HTMLElement)) return;
+            if ('disabled' in input) input.disabled = disabled;
+            input.classList.toggle('bg-gray-100', disabled);
+            input.classList.toggle('text-gray-400', disabled);
+            input.classList.toggle('cursor-not-allowed', disabled);
+            if (typeof placeholder === 'string' && 'placeholder' in input) {
+                input.placeholder = placeholder;
+            }
+        }
+
+        function syncOutputAuthorRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-output-author-person-type]');
+            const manualWrap = row.querySelector('[data-output-author-manual-wrap]');
+            const manualInput = row.querySelector('[data-output-author-manual-name]');
+            const userWrap = row.querySelector('[data-output-author-user-wrap]');
+            const userSelect = row.querySelector('[data-output-author-user-select]');
+            const userIdInput = row.querySelector('[data-user-id-hidden]');
+            const nameHidden = row.querySelector('[data-output-author-name-hidden]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualWrap instanceof HTMLElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userWrap instanceof HTMLElement) ||
+                !(userSelect instanceof HTMLSelectElement) ||
+                !(userIdInput instanceof HTMLInputElement) ||
+                !(nameHidden instanceof HTMLInputElement)) {
+                return;
+            }
+
+            ensureOutputAuthorTomSelect(userSelect);
+
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.outputAuthorMode || '';
+            const tom = userSelect.tomselect || null;
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.research_display_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+
+            if (mode === 'internal' && !userSelect.value && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                }
+
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value
+                    ? String(selectedOption.textContent || '').trim()
+                    : '';
+
+                setOutputAuthorWrapVisible(manualWrap, false);
+                setOutputAuthorWrapVisible(userWrap, true);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกชื่อผู้เขียนจากรายชื่อบุคลากร');
+
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                }
+
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, false, 'ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)');
+
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+
+                setOutputAuthorWrapVisible(manualWrap, true);
+                setOutputAuthorWrapVisible(userWrap, false);
+                toggleOutputAuthorFieldState(manualInput, true, 'เลือกประเภทผู้เขียนก่อน');
+
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            row.dataset.outputAuthorMode = mode;
+        }
+
+        function bindOutputAuthorRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-output-author-person-type]');
+            const manualInput = row.querySelector('[data-output-author-manual-name]');
+            const userSelect = row.querySelector('[data-output-author-user-select]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            if (typeSelect.dataset.outputAuthorBound !== '1') {
+                typeSelect.dataset.outputAuthorBound = '1';
+                typeSelect.addEventListener('change', () => syncOutputAuthorRow(row));
+            }
+
+            if (manualInput.dataset.outputAuthorBound !== '1') {
+                manualInput.dataset.outputAuthorBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    manualInput.addEventListener(eventName, () => syncOutputAuthorRow(row));
+                });
+            }
+
+            if (userSelect.dataset.outputAuthorBound !== '1') {
+                userSelect.dataset.outputAuthorBound = '1';
+                ['change', 'blur'].forEach((eventName) => {
+                    userSelect.addEventListener(eventName, () => syncOutputAuthorRow(row));
+                });
+            }
+
+            syncOutputAuthorRow(row);
+        }
+
+        function initOutputAuthorRows(scope = document) {
+            scope.querySelectorAll('.author-row').forEach((row) => bindOutputAuthorRow(row));
+        }
+
+        const PI_INTERNAL_AFFILIATION = @json($piInternalAffiliation);
+        const CORESEARCH_INTERNAL_UNIT = @json($internalCoresearchUnit);
+        const CORESEARCH_INTERNAL_AFFILIATION = @json($internalCoresearchAffiliation);
+
+        function ensurePiTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function togglePiFieldState(input, disabled, placeholder) {
+            if (!(input instanceof HTMLElement)) return;
+            if ('disabled' in input) input.disabled = disabled;
+            input.classList.toggle('bg-gray-100', disabled);
+            input.classList.toggle('text-gray-400', disabled);
+            input.classList.toggle('cursor-not-allowed', disabled);
+            if (typeof placeholder === 'string' && 'placeholder' in input) {
+                input.placeholder = placeholder;
+            }
+        }
+
+        function setPiWrapVisible(element, visible) {
+            if (!(element instanceof HTMLElement)) return;
+            element.classList.toggle('hidden', !visible);
+            element.hidden = !visible;
+            element.style.display = visible ? '' : 'none';
+        }
+
+        function setTomSelectWrapperState(select, visible, disabled) {
+            const wrapper = select?.tomselect?.wrapper;
+            if (!(wrapper instanceof HTMLElement)) return;
+            wrapper.classList.toggle('hidden', !visible);
+            wrapper.hidden = !visible;
+            wrapper.style.display = visible ? '' : 'none';
+            wrapper.classList.toggle('opacity-60', !!disabled);
+            wrapper.classList.toggle('pointer-events-none', !!disabled);
+        }
+
+        function syncPiPersonFields(scope = document) {
+            const typeSelect = scope.querySelector('[data-pi-person-type]');
+            const affiliationInput = scope.querySelector('[data-pi-affiliation]');
+            const manualWrap = scope.querySelector('[data-pi-manual-wrap]');
+            const manualInput = scope.querySelector('[data-pi-manual-name]');
+            const userWrap = scope.querySelector('[data-pi-user-wrap]');
+            const userSelect = scope.querySelector('[data-pi-user-select]');
+            const userIdInput = scope.querySelector('[data-pi-user-id]');
+            const nameHidden = scope.querySelector('[data-pi-name-hidden]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(affiliationInput instanceof HTMLInputElement) ||
+                !(manualWrap instanceof HTMLElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userWrap instanceof HTMLElement) ||
+                !(userSelect instanceof HTMLSelectElement) ||
+                !(userIdInput instanceof HTMLInputElement) ||
+                !(nameHidden instanceof HTMLInputElement)) {
+                return;
+            }
+
+            ensurePiTomSelect(userSelect);
+
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = typeSelect.dataset.piMode || '';
+            const tom = userSelect.tomselect || null;
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                }
+
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value
+                    ? String(selectedOption.textContent || '').trim()
+                    : '';
+
+                setPiWrapVisible(manualWrap, false);
+                setPiWrapVisible(userWrap, true);
+                togglePiFieldState(manualInput, true, 'เลือก PI จากรายชื่อบุคลากร');
+                togglePiFieldState(affiliationInput, false, PI_INTERNAL_AFFILIATION);
+
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+                affiliationInput.required = false;
+                affiliationInput.readOnly = true;
+                affiliationInput.value = PI_INTERNAL_AFFILIATION;
+                affiliationInput.removeAttribute('list');
+
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                    affiliationInput.value = '';
+                }
+
+                setPiWrapVisible(manualWrap, true);
+                setPiWrapVisible(userWrap, false);
+                togglePiFieldState(manualInput, false, 'ยศ ชื่อ นามสกุล');
+                togglePiFieldState(affiliationInput, false, 'สังกัดผู้วิจัยหลัก');
+
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                affiliationInput.required = true;
+                affiliationInput.readOnly = false;
+                affiliationInput.setAttribute('list', 'piaffiliationList');
+
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+
+                setPiWrapVisible(manualWrap, true);
+                setPiWrapVisible(userWrap, false);
+                togglePiFieldState(manualInput, true, 'เลือกประเภทผู้วิจัยหลักก่อน');
+                togglePiFieldState(affiliationInput, true, 'เลือกประเภทผู้วิจัยหลักก่อน');
+
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                affiliationInput.required = false;
+                affiliationInput.readOnly = false;
+                affiliationInput.setAttribute('list', 'piaffiliationList');
+
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+                affiliationInput.value = '';
+
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            typeSelect.dataset.piMode = mode;
+        }
+
+        function bindPiPersonControl(scope = document) {
+            const typeSelect = scope.querySelector('[data-pi-person-type]');
+            const manualInput = scope.querySelector('[data-pi-manual-name]');
+            const userSelect = scope.querySelector('[data-pi-user-select]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            if (typeSelect.dataset.piBound !== '1') {
+                typeSelect.dataset.piBound = '1';
+                typeSelect.addEventListener('change', () => syncPiPersonFields(scope));
+            }
+
+            if (manualInput.dataset.piBound !== '1') {
+                manualInput.dataset.piBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    manualInput.addEventListener(eventName, () => syncPiPersonFields(scope));
+                });
+            }
+
+            if (userSelect.dataset.piBound !== '1') {
+                userSelect.dataset.piBound = '1';
+                ['change', 'blur'].forEach((eventName) => {
+                    userSelect.addEventListener(eventName, () => syncPiPersonFields(scope));
+                });
+            }
+
+            syncPiPersonFields(scope);
+        }
+
+        function ensureCopiTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function setCopiWrapVisible(element, visible) {
+            if (!(element instanceof HTMLElement)) return;
+            element.classList.toggle('hidden', !visible);
+            element.hidden = !visible;
+            element.style.display = visible ? '' : 'none';
+        }
+
+        function toggleCopiFieldState(input, disabled, placeholder) {
+            if (!(input instanceof HTMLElement)) return;
+            if ('disabled' in input) input.disabled = disabled;
+            input.classList.toggle('bg-slate-100', disabled);
+            input.classList.toggle('text-slate-400', disabled);
+            input.classList.toggle('cursor-not-allowed', disabled);
+            if (typeof placeholder === 'string' && 'placeholder' in input) {
+                input.placeholder = placeholder;
+            }
+        }
+
+        function syncCopiRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-copi-person-type]');
+            const affiliationInput = row.querySelector('[data-copi-affiliation]');
+            const manualWrap = row.querySelector('[data-copi-manual-wrap]');
+            const manualInput = row.querySelector('[data-copi-manual-name]');
+            const userWrap = row.querySelector('[data-copi-user-wrap]');
+            const userSelect = row.querySelector('[data-copi-user-select]');
+            const userIdInput = row.querySelector('[data-copi-user-id]');
+            const nameHidden = row.querySelector('[data-copi-name]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(affiliationInput instanceof HTMLInputElement) ||
+                !(manualWrap instanceof HTMLElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userWrap instanceof HTMLElement) ||
+                !(userSelect instanceof HTMLSelectElement) ||
+                !(userIdInput instanceof HTMLInputElement) ||
+                !(nameHidden instanceof HTMLInputElement)) {
+                return;
+            }
+
+            ensureCopiTomSelect(userSelect);
+
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.copiMode || '';
+            const tom = userSelect.tomselect || null;
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (mode === 'internal' && userIdInput.value && String(userSelect.value || '').trim() !== String(userIdInput.value).trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+
+            if (mode === 'internal' && !userSelect.value && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                }
+
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                nameHidden.value = selectedOption && userIdInput.value
+                    ? String(selectedOption.textContent || '').trim()
+                    : '';
+
+                setCopiWrapVisible(manualWrap, false);
+                setCopiWrapVisible(userWrap, true);
+                toggleCopiFieldState(manualInput, true, 'เลือก COPI จากรายชื่อบุคลากร');
+                toggleCopiFieldState(affiliationInput, false, PI_INTERNAL_AFFILIATION);
+
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+                affiliationInput.required = false;
+                affiliationInput.readOnly = true;
+                affiliationInput.value = PI_INTERNAL_AFFILIATION;
+                affiliationInput.removeAttribute('list');
+
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                    userIdInput.value = '';
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                    affiliationInput.value = '';
+                }
+
+                setCopiWrapVisible(manualWrap, true);
+                setCopiWrapVisible(userWrap, false);
+                toggleCopiFieldState(manualInput, false, 'ยศ ชื่อ นามสกุล');
+                toggleCopiFieldState(affiliationInput, false, 'สังกัด COPI');
+
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                affiliationInput.required = true;
+                affiliationInput.readOnly = false;
+                affiliationInput.setAttribute('list', 'copiAffiliationList');
+
+                userIdInput.value = '';
+                nameHidden.value = String(manualInput.value || '').trim();
+
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+
+                setCopiWrapVisible(manualWrap, true);
+                setCopiWrapVisible(userWrap, false);
+                toggleCopiFieldState(manualInput, true, 'เลือกประเภท COPI ก่อน');
+                toggleCopiFieldState(affiliationInput, true, 'เลือกประเภท COPI ก่อน');
+
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                affiliationInput.required = false;
+                affiliationInput.readOnly = false;
+                affiliationInput.setAttribute('list', 'copiAffiliationList');
+
+                userIdInput.value = '';
+                nameHidden.value = '';
+                manualInput.value = '';
+                affiliationInput.value = '';
+
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            row.dataset.copiMode = mode;
+        }
+
+        function bindCopiRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-copi-person-type]');
+            const manualInput = row.querySelector('[data-copi-manual-name]');
+            const userSelect = row.querySelector('[data-copi-user-select]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            if (typeSelect.dataset.copiBound !== '1') {
+                typeSelect.dataset.copiBound = '1';
+                typeSelect.addEventListener('change', () => syncCopiRow(row));
+            }
+
+            if (manualInput.dataset.copiBound !== '1') {
+                manualInput.dataset.copiBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    manualInput.addEventListener(eventName, () => syncCopiRow(row));
+                });
+            }
+
+            if (userSelect.dataset.copiBound !== '1') {
+                userSelect.dataset.copiBound = '1';
+                ['change', 'blur'].forEach((eventName) => {
+                    userSelect.addEventListener(eventName, () => syncCopiRow(row));
+                });
+            }
+
+            syncCopiRow(row);
+        }
+
+        function initCopiRows(scope = document) {
+            scope.querySelectorAll('.copi-row').forEach((row) => bindCopiRow(row));
+
+            const container = scope.querySelector('#copi-container');
+            if (!(container instanceof HTMLElement) || container.dataset.copiObserverBound === '1') {
+                return;
+            }
+
+            container.dataset.copiObserverBound = '1';
+            new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node instanceof HTMLElement && node.matches('.copi-row')) {
+                            bindCopiRow(node);
+                        }
+                    });
+                });
+            }).observe(container, { childList: true });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            bindProjectUserLookup(document);
+            bindProjectSearchSelectGuards(document);
+            initOutputAuthorRows(document);
+            initAwardRecipientRows(document);
+            initBookAuthorRows(document);
+            initConferencePresenterRows(document);
+            bindPiPersonControl(document);
+            initCopiRows(document);
+            initCoresearchRows(document);
+        });
+
+        function ensureCoresearchTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function syncCoresearchRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const statusSelect = row.querySelector('[data-coresearch-unit-status]');
+            const nameHidden = row.querySelector('[data-coresearch-name]');
+            const manualWrap = row.querySelector('[data-coresearch-manual-wrap]');
+            const manualInput = row.querySelector('[data-coresearch-manual-name]');
+            const userWrap = row.querySelector('[data-coresearch-user-wrap]');
+            const userSelect = row.querySelector('[data-coresearch-user-select]');
+            const affiliationInput = row.querySelector('[data-coresearch-affiliation]');
+
+            if (!(statusSelect instanceof HTMLSelectElement) || !(nameHidden instanceof HTMLInputElement) || !(manualInput instanceof HTMLInputElement) || !(userSelect instanceof HTMLSelectElement) || !(affiliationInput instanceof HTMLInputElement)) {
+                return;
+            }
+
+            const isInternal = String(statusSelect.value || '').trim() === CORESEARCH_INTERNAL_UNIT;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (isInternal && !String(userSelect.value || '').trim() && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+            }
+
+            const hasStatus = !!String(statusSelect.value || '').trim();
+            const wasInternal = row.dataset.coresearchMode === 'internal';
+
+            manualWrap?.classList.toggle('hidden', isInternal);
+            userWrap?.classList.toggle('hidden', !isInternal);
+            manualInput.required = !isInternal && hasStatus;
+            manualInput.disabled = isInternal || !hasStatus;
+            userSelect.disabled = !isInternal;
+            userSelect.required = isInternal;
+            affiliationInput.required = hasStatus && !isInternal;
+            affiliationInput.disabled = !hasStatus;
+
+            const setDisabledStyle = (field, disabled, placeholderWhenDisabled = 'เลือกคนภายนอก / ภายในก่อน', placeholderWhenEnabled = null) => {
+                if (!field) return;
+                field.classList.toggle('bg-slate-100', disabled);
+                field.classList.toggle('text-slate-400', disabled);
+                field.classList.toggle('cursor-not-allowed', disabled);
+                if ('placeholder' in field) {
+                    field.placeholder = disabled ? placeholderWhenDisabled : (placeholderWhenEnabled ?? field.placeholder);
+                }
+            };
+
+            if (isInternal) {
+                ensureCoresearchTomSelect(userSelect);
+                const selectedOption = userSelect.options[userSelect.selectedIndex] ?? null;
+                nameHidden.value = selectedOption && userSelect.value ? String(selectedOption.text || '').trim() : '';
+                affiliationInput.value = CORESEARCH_INTERNAL_AFFILIATION;
+                affiliationInput.readOnly = true;
+                affiliationInput.required = false;
+                setDisabledStyle(affiliationInput, false, 'เลือกคนภายนอก / ภายในก่อน', CORESEARCH_INTERNAL_AFFILIATION);
+                setDisabledStyle(manualInput, true);
+                if (userSelect.tomselect?.wrapper) {
+                    userSelect.tomselect.wrapper.classList.remove('opacity-60', 'pointer-events-none');
+                }
+            } else {
+                if (wasInternal) {
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                    if (affiliationInput.value === CORESEARCH_INTERNAL_AFFILIATION) {
+                        affiliationInput.value = '';
+                    }
+                }
+                userSelect.required = false;
+                userSelect.disabled = true;
+                if (userSelect.tomselect) {
+                    userSelect.tomselect.clear(true);
+                } else {
+                    userSelect.value = '';
+                }
+                nameHidden.value = manualInput.value;
+                affiliationInput.readOnly = false;
+                setDisabledStyle(manualInput, !hasStatus, 'เลือกคนภายนอก / ภายในก่อน', 'ยศ ชื่อ นามสกุล');
+                setDisabledStyle(affiliationInput, !hasStatus, 'เลือกคนภายนอก / ภายในก่อน', 'สังกัด');
+                if (userSelect.tomselect?.wrapper) {
+                    userSelect.tomselect.wrapper.classList.add('opacity-60', 'pointer-events-none');
+                }
+                if (!hasStatus) {
+                    nameHidden.value = '';
+                    manualInput.value = '';
+                    affiliationInput.value = '';
+                }
+            }
+
+            row.dataset.coresearchMode = isInternal ? 'internal' : 'manual';
+        }
+
+        function bindCoresearchRow(row) {
+            if (!(row instanceof HTMLElement) || row.dataset.coresearchBound === '1') return;
+
+            row.dataset.coresearchBound = '1';
+            const statusSelect = row.querySelector('[data-coresearch-unit-status]');
+            const manualInput = row.querySelector('[data-coresearch-manual-name]');
+            const userSelect = row.querySelector('[data-coresearch-user-select]');
+
+            statusSelect?.addEventListener('change', () => syncCoresearchRow(row));
+            manualInput?.addEventListener('input', () => syncCoresearchRow(row));
+            userSelect?.addEventListener('change', () => syncCoresearchRow(row));
+
+            syncCoresearchRow(row);
+        }
+
+        function initCoresearchRows(scope = document) {
+            scope.querySelectorAll('.coresearch-row').forEach((row) => bindCoresearchRow(row));
+        }
+
         function refreshBookAuthorDatalistInOutput(sourceEl) {
             if (!(sourceEl instanceof Element)) return;
             const section = sourceEl.classList.contains('ea119-section') ? sourceEl : sourceEl.closest('.ea119-section');
@@ -2068,8 +3387,8 @@
             const list = section.querySelector('.book-author-name-list');
             if (!(list instanceof HTMLDataListElement)) return;
 
-            const inputs = Array.from(section.querySelectorAll('input[data-book-author-input]'));
-            const activeInput = sourceEl.matches('input[data-book-author-input]') ? sourceEl : null;
+            const inputs = Array.from(section.querySelectorAll('input[data-book-author-manual-name]'));
+            const activeInput = sourceEl.matches('input[data-book-author-manual-name]') ? sourceEl : null;
             const selected = new Set(
                 inputs
                     .map((input) => String(input.value || '').trim())
@@ -2101,7 +3420,7 @@
                 rows: []
             };
 
-            form.querySelectorAll('.ea119-section input[data-book-author-input]').forEach((el) => el.classList.remove('border-red-500', 'bg-red-50'));
+            form.querySelectorAll('.ea119-section input[data-book-author-manual-name], .ea119-section select[data-book-author-user-select]').forEach((el) => el.classList.remove('border-red-500', 'bg-red-50'));
 
             form.querySelectorAll('.output-row').forEach((row) => {
                 const typeField = row.querySelector('select[name^="outputs["][name$="[type]"]') || row.querySelector('input[name^="outputs["][name$="[type]"]');
@@ -2109,9 +3428,13 @@
                 if (!typeValue.startsWith('EA119')) return;
 
                 const seen = new Map();
-                const inputs = Array.from(row.querySelectorAll('.ea119-section input[data-book-author-input]'));
-                inputs.forEach((input) => {
-                    const raw = String(input.value || '').trim();
+                const rows = Array.from(row.querySelectorAll('.ea119-section .book-author-row'));
+                rows.forEach((bookAuthorRow) => {
+                    const hiddenInput = bookAuthorRow.querySelector('[data-book-author-name-hidden]');
+                    const manualInput = bookAuthorRow.querySelector('[data-book-author-manual-name]');
+                    const userSelect = bookAuthorRow.querySelector('[data-book-author-user-select]');
+                    const displayTarget = window.getProjectValidationDisplayTarget?.(userSelect?.disabled ? manualInput : userSelect) || (userSelect?.disabled ? manualInput : userSelect);
+                    const raw = String(hiddenInput?.value || manualInput?.value || '').trim();
                     if (!raw) return;
 
                     const key = normalizeAuthorNameForDuplicateCheck(raw);
@@ -2120,104 +3443,321 @@
                     if (seen.has(key)) {
                         const firstInput = seen.get(key);
                         firstInput?.classList.add('border-red-500', 'bg-red-50');
-                        input.classList.add('border-red-500', 'bg-red-50');
+                        displayTarget?.classList.add('border-red-500', 'bg-red-50');
                         if (result.valid) {
                             result.valid = false;
-                            result.field = input;
+                            result.field = displayTarget;
                             result.message = 'พบชื่อผู้เขียนซ้ำ กรุณาเลือกชื่อที่ไม่ซ้ำ';
                             result.rows.push(row);
                         }
                         return;
                     }
 
-                    seen.set(key, input);
+                    seen.set(key, displayTarget);
                 });
             });
 
             return result;
         }
 
-        /** ===== EA103 Section (Conferences) ===== */
+        function ensureConferencePresenterTomSelect(select) {
+            if (!(select instanceof HTMLSelectElement)) return;
+            const tom = window.ensureProjectSearchDropdown?.(select, {
+                placeholder: 'พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ',
+            });
+            applySearchTomSelectStyles(tom);
+        }
+
+        function setConferencePresenterWrapVisible(element, visible) {
+            if (!(element instanceof HTMLElement)) return;
+            element.classList.toggle('hidden', !visible);
+            element.hidden = !visible;
+            element.style.display = visible ? '' : 'none';
+        }
+
+        function toggleConferencePresenterFieldState(input, disabled, placeholder) {
+            if (!(input instanceof HTMLElement)) return;
+            if ('disabled' in input) input.disabled = disabled;
+            input.classList.toggle('bg-gray-100', disabled);
+            input.classList.toggle('text-gray-400', disabled);
+            input.classList.toggle('cursor-not-allowed', disabled);
+            if (typeof placeholder === 'string' && 'placeholder' in input) {
+                input.placeholder = placeholder;
+            }
+        }
+
+        function syncConferencePresenterRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-conference-presenter-person-type]');
+            const manualWrap = row.querySelector('[data-conference-presenter-manual-wrap]');
+            const manualInput = row.querySelector('[data-conference-presenter-manual-name]');
+            const userWrap = row.querySelector('[data-conference-presenter-user-wrap]');
+            const userSelect = row.querySelector('[data-conference-presenter-user-select]');
+            const userIdInput = row.querySelector('[data-conference-presenter-user-id]');
+            const noteHidden = row.querySelector('[data-conference-presenter-note-hidden]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualWrap instanceof HTMLElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userWrap instanceof HTMLElement) ||
+                !(userSelect instanceof HTMLSelectElement) ||
+                !(userIdInput instanceof HTMLInputElement) ||
+                !(noteHidden instanceof HTMLInputElement)) {
+                return;
+            }
+
+            ensureConferencePresenterTomSelect(userSelect);
+
+            const mode = String(typeSelect.value || '').trim();
+            const previousMode = row.dataset.conferencePresenterMode || '';
+            const modeChanged = previousMode !== '' && previousMode !== mode;
+            const tom = userSelect.tomselect || null;
+            const matchedUser = Array.isArray(window.projectUserDirectory)
+                ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(noteHidden.value || manualInput.value || '').trim())
+                : null;
+
+            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+                userSelect.value = String(userIdInput.value).trim();
+                if (tom) tom.setValue(String(userIdInput.value).trim(), true);
+            }
+
+            if (mode === 'internal' && !String(userSelect.value || '').trim() && matchedUser) {
+                userSelect.value = String(matchedUser.id);
+                if (tom) tom.setValue(String(matchedUser.id), true);
+            }
+
+            if (mode === 'internal') {
+                if (modeChanged) {
+                    manualInput.value = '';
+                    userIdInput.value = '';
+                    noteHidden.value = '';
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                }
+
+                const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
+                userIdInput.value = String(userSelect.value || '').trim();
+                noteHidden.value = selectedOption && userIdInput.value
+                    ? String(selectedOption.textContent || '').trim()
+                    : '';
+
+                setConferencePresenterWrapVisible(manualWrap, false);
+                setConferencePresenterWrapVisible(userWrap, true);
+                toggleConferencePresenterFieldState(manualInput, true, 'เลือกผู้นำเสนอจากรายชื่อบุคลากร');
+
+                manualInput.required = false;
+                userSelect.required = true;
+                userSelect.disabled = false;
+
+                if (tom) tom.enable();
+                setTomSelectWrapperState(userSelect, true, false);
+            } else if (mode === 'external') {
+                if (modeChanged) {
+                    if (tom) {
+                        tom.clear(true);
+                    } else {
+                        userSelect.value = '';
+                    }
+                    userIdInput.value = '';
+                    noteHidden.value = '';
+                    manualInput.value = '';
+                }
+
+                setConferencePresenterWrapVisible(manualWrap, true);
+                setConferencePresenterWrapVisible(userWrap, false);
+                toggleConferencePresenterFieldState(manualInput, false, 'ยศ ชื่อ นามสกุล');
+
+                manualInput.required = true;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                noteHidden.value = String(manualInput.value || '').trim();
+
+                if (tom) tom.disable();
+                setTomSelectWrapperState(userSelect, false, true);
+            } else {
+                if (tom) {
+                    tom.clear(true);
+                    tom.disable();
+                } else {
+                    userSelect.value = '';
+                }
+
+                setConferencePresenterWrapVisible(manualWrap, true);
+                setConferencePresenterWrapVisible(userWrap, false);
+                toggleConferencePresenterFieldState(manualInput, true, 'เลือกประเภทผู้นำเสนอก่อน');
+
+                manualInput.required = false;
+                userSelect.required = false;
+                userSelect.disabled = true;
+                userIdInput.value = '';
+                noteHidden.value = '';
+                manualInput.value = '';
+
+                setTomSelectWrapperState(userSelect, false, true);
+            }
+
+            row.dataset.conferencePresenterMode = mode;
+        }
+
+        function bindConferencePresenterRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+
+            const typeSelect = row.querySelector('[data-conference-presenter-person-type]');
+            const manualInput = row.querySelector('[data-conference-presenter-manual-name]');
+            const userSelect = row.querySelector('[data-conference-presenter-user-select]');
+
+            if (!(typeSelect instanceof HTMLSelectElement) ||
+                !(manualInput instanceof HTMLInputElement) ||
+                !(userSelect instanceof HTMLSelectElement)) {
+                return;
+            }
+
+            if (typeSelect.dataset.conferencePresenterBound !== '1') {
+                typeSelect.dataset.conferencePresenterBound = '1';
+                typeSelect.addEventListener('change', () => syncConferencePresenterRow(row));
+            }
+
+            if (manualInput.dataset.conferencePresenterBound !== '1') {
+                manualInput.dataset.conferencePresenterBound = '1';
+                ['input', 'change', 'blur'].forEach((eventName) => {
+                    manualInput.addEventListener(eventName, () => syncConferencePresenterRow(row));
+                });
+            }
+
+            if (userSelect.dataset.conferencePresenterBound !== '1') {
+                userSelect.dataset.conferencePresenterBound = '1';
+                ['change', 'blur'].forEach((eventName) => {
+                    userSelect.addEventListener(eventName, () => syncConferencePresenterRow(row));
+                });
+            }
+
+            syncConferencePresenterRow(row);
+        }
+
+        function initConferencePresenterRows(scope = document) {
+            scope.querySelectorAll('.conference-presenter-row').forEach((row) => bindConferencePresenterRow(row));
+        }
+
+        window.syncConferencePresenterRow = syncConferencePresenterRow;
+
+        /** ===== EA103 Section (Conference + Presenters) ===== */
         function renderEA103Section(idx) {
             const wrap = document.createElement('div');
             wrap.className = 'ea103-section space-y-3 border rounded-xl p-4 bg-amber-50/60';
             wrap.innerHTML = `
-    <div class="flex items-center justify-between">
-      <span class="font-semibold text-amber-800">Conferences</span>
-      <button type="button" class="px-3 py-1 rounded bg-amber-600 text-white" onclick="addConferenceRow(this)">+ เพิ่ม Conference</button>
+    <input type="hidden" name="outputs[${idx}][conference_id]" value="">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">ชื่อเวที/Conference</span>
+        <input name="outputs[${idx}][conference_name]" class="w-full border p-2 rounded" placeholder="เช่น PMAC 2025">
+      </label>
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">ประเภทนำเสนอ</span>
+        <select name="outputs[${idx}][conference_presentation_type]" class="w-full border p-2 rounded">
+          <option value="">เลือก</option>
+          <option value="Oral Presentation">Oral Presentation</option>
+          <option value="Poster Presentation">Poster Presentation</option>
+          <option value="Abstract Presentation">Abstract Presentation</option>
+          <option value="Panel Discussion">Panel Discussion</option>
+          <option value="Keynote Speech">Keynote Speech</option>
+          <option value="World café">World café</option>
+        </select>
+      </label>
+      <label class="w-full">
+        <span class="block text-sm text-gray-700 mb-1">สถานที่</span>
+        <input name="outputs[${idx}][conference_location]" class="w-full border p-2 rounded" placeholder="เมือง/ประเทศ">
+      </label>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm border">
-        <thead class="bg-amber-100">
-          <tr>
-            <th class="px-2 py-2 text-left">ชื่อเวที/Conference</th>
-            <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
-            <th class="px-2 py-2 text-left">สถานที่</th>
-            <th class="px-2 py-2 text-left">ชื่อผู้นำเสนอ</th>
-            <th class="px-2 py-2 text-center">ลบ</th>
-          </tr>
-        </thead>
-        <tbody class="conference-tbody" data-conf-index="0"></tbody>
-      </table>
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="font-semibold text-amber-800">รายชื่อผู้นำเสนอ</span>
+      </div>
+      <div class="conference-presenters-container space-y-2" data-conf-presenter-index="0"></div>
+      <div class="flex justify-center">
+        <button type="button" class="px-3 py-1 rounded bg-amber-600 text-white" onclick="addConferencePresenterRow(this)">+ เพิ่มผู้นำเสนอ</button>
+      </div>
     </div>
   `;
 
-            const tbody = wrap.querySelector('.conference-tbody');
-            tbody.appendChild(buildConferenceRow(idx, 0));
+            const presentersWrap = wrap.querySelector('.conference-presenters-container');
+            presentersWrap.appendChild(buildConferencePresenterRow(idx, 0));
 
             return wrap;
         }
 
-        function addConferenceRow(btnEl) {
+        function addConferencePresenterRow(btnEl) {
             const section = btnEl.closest('.ea103-section');
             const outputRow = btnEl.closest('.output-row');
             const idx = parseInt(outputRow.getAttribute('data-index') || '0', 10);
 
-            const tbody = section.querySelector('.conference-tbody');
-            let cIdx = parseInt(tbody.getAttribute('data-conf-index') || '0', 10);
-            cIdx += 1;
-            tbody.setAttribute('data-conf-index', cIdx);
+            const presentersWrap = section.querySelector('.conference-presenters-container');
+            let pIdx = parseInt(presentersWrap.getAttribute('data-conf-presenter-index') || '0', 10);
+            pIdx += 1;
+            presentersWrap.setAttribute('data-conf-presenter-index', pIdx);
 
-            tbody.appendChild(buildConferenceRow(idx, cIdx));
+            const row = buildConferencePresenterRow(idx, pIdx);
+            presentersWrap.appendChild(row);
+            bindProjectSearchSelectGuards(section);
         }
 
-        function buildConferenceRow(outputIdx, cIdx) {
-            const tr = document.createElement('tr');
-            tr.className = 'border-t conference-row';
-            tr.innerHTML = `
-    <td class="px-2 py-2">
-      <input name="outputs[${outputIdx}][conferences][${cIdx}][name]" class="w-56 border p-2 rounded" placeholder="เช่น PMAC 2025">
-    </td>
-    <td class="px-2 py-2">
-      <select name="outputs[${outputIdx}][conferences][${cIdx}][presentation_type]" class="w-44 border p-2 rounded">
-        <option value="">เลือก</option>
-        <option value="Oral Presentation">Oral Presentation</option>
-        <option value="Poster Presentation">Poster Presentation</option>
-        <option value="Abstract Presentation">Abstract Presentation</option>
-        <option value="Panel Discussion">Panel Discussion</option>
-        <option value="Keynote Speech">Keynote Speech</option>
-        <option value="World café">World café</option>
+        function buildConferencePresenterRow(outputIdx, presenterIdx) {
+            const row = document.createElement('div');
+            row.className = 'conference-presenter-row grid grid-cols-1 md:grid-cols-12 gap-3 items-end';
+            const userOptions = (Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [])
+                .map((user) => `<option value="${String(user.id)}">${String(user.full_name || '').replace(/"/g, '&quot;')}</option>`)
+                .join('');
+
+            row.innerHTML = `
+    <input type="hidden" name="outputs[${outputIdx}][conference_presenters][${presenterIdx}][id]" value="">
+    <input type="hidden" name="outputs[${outputIdx}][conference_presenters][${presenterIdx}][user_id]" value="" data-conference-presenter-user-id>
+    <input type="hidden" name="outputs[${outputIdx}][conference_presenters][${presenterIdx}][note]" value="" data-conference-presenter-note-hidden>
+
+    <label class="w-full md:col-span-3">
+      <span class="block text-sm text-gray-700 mb-1">คนในหน่วย / คนนอก</span>
+      <select name="outputs[${outputIdx}][conference_presenters][${presenterIdx}][person_type]" data-conference-presenter-person-type class="w-full border p-2 rounded" required
+        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทผู้นำเสนอ')"
+        oninput="this.setCustomValidity('')">
+        <option value="">กรุณาเลือก</option>
+        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+        <option value="external">คนนอก</option>
       </select>
-    </td>
-    <td class="px-2 py-2">
-      <input name="outputs[${outputIdx}][conferences][${cIdx}][location]" class="w-44 border p-2 rounded" placeholder="เมือง/ประเทศ">
-    </td>
-    <td class="px-2 py-2">
-      <input type="hidden" name="outputs[${outputIdx}][conferences][${cIdx}][user_id]" data-user-id-hidden>
-      <input name="outputs[${outputIdx}][conferences][${cIdx}][note]" list="userNames" class="w-56 border p-2 rounded" placeholder="ชื่อผู้นำเสนอ">
-    </td>
-    <td class="px-2 py-2 text-center">
-      <button type="button" class="px-2 py-1 text-red-600 border border-red-300 rounded" onclick="removeConferenceRow(this)">ลบ</button>
-    </td>
+    </label>
+
+    <label class="w-full md:col-span-8" data-conference-presenter-manual-wrap>
+      <span class="block text-sm text-gray-700 mb-1">ชื่อผู้นำเสนอ</span>
+      <input type="text" data-conference-presenter-manual-name class="w-full border p-2 rounded bg-gray-100 text-gray-400 cursor-not-allowed" placeholder="เลือกประเภทผู้นำเสนอก่อน"
+        disabled oninvalid="this.setCustomValidity('กรุณาระบุชื่อผู้นำเสนอ')" oninput="this.setCustomValidity('')">
+    </label>
+
+    <label class="w-full md:col-span-8 hidden" data-conference-presenter-user-wrap>
+      <span class="block text-sm text-gray-700 mb-1">เลือกผู้นำเสนอจากรายชื่อบุคลากร</span>
+      <select data-conference-presenter-user-select class="w-full border p-2 rounded" disabled
+        oninvalid="this.setCustomValidity('กรุณาเลือกผู้นำเสนอจากรายการ')" oninput="this.setCustomValidity('')">
+        <option value="">พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ</option>
+        ${userOptions}
+      </select>
+    </label>
+
+    <div class="w-full md:col-span-1 flex justify-end">
+      <button type="button" class="w-full md:w-auto px-3 py-2 rounded border text-red-600 border-red-300 whitespace-nowrap" onclick="removeConferencePresenterRow(this)">ลบ</button>
+    </div>
   `;
-            bindProjectUserLookup(tr);
-            return tr;
+
+            bindConferencePresenterRow(row);
+            return row;
         }
 
-        function removeConferenceRow(btn) {
-            const tr = btn.closest('tr.conference-row');
-            if (tr) tr.remove();
+        function removeConferencePresenterRow(btn) {
+            confirmProjectDesktopRemoval(() => {
+                btn.closest('.conference-presenter-row')?.remove();
+            });
         }
 
         /** ===== util reindex ===== */
@@ -2234,7 +3774,7 @@
                     .forEach(el => {
                         const old = el.getAttribute('name');
                         if (!old) return;
-                        el.setAttribute('name', old.replace(/^outputs\[\d+\]/, `outputs[${i}]`));
+                        el.setAttribute('name', old.replace(/^outputs\[[^\]]+\]/, `outputs[${i}]`));
                     });
             });
         }
@@ -2529,12 +4069,15 @@
         });
     </script> --}}
     <script>
-        new TomSelect('#pi_name', {
-            create: true,
-            maxItems: 1,
-            persist: false,
-            plugins: ['remove_button']
-        });
+        const piNameSelect = document.querySelector('select#pi_name');
+        if (piNameSelect) {
+            window.ensureProjectSearchDropdown?.(piNameSelect, {
+                placeholder: 'เลือก PI',
+                searchPlaceholder: 'พิมพ์เพื่อค้นหา PI',
+            });
+        }
+
+        initCoresearchRows(document);
     </script>
 
     <script>
@@ -2552,25 +4095,90 @@
             const now = () => Date.now();
             const expired = ts => (now() - ts) > TTL_HOURS * 3600 * 1000;
 
+            const syncProjectRoleDraftFields = () => {
+                window.reindexOutput?.();
+                document.querySelectorAll('.author-row').forEach((row) => window.syncOutputAuthorRow?.(row));
+                document.querySelectorAll('.award-recipient-row').forEach((row) => window.syncAwardRecipientRow?.(row));
+                document.querySelectorAll('.book-author-row').forEach((row) => window.syncBookAuthorRow?.(row));
+                window.syncPiPersonFields?.(document);
+                document.querySelectorAll('.copi-row').forEach((row) => window.syncCopiRow?.(row));
+                document.querySelectorAll('.coresearch-row').forEach((row) => window.syncCoresearchRow?.(row));
+                document.querySelectorAll('.conference-presenter-row').forEach((row) => window.syncConferencePresenterRow?.(row));
+            };
+
+            const assignCollectedValue = (data, el, nameOverride = null) => {
+                const name = nameOverride || el.name;
+                if (!name) return;
+
+                if (el.type === 'checkbox') data[name] = el.checked;
+                else if (el.type === 'radio') {
+                    if (el.checked) data[name] = el.value;
+                } else if (el.classList?.contains('fte-shared-datepicker')) {
+                    const parsed = parseLocalDateInput(el.dataset.isoValue || el.value);
+                    data[name] = parsed ? toDmyCE(parsed) : '';
+                } else {
+                    data[name] = el.value;
+                }
+            };
+
+            const collectNormalizedOutputData = (data) => {
+                window.reindexOutput?.();
+                FORM.querySelectorAll('#output-container .output-row').forEach((row, rowIndex) => {
+                    row.querySelectorAll('input[name^="outputs["], select[name^="outputs["], textarea[name^="outputs["]').forEach((el) => {
+                        if (!el.name) return;
+                        const normalizedName = el.name.replace(/^outputs\[[^\]]+\]/, `outputs[${rowIndex}]`);
+                        assignCollectedValue(data, el, normalizedName);
+                    });
+                });
+            };
+
+            const getOutputRelativeName = (name) => {
+                const match = String(name || '').match(/^outputs\[[^\]]+\]\[(.+)\]$/);
+                return match ? match[1] : '';
+            };
+
+            const collectOutputRows = () => {
+                window.reindexOutput?.();
+                return Array.from(FORM.querySelectorAll('#output-container .output-row')).map((row) => {
+                    const rowData = {};
+                    row.querySelectorAll('input[name^="outputs["], select[name^="outputs["], textarea[name^="outputs["]').forEach((el) => {
+                        if (!el.name) return;
+                        const relativeName = getOutputRelativeName(el.name);
+                        if (!relativeName) return;
+                        assignCollectedValue(rowData, el, relativeName);
+                    });
+                    return rowData;
+                });
+            };
+
+            const flattenOutputRows = (rows) => {
+                const flat = {};
+                (Array.isArray(rows) ? rows : []).forEach((rowData, rowIndex) => {
+                    Object.entries(rowData || {}).forEach(([relativeName, value]) => {
+                        flat[`outputs[${rowIndex}][${relativeName}]`] = value;
+                    });
+                });
+                return flat;
+            };
+
             const collectForm = () => {
+                syncProjectRoleDraftFields();
                 const data = {};
                 FORM.querySelectorAll('input, select, textarea').forEach(el => {
                     if (!el.name) return;
-                    if (el.type === 'checkbox') data[el.name] = el.checked;
-                    else if (el.type === 'radio') {
-                        if (el.checked) data[el.name] = el.value;
-                    } else if (el.classList?.contains('fte-shared-datepicker')) {
-                        const parsed = parseLocalDateInput(el.dataset.isoValue || el.value);
-                        data[el.name] = parsed ? toDmyCE(parsed) : '';
-                    } else data[el.name] = el.value;
+                    if (el.name.startsWith('outputs[')) return;
+                    assignCollectedValue(data, el);
                 });
+                collectNormalizedOutputData(data);
                 return data;
             };
 
             const save = () => {
+                const data = collectForm();
                 localStorage.setItem(FORM_KEY, JSON.stringify({
                     ts: now(),
-                    data: collectForm()
+                    data,
+                    outputRows: collectOutputRows()
                 }));
             };
 
@@ -2586,6 +4194,8 @@
                 clearTimeout(timer);
                 save();
             });
+            window.addEventListener('pagehide', save);
+            window.addEventListener('beforeunload', save);
 
             /* ---------- dynamic rows ---------- */
             const maxIndex = (data, prefix) => {
@@ -2598,10 +4208,16 @@
             };
 
             const addRepeatableRows = (id, maxIdx) => {
-                if (maxIdx < 1) return;
+                if (maxIdx < 0) return;
                 const btn = document.querySelector(`[data-repeatable-add="${id}"]`);
-                if (!btn) return;
-                for (let i = 0; i < maxIdx; i++) btn.click();
+                const wrap = document.querySelector(`[data-repeatable][data-id="${id}"]`);
+                const containerId = wrap?.dataset?.container || '';
+                const container = containerId ? document.getElementById(containerId) : null;
+                const existingCount = container?.querySelectorAll('[data-repeatable-row]').length ?? 0;
+                const targetCount = maxIdx + 1;
+                const rowsToAdd = Math.max(0, targetCount - existingCount);
+                if (!btn || rowsToAdd < 1) return;
+                for (let i = 0; i < rowsToAdd; i++) btn.click();
             };
 
             const syncOutputIndexes = () => {
@@ -2612,7 +4228,9 @@
             const collectOutputMeta = (data) => {
                 const typeMap = {};
                 const authorMax = {};
-                const confMax = {};
+                const awardRecipientMax = {};
+                const bookAuthorMax = {};
+                const confPresenterMax = {};
 
                 Object.keys(data).forEach(k => {
                     let m = k.match(/^outputs\[(\d+)\]\[type\]/);
@@ -2625,15 +4243,29 @@
                         authorMax[oIdx] = Math.max(authorMax[oIdx] ?? -1, aIdx);
                     }
 
-                    m = k.match(/^outputs\[(\d+)\]\[conferences\]\[(\d+)\]/);
+                    m = k.match(/^outputs\[(\d+)\]\[award_recipients\]\[(\d+)\]/);
                     if (m) {
                         const oIdx = parseInt(m[1], 10);
-                        const cIdx = parseInt(m[2], 10);
-                        confMax[oIdx] = Math.max(confMax[oIdx] ?? -1, cIdx);
+                        const aIdx = parseInt(m[2], 10);
+                        awardRecipientMax[oIdx] = Math.max(awardRecipientMax[oIdx] ?? -1, aIdx);
+                    }
+
+                    m = k.match(/^outputs\[(\d+)\]\[book_authors\]\[(\d+)\]/);
+                    if (m) {
+                        const oIdx = parseInt(m[1], 10);
+                        const bIdx = parseInt(m[2], 10);
+                        bookAuthorMax[oIdx] = Math.max(bookAuthorMax[oIdx] ?? -1, bIdx);
+                    }
+
+                    m = k.match(/^outputs\[(\d+)\]\[conference_presenters\]\[(\d+)\]/);
+                    if (m) {
+                        const oIdx = parseInt(m[1], 10);
+                        const pIdx = parseInt(m[2], 10);
+                        confPresenterMax[oIdx] = Math.max(confPresenterMax[oIdx] ?? -1, pIdx);
                     }
                 });
 
-                return { typeMap, authorMax, confMax };
+                return { typeMap, authorMax, awardRecipientMax, bookAuthorMax, confPresenterMax };
             };
 
             const ensureOutputSections = (data) => {
@@ -2657,13 +4289,31 @@
                     for (let i = 0; i < maxIdx; i++) addAuthorRow(btn);
                 });
 
-                Object.entries(meta.confMax).forEach(([idxStr, maxIdx]) => {
+                Object.entries(meta.awardRecipientMax).forEach(([idxStr, maxIdx]) => {
                     if (maxIdx < 1) return;
                     const idx = parseInt(idxStr, 10);
                     const row = FORM.querySelector(`[name="outputs[${idx}][title]"]`)?.closest('.output-row');
-                    const btn = row?.querySelector('.ea103-section button[onclick*="addConferenceRow"]');
-                    if (!btn || typeof addConferenceRow !== 'function') return;
-                    for (let i = 0; i < maxIdx; i++) addConferenceRow(btn);
+                    const btn = row?.querySelector('.ea118-section button[onclick*="addAwardRecipientRow"]');
+                    if (!btn || typeof addAwardRecipientRow !== 'function') return;
+                    for (let i = 0; i < maxIdx; i++) addAwardRecipientRow(btn);
+                });
+
+                Object.entries(meta.bookAuthorMax).forEach(([idxStr, maxIdx]) => {
+                    if (maxIdx < 1) return;
+                    const idx = parseInt(idxStr, 10);
+                    const row = FORM.querySelector(`[name="outputs[${idx}][title]"]`)?.closest('.output-row');
+                    const btn = row?.querySelector('.ea119-section button[onclick*="addBookAuthorRow"]');
+                    if (!btn || typeof addBookAuthorRow !== 'function') return;
+                    for (let i = 0; i < maxIdx; i++) addBookAuthorRow(btn);
+                });
+
+                Object.entries(meta.confPresenterMax).forEach(([idxStr, maxIdx]) => {
+                    if (maxIdx < 1) return;
+                    const idx = parseInt(idxStr, 10);
+                    const row = FORM.querySelector(`[name="outputs[${idx}][title]"]`)?.closest('.output-row');
+                    const btn = row?.querySelector('.ea103-section button[onclick*="addConferencePresenterRow"]');
+                    if (!btn || typeof addConferencePresenterRow !== 'function') return;
+                    for (let i = 0; i < maxIdx; i++) addConferencePresenterRow(btn);
                 });
             };
 
@@ -2692,45 +4342,81 @@
                 return today;
             })();
 
+            const applyFieldValue = (el, name, value, options = {}) => {
+                if (!el) return;
+                const skipChangeEvent = options.skipChangeEvent === true;
+
+                if (el.type === 'checkbox') {
+                    el.checked = !!value;
+                } else if (el.type === 'radio') {
+                    const r = FORM.querySelector(
+                        `[name="${CSS.escape(name)}"][value="${CSS.escape(value)}"]`
+                    );
+                    if (r) r.checked = true;
+                    return;
+                } else if (el._flatpickr) {
+                    const val = String(value ?? '').trim();
+                    if (!val) {
+                        el._flatpickr.clear();
+                    } else {
+                        const parsed = parseLocalDateValue(val);
+                        const noPast = el.dataset.noPast === '1';
+                        const isPastDate = parsed instanceof Date && !Number.isNaN(parsed.getTime()) &&
+                            parsed < NO_PAST_CLIENT_TODAY;
+
+                        if (noPast && isPastDate) {
+                            el._flatpickr.clear();
+                        } else {
+                            el._flatpickr.setDate(val, false);
+                        }
+                    }
+                } else if (el.classList?.contains('fte-shared-datepicker')) {
+                    const parsed = parseLocalDateValue(value);
+                    const normalized = parsed ? `${String(parsed.getDate()).padStart(2, '0')}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${parsed.getFullYear()}` : String(value ?? '').trim();
+                    el.dataset.isoValue = normalized;
+                    el.value = normalized;
+                } else {
+                    el.value = value;
+                }
+
+                if (!skipChangeEvent) {
+                    el.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                }
+            };
+
             const applyForm = (data) => {
                 Object.entries(data).forEach(([name, value]) => {
                     const el = FORM.querySelector(`[name="${CSS.escape(name)}"]`);
                     if (!el) return;
+                    applyFieldValue(el, name, value);
+                });
+            };
 
-                    if (el.type === 'checkbox') el.checked = !!value;
-                    else if (el.type === 'radio') {
-                        const r = FORM.querySelector(
-                            `[name="${CSS.escape(name)}"][value="${CSS.escape(value)}"]`
-                        );
-                        if (r) r.checked = true;
-                    } else if (el._flatpickr) {
-                        const val = String(value ?? '').trim();
-                        if (!val) {
-                            el._flatpickr.clear();
-                        } else {
-                            const parsed = parseLocalDateValue(val);
-                            const noPast = el.dataset.noPast === '1';
-                            const isPastDate = parsed instanceof Date && !Number.isNaN(parsed.getTime()) &&
-                                parsed < NO_PAST_CLIENT_TODAY;
+            const applyOutputRows = (rows) => {
+                const outputEls = Array.from(FORM.querySelectorAll('#output-container .output-row'));
 
-                            if (noPast && isPastDate) {
-                                el._flatpickr.clear();
-                            } else {
-                                el._flatpickr.setDate(val, false);
-                            }
-                        }
-                    } else if (el.classList?.contains('fte-shared-datepicker')) {
-                        const parsed = parseLocalDateValue(value);
-                        const normalized = parsed ? `${String(parsed.getDate()).padStart(2, '0')}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${parsed.getFullYear()}` : String(value ?? '').trim();
-                        el.dataset.isoValue = normalized;
-                        el.value = normalized;
-                    } else {
-                        el.value = value;
+                rows.forEach((rowData, rowIndex) => {
+                    const row = outputEls[rowIndex];
+                    if (!row || !rowData || typeof rowData !== 'object') return;
+
+                    const typeName = `outputs[${rowIndex}][type]`;
+                    const typeSelect = row.querySelector(`[name="${CSS.escape(typeName)}"]`);
+                    if (typeSelect && Object.prototype.hasOwnProperty.call(rowData, 'type')) {
+                        applyFieldValue(typeSelect, typeName, rowData.type, {
+                            skipChangeEvent: true
+                        });
                     }
 
-                    el.dispatchEvent(new Event('change', {
-                        bubbles: true
-                    }));
+                    Object.entries(rowData).forEach(([relativeName, value]) => {
+                        if (relativeName === 'type') return;
+                        const fullName = `outputs[${rowIndex}][${relativeName}]`;
+                        const field = row.querySelector(`[name="${CSS.escape(fullName)}"]`) ||
+                            FORM.querySelector(`[name="${CSS.escape(fullName)}"]`);
+                        if (!field) return;
+                        applyFieldValue(field, fullName, value);
+                    });
                 });
             };
 
@@ -2793,14 +4479,40 @@
             const bannerDiscard = document.getElementById('autosave-banner-discard');
             const restoreDraft = (payload) => {
                 const data = payload.data;
+                const outputRows = Array.isArray(payload.outputRows) ? payload.outputRows : [];
+                const normalizedOutputData = outputRows.length ? flattenOutputRows(outputRows) : data;
+                window.reindexOutput?.();
                 addRepeatableRows('irb', maxIndex(data, 'irbs'));
                 addRepeatableRows('copi', maxIndex(data, 'copis'));
                 addRepeatableRows('coresearch', maxIndex(data, 'coresearch'));
                 addRepeatableRows('fte', maxIndex(data, 'fte_roles'));
-                addRepeatableRows('output', maxIndex(data, 'outputs'));
-                ensureOutputSections(data);
-                applyForm(data);
+                addRepeatableRows('output', outputRows.length ? outputRows.length - 1 : maxIndex(data, 'outputs'));
+                window.reindexOutput?.();
+                if (outputRows.length) {
+                    ensureOutputSections(normalizedOutputData);
+                    applyOutputRows(outputRows);
+                    applyForm(Object.fromEntries(
+                        Object.entries(data).filter(([name]) => !name.startsWith('outputs['))
+                    ));
+                } else {
+                    ensureOutputSections(normalizedOutputData);
+                    applyForm({
+                        ...data,
+                        ...normalizedOutputData
+                    });
+                }
+                window.reindexOutput?.();
                 hydrateSharedFteDateInputs();
+                initOutputAuthorRows(document);
+                initAwardRecipientRows(document);
+                initBookAuthorRows(document);
+                initConferencePresenterRows(document);
+                bindProjectUserLookup(document);
+                bindPiPersonControl(document);
+                initCopiRows(document);
+                initCoresearchRows(document);
+                document.querySelectorAll('.ea119-section').forEach((section) => refreshBookAuthorDatalistInOutput(section));
+                syncProjectRoleDraftFields();
                 window.reindexFTE?.();
                 window.refreshFteUx?.();
             };
@@ -2895,6 +4607,8 @@
             function revealFieldIfCollapsed(field) {
                 if (!field || field.closest('template')) return false;
 
+                const displayTarget = window.getProjectValidationDisplayTarget?.(field) || field;
+
                 let node = field.parentElement;
                 let changed = false;
 
@@ -2931,7 +4645,7 @@
                     node = node.parentElement;
                 }
 
-                return changed || field.offsetParent !== null;
+                return changed || field.offsetParent !== null || displayTarget.offsetParent !== null;
             }
 
             if (projectForm) {
@@ -2974,21 +4688,20 @@
                             return;
                         }
 
-                        if (field.offsetParent === null) {
+                        const displayTarget = window.getProjectValidationDisplayTarget?.(field) || field;
+                        const fieldVisible = field.offsetParent !== null || field.getClientRects().length > 0;
+                        const displayVisible = displayTarget.offsetParent !== null || displayTarget.getClientRects().length > 0;
+                        if (!fieldVisible && !displayVisible) {
                             const visibleNow = revealFieldIfCollapsed(field);
                             if (!visibleNow) return;
                         }
 
-                        const val = field.value.trim();
+                        const val = String(field.value ?? '').trim();
                         const invalid = !val || !field.checkValidity();
-                        const displayTarget = window.getProjectValidationDisplayTarget?.(field) || field;
 
                         if (invalid) {
                             isValid = false;
-                            displayTarget.classList.add('border-red-500', 'bg-red-50');
-                            if (field !== displayTarget) {
-                                field.classList.add('border-red-500', 'bg-red-50');
-                            }
+                            window.syncProjectValidationClasses?.(field, true);
                             if (field.name === 'planning_status') {
                                 displayTarget.style.backgroundColor = '#fef2f2';
                                 displayTarget.style.color = '#991b1b';
@@ -3006,10 +4719,7 @@
                                 if (sectionNameById[id]) invalidSections.add(sectionNameById[id]);
                             }
                         } else {
-                            displayTarget.classList.remove('border-red-500', 'bg-red-50');
-                            if (field !== displayTarget) {
-                                field.classList.remove('border-red-500', 'bg-red-50');
-                            }
+                            window.syncProjectValidationClasses?.(field, false);
                             if (field.name === 'planning_status') {
                                 updateStatusColor(displayTarget);
                             }

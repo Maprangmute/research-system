@@ -1,6 +1,38 @@
 @extends('layouts.app')
 
 @php
+    $conferencePresenters = collect($externalOutput->conferences->first()?->presenters ?? [])->map(function ($presenter) {
+        return [
+            'id' => $presenter->id,
+            'person_type' => $presenter->user_id ? 'internal' : 'external',
+            'note' => $presenter->name,
+            'user_id' => $presenter->user_id,
+        ];
+    })->values()->all();
+
+    $authorSource = $externalOutput->type === 'EA118'
+        ? collect($externalOutput->awardRecipients ?? [])
+        : ($externalOutput->type === 'EA119'
+            ? collect($externalOutput->bookAuthors ?? [])
+            : collect($externalOutput->authors ?? []));
+
+    $authorRows = $authorSource->map(function ($author) use ($externalOutput) {
+        $supportsUnit = $externalOutput->type === 'EA118';
+        $personType = $author->user_id
+            ? 'internal'
+            : (($supportsUnit && trim((string) $author->name) === 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ') ? 'unit' : 'external');
+        $role = $externalOutput->type === 'EA118'
+            ? 'awardee'
+            : ($author->role ?? '');
+
+        return [
+            'role' => $role,
+            'person_type' => $personType,
+            'name' => $author->name,
+            'user_id' => $author->user_id,
+        ];
+    })->values()->all();
+
     $formData = [
         'title' => old('title', $externalOutput->title),
         'type' => old('type', $externalOutput->type),
@@ -13,20 +45,18 @@
         'book_title' => old('book_title', $externalOutput->book_title),
         'publisher_name' => old('publisher_name', $externalOutput->publisher_name),
         'chapter_pages' => old('chapter_pages', $externalOutput->chapter_pages),
-        'authors' => old('authors', $externalOutput->authors->map(fn($author) => ['role' => $author->role, 'name' => $author->name, 'user_id' => $author->user_id])->all() ?: [['role' => '', 'name' => '', 'user_id' => '']]),
-        'conferences' => old('conferences', $externalOutput->conferences->map(fn($conference) => [
-            'name' => $conference->name,
-            'presentation_type' => $conference->presentation_type,
-            'location' => $conference->location,
-            'presenter_name' => $conference->presenter_name,
-            'user_id' => $conference->user_id,
-        ])->all() ?: [[
-            'name' => '',
-            'presentation_type' => '',
-            'location' => '',
-            'presenter_name' => '',
+        'isbn' => old('isbn', $externalOutput->isbn),
+        'conference_id' => old('conference_id', $externalOutput->conferences->first()?->id),
+        'conference_name' => old('conference_name', $externalOutput->conferences->first()?->name),
+        'conference_presentation_type' => old('conference_presentation_type', $externalOutput->conferences->first()?->presentation_type),
+        'conference_location' => old('conference_location', $externalOutput->conferences->first()?->location),
+        'conference_presenters' => old('conference_presenters', $conferencePresenters ?: [[
+            'id' => '',
+            'person_type' => '',
+            'note' => '',
             'user_id' => '',
         ]]),
+        'authors' => old('authors', $authorRows ?: [['role' => '', 'person_type' => '', 'name' => '', 'user_id' => '']]),
     ];
     $type = in_array(($formData['type'] ?? ''), ['EA101', 'EA103', 'EA118', 'EA119', 'EA120'], true)
         ? $formData['type']
@@ -37,37 +67,51 @@
     <script>
         window.outputUserDirectory = @json($userDirectory);
     </script>
-    <datalist id="externalAcademicAuthorNames">
-        @foreach ($authorOptions as $authorName)
-            <option value="{{ $authorName }}"></option>
-        @endforeach
+    <datalist id="externalAcademicAuthorInternalNames">
         @foreach ($userDirectory as $userOption)
             <option value="{{ $userOption['research_display_name'] }}"></option>
         @endforeach
     </datalist>
 
-    <datalist id="externalAcademicPresenterNames">
-        @foreach ($presenterOptions as $presenterName)
-            <option value="{{ $presenterName }}"></option>
+    <datalist id="externalAcademicAuthorManualNames">
+        @foreach ($authorOptions as $authorName)
+            <option value="{{ $authorName }}"></option>
         @endforeach
+    </datalist>
+
+    <datalist id="externalAcademicPresenterInternalNames">
         @foreach ($userDirectory as $userOption)
             <option value="{{ $userOption['full_name'] }}"></option>
         @endforeach
     </datalist>
 
-    <datalist id="externalAcademicBookAuthorNames">
+    <datalist id="externalAcademicPresenterManualNames">
+        @foreach ($presenterOptions as $presenterName)
+            <option value="{{ $presenterName }}"></option>
+        @endforeach
+    </datalist>
+
+    <datalist id="externalAcademicBookAuthorInternalNames">
+        @foreach ($userDirectory as $userOption)
+            <option value="{{ $userOption['full_name'] }}"></option>
+        @endforeach
+    </datalist>
+
+    <datalist id="externalAcademicBookAuthorManualNames">
         @foreach ($bookAuthorOptions as $authorName)
             <option value="{{ $authorName }}"></option>
         @endforeach
     </datalist>
 
-    <datalist id="externalAcademicAwardRecipientNames">
-        <option value="หน่วยวิจัยเพื่อขับเคลื่อนนโยบาลสุขภาพ"></option>
-        @foreach ($presenterOptions as $recipientName)
-            <option value="{{ $recipientName }}"></option>
-        @endforeach
+    <datalist id="externalAcademicAwardRecipientInternalNames">
         @foreach ($userDirectory as $userOption)
             <option value="{{ $userOption['full_name'] }}"></option>
+        @endforeach
+    </datalist>
+
+    <datalist id="externalAcademicAwardRecipientManualNames">
+        @foreach ($presenterOptions as $recipientName)
+            <option value="{{ $recipientName }}"></option>
         @endforeach
     </datalist>
 
@@ -209,7 +253,7 @@
                         <div class="mb-3 text-xl font-bold text-blue-700">รายชื่อผู้เขียน (Authors)</div>
                         <div class="space-y-3" id="editAuthorsList">
                             @foreach ($formData['authors'] as $authorIndex => $author)
-                                <div class="edit-author-row grid gap-3 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.1fr)_auto]">
+                                <div class="edit-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]">
                                     <label class="block">
                                         <span class="text-sm font-medium text-slate-700">บทบาทผู้เขียน (Role)</span>
                                         <select name="authors[{{ $authorIndex }}][role]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
@@ -220,10 +264,18 @@
                                         </select>
                                     </label>
                                     <label class="block">
+                                        <span class="text-sm font-medium text-slate-700">คนในหน่วย / คนนอก</span>
+                                        <select name="authors[{{ $authorIndex }}][person_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" data-person-type data-name-kind="author" data-name-mode="research">
+                                            <option value="" @selected(($author['person_type'] ?? '') === '')>กรุณาเลือก</option>
+                                            <option value="internal" @selected(($author['person_type'] ?? '') === 'internal')>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                            <option value="external" @selected(($author['person_type'] ?? '') === 'external')>คนนอก</option>
+                                        </select>
+                                    </label>
+                                    <label class="block">
                                         <span class="text-sm font-medium text-slate-700">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
                                         <input type="hidden" name="authors[{{ $authorIndex }}][user_id]" value="{{ $author['user_id'] ?? '' }}" data-user-id-hidden>
-                                        <input type="text" list="externalAcademicAuthorNames" name="authors[{{ $authorIndex }}][name]" value="{{ $author['name'] ?? '' }}"
-                                            data-user-lookup="research"
+                                        <input type="text" list="externalAcademicAuthorManualNames" name="authors[{{ $authorIndex }}][name]" value="{{ $author['name'] ?? '' }}"
+                                            data-name-input
                                             class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                                             placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)">
                                     </label>
@@ -241,41 +293,54 @@
 
                 <div data-edit-ea103-section @class(['mt-5 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 md:p-5', 'hidden' => $type !== 'EA103'])>
                     <div class="mb-4 text-lg font-semibold text-slate-900">Presentation</div>
-                    <div class="space-y-3" id="editConferencesList">
-                        @foreach ($formData['conferences'] as $conferenceIndex => $conference)
-                            <div class="edit-conference-row rounded-2xl border border-slate-200 bg-white/80 p-4">
-                                <div class="grid gap-4 md:grid-cols-2">
+                    <input type="hidden" name="conference_id" value="{{ $formData['conference_id'] ?? '' }}">
+                    <div class="grid gap-4 md:grid-cols-3">
+                        <label class="block">
+                            <span class="text-sm font-medium text-slate-700">ชื่อเวที/Conference <span class="text-rose-500">*</span></span>
+                            <input type="text" name="conference_name" value="{{ $formData['conference_name'] ?? '' }}" data-required-ea103="true" oninvalid="this.setCustomValidity('กรุณากรอกชื่อเวที/Conference')" oninput="this.setCustomValidity('')" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เช่น PMAC 2025">
+                        </label>
+                        <label class="block">
+                            <span class="text-sm font-medium text-slate-700">ประเภทนำเสนอ</span>
+                            <select name="conference_presentation_type" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                                <option value="">เลือก</option>
+                                @foreach (['Oral Presentation', 'Poster Presentation', 'Abstract Presentation', 'Panel Discussion', 'Keynote Speech', 'World café'] as $presentationType)
+                                    <option value="{{ $presentationType }}" @selected(($formData['conference_presentation_type'] ?? '') === $presentationType)>{{ $presentationType }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="block">
+                            <span class="text-sm font-medium text-slate-700">สถานที่</span>
+                            <input type="text" name="conference_location" value="{{ $formData['conference_location'] ?? '' }}" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เมือง/ประเทศ">
+                        </label>
+                    </div>
+                    <div class="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-4">
+                        <div class="mb-3 text-xl font-bold text-amber-700">รายชื่อผู้นำเสนอ</div>
+                        <div class="space-y-3" id="editConferencePresentersList">
+                            @foreach ($formData['conference_presenters'] as $presenterIndex => $presenter)
+                                <div class="edit-conference-presenter-row grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto]">
+                                    <input type="hidden" name="conference_presenters[{{ $presenterIndex }}][id]" value="{{ $presenter['id'] ?? '' }}">
                                     <label class="block">
-                                        <span class="text-sm font-medium text-slate-700">ชื่อเวที/Conference <span class="text-rose-500">*</span></span>
-                                        <input type="text" name="conferences[{{ $conferenceIndex }}][name]" value="{{ $conference['name'] ?? '' }}" data-required-ea103="true" oninvalid="this.setCustomValidity('กรุณากรอกชื่อเวที/Conference')" oninput="this.setCustomValidity('')" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เช่น PMAC 2025">
-                                    </label>
-                                    <label class="block">
-                                        <span class="text-sm font-medium text-slate-700">ประเภทการนำเสนอ</span>
-                                        <select name="conferences[{{ $conferenceIndex }}][presentation_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                                            <option value="">เลือก</option>
-                                            @foreach (['Oral Presentation', 'Poster Presentation', 'Panel Discussion', 'Keynote Speech', 'World café'] as $presentationType)
-                                                <option value="{{ $presentationType }}" @selected(($conference['presentation_type'] ?? '') === $presentationType)>{{ $presentationType }}</option>
-                                            @endforeach
+                                        <span class="text-sm font-medium text-slate-700">คนในหน่วย / คนนอก</span>
+                                        <select name="conference_presenters[{{ $presenterIndex }}][person_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" data-person-type data-name-kind="presenter" data-name-mode="full">
+                                            <option value="" @selected(($presenter['person_type'] ?? '') === '')>กรุณาเลือก</option>
+                                            <option value="internal" @selected(($presenter['person_type'] ?? '') === 'internal')>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                            <option value="external" @selected(($presenter['person_type'] ?? '') === 'external')>คนนอก</option>
                                         </select>
                                     </label>
                                     <label class="block">
-                                        <span class="text-sm font-medium text-slate-700">สถานที่</span>
-                                        <input type="text" name="conferences[{{ $conferenceIndex }}][location]" value="{{ $conference['location'] ?? '' }}" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เมือง/ประเทศ">
-                                    </label>
-                                    <label class="block">
                                         <span class="text-sm font-medium text-slate-700">ชื่อผู้นำเสนอ</span>
-                                        <input type="hidden" name="conferences[{{ $conferenceIndex }}][user_id]" value="{{ $conference['user_id'] ?? '' }}" data-user-id-hidden>
-                                        <input type="text" list="externalAcademicPresenterNames" name="conferences[{{ $conferenceIndex }}][presenter_name]" value="{{ $conference['presenter_name'] ?? '' }}" data-user-lookup="full" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อผู้นำเสนอ">
+                                        <input type="hidden" name="conference_presenters[{{ $presenterIndex }}][user_id]" value="{{ $presenter['user_id'] ?? '' }}" data-user-id-hidden>
+                                        <input type="text" list="externalAcademicPresenterManualNames" name="conference_presenters[{{ $presenterIndex }}][note]" value="{{ $presenter['note'] ?? '' }}" data-name-input class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อผู้นำเสนอ">
                                     </label>
+                                    <div class="flex items-end">
+                                        <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-conference-presenter>ลบผู้นำเสนอ</button>
+                                    </div>
                                 </div>
-                                <div class="mt-3 flex justify-end">
-                                    <button type="button" class="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-conference>ลบรายการ</button>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                    <div class="mt-3 flex justify-end">
-                        <button type="button" id="addEditConference" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">+ เพิ่มรายการ</button>
+                            @endforeach
+                        </div>
+                        <div class="mt-3 flex justify-end">
+                            <button type="button" id="addEditConferencePresenter" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">+ เพิ่มผู้นำเสนอ</button>
+                        </div>
                     </div>
                 </div>
 
@@ -285,13 +350,22 @@
                         <div class="mb-3 text-xl font-bold text-violet-700">ผู้ได้รับรางวัล (Award Recipients)</div>
                         <div class="space-y-3" id="editAwardRecipientsList">
                             @foreach ($formData['authors'] as $authorIndex => $author)
-                                <div class="edit-award-recipient-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                                <div class="edit-award-recipient-row grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto]">
                                     <input type="hidden" name="authors[{{ $authorIndex }}][role]" value="awardee">
+                                    <label class="block">
+                                        <span class="text-sm font-medium text-slate-700">คนในหน่วย / คนนอก / หน่วยงาน</span>
+                                        <select name="authors[{{ $authorIndex }}][person_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" data-person-type data-name-kind="award" data-name-mode="full">
+                                            <option value="" @selected(($author['person_type'] ?? '') === '')>กรุณาเลือก</option>
+                                            <option value="unit" @selected(($author['person_type'] ?? '') === 'unit')>หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                            <option value="internal" @selected(($author['person_type'] ?? '') === 'internal')>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                            <option value="external" @selected(($author['person_type'] ?? '') === 'external')>คนนอก</option>
+                                        </select>
+                                    </label>
                                     <label class="block">
                                         <span class="text-sm font-medium text-slate-700">ชื่อผู้ได้รับรางวัล</span>
                                         <input type="hidden" name="authors[{{ $authorIndex }}][user_id]" value="{{ $author['user_id'] ?? '' }}" data-user-id-hidden>
-                                        <input type="text" list="externalAcademicAwardRecipientNames" name="authors[{{ $authorIndex }}][name]" value="{{ $author['name'] ?? '' }}"
-                                            data-user-lookup="full"
+                                        <input type="text" list="externalAcademicAwardRecipientManualNames" name="authors[{{ $authorIndex }}][name]" value="{{ $author['name'] ?? '' }}"
+                                            data-name-input
                                             class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                                             placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
                                     </label>
@@ -309,7 +383,7 @@
 
                 <div data-edit-ea119-section @class(['mt-5 rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4 md:p-5', 'hidden' => $type !== 'EA119'])>
                     <div class="mb-4 text-lg font-semibold text-slate-900">Textbook / Book chapter</div>
-                    <div class="mb-4 grid gap-4 md:grid-cols-3">
+                    <div class="mb-4 grid gap-4 md:grid-cols-4">
                         <label class="block">
                             <span class="text-sm font-semibold text-slate-700">ชื่อหนังสือ <span class="text-rose-500">*</span></span>
                             <input type="text" name="book_title" value="{{ $formData['book_title'] }}"
@@ -337,15 +411,31 @@
                                 class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                                 placeholder="เช่น Chapter 2, pp. 45-66">
                         </label>
+                        <label class="block">
+                            <span class="text-sm font-semibold text-slate-700">เลข ISBN</span>
+                            <input type="text" name="isbn" value="{{ $formData['isbn'] }}"
+                                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                                placeholder="เช่น 978-3-16-148410-0">
+                        </label>
                     </div>
                     <div class="rounded-2xl border border-slate-200 bg-white/80 p-4">
                         <div class="mb-3 text-xl font-bold text-blue-700">รายชื่อผู้เขียน (Authors)</div>
                         <div class="space-y-3" id="editBookAuthorsList">
                             @foreach ($formData['authors'] as $authorIndex => $author)
-                                <div class="edit-book-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                                <div class="edit-book-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto]">
+                                    <label class="block">
+                                        <span class="text-sm font-medium text-slate-700">คนในหน่วย / คนนอก</span>
+                                        <select name="authors[{{ $authorIndex }}][person_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" data-person-type data-name-kind="book" data-name-mode="full">
+                                            <option value="" @selected(($author['person_type'] ?? '') === '')>กรุณาเลือก</option>
+                                            <option value="internal" @selected(($author['person_type'] ?? '') === 'internal')>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                                            <option value="external" @selected(($author['person_type'] ?? '') === 'external')>คนนอก</option>
+                                        </select>
+                                    </label>
                                     <label class="block">
                                         <span class="text-sm font-medium text-slate-700">ชื่อผู้เขียน</span>
-                                        <input type="text" list="externalAcademicBookAuthorNames" name="authors[{{ $authorIndex }}][name]" value="{{ $author['name'] ?? '' }}"
+                                        <input type="hidden" name="authors[{{ $authorIndex }}][user_id]" value="{{ $author['user_id'] ?? '' }}" data-user-id-hidden>
+                                        <input type="text" list="externalAcademicBookAuthorManualNames" name="authors[{{ $authorIndex }}][name]" value="{{ $author['name'] ?? '' }}"
+                                            data-name-input
                                             class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                                             onfocus="this.dispatchEvent(new Event('input', { bubbles: true }))"
                                             placeholder="เลือกหรือพิมพ์ชื่อผู้เขียน">
@@ -373,7 +463,7 @@
     </div>
 
     <template id="editAuthorTemplate">
-        <div class="edit-author-row grid gap-3 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.1fr)_auto]">
+        <div class="edit-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]">
             <label class="block">
                 <span class="text-sm font-medium text-slate-700">บทบาทผู้เขียน (Role)</span>
                 <select name="authors[__INDEX__][role]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
@@ -384,9 +474,17 @@
                 </select>
             </label>
             <label class="block">
+                <span class="text-sm font-medium text-slate-700">คนในหน่วย / คนนอก</span>
+                <select name="authors[__INDEX__][person_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" data-person-type data-name-kind="author" data-name-mode="research">
+                    <option value="">กรุณาเลือก</option>
+                    <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                    <option value="external">คนนอก</option>
+                </select>
+            </label>
+            <label class="block">
                 <span class="text-sm font-medium text-slate-700">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
                 <input type="hidden" name="authors[__INDEX__][user_id]" data-user-id-hidden>
-                <input type="text" list="externalAcademicAuthorNames" name="authors[__INDEX__][name]" data-user-lookup="research" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)">
+                <input type="text" list="externalAcademicAuthorManualNames" name="authors[__INDEX__][name]" data-name-input class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)">
             </label>
             <div class="flex items-end">
                 <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-author>ลบผู้เขียน</button>
@@ -394,45 +492,42 @@
         </div>
     </template>
 
-    <template id="editConferenceTemplate">
-        <div class="edit-conference-row rounded-2xl border border-slate-200 bg-white/80 p-4">
-            <div class="grid gap-4 md:grid-cols-2">
-                <label class="block">
-                    <span class="text-sm font-medium text-slate-700">ชื่อเวที/Conference <span class="text-rose-500">*</span></span>
-                    <input type="text" name="conferences[__INDEX__][name]" data-required-ea103="true" oninvalid="this.setCustomValidity('กรุณากรอกชื่อเวที/Conference')" oninput="this.setCustomValidity('')" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เช่น PMAC 2025">
-                </label>
-                <label class="block">
-                    <span class="text-sm font-medium text-slate-700">ประเภทการนำเสนอ</span>
-                    <select name="conferences[__INDEX__][presentation_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                        <option value="">เลือก</option>
-                        <option value="Oral Presentation">Oral Presentation</option>
-                        <option value="Poster Presentation">Poster Presentation</option>
-                        <option value="Panel Discussion">Panel Discussion</option>
-                        <option value="Keynote Speech">Keynote Speech</option>
-                        <option value="World café">World café</option>
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-sm font-medium text-slate-700">สถานที่</span>
-                    <input type="text" name="conferences[__INDEX__][location]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เมือง/ประเทศ">
-                </label>
-                <label class="block">
-                    <span class="text-sm font-medium text-slate-700">ชื่อผู้นำเสนอ</span>
-                    <input type="hidden" name="conferences[__INDEX__][user_id]" data-user-id-hidden>
-                    <input type="text" list="externalAcademicPresenterNames" name="conferences[__INDEX__][presenter_name]" data-user-lookup="full" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อผู้นำเสนอ">
-                </label>
-            </div>
-            <div class="mt-3 flex justify-end">
-                <button type="button" class="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-conference>ลบรายการ</button>
+    <template id="editConferencePresenterTemplate">
+        <div class="edit-conference-presenter-row grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto]">
+            <input type="hidden" name="conference_presenters[__INDEX__][id]" value="">
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">คนในหน่วย / คนนอก</span>
+                <select name="conference_presenters[__INDEX__][person_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" data-person-type data-name-kind="presenter" data-name-mode="full">
+                    <option value="">กรุณาเลือก</option>
+                    <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                    <option value="external">คนนอก</option>
+                </select>
+            </label>
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">ชื่อผู้นำเสนอ</span>
+                <input type="hidden" name="conference_presenters[__INDEX__][user_id]" data-user-id-hidden>
+                <input type="text" list="externalAcademicPresenterManualNames" name="conference_presenters[__INDEX__][note]" data-name-input class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ชื่อผู้นำเสนอ">
+            </label>
+            <div class="flex items-end">
+                <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-conference-presenter>ลบผู้นำเสนอ</button>
             </div>
         </div>
     </template>
 
     <template id="editBookAuthorTemplate">
-        <div class="edit-book-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div class="edit-book-author-row grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto]">
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">คนในหน่วย / คนนอก</span>
+                <select name="authors[__INDEX__][person_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" data-person-type data-name-kind="book" data-name-mode="full">
+                    <option value="">กรุณาเลือก</option>
+                    <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                    <option value="external">คนนอก</option>
+                </select>
+            </label>
             <label class="block">
                 <span class="text-sm font-medium text-slate-700">ชื่อผู้เขียน</span>
-                <input type="text" list="externalAcademicBookAuthorNames" name="authors[__INDEX__][name]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" onfocus="this.dispatchEvent(new Event('input', { bubbles: true }))" placeholder="เลือกหรือพิมพ์ชื่อผู้เขียน">
+                <input type="hidden" name="authors[__INDEX__][user_id]" data-user-id-hidden>
+                <input type="text" list="externalAcademicBookAuthorManualNames" name="authors[__INDEX__][name]" data-name-input class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" onfocus="this.dispatchEvent(new Event('input', { bubbles: true }))" placeholder="เลือกหรือพิมพ์ชื่อผู้เขียน">
             </label>
             <div class="flex items-end">
                 <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-book-author>ลบผู้เขียน</button>
@@ -441,12 +536,21 @@
     </template>
 
     <template id="editAwardRecipientTemplate">
-        <div class="edit-award-recipient-row grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div class="edit-award-recipient-row grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto]">
             <input type="hidden" name="authors[__INDEX__][role]" value="awardee">
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">คนในหน่วย / คนนอก / หน่วยงาน</span>
+                <select name="authors[__INDEX__][person_type]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" data-person-type data-name-kind="award" data-name-mode="full">
+                    <option value="">กรุณาเลือก</option>
+                    <option value="unit">หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                    <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                    <option value="external">คนนอก</option>
+                </select>
+            </label>
             <label class="block">
                 <span class="text-sm font-medium text-slate-700">ชื่อผู้ได้รับรางวัล</span>
                 <input type="hidden" name="authors[__INDEX__][user_id]" data-user-id-hidden>
-                <input type="text" list="externalAcademicAwardRecipientNames" name="authors[__INDEX__][name]" data-user-lookup="full" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
+                <input type="text" list="externalAcademicAwardRecipientManualNames" name="authors[__INDEX__][name]" data-name-input class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เลือกหรือพิมพ์ชื่อผู้ได้รับรางวัล">
             </label>
             <div class="flex items-end">
                 <button type="button" class="rounded-xl border border-rose-200 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50" data-remove-edit-award-recipient>ลบรายชื่อ</button>
@@ -463,7 +567,7 @@
             const ea118Section = document.querySelector('[data-edit-ea118-section]');
             const ea119Section = document.querySelector('[data-edit-ea119-section]');
             const authorsList = document.getElementById('editAuthorsList');
-            const conferencesList = document.getElementById('editConferencesList');
+            const conferencePresentersList = document.getElementById('editConferencePresentersList');
             const awardRecipientsList = document.getElementById('editAwardRecipientsList');
             const bookAuthorsList = document.getElementById('editBookAuthorsList');
             const userDirectory = Array.isArray(window.outputUserDirectory) ? window.outputUserDirectory : [];
@@ -491,6 +595,21 @@
             };
             const isVisibleField = (field) => !!field.offsetParent;
 
+            const findMatchedUserByValue = (value, mode) => {
+                const trimmed = (value || '').trim();
+                if (trimmed === '') {
+                    return null;
+                }
+
+                return userDirectory.find((user) => {
+                    if (mode === 'research') {
+                        return (user.research_display_name || '').trim() === trimmed;
+                    }
+
+                    return (user.full_name || '').trim() === trimmed;
+                }) || null;
+            };
+
             const findMatchedUser = (input) => {
                 const value = (input?.value || '').trim();
                 const mode = input?.dataset?.userLookup || 'full';
@@ -499,17 +618,68 @@
                     return null;
                 }
 
-                return userDirectory.find((user) => {
-                    if (mode === 'research') {
-                        return (user.research_display_name || '').trim() === value;
+                return findMatchedUserByValue(value, mode);
+            };
+
+            const getExternalUserOptionLabel = (user, mode) => mode === 'research'
+                ? String(user?.research_display_name || '').trim()
+                : String(user?.full_name || '').trim();
+
+            const ensureExternalUserSearchSelect = (row, nameInput, nameMode) => {
+                if (!(row instanceof HTMLElement) || !(nameInput instanceof HTMLInputElement)) {
+                    return null;
+                }
+
+                let select = row.querySelector('[data-external-user-search-select]');
+                if (!(select instanceof HTMLSelectElement)) {
+                    select = document.createElement('select');
+                    select.className = 'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm hidden';
+                    select.dataset.externalUserSearchSelect = '1';
+                    nameInput.insertAdjacentElement('afterend', select);
+                }
+
+                const matchedUser = findMatchedUserByValue(nameInput.value, nameMode);
+                select.innerHTML = '<option value="">เลือกจากรายชื่อบุคลากร</option>';
+
+                userDirectory.forEach((user) => {
+                    const label = getExternalUserOptionLabel(user, nameMode);
+                    const id = String(user?.id || '').trim();
+                    if (label === '' || id === '') {
+                        return;
                     }
 
-                    return (user.full_name || '').trim() === value;
-                }) || null;
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = label;
+                    option.selected = !!(matchedUser && String(matchedUser.id) === id);
+                    select.appendChild(option);
+                });
+
+                const dropdown = typeof window.ensureProjectSearchDropdown === 'function'
+                    ? window.ensureProjectSearchDropdown(select, {
+                        placeholder: 'เลือกจากรายชื่อบุคลากร',
+                        searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อบุคลากร',
+                    })
+                    : null;
+
+                if (select.dataset.externalUserSearchBound !== '1') {
+                    select.dataset.externalUserSearchBound = '1';
+                    select.addEventListener('change', () => {
+                        const selectedUser = userDirectory.find((user) => String(user?.id || '') === String(select.value || '')) || null;
+                        nameInput.value = selectedUser ? getExternalUserOptionLabel(selectedUser, nameMode) : '';
+                        const hidden = row.querySelector('[data-user-id-hidden]');
+                        if (hidden instanceof HTMLInputElement) {
+                            hidden.value = selectedUser ? String(selectedUser.id) : '';
+                        }
+                    });
+                }
+
+                dropdown?.refreshOptions?.();
+                return select;
             };
 
             const syncUserLookupInput = (input) => {
-                const hidden = input?.closest('label, .edit-author-row, .edit-conference-row, .edit-award-recipient-row')?.querySelector('[data-user-id-hidden]');
+                const hidden = input?.closest('label, .edit-author-row, .edit-conference-presenter-row, .edit-award-recipient-row')?.querySelector('[data-user-id-hidden]');
                 if (!hidden) {
                     return;
                 }
@@ -530,6 +700,144 @@
                         input.addEventListener(eventName, () => syncUserLookupInput(input));
                     });
                     syncUserLookupInput(input);
+                });
+            };
+
+            const syncExternalNameRow = (row) => {
+                if (!(row instanceof HTMLElement)) return;
+
+                const typeSelect = row.querySelector('[data-person-type]');
+                const nameInput = row.querySelector('[data-name-input]');
+                const userIdInput = row.querySelector('[data-user-id-hidden]');
+                if (!(typeSelect instanceof HTMLSelectElement) || !(nameInput instanceof HTMLInputElement) || !(userIdInput instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                const mode = String(typeSelect.value || '').trim();
+                const nameMode = String(typeSelect.dataset.nameMode || 'full').trim();
+                const kind = String(typeSelect.dataset.nameKind || '').trim();
+                const unitName = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
+                const userSearchSelect = ensureExternalUserSearchSelect(row, nameInput, nameMode);
+                const toggleUserSearch = (show) => {
+                    if (!(userSearchSelect instanceof HTMLSelectElement)) {
+                        return;
+                    }
+
+                    userSearchSelect.classList.toggle('hidden', !show);
+                    userSearchSelect.disabled = !show;
+                    userSearchSelect.tomselect?.wrapper?.classList.toggle('hidden', !show);
+                    if (show) {
+                        userSearchSelect.tomselect?.enable?.();
+                        userSearchSelect.tomselect?.refreshOptions?.();
+                    } else {
+                        userSearchSelect.tomselect?.disable?.();
+                    }
+                };
+                const setManualInputState = (enabled, placeholder) => {
+                    nameInput.disabled = !enabled;
+                    nameInput.readOnly = !enabled;
+                    nameInput.placeholder = placeholder;
+                    nameInput.classList.toggle('bg-slate-100', !enabled);
+                    nameInput.classList.toggle('text-slate-500', !enabled);
+                    nameInput.classList.toggle('cursor-not-allowed', !enabled);
+                };
+                const disabledPlaceholder = kind === 'author'
+                    ? 'เลือกคนในหน่วย / คนนอกก่อน'
+                    : kind === 'presenter'
+                        ? 'เลือกคนในหน่วย / คนนอกก่อน'
+                        : kind === 'award'
+                            ? 'เลือกคนในหน่วย / คนนอก / หน่วยงานก่อน'
+                            : 'เลือกคนในหน่วย / คนนอกก่อน';
+
+                if (mode === '') {
+                    userIdInput.value = '';
+                    nameInput.value = '';
+                    nameInput.dataset.userLookup = '';
+                    nameInput.setAttribute('list', '');
+                    nameInput.classList.remove('hidden');
+                    toggleUserSearch(false);
+                    setManualInputState(false, disabledPlaceholder);
+                    return;
+                }
+
+                if (mode === 'unit') {
+                    userIdInput.value = '';
+                    nameInput.value = unitName;
+                    nameInput.dataset.userLookup = '';
+                    nameInput.setAttribute('list', '');
+                    nameInput.classList.remove('hidden');
+                    toggleUserSearch(false);
+                    setManualInputState(false, kind === 'author' ? 'ชื่อหน่วยงานผู้เขียน' : 'ชื่อหน่วยงาน');
+                    return;
+                }
+
+                nameInput.classList.remove('hidden');
+
+                if (mode === 'internal') {
+                    nameInput.dataset.userLookup = nameMode;
+                    nameInput.setAttribute('list', '');
+                    nameInput.classList.add('hidden');
+                    toggleUserSearch(true);
+                    setManualInputState(false,
+                        kind === 'author'
+                            ? 'เลือกชื่อผู้เขียนจากบุคลากร'
+                            : kind === 'presenter'
+                                ? 'เลือกชื่อผู้นำเสนอจากบุคลากร'
+                                : kind === 'award'
+                                    ? 'เลือกชื่อผู้ได้รับรางวัลจากบุคลากร'
+                                    : 'เลือกชื่อผู้เขียนจากบุคลากร');
+                    const matchedUser = findMatchedUserByValue(nameInput.value, nameMode);
+                    userIdInput.value = matchedUser ? String(matchedUser.id) : '';
+                    if (userSearchSelect instanceof HTMLSelectElement) {
+                        const selectedValue = matchedUser ? String(matchedUser.id) : '';
+                        userSearchSelect.value = selectedValue;
+                        userSearchSelect.tomselect?.setValue?.(selectedValue, true);
+                    }
+                    return;
+                }
+
+                nameInput.dataset.userLookup = '';
+                toggleUserSearch(false);
+                nameInput.setAttribute('list',
+                    kind === 'author'
+                        ? 'externalAcademicAuthorManualNames'
+                        : kind === 'presenter'
+                            ? 'externalAcademicPresenterManualNames'
+                            : kind === 'award'
+                                ? 'externalAcademicAwardRecipientManualNames'
+                                : 'externalAcademicBookAuthorManualNames');
+                setManualInputState(true,
+                    kind === 'author'
+                        ? 'ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)'
+                        : kind === 'presenter'
+                            ? 'ชื่อผู้นำเสนอ'
+                            : kind === 'award'
+                                ? 'ชื่อผู้ได้รับรางวัล'
+                                : 'ชื่อผู้เขียน');
+                userIdInput.value = '';
+            };
+
+            const bindExternalNameRows = (scope = document) => {
+                scope.querySelectorAll('.edit-author-row, .edit-conference-presenter-row, .edit-award-recipient-row, .edit-book-author-row').forEach((row) => {
+                    const typeSelect = row.querySelector('[data-person-type]');
+                    const nameInput = row.querySelector('[data-name-input]');
+                    if (!(typeSelect instanceof HTMLSelectElement) || !(nameInput instanceof HTMLInputElement)) {
+                        return;
+                    }
+
+                    if (typeSelect.dataset.boundExternalType !== '1') {
+                        typeSelect.dataset.boundExternalType = '1';
+                        typeSelect.addEventListener('change', () => syncExternalNameRow(row));
+                    }
+
+                    if (nameInput.dataset.boundExternalName !== '1') {
+                        nameInput.dataset.boundExternalName = '1';
+                        ['input', 'change', 'blur'].forEach((eventName) => {
+                            nameInput.addEventListener(eventName, () => syncExternalNameRow(row));
+                        });
+                    }
+
+                    syncExternalNameRow(row);
                 });
             };
 
@@ -605,9 +913,9 @@
                         field.name = field.name.replace(/authors\[\d+]/, `authors[${index}]`);
                     });
                 });
-                conferencesList?.querySelectorAll('.edit-conference-row').forEach((row, index) => {
+                conferencePresentersList?.querySelectorAll('.edit-conference-presenter-row').forEach((row, index) => {
                     row.querySelectorAll('[name]').forEach((field) => {
-                        field.name = field.name.replace(/conferences\[\d+]/, `conferences[${index}]`);
+                        field.name = field.name.replace(/conference_presenters\[\d+]/, `conference_presenters[${index}]`);
                     });
                 });
                 bookAuthorsList?.querySelectorAll('.edit-book-author-row').forEach((row, index) => {
@@ -626,19 +934,22 @@
                 const index = authorsList.querySelectorAll('.edit-author-row').length;
                 authorsList.insertAdjacentHTML('beforeend', document.getElementById('editAuthorTemplate').innerHTML.replaceAll('__INDEX__', index));
                 bindUserLookup(authorsList);
+                bindExternalNameRows(authorsList);
                 reindexRows();
             });
 
-            document.getElementById('addEditConference')?.addEventListener('click', () => {
-                const index = conferencesList.querySelectorAll('.edit-conference-row').length;
-                conferencesList.insertAdjacentHTML('beforeend', document.getElementById('editConferenceTemplate').innerHTML.replaceAll('__INDEX__', index));
-                bindUserLookup(conferencesList);
+            document.getElementById('addEditConferencePresenter')?.addEventListener('click', () => {
+                const index = conferencePresentersList.querySelectorAll('.edit-conference-presenter-row').length;
+                conferencePresentersList.insertAdjacentHTML('beforeend', document.getElementById('editConferencePresenterTemplate').innerHTML.replaceAll('__INDEX__', index));
+                bindUserLookup(conferencePresentersList);
+                bindExternalNameRows(conferencePresentersList);
                 reindexRows();
             });
 
             document.getElementById('addEditBookAuthor')?.addEventListener('click', () => {
                 const index = bookAuthorsList.querySelectorAll('.edit-book-author-row').length;
                 bookAuthorsList.insertAdjacentHTML('beforeend', document.getElementById('editBookAuthorTemplate').innerHTML.replaceAll('__INDEX__', index));
+                bindExternalNameRows(bookAuthorsList);
                 reindexRows();
             });
 
@@ -646,6 +957,7 @@
                 const index = awardRecipientsList.querySelectorAll('.edit-award-recipient-row').length;
                 awardRecipientsList.insertAdjacentHTML('beforeend', document.getElementById('editAwardRecipientTemplate').innerHTML.replaceAll('__INDEX__', index));
                 bindUserLookup(awardRecipientsList);
+                bindExternalNameRows(awardRecipientsList);
                 reindexRows();
             });
 
@@ -656,9 +968,9 @@
                         reindexRows();
                     }
                 }
-                if (event.target.matches('[data-remove-edit-conference]')) {
-                    if (conferencesList.querySelectorAll('.edit-conference-row').length > 1) {
-                        event.target.closest('.edit-conference-row')?.remove();
+                if (event.target.matches('[data-remove-edit-conference-presenter]')) {
+                    if (conferencePresentersList.querySelectorAll('.edit-conference-presenter-row').length > 1) {
+                        event.target.closest('.edit-conference-presenter-row')?.remove();
                         reindexRows();
                     }
                 }
@@ -679,6 +991,7 @@
             typeSelect?.addEventListener('change', syncType);
             syncType();
             bindUserLookup(document);
+            bindExternalNameRows(document);
             if (typeof window.initThaiDatePickers === 'function') {
                 window.initThaiDatePickers(document);
             }

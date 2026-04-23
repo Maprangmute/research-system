@@ -648,21 +648,29 @@
                         </div>
                     @endif
 
-                    @if (!empty($output->authors) && $output->authors->count())
+                    @if ((str_starts_with((string) ($output->type ?? ''), 'EA118') && !empty($output->awardRecipients) && $output->awardRecipients->count()) || (!str_starts_with((string) ($output->type ?? ''), 'EA118') && !empty($output->authors) && $output->authors->count()))
                         <div class="output-meta-row">
                             <strong>{{ str_starts_with((string) ($output->type ?? ''), 'EA118') ? 'Award Recipients' : 'Authors' }}:</strong>
-                            {{ $output->authors->pluck('name')->filter()->implode(', ') }}
+                            {{ str_starts_with((string) ($output->type ?? ''), 'EA118') ? $output->awardRecipients->pluck('name')->filter()->implode(', ') : $output->authors->pluck('name')->filter()->implode(', ') }}
                         </div>
                     @endif
 
                     @if (!empty($output->conferences) && $output->conferences->count())
                         <div class="output-meta-row">
                             <strong>Conferences:</strong>
-                            {{ $output->conferences->pluck('name')->filter()->implode(', ') }}
+                            {{ $output->conferences->map(function ($conference) {
+                                $parts = array_filter([
+                                    $conference->name,
+                                    $conference->presentation_type,
+                                    $conference->location,
+                                    $conference->presenterDisplay(),
+                                ]);
+                                return implode(' • ', $parts);
+                            })->filter()->implode(' | ') }}
                         </div>
                     @endif
 
-                    @if (!empty($output->book_title) || !empty($output->publisher_name) || !empty($output->chapter_pages))
+                    @if (!empty($output->book_title) || !empty($output->publisher_name) || !empty($output->chapter_pages) || !empty($output->isbn))
                         <div class="output-meta-row">
                             <strong>ชื่อหนังสือ:</strong> {{ text_or_dash($output->book_title) }}
                         </div>
@@ -670,6 +678,8 @@
                             <strong>ชื่อสำนักพิมพ์:</strong> {{ text_or_dash($output->publisher_name) }}
                             |
                             <strong>ชื่อบท / เลขหน้า:</strong> {{ text_or_dash($output->chapter_pages) }}
+                            |
+                            <strong>เลข ISBN:</strong> {{ text_or_dash($output->isbn) }}
                         </div>
                     @endif
 

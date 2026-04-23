@@ -3,24 +3,25 @@
 namespace App\Support;
 
 use App\Models\BackOfficeTask;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class UserDisplayNameSync
 {
-    public static function syncAfterResponse(string $oldPrefix, string $oldName, string $newPrefix, string $newName): void
+    public static function syncAfterResponse(string $oldPrefix, string $oldName, string $newPrefix, string $newName, ?int $userId = null): void
     {
         if (app()->runningInConsole()) {
-            self::sync($oldPrefix, $oldName, $newPrefix, $newName);
+            self::sync($oldPrefix, $oldName, $newPrefix, $newName, $userId);
             return;
         }
 
-        app()->terminating(static function () use ($oldPrefix, $oldName, $newPrefix, $newName): void {
-            self::sync($oldPrefix, $oldName, $newPrefix, $newName);
+        app()->terminating(static function () use ($oldPrefix, $oldName, $newPrefix, $newName, $userId): void {
+            self::sync($oldPrefix, $oldName, $newPrefix, $newName, $userId);
         });
     }
 
-    public static function sync(string $oldPrefix, string $oldName, string $newPrefix, string $newName): void
+    public static function sync(string $oldPrefix, string $oldName, string $newPrefix, string $newName, ?int $userId = null): void
     {
         $oldPrefix = trim($oldPrefix);
         $oldName = trim($oldName);
@@ -40,6 +41,16 @@ class UserDisplayNameSync
             $replacements[$oldName] = $newName;
         }
 
+        if ($userId && $newFull !== '') {
+            self::syncCopiLinkedUsers($userId, $newFull);
+            self::syncCoResearchLinkedUsers($userId, $newFull);
+            self::syncProjectLinkedUsers($userId, $newFull);
+            self::syncOutputAuthorLinkedUsers($userId);
+            self::syncOutputAwardRecipientLinkedUsers($userId, $newFull);
+            self::syncOutputBookAuthorLinkedUsers($userId, $newFull);
+            self::syncOutputConferenceLinkedUsers($userId, $newFull);
+        }
+
         if ($replacements === []) {
             return;
         }
@@ -51,11 +62,15 @@ class UserDisplayNameSync
             self::syncSimpleNameColumn('projects', 'pi_name', $replacements);
 
             self::syncOutputAuthors($replacements);
+            self::syncSimpleNameColumn('output_award_recipients', 'name', $replacements);
             self::syncOutputBookAuthors($replacements);
-            self::syncSimpleNameColumn('output_conferences', 'note', $replacements);
+            self::syncSimpleNameColumn('output_conference_presenters', 'name', $replacements);
 
             self::syncSimpleNameColumn('external_output_authors', 'name', $replacements);
+            self::syncSimpleNameColumn('external_output_award_recipients', 'name', $replacements);
+            self::syncSimpleNameColumn('external_output_book_authors', 'name', $replacements);
             self::syncSimpleNameColumn('external_output_conferences', 'presenter_name', $replacements);
+            self::syncSimpleNameColumn('external_output_conference_presenters', 'name', $replacements);
 
             self::syncSimpleNameColumn('back_office_entries', 'person_name', $replacements);
             self::syncSimpleNameColumn('progress_reports', 'submitter_name', $replacements);
@@ -64,6 +79,173 @@ class UserDisplayNameSync
             self::syncBookAuthorJsonColumn('back_office_task_outputs', 'book_authors', $replacements);
             self::syncBookAuthorJsonColumn('back_office_entry_outputs', 'book_authors', $replacements);
         });
+    }
+
+    private static function syncCoResearchLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('co_research') ||
+            !Schema::hasColumn('co_research', 'user_id') ||
+            !Schema::hasColumn('co_research', 'name')
+        ) {
+            return;
+        }
+
+        $payload = ['name' => $fullName];
+
+        if (Schema::hasColumn('co_research', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('co_research')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncCopiLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('copis') ||
+            !Schema::hasColumn('copis', 'user_id') ||
+            !Schema::hasColumn('copis', 'name')
+        ) {
+            return;
+        }
+
+        $payload = ['name' => $fullName];
+
+        if (Schema::hasColumn('copis', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('copis')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncProjectLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('projects') ||
+            !Schema::hasColumn('projects', 'pi_user_id') ||
+            !Schema::hasColumn('projects', 'pi_name')
+        ) {
+            return;
+        }
+
+        $payload = ['pi_name' => $fullName];
+
+        if (Schema::hasColumn('projects', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('projects')
+            ->where('pi_user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncOutputAuthorLinkedUsers(int $userId): void
+    {
+        if (
+            !Schema::hasTable('output_authors') ||
+            !Schema::hasColumn('output_authors', 'user_id') ||
+            !Schema::hasColumn('output_authors', 'name')
+        ) {
+            return;
+        }
+
+        $user = User::query()->find($userId);
+        if (! $user) {
+            return;
+        }
+
+        $researchDisplayName = trim((string) $user->research_display_name);
+        $fullName = trim((string) $user->full_name);
+        $hasUpdatedAt = Schema::hasColumn('output_authors', 'updated_at');
+
+        DB::table('output_authors')
+            ->select(['id', 'role'])
+            ->where('user_id', $userId)
+            ->orderBy('id')
+            ->chunkById(200, function ($rows) use ($researchDisplayName, $fullName, $hasUpdatedAt): void {
+                foreach ($rows as $row) {
+                    $name = $row->role === 'awardee' ? $fullName : $researchDisplayName;
+                    if ($name === '') {
+                        continue;
+                    }
+
+                    $payload = ['name' => $name];
+
+                    if ($hasUpdatedAt) {
+                        $payload['updated_at'] = now();
+                    }
+
+                    DB::table('output_authors')->where('id', $row->id)->update($payload);
+                }
+            });
+    }
+
+    private static function syncOutputConferenceLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('output_conference_presenters') ||
+            !Schema::hasColumn('output_conference_presenters', 'user_id') ||
+            !Schema::hasColumn('output_conference_presenters', 'name')
+        ) {
+            return;
+        }
+
+        $payload = ['name' => $fullName];
+
+        if (Schema::hasColumn('output_conference_presenters', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('output_conference_presenters')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncOutputAwardRecipientLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('output_award_recipients') ||
+            !Schema::hasColumn('output_award_recipients', 'user_id') ||
+            !Schema::hasColumn('output_award_recipients', 'name')
+        ) {
+            return;
+        }
+
+        $payload = ['name' => $fullName];
+
+        if (Schema::hasColumn('output_award_recipients', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('output_award_recipients')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncOutputBookAuthorLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('output_book_authors') ||
+            !Schema::hasColumn('output_book_authors', 'user_id') ||
+            !Schema::hasColumn('output_book_authors', 'name')
+        ) {
+            return;
+        }
+
+        $payload = ['name' => $fullName];
+
+        if (Schema::hasColumn('output_book_authors', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('output_book_authors')
+            ->where('user_id', $userId)
+            ->update($payload);
     }
 
     private static function syncOutputAuthors(array $replacements): void

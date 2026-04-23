@@ -33,6 +33,234 @@
     <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css">
     <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
 
+    <style>
+        .ts-wrapper {
+            width: 100%;
+            border: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
+
+        .ts-wrapper.single .ts-control,
+        .ts-wrapper.multi .ts-control {
+            min-height: 42px !important;
+            height: 42px !important;
+            padding: 0 36px 0 12px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            background: #fff !important;
+            box-shadow: none !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0 !important;
+            font: inherit !important;
+            font-size: 16px !important;
+            font-weight: 400 !important;
+            line-height: 24px !important;
+            color: #111827 !important;
+        }
+
+        .ts-wrapper.single.input-active .ts-control,
+        .ts-wrapper.multi.input-active .ts-control {
+            box-shadow: none !important;
+        }
+
+        .ts-wrapper .ts-control input {
+            min-width: 0 !important;
+            width: 100% !important;
+            height: 24px !important;
+            min-height: 24px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            font: inherit !important;
+            font-size: 16px !important;
+            font-weight: 400 !important;
+            line-height: 24px !important;
+            color: #111827 !important;
+        }
+
+        .ts-wrapper.single .ts-control > .item,
+        .ts-wrapper.multi .ts-control > .item {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            font: inherit !important;
+            font-size: 16px !important;
+            font-weight: 400 !important;
+            line-height: 24px !important;
+            color: #111827 !important;
+        }
+
+        .ts-wrapper.plugin-clear_button .clear-button,
+        .ts-wrapper .clear-button {
+            display: none !important;
+        }
+
+        .ts-dropdown,
+        .ts-dropdown .option,
+        .ts-dropdown .create {
+            font: inherit !important;
+            font-size: 16px !important;
+            line-height: 24px !important;
+        }
+
+        .ts-wrapper.disabled .ts-control,
+        .ts-wrapper.disabled .ts-control input {
+            background: #f3f4f6 !important;
+            color: #9ca3af !important;
+            cursor: not-allowed !important;
+        }
+
+        .project-search-select {
+            position: relative;
+            width: 100%;
+        }
+
+        .project-search-select__native {
+            position: absolute !important;
+            left: -9999px !important;
+            top: 0 !important;
+            width: 1px !important;
+            height: 1px !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        .project-search-select__button {
+            width: 100%;
+            min-height: 42px;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background: #ffffff;
+            color: #111827;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            font: inherit;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 24px;
+            box-shadow: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+
+        .project-search-select__button:focus-visible {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .project-search-select__button[disabled] {
+            background: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .project-search-select__label {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .project-search-select__icon {
+            flex: 0 0 auto;
+            color: #94a3b8;
+            line-height: 1;
+        }
+
+        .project-search-select__menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            z-index: 60;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            background: #ffffff;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+        }
+
+        .project-search-select__menu.hidden {
+            display: none;
+        }
+
+        .project-search-select__search {
+            width: 100%;
+            min-height: 42px;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background: #ffffff;
+            font: inherit;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 24px;
+            color: #111827;
+            box-shadow: none;
+        }
+
+        .project-search-select__search:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .project-search-select__options {
+            max-height: 14rem;
+            margin-top: 0.5rem;
+            overflow-y: auto;
+            scrollbar-gutter: stable;
+        }
+
+        .project-search-select__options::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .project-search-select__options::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 999px;
+        }
+
+        .project-search-select__options::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 999px;
+            border: 2px solid #f1f5f9;
+        }
+
+        .project-search-select__option {
+            width: 100%;
+            padding: 0.5rem 0.625rem;
+            border-radius: 0.5rem;
+            background: transparent;
+            color: #111827;
+            text-align: left;
+            font: inherit;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .project-search-select__option:hover,
+        .project-search-select__option.is-selected {
+            background: #f1f5f9;
+        }
+
+        .project-search-select__empty {
+            padding: 0.5rem 0.625rem;
+            color: #64748b;
+            font-size: 0.8125rem;
+        }
+    </style>
 
 
 </head>
@@ -327,7 +555,7 @@
                                 </a>
                                  <a href="{{ route('outputs.visualization') }}"
                                     class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
-                                    📊 Visualization
+                                    ข้อมูลผลงาน สำหรับสัมมมนา
                                 </a>
                             </div>
                         </div>
@@ -1202,6 +1430,20 @@
     function getProjectValidationDisplayTarget(field) {
         if (!(field instanceof HTMLElement)) return field;
 
+        if (field instanceof HTMLSelectElement) {
+            const tomSelectControl = field.tomselect?.control;
+            if (
+                tomSelectControl instanceof HTMLElement &&
+                (
+                    field.tomselect?.wrapper?.offsetParent !== null ||
+                    tomSelectControl.offsetParent !== null ||
+                    tomSelectControl.getClientRects?.().length
+                )
+            ) {
+                return tomSelectControl;
+            }
+        }
+
         if (field instanceof HTMLInputElement) {
             const flatpickrAltInput = field._flatpickr?.altInput;
             if (flatpickrAltInput instanceof HTMLInputElement && flatpickrAltInput.offsetParent !== null) {
@@ -1220,6 +1462,277 @@
         }
 
         return field;
+    }
+
+    function closeProjectSearchDropdowns(except = null) {
+        document.querySelectorAll('[data-project-search-select-menu]').forEach((menu) => {
+            if (except && menu === except) return;
+            menu.classList.add('hidden');
+        });
+    }
+
+    function ensureProjectSearchDropdown(select, config = {}) {
+        if (!(select instanceof HTMLSelectElement)) return null;
+
+        const staleWrapper = select.nextElementSibling;
+        if (staleWrapper instanceof HTMLElement && staleWrapper.matches('.project-search-select') && !select.tomselect) {
+            staleWrapper.remove();
+            delete select.dataset.projectSearchDropdown;
+            delete select.dataset.projectSearchDropdownBound;
+        }
+
+        if (select.tomselect?.destroy && select.dataset.projectSearchDropdown !== '1') {
+            select.tomselect.destroy();
+        }
+
+        if (select.dataset.projectSearchDropdown === '1' && select.tomselect) {
+            select.tomselect.refreshOptions();
+            return select.tomselect;
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'project-search-select';
+        wrapper.dataset.projectSearchDropdown = '1';
+        wrapper.setAttribute('data-project-search-dropdown', '1');
+        wrapper.innerHTML = `
+            <button type="button" class="project-search-select__button" data-project-search-select-toggle>
+                <span class="project-search-select__label" data-project-search-select-label></span>
+                <span class="project-search-select__icon">▾</span>
+            </button>
+            <div class="project-search-select__menu hidden" data-project-search-select-menu>
+                <input type="text" class="project-search-select__search" data-project-search-select-search>
+                <div class="project-search-select__options" data-project-search-select-options></div>
+                <div class="project-search-select__empty hidden" data-project-search-select-empty>ไม่พบข้อมูล</div>
+            </div>
+        `;
+
+        select.classList.add('project-search-select__native');
+        select.insertAdjacentElement('afterend', wrapper);
+
+        const toggle = wrapper.querySelector('[data-project-search-select-toggle]');
+        const label = wrapper.querySelector('[data-project-search-select-label]');
+        const menu = wrapper.querySelector('[data-project-search-select-menu]');
+        const searchInput = wrapper.querySelector('[data-project-search-select-search]');
+        const optionsWrap = wrapper.querySelector('[data-project-search-select-options]');
+        const emptyEl = wrapper.querySelector('[data-project-search-select-empty]');
+
+        if (!(toggle instanceof HTMLButtonElement) ||
+            !(label instanceof HTMLElement) ||
+            !(menu instanceof HTMLElement) ||
+            !(searchInput instanceof HTMLInputElement) ||
+            !(optionsWrap instanceof HTMLElement) ||
+            !(emptyEl instanceof HTMLElement)) {
+            wrapper.remove();
+            return null;
+        }
+
+        const events = {};
+        const emit = (eventName, ...args) => {
+            (events[eventName] || []).forEach((handler) => {
+                if (typeof handler === 'function') {
+                    handler(...args);
+                }
+            });
+        };
+
+        const placeholder = String(
+            config.placeholder ||
+            select.dataset.searchPlaceholder ||
+            select.options[0]?.textContent?.trim() ||
+            'เลือกข้อมูล'
+        ).trim();
+        searchInput.placeholder = String(config.searchPlaceholder || 'พิมพ์เพื่อค้นหา...').trim();
+
+        const optionItems = () => Array.from(select.options)
+            .filter((option) => option.value !== '')
+            .map((option) => ({
+                value: String(option.value),
+                label: String(option.textContent || '').trim(),
+            }));
+
+        const syncLabel = () => {
+            const selectedOption = Array.from(select.options).find((option) => option.value === select.value);
+            label.textContent = selectedOption && selectedOption.value
+                ? String(selectedOption.textContent || '').trim()
+                : placeholder;
+            toggle.title = label.textContent;
+        };
+
+        const renderOptions = () => {
+            const term = String(searchInput.value || '').toLowerCase().trim();
+            const items = optionItems().filter((item) => term === '' || item.label.toLowerCase().includes(term));
+            optionsWrap.innerHTML = '';
+
+            if (!items.length) {
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            items.forEach((item) => {
+                const optionButton = document.createElement('button');
+                optionButton.type = 'button';
+                optionButton.className = 'project-search-select__option';
+                optionButton.textContent = item.label;
+                optionButton.dataset.value = item.value;
+                if (item.value === String(select.value || '')) {
+                    optionButton.classList.add('is-selected');
+                }
+                optionButton.addEventListener('mousedown', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                });
+                optionButton.addEventListener('click', () => {
+                    const previousValue = String(select.value || '');
+                    select.value = item.value;
+                    syncLabel();
+                    renderOptions();
+                    menu.classList.add('hidden');
+                    emit('item_add', item.value, previousValue);
+                    emit('dropdown_close');
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                optionsWrap.appendChild(optionButton);
+            });
+        };
+
+        const syncState = () => {
+            toggle.disabled = !!select.disabled;
+            wrapper.classList.toggle('opacity-60', !!select.disabled);
+            wrapper.classList.toggle('pointer-events-none', !!select.disabled);
+            syncLabel();
+            if (select.disabled) {
+                menu.classList.add('hidden');
+            }
+        };
+
+        toggle.addEventListener('click', () => {
+            if (select.disabled) return;
+            const willOpen = menu.classList.contains('hidden');
+            closeProjectSearchDropdowns(willOpen ? menu : null);
+            menu.classList.toggle('hidden', !willOpen);
+            if (willOpen) {
+                searchInput.value = '';
+                renderOptions();
+                searchInput.focus();
+                emit('dropdown_open');
+            } else {
+                emit('dropdown_close');
+            }
+        });
+
+        wrapper.addEventListener('mousedown', (event) => {
+            event.stopPropagation();
+        });
+
+        wrapper.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        searchInput.addEventListener('input', renderOptions);
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                menu.classList.add('hidden');
+                toggle.focus();
+                emit('dropdown_close');
+            }
+        });
+
+        if (select.dataset.projectSearchDropdownBound !== '1') {
+            select.dataset.projectSearchDropdownBound = '1';
+            select.addEventListener('change', () => {
+                syncState();
+                renderOptions();
+            });
+        }
+
+        const api = {
+            wrapper,
+            control: toggle,
+            control_input: searchInput,
+            dropdown: menu,
+            on(eventName, handler) {
+                events[eventName] = events[eventName] || [];
+                events[eventName].push(handler);
+            },
+            clear(silent = false) {
+                this.setValue('', silent);
+            },
+            setValue(value, silent = false) {
+                select.value = value == null ? '' : String(value);
+                syncState();
+                renderOptions();
+                if (!silent) {
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            },
+            getValue() {
+                return String(select.value || '');
+            },
+            enable() {
+                select.disabled = false;
+                syncState();
+            },
+            disable() {
+                select.disabled = true;
+                syncState();
+            },
+            refreshOptions() {
+                syncState();
+                renderOptions();
+            },
+            destroy() {
+                wrapper.remove();
+                select.classList.remove('project-search-select__native');
+                delete select.tomselect;
+                delete select.dataset.projectSearchDropdown;
+            },
+        };
+
+        select.dataset.projectSearchDropdown = '1';
+        select.tomselect = api;
+
+        syncState();
+        renderOptions();
+        return api;
+    }
+
+    function syncProjectSearchDropdown(select) {
+        if (!(select instanceof HTMLSelectElement)) return;
+        select.tomselect?.refreshOptions?.();
+    }
+
+    function syncProjectValidationClasses(field, invalid) {
+        if (!(field instanceof HTMLElement)) return;
+
+        const toggleClasses = (el) => {
+            if (!(el instanceof HTMLElement)) return;
+            el.classList.toggle('border-red-500', invalid);
+            el.classList.toggle('bg-red-50', invalid);
+        };
+
+        const displayTarget = getProjectValidationDisplayTarget(field);
+        toggleClasses(displayTarget);
+
+        if (field !== displayTarget) {
+            toggleClasses(field);
+        }
+
+        if (field instanceof HTMLSelectElement && field.tomselect) {
+            toggleClasses(field.tomselect.wrapper);
+            toggleClasses(field.tomselect.control);
+            const controlInput = field.tomselect.control_input;
+            if (controlInput instanceof HTMLElement) {
+                toggleClasses(controlInput);
+            }
+            if (invalid) {
+                field.tomselect.wrapper?.setAttribute?.('aria-invalid', 'true');
+                field.tomselect.control?.setAttribute?.('aria-invalid', 'true');
+            } else {
+                field.tomselect.wrapper?.removeAttribute?.('aria-invalid');
+                field.tomselect.control?.removeAttribute?.('aria-invalid');
+            }
+        }
     }
 
     function parseProjectComparableDateInput(input) {
@@ -1312,7 +1825,17 @@
     }
 
     window.getProjectValidationDisplayTarget = getProjectValidationDisplayTarget;
+    window.syncProjectValidationClasses = syncProjectValidationClasses;
     window.validateProjectFteDateRanges = validateProjectFteDateRanges;
+    window.ensureProjectSearchDropdown = ensureProjectSearchDropdown;
+    window.syncProjectSearchDropdown = syncProjectSearchDropdown;
+    window.closeProjectSearchDropdowns = closeProjectSearchDropdowns;
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-project-search-dropdown]')) {
+            closeProjectSearchDropdowns();
+        }
+    });
 
     document.addEventListener('submit', (event) => {
         syncDateInputsBeforeSubmit(event.target);
@@ -2861,6 +3384,9 @@
             if (isCollapseDisabled()) return;
             const target = e.target;
             if (
+                target?.closest?.('.swal2-container') ||
+                target?.closest?.('.swal2-popup') ||
+                document.body.classList.contains('swal2-shown') ||
                 target?.closest?.('.thai-wheel-overlay') ||
                 target?.closest?.('.thai-wheel-sheet') ||
                 target?.closest?.('.thai-wheel-select') ||
@@ -2873,7 +3399,16 @@
                 return;
             }
             if (
+                target?.closest?.('.swal2-container') ||
+                target?.closest?.('.swal2-popup') ||
+                document.body.classList.contains('swal2-shown') ||
                 target?.closest?.('[data-repeatable-remove]') ||
+                target?.closest?.('[data-row-remove]') ||
+                target?.closest?.('button[onclick*="removeRow("]') ||
+                target?.closest?.('button[onclick*="removeAuthorRow("]') ||
+                target?.closest?.('button[onclick*="removeAwardRecipientRow("]') ||
+                target?.closest?.('button[onclick*="removeBookAuthorRow("]') ||
+                target?.closest?.('button[onclick*="removeConferencePresenterRow("]') ||
                 target?.closest?.('.row-collapse-remove') ||
                 target?.closest?.('.fte-summary-delete')
             ) {
@@ -2899,6 +3434,12 @@
             const target = e.target;
             if (
                 target?.closest?.('[data-repeatable-remove]') ||
+                target?.closest?.('[data-row-remove]') ||
+                target?.closest?.('button[onclick*="removeRow("]') ||
+                target?.closest?.('button[onclick*="removeAuthorRow("]') ||
+                target?.closest?.('button[onclick*="removeAwardRecipientRow("]') ||
+                target?.closest?.('button[onclick*="removeBookAuthorRow("]') ||
+                target?.closest?.('button[onclick*="removeConferencePresenterRow("]') ||
                 target?.closest?.('.row-collapse-remove') ||
                 target?.closest?.('.fte-summary-delete')
             ) {
@@ -2924,6 +3465,8 @@
                 .forEach((el, i) => el.textContent = i + 1);
             container.querySelectorAll(COLLAPSIBLE_SELECTOR)
                 .forEach(row => updateToggleLabel(row));
+            container.querySelectorAll('.output-row')
+                .forEach((row, i) => row.setAttribute('data-index', i));
         }
 
         function replaceIndex(root, index) {
@@ -3151,11 +3694,15 @@
             const group = row.closest('[data-repeatable]');
             const container = group ? document.getElementById(group.dataset.container) : row.parentElement;
             const detail = getRowRemovalLabel(row);
+            const groupId = group?.dataset?.id || '';
 
             confirmRemove(() => {
                 removeRowWithMobileScroll(row, () => {
                     row.remove();
                     updateIndex(container);
+                    if (groupId === 'output' && typeof window.reindexOutput === 'function') {
+                        window.reindexOutput();
+                    }
                 });
             }, {
                 detail
@@ -3192,12 +3739,18 @@
             if (!row) return;
 
             replaceIndex(row, index);
+            if (groupId === 'output') {
+                row.setAttribute('data-index', index);
+            }
             bindRemove(row);
             prepareRow(row);
 
             container.appendChild(row);
             updateIndex(container);
             highlightRow(row);
+            if (groupId === 'output' && typeof window.reindexOutput === 'function') {
+                window.reindexOutput();
+            }
             if (groupId === 'fte' && typeof window.handleFteRowAdded === 'function') {
                 window.handleFteRowAdded(row);
             } else {

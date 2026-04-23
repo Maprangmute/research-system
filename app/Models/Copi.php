@@ -12,7 +12,7 @@ class Copi extends Model
     protected $touches = ['project'];
 
     protected $fillable = [
-        'project_id', 'name', 'affiliation'
+        'project_id', 'user_id', 'name', 'affiliation'
     ];
 
     // ==== Log ทุก action ที่เกี่ยวกับ Copi ====
@@ -66,5 +66,10 @@ class Copi extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

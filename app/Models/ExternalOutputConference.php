@@ -26,4 +26,29 @@ class ExternalOutputConference extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function presenters()
+    {
+        return $this->hasMany(ExternalOutputConferencePresenter::class, 'external_output_conference_id');
+    }
+
+    public function presenterNames(): array
+    {
+        $names = $this->relationLoaded('presenters')
+            ? $this->presenters->pluck('name')->filter()->values()->all()
+            : $this->presenters()->pluck('name')->filter()->values()->all();
+
+        if ($names !== []) {
+            return $names;
+        }
+
+        $fallback = trim((string) ($this->presenter_name ?? ''));
+
+        return $fallback !== '' ? [$fallback] : [];
+    }
+
+    public function presenterDisplay(): string
+    {
+        return implode(', ', $this->presenterNames());
+    }
+
 }

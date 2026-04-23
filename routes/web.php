@@ -221,6 +221,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/outputs/external-academic/{externalOutput}/edit', [OutputController::class, 'externalAcademicEdit'])->name('outputs.external-academic.edit');
     Route::get('/outputs/external-academic/{externalOutput}', [OutputController::class, 'externalAcademicShow'])->name('outputs.external-academic.show');
     Route::post('/outputs/external-academic', [OutputController::class, 'storeExternalAcademic'])->name('outputs.external-academic.store');
+    Route::post('/outputs/external-academic/{externalOutput}/move-to-project', [OutputController::class, 'moveExternalAcademicToProject'])->name('outputs.external-academic.move-to-project');
     Route::put('/outputs/external-academic/{externalOutput}', [OutputController::class, 'updateExternalAcademic'])->name('outputs.external-academic.update');
     Route::delete('/outputs/external-academic/{externalOutput}', [OutputController::class, 'destroyExternalAcademic'])->name('outputs.external-academic.destroy');
     Route::get('/outputs/papers/pdf', [OutputController::class, 'papersPdf'])->name('outputs.papers.pdf');

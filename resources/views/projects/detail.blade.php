@@ -1557,7 +1557,7 @@
                                         {{-- ===== ส่วนพิเศษ: EA101 ===== --}}
                                         @if ($isEA101)
                                             <div class="mt-3 border rounded-xl p-4 bg-blue-50/50">
-                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                                                     <div>
                                                         <div class="text-gray-500">Journal</div>
                                                         <div class="text-gray-800">{{ $output->journal ?: '-' }}</div>
@@ -1592,88 +1592,124 @@
                                                     });
                                                 @endphp
 
-                                                <div class="mt-3">
-                                                    <div class="font-semibold text-blue-800 mb-2">รายชื่อผู้เขียน (Authors)
-                                                    </div>
+                                                <div class="mt-4 overflow-hidden rounded-2xl border border-blue-200/80 bg-blue-50/45">
+                                                    <div class="grid gap-4 p-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(300px,0.95fr)] lg:p-6">
+                                                        <div class="rounded-2xl border border-blue-100 bg-white p-5">
+                                                            <div class="flex flex-wrap items-center gap-2">
+                                                                <div class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                                                                    Journal Article
+                                                                </div>
+                                                                <div class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                                                    ผู้เขียน {{ $authorsReal->count() ?: 0 }} คน
+                                                                </div>
+                                                            </div>
 
-                                                    @if ($authorsReal->isEmpty())
-                                                        <div class="text-sm text-gray-500">- ไม่มีรายชื่อผู้เขียน -</div>
-                                                    @else
-                                                        <div class="overflow-x-auto">
-                                                            <table class="min-w-full text-sm border bg-white">
-                                                                <thead class="bg-blue-100">
-                                                                    <tr>
-                                                                        <th class="px-2 py-2 text-left">#</th>
-                                                                        <th class="px-2 py-2 text-left">ชื่อ-นามสกุล</th>
-                                                                        <th class="px-2 py-2 text-left">บทบาท</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    @foreach ($authorsReal as $ai => $a)
-                                                                        <tr class="border-t">
-                                                                            <td class="px-2 py-2">{{ $ai + 1 }}</td>
-                                                                            <td class="px-2 py-2 break-words">
-                                                                                {{ $a->name ?: '-' }}</td>
-                                                                            <td class="px-2 py-2 capitalize">
-                                                                                @php
-                                                                                    $role = strtolower(
-                                                                                        trim($a->role ?? ''),
-                                                                                    );
-                                                                                    $roleLabel =
-                                                                                        $role === 'first'
-                                                                                            ? 'First-author'
-                                                                                            : ($role === 'co'
-                                                                                                ? 'Co-author'
-                                                                                                : ($role ===
-                                                                                                'corresponding'
-                                                                                                    ? 'Corresponding author'
-                                                                                                    : ($a->role ?:
-                                                                                                    '-')));
-                                                                                @endphp
-                                                                                {{ $roleLabel }}
-                                                                            </td>
-                                                                        </tr>
-                                                                    @endforeach
-                                                                </tbody>
-                                                            </table>
+                                                            <div class="mt-4 grid gap-3 md:grid-cols-3">
+                                                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Journal</div>
+                                                                    <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">{{ $output->journal ?: '-' }}</div>
+                                                                </div>
+                                                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quartile</div>
+                                                                    <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">{{ $output->quartile ?: '-' }}</div>
+                                                                </div>
+                                                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Impact Factor</div>
+                                                                    <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">
+                                                                        {{ $output->impact_factor !== null && $output->impact_factor !== '' ? $output->impact_factor : '-' }}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    @endif
+
+                                                        <div class="rounded-2xl border border-blue-100 bg-white p-5">
+                                                            <div>
+                                                                <div class="text-sm font-semibold text-blue-800">รายชื่อผู้เขียน (Authors)</div>
+                                                                <div class="mt-1 text-xs text-slate-500">
+                                                                    {{ $authorsReal->count() ? $authorsReal->count() . ' คน' : 'ยังไม่มีข้อมูลผู้เขียน' }}
+                                                                </div>
+                                                            </div>
+
+                                                            @if ($authorsReal->isEmpty())
+                                                                <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                                                                    - ไม่มีรายชื่อผู้เขียน -
+                                                                </div>
+                                                            @else
+                                                                <div class="mt-4 space-y-3">
+                                                                    @foreach ($authorsReal as $ai => $a)
+                                                                        @php
+                                                                            $role = strtolower(trim($a->role ?? ''));
+                                                                            $roleLabel =
+                                                                                $role === 'first'
+                                                                                    ? 'First-author'
+                                                                                    : ($role === 'co'
+                                                                                        ? 'Co-author'
+                                                                                        : ($role === 'corresponding'
+                                                                                            ? 'Corresponding author'
+                                                                                            : ($a->role ?: '-')));
+                                                                        @endphp
+                                                                        <div class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                                                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-blue-700 ring-1 ring-slate-200">
+                                                                                {{ $ai + 1 }}
+                                                                            </div>
+                                                                            <div class="min-w-0 flex-1">
+                                                                                <div class="break-words text-sm font-semibold leading-6 text-slate-800">{{ $a->name ?: '-' }}</div>
+                                                                                <div class="mt-1 text-xs font-medium text-slate-500">{{ $roleLabel }}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    @endforeach
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         @endif
 
                                         @if ($isEA118)
                                             @php
-                                                $awardees = ($output->authors ?? collect())->filter(function ($a) {
+                                                $awardees = ($output->awardRecipients ?? collect())->filter(function ($a) {
                                                     return !empty(trim($a->name ?? ''));
                                                 });
                                             @endphp
 
-                                            <div class="mt-3 border rounded-xl p-4 bg-violet-50/60">
-                                                <div class="font-semibold text-violet-800 mb-2">ผู้ได้รับรางวัล (Award Recipients)</div>
-
-                                                @if ($awardees->isEmpty())
-                                                    <div class="text-sm text-gray-500">- ไม่มีรายชื่อผู้ได้รับรางวัล -</div>
-                                                @else
-                                                    <div class="overflow-x-auto">
-                                                        <table class="min-w-full text-sm border bg-white">
-                                                            <thead class="bg-violet-100">
-                                                                <tr>
-                                                                    <th class="px-2 py-2 text-left">#</th>
-                                                                    <th class="px-2 py-2 text-left">ชื่อ-นามสกุล / หน่วยงาน</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                @foreach ($awardees as $ai => $awardee)
-                                                                    <tr class="border-t">
-                                                                        <td class="px-2 py-2">{{ $ai + 1 }}</td>
-                                                                        <td class="px-2 py-2 break-words">{{ $awardee->name }}</td>
-                                                                    </tr>
-                                                                @endforeach
-                                                            </tbody>
-                                                        </table>
+                                            <div class="mt-4 overflow-hidden rounded-2xl border border-violet-200/80 bg-violet-50/45">
+                                                <div class="grid gap-4 p-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:p-6">
+                                                    <div class="rounded-2xl border border-violet-100 bg-white p-5">
+                                                        <div class="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-800">
+                                                            Award / Recognition
+                                                        </div>
+                                                        <div class="mt-4 rounded-2xl bg-violet-50/70 px-5 py-5">
+                                                            <div class="text-[11px] font-semibold uppercase tracking-wide text-violet-700">ผู้ได้รับรางวัล</div>
+                                                            <div class="mt-2 text-3xl font-bold text-slate-900">{{ $awardees->count() ?: 0 }}</div>
+                                                            <div class="mt-2 text-sm text-slate-500">รายการที่เชื่อมกับผลงานรางวัลนี้</div>
+                                                        </div>
                                                     </div>
-                                                @endif
+
+                                                    <div class="rounded-2xl border border-violet-100 bg-white p-5">
+                                                        <div class="text-sm font-semibold text-violet-800">ผู้ได้รับรางวัล (Award Recipients)</div>
+                                                        <div class="mt-1 text-xs text-slate-500">
+                                                            {{ $awardees->count() ? $awardees->count() . ' รายการ' : 'ยังไม่มีข้อมูลผู้ได้รับรางวัล' }}
+                                                        </div>
+
+                                                        @if ($awardees->isEmpty())
+                                                            <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                                                                - ไม่มีรายชื่อผู้ได้รับรางวัล -
+                                                            </div>
+                                                        @else
+                                                            <div class="mt-4 space-y-3">
+                                                                @foreach ($awardees as $ai => $awardee)
+                                                                    <div class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                                                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-violet-700 ring-1 ring-slate-200">
+                                                                            {{ $ai + 1 }}
+                                                                        </div>
+                                                                        <div class="min-w-0 break-words text-sm font-semibold leading-6 text-slate-800">{{ $awardee->name }}</div>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
                                             </div>
                                         @endif
 
@@ -1685,49 +1721,56 @@
                                                     return !empty(trim($c->name ?? '')) ||
                                                         !empty(trim($c->presentation_type ?? '')) ||
                                                         !empty(trim($c->location ?? '')) ||
-                                                        !empty(trim($c->note ?? ''));
+                                                        !empty(trim($c->presenterDisplay() ?? ''));
                                                 });
                                             @endphp
 
-                                            <div class="mt-3 border rounded-xl p-4 bg-amber-50/60">
-                                                <div class="font-semibold text-amber-800 mb-2">Conferences</div>
-
-                                                @if ($confsReal->isEmpty())
-                                                    <div class="text-sm text-gray-500">- ไม่มีรายการ Conference -</div>
-                                                @else
-                                                    <div class="overflow-x-auto">
-                                                        <table class="min-w-full text-sm border bg-white">
-                                                            <thead class="bg-amber-100">
-                                                                <tr>
-                                                                    <th class="px-2 py-2 text-left">#</th>
-                                                                    <th class="px-2 py-2 text-left">ชื่อเวที/Conference
-                                                                    </th>
-                                                                    <th class="px-2 py-2 text-left">ประเภทนำเสนอ</th>
-                                                                    <th class="px-2 py-2 text-left">สถานที่</th>
-                                                                    <th class="px-2 py-2 text-left">ชื่อผู้นำเสนอ</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                @foreach ($confsReal as $ci => $c)
-                                                                    <tr id="output-{{ $output->id }}-conference-{{ $c->id }}" class="border-t">
-                                                                        <td class="px-2 py-2">{{ $ci + 1 }}</td>
-                                                                        <td class="px-2 py-2 break-words">
-                                                                            {{ $c->name ?: '-' }}
-                                                                        </td>
-                                                                        <td class="px-2 py-2">
-                                                                            {{ $c->presentation_type ?: '-' }}
-                                                                        </td>
-                                                                        <td class="px-2 py-2 break-words">
-                                                                            {{ $c->location ?: '-' }}</td>
-                                                                        <td class="px-2 py-2 break-words">
-                                                                            {{ $c->note ?: '-' }}
-                                                                        </td>
-                                                                    </tr>
-                                                                @endforeach
-                                                            </tbody>
-                                                        </table>
+                                            <div class="mt-4 overflow-hidden rounded-2xl border border-amber-200/80 bg-amber-50/45">
+                                                <div class="p-5 lg:p-6">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <div class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                                                            Conference Presentation
+                                                        </div>
+                                                        <div class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                                            {{ $confsReal->count() ?: 0 }} รายการ
+                                                        </div>
                                                     </div>
-                                                @endif
+
+                                                    @if ($confsReal->isEmpty())
+                                                        <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-white px-4 py-4 text-sm text-slate-500">
+                                                            - ไม่มีรายการ Conference -
+                                                        </div>
+                                                    @else
+                                                        <div class="mt-4 space-y-3">
+                                                            @foreach ($confsReal as $ci => $c)
+                                                                <div id="output-{{ $output->id }}-conference-{{ $c->id }}" class="rounded-2xl border border-amber-100 bg-white px-5 py-4">
+                                                                    <div class="flex items-start gap-4">
+                                                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-sm font-bold text-amber-700 ring-1 ring-amber-100">
+                                                                            {{ $ci + 1 }}
+                                                                        </div>
+                                                                        <div class="min-w-0 flex-1">
+                                                                            <div class="break-words text-base font-semibold leading-7 text-slate-900">{{ $c->name ?: '-' }}</div>
+                                                                            <div class="mt-3 grid gap-3 md:grid-cols-3">
+                                                                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                                                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ประเภทนำเสนอ</div>
+                                                                                    <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">{{ $c->presentation_type ?: '-' }}</div>
+                                                                                </div>
+                                                                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                                                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">สถานที่</div>
+                                                                                    <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">{{ $c->location ?: '-' }}</div>
+                                                                                </div>
+                                                                                <div class="rounded-xl bg-slate-50 px-4 py-3">
+                                                                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ผู้นำเสนอ</div>
+                                                                                    <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">{{ $c->presenterDisplay() ?: '-' }}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </div>
                                         @endif
 
@@ -1739,32 +1782,71 @@
                                                 });
                                             @endphp
 
-                                            <div class="mt-3 border rounded-xl p-4 bg-emerald-50/60">
-                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                                    <div>
-                                                        <div class="text-gray-500">ชื่อหนังสือ</div>
-                                                        <div class="text-gray-800">{{ $output->book_title ?: '-' }}</div>
+                                            <div class="mt-4 overflow-hidden rounded-2xl border border-emerald-200/80 bg-emerald-50/45">
+                                                <div class="grid gap-4 p-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)] lg:p-6">
+                                                    <div class="rounded-2xl border border-emerald-100 bg-white p-5">
+                                                        <div class="flex flex-wrap items-center gap-2">
+                                                            <div class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                                                                หนังสือ / บทในหนังสือ
+                                                            </div>
+                                                            <div class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                                                ผู้เขียน {{ $bookAuthorsReal->count() ?: 0 }} คน
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="mt-4 rounded-2xl bg-emerald-50/60 px-5 py-5">
+                                                            <div class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">ชื่อหนังสือ</div>
+                                                            <div class="mt-2 text-lg font-bold leading-8 text-slate-900">
+                                                                {{ $output->book_title ?: 'ไม่ระบุชื่อหนังสือ' }}
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="mt-4 grid gap-3 md:grid-cols-2">
+                                                            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ชื่อสำนักพิมพ์</div>
+                                                                <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">{{ $output->publisher_name ?: '-' }}</div>
+                                                            </div>
+                                                            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">เลข ISBN</div>
+                                                                <div class="mt-2 text-sm font-semibold leading-6 tracking-wide text-slate-800">{{ $output->isbn ?: '-' }}</div>
+                                                            </div>
+                                                            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 md:col-span-2">
+                                                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ชื่อบท / เลขหน้า</div>
+                                                                <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">{{ $output->chapter_pages ?: '-' }}</div>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <div class="text-gray-500">ชื่อสำนักพิมพ์</div>
-                                                        <div class="text-gray-800">{{ $output->publisher_name ?: '-' }}</div>
+
+                                                    <div class="rounded-2xl border border-emerald-100 bg-white p-5">
+                                                        <div class="flex items-center justify-between gap-3">
+                                                            <div>
+                                                                <div class="text-sm font-semibold text-emerald-800">รายชื่อผู้เขียน</div>
+                                                                <div class="mt-1 text-xs text-slate-500">
+                                                                    {{ $bookAuthorsReal->count() ? $bookAuthorsReal->count() . ' คน' : 'ยังไม่มีข้อมูลผู้เขียน' }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        @if ($bookAuthorsReal->isEmpty())
+                                                            <div class="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                                                                - ไม่มีรายชื่อผู้เขียน -
+                                                            </div>
+                                                        @else
+                                                            <div class="mt-4 space-y-3">
+                                                                @foreach ($bookAuthorsReal as $index => $a)
+                                                                    <div class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                                                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-emerald-700 ring-1 ring-slate-200">
+                                                                            {{ $index + 1 }}
+                                                                        </div>
+                                                                        <div class="min-w-0">
+                                                                            <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Author {{ $index + 1 }}</div>
+                                                                            <div class="mt-1 break-words text-sm font-semibold leading-6 text-slate-800">{{ $a->name ?: '-' }}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        @endif
                                                     </div>
-                                                    <div>
-                                                        <div class="text-gray-500">ชื่อบท / เลขหน้า</div>
-                                                        <div class="text-gray-800">{{ $output->chapter_pages ?: '-' }}</div>
-                                                    </div>
-                                                </div>
-                                                <div class="mt-3">
-                                                    <div class="font-semibold text-emerald-800 mb-2">รายชื่อผู้เขียน</div>
-                                                    @if ($bookAuthorsReal->isEmpty())
-                                                        <div class="text-sm text-gray-500">- ไม่มีรายชื่อผู้เขียน -</div>
-                                                    @else
-                                                        <ul class="list-disc list-inside text-sm text-slate-700">
-                                                            @foreach ($bookAuthorsReal as $a)
-                                                                <li>{{ $a->name ?: '-' }}</li>
-                                                            @endforeach
-                                                        </ul>
-                                                    @endif
                                                 </div>
                                             </div>
                                         @endif

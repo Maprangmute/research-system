@@ -137,6 +137,22 @@
                     </label>
                 </section>
 
+                <section>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">Author (English)</span>
+                        <select name="author"
+                            data-paper-auto-submit="true"
+                            data-paper-author-search="true"
+                            data-search-placeholder="เลือกผู้เขียนภาษาอังกฤษ"
+                            class="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50">
+                            <option value="">ทั้งหมด</option>
+                            @foreach ($authorOptions as $authorOption)
+                                <option value="{{ $authorOption }}" @selected(request('author') === $authorOption)>{{ $authorOption }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                </section>
+
                 <fieldset class="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
                     <legend class="sr-only">Paper filters</legend>
                     <section class="space-y-3 md:col-span-2 xl:col-span-2">
@@ -409,6 +425,20 @@
                 bindImpactRange();
             };
 
+            const bindPaperAuthorSearchSelect = () => {
+                const select = query('[data-paper-author-search="true"]');
+                if (!(select instanceof HTMLSelectElement) || typeof ensureProjectSearchDropdown !== 'function') {
+                    return;
+                }
+
+                const dropdown = ensureProjectSearchDropdown(select, {
+                    placeholder: 'ทั้งหมด',
+                    searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้เขียนภาษาอังกฤษ'
+                });
+
+                dropdown?.refreshOptions?.();
+            };
+
             document.addEventListener('click', (event) => {
                 const resetLink = event.target.closest('[data-papers-reset="true"]');
                 if (resetLink) {
@@ -445,6 +475,7 @@
             });
 
             bindPapersInteractions();
+            bindPaperAuthorSearchSelect();
         });
     </script>
 @endsection

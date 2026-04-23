@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ProjectLog;
+use App\Models\User;
 
 class CoResearch extends Model
 {
@@ -13,6 +14,7 @@ class CoResearch extends Model
 
     protected $fillable = [
         'project_id',
+        'user_id',
         'name',
         'affiliation',
         'unit_status'
@@ -69,5 +71,10 @@ class CoResearch extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

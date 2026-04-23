@@ -55,6 +55,8 @@
 @endphp
 
 @section('content')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <div class="container mx-auto mt-8 space-y-4 px-4 pb-8">
         <section class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
             <div class="flex flex-col gap-4 px-5 py-5 md:px-6 lg:flex-row lg:items-start lg:justify-between">
@@ -143,13 +145,15 @@
                         [
                             'label' => 'Author',
                             'value' => in_array($output->type, ['EA101', 'EA119'], true)
-                                ? $output->authors->pluck('name')->filter()->implode(', ')
+                                ? ($output->type === 'EA119'
+                                    ? $output->bookAuthors->pluck('name')->filter()->implode(', ')
+                                    : $output->authors->pluck('name')->filter()->implode(', '))
                                 : null,
                         ],
                         [
                             'label' => 'Award Recipient',
                             'value' => $output->type === 'EA118'
-                                ? $output->authors->pluck('name')->filter()->implode(', ')
+                                ? $output->awardRecipients->pluck('name')->filter()->implode(', ')
                                 : null,
                         ],
                         [
@@ -173,7 +177,7 @@
                         [
                             'label' => 'Presenter',
                             'value' => $output->type === 'EA103'
-                                ? $output->conferences->pluck('presenter_name')->filter()->implode(', ')
+                                ? $output->conferences->map(fn ($conference) => $conference->presenterDisplay())->filter()->implode(', ')
                                 : null,
                         ],
                         [
@@ -185,8 +189,19 @@
                         ['label' => 'ชื่อหนังสือ', 'value' => $output->type === 'EA119' ? $output->book_title : null],
                         ['label' => 'ชื่อสำนักพิมพ์', 'value' => $output->type === 'EA119' ? $output->publisher_name : null],
                         ['label' => 'ชื่อบท / เลขหน้า', 'value' => $output->type === 'EA119' ? $output->chapter_pages : null],
+                        ['label' => 'เลข ISBN', 'value' => $output->type === 'EA119' ? $output->isbn : null],
                         ['label' => 'บันทึกโดย', 'value' => $creatorName ?: null],
                     ])->filter(fn ($item) => $hasValue($item['value'] ?? null))->values();
+                    $moveSummary = [
+                        'type' => $typeLabel($output->type),
+                        'title' => $output->title,
+                        'publish_date' => $output->publish_date ? $thaiDate($output->publish_date) : null,
+                        'note' => $output->note,
+                        'fields' => $summaryItems->map(fn ($item) => [
+                            'label' => $item['label'],
+                            'value' => $item['value'],
+                        ])->values()->all(),
+                    ];
                 @endphp
                 <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -232,6 +247,13 @@
                                     class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
                                     แก้ไข
                                 </a>
+                                <button type="button"
+                                    class="inline-flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100"
+                                    data-open-move-modal="true"
+                                    data-move-action="{{ route('outputs.external-academic.move-to-project', $output) }}"
+                                    data-output-base64="{{ base64_encode(json_encode($moveSummary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) }}">
+                                    ย้าย output ไปโครงการ
+                                </button>
                                 <form method="POST" action="{{ route('outputs.external-academic.destroy', $output) }}"
                                     onsubmit="return confirm('ยืนยันการลบรายการนี้?')">
                                     @csrf
@@ -259,4 +281,190 @@
             </section>
         @endif
     </div>
+
+    <form id="moveExternalOutputForm" method="POST" class="hidden">
+        @csrf
+        <input type="hidden" name="project_id" id="moveExternalOutputProjectId">
+    </form>
+
+    <script id="moveProjectOptionsData" type="application/json">
+        @php
+            echo json_encode(
+                $projectOptions->map(function ($project) {
+                    return [
+                        'id' => $project->id,
+                        'project_code' => $project->project_code,
+                        'project_name_th' => $project->project_name_th,
+                        'search_text' => mb_strtolower(trim(implode(' ', array_filter([$project->id, $project->project_code, $project->project_name_th])))),
+                    ];
+                })->values(),
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+        @endphp
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const moveForm = document.getElementById('moveExternalOutputForm');
+            const moveProjectIdInput = document.getElementById('moveExternalOutputProjectId');
+            const projectOptionsData = document.getElementById('moveProjectOptionsData');
+            const projectOptions = projectOptionsData ? JSON.parse(projectOptionsData.textContent || '[]') : [];
+
+            const escapeHtml = (value) => String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+
+            const renderProjectOptions = (items) => {
+                if (!items.length) {
+                    return '<div style="padding:12px;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b;">ไม่พบโครงการ</div>';
+                }
+
+                return items.map((project) => `
+                    <button type="button"
+                        class="move-project-choice"
+                        data-project-id="${escapeHtml(project.id)}"
+                        data-project-code="${escapeHtml(project.project_code || '')}"
+                        data-project-name="${escapeHtml(project.project_name_th || '')}"
+                        style="width:100%;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;text-align:left;">
+                        <span>
+                            <span style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#64748b;">Project #${escapeHtml(project.id)}</span>
+                            <span style="display:block;margin-top:4px;font-size:14px;font-weight:700;color:#0f172a;">${escapeHtml(project.project_name_th || '-')}</span>
+                            ${project.project_code ? `<span style="display:block;margin-top:4px;font-size:12px;color:#64748b;">${escapeHtml(project.project_code)}</span>` : ''}
+                        </span>
+                        <span style="display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;flex:0 0 auto;min-width:56px;border-radius:10px;background:#e0e7ff;padding:4px 10px;font-size:12px;font-weight:700;color:#4338ca;">เลือก</span>
+                    </button>
+                `).join('');
+            };
+
+            const openProjectPicker = async (action, output) => {
+                let filteredProjects = [...projectOptions];
+
+                const picker = await Swal.fire({
+                    title: 'เลือกโครงการปลายทาง',
+                    width: 860,
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'ปิด',
+                    html: `
+                        <div style="display:grid;gap:12px;text-align:left;">
+                            <div style="font-size:13px;color:#475569;">เลือกโครงการจากรายการด้านล่าง แล้วระบบจะขอให้ยืนยันอีกครั้งก่อนย้าย</div>
+                            <input id="swalMoveProjectSearch" type="text" placeholder="ค้นหาจากรหัสโครงการ / ชื่อโครงการ"
+                                style="width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:10px 12px;font-size:14px;">
+                            <div id="swalMoveProjectList" style="max-height:50vh;overflow-y:auto;display:grid;gap:10px;">
+                                ${renderProjectOptions(filteredProjects)}
+                            </div>
+                        </div>
+                    `,
+                    didOpen: () => {
+                        const popup = Swal.getPopup();
+                        const searchInput = popup?.querySelector('#swalMoveProjectSearch');
+                        const listWrap = popup?.querySelector('#swalMoveProjectList');
+                        const bindProjectButtons = () => {
+                            listWrap?.querySelectorAll('.move-project-choice').forEach((button) => {
+                                button.addEventListener('click', () => {
+                                    Swal.close();
+                                    confirmProjectMove(
+                                        action,
+                                        output,
+                                        {
+                                            id: button.getAttribute('data-project-id') || '',
+                                            project_code: button.getAttribute('data-project-code') || '',
+                                            project_name_th: button.getAttribute('data-project-name') || '',
+                                        }
+                                    );
+                                });
+                            });
+                        };
+
+                        bindProjectButtons();
+
+                        searchInput?.addEventListener('input', () => {
+                            const term = (searchInput.value || '').trim().toLowerCase();
+                            filteredProjects = projectOptions.filter((project) => {
+                                return term === '' || String(project.search_text || '').includes(term);
+                            });
+                            if (listWrap) {
+                                listWrap.innerHTML = renderProjectOptions(filteredProjects);
+                                bindProjectButtons();
+                            }
+                        });
+                    },
+                });
+
+                return picker;
+            };
+
+            const confirmProjectMove = async (action, activeOutput, project) => {
+                const fields = Array.isArray(activeOutput.fields) ? activeOutput.fields : [];
+                const detailHtml = fields.map((field) => `
+                    <div style="padding:10px 12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;text-align:left;">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#64748b;">${escapeHtml(field.label)}</div>
+                        <div style="margin-top:4px;font-size:13px;line-height:1.55;color:#0f172a;word-break:break-word;">${escapeHtml(field.value || '-')}</div>
+                    </div>
+                `).join('');
+
+                const result = await Swal.fire({
+                    icon: 'warning',
+                    title: 'ย้าย output ไปยังโครงการนี้?',
+                    width: 760,
+                    html: `
+                        <div style="display:grid;gap:12px;text-align:left;">
+                            <div style="padding:12px 14px;border:1px solid #fde68a;border-radius:14px;background:#fffbeb;">
+                                <div style="font-size:12px;font-weight:700;color:#92400e;">โครงการปลายทาง</div>
+                                <div style="margin-top:4px;font-size:14px;font-weight:700;color:#111827;">Project #${escapeHtml(project.id)} ${escapeHtml(project.project_name_th)}</div>
+                                ${project.project_code ? `<div style="margin-top:4px;font-size:12px;color:#475569;">${escapeHtml(project.project_code)}</div>` : ''}
+                            </div>
+                            <div style="padding:12px 14px;border:1px solid #e2e8f0;border-radius:14px;background:#ffffff;">
+                                <div style="font-size:12px;font-weight:700;color:#475569;">ข้อมูลผลงานที่จะย้าย</div>
+                                <div style="margin-top:4px;font-size:14px;font-weight:700;color:#111827;">${escapeHtml(activeOutput.title || '-')}</div>
+                                <div style="margin-top:6px;font-size:12px;color:#475569;">ประเภท: ${escapeHtml(activeOutput.type || '-')}</div>
+                                ${activeOutput.publish_date ? `<div style="margin-top:4px;font-size:12px;color:#475569;">เผยแพร่: ${escapeHtml(activeOutput.publish_date)}</div>` : ''}
+                                ${activeOutput.note ? `<div style="margin-top:8px;font-size:12px;line-height:1.6;color:#334155;word-break:break-word;">${escapeHtml(activeOutput.note)}</div>` : ''}
+                            </div>
+                            ${detailHtml ? `<div style="display:grid;gap:10px;">${detailHtml}</div>` : ''}
+                            <div style="font-size:12px;font-weight:700;color:#b91c1c;">* ย้ายแล้วไม่สามารถย้อนกลับได้</div>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'ยืนยันการย้าย',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                });
+
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                moveForm.setAttribute('action', action);
+                moveProjectIdInput.value = project.id;
+                moveForm.submit();
+            };
+
+            document.addEventListener('click', async (event) => {
+                const openButton = event.target.closest('[data-open-move-modal="true"]');
+                if (openButton) {
+                    const encoded = openButton.getAttribute('data-output-base64') || '';
+                    let output = {};
+                    try {
+                        output = encoded ? JSON.parse(atob(encoded)) : {};
+                    } catch (error) {
+                        console.error('Cannot parse move output payload', error);
+                        await Swal.fire({
+                            icon: 'error',
+                            title: 'เปิดข้อมูลสำหรับย้ายไม่สำเร็จ',
+                            text: 'กรุณารีเฟรชหน้าแล้วลองอีกครั้ง',
+                            confirmButtonText: 'ตกลง',
+                        });
+                        return;
+                    }
+                    await openProjectPicker(openButton.getAttribute('data-move-action') || '', output);
+                    return;
+                }
+            });
+        });
+    </script>
 @endsection
