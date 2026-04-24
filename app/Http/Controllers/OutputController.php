@@ -26,6 +26,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use PDF;
 
 class OutputController extends Controller
@@ -1777,7 +1778,7 @@ class OutputController extends Controller
             'profilePhotoDataUri' => $this->resolveUserProfilePhotoDataUriForPdf($user),
         ]));
 
-        return $pdf->stream('personal-output-' . $user->id . '.pdf');
+        return $pdf->stream($this->buildOutputPdfFilename('OUTPUT_PERSONAL', $user->full_name ?: $user->name));
     }
 
     public function papers(Request $request)
@@ -1843,7 +1844,7 @@ class OutputController extends Controller
             'dir' => $dir,
         ]);
 
-        return $pdf->stream('research-papers-report.pdf');
+        return $pdf->stream($this->buildOutputPdfFilename('OUTPUT_PAPERS'));
     }
 
     public function presentations(Request $request)
@@ -1893,7 +1894,7 @@ class OutputController extends Controller
             'filters' => $filters,
         ]);
 
-        return $pdf->stream('presentations-report.pdf');
+        return $pdf->stream($this->buildOutputPdfFilename('OUTPUT_PRESENTATIONS'));
     }
 
     public function textbooks(Request $request)
@@ -1942,7 +1943,25 @@ class OutputController extends Controller
             'dir' => $dir,
         ]);
 
-        return $pdf->stream('textbooks-report.pdf');
+        return $pdf->stream($this->buildOutputPdfFilename('OUTPUT_TEXTBOOKS'));
+    }
+
+    private function buildOutputPdfFilename(string $prefix, ?string $subject = null): string
+    {
+        $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
+        $base = strtoupper(trim($prefix)) . '_' . $dateStr;
+
+        $subject = trim((string) ($subject ?? ''));
+        if ($subject !== '') {
+            $subject = preg_replace('/[\/\\\\\?\%\*\:\|"<>\x00-\x1F]/u', ' ', $subject);
+            $subject = preg_replace('/\s+/u', '_', $subject ?? '');
+            $subject = trim((string) $subject, '_');
+            if ($subject !== '') {
+                $base .= '_' . Str::limit($subject, 80, '');
+            }
+        }
+
+        return $base . '.pdf';
     }
 
     private function buildPresentationsPayload(Request $request, string $sort, string $dir): array

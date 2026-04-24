@@ -9,6 +9,38 @@
         });
     </script>
     <style>
+        .month-card {
+            overflow: hidden;
+            border-color: #dbe7f5;
+        }
+
+        .month-card > summary {
+            list-style: none;
+            background: linear-gradient(135deg, #dbeafe 0%, #dbeafe 42%, #e0e7ff 100%);
+            border-bottom: 1px solid #c7d2fe;
+        }
+
+        .month-card > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .month-card[open] > summary {
+            background: linear-gradient(135deg, #bfdbfe 0%, #c7d2fe 46%, #dbeafe 100%);
+        }
+
+        .month-heading-badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            border: 1px solid #93c5fd;
+            background: rgba(255, 255, 255, 0.82);
+            color: #1e40af;
+            padding: 0.2rem 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
         @media (max-width: 768px) {
             .fte-table thead {
                 display: none;
@@ -55,7 +87,7 @@
         $totalHours = $allRows->sum('hours_in_month');
         $projectOptions = $allRows->pluck('project.project_name_th')->filter()->unique()->sort()->values();
         $roleOptions = $allRows->pluck('role_group')->filter()->unique()->sort()->values();
-        $yearOptions = $monthlyFTE->keys()->map(fn($m) => substr($m, 0, 4))->unique()->sort()->values();
+        $yearOptions = $monthlyFTE->keys()->map(fn($m) => substr($m, 0, 4))->unique()->sortDesc()->values();
         $monthOptions = $monthlyFTE->keys()->values();
     @endphp
 
@@ -109,6 +141,7 @@
                             <span class="text-xs font-semibold text-slate-600">รูปแบบช่วงข้อมูล</span>
                             <select id="pdfMode" name="mode" class="mt-1 w-full border border-slate-200 rounded-lg p-2 text-sm">
                                 <option value="all">ทั้งหมด</option>
+                                <option value="month">เดือนนี้</option>
                                 <option value="year">เฉพาะปี</option>
                                 <option value="custom">กำหนดช่วงวัน</option>
                             </select>
@@ -286,7 +319,7 @@
                         <col class="w-[44%]">
                         <col class="w-[20%]">
                     </colgroup>
-                    <thead class="bg-slate-50 border-b border-slate-200">
+                    <thead class="bg-slate-100 border-b border-slate-300">
                         <tr>
                             <th class="px-3 py-2 text-left font-semibold text-slate-700">ชื่อโครงการ/งาน</th>
                             <th class="px-3 py-2 text-left font-semibold text-slate-700">รายละเอียดงาน</th>
@@ -450,10 +483,10 @@
                 <details class="month-card bg-white border rounded-2xl shadow-sm" open data-month="{{ $monthKey }}"
                     data-year="{{ $carbon->year }}">
                     <summary class="cursor-pointer px-4 py-3 flex flex-col md:flex-row md:items-center gap-2">
-                        <div class="text-sm font-semibold text-slate-800">
-                            {{ $monthName }} {{ $year }}
+                        <div>
+                            <span class="month-heading-badge">{{ $monthName }} {{ $year }}</span>
                         </div>
-                        <div class="text-xs text-slate-500">
+                        <div class="text-xs font-medium text-slate-600">
                             {{ $rows->count() }} รายการ •
                             FTE {{ number_format($sumFTE, 7) }} •
                             ชั่วโมง {{ number_format($sumHours, 2) }}
@@ -463,7 +496,7 @@
                     <div class="border-t">
                         <div class="overflow-x-auto">
                             <table class="fte-table w-full text-sm">
-                                <thead class="bg-slate-50 border-b text-xs text-slate-600">
+                                <thead class="bg-slate-100 border-b border-slate-300 text-xs text-slate-700">
                                     <tr>
                                         <th class="p-2 text-left">ชื่อโปรเจค / งานนอกโครงการ</th>
                                         <th class="p-2 text-left">กลุ่ม</th>

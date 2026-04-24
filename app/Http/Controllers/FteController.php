@@ -8,11 +8,18 @@ use App\Models\FteRole;
 use App\Models\Project;
 use App\Models\BackOfficeEntry;
 use App\Models\BackOfficeTask;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use PDF;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\SimpleType\Jc;
+use PhpOffice\PhpWord\SimpleType\JcTable;
+use PhpOffice\PhpWord\SimpleType\TblWidth;
+use PhpOffice\PhpWord\SimpleType\VerticalJc;
 
 
 class FteController extends Controller
@@ -751,6 +758,7 @@ public function exportPdf(Request $request, $person)
 
     $pdf = PDF::loadView('fte.pdf', array_merge($data, [
         'user' => $user,
+        'profilePhotoDataUri' => $this->resolveUserProfilePhotoDataUriForExport($data['profile'] ?? null),
     ]));
 
     return $pdf->stream($filename);
@@ -774,14 +782,228 @@ public function exportWord(Request $request, $person)
     $user = auth()->user();
     $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
     $safePerson = preg_replace('/[^\pL\pN\-_\s]+/u', '', (string) $data['person']);
-    $filename = "FTE_{$dateStr}_" . trim((string) $safePerson) . ".doc";
+    $filename = "FTE_{$dateStr}_" . trim((string) $safePerson) . ".docx";
+    $tempFile = tempnam(sys_get_temp_dir(), 'fte_word_');
+    $docxPath = $tempFile . '.docx';
+    @unlink($tempFile);
+
+    $this->buildFteWordDocument(
+        array_merge($data, [
+            'user' => $user,
+            'profilePhotoPath' => $this->resolveUserProfilePhotoPathForExport($data['profile'] ?? null),
+        ]),
+        $docxPath
+    );
 
     return response()
-        ->view('fte.word', array_merge($data, [
-            'user' => $user,
-        ]))
-        ->header('Content-Type', 'application/msword; charset=UTF-8')
-        ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        ->download($docxPath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ])
+        ->deleteFileAfterSend(true);
+}
+
+private function buildFteWordDocument(array $data, string $targetPath): void
+{
+    $phpWord = new PhpWord();
+    $phpWord->setDefaultFontName('TH Sarabun New');
+    $phpWord->setDefaultFontSize(16);
+    $phpWord->setDefaultParagraphStyle([
+        'spaceAfter' => 0,
+        'spacing' => 0,
+        'lineHeight' => 1.1,
+    ]);
+
+    $phpWord->addTitleStyle(1, ['bold' => true, 'size' => 24, 'color' => '0F172A']);
+    $section = $phpWord->addSection([
+        'marginTop' => 900,
+        'marginBottom' => 900,
+        'marginLeft' => 900,
+        'marginRight' => 900,
+        'footerHeight' => 500,
+    ]);
+
+    $user = $data['user'] ?? null;
+    $person = (string) ($data['person'] ?? '-');
+    $profile = $data['profile'] ?? null;
+    $profilePhotoPath = $data['profilePhotoPath'] ?? null;
+    $monthlyFTE = $data['monthlyFTE'] ?? collect();
+    $monthWorkList = collect($data['monthWorkList'] ?? []);
+    $monthProjectStats = $data['monthProjectStats'] ?? [];
+    $pdfFilter = $data['pdfFilter'] ?? [];
+    $allRows = $monthlyFTE instanceof Collection ? $monthlyFTE->flatten(1) : collect();
+    $projectCount = $allRows->pluck('project.id')->filter()->unique()->count();
+    $totalFte = (float) $allRows->sum('fte_value');
+    $totalHours = (float) $allRows->sum('hours_in_month');
+    $position = $profile->position ?? '-';
+    $reporter = $user ? trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) : 'ผู้ใช้ระบบ';
+    $reportNow = now()->setTimezone('Asia/Bangkok')->locale('th');
+    $reportDate = $reportNow->translatedFormat('j F') . ' ' . ($reportNow->year + 543) . ' เวลา ' . $reportNow->format('H:i');
+    $filterLabel = $pdfFilter['label'] ?? 'ทั้งหมด';
+    $fullWidth = 10000;
+    $cellBorder = ['borderSize' => 8, 'borderColor' => 'CBD5E1'];
+    $tableBase = [
+        'unit' => TblWidth::TWIP,
+        'width' => 100 * 50,
+        'alignment' => JcTable::CENTER,
+        'cellMarginTop' => 80,
+        'cellMarginBottom' => 80,
+        'cellMarginLeft' => 120,
+        'cellMarginRight' => 120,
+    ];
+    $labelStyle = ['bold' => true, 'size' => 14, 'color' => '334155'];
+    $bodyStyle = ['size' => 12, 'color' => '334155'];
+    $mutedStyle = ['size' => 12, 'color' => '64748B'];
+
+    $footer = $section->addFooter();
+    $footerTable = $footer->addTable(array_merge($tableBase, [
+        'borderTopSize' => 6,
+        'borderTopColor' => 'CBD5E1',
+    ]));
+    $footerTable->addRow();
+    $footerTable->addCell(7000, ['valign' => VerticalJc::CENTER])->addText(
+        'ผู้สร้างรายงาน ' . $reporter . ' · ' . $reportDate,
+        ['size' => 10, 'color' => '64748B']
+    );
+    $footerTable->addCell(2500, ['valign' => VerticalJc::CENTER])->addPreserveText(
+        'หน้า {PAGE} / {NUMPAGES}',
+        ['size' => 10, 'color' => '64748B'],
+        ['alignment' => Jc::END]
+    );
+
+    $headerTable = $section->addTable($tableBase);
+    $headerTable->addRow();
+    $headerTable->addCell(6200, ['valign' => VerticalJc::CENTER])->addText('FTE Individual Report', ['bold' => true, 'size' => 24, 'color' => '0F172A']);
+    $headerRight = $headerTable->addCell(3800, ['valign' => VerticalJc::CENTER]);
+    $headerRight->addText('Siriraj Health Policy', ['size' => 13, 'color' => '64748B'], ['alignment' => Jc::END, 'spaceAfter' => 40]);
+    $headerRight->addText('รายงานภาระงานรายบุคคล', ['size' => 13, 'color' => '64748B'], ['alignment' => Jc::END]);
+
+    $section->addTextBreak(1);
+
+    $heroTable = $section->addTable(array_merge($tableBase, $cellBorder));
+    $heroTable->addRow(1900);
+    $photoCell = $heroTable->addCell(1900, ['bgColor' => 'F8FAFC', 'valign' => VerticalJc::CENTER]);
+    if ($profilePhotoPath && is_file($profilePhotoPath)) {
+        $photoCell->addImage($profilePhotoPath, [
+            'width' => 82,
+            'height' => 82,
+            'alignment' => Jc::CENTER,
+        ]);
+    }
+    $heroCell = $heroTable->addCell(8100, ['valign' => VerticalJc::CENTER]);
+    $heroCell->addText('FTE OVERVIEW', ['bold' => true, 'size' => 14, 'color' => '64748B'], ['spaceAfter' => 60]);
+    $heroCell->addText($person, ['bold' => true, 'size' => 24, 'color' => '0F172A'], ['spaceAfter' => 120]);
+    $heroCell->addText('ตำแหน่ง ' . $position, ['size' => 15, 'color' => '475569'], ['spaceAfter' => 70]);
+    $heroCell->addText('ช่วงข้อมูล: ' . $filterLabel, ['size' => 14, 'color' => '64748B'], ['spaceAfter' => 40]);
+    $heroCell->addText('รายงานออกเมื่อ ' . $reportDate, ['size' => 14, 'color' => '64748B']);
+
+    $section->addTextBreak(1);
+
+    $summaryTable = $section->addTable(array_merge($tableBase, $cellBorder));
+    $summaryTable->addRow();
+    $summaryItems = [
+        ['label' => 'จำนวนภาระงานทั้งหมด', 'value' => number_format($allRows->count()), 'note' => 'รายการงานที่ถูกคำนวณในรายงานนี้', 'bg' => 'EFF6FF'],
+        ['label' => 'จำนวนโครงการ / งาน', 'value' => number_format($projectCount), 'note' => 'นับโครงการที่มีภาระงานเชื่อมโยง', 'bg' => 'EFF6FF'],
+        ['label' => 'FTE รวมทั้งหมด', 'value' => number_format($totalFte, 4), 'note' => 'สะสมจากทุกช่วงเวลาในขอบเขตรายงาน', 'bg' => 'F5F3FF'],
+        ['label' => 'ชั่วโมงรวมทั้งหมด', 'value' => number_format($totalHours, 2), 'note' => 'รวมชั่วโมงทำงานทั้งหมด', 'bg' => 'ECFEFF'],
+    ];
+    foreach ($summaryItems as $item) {
+        $cell = $summaryTable->addCell(2500, ['bgColor' => $item['bg'], 'valign' => VerticalJc::CENTER]);
+        $cell->addText($item['label'], $labelStyle, ['alignment' => Jc::CENTER, 'spaceAfter' => 50]);
+        $cell->addText($item['value'], ['bold' => true, 'size' => 22, 'color' => '0F172A'], ['alignment' => Jc::CENTER, 'spaceAfter' => 40]);
+        $cell->addText($item['note'], $mutedStyle, ['alignment' => Jc::CENTER]);
+    }
+
+    $section->addTextBreak(1);
+    $section->addText('สถานะโครงการ / งานประจำเดือน ' . ($monthProjectStats['label'] ?? '-'), ['bold' => true, 'size' => 18, 'color' => '0F172A'], ['spaceAfter' => 40]);
+    $section->addText('สรุปรายการงานที่เกี่ยวข้องในเดือนอ้างอิง พร้อมรายละเอียดภาระงานแต่ละกลุ่ม', ['size' => 13, 'color' => '64748B'], ['spaceAfter' => 80]);
+
+    $workListTable = $section->addTable(array_merge($tableBase, $cellBorder));
+    $workListTable->addRow();
+    foreach ([
+        ['ชื่อโครงการ / งาน', 2800],
+        ['รายละเอียดงาน', 5400],
+        ['สถานะ', 1800],
+    ] as [$text, $width]) {
+        $workListTable->addCell($width, ['bgColor' => 'DFF7FB', 'valign' => VerticalJc::CENTER])->addText($text, ['bold' => true, 'size' => 13, 'color' => '334155'], ['alignment' => Jc::CENTER]);
+    }
+    if ($monthWorkList->isEmpty()) {
+        $workListTable->addRow();
+        $workListTable->addCell($fullWidth, ['gridSpan' => 3, 'valign' => VerticalJc::CENTER])->addText('ไม่มีรายการโครงการ/งานในเดือนนี้', ['size' => 13, 'color' => '64748B'], ['alignment' => Jc::CENTER]);
+    } else {
+        foreach ($monthWorkList as $work) {
+            $workListTable->addRow();
+            $workListTable->addCell(2800, ['valign' => VerticalJc::CENTER])->addText((string) ($work['name'] ?? '-'), ['bold' => true, 'size' => 14, 'color' => '0F172A']);
+            $detailCell = $workListTable->addCell(5400, ['valign' => VerticalJc::CENTER]);
+            $detailGroups = collect($work['work_detail_groups'] ?? [])->filter();
+            if ($detailGroups->isEmpty()) {
+                $detailCell->addText('-', ['size' => 13, 'color' => '64748B']);
+            } else {
+                foreach ($detailGroups as $group) {
+                    $detailCell->addText('• ' . ($group['job'] ?? 'รายละเอียดงาน'), ['bold' => true, 'size' => 13, 'color' => '0F172A'], ['spaceAfter' => 20]);
+                    foreach (collect($group['tasks'] ?? [])->filter() as $task) {
+                        $detailCell->addText('- ' . ($task['task'] ?? '-'), $bodyStyle);
+                    }
+                }
+            }
+            $workListTable->addCell(1800, ['valign' => VerticalJc::CENTER])->addText((string) ($work['status_label'] ?? '-'), ['bold' => true, 'size' => 13, 'color' => '334155'], ['alignment' => Jc::CENTER]);
+        }
+    }
+
+    $section->addTextBreak(1);
+    $section->addText('รายละเอียดการทำงานรายเดือน', ['bold' => true, 'size' => 18, 'color' => '0F172A'], ['spaceAfter' => 40]);
+    $section->addText('แยกรายเดือนเพื่อให้ติดตามภาระงาน ช่วงเวลา ชั่วโมง และค่า FTE ได้อย่างเป็นระบบ', ['size' => 13, 'color' => '64748B'], ['spaceAfter' => 80]);
+
+    foreach ($monthlyFTE as $monthKey => $rows) {
+        $carbon = Carbon::createFromFormat('Y-m', $monthKey);
+        $monthName = $carbon->locale('th')->translatedFormat('F');
+        $year = $carbon->year + 543;
+
+        $section->addText($monthName . ' ' . $year . ' · ' . $rows->count() . ' รายการ', ['bold' => true, 'size' => 16, 'color' => '9A3412'], ['spaceAfter' => 40]);
+        $monthTable = $section->addTable(array_merge($tableBase, $cellBorder));
+        $monthTable->addRow();
+        foreach ([
+            ['#', 600],
+            ['โครงการ / รายละเอียดงาน', 4000],
+            ['ช่วงเวลา', 2200],
+            ['ชั่วโมง', 1000],
+            ['วันทำงาน', 1000],
+            ['FTE เดือนนี้', 1200],
+        ] as [$text, $width]) {
+            $monthTable->addCell($width, ['bgColor' => 'FFF1DF', 'valign' => VerticalJc::CENTER])->addText($text, ['bold' => true, 'size' => 13, 'color' => '334155'], ['alignment' => Jc::CENTER]);
+        }
+
+        foreach ($rows as $index => $item) {
+            $monthTable->addRow();
+            $monthTable->addCell(600, ['valign' => VerticalJc::CENTER])->addText((string) ($index + 1), ['size' => 13], ['alignment' => Jc::CENTER]);
+
+            $title = $item->project?->id ? ($item->project->project_name_th ?? '-') : ($item->task_detail ?? '-');
+            $detailCell = $monthTable->addCell(4000, ['valign' => VerticalJc::CENTER]);
+            $detailCell->addText($title, ['bold' => true, 'size' => 14, 'color' => '0F172A'], ['spaceAfter' => 20]);
+            $detailCell->addText('กลุ่ม: ' . ($item->role_group ?? '-'), $bodyStyle, ['spaceAfter' => 10]);
+            $detailCell->addText('รายละเอียดงาน: ' . ($item->task_detail ?? $item->job_detail ?? '-'), $bodyStyle);
+            if (! $item->project?->id) {
+                $detailCell->addText('หมายเหตุ: งานนอกโครงการ', $bodyStyle);
+            }
+
+            $osCarbon = Carbon::parse($item->overlap_start);
+            $oeCarbon = Carbon::parse($item->overlap_end);
+            $range = $osCarbon->locale('th')->translatedFormat('j F') . ' ' . ($osCarbon->year + 543)
+                . "\nถึง " . $oeCarbon->locale('th')->translatedFormat('j F') . ' ' . ($oeCarbon->year + 543);
+            $monthTable->addCell(2200, ['valign' => VerticalJc::CENTER])->addText($range, $bodyStyle, ['alignment' => Jc::CENTER]);
+            $monthTable->addCell(1000, ['valign' => VerticalJc::CENTER])->addText(number_format((float) $item->hours_in_month, 2), $bodyStyle, ['alignment' => Jc::CENTER]);
+            $monthTable->addCell(1000, ['valign' => VerticalJc::CENTER])->addText((string) intval($item->days_in_month), $bodyStyle, ['alignment' => Jc::CENTER]);
+            $monthTable->addCell(1200, ['valign' => VerticalJc::CENTER])->addText(number_format((float) $item->fte_value, 6), $bodyStyle, ['alignment' => Jc::CENTER]);
+        }
+
+        $section->addTextBreak(1);
+    }
+
+    $section->addPageBreak();
+    $section->addText('Output ที่เกิดขึ้น', ['bold' => true, 'size' => 18, 'color' => '0F172A']);
+    $section->addText('ช่วงข้อมูลของ output: ' . ($pdfFilter['output_label'] ?? $filterLabel), ['size' => 13, 'color' => '64748B']);
+    $section->addTextBreak(2);
+
+    IOFactory::createWriter($phpWord, 'Word2007')->save($targetPath);
 }
 
 private function buildFteDetailData(string $person, array $filter = []): array
@@ -1125,7 +1347,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
     }
 
     $expanded = $this->rebalanceSplitDisplayValues($expanded);
-    $monthlyFTE = $expanded->groupBy('month')->sortKeys();
+    $monthlyFTE = $expanded->groupBy('month')->sortKeysDesc();
 
     $chartLabels = $monthlyFTE->keys()->values();
     $chartData   = $monthlyFTE->map(fn($rows) => $rows->sum('fte_value'))->values();
@@ -1701,6 +1923,42 @@ private function buildFteProjectData(Project $project): array
         ];
 
         return $map[$category] ?? 'อื่นๆ';
+    }
+
+    private function resolveUserProfilePhotoDataUriForExport(?User $user): ?string
+    {
+        $fullPath = $this->resolveUserProfilePhotoPathForExport($user);
+        if (! $fullPath) {
+            return null;
+        }
+
+        $contents = @file_get_contents($fullPath);
+        if ($contents === false || $contents === '') {
+            return null;
+        }
+
+        $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+
+        return 'data:' . $mime . ';base64,' . base64_encode($contents);
+    }
+
+    private function resolveUserProfilePhotoPathForExport(?User $user): ?string
+    {
+        if (! $user) {
+            return null;
+        }
+
+        $relativePath = trim((string) ($user->profile_photo_path ?? ''));
+        if ($relativePath === '') {
+            return null;
+        }
+
+        $candidates = [
+            storage_path('app/public/' . ltrim($relativePath, '/')),
+            public_path('storage/' . ltrim($relativePath, '/')),
+        ];
+
+        return collect($candidates)->first(fn ($path) => is_file($path) && is_readable($path));
     }
 
 }
