@@ -114,6 +114,10 @@
                 background: linear-gradient(180deg, #c2410c 0%, #fb923c 100%);
             }
 
+            .section-heading.other::before {
+                background: linear-gradient(180deg, #475569 0%, #94a3b8 100%);
+            }
+
             .section-heading.award::before {
                 background: linear-gradient(180deg, #b45309 0%, #facc15 100%);
             }
@@ -183,6 +187,21 @@
                 font-weight: 700;
             }
 
+            .role-badge.type-pill {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.2rem;
+                border-radius: 24px;
+                padding: 0.7rem 1rem;
+            }
+
+            .type-pill-code {
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: 0.04em;
+                opacity: 0.72;
+            }
+
             .role-badge.pi {
                 border-color: #bfdbfe;
                 background: #eff6ff;
@@ -230,6 +249,107 @@
                 background: #fdf2f8;
                 color: #be185d;
             }
+
+            .role-badge.source-back-office {
+                border-color: #fde68a;
+                background: #fffbeb;
+                color: #b45309;
+            }
+
+            .role-badge.type-report {
+                border-color: #c7d2fe;
+                background: #eef2ff;
+                color: #3730a3;
+            }
+
+            .role-badge.type-data {
+                border-color: #bae6fd;
+                background: #f0f9ff;
+                color: #0369a1;
+            }
+
+            .role-badge.type-policy {
+                border-color: #bbf7d0;
+                background: #f0fdf4;
+                color: #15803d;
+            }
+
+            .role-badge.type-communication {
+                border-color: #fbcfe8;
+                background: #fdf2f8;
+                color: #be185d;
+            }
+
+            .role-badge.type-event {
+                border-color: #fed7aa;
+                background: #fff7ed;
+                color: #c2410c;
+            }
+
+            .role-badge.type-manual {
+                border-color: #fde68a;
+                background: #fffbeb;
+                color: #a16207;
+            }
+
+            .role-badge.type-other {
+                border-color: #cbd5e1;
+                background: #f8fafc;
+                color: #475569;
+            }
+
+            .project-type-badge {
+                display: inline-flex;
+                align-items: center;
+                border-radius: 999px;
+                border: 1px solid #cbd5e1;
+                padding: 0.28rem 0.72rem;
+                font-size: 12px;
+                font-weight: 700;
+                line-height: 1.3;
+            }
+
+            .project-type-badge.tone-rose { background: #ffe4e6; border-color: #fecdd3; color: #9f1239; }
+            .project-type-badge.tone-orange { background: #ffedd5; border-color: #fed7aa; color: #9a3412; }
+            .project-type-badge.tone-amber { background: #fef3c7; border-color: #fde68a; color: #92400e; }
+            .project-type-badge.tone-lime { background: #ecfccb; border-color: #d9f99d; color: #3f6212; }
+            .project-type-badge.tone-emerald { background: #d1fae5; border-color: #a7f3d0; color: #065f46; }
+            .project-type-badge.tone-teal { background: #ccfbf1; border-color: #99f6e4; color: #115e59; }
+            .project-type-badge.tone-cyan { background: #cffafe; border-color: #a5f3fc; color: #155e75; }
+            .project-type-badge.tone-sky { background: #e0f2fe; border-color: #bae6fd; color: #075985; }
+            .project-type-badge.tone-blue { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
+            .project-type-badge.tone-indigo { background: #e0e7ff; border-color: #c7d2fe; color: #3730a3; }
+            .project-type-badge.tone-violet { background: #ede9fe; border-color: #ddd6fe; color: #6d28d9; }
+            .project-type-badge.tone-fuchsia { background: #fae8ff; border-color: #f5d0fe; color: #a21caf; }
+            .project-type-badge.tone-pink { background: #fce7f3; border-color: #fbcfe8; color: #be185d; }
+            .project-type-badge.tone-slate { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+
+            .project-theme-badge {
+                display: inline-flex;
+                align-items: center;
+                border-radius: 12px;
+                border: 1px solid #dbe4f0;
+                background: #f8fafc;
+                color: #475569;
+                padding: 0.3rem 0.72rem;
+                font-size: 12px;
+                line-height: 1.45;
+            }
+
+            .project-theme-badge.tone-rose { background: #fff1f2; border-color: #fecdd3; color: #9f1239; }
+            .project-theme-badge.tone-orange { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+            .project-theme-badge.tone-amber { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+            .project-theme-badge.tone-lime { background: #f7fee7; border-color: #d9f99d; color: #3f6212; }
+            .project-theme-badge.tone-emerald { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+            .project-theme-badge.tone-teal { background: #f0fdfa; border-color: #99f6e4; color: #115e59; }
+            .project-theme-badge.tone-cyan { background: #ecfeff; border-color: #a5f3fc; color: #155e75; }
+            .project-theme-badge.tone-sky { background: #f0f9ff; border-color: #bae6fd; color: #075985; }
+            .project-theme-badge.tone-blue { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+            .project-theme-badge.tone-indigo { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
+            .project-theme-badge.tone-violet { background: #f5f3ff; border-color: #ddd6fe; color: #6d28d9; }
+            .project-theme-badge.tone-fuchsia { background: #fdf4ff; border-color: #f5d0fe; color: #a21caf; }
+            .project-theme-badge.tone-pink { background: #fdf2f8; border-color: #fbcfe8; color: #be185d; }
+            .project-theme-badge.tone-slate { background: #f8fafc; border-color: #cbd5e1; color: #475569; }
 
             .status-badge {
                 display: inline-flex;
@@ -380,7 +500,7 @@
         </style>
 
         <section class="person-panel overflow-hidden">
-            <div class="grid gap-6 p-5 md:grid-cols-[280px_minmax(0,1fr)] md:p-7">
+            <div class="grid gap-6 p-5 md:grid-cols-[420px_minmax(0,1fr)] md:p-7">
                 <div class="overview-card flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-7 text-center">
                     @if ($subject->profile_photo_path)
                         <img
@@ -470,6 +590,11 @@
                                     <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($stats['award_outputs']) }}</p>
                                     <p class="mt-1 text-sm text-slate-500">Outputs</p>
                                 </div>
+                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                    <p class="text-xs font-semibold text-slate-500">Total Outputs</p>
+                                    <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($stats['total_outputs']) }}</p>
+                                    <p class="mt-1 text-sm text-slate-500">All Types</p>
+                                </div>
                             </div>
                         </article>
                     </div>
@@ -484,15 +609,15 @@
                     <p class="text-sm text-slate-500">รายการโครงการที่เกี่ยวข้องทั้งหมด</p>
                 </div>
                 <div class="section-search-row">
-                    <input id="projectSearchInput" type="text" placeholder="ค้นหาโครงการ / รหัส / บทบาท / สถานะ" class="live-search">
+                    <input id="projectSearchInput" type="text" placeholder="ค้นหาโครงการ / รหัส / theme / type / บทบาท" class="live-search">
                 </div>
             </div>
             <div class="section-filter-row">
                 <select id="projectYearFilter" class="filter-select">
                     <option value="">ทุกปี</option>
                 </select>
-                <select id="projectStatusFilter" class="filter-select">
-                    <option value="">ทุกสถานะ</option>
+                <select id="projectThemeFilter" class="filter-select">
+                    <option value="">ทุก Theme</option>
                 </select>
                 <select id="projectRoleFilter" class="filter-select">
                     <option value="">ทุกบทบาท</option>
@@ -516,7 +641,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold">โครงการ</th>
                                 <th class="px-4 py-3 text-left font-semibold">ปี</th>
-                                <th class="px-4 py-3 text-left font-semibold">สถานะ</th>
+                                <th class="px-4 py-3 text-left font-semibold">ประเภท / Theme</th>
                                 <th class="px-4 py-3 text-left font-semibold">บทบาท</th>
                             </tr>
                         </thead>
@@ -533,8 +658,8 @@
         <section class="person-panel p-5 md:p-6">
             <div class="section-toolbar mb-4">
                 <div>
-                    <h2 class="section-heading research text-xl font-bold text-slate-900">Research Papers</h2>
-                    <p class="text-sm text-slate-500">รวมทั้ง Project outputs และ Extra outputs แล้ว</p>
+                        <h2 class="section-heading research text-xl font-bold text-slate-900">Research Papers</h2>
+                        <p class="text-sm text-slate-500">รวม Project outputs, งานนอกโครงการ และ Extra outputs แล้ว</p>
                 </div>
                 <div class="section-search-row">
                     <input id="researchSearchInput" type="text" placeholder="ค้นหาชื่อ paper / journal / ผู้เขียน / แหล่งอ้างอิง" class="live-search">
@@ -744,6 +869,7 @@
                     </div>
                 @endif
             </article>
+
         </section>
 
         @php
@@ -752,6 +878,9 @@
                 'project_code' => $row->project_code,
                 'year_be' => $row->year_be,
                 'execution_status' => $row->execution_status,
+                'content_theme' => $row->content_theme ?? '-',
+                'project_type_label' => $row->project_type_label ?? '-',
+                'source_label' => $row->source_label ?? 'Project',
                 'roles' => array_values($row->roles ?? []),
                 'link' => $row->link,
             ])->values();
@@ -766,6 +895,7 @@
                 'source_label' => $row->source_label,
                 'roles' => $row->roles instanceof \Illuminate\Support\Collection ? $row->roles->values()->all() : array_values($row->roles ?? []),
                 'reference_label' => $row->reference_label,
+                'reference_link' => $row->reference_link,
                 'link' => $row->link,
             ])->values();
 
@@ -822,8 +952,75 @@
                     if (key === 'corresponding author') return 'corresponding-author';
                     return '';
                 };
-                const sourceClass = (label) => normalize(label) === 'extra' ? 'source-extra' : 'source-project';
-                const originLabel = (label) => normalize(label) === 'extra' ? 'skill ส่วนบุคคล' : 'โครงการ';
+                const sourceClass = (label) => {
+                    const key = normalize(label);
+                    if (key === 'extra') return 'source-extra';
+                    if (key === 'back office') return 'source-back-office';
+                    return 'source-project';
+                };
+                const buildStyleMap = (values, palette) => {
+                    const unique = Array.from(new Set(values.map((value) => String(value || '').trim()).filter((value) => value && value !== '-')));
+                    return new Map(unique.map((value, index) => [value, palette[index % palette.length]]));
+                };
+                const typePalette = [
+                    { bg: '#ffe4e6', border: '#fecdd3', text: '#9f1239' },
+                    { bg: '#ffedd5', border: '#fed7aa', text: '#9a3412' },
+                    { bg: '#fef3c7', border: '#fde68a', text: '#92400e' },
+                    { bg: '#ecfccb', border: '#d9f99d', text: '#3f6212' },
+                    { bg: '#d1fae5', border: '#a7f3d0', text: '#065f46' },
+                    { bg: '#cffafe', border: '#a5f3fc', text: '#155e75' },
+                    { bg: '#dbeafe', border: '#bfdbfe', text: '#1d4ed8' },
+                    { bg: '#e0e7ff', border: '#c7d2fe', text: '#3730a3' },
+                    { bg: '#ede9fe', border: '#ddd6fe', text: '#6d28d9' },
+                    { bg: '#fae8ff', border: '#f5d0fe', text: '#a21caf' },
+                    { bg: '#fce7f3', border: '#fbcfe8', text: '#be185d' },
+                    { bg: '#e0f2fe', border: '#bae6fd', text: '#075985' },
+                ];
+                const themePalette = [
+                    { bg: '#fefce8', border: '#fef08a', text: '#854d0e' },
+                    { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534' },
+                    { bg: '#ecfeff', border: '#a5f3fc', text: '#0f766e' },
+                    { bg: '#eef2ff', border: '#c7d2fe', text: '#4338ca' },
+                    { bg: '#fdf4ff', border: '#f5d0fe', text: '#a21caf' },
+                    { bg: '#fff1f2', border: '#fecdd3', text: '#be123c' },
+                    { bg: '#fff7ed', border: '#fdba74', text: '#c2410c' },
+                    { bg: '#f0f9ff', border: '#7dd3fc', text: '#0369a1' },
+                    { bg: '#f8fafc', border: '#cbd5e1', text: '#475569' },
+                    { bg: '#faf5ff', border: '#e9d5ff', text: '#7e22ce' },
+                    { bg: '#ecfccb', border: '#bef264', text: '#4d7c0f' },
+                    { bg: '#fef2f2', border: '#fca5a5', text: '#b91c1c' },
+                ];
+                const typeStyleMap = buildStyleMap(projectRows.map((row) => row.project_type_label), typePalette);
+                const themeStyleMap = buildStyleMap(projectRows.map((row) => row.content_theme), themePalette);
+                const badgeStyle = (styleMap, label) => {
+                    const value = String(label || '').trim();
+                    const tone = styleMap.get(value) || { bg: '#f8fafc', border: '#cbd5e1', text: '#475569' };
+                    return `background:${tone.bg}; border-color:${tone.border}; color:${tone.text};`;
+                };
+                const otherTypeClass = (typeCode) => {
+                    const key = normalize(typeCode).toUpperCase();
+                    if (key === 'EA102') return 'type-report';
+                    if (key === 'EA104') return 'type-data';
+                    if (key === 'EA105') return 'type-data';
+                    if (key === 'EA106') return 'type-policy';
+                    if (key === 'EA107') return 'type-communication';
+                    if (key === 'EA108') return 'type-communication';
+                    if (key === 'EA109') return 'type-policy';
+                    if (key === 'EA112') return 'type-event';
+                    if (key === 'EA113') return 'type-event';
+                    if (key === 'EA114') return 'type-event';
+                    if (key === 'EA115') return 'type-event';
+                    if (key === 'EA116') return 'type-report';
+                    if (key === 'EA117') return 'type-policy';
+                    if (key === 'EA120') return 'type-manual';
+                    return 'type-other';
+                };
+                const originLabel = (label) => {
+                    const key = normalize(label);
+                    if (key === 'extra') return 'skill ส่วนบุคคล';
+                    if (key === 'back office') return 'งานนอกโครงการ';
+                    return 'โครงการ';
+                };
                 const statusClass = (status) => {
                     const value = normalize(status);
                     if (value.includes('ปิด') || value.includes('เสร็จ') || value.includes('เสร็จสิ้น')) return 'is-complete';
@@ -890,14 +1087,14 @@
                     const pager = document.getElementById('projectPager');
                     const section = input.closest('.person-panel');
                     const yearFilter = document.getElementById('projectYearFilter');
-                    const statusFilter = document.getElementById('projectStatusFilter');
+                    const themeFilter = document.getElementById('projectThemeFilter');
                     const roleFilter = document.getElementById('projectRoleFilter');
                     const sortSelect = document.getElementById('projectSortSelect');
-                    if (!input || !body || !meta || !pager || !yearFilter || !statusFilter || !roleFilter || !sortSelect) return;
+                    if (!input || !body || !meta || !pager || !yearFilter || !themeFilter || !roleFilter || !sortSelect) return;
 
                     let page = 1;
                     fillSelect(yearFilter, uniqueSorted(projectRows.map((row) => row.year_be).filter((value) => value !== null && value !== ''), 'desc'), 'ทุกปี');
-                    fillSelect(statusFilter, uniqueSorted(projectRows.map((row) => row.execution_status)), 'ทุกสถานะ');
+                    fillSelect(themeFilter, uniqueSorted(projectRows.map((row) => row.content_theme).filter((value) => value && value !== '-')), 'ทุก Theme');
                     fillSelect(roleFilter, uniqueSorted(projectRows.flatMap((row) => row.roles || [])), 'ทุกบทบาท');
 
                     const render = () => {
@@ -908,11 +1105,12 @@
                                 row.project_name,
                                 row.project_code,
                                 row.year_be,
-                                row.execution_status,
+                                row.content_theme,
+                                row.project_type_label,
                                 ...(row.roles || []),
                             ].join(' ')).includes(query);
                         }).filter((row) => !yearFilter.value || String(row.year_be || '') === yearFilter.value)
-                            .filter((row) => !statusFilter.value || String(row.execution_status || '') === statusFilter.value)
+                            .filter((row) => !themeFilter.value || String(row.content_theme || '') === themeFilter.value)
                             .filter((row) => !roleFilter.value || (row.roles || []).includes(roleFilter.value));
 
                         const sorted = [...filtered].sort((a, b) => {
@@ -942,11 +1140,17 @@
                                             ? `<a href="${row.link}" target="_blank" rel="noopener noreferrer" class="font-semibold text-slate-900 no-underline hover:text-slate-900">${row.project_name || '-'}</a>`
                                             : (row.project_name || '-')}
                                     </div>
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        <span class="role-badge ${sourceClass(row.source_label)}">${originLabel(row.source_label)}</span>
+                                    </div>
                                     ${row.project_code ? `<div class="mt-1 text-xs font-normal text-slate-400">${row.project_code}</div>` : ''}
                                 </td>
                                 <td class="px-4 py-4 text-slate-600" data-label="ปี">${row.year_be || '-'}</td>
-                                <td class="px-4 py-4 text-slate-600" data-label="สถานะ">
-                                    <span class="status-badge ${statusClass(row.execution_status)}">${row.execution_status || '-'}</span>
+                                <td class="px-4 py-4 text-slate-600" data-label="ประเภท / Theme">
+                                    <div class="flex flex-col items-start gap-2">
+                                        <span class="project-type-badge" style="${badgeStyle(typeStyleMap, row.project_type_label)}">${row.project_type_label || '-'}</span>
+                                        <span class="project-theme-badge" style="${badgeStyle(themeStyleMap, row.content_theme)}">${row.content_theme || '-'}</span>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-4" data-label="บทบาท">
                                     <div class="flex flex-wrap gap-2">
@@ -972,7 +1176,7 @@
                         page = 1;
                         render();
                     });
-                    [yearFilter, statusFilter, roleFilter, sortSelect].forEach((element) => {
+                    [yearFilter, themeFilter, roleFilter, sortSelect].forEach((element) => {
                         element.addEventListener('change', () => {
                             page = 1;
                             render();
@@ -1001,7 +1205,7 @@
                     fillSelect(journalFilter, uniqueSorted(researchRows.map((row) => row.journal).filter((value) => value && value !== '-')), 'ทุก Journal');
                     fillSelect(quartileFilter, uniqueSorted(researchRows.map((row) => row.quartile).filter((value) => value && value !== '-')), 'ทุก Quartile');
                     fillSelect(roleFilter, uniqueSorted(researchRows.flatMap((row) => row.roles || [])), 'ทุกบทบาท');
-                    fillSelect(originFilter, ['โครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
+                    fillSelect(originFilter, ['โครงการ', 'งานนอกโครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
 
                     const render = () => {
                         const query = normalize(input.value);
@@ -1065,7 +1269,9 @@
                                 <td class="px-4 py-4 text-slate-600" data-label="โครงการ / skill ส่วนบุคคล">
                                     <div class="flex flex-wrap items-start gap-2">
                                         <span class="role-badge ${sourceClass(row.source_label)}">${originLabel(row.source_label)}</span>
-                                        <span class="leading-6">${row.reference_label || '-'}</span>
+                                        ${row.reference_link
+                                            ? `<a href="${row.reference_link}" class="leading-6 text-slate-700 no-underline hover:text-slate-900 hover:underline">${row.reference_label || '-'}</a>`
+                                            : `<span class="leading-6">${row.reference_label || '-'}</span>`}
                                     </div>
                                 </td>
                             </tr>
@@ -1112,7 +1318,7 @@
                     let page = 1;
                     fillSelect(yearFilter, uniqueSorted(presentationRows.map((row) => row.year_be).filter((value) => value !== null && value !== ''), 'desc'), 'ทุกปี');
                     fillSelect(typeFilter, uniqueSorted(presentationRows.map((row) => row.presentation_type).filter((value) => value && value !== '-')), 'ทุกประเภท');
-                    fillSelect(originFilter, ['โครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
+                    fillSelect(originFilter, ['โครงการ', 'งานนอกโครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
 
                     const render = () => {
                         const query = normalize(input.value);
@@ -1211,7 +1417,7 @@
 
                     let page = 1;
                     fillSelect(yearFilter, uniqueSorted(textbookRows.map((row) => row.year_be).filter((value) => value !== null && value !== ''), 'desc'), 'ทุกปี');
-                    fillSelect(originFilter, ['โครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
+                    fillSelect(originFilter, ['โครงการ', 'งานนอกโครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
 
                     const render = () => {
                         const query = normalize(input.value);
@@ -1307,7 +1513,7 @@
 
                     let page = 1;
                     fillSelect(yearFilter, uniqueSorted(awardRows.map((row) => row.year_be).filter((value) => value !== null && value !== ''), 'desc'), 'ทุกปี');
-                    fillSelect(originFilter, ['โครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
+                    fillSelect(originFilter, ['โครงการ', 'งานนอกโครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
 
                     const render = () => {
                         const query = normalize(input.value);

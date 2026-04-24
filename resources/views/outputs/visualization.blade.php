@@ -15,7 +15,6 @@
         $paperLatestCount = (int) (($paperSummary['latest'] ?? collect())->count());
         $presentationLatestCount = (int) (($presentationSummary['latest'] ?? collect())->count());
         $textbookLatestCount = (int) (($textbookSummary['latest'] ?? collect())->count());
-
         $baseTitle = 'ผลงานของหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
         $titleParts = collect();
         if (filled($selectedYearFrom) || filled($selectedYearTo)) {
@@ -115,6 +114,35 @@
             }
             return '#' . $base . $alpha;
         };
+        $textbookYearPalette = [
+            '#2563eb',
+            '#14b8a6',
+            '#f97316',
+            '#8b5cf6',
+            '#ec4899',
+            '#0f766e',
+            '#d97706',
+            '#4f46e5',
+            '#059669',
+            '#dc2626',
+        ];
+        $textbookYearColorMap = collect($textbookYearLabels ?? collect())
+            ->values()
+            ->map(fn ($year) => (string) $year)
+            ->values()
+            ->mapWithKeys(function ($year, $index) use ($textbookYearPalette) {
+                return [$year => $textbookYearPalette[$index % count($textbookYearPalette)]];
+            });
+        $textbookYearStyleMap = $textbookYearColorMap->mapWithKeys(fn ($color, $year) => [
+            $year => sprintf(
+                'background-color:%s; border-color:%s; color:%s;',
+                $withAlpha($color, '16'),
+                $withAlpha($color, '55'),
+                $color
+            ),
+        ]);
+        $textbookCoverageStartYear = collect($textbookYearLabels ?? collect())->first();
+        $textbookCoverageEndYear = collect($textbookYearLabels ?? collect())->last();
         $extractTypeCode = static function ($type): string {
             $text = trim((string) $type);
             if ($text === '') {
@@ -1026,7 +1054,7 @@
                         <div class="section-tag section-tag--teal">Textbooks</div>
                         <h2 class="text-base font-semibold text-slate-900">ผลงาน Textbooks <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($textbookCount) }} รายการ)</span></h2>
                         <div class="mt-4 flex flex-1 items-center">
-                            <div class="h-[340px] w-full"><canvas id="chartTextbookPublisher"></canvas></div>
+                            <div class="h-[340px] w-full"><canvas id="chartTextbookYear"></canvas></div>
                         </div>
                     </article>
                     <article class="fade-up panel section-panel section-panel--teal flex h-full flex-col p-5 md:p-6">
@@ -1034,20 +1062,25 @@
                         <div class="focus-kpi mt-3 px-4 py-3">
                             <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format($textbookCount) }} Textbooks</div>
                         </div>
-                        <p class="mt-2 text-sm text-slate-600">Top Publisher: {{ $textbookSummary['top_publisher'] ?: '-' }} · ผู้เขียนไม่ซ้ำ: {{ number_format((int) ($textbookSummary['unique_authors'] ?? 0)) }}</p>
+                        <p class="mt-2 text-sm text-slate-600">ครอบคลุมปี {{ $textbookCoverageStartYear ?: '-' }} ถึง {{ $textbookCoverageEndYear ?: '-' }} · ปีที่มีจำนวนสูงสุด {{ $textbookSummary['peak_year'] ?: '-' }} ({{ number_format((int) ($textbookSummary['peak_year_count'] ?? 0)) }} รายการ)</p>
                         <p class="mt-1 text-xs text-slate-500">รายการที่แสดงล่าสุด {{ number_format($textbookLatestCount) }} รายการ</p>
                         <div class="mt-4 flex-1 space-y-2">
                             @forelse (($textbookSummary['latest'] ?? collect()) as $row)
                                 <button
                                     type="button"
-                                    class="js-output-item block w-full rounded-lg border border-slate-200 px-3 py-2.5 text-left text-slate-700 hover:bg-slate-50"
+                                    class="js-output-item block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
+                                    style="{{ isset($textbookYearStyleMap[(string) ($row->year_be ?? '')]) ? $textbookYearStyleMap[(string) ($row->year_be ?? '')] . ' background-image:linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.94));' : 'border-color:#e2e8f0; background:#ffffff;' }}"
                                     data-title="{{ $row->title }}"
                                     data-link="{{ $row->modal_link ?? '' }}"
                                     data-detail="{{ $row->modal_detail ?? '' }}"
                                     data-type="EA119 - Textbook / Book Chapter"
                                 >
                                     <div class="font-medium line-clamp-2">{{ $row->title }}</div>
-                                    <div class="mt-1 text-xs text-slate-500">{{ $row->publisher_name ?: 'ไม่ระบุสำนักพิมพ์' }} • {{ $row->book_title ?: 'ไม่ระบุชื่อหนังสือ' }} • {{ $row->year_be ?: '-' }}</div>
+                                    <div class="mt-2 grid gap-1 text-xs">
+                                        <div class="text-slate-500">สำนักพิมพ์: <span class="font-medium text-slate-700">{{ $row->publisher_name ?: 'ไม่ระบุสำนักพิมพ์' }}</span></div>
+                                        <div class="text-slate-500">หนังสือ: <span class="font-medium text-slate-700">{{ $row->book_title ?: 'ไม่ระบุชื่อหนังสือ' }}</span></div>
+                                        <div class="text-slate-500">ผู้แต่ง: <span class="font-medium text-slate-700">{{ filled($row->authors ?? []) ? implode(', ', array_filter((array) ($row->authors ?? []))) : 'ไม่ระบุผู้แต่ง' }}</span></div>
+                                    </div>
                                 </button>
                             @empty
                                 <div class="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">ไม่มีข้อมูล</div>
@@ -1191,10 +1224,11 @@
             const paperQuartileValues = @json($paperQuartileValues);
             const presentationActivityLabels = @json($presentationActivityLabels);
             const presentationActivityValues = @json($presentationActivityValues);
-            const textbookPublisherLabels = @json($textbookPublisherLabels);
-            const textbookPublisherValues = @json($textbookPublisherValues);
+            const textbookYearLabels = @json($textbookYearLabels);
+            const textbookYearValues = @json($textbookYearValues);
             const presentationChartColors = ['#ea580c', '#fb7185', '#16a34a', '#0891b2', '#7c3aed', '#ca8a04', '#0f766e', '#475569'];
             const presentationChartBorderColors = ['#c2410c', '#e11d48', '#15803d', '#0e7490', '#6d28d9', '#a16207', '#115e59', '#334155'];
+            const textbookYearColors = @json(collect($textbookYearLabels ?? collect())->map(fn ($year) => $textbookYearColorMap[(string) $year] ?? '#0f766e')->values());
 
             const gridColor = 'rgba(148, 163, 184, 0.2)';
             const textColor = '#334155';
@@ -1472,35 +1506,46 @@
                 }
             });
 
-            const textbookCanvas = document.getElementById('chartTextbookPublisher');
+            const textbookCanvas = document.getElementById('chartTextbookYear');
             if (textbookCanvas) {
                 new Chart(textbookCanvas, {
                     type: 'bar',
                     data: {
-                        labels: safeLabels(textbookPublisherLabels),
-                        datasets: [{ label: 'จำนวน Textbook', data: safeValues(textbookPublisherValues), backgroundColor: '#0f766e', borderRadius: 8 }]
+                        labels: safeLabels(textbookYearLabels),
+                        datasets: [{
+                            label: 'จำนวน Textbook',
+                            data: safeValues(textbookYearValues),
+                            backgroundColor: safeColors(textbookYearColors),
+                            borderColor: safeColors(textbookYearColors),
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            hoverBackgroundColor: safeColors(textbookYearColors),
+                            maxBarThickness: 68
+                        }]
                     },
                     options: {
-                        indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
                         animation: chartAnim,
                         scales: {
-                            x: {
+                            y: {
                                 beginAtZero: true,
-                                suggestedMax: suggestedAxisMax(safeValues(textbookPublisherValues), 5),
+                                suggestedMax: suggestedAxisMax(safeValues(textbookYearValues), 5),
                                 ticks: { precision: 0, color: textColor },
                                 grid: { color: gridColor }
                             },
-                            y: { ticks: { color: textColor } }
+                            x: {
+                                ticks: { color: textColor },
+                                grid: { color: gridColor }
+                            }
                         },
                         plugins: {
                             legend: { display: false },
                             datalabels: {
                                 color: '#0f172a',
                                 anchor: 'end',
-                                align: 'right',
-                                offset: 4,
+                                align: 'end',
+                                offset: 2,
                                 clamp: true,
                                 font: { weight: '700', size: 11 },
                                 formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''

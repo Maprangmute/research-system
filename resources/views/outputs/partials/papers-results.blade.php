@@ -46,6 +46,11 @@
                             @if (!empty($paper->output_code))
                                 <div class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ $paper->output_code }}</div>
                             @endif
+                            @if (!empty($paper->source_badge))
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">{{ $paper->source_badge }}</span>
+                                </div>
+                            @endif
                             <div class="font-semibold leading-6 text-slate-900">{{ $paper->title }}</div>
                             @if ($paper->impact_factor)
                                 <div class="mt-1 text-xs text-slate-500">Impact Factor: {{ $paper->impact_factor }}</div>
@@ -150,6 +155,11 @@
                                 <td class="px-4 py-4 text-sm text-slate-900">
                                     @if (!empty($paper->output_code))
                                         <div class="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">{{ $paper->output_code }}</div>
+                                    @endif
+                                    @if (!empty($paper->source_badge))
+                                        <div class="mt-1">
+                                            <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">{{ $paper->source_badge }}</span>
+                                        </div>
                                     @endif
                                     <div class="font-semibold leading-6">{{ $paper->title }}</div>
                                     @if ($paper->impact_factor)
