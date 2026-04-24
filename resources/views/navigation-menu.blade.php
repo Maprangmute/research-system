@@ -111,6 +111,25 @@
                                 </x-dropdown-link>
                             @endif
 
+                            @if (Auth::user()->hasRole(\App\Models\User::ROLE_ADMIN))
+                                <div class="border-t border-gray-200"></div>
+                                <div class="block px-4 py-2 text-xs text-gray-400">
+                                    {{ __('Logs') }}
+                                </div>
+
+                                <x-dropdown-link href="{{ route('project_logs.index') }}">
+                                    {{ __('Project Log') }}
+                                </x-dropdown-link>
+
+                                <x-dropdown-link href="{{ route('back_office_action_logs.index') }}">
+                                    {{ __('Back Office Log') }}
+                                </x-dropdown-link>
+
+                                <x-dropdown-link href="{{ route('user_activity_logs.index') }}">
+                                    {{ __('User Activity Log') }}
+                                </x-dropdown-link>
+                            @endif
+
                             <div class="border-t border-gray-200"></div>
 
                             <!-- Authentication -->
@@ -174,6 +193,26 @@
                 @if (Laravel\Jetstream\Jetstream::hasApiFeatures())
                     <x-responsive-nav-link href="{{ route('api-tokens.index') }}" :active="request()->routeIs('api-tokens.index')">
                         {{ __('API Tokens') }}
+                    </x-responsive-nav-link>
+                @endif
+
+                @if (Auth::user()->hasRole(\App\Models\User::ROLE_ADMIN))
+                    <div class="border-t border-gray-200"></div>
+
+                    <div class="block px-4 py-2 text-xs text-gray-400">
+                        {{ __('Logs') }}
+                    </div>
+
+                    <x-responsive-nav-link href="{{ route('project_logs.index') }}" :active="request()->routeIs('project_logs.*')">
+                        {{ __('Project Log') }}
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link href="{{ route('back_office_action_logs.index') }}" :active="request()->routeIs('back_office_action_logs.*')">
+                        {{ __('Back Office Log') }}
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link href="{{ route('user_activity_logs.index') }}" :active="request()->routeIs('user_activity_logs.*')">
+                        {{ __('User Activity Log') }}
                     </x-responsive-nav-link>
                 @endif
 

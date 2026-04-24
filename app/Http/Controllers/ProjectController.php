@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Output;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\AuditLogger;
 // ⬅️ เพิ่ม
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -811,6 +812,11 @@ public function store(Request $request)
         $fteChartData = $this->buildProjectFteChartData($project);
         $pdf = PDF::loadView('projects.pdf', array_merge(compact('project', 'user'), $fteChartData));
 
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'project_pdf',
+            'subject_label' => (string) ($project->project_name_th ?: $project->project_code ?: $project->id),
+        ], request());
+
         return $pdf->stream($filename);
     }
 
@@ -886,6 +892,10 @@ public function store(Request $request)
         $baseName = "projects_{$suffix}_{$stamp}";
 
         if ($format === 'csv') {
+            AuditLogger::logFileDownload("{$baseName}.csv", [
+                'subject_type' => 'project_list_export',
+                'subject_label' => 'Project List',
+            ], $request);
             return response()->streamDownload(function () use ($rows) {
                 $handle = fopen('php://output', 'w');
                 fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
@@ -922,6 +932,11 @@ public function store(Request $request)
                 'format' => 'A4-L',
             ]);
 
+            AuditLogger::logFileDownload("{$baseName}.pdf", [
+                'subject_type' => 'project_list_export',
+                'subject_label' => 'Project List',
+            ], $request);
+
             return $pdf->stream("{$baseName}.pdf");
         }
 
@@ -930,6 +945,11 @@ public function store(Request $request)
             'periodLabel' => $periodLabel,
             'generatedAt' => now()->setTimezone('Asia/Bangkok'),
         ])->render();
+
+        AuditLogger::logFileDownload("{$baseName}.xls", [
+            'subject_type' => 'project_list_export',
+            'subject_label' => 'Project List',
+        ], $request);
 
         return response($html, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',

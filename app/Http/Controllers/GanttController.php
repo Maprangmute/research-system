@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FteRole;
 use App\Models\Project;
 use App\Models\Task;
+use App\Support\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use PDF;
@@ -37,10 +38,20 @@ class GanttController extends Controller
                 'format' => 'A3-L',
             ]);
 
+            AuditLogger::logFileDownload("{$baseName}.pdf", [
+                'subject_type' => 'gantt_export',
+                'subject_label' => (string) ($project->project_name_th ?: $project->project_code ?: $project->id),
+            ], $request);
+
             return $pdf->stream("{$baseName}.pdf");
         }
 
         $html = view('gantt.export-xls', $payload)->render();
+
+        AuditLogger::logFileDownload("{$baseName}.xls", [
+            'subject_type' => 'gantt_export',
+            'subject_label' => (string) ($project->project_name_th ?: $project->project_code ?: $project->id),
+        ], $request);
 
         return response($html, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',

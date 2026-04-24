@@ -19,6 +19,7 @@ use App\Models\OutputConference;
 use App\Models\OutputConferencePresenter;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\Eloquent\Builder;
@@ -1777,8 +1778,13 @@ class OutputController extends Controller
             'reporter' => $reporter,
             'profilePhotoDataUri' => $this->resolveUserProfilePhotoDataUriForPdf($user),
         ]));
+        $filename = $this->buildOutputPdfFilename('OUTPUT_PERSONAL', $user->full_name ?: $user->name);
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'output_personal_pdf',
+            'subject_label' => (string) ($user->full_name ?: $user->name),
+        ], $request);
 
-        return $pdf->stream($this->buildOutputPdfFilename('OUTPUT_PERSONAL', $user->full_name ?: $user->name));
+        return $pdf->stream($filename);
     }
 
     public function papers(Request $request)
@@ -1843,8 +1849,13 @@ class OutputController extends Controller
             'sort' => $sort,
             'dir' => $dir,
         ]);
+        $filename = $this->buildOutputPdfFilename('OUTPUT_PAPERS');
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'output_papers_pdf',
+            'subject_label' => 'Research Papers and Journal Articles',
+        ], $request);
 
-        return $pdf->stream($this->buildOutputPdfFilename('OUTPUT_PAPERS'));
+        return $pdf->stream($filename);
     }
 
     public function presentations(Request $request)
@@ -1893,8 +1904,13 @@ class OutputController extends Controller
             'generatedAt' => now()->setTimezone('Asia/Bangkok'),
             'filters' => $filters,
         ]);
+        $filename = $this->buildOutputPdfFilename('OUTPUT_PRESENTATIONS');
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'output_presentations_pdf',
+            'subject_label' => 'Presentations in Academic Conferences',
+        ], $request);
 
-        return $pdf->stream($this->buildOutputPdfFilename('OUTPUT_PRESENTATIONS'));
+        return $pdf->stream($filename);
     }
 
     public function textbooks(Request $request)
@@ -1942,8 +1958,13 @@ class OutputController extends Controller
             'sort' => $sort,
             'dir' => $dir,
         ]);
+        $filename = $this->buildOutputPdfFilename('OUTPUT_TEXTBOOKS');
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'output_textbooks_pdf',
+            'subject_label' => 'Textbook / Book Chapter',
+        ], $request);
 
-        return $pdf->stream($this->buildOutputPdfFilename('OUTPUT_TEXTBOOKS'));
+        return $pdf->stream($filename);
     }
 
     private function buildOutputPdfFilename(string $prefix, ?string $subject = null): string

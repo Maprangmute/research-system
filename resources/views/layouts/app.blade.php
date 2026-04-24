@@ -617,6 +617,14 @@
                                         class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
                                         📝 Project log
                                     </a>
+                                    <a href="{{ route('back_office_action_logs.index') }}"
+                                        class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
+                                        📚 Back Office Log
+                                    </a>
+                                    <a href="{{ route('user_activity_logs.index') }}"
+                                        class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
+                                        🛡️ User Activity Log
+                                    </a>
                                 @endif
                                 <a href="{{ route('profile.show') }}"
                                     class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
@@ -702,6 +710,8 @@
                         @endif
                         @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
                             <a href="/project-logs">📝 Project log</a>
+                            <a href="{{ route('back_office_action_logs.index') }}">📚 Back Office Log</a>
+                            <a href="{{ route('user_activity_logs.index') }}">🛡️ User Activity Log</a>
                         @endif
                         <a href="{{ route('profile.show') }}">👤 แก้ไขข้อมูลส่วนตัว</a>
                         <form method="POST" action="{{ route('logout') }}" data-logout-form>

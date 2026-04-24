@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\BackOfficeEntry;
 use App\Models\BackOfficeTask;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -734,6 +735,11 @@ public function projectPdf(Project $project)
         'user' => $user,
     ]));
 
+    AuditLogger::logFileDownload($filename, [
+        'subject_type' => 'fte_project_pdf',
+        'subject_label' => (string) ($project->project_name_th ?: $project->project_code ?: $project->id),
+    ], request());
+
     return $pdf->stream($filename);
 }
 
@@ -760,6 +766,11 @@ public function exportPdf(Request $request, $person)
         'user' => $user,
         'profilePhotoDataUri' => $this->resolveUserProfilePhotoDataUriForExport($data['profile'] ?? null),
     ]));
+
+    AuditLogger::logFileDownload($filename, [
+        'subject_type' => 'fte_person_pdf',
+        'subject_label' => (string) $data['person'],
+    ], $request);
 
     return $pdf->stream($filename);
 }
@@ -794,6 +805,11 @@ public function exportWord(Request $request, $person)
         ]),
         $docxPath
     );
+
+    AuditLogger::logFileDownload($filename, [
+        'subject_type' => 'fte_person_word',
+        'subject_label' => (string) $data['person'],
+    ], $request);
 
     return response()
         ->download($docxPath, $filename, [

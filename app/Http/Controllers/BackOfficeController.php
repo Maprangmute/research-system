@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BackOfficeEntry;
 use App\Models\BackOfficeTask;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Carbon\Carbon;
 use PDF;
 use Illuminate\Http\Request;
@@ -13,6 +14,150 @@ use Illuminate\Support\Facades\DB;
 
 class BackOfficeController extends Controller
 {
+    private function normalizeLeaderList(array $leaders): array
+    {
+        return collect($leaders)
+            ->map(fn ($value) => trim((string) $value))
+            ->filter(fn ($value) => $value !== '')
+            ->values()
+            ->all();
+    }
+
+    private function normalizeBackOfficeAuthors(array $items): array
+    {
+        return collect($items)
+            ->map(function ($item) {
+                return [
+                    'name' => trim((string) ($item['name'] ?? '')),
+                    'role' => trim((string) ($item['role'] ?? '')),
+                ];
+            })
+            ->filter(fn ($item) => $item['name'] !== '' || $item['role'] !== '')
+            ->values()
+            ->all();
+    }
+
+    private function normalizeBackOfficeBookAuthors(array $items): array
+    {
+        return collect($items)
+            ->map(fn ($item) => ['name' => trim((string) ($item['name'] ?? ''))])
+            ->filter(fn ($item) => $item['name'] !== '')
+            ->values()
+            ->all();
+    }
+
+    private function normalizeBackOfficeConferences(array $items): array
+    {
+        return collect($items)
+            ->map(function ($item) {
+                return [
+                    'name' => trim((string) ($item['name'] ?? '')),
+                    'presentation_type' => trim((string) ($item['presentation_type'] ?? '')),
+                    'location' => trim((string) ($item['location'] ?? '')),
+                    'note' => trim((string) ($item['note'] ?? '')),
+                ];
+            })
+            ->filter(function ($item) {
+                return collect($item)->contains(fn ($value) => $value !== '');
+            })
+            ->values()
+            ->all();
+    }
+
+    private function buildBackOfficeComparableSnapshot(BackOfficeTask $task): array
+    {
+        $task->loadMissing(['entries', 'outputs']);
+
+        return [
+            'title' => trim((string) $task->title),
+            'start_date' => trim((string) $task->start_date),
+            'end_date' => trim((string) $task->end_date),
+            'description' => trim((string) ($task->description ?? '')),
+            'purpose' => trim((string) ($task->purpose ?? '')),
+            'leaders' => $this->normalizeLeaderList((array) ($task->leaders ?? [])),
+            'entries' => $task->entries
+                ->map(function ($entry) {
+                    return [
+                        'person_name' => trim((string) $entry->person_name),
+                        'category' => trim((string) $entry->category),
+                        'job_name' => trim((string) $entry->job_name),
+                        'job_detail' => trim((string) $entry->job_detail),
+                        'start_date' => trim((string) $entry->start_date),
+                        'end_date' => trim((string) $entry->end_date),
+                        'hours' => (string) ((float) $entry->hours),
+                    ];
+                })
+                ->values()
+                ->all(),
+            'outputs' => $task->outputs
+                ->map(function ($output) {
+                    return [
+                        'title' => trim((string) $output->title),
+                        'type' => trim((string) ($output->type ?? '')),
+                        'project_output' => trim((string) ($output->project_output ?? '')),
+                        'year' => trim((string) ($output->year ?? '')),
+                        'journal' => trim((string) ($output->journal ?? '')),
+                        'quartile' => trim((string) ($output->quartile ?? '')),
+                        'impact_factor' => $output->impact_factor === null ? '' : (string) ((float) $output->impact_factor),
+                        'book_title' => trim((string) ($output->book_title ?? '')),
+                        'publisher_name' => trim((string) ($output->publisher_name ?? '')),
+                        'chapter_pages' => trim((string) ($output->chapter_pages ?? '')),
+                        'book_authors' => $this->normalizeBackOfficeBookAuthors((array) ($output->book_authors ?? [])),
+                        'authors' => $this->normalizeBackOfficeAuthors((array) ($output->authors ?? [])),
+                        'conferences' => $this->normalizeBackOfficeConferences((array) ($output->conferences ?? [])),
+                    ];
+                })
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function buildBackOfficeComparableInput(array $data): array
+    {
+        return [
+            'title' => trim((string) ($data['title'] ?? '')),
+            'start_date' => trim((string) ($data['start_date'] ?? '')),
+            'end_date' => trim((string) ($data['end_date'] ?? '')),
+            'description' => trim((string) ($data['description'] ?? '')),
+            'purpose' => trim((string) ($data['purpose'] ?? '')),
+            'leaders' => $this->normalizeLeaderList((array) ($data['leaders'] ?? [])),
+            'entries' => collect($data['entries'] ?? [])
+                ->map(function ($entry) {
+                    return [
+                        'person_name' => trim((string) ($entry['person_name'] ?? '')),
+                        'category' => trim((string) ($entry['category'] ?? '')),
+                        'job_name' => trim((string) ($entry['job_name'] ?? '')),
+                        'job_detail' => trim((string) ($entry['job_detail'] ?? '')),
+                        'start_date' => trim((string) ($entry['start_date'] ?? '')),
+                        'end_date' => trim((string) ($entry['end_date'] ?? '')),
+                        'hours' => (string) ((float) ($entry['hours'] ?? 0)),
+                    ];
+                })
+                ->values()
+                ->all(),
+            'outputs' => collect($data['outputs'] ?? [])
+                ->map(function ($output) {
+                    return [
+                        'title' => trim((string) ($output['title'] ?? '')),
+                        'type' => trim((string) ($output['type'] ?? '')),
+                        'project_output' => trim((string) ($output['project_output'] ?? '')),
+                        'year' => trim((string) ($output['year'] ?? '')),
+                        'journal' => trim((string) ($output['journal'] ?? '')),
+                        'quartile' => trim((string) ($output['quartile'] ?? '')),
+                        'impact_factor' => ($output['impact_factor'] ?? null) === null ? '' : (string) ((float) $output['impact_factor']),
+                        'book_title' => trim((string) ($output['book_title'] ?? '')),
+                        'publisher_name' => trim((string) ($output['publisher_name'] ?? '')),
+                        'chapter_pages' => trim((string) ($output['chapter_pages'] ?? '')),
+                        'book_authors' => $this->normalizeBackOfficeBookAuthors((array) ($output['book_authors'] ?? [])),
+                        'authors' => $this->normalizeBackOfficeAuthors((array) ($output['authors'] ?? [])),
+                        'conferences' => $this->normalizeBackOfficeConferences((array) ($output['conferences'] ?? [])),
+                    ];
+                })
+                ->values()
+                ->all(),
+        ];
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -86,6 +231,11 @@ class BackOfficeController extends Controller
             'tasks' => $tasks,
             'summary' => $summary,
         ];
+
+        AuditLogger::logBackOfficeAction('view_index', [
+            'subject_type' => 'back_office_task',
+            'subject_label' => $request->ajax() ? 'เปิดรายการ Back Office (ajax)' : 'เปิดรายการ Back Office',
+        ], $request);
 
         if ($request->ajax()) {
             return view('back-office.partials.index-content', $viewData);
@@ -222,6 +372,11 @@ class BackOfficeController extends Controller
         $users = User::select('prefix', 'name')->orderBy('name')->get();
         $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
 
+        AuditLogger::logBackOfficeAction('view_create_form', [
+            'subject_type' => 'back_office_task',
+            'subject_label' => 'เปิดฟอร์มสร้าง Back Office',
+        ]);
+
         return view('back-office.create', [
             'personList' => $personList,
         ]);
@@ -337,6 +492,17 @@ class BackOfficeController extends Controller
             }
         });
 
+        AuditLogger::logBackOfficeAction('create_task', [
+            'task_id' => $task?->id,
+            'subject_type' => 'back_office_task',
+            'subject_label' => $task?->title,
+            'task_title' => $task?->title,
+            'changes' => [
+                'entries_count' => count($data['entries'] ?? []),
+                'outputs_count' => count($data['outputs'] ?? []),
+            ],
+        ], $request);
+
         return redirect()
             ->route('back_office.show', $task?->id)
             ->with('success', 'บันทึกงานนอกโครงการเรียบร้อย');
@@ -351,6 +517,13 @@ class BackOfficeController extends Controller
             'hours' => $task->entries->sum('hours'),
             'fte' => $task->entries->sum('fte_value'),
         ];
+
+        AuditLogger::logBackOfficeAction('view_task', [
+            'task_id' => $task->id,
+            'subject_type' => 'back_office_task',
+            'subject_label' => $task->title,
+            'task_title' => $task->title,
+        ], $request);
 
         if ($request->boolean('drawer')) {
             return view('back-office.partials.detail-content', [
@@ -372,6 +545,13 @@ class BackOfficeController extends Controller
 
         $users = User::select('prefix', 'name')->orderBy('name')->get();
         $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
+
+        AuditLogger::logBackOfficeAction('view_edit_form', [
+            'task_id' => $task->id,
+            'subject_type' => 'back_office_task',
+            'subject_label' => $task->title,
+            'task_title' => $task->title,
+        ]);
 
         return view('back-office.edit', [
             'task' => $task,
@@ -433,6 +613,15 @@ class BackOfficeController extends Controller
             }
         }
 
+        $originalSnapshot = $this->buildBackOfficeComparableSnapshot($task);
+        $incomingSnapshot = $this->buildBackOfficeComparableInput($data);
+
+        if ($originalSnapshot === $incomingSnapshot) {
+            return redirect()
+                ->route('back_office.show', $task->id)
+                ->with('success', 'ไม่มีการเปลี่ยนแปลงข้อมูล');
+        }
+
         DB::transaction(function () use ($data, $task, $startDate, $endDate) {
             $task->update([
                 'title' => $data['title'],
@@ -489,6 +678,17 @@ class BackOfficeController extends Controller
             }
         });
 
+        AuditLogger::logBackOfficeAction('update_task', [
+            'task_id' => $task->id,
+            'subject_type' => 'back_office_task',
+            'subject_label' => $task->title,
+            'task_title' => $task->title,
+            'changes' => [
+                'entries_count' => count($data['entries'] ?? []),
+                'outputs_count' => count($data['outputs'] ?? []),
+            ],
+        ], $request);
+
         return redirect()
             ->route('back_office.show', $task->id)
             ->with('success', 'อัปเดตงานนอกโครงการเรียบร้อย');
@@ -506,6 +706,13 @@ class BackOfficeController extends Controller
             $task->outputs()->delete();
             $task->delete();
         });
+
+        AuditLogger::logBackOfficeAction('delete_task', [
+            'task_id' => $task->id,
+            'subject_type' => 'back_office_task',
+            'subject_label' => $task->title,
+            'task_title' => $task->title,
+        ]);
 
         return redirect()
             ->route('back_office.index')
@@ -535,6 +742,17 @@ class BackOfficeController extends Controller
             'task' => $task,
             'summary' => $summary,
             'user' => $user,
+        ]);
+
+        AuditLogger::logBackOfficeAction('export_pdf', [
+            'task_id' => $task->id,
+            'subject_type' => 'back_office_task',
+            'subject_label' => $task->title,
+            'task_title' => $task->title,
+        ]);
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'back_office_pdf',
+            'subject_label' => $task->title,
         ]);
 
         return $pdf->stream($filename);

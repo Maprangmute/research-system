@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ProjectLog;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
@@ -311,6 +312,10 @@ class ProjectLogController extends Controller
         $baseName = "project_logs_{$stamp}";
 
         if ($format === 'csv') {
+            AuditLogger::logFileDownload("{$baseName}.csv", [
+                'subject_type' => 'project_log_export',
+                'subject_label' => 'Project Log',
+            ], $request);
             return response()->streamDownload(function () use ($groupedExportRows) {
                 $handle = fopen('php://output', 'w');
                 fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
@@ -342,6 +347,10 @@ class ProjectLogController extends Controller
             ], [], [
                 'format' => 'A4-L',
             ]);
+            AuditLogger::logFileDownload("{$baseName}.pdf", [
+                'subject_type' => 'project_log_export',
+                'subject_label' => 'Project Log',
+            ], $request);
             return $pdf->stream("{$baseName}.pdf");
         }
 
@@ -351,6 +360,10 @@ class ProjectLogController extends Controller
             'generatedAt' => $generatedAt,
             'generatedBy' => $generatedBy,
         ])->render();
+        AuditLogger::logFileDownload("{$baseName}.xls", [
+            'subject_type' => 'project_log_export',
+            'subject_label' => 'Project Log',
+        ], $request);
         return response($html, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$baseName}.xls\"",

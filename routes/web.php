@@ -4,12 +4,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\FteController;
 use App\Http\Controllers\OverviewController;
+use App\Http\Controllers\BackOfficeActionLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TaskLinkController;
 use App\Http\Controllers\AiDashboardController;
 use App\Http\Controllers\OutputController;
 use App\Http\Controllers\BackOfficeController;
+use App\Http\Controllers\UserActivityLogController;
 
 
 use App\Http\Controllers\DocumentController;
@@ -115,6 +117,9 @@ use App\Http\Controllers\ProjectLogController;
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/project-logs', [ProjectLogController::class, 'index'])->name('project_logs.index');
+    Route::get('/back-office-action-logs', [BackOfficeActionLogController::class, 'index'])->name('back_office_action_logs.index');
+    Route::get('/back-office-action-logs/{id}', [BackOfficeActionLogController::class, 'show'])->name('back_office_action_logs.show')->whereNumber('id');
+    Route::get('/user-activity-logs', [UserActivityLogController::class, 'index'])->name('user_activity_logs.index');
     Route::get('/project-logs/project-suggestions', [ProjectLogController::class, 'projectSuggestions'])->name('project_logs.project_suggestions');
     Route::get('/project-logs/export', [ProjectLogController::class, 'export'])->name('project_logs.export');
     Route::delete('/project-logs/purge-old', [ProjectLogController::class, 'purgeOld'])->name('project_logs.purge_old');

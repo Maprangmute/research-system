@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Support\Facades\Schema;
 use PDF;
 
@@ -403,6 +404,11 @@ class DashboardController extends Controller
         $stamp = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
         $userSlug = preg_replace('/\\s+/', '', $generatedBy);
         $filename = "SiHealthpolicy_overview_{$userSlug}_{$stamp}.pdf";
+
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'dashboard_pdf',
+            'subject_label' => 'Dashboard Export',
+        ], $request);
 
         return response($dompdf->output(), 200, [
             'Content-Type' => 'application/pdf',
