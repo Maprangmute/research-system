@@ -59,8 +59,10 @@
             @if ($tasks->count() > 0)
                 <div class="back-office-mobile-list back-office-mobile-only">
                     @foreach ($tasks as $task)
+                        @php($backofficeId = $task->backoffice_id ?: \App\Models\BackOfficeTask::formatBackOfficeId((int) $task->id))
                         <article class="back-office-mobile-card" data-back-office-search-text="{{ trim(implode(' ', array_filter([
                             $task->title,
+                            $backofficeId,
                             $task->description,
                             $task->purpose,
                             is_array($task->leaders) ? implode(' ', array_filter($task->leaders)) : $task->leaders,
@@ -69,8 +71,8 @@
                         ], fn ($value) => filled($value)))) }}">
                             <div class="flex items-start justify-between gap-2">
                                 <div>
-                                    <div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">ID #{{ $task->id }}</div>
-                                    <a href="{{ route('back_office.show', $task->id) }}" data-back-office-open
+                                    <div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Backoffice_id {{ $backofficeId }}</div>
+                                    <a href="{{ route('back_office.show', $task) }}" data-back-office-open
                                         class="mt-1 inline-block text-[0.95rem] font-semibold leading-5 text-sky-700 hover:text-sky-800 hover:underline">
                                         {{ $task->title }}
                                     </a>
@@ -105,11 +107,11 @@
                             <div class="mt-2 text-xs text-slate-500">ผู้บันทึก {{ $task->creator?->name ?? '-' }}</div>
                             <div class="mt-2.5">
                                 <div class="back-office-action-cluster">
-                                    <a href="{{ route('back_office.show', $task->id) }}" data-back-office-open
+                                    <a href="{{ route('back_office.show', $task) }}" data-back-office-open
                                         class="back-office-action-primary">
                                         รายละเอียด
                                     </a>
-                                    <form action="{{ route('back_office.destroy', $task->id) }}" method="POST"
+                                    <form action="{{ route('back_office.destroy', $task) }}" method="POST"
                                         data-back-office-delete-form
                                         data-record-id="{{ $task->id }}"
                                         data-record-title="{{ $task->title }}"
@@ -123,11 +125,11 @@
                                     <details class="back-office-action-menu">
                                         <summary aria-label="เมนูเพิ่มเติม">⋯</summary>
                                         <div class="back-office-action-menu__panel">
-                                            <a href="{{ route('back_office.edit', $task->id) }}"
+                                            <a href="{{ route('back_office.edit', $task) }}"
                                                 class="back-office-action-menu__item">
                                                 แก้ไข
                                             </a>
-                                            <a href="{{ route('back_office.pdf', $task->id) }}" target="_blank" rel="noopener"
+                                            <a href="{{ route('back_office.pdf', $task) }}" target="_blank" rel="noopener"
                                                 class="back-office-action-menu__item">
                                                 PDF
                                             </a>
@@ -144,7 +146,7 @@
                         <table class="back-office-table">
                             <thead>
                                 <tr>
-                                    <th class="w-[76px] text-center">ID</th>
+                                    <th class="w-[120px] text-center">Backoffice_id</th>
                                     <th class="min-w-[320px]">ชื่องาน</th>
                                     <th class="min-w-[220px]">ช่วงเวลา</th>
                                     <th class="hidden w-[100px] text-right lg:table-cell">ภาระงาน</th>
@@ -157,17 +159,19 @@
                             </thead>
                             <tbody>
                                 @foreach ($tasks as $task)
+                                    @php($backofficeId = $task->backoffice_id ?: \App\Models\BackOfficeTask::formatBackOfficeId((int) $task->id))
                                     <tr data-back-office-search-text="{{ trim(implode(' ', array_filter([
                                         $task->title,
+                                        $backofficeId,
                                         $task->description,
                                         $task->purpose,
                                         is_array($task->leaders) ? implode(' ', array_filter($task->leaders)) : $task->leaders,
                                         $task->creator?->prefix,
                                         $task->creator?->name,
                                     ], fn ($value) => filled($value)))) }}">
-                                        <td class="text-center text-sm font-semibold text-slate-600">{{ $task->id }}</td>
+                                        <td class="text-center text-sm font-semibold text-slate-600">{{ $backofficeId }}</td>
                                         <td>
-                                            <a href="{{ route('back_office.show', $task->id) }}"
+                                            <a href="{{ route('back_office.show', $task) }}"
                                                 class="text-sm font-semibold text-sky-700 hover:text-sky-800 hover:underline">
                                                 {{ $task->title }}
                                             </a>
@@ -195,11 +199,11 @@
                                         <td class="hidden text-sm text-slate-700 xl:table-cell">{{ $task->creator?->name ?? '-' }}</td>
                                         <td>
                                             <div class="back-office-action-cluster">
-                                                <a href="{{ route('back_office.show', $task->id) }}" data-back-office-open
+                                                <a href="{{ route('back_office.show', $task) }}" data-back-office-open
                                                     class="back-office-action-primary">
                                                     รายละเอียด
                                                 </a>
-                                                <form action="{{ route('back_office.destroy', $task->id) }}" method="POST"
+                                                <form action="{{ route('back_office.destroy', $task) }}" method="POST"
                                                     data-back-office-delete-form
                                                     data-record-id="{{ $task->id }}"
                                                     data-record-title="{{ $task->title }}"
@@ -213,11 +217,11 @@
                                                 <details class="back-office-action-menu">
                                                     <summary aria-label="เมนูเพิ่มเติม">⋯</summary>
                                                     <div class="back-office-action-menu__panel">
-                                                        <a href="{{ route('back_office.edit', $task->id) }}"
+                                                        <a href="{{ route('back_office.edit', $task) }}"
                                                             class="back-office-action-menu__item">
                                                             แก้ไข
                                                         </a>
-                                                        <a href="{{ route('back_office.pdf', $task->id) }}" target="_blank" rel="noopener"
+                                                        <a href="{{ route('back_office.pdf', $task) }}" target="_blank" rel="noopener"
                                                             class="back-office-action-menu__item">
                                                             PDF
                                                         </a>

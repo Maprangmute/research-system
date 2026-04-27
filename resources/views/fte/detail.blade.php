@@ -252,7 +252,7 @@
                                             {{ $work['name'] ?? '-' }}
                                         </a>
                                     @elseif (($work['type'] ?? '') === 'back_office' && !empty($work['task_id']))
-                                        <a href="{{ route('back_office.show', $work['task_id']) }}" target="_blank" rel="noopener"
+                                        <a href="{{ route('back_office.show', \App\Models\BackOfficeTask::formatBackOfficeId((int) $work['task_id'])) }}" target="_blank" rel="noopener"
                                             class="text-blue-700 hover:underline">
                                             {{ $work['name'] ?? '-' }}
                                         </a>
@@ -336,7 +336,7 @@
                                             {{ $work['name'] ?? '-' }}
                                         </a>
                                     @elseif (($work['type'] ?? '') === 'back_office' && !empty($work['task_id']))
-                                        <a href="{{ route('back_office.show', $work['task_id']) }}" target="_blank" rel="noopener"
+                                        <a href="{{ route('back_office.show', \App\Models\BackOfficeTask::formatBackOfficeId((int) $work['task_id'])) }}" target="_blank" rel="noopener"
                                             class="text-blue-700 hover:underline">
                                             {{ $work['name'] ?? '-' }}
                                         </a>
@@ -550,7 +550,7 @@
                                                         $backOfficeTitle = $item->task_detail ?? '-';
                                                     @endphp
                                                     @if (!empty($item->task_id))
-                                                        <a href="{{ route('back_office.show', $item->task_id) }}" target="_blank" rel="noopener"
+                                                        <a href="{{ route('back_office.show', \App\Models\BackOfficeTask::formatBackOfficeId((int) $item->task_id)) }}" target="_blank" rel="noopener"
                                                             class="text-blue-700 hover:underline">
                                                             {{ $backOfficeTitle }}
                                                         </a>

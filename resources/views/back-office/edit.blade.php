@@ -57,6 +57,91 @@
             box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.25);
         }
 
+        .bo-editor-shell .project-search-select {
+            position: relative;
+            width: 100%;
+            margin-top: 0.25rem;
+        }
+
+        .bo-editor-shell .project-search-select__native {
+            display: none !important;
+        }
+
+        .bo-editor-shell .project-search-select__button {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            min-height: 3.3rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 16px;
+            background: #ffffff;
+            padding: 0.82rem 0.95rem;
+            color: #0f172a;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            text-align: left;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .bo-editor-shell .project-search-select__button:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.25);
+        }
+
+        .bo-editor-shell .project-search-select__label {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .bo-editor-shell .project-search-select__icon {
+            flex: 0 0 auto;
+            margin-left: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .bo-editor-shell .project-search-select__menu {
+            position: absolute;
+            z-index: 80;
+            left: 0;
+            right: 0;
+            top: calc(100% + 0.35rem);
+            border: 1px solid #cbd5e1;
+            border-radius: 18px;
+            background: #ffffff;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
+            padding: 0.55rem;
+        }
+
+        .bo-editor-shell .project-search-select__search {
+            margin: 0 0 0.45rem;
+            min-height: 2.65rem;
+        }
+
+        .bo-editor-shell .project-search-select__options {
+            max-height: 16rem;
+            overflow-y: auto;
+        }
+
+        .bo-editor-shell .project-search-select__option {
+            display: block;
+            width: 100%;
+            border-radius: 12px;
+            padding: 0.62rem 0.75rem;
+            text-align: left;
+            color: #0f172a;
+            font-size: 0.92rem;
+        }
+
+        .bo-editor-shell .project-search-select__option:hover,
+        .bo-editor-shell .project-search-select__option.is-selected {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
         .bo-editor-step {
             display: inline-flex;
             align-items: center;
@@ -94,6 +179,95 @@
             border-radius: 18px;
             background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
             padding: 0.95rem 1rem;
+        }
+
+        .bo-type-helper {
+            margin-top: 0.45rem;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            color: #64748b;
+        }
+
+        .bo-special-placeholder {
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            background: #fff;
+            padding: 0.85rem 1rem;
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+
+        .bo-special-panel {
+            border-radius: 18px;
+            border: 1px solid #dbe5f0;
+            padding: 1rem;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+        }
+
+        .bo-special-panel__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.9rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+            padding-bottom: 0.75rem;
+        }
+
+        .bo-special-panel__title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .bo-special-panel__hint {
+            margin-top: 0.15rem;
+            font-size: 0.76rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .bo-mini-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            padding: 0.55rem 0.85rem;
+            font-size: 0.76rem;
+            font-weight: 700;
+            line-height: 1;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .bo-mini-action--add {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .bo-mini-action--add:hover {
+            background: #bbf7d0;
+        }
+
+        .bo-mini-action--remove {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .bo-mini-action--remove:hover {
+            background: #fecaca;
+        }
+
+        .bo-special-row {
+            border: 1px solid #dbe5f0;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.78);
+            padding: 1rem;
+        }
+
+        .bo-required {
+            color: #dc2626;
+            font-weight: 700;
+            margin-left: 0.2rem;
         }
 
         .leader-stack {
@@ -318,6 +492,19 @@
                 border-radius: 20px;
             }
 
+            .bo-special-panel {
+                border-radius: 16px;
+                padding: 0.85rem;
+            }
+
+            .bo-special-row {
+                padding: 0.85rem;
+            }
+
+            .bo-special-row .bo-mini-action {
+                width: 100%;
+            }
+
             .leader-row {
                 grid-template-columns: 1fr;
             }
@@ -334,7 +521,7 @@
         }
     </style>
 
-    <div class="bo-editor-shell mx-auto max-w-6xl space-y-6 p-4">
+    <div class="bo-editor-shell mx-auto max-w-[1720px] space-y-6 p-4 xl:px-6 2xl:px-8">
         <aside class="bo-section-nav" aria-label="เมนูลัดหัวข้อ">
             <button type="button" class="bo-section-dot" data-nav-target="bo-section-main" aria-label="1: ข้อมูลงานหลัก"><span class="bo-section-dot__short">1</span><span class="bo-section-dot__full">1: ข้อมูลงานหลัก</span></button>
             <button type="button" class="bo-section-dot" data-nav-target="bo-section-entries" aria-label="2: ภาระงานและผู้รับผิดชอบ"><span class="bo-section-dot__short">2</span><span class="bo-section-dot__full">2: ภาระงานและผู้รับผิดชอบ</span></button>
@@ -342,8 +529,8 @@
         </aside>
         <section class="bo-editor-panel bo-editor-hero">
             <div class="relative flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
-                <div class="max-w-3xl">
-                    <a href="{{ route('back_office.show', $task->id) }}" class="text-sm text-sky-700 hover:underline">← กลับไปหน้ารายละเอียด</a>
+                <div class="max-w-5xl">
+                    <a href="{{ route('back_office.show', $task) }}" class="text-sm text-sky-700 hover:underline">← กลับไปหน้ารายละเอียด</a>
                     <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">แก้ไขงานนอกโครงการ</h1>
                 </div>
                 <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
@@ -351,7 +538,7 @@
                         class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
                         กลับไปรายการงาน
                     </a>
-                    <a href="{{ route('back_office.show', $task->id) }}"
+                    <a href="{{ route('back_office.show', $task) }}"
                         class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
                         ดูรายละเอียด
                     </a>
@@ -369,7 +556,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('back_office.update', $task->id) }}" class="space-y-6" novalidate>
+        <form method="POST" action="{{ route('back_office.update', $task) }}" class="space-y-6" novalidate>
             @csrf
             @method('PUT')
 
@@ -382,26 +569,26 @@
                     </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">ชื่องาน</span>
+                        <span class="text-sm font-semibold text-slate-600">ชื่องาน <span class="bo-required">*</span></span>
                         <input name="title" value="{{ old('title', $task->title) }}" required
                             class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="เช่น งานจัดทำเอกสารประกอบการประชุม">
                     </label>
                     <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">รายละเอียดเพิ่มเติม</span>
+                        <span class="text-sm font-semibold text-slate-600">รายละเอียดเพิ่มเติม <span class="bo-required">*</span></span>
                         <input name="description" value="{{ old('description', $task->description) }}"
                             class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="อธิบายสั้นๆ (ถ้ามี)">
                     </label>
                     <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">วันที่เริ่ม</span>
+                        <span class="text-sm font-semibold text-slate-600">วันที่เริ่ม <span class="bo-required">*</span></span>
                         <input type="text" name="start_date" value="{{ old('start_date', $task->start_date) }}" required
                             class="w-full mt-1 border border-slate-200 rounded-lg p-3 js-date-be"
-                            placeholder="วันเริ่มต้น" autocomplete="off">
+                            placeholder="กรุณาใส่วันที่เริ่มต้นภาระงาน" autocomplete="off">
                     </label>
                     <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">วันที่สิ้นสุด</span>
+                        <span class="text-sm font-semibold text-slate-600">วันที่สิ้นสุด <span class="bo-required">*</span></span>
                         <input type="text" name="end_date" value="{{ old('end_date', $task->end_date) }}" required
                             class="w-full mt-1 border border-slate-200 rounded-lg p-3 js-date-be"
-                            placeholder="วันสิ้นสุด" autocomplete="off">
+                            placeholder="กรุณาใส่วันที่สิ้นสุดภาระงาน" autocomplete="off">
                     </label>
                     <label class="block md:col-span-2">
                         <span class="text-sm font-semibold text-slate-600">จุดประสงค์ของงาน</span>
@@ -466,7 +653,7 @@
             </div>
 
             <div class="flex items-center justify-end gap-2">
-                <a href="{{ route('back_office.show', $task->id) }}" class="px-4 py-2 rounded-lg border text-sm hover:bg-slate-50">ยกเลิก</a>
+                <a href="{{ route('back_office.show', $task) }}" class="px-4 py-2 rounded-lg border text-sm hover:bg-slate-50">ยกเลิก</a>
                 <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700">บันทึกการแก้ไข</button>
             </div>
         </form>
@@ -498,12 +685,17 @@
             </div>
             <div class="entry-body mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ชื่อ-นามสกุล ผู้รับผิดชอบ</span>
-                    <input list="person-list" name="entries[__INDEX__][person_name]" required
-                        class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="ชื่อ-นามสกุล">
+                    <span class="text-xs font-semibold text-slate-600">ชื่อ-นามสกุล ผู้รับผิดชอบ <span class="bo-required">*</span></span>
+                    <select name="entries[__INDEX__][person_name]" required data-back-office-person-select
+                        class="w-full mt-1 border border-slate-200 rounded-lg p-3">
+                        <option value="">กรุณาเลือกผู้รับผิดชอบ</option>
+                        @foreach ($personList as $person)
+                            <option value="{{ $person }}">{{ $person }}</option>
+                        @endforeach
+                    </select>
                 </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ประเภท</span>
+                    <span class="text-xs font-semibold text-slate-600">ประเภท <span class="bo-required">*</span></span>
                     @php
                         $categoryOptions = [
                             'งานบริการด้านเอกสารงานวิจัย',
@@ -529,30 +721,30 @@
                     </select>
                 </label>
                 <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ชื่อภาระงาน</span>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อภาระงาน <span class="bo-required">*</span></span>
                     <input name="entries[__INDEX__][job_name]" required
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="ชื่อภาระงาน">
                 </label>
                 <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">รายละเอียดงาน</span>
+                    <span class="text-xs font-semibold text-slate-600">รายละเอียดงาน <span class="bo-required">*</span></span>
                     <textarea name="entries[__INDEX__][job_detail]" required rows="1"
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3 auto-grow"
                         placeholder="รายละเอียดงาน"></textarea>
                 </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">วันที่เริ่ม</span>
+                    <span class="text-xs font-semibold text-slate-600">วันที่เริ่ม <span class="bo-required">*</span></span>
                     <input type="text" name="entries[__INDEX__][start_date]" required
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3 js-date-be"
-                        placeholder="วันเริ่มต้น" autocomplete="off">
+                        placeholder="กรุณาใส่วันที่เริ่มต้นภาระงาน" autocomplete="off">
                 </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">วันที่สิ้นสุด</span>
+                    <span class="text-xs font-semibold text-slate-600">วันที่สิ้นสุด <span class="bo-required">*</span></span>
                     <input type="text" name="entries[__INDEX__][end_date]" required
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3 js-date-be"
-                        placeholder="วันสิ้นสุด" autocomplete="off">
+                        placeholder="กรุณาใส่วันที่สิ้นสุดภาระงาน" autocomplete="off">
                 </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ชั่วโมง</span>
+                    <span class="text-xs font-semibold text-slate-600">ชั่วโมง <span class="bo-required">*</span></span>
                     <input type="number" step="0.01" min="0" name="entries[__INDEX__][hours]" required
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3 text-right hours-input" value="0">
                 </label>
@@ -589,11 +781,11 @@
             </div>
             <div class="task-output-body mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ชื่อผลงาน</span>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อผลงาน <span class="bo-required">*</span></span>
                     <input name="outputs[__TINDEX__][title]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" required>
                 </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ประเภทผลงาน</span>
+                    <span class="text-xs font-semibold text-slate-600">ประเภทผลงาน <span class="bo-required">*</span></span>
                     <select name="outputs[__TINDEX__][type]" class="output-type w-full mt-1 border border-slate-200 rounded-lg p-2">
                         <option value="">เลือกประเภทของผลงาน</option>
                         <option>EA101 Research Paper or Journal Article</option>
@@ -625,7 +817,7 @@
                         class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="รายละเอียด / ลิงค์ผลงาน">
                 </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">วันที่เผยแพร่</span>
+                    <span class="text-xs font-semibold text-slate-600">วันที่เผยแพร่ <span class="bo-required">*</span></span>
                     <input type="text" name="outputs[__TINDEX__][year]"
                         class="w-full mt-1 border border-slate-200 rounded-lg p-2 js-date-be"
                         placeholder="วันที่เผยแพร่" autocomplete="off">
@@ -642,7 +834,7 @@
         const addEntryBtn = document.getElementById('add-entry');
         const entryTemplate = document.getElementById('entry-template');
         const initialEntries = @json(old('entries', $task->entries));
-        const initialTaskOutputs = @json(old('outputs', $task->outputs));
+        const initialTaskOutputs = @json(old('outputs', $initialTaskOutputs ?? []));
         const initialLeaders = @json(old('leaders', $task->leaders ?? []));
         const leadersBody = document.getElementById('leaders-body');
         const leaderTemplate = document.getElementById('leader-template');
@@ -650,7 +842,44 @@
         const taskOutputsBody = document.getElementById('task-outputs-body');
         const taskOutputTemplate = document.getElementById('task-output-template');
         const addTaskOutputBtn = document.getElementById('add-task-output');
-        const backOfficeForm = document.querySelector('form[action="{{ route('back_office.update', $task->id) }}"]');
+        const backOfficeForm = document.querySelector('form[action="{{ route('back_office.update', $task) }}"]');
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getDateDisplayFields(input) {
+            if (!(input instanceof HTMLElement) || !input.classList.contains('js-date-be')) return [];
+            const fields = [
+                input._flatpickr?.altInput,
+                input.nextElementSibling,
+                input.previousElementSibling,
+                ...Array.from(input.closest('label')?.querySelectorAll('input') || []),
+                ...Array.from(input.parentElement?.querySelectorAll('input') || []),
+            ];
+
+            return [...new Set(fields)]
+                .filter((field) => field instanceof HTMLInputElement && field !== input && field.type !== 'hidden' && !field.classList.contains('flatpickr-hidden'));
+        }
+
+        function setDateInvalidInlineStyle(input, invalid) {
+            getDateDisplayFields(input).forEach((field) => {
+                if (invalid) {
+                    field.style.setProperty('border-color', '#ef4444', 'important');
+                    field.style.setProperty('box-shadow', '0 0 0 4px rgba(254, 202, 202, 0.75)', 'important');
+                    field.style.setProperty('background', '#fff5f5', 'important');
+                } else {
+                    field.style.removeProperty('border-color');
+                    field.style.removeProperty('box-shadow');
+                    field.style.removeProperty('background');
+                }
+            });
+        }
+
         const OUTPUT_TYPE_OPTIONS = [
             'EA101 Research Paper or Journal Article',
             'EA102 Reports and White Papers',
@@ -699,7 +928,9 @@
         function getVisibleField(input) {
             if (!(input instanceof HTMLElement)) return null;
             const altInput = input._flatpickr?.altInput;
-            if (altInput instanceof HTMLElement && altInput.offsetParent !== null) return altInput;
+            if (altInput instanceof HTMLElement) return altInput;
+            const searchButton = input.tomselect?.wrapper?.querySelector?.('[data-project-search-select-toggle]');
+            if (searchButton instanceof HTMLElement) return searchButton;
             return input;
         }
 
@@ -719,6 +950,7 @@
             const field = getVisibleField(input);
             field?.classList.remove('bo-field-invalid');
             input?.classList?.remove('bo-field-invalid');
+            setDateInvalidInlineStyle(input, false);
             const errorNode = field?.parentElement?.querySelector('.bo-field-error');
             if (errorNode) errorNode.remove();
         }
@@ -727,6 +959,7 @@
             const field = getVisibleField(input);
             field?.classList.add('bo-field-invalid');
             input?.classList?.add('bo-field-invalid');
+            setDateInvalidInlineStyle(input, true);
             const errorNode = getFieldErrorNode(input);
             if (errorNode) errorNode.textContent = message || 'กรุณาตรวจสอบข้อมูลนี้';
         }
@@ -764,33 +997,141 @@
             }, 80);
         }
 
+        function getBackOfficeFieldLabel(input) {
+            const rawLabel = input.closest('label')?.querySelector('span')?.textContent
+                || input.parentElement?.querySelector('span')?.textContent
+                || input.dataset.placeholder
+                || input.placeholder
+                || input.name
+                || 'ช่องนี้';
+
+            return String(rawLabel)
+                .replace(/\*/g, '')
+                .replace(/\s+/g, ' ')
+                .trim() || 'ช่องนี้';
+        }
+
+        function getInvalidSummaryLabel(field) {
+            if (!(field instanceof HTMLElement)) return 'ช่องข้อมูลที่จำเป็น';
+            if (field.dataset?.invalidSummary) return field.dataset.invalidSummary;
+            if (field.matches?.('.ea101-section')) return 'รายชื่อผู้เขียน';
+            if (field.matches?.('.ea103-section')) return 'รายชื่อผู้นำเสนอ';
+            if (field.matches?.('.ea118-section')) return 'ผู้ได้รับรางวัล';
+            if (field.matches?.('.ea119-section')) return 'รายชื่อผู้เขียนหนังสือ';
+            if (field.name === 'year') return 'วันที่เผยแพร่';
+            return getBackOfficeFieldLabel(field);
+        }
+
+        function shouldSkipRequiredField(input) {
+            if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement || input instanceof HTMLTextAreaElement)) {
+                return true;
+            }
+
+            if (input.disabled || input.readOnly || input.closest('template')) return true;
+            if (input.type === 'hidden' && !input.classList.contains('js-date-be')) return true;
+
+            const name = String(input.name || '').trim();
+            if (!name && !input.matches('[data-person-search-select],[data-person-manual-input]')) return true;
+            if (['_token', '_method'].includes(name)) return true;
+            if (name === 'purpose') return true;
+            if (name.endsWith('[project_output]')) return true;
+
+            return false;
+        }
+
         function validateSingleField(input) {
             if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement || input instanceof HTMLTextAreaElement)) {
                 return true;
             }
 
             clearFieldInvalid(input);
+            if (shouldSkipRequiredField(input)) return true;
 
             const rawValue = (input.value ?? '').toString().trim();
-            const label = input.closest('label')?.querySelector('span')?.textContent?.trim() || 'ฟิลด์นี้';
-            const isRequired = input.required;
+            const label = getBackOfficeFieldLabel(input);
 
-            if (isRequired && rawValue === '') {
+            if (rawValue === '') {
+                input.dataset.invalidSummary = label;
                 markFieldInvalid(input, `กรุณากรอก${label}`);
                 return false;
             }
 
             if (rawValue !== '' && input.classList.contains('js-date-be') && !parseDateInputValue(rawValue)) {
+                input.dataset.invalidSummary = `${label}ไม่ถูกต้อง`;
                 markFieldInvalid(input, `${label}ไม่ถูกต้อง`);
                 return false;
             }
 
             if (typeof input.checkValidity === 'function' && !input.checkValidity()) {
+                input.dataset.invalidSummary = label;
                 markFieldInvalid(input, input.validationMessage || `${label}ไม่ถูกต้อง`);
                 return false;
             }
 
             return true;
+        }
+
+        function validateConditionalPersonRows() {
+            const invalidFields = [];
+
+            backOfficeForm?.querySelectorAll('[data-conditional-person-row]').forEach((row) => {
+                const typeSelect = row.querySelector('[data-person-type-select]');
+                const searchSelect = row.querySelector('[data-person-search-select]');
+                const manualInput = row.querySelector('[data-person-manual-input]');
+                const hiddenInput = row.querySelector('[data-person-name-hidden]');
+                const mode = String(typeSelect?.value || '').trim();
+                const displayInput = mode === 'internal' ? searchSelect : manualInput;
+
+                if (typeSelect instanceof HTMLSelectElement && !validateSingleField(typeSelect)) {
+                    invalidFields.push(typeSelect);
+                    return;
+                }
+
+                if (!['internal', 'external', 'unit'].includes(mode)) return;
+
+                const value = mode === 'unit'
+                    ? String(hiddenInput?.value || SPECIAL_UNIT_NAME).trim()
+                    : String((displayInput?.value || hiddenInput?.value || '')).trim();
+
+                if (!value && displayInput instanceof HTMLElement) {
+                    clearFieldInvalid(displayInput);
+                    displayInput.dataset.invalidSummary = getBackOfficeFieldLabel(displayInput);
+                    markFieldInvalid(displayInput, `กรุณากรอก${getBackOfficeFieldLabel(displayInput)}`);
+                    invalidFields.push(displayInput);
+                }
+            });
+
+            return invalidFields;
+        }
+
+        function validateRequiredRepeatRows() {
+            const invalidFields = [];
+            const rules = [
+                ['.ea101-section', '[data-output-author]', 'กรุณาเพิ่มผู้เขียนอย่างน้อย 1 คน'],
+                ['.ea103-section', '[data-output-conference-presenter]', 'กรุณาเพิ่มผู้นำเสนออย่างน้อย 1 คน'],
+                ['.ea118-section', '[data-output-award-recipient]', 'กรุณาเพิ่มผู้ได้รับรางวัลอย่างน้อย 1 คน'],
+                ['.ea119-section', '[data-output-book-author]', 'กรุณาเพิ่มผู้เขียนอย่างน้อย 1 คน'],
+            ];
+
+            rules.forEach(([sectionSelector, rowSelector, message]) => {
+                backOfficeForm?.querySelectorAll(sectionSelector).forEach((section) => {
+                    section.classList.remove('bo-field-invalid');
+                    const oldError = section.querySelector(':scope > .bo-field-error');
+                    if (oldError) oldError.remove();
+
+                    if (section.querySelector(rowSelector)) return;
+
+                    section.classList.add('bo-field-invalid');
+                    const errorNode = document.createElement('div');
+                    errorNode.className = 'bo-field-error';
+                    errorNode.textContent = message;
+                    section.appendChild(errorNode);
+                    section.dataset.invalidSummary = message.replace(/^กรุณา/, '');
+                    invalidFields.push(section);
+                });
+            });
+
+            return invalidFields;
         }
 
         function validateBackOfficeForm() {
@@ -802,7 +1143,36 @@
                 if (!validateSingleField(field)) invalidFields.push(field);
             });
 
+            invalidFields.push(...validateConditionalPersonRows());
+            invalidFields.push(...validateRequiredRepeatRows());
+
             return invalidFields;
+        }
+
+        function showRequiredAlert(invalidFields = []) {
+            const labels = [...new Set(
+                invalidFields
+                    .map(getInvalidSummaryLabel)
+                    .map((label) => String(label || '').replace(/\*/g, '').replace(/\s+/g, ' ').trim())
+                    .filter(Boolean)
+            )].slice(0, 8);
+            const moreCount = Math.max(0, invalidFields.length - labels.length);
+            const detailHtml = labels.length
+                ? `<div style="margin-top:14px;text-align:left"><div style="font-weight:700;margin-bottom:6px">ยังขาด:</div><ul style="margin:0;padding-left:1.2rem">${labels.map((label) => `<li>${escapeHtml(label)}</li>`).join('')}${moreCount ? `<li>และอีก ${moreCount} รายการ</li>` : ''}</ul></div>`
+                : '';
+
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ยังบันทึกไม่ได้',
+                    html: `กรุณากรอกข้อมูลให้ครบและตรวจสอบช่องสีแดง${detailHtml}`,
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#dc2626',
+                });
+                return;
+            }
+
+            window.alert(`กรุณากรอกข้อมูลให้ครบและตรวจสอบช่องสีแดง${labels.length ? `\n\nยังขาด:\n- ${labels.join('\n- ')}` : ''}`);
         }
 
         async function confirmRemoval(options = {}) {
@@ -1066,7 +1436,7 @@
             hoursInput?.addEventListener('input', () => updateFte(entry));
             textarea?.addEventListener('input', () => resizeTextarea(textarea));
             removeBtn?.addEventListener('click', async () => {
-                const person = entry.querySelector('input[name$="[person_name]"]')?.value?.trim() || 'ไม่ระบุผู้รับผิดชอบ';
+                const person = entry.querySelector('[name$="[person_name]"]')?.value?.trim() || 'ไม่ระบุผู้รับผิดชอบ';
                 const jobName = entry.querySelector('input[name$="[job_name]"]')?.value?.trim() || 'ไม่มีชื่อภาระงาน';
                 const confirmed = await confirmRemoval({
                     title: 'ลบภาระงาน',
@@ -1108,38 +1478,73 @@
             updateSummary(entry);
         }
 
+        function renderSpecialPlaceholder(message, subMessage = '') {
+            const wrap = document.createElement('div');
+            wrap.className = 'bo-special-placeholder';
+            wrap.innerHTML = `
+                <div class="font-semibold text-slate-700">${message}</div>
+                ${subMessage ? `<div class="mt-1 text-[12px] text-slate-500">${subMessage}</div>` : ''}
+            `;
+            return wrap;
+        }
+
+        function getOutputTypeDescription(type) {
+            if (type.startsWith('EA101')) {
+                return 'ฟอร์มเฉพาะสำหรับผลงานบทความวิจัยในวารสาร พร้อมข้อมูล journal, quartile, IF และผู้เขียน';
+            }
+            if (type.startsWith('EA103')) {
+                return 'ฟอร์มเฉพาะสำหรับผลงานการนำเสนอวิชาการ พร้อมข้อมูล conference, รูปแบบการนำเสนอ และผู้นำเสนอ';
+            }
+            if (type.startsWith('EA118')) {
+                return 'ฟอร์มเฉพาะสำหรับรางวัลและการยกย่อง พร้อมข้อมูลผู้ได้รับรางวัลหลายรายการ';
+            }
+            if (type.startsWith('EA119')) {
+                return 'ฟอร์มเฉพาะสำหรับหนังสือหรือบทในหนังสือ พร้อมข้อมูลชื่อหนังสือ สำนักพิมพ์ และผู้เขียน';
+            }
+            return 'ประเภทนี้ใช้ข้อมูลพื้นฐานของผลงานได้ทันที และยังไม่มีฟิลด์เฉพาะประเภทเพิ่มเติม';
+        }
+
         function renderEA101Section(prefix) {
             const wrap = document.createElement('div');
-            wrap.className = 'ea101-section border rounded-lg p-3 bg-blue-50/60 space-y-3';
+            wrap.className = 'bo-special-panel ea101-section bg-blue-50/60 space-y-3';
             wrap.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <label class="block">
-                        <span class="text-xs font-semibold text-slate-600">Journal</span>
-                        <input name="${prefix}[journal]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น IEEE Access">
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-slate-600">Quartile (Q)</span>
-                        <select name="${prefix}[quartile]" class="w-full mt-1 border border-slate-200 rounded-lg p-2">
-                            <option value="">เลือก Quartile</option>
-                            <option value="Q1">Q1</option>
-                            <option value="Q2">Q2</option>
-                            <option value="Q3">Q3</option>
-                            <option value="Q4">Q4</option>
-                        </select>
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-slate-600">Impact Factor (IF)</span>
-                        <input name="${prefix}[impact_factor]" type="number" step="0.001"
-                            class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น 3.215">
-                    </label>
+                <div class="bo-special-panel__head">
+                    <div>
+                        <div class="bo-special-panel__title">EA101 Research Paper or Journal Article</div>
+                    </div>
                 </div>
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-semibold text-slate-600">รายชื่อผู้เขียน (Authors)</span>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="bo-special-row md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">Journal</span>
+                            <input name="${prefix}[journal]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น IEEE Access">
+                        </label>
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">Quartile (Q)</span>
+                            <select name="${prefix}[quartile]" class="w-full mt-1 border border-slate-200 rounded-lg p-2">
+                                <option value="">เลือก Quartile</option>
+                                <option value="Q1">Q1</option>
+                                <option value="Q2">Q2</option>
+                                <option value="Q3">Q3</option>
+                                <option value="Q4">Q4</option>
+                            </select>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">Impact Factor (IF)</span>
+                            <input name="${prefix}[impact_factor]" type="number" step="0.001"
+                                class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น 3.215">
+                        </label>
+                    </div>
+                </div>
+                <div class="bo-special-row">
+                    <div class="bo-special-panel__head">
+                        <div>
+                            <div class="bo-special-panel__title">รายชื่อผู้เขียน (Authors)</div>
+                        </div>
                     </div>
                     <div class="space-y-2" data-output-authors data-prefix="${prefix}"></div>
-                    <div class="mt-2 flex justify-end">
-                        <button type="button" class="text-emerald-600 text-xs hover:underline" onclick="addOutputAuthor(this)">เพิ่มผู้เขียน</button>
+                    <div class="mt-4 flex justify-center">
+                        <button type="button" class="bo-mini-action bo-mini-action--add" onclick="addOutputAuthor(this)">+ เพิ่มผู้เขียน</button>
                     </div>
                 </div>
             `;
@@ -1148,22 +1553,75 @@
 
         function renderEA103Section(prefix) {
             const wrap = document.createElement('div');
-            wrap.className = 'ea103-section border rounded-lg p-3 bg-amber-50/60 space-y-3';
+            wrap.className = 'bo-special-panel ea103-section bg-amber-50/60 space-y-3';
             wrap.innerHTML = `
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-slate-600">Conferences</span>
-                    <button type="button" class="text-emerald-600 text-xs hover:underline" onclick="addOutputConference(this)">เพิ่มรายการ</button>
+                <div class="bo-special-panel__head">
+                    <div>
+                        <div class="bo-special-panel__title">EA103 Presentations in Academic Conferences</div>
+                    </div>
                 </div>
-                <div class="space-y-2" data-output-confs data-prefix="${prefix}"></div>
+                <div class="bo-special-row grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <label class="block md:col-span-3">
+                        <span class="text-xs font-semibold text-slate-600">ชื่อเวที/Conference</span>
+                        <input name="${prefix}[conference_name]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น PMAC 2025">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ประเภทนำเสนอ</span>
+                        <select name="${prefix}[conference_presentation_type]" class="w-full mt-1 border border-slate-200 rounded-lg p-2">
+                            <option value="">เลือก</option>
+                            <option value="Oral Presentation">Oral Presentation</option>
+                            <option value="Poster Presentation">Poster Presentation</option>
+                            <option value="Panel Discussion">Panel Discussion</option>
+                            <option value="Keynote Speech">Keynote Speech</option>
+                        </select>
+                    </label>
+                    <label class="block md:col-span-2">
+                        <span class="text-xs font-semibold text-slate-600">สถานที่</span>
+                        <input name="${prefix}[conference_location]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เมือง/ประเทศ">
+                    </label>
+                </div>
+                <div class="bo-special-row">
+                    <div class="bo-special-panel__head">
+                        <div>
+                            <div class="bo-special-panel__title">รายชื่อผู้นำเสนอ</div>
+                        </div>
+                    </div>
+                    <div class="space-y-2" data-output-conference-presenters data-prefix="${prefix}"></div>
+                    <div class="mt-4 flex justify-center">
+                        <button type="button" class="bo-mini-action bo-mini-action--add" onclick="addOutputConferencePresenter(this)">+ เพิ่มผู้นำเสนอ</button>
+                    </div>
+                </div>
+            `;
+            return wrap;
+        }
+
+        function renderEA118Section(prefix) {
+            const wrap = document.createElement('div');
+            wrap.className = 'bo-special-panel ea118-section bg-violet-50/60 space-y-3';
+            wrap.innerHTML = `
+                <div class="bo-special-panel__head">
+                    <div>
+                        <div class="bo-special-panel__title">EA118 Award and Recognition</div>
+                    </div>
+                </div>
+                <div class="space-y-2" data-output-award-recipients data-prefix="${prefix}"></div>
+                <div class="mt-6 flex justify-center pt-2">
+                    <button type="button" class="bo-mini-action bo-mini-action--add" onclick="addOutputAwardRecipient(this)">+ เพิ่มผู้ได้รับรางวัล</button>
+                </div>
             `;
             return wrap;
         }
 
         function renderEA119Section(prefix) {
             const wrap = document.createElement('div');
-            wrap.className = 'ea119-section border rounded-lg p-3 bg-emerald-50/60 space-y-3';
+            wrap.className = 'bo-special-panel ea119-section bg-emerald-50/60 space-y-3';
             wrap.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bo-special-panel__head">
+                    <div>
+                        <div class="bo-special-panel__title">EA119 Textbook / Book chapter</div>
+                    </div>
+                </div>
+                <div class="bo-special-row grid grid-cols-1 md:grid-cols-3 gap-3">
                     <label class="block">
                         <span class="text-xs font-semibold text-slate-600">ชื่อหนังสือ</span>
                         <input name="${prefix}[book_title]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น Textbook of Public Health">
@@ -1177,17 +1635,241 @@
                         <input name="${prefix}[chapter_pages]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น Chapter 2, pp. 45-66">
                     </label>
                 </div>
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-semibold text-slate-600">รายชื่อผู้เขียน</span>
+                <div class="bo-special-row">
+                    <div class="bo-special-panel__head">
+                        <div>
+                            <div class="bo-special-panel__title">รายชื่อผู้เขียน</div>
+                        </div>
                     </div>
                     <div class="space-y-2" data-output-book-authors data-prefix="${prefix}"></div>
-                    <div class="mt-2 flex justify-end">
-                        <button type="button" class="text-emerald-600 text-xs hover:underline" onclick="addOutputBookAuthor(this)">เพิ่มผู้เขียน</button>
+                    <div class="mt-6 flex justify-center pt-2">
+                        <button type="button" class="bo-mini-action bo-mini-action--add" onclick="addOutputBookAuthor(this)">+ เพิ่มผู้เขียน</button>
                     </div>
                 </div>
             `;
             return wrap;
+        }
+
+        const backOfficePeople = @json(($personList ?? collect())->values());
+        const backOfficeResearchPeople = @json(($researchPersonList ?? collect())->values());
+        const escapeOption = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const backOfficePeopleOptions = backOfficePeople.map((name) => `<option value="${escapeOption(name)}">${escapeOption(name)}</option>`).join('');
+        const backOfficeResearchPeopleOptions = backOfficeResearchPeople.map((name) => `<option value="${escapeOption(name)}">${escapeOption(name)}</option>`).join('');
+        const SPECIAL_UNIT_NAME = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
+
+        function closeBackOfficeSearchDropdowns(except = null) {
+            document.querySelectorAll('[data-project-search-select-menu]').forEach((menu) => {
+                if (except && menu === except) return;
+                menu.classList.add('hidden');
+            });
+        }
+
+        function ensureBackOfficeSearchDropdown(select, config = {}) {
+            if (!(select instanceof HTMLSelectElement)) return null;
+
+            const staleWrapper = select.nextElementSibling;
+            if (staleWrapper instanceof HTMLElement && staleWrapper.matches('.project-search-select') && !select.tomselect) {
+                staleWrapper.remove();
+                delete select.dataset.projectSearchDropdown;
+            }
+
+            if (select.dataset.projectSearchDropdown === '1' && select.tomselect) {
+                select.tomselect.refreshOptions?.();
+                return select.tomselect;
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'project-search-select';
+            wrapper.dataset.projectSearchDropdown = '1';
+            wrapper.innerHTML = `
+                <button type="button" class="project-search-select__button" data-project-search-select-toggle>
+                    <span class="project-search-select__label" data-project-search-select-label></span>
+                    <span class="project-search-select__icon">▾</span>
+                </button>
+                <div class="project-search-select__menu hidden" data-project-search-select-menu>
+                    <input type="text" class="project-search-select__search" data-project-search-select-search>
+                    <div class="project-search-select__options" data-project-search-select-options></div>
+                    <div class="project-search-select__empty hidden" data-project-search-select-empty>ไม่พบข้อมูล</div>
+                </div>
+            `;
+
+            select.classList.add('project-search-select__native');
+            select.insertAdjacentElement('afterend', wrapper);
+
+            const toggle = wrapper.querySelector('[data-project-search-select-toggle]');
+            const label = wrapper.querySelector('[data-project-search-select-label]');
+            const menu = wrapper.querySelector('[data-project-search-select-menu]');
+            const searchInput = wrapper.querySelector('[data-project-search-select-search]');
+            const optionsWrap = wrapper.querySelector('[data-project-search-select-options]');
+            const emptyEl = wrapper.querySelector('[data-project-search-select-empty]');
+
+            if (!(toggle instanceof HTMLButtonElement) ||
+                !(label instanceof HTMLElement) ||
+                !(menu instanceof HTMLElement) ||
+                !(searchInput instanceof HTMLInputElement) ||
+                !(optionsWrap instanceof HTMLElement) ||
+                !(emptyEl instanceof HTMLElement)) {
+                wrapper.remove();
+                return null;
+            }
+
+            const placeholder = String(config.placeholder || select.dataset.placeholder || select.querySelector('option[value=""]')?.textContent?.trim() || 'กรุณาเลือกชื่อ').trim();
+            searchInput.placeholder = String(config.searchPlaceholder || select.dataset.searchPlaceholder || 'พิมพ์เพื่อค้นหา').trim();
+
+            const optionItems = () => Array.from(select.options)
+                .filter((option) => option.value !== '')
+                .map((option) => ({ value: String(option.value), label: String(option.textContent || '').trim() }));
+
+            const syncLabel = () => {
+                const selected = Array.from(select.options).find((option) => option.value === select.value);
+                label.textContent = selected && selected.value ? String(selected.textContent || '').trim() : placeholder;
+            };
+
+            const renderOptions = () => {
+                const term = String(searchInput.value || '').toLowerCase().trim();
+                const items = optionItems().filter((item) => term === '' || item.label.toLowerCase().includes(term));
+                optionsWrap.innerHTML = '';
+                if (!items.length) {
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+                emptyEl.classList.add('hidden');
+                items.forEach((item) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'project-search-select__option';
+                    button.textContent = item.label;
+                    if (item.value === String(select.value || '')) button.classList.add('is-selected');
+                    button.addEventListener('mousedown', (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    });
+                    button.addEventListener('click', () => {
+                        select.value = item.value;
+                        syncLabel();
+                        renderOptions();
+                        menu.classList.add('hidden');
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
+                    optionsWrap.appendChild(button);
+                });
+            };
+
+            toggle.addEventListener('click', () => {
+                if (select.disabled) return;
+                const willOpen = menu.classList.contains('hidden');
+                closeBackOfficeSearchDropdowns(willOpen ? menu : null);
+                menu.classList.toggle('hidden', !willOpen);
+                if (willOpen) {
+                    searchInput.value = '';
+                    renderOptions();
+                    searchInput.focus();
+                }
+            });
+
+            searchInput.addEventListener('input', renderOptions);
+            document.addEventListener('click', (event) => {
+                if (!wrapper.contains(event.target) && event.target !== select) {
+                    menu.classList.add('hidden');
+                }
+            });
+            select.addEventListener('change', () => {
+                syncLabel();
+                renderOptions();
+            });
+
+            const api = {
+                wrapper,
+                refreshOptions() {
+                    renderOptions();
+                    syncLabel();
+                },
+                clear(silent = false) {
+                    select.value = '';
+                    syncLabel();
+                    renderOptions();
+                    if (!silent) select.dispatchEvent(new Event('change', { bubbles: true }));
+                },
+                setValue(value, silent = false) {
+                    select.value = String(value ?? '');
+                    syncLabel();
+                    renderOptions();
+                    if (!silent) select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            };
+
+            syncLabel();
+            renderOptions();
+            select.dataset.projectSearchDropdown = '1';
+            select.tomselect = api;
+            return api;
+        }
+
+        function initBackOfficeSearchDropdown(scope = document) {
+            scope.querySelectorAll('[data-back-office-person-select]').forEach((select) => {
+                if (!(select instanceof HTMLSelectElement)) return;
+                const placeholder = select.dataset.placeholder || select.querySelector('option[value=""]')?.textContent?.trim() || 'กรุณาเลือกชื่อ';
+                const searchPlaceholder = select.dataset.searchPlaceholder || 'พิมพ์เพื่อค้นหาชื่อ';
+                const dropdown = ensureBackOfficeSearchDropdown(select, { placeholder, searchPlaceholder });
+                dropdown?.refreshOptions?.();
+            });
+        }
+
+        function syncBackOfficeConditionalRow(row) {
+            if (!(row instanceof HTMLElement)) return;
+            const typeSelect = row.querySelector('[data-person-type-select]');
+            const selectWrap = row.querySelector('[data-person-select-wrap]');
+            const manualWrap = row.querySelector('[data-person-manual-wrap]');
+            const searchSelect = row.querySelector('[data-person-search-select]');
+            const manualInput = row.querySelector('[data-person-manual-input]');
+            const hiddenInput = row.querySelector('[data-person-name-hidden]');
+            if (!(typeSelect instanceof HTMLSelectElement) || !(hiddenInput instanceof HTMLInputElement)) return;
+
+            const mode = String(typeSelect.value || '').trim();
+            const isInternal = mode === 'internal';
+            const isExternal = mode === 'external';
+            const isUnit = mode === 'unit';
+
+            selectWrap?.classList.toggle('hidden', !isInternal);
+            manualWrap?.classList.toggle('hidden', !isExternal && !isUnit);
+
+            if (searchSelect instanceof HTMLSelectElement) {
+                searchSelect.disabled = !isInternal;
+                if (isInternal) {
+                    initBackOfficeSearchDropdown(row);
+                    hiddenInput.value = searchSelect.value || '';
+                } else {
+                    try { searchSelect.tomselect?.clear?.(true); } catch (_) {}
+                    searchSelect.value = '';
+                }
+            }
+
+            if (manualInput instanceof HTMLInputElement) {
+                const unitLabel = manualInput.dataset.unitPlaceholder || SPECIAL_UNIT_NAME;
+                manualInput.disabled = !isExternal && !isUnit;
+                manualInput.readOnly = isUnit;
+                if (isUnit) {
+                    manualInput.placeholder = unitLabel;
+                    manualInput.value = unitLabel;
+                    hiddenInput.value = unitLabel;
+                } else if (isExternal) {
+                    manualInput.placeholder = manualInput.dataset.externalPlaceholder || 'ชื่อผู้ได้รับรางวัล';
+                    hiddenInput.value = manualInput.value || '';
+                } else if (!isInternal) {
+                    manualInput.placeholder = manualInput.dataset.idlePlaceholder || 'เลือกประเภทผู้ได้รับรางวัลก่อน';
+                    manualInput.value = '';
+                    hiddenInput.value = '';
+                }
+            }
+        }
+
+        function bindBackOfficeConditionalRow(row) {
+            if (!(row instanceof HTMLElement) || row.dataset.conditionalBound === '1') return;
+            row.dataset.conditionalBound = '1';
+            row.querySelector('[data-person-type-select]')?.addEventListener('change', () => syncBackOfficeConditionalRow(row));
+            row.querySelector('[data-person-search-select]')?.addEventListener('change', () => syncBackOfficeConditionalRow(row));
+            row.querySelector('[data-person-manual-input]')?.addEventListener('input', () => syncBackOfficeConditionalRow(row));
+            syncBackOfficeConditionalRow(row);
         }
 
         function addOutputAuthor(btn, data = {}) {
@@ -1197,10 +1879,12 @@
             const prefix = container.dataset.prefix;
             const idx = container.querySelectorAll('[data-output-author]').length;
             const row = document.createElement('div');
-            row.className = 'grid grid-cols-1 md:grid-cols-3 gap-2 items-end';
+            const personType = String(data.person_type || '').trim() || (data.name && backOfficeResearchPeople.includes(data.name) ? 'internal' : (data.name ? 'external' : ''));
+            row.className = 'bo-special-row grid grid-cols-1 md:grid-cols-[minmax(0,180px)_minmax(0,220px)_minmax(0,1fr)_auto] gap-2 items-end';
             row.setAttribute('data-output-author', '1');
+            row.setAttribute('data-conditional-person-row', '1');
             row.innerHTML = `
-                <label class="block md:col-span-1">
+                <label class="block">
                     <span class="text-xs font-semibold text-slate-600">บทบาท</span>
                     <select name="${prefix}[authors][${idx}][role]" class="w-full mt-1 border border-slate-200 rounded-lg p-2">
                         <option value="">เลือกบทบาท</option>
@@ -1209,64 +1893,126 @@
                         <option value="corresponding">Corresponding author</option>
                     </select>
                 </label>
-                <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
-                    <input name="${prefix}[authors][${idx}][name]" list="output-author-names" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)">
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">คนในหน่วย / คนนอก</span>
+                    <select name="${prefix}[authors][${idx}][person_type]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" data-person-type-select>
+                        <option value="">กรุณาเลือก</option>
+                        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="external">คนนอก</option>
+                    </select>
                 </label>
-                <div class="md:col-span-3 text-right">
-                    <button type="button" class="text-red-500 text-xs hover:underline" onclick="this.closest('[data-output-author]').remove()">ลบ</button>
+                <div class="hidden" data-person-select-wrap>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
+                    <select class="w-full mt-1 border border-slate-200 rounded-lg p-2" data-back-office-person-select data-person-search-select data-placeholder="กรุณาเลือกชื่อผู้เขียน" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้เขียน">
+                        <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>${backOfficeResearchPeopleOptions}
+                    </select>
+                </div>
+                <label data-person-manual-wrap>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)</span>
+                    <input class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เลือกประเภทผู้เขียนก่อน" data-idle-placeholder="เลือกประเภทผู้เขียนก่อน" data-external-placeholder="ชื่อ - นามสกุล ผู้เขียน (อังกฤษ)" data-person-manual-input disabled>
+                </label>
+                <input type="hidden" name="${prefix}[authors][${idx}][name]" data-person-name-hidden>
+                <div class="text-right">
+                    <button type="button" class="bo-mini-action bo-mini-action--remove" onclick="this.closest('[data-output-author]').remove()">ลบผู้เขียน</button>
                 </div>
             `;
             if (data.role) {
                 row.querySelector(`select[name="${prefix}[authors][${idx}][role]"]`).value = data.role;
             }
-            if (data.name) {
-                row.querySelector(`input[name="${prefix}[authors][${idx}][name]"]`).value = data.name;
-            }
+            row.querySelector(`select[name="${prefix}[authors][${idx}][person_type]"]`).value = personType;
+            row.querySelector(`[data-person-name-hidden]`).value = data.name || '';
+            if (personType === 'internal') row.querySelector('[data-person-search-select]').value = data.name || '';
+            if (personType === 'external') row.querySelector('[data-person-manual-input]').value = data.name || '';
             container.appendChild(row);
+            bindBackOfficeConditionalRow(row);
         }
 
-        function addOutputConference(btn, data = {}) {
+        function addOutputConferencePresenter(btn, data = {}) {
             const section = btn.closest('.ea103-section');
-            const container = section?.querySelector('[data-output-confs]');
+            const container = section?.querySelector('[data-output-conference-presenters]');
             if (!container) return;
             const prefix = container.dataset.prefix;
-            const idx = container.querySelectorAll('[data-output-conf]').length;
+            const idx = container.querySelectorAll('[data-output-conference-presenter]').length;
             const row = document.createElement('div');
-            row.className = 'grid grid-cols-1 md:grid-cols-5 gap-2 items-end';
-            row.setAttribute('data-output-conf', '1');
+            const personType = String(data.person_type || '').trim() || (data.name && backOfficePeople.includes(data.name) ? 'internal' : (data.name ? 'external' : ''));
+            row.className = 'bo-special-row grid grid-cols-1 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-end';
+            row.setAttribute('data-output-conference-presenter', '1');
+            row.setAttribute('data-conditional-person-row', '1');
             row.innerHTML = `
-                <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ชื่อเวที/Conference</span>
-                    <input name="${prefix}[conferences][${idx}][name]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น PMAC 2025">
-                </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ประเภทนำเสนอ</span>
-                    <select name="${prefix}[conferences][${idx}][presentation_type]" class="w-full mt-1 border border-slate-200 rounded-lg p-2">
-                        <option value="">เลือก</option>
-                        <option value="Oral Presentation">Oral Presentation</option>
-                        <option value="Poster Presentation">Poster Presentation</option>
-                        <option value="Panel Discussion">Panel Discussion</option>
-                        <option value="Keynote Speech">Keynote Speech</option>
+                    <span class="text-xs font-semibold text-slate-600">ประเภทผู้นำเสนอ</span>
+                    <select name="${prefix}[conference_presenters][${idx}][person_type]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" data-person-type-select>
+                        <option value="">กรุณาเลือก</option>
+                        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="external">คนนอก</option>
                     </select>
                 </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">สถานที่</span>
-                    <input name="${prefix}[conferences][${idx}][location]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เมือง/ประเทศ">
+                <div class="hidden" data-person-select-wrap>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อ - นามสกุล ผู้นำเสนอ</span>
+                    <select class="w-full mt-1 border border-slate-200 rounded-lg p-2" data-back-office-person-select data-person-search-select data-placeholder="กรุณาเลือกชื่อผู้นำเสนอ" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ">
+                        <option value="">พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ</option>${backOfficePeopleOptions}
+                    </select>
+                </div>
+                <label data-person-manual-wrap>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อ - นามสกุล ผู้นำเสนอ</span>
+                    <input class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เลือกประเภทผู้นำเสนอก่อน" data-idle-placeholder="เลือกประเภทผู้นำเสนอก่อน" data-external-placeholder="ชื่อ - นามสกุล ผู้นำเสนอ" data-person-manual-input disabled>
                 </label>
-                <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">ชื่อผู้นำเสนอ</span>
-                    <input name="${prefix}[conferences][${idx}][note]" list="person-list" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="ชื่อผู้นำเสนอ">
-                </label>
-                <div class="md:col-span-5 text-right">
-                    <button type="button" class="text-red-500 text-xs hover:underline" onclick="this.closest('[data-output-conf]').remove()">ลบ</button>
+                <input type="hidden" name="${prefix}[conference_presenters][${idx}][name]" data-person-name-hidden>
+                <div class="text-right">
+                    <button type="button" class="bo-mini-action bo-mini-action--remove" onclick="this.closest('[data-output-conference-presenter]').remove()">ลบผู้นำเสนอ</button>
                 </div>
             `;
-            if (data.name) row.querySelector(`input[name="${prefix}[conferences][${idx}][name]"]`).value = data.name;
-            if (data.presentation_type) row.querySelector(`select[name="${prefix}[conferences][${idx}][presentation_type]"]`).value = data.presentation_type;
-            if (data.location) row.querySelector(`input[name="${prefix}[conferences][${idx}][location]"]`).value = data.location;
-            if (data.note) row.querySelector(`input[name="${prefix}[conferences][${idx}][note]"]`).value = data.note;
+            row.querySelector(`select[name="${prefix}[conference_presenters][${idx}][person_type]"]`).value = personType;
+            row.querySelector(`[data-person-name-hidden]`).value = data.name || '';
+            if (personType === 'internal') row.querySelector('[data-person-search-select]').value = data.name || '';
+            if (personType === 'external') row.querySelector('[data-person-manual-input]').value = data.name || '';
             container.appendChild(row);
+            bindBackOfficeConditionalRow(row);
+        }
+
+        function addOutputAwardRecipient(btn, data = {}) {
+            const section = btn.closest('.ea118-section');
+            const container = section?.querySelector('[data-output-award-recipients]');
+            if (!container) return;
+            const prefix = container.dataset.prefix;
+            const idx = container.querySelectorAll('[data-output-award-recipient]').length;
+            const row = document.createElement('div');
+            const personType = String(data.person_type || '').trim();
+            row.className = 'bo-special-row grid grid-cols-1 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-end';
+            row.setAttribute('data-output-award-recipient', '1');
+            row.setAttribute('data-conditional-person-row', '1');
+            row.innerHTML = `
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">คนในหน่วย / คนนอก</span>
+                    <select name="${prefix}[award_recipients][${idx}][person_type]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" data-person-type-select>
+                        <option value="">กรุณาเลือก</option>
+                        <option value="unit">หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="external">คนนอก</option>
+                    </select>
+                </label>
+                <div class="hidden" data-person-select-wrap>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อผู้ได้รับรางวัล</span>
+                    <select class="w-full mt-1 border border-slate-200 rounded-lg p-2" data-back-office-person-select data-person-search-select data-placeholder="กรุณาเลือกชื่อผู้ได้รับรางวัล" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล">
+                        <option value="">พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล</option>${backOfficePeopleOptions}
+                    </select>
+                </div>
+                <label class="hidden" data-person-manual-wrap>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อผู้ได้รับรางวัล</span>
+                    <input class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เลือกประเภทผู้ได้รับรางวัลก่อน" data-idle-placeholder="เลือกประเภทผู้ได้รับรางวัลก่อน" data-external-placeholder="ชื่อผู้ได้รับรางวัล" data-unit-placeholder="หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ" data-person-manual-input disabled>
+                </label>
+                <input type="hidden" name="${prefix}[award_recipients][${idx}][name]" data-person-name-hidden>
+                <div class="text-right">
+                    <button type="button" class="bo-mini-action bo-mini-action--remove" onclick="this.closest('[data-output-award-recipient]').remove()">ลบรายชื่อ</button>
+                </div>
+            `;
+            row.querySelector(`select[name="${prefix}[award_recipients][${idx}][person_type]"]`).value = personType;
+            row.querySelector(`[data-person-name-hidden]`).value = personType === 'unit' ? (data.name || SPECIAL_UNIT_NAME) : (data.name || '');
+            if (personType === 'internal') row.querySelector('[data-person-search-select]').value = data.name || '';
+            if (personType === 'external') row.querySelector('[data-person-manual-input]').value = data.name || '';
+            if (personType === 'unit') row.querySelector('[data-person-manual-input]').value = data.name || SPECIAL_UNIT_NAME;
+            container.appendChild(row);
+            bindBackOfficeConditionalRow(row);
         }
 
         function addOutputBookAuthor(btn, data = {}) {
@@ -1276,20 +2022,38 @@
             const prefix = container.dataset.prefix;
             const idx = container.querySelectorAll('[data-output-book-author]').length;
             const row = document.createElement('div');
-            row.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-end';
+            const personType = String(data.person_type || '').trim() || (data.name && backOfficePeople.includes(data.name) ? 'internal' : (data.name ? 'external' : ''));
+            row.className = 'bo-special-row grid grid-cols-1 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-end';
             row.setAttribute('data-output-book-author', '1');
+            row.setAttribute('data-conditional-person-row', '1');
             row.innerHTML = `
-                <label class="block md:col-span-3">
-                    <span class="text-xs font-semibold text-slate-600">ชื่อผู้เขียน</span>
-                    <input name="${prefix}[book_authors][${idx}][name]" list="person-list" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เลือกชื่อผู้เขียน">
+                <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">คนในหน่วย / คนนอก</span>
+                    <select name="${prefix}[book_authors][${idx}][person_type]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" data-person-type-select>
+                        <option value="">กรุณาเลือก</option>
+                        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                        <option value="external">คนนอก</option>
+                    </select>
                 </label>
-                <div class="md:col-span-1 text-right">
-                    <button type="button" class="text-red-500 text-xs hover:underline" onclick="this.closest('[data-output-book-author]').remove()">ลบ</button>
+                <div class="hidden" data-person-select-wrap>
+                    <span class="text-xs font-semibold text-slate-600">เลือกชื่อผู้เขียน</span>
+                    <select class="w-full mt-1 border border-slate-200 rounded-lg p-2" data-back-office-person-select data-person-search-select data-placeholder="กรุณาเลือกชื่อผู้เขียน" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้เขียน">
+                        <option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>${backOfficePeopleOptions}
+                    </select>
+                </div>
+                <label class="hidden" data-person-manual-wrap>
+                    <span class="text-xs font-semibold text-slate-600">ชื่อผู้เขียน</span>
+                    <input class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="ชื่อผู้เขียน" data-person-manual-input disabled>
+                </label>
+                <input type="hidden" name="${prefix}[book_authors][${idx}][name]" data-person-name-hidden>
+                <div class="text-right">
+                    <button type="button" class="bo-mini-action bo-mini-action--remove" onclick="this.closest('[data-output-book-author]').remove()">ลบผู้เขียน</button>
                 </div>
             `;
-            if (data.name) {
-                row.querySelector(`input[name="${prefix}[book_authors][${idx}][name]"]`).value = data.name;
-            }
+            row.querySelector(`select[name="${prefix}[book_authors][${idx}][person_type]"]`).value = personType;
+            row.querySelector(`[data-person-name-hidden]`).value = data.name || '';
+            if (personType === 'internal') row.querySelector('[data-person-search-select]').value = data.name || '';
+            if (personType === 'external') row.querySelector('[data-person-manual-input]').value = data.name || '';
             if (data.id) {
                 const hidden = document.createElement('input');
                 hidden.type = 'hidden';
@@ -1298,6 +2062,7 @@
                 row.appendChild(hidden);
             }
             container.appendChild(row);
+            bindBackOfficeConditionalRow(row);
         }
 
         function handleOutputType(selectEl) {
@@ -1311,6 +2076,8 @@
                 mount.appendChild(renderEA101Section(prefix));
             } else if (val.startsWith('EA103')) {
                 mount.appendChild(renderEA103Section(prefix));
+            } else if (val.startsWith('EA118')) {
+                mount.appendChild(renderEA118Section(prefix));
             } else if (val.startsWith('EA119')) {
                 mount.appendChild(renderEA119Section(prefix));
             }
@@ -1337,9 +2104,28 @@
                 const btn = row.querySelector('.ea101-section button');
                 if (btn) data.authors.forEach(author => addOutputAuthor(btn, author));
             }
-            if (Array.isArray(data.conferences)) {
+            if (Array.isArray(data.conferences) && data.conferences.length) {
+                const firstConference = data.conferences[0] || {};
+                const conferenceName = row.querySelector(`[name="${prefix}[conference_name]"]`);
+                if (conferenceName) conferenceName.value = firstConference.name || data.conference_name || '';
+                const conferencePresentationType = row.querySelector(`[name="${prefix}[conference_presentation_type]"]`);
+                if (conferencePresentationType) conferencePresentationType.value = firstConference.presentation_type || data.conference_presentation_type || '';
+                const conferenceLocation = row.querySelector(`[name="${prefix}[conference_location]"]`);
+                if (conferenceLocation) conferenceLocation.value = firstConference.location || data.conference_location || '';
                 const btn = row.querySelector('.ea103-section button');
-                if (btn) data.conferences.forEach(conf => addOutputConference(btn, conf));
+                const presenters = Array.isArray(firstConference.presenters) && firstConference.presenters.length
+                    ? firstConference.presenters
+                    : ((firstConference.note || firstConference.presenter_person_type)
+                        ? [{ name: firstConference.note || '', person_type: firstConference.presenter_person_type || '' }]
+                        : []);
+                if (btn && presenters.length) presenters.forEach((presenter) => addOutputConferencePresenter(btn, presenter));
+            }
+            const awardRecipients = Array.isArray(data.award_recipients)
+                ? data.award_recipients
+                : (Array.isArray(data.authors) ? data.authors.filter(author => (author?.role || '') === 'awardee') : []);
+            if (awardRecipients.length) {
+                const btn = row.querySelector('.ea118-section button');
+                if (btn) awardRecipients.forEach(recipient => addOutputAwardRecipient(btn, recipient));
             }
             if (Array.isArray(data.book_authors)) {
                 const btn = row.querySelector('.ea119-section button');
@@ -1394,12 +2180,24 @@
             entry.querySelector(`[name="entries[${index}][hours]"]`).value = data.hours ?? 0;
 
             entriesBody.appendChild(entry);
+            initBackOfficePersonSelect(entry);
             if (window.initDateBE) initDateBE(entry);
             bindEntryDateRules(entry, index);
             bindEntry(entry);
             updateIndex();
             collapseAllEntries(entry);
             setCollapsed(entry, false);
+        }
+
+        function initBackOfficePersonSelect(scope = document) {
+            scope.querySelectorAll('[data-back-office-person-select]').forEach((select) => {
+                if (!(select instanceof HTMLSelectElement)) return;
+                const dropdown = ensureBackOfficeSearchDropdown(select, {
+                    placeholder: 'กรุณาเลือกผู้รับผิดชอบ',
+                    searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้รับผิดชอบ',
+                });
+                dropdown?.refreshOptions?.();
+            });
         }
 
         function isTaskOutputCollapsed(row) {
@@ -1501,6 +2299,8 @@
             addEntry();
         }
 
+        initBackOfficePersonSelect(document);
+
         if (Array.isArray(initialTaskOutputs) && initialTaskOutputs.length) {
             initialTaskOutputs.forEach(output => addTaskOutput(output));
         }
@@ -1569,21 +2369,19 @@
             input.addEventListener('input', () => clearFieldInvalid(input));
             input.addEventListener('change', () => clearFieldInvalid(input));
         });
+        backOfficeForm?.addEventListener('input', (event) => {
+            if (event.target instanceof HTMLElement) clearFieldInvalid(event.target);
+        });
+        backOfficeForm?.addEventListener('change', (event) => {
+            if (event.target instanceof HTMLElement) clearFieldInvalid(event.target);
+        });
 
         backOfficeForm?.addEventListener('submit', (event) => {
             const invalidFields = validateBackOfficeForm();
             if (!invalidFields.length) return;
 
             event.preventDefault();
-            if (window.Swal) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'ยังบันทึกไม่ได้',
-                    text: 'กรุณากรอกข้อมูลให้ครบและตรวจสอบช่องสีแดง',
-                    confirmButtonText: 'ตกลง',
-                    confirmButtonColor: '#dc2626',
-                });
-            }
+            showRequiredAlert(invalidFields);
             scrollToField(invalidFields[0]);
         });
 
@@ -1618,7 +2416,7 @@
         }
 
         function updateSummary(entry) {
-            const person = entry.querySelector('input[name$="[person_name]"]')?.value?.trim() || '';
+            const person = entry.querySelector('[name$="[person_name]"]')?.value?.trim() || '';
             const category = entry.querySelector('select[name$="[category]"]')?.value?.trim() || '';
             const jobDetail = entry.querySelector('textarea[name$="[job_detail]"]')?.value?.trim() || '';
             const startDate = entry.querySelector('input[name$="[start_date]"]')?.value?.trim() || '';
@@ -1640,6 +2438,77 @@
                 sub.textContent = `${dateText} • ${hours} ชม.`;
             }
         }
+    </script>
+    <script>
+        (() => {
+            const formatBackOfficeBeText = (date) => {
+                if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+                const day = date.getDate();
+                const month = date.toLocaleDateString('th-TH', { month: 'long' });
+                const year = date.getFullYear() + 543;
+                return `${day} ${month} ${year}`;
+            };
+
+            const forceBackOfficeBeDisplay = (inst) => {
+                const altInput = inst?.altInput;
+                const selectedDate = inst?.selectedDates?.[0];
+                if (!(altInput instanceof HTMLInputElement) || !(selectedDate instanceof Date) || Number.isNaN(selectedDate.getTime())) return;
+                altInput.value = formatBackOfficeBeText(selectedDate);
+            };
+
+            const forceBackOfficeBeYear = (inst) => {
+                const cal = inst?.calendarContainer;
+                if (!cal) return;
+
+                const yearInput = cal.querySelector('.flatpickr-current-month input.cur-year');
+                if (yearInput) {
+                    const year = parseInt(yearInput.value || '0', 10);
+                    if (!Number.isNaN(year) && year > 0 && year < 2400) {
+                        yearInput.value = String(year + 543);
+                    }
+                }
+
+                ['.flatpickr-prev-month', '.flatpickr-next-month'].forEach((selector) => {
+                    const btn = cal.querySelector(selector);
+                    if (!btn || btn.dataset.boBeBound === '1') return;
+                    btn.dataset.boBeBound = '1';
+                    btn.addEventListener('click', () => {
+                        requestAnimationFrame(() => forceBackOfficeBeYear(inst));
+                        window.setTimeout(() => forceBackOfficeBeYear(inst), 0);
+                    });
+                });
+            };
+
+            const bindBackOfficeBeDatepickers = (scope = document) => {
+                scope.querySelectorAll('.js-date-be').forEach((input) => {
+                    const inst = input?._flatpickr;
+                    if (!inst || input.dataset.boBeInit === '1') return;
+                    input.dataset.boBeInit = '1';
+
+                    const sync = () => {
+                        forceBackOfficeBeDisplay(inst);
+                        requestAnimationFrame(() => forceBackOfficeBeYear(inst));
+                        window.setTimeout(() => forceBackOfficeBeYear(inst), 0);
+                    };
+
+                    inst.altInput?.addEventListener('focus', sync);
+                    inst.altInput?.addEventListener('click', sync);
+                    inst.altInput?.addEventListener('input', sync);
+                    inst.altInput?.addEventListener('blur', sync);
+                    sync();
+                });
+            };
+
+            let tries = 0;
+            const timer = window.setInterval(() => {
+                bindBackOfficeBeDatepickers(document);
+                tries += 1;
+                if (tries >= 20) window.clearInterval(timer);
+            }, 250);
+
+            window.setTimeout(() => bindBackOfficeBeDatepickers(document), 50);
+            window.setTimeout(() => bindBackOfficeBeDatepickers(document), 500);
+        })();
     </script>
     <script>
         (() => {
@@ -1700,6 +2569,29 @@
             window.addEventListener('resize', updateActiveDot);
             window.setTimeout(updateActiveDot, 60);
             updateActiveDot();
+        })();
+
+        (() => {
+            const syncBackOfficeDatePlaceholders = () => {
+                document.querySelectorAll('.js-date-be[placeholder]').forEach((input) => {
+                    const placeholder = input.getAttribute('placeholder') || '';
+                    const altInput = input._flatpickr?.altInput;
+                    if (!altInput || !placeholder) return;
+                    altInput.placeholder = placeholder;
+                    altInput.setAttribute('placeholder', placeholder);
+                    if (!altInput.value) altInput.value = '';
+                });
+            };
+
+            let tries = 0;
+            const timer = window.setInterval(() => {
+                syncBackOfficeDatePlaceholders();
+                tries += 1;
+                if (tries >= 20) window.clearInterval(timer);
+            }, 250);
+
+            window.setTimeout(syncBackOfficeDatePlaceholders, 50);
+            window.setTimeout(syncBackOfficeDatePlaceholders, 500);
         })();
     </script>
 @endsection

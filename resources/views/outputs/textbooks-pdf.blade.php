@@ -148,16 +148,19 @@
             line-height: 1.4;
         }
         .textbook-title {
-            font-size: 15.8pt;
+            font-size: 18.4pt;
             font-weight: bold;
-            line-height: 1.42;
+            line-height: 1.34;
             color: #0f172a;
         }
-        .textbook-year {
-            white-space: nowrap;
+        .textbook-head-main {
+            width: 80%;
+            padding-right: 10px;
+        }
+        .textbook-head-qr {
+            width: 20%;
             text-align: right;
-            font-size: 11.8pt;
-            color: #64748b;
+            vertical-align: middle;
         }
         .textbook-meta-inline {
             margin-top: 4px;
@@ -179,41 +182,47 @@
         .textbook-meta-grid td:last-child {
             padding-right: 0;
         }
-        .textbook-meta-grid .col-main { width: 42%; }
-        .textbook-meta-grid .col-side { width: 29%; }
-        .textbook-meta-grid .col-qr {
-            width: 40px;
-            text-align: center;
-            vertical-align: top;
-            padding-right: 0;
-        }
+        .textbook-meta-grid .col-main { width: 58%; }
+        .textbook-meta-grid .col-side { width: 42%; }
         .textbook-block {
             margin-top: 10px;
         }
+        .textbook-detail-row td {
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+        }
         .textbook-label {
-            margin-bottom: 4px;
-            font-size: 11.1pt;
+            margin-bottom: 5px;
+            font-size: 12.2pt;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748b;
+            letter-spacing: 0.06em;
+            color: #334155;
         }
         .textbook-value {
             font-size: 13.3pt;
-            line-height: 1.66;
+            line-height: 1.62;
             color: #1e293b;
             word-break: break-word;
             white-space: normal;
         }
         .qr-wrap {
-            width: 28px;
-            margin: 2px auto 0;
+            width: 18px;
+            margin: 0 auto;
             text-align: center;
         }
         .qr-wrap img {
             display: inline-block;
-            width: 28px;
-            height: 28px;
+            width: 18px;
+            height: 18px;
+        }
+        .qr-wrap.head {
+            width: 22px;
+            margin: 0 0 0 auto;
+        }
+        .qr-wrap.head img {
+            width: 22px;
+            height: 22px;
         }
         .empty-state {
             border: 1px dashed #cbd5e1;
@@ -312,7 +321,7 @@
                 return null;
             }
             try {
-                $renderer = new \BaconQrCode\Renderer\GDLibRenderer(120);
+                $renderer = new \BaconQrCode\Renderer\GDLibRenderer(80);
                 $writer = new \BaconQrCode\Writer($renderer);
                 $png = $writer->writeString($value);
                 return 'data:image/png;base64,' . base64_encode($png);
@@ -323,24 +332,43 @@
 
         $generated = ($generatedAt ?? now())->setTimezone('Asia/Bangkok')->locale('th');
         $generatedLabel = $generated->translatedFormat('j F') . ' ' . ($generated->year + 543) . $generated->translatedFormat(' เวลา H:i');
+        $headerLogoPath = public_path('images/sihp-logo.png');
+        $headerLogo = file_exists($headerLogoPath) ? 'file://' . $headerLogoPath : null;
     @endphp
 
     <htmlpageheader name="Header">
-        <div class="header-line" style="font-size:13.6pt; color:#0f172a;">
-            Textbook / Book Chapter
+        <div class="header-line">
+            <table style="width:100%; border-collapse:collapse; font-size:13.6pt; color:#0f172a;">
+                <tr>
+                    <td style="width:58%; text-align:left; vertical-align:middle;">
+                        <table style="border-collapse:collapse;">
+                            <tr>
+                                @if ($headerLogo)
+                                    <td style="vertical-align:middle; padding-right:7px;">
+                                        <img src="{{ $headerLogo }}" alt="SiHP Logo" style="height:18px; width:auto; vertical-align:middle;">
+                                    </td>
+                                @endif
+                                <td style="vertical-align:middle; font-size:13.2pt; color:#0f172a; font-weight:bold;">
+                                    SiHP Research Database Management System
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="width:42%; text-align:right; vertical-align:middle; font-size:13.6pt; font-weight:bold; color:#0f172a;">
+                        Textbook / Book Chapter
+                    </td>
+                </tr>
+            </table>
         </div>
     </htmlpageheader>
 
     <htmlpagefooter name="Footer">
-        <div style="width:100%; font-size:11.2pt; color:#64748b; border-top:1px solid #dbe7f5; padding-top:6px;">
-            <div style="float:left;">
-                ผู้สร้างรายงาน {{ $reporter ?? 'ผู้ใช้ระบบ' }}
-            </div>
-            <div style="float:right; text-align:right;">
-                หน้า {PAGENO} / {nbpg}<br>
-                {{ $generatedLabel }}
-            </div>
-        </div>
+        <table style="width:100%; border-top:1px solid #dbe7f5; padding-top:6px; font-size:11.2pt; color:#64748b; border-collapse:collapse;">
+            <tr>
+                <td style="width:76%; text-align:left;">ผู้สร้างรายงาน {{ $reporter ?? 'ผู้ใช้ระบบ' }} เวลา {{ $generatedLabel }}</td>
+                <td style="width:24%; text-align:right; white-space:nowrap;">หน้า {PAGENO} / {nbpg}</td>
+            </tr>
+        </table>
     </htmlpagefooter>
 
     <div class="hero-shell">
@@ -411,12 +439,18 @@
             <div class="textbook-card">
                 <table class="textbook-topline">
                     <tr>
-                        <td class="textbook-index">{{ $index + 1 }}.</td>
-                        <td>
-                            <div class="textbook-title">{{ $row->title ?: '-' }}</div>
+                        <td class="textbook-index">
+                            {{ $index + 1 }}.
+                        </td>
+                        <td class="textbook-head-main">
+                            <div class="textbook-title">{{ $row->title ?: '-' }}@if($row->year_be) ({{ $row->year_be }})@endif</div>
                             <div class="textbook-meta-inline">{{ $metaLine ?: '-' }}</div>
                         </td>
-                        <td class="textbook-year">ปี {{ $row->year_be ?: '-' }}</td>
+                        <td class="textbook-head-qr">
+                            @if ($qrCode)
+                                <div class="qr-wrap head"><img src="{{ $qrCode }}" alt="QR"></div>
+                            @endif
+                        </td>
                     </tr>
                 </table>
 
@@ -431,12 +465,6 @@
                                 <div class="textbook-label">Authors</div>
                                 <div class="textbook-value">{{ collect($row->authors)->isEmpty() ? '-' : collect($row->authors)->implode(', ') }}</div>
                             </div>
-                            @if (!empty($row->detail))
-                                <div class="textbook-block">
-                                    <div class="textbook-label">รายละเอียด / ลิงก์ / โน้ต</div>
-                                    <div class="textbook-value">{{ $row->detail }}</div>
-                                </div>
-                            @endif
                         </td>
                         <td class="col-side">
                             <div class="textbook-block">
@@ -451,8 +479,6 @@
                                 <div class="textbook-label">Output Code</div>
                                 <div class="textbook-value">{{ $row->output_code ?: '-' }}</div>
                             </div>
-                        </td>
-                        <td class="col-side">
                             <div class="textbook-block">
                                 <div class="textbook-label">โครงการ / งานอ้างอิง</div>
                                 <div class="textbook-value">
@@ -463,12 +489,15 @@
                                 </div>
                             </div>
                         </td>
-                        @if ($qrCode)
-                            <td class="col-qr">
-                                <div class="qr-wrap"><img src="{{ $qrCode }}" alt="QR"></div>
-                            </td>
-                        @endif
                     </tr>
+                    @if (!empty($row->detail))
+                        <tr class="textbook-detail-row">
+                            <td colspan="2">
+                                <div class="textbook-label">รายละเอียด / ลิงก์ / โน้ต</div>
+                                <div class="textbook-value">{{ $row->detail }}</div>
+                            </td>
+                        </tr>
+                    @endif
                 </table>
             </div>
         @empty

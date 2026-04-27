@@ -105,7 +105,9 @@
                                                             @else
                                                                 @php
                                                                     $backOfficeTitle = $item->task_detail ?? '-';
-                                                                    $backOfficeId = $item->task_id ?? ($item->task?->id ?? null);
+                                                                    $backOfficeTask = property_exists($item, 'task') ? $item->task : null;
+                                                                    $backOfficeId = $backOfficeTask?->getRouteKey()
+                                                                        ?? (!empty($item->task_id) ? \App\Models\BackOfficeTask::formatBackOfficeId((int) $item->task_id) : null);
                                                                 @endphp
                                                                 @if (!is_null($backOfficeId))
                                                                     <a href="{{ route('back_office.show', $backOfficeId) }}"

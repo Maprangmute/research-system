@@ -121,8 +121,8 @@
             </div>
 
             <div class="mt-5 flex flex-wrap gap-3">
-                @if ($log->task_id)
-                    <a href="{{ route('back_office.show', $log->task_id) }}" class="inline-flex items-center rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100">
+                @if ($log->task)
+                    <a href="{{ route('back_office.show', $log->task) }}" class="inline-flex items-center rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100">
                         ดู Back Office Task
                     </a>
                 @endif

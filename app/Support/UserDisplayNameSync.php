@@ -49,6 +49,11 @@ class UserDisplayNameSync
             self::syncOutputAwardRecipientLinkedUsers($userId, $newFull);
             self::syncOutputBookAuthorLinkedUsers($userId, $newFull);
             self::syncOutputConferenceLinkedUsers($userId, $newFull);
+            self::syncBackOfficeEntryLinkedUsers($userId, $newFull);
+            self::syncBackOfficeOutputAuthorLinkedUsers($userId);
+            self::syncBackOfficeOutputAwardRecipientLinkedUsers($userId, $newFull);
+            self::syncBackOfficeOutputBookAuthorLinkedUsers($userId, $newFull);
+            self::syncBackOfficeOutputConferenceLinkedUsers($userId, $newFull);
         }
 
         if ($replacements === []) {
@@ -73,9 +78,15 @@ class UserDisplayNameSync
             self::syncSimpleNameColumn('external_output_conference_presenters', 'name', $replacements);
 
             self::syncSimpleNameColumn('back_office_entries', 'person_name', $replacements);
+            self::syncOutputAuthorsForTable('back_office_output_authors', $replacements);
+            self::syncSimpleNameColumn('back_office_output_award_recipients', 'name', $replacements);
+            self::syncSimpleNameColumn('back_office_output_book_authors', 'name', $replacements);
+            self::syncSimpleNameColumn('back_office_output_conference_presenters', 'name', $replacements);
             self::syncSimpleNameColumn('progress_reports', 'submitter_name', $replacements);
 
             self::syncBackOfficeTaskLeaders($replacements);
+            self::syncBackOfficeAuthorJsonColumn('back_office_task_outputs', 'authors', $replacements);
+            self::syncBackOfficeConferenceJsonColumn('back_office_task_outputs', 'conferences', $replacements);
             self::syncBookAuthorJsonColumn('back_office_task_outputs', 'book_authors', $replacements);
             self::syncBookAuthorJsonColumn('back_office_entry_outputs', 'book_authors', $replacements);
         });
@@ -248,6 +259,133 @@ class UserDisplayNameSync
             ->update($payload);
     }
 
+    private static function syncBackOfficeEntryLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('back_office_entries') ||
+            !Schema::hasColumn('back_office_entries', 'user_id') ||
+            !Schema::hasColumn('back_office_entries', 'person_name')
+        ) {
+            return;
+        }
+
+        $payload = ['person_name' => $fullName];
+
+        if (Schema::hasColumn('back_office_entries', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('back_office_entries')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncBackOfficeOutputAuthorLinkedUsers(int $userId): void
+    {
+        if (
+            !Schema::hasTable('back_office_output_authors') ||
+            !Schema::hasColumn('back_office_output_authors', 'user_id') ||
+            !Schema::hasColumn('back_office_output_authors', 'name')
+        ) {
+            return;
+        }
+
+        $user = User::query()->find($userId);
+        if (! $user) {
+            return;
+        }
+
+        $researchDisplayName = trim((string) $user->research_display_name);
+        $fullName = trim((string) $user->full_name);
+        $hasUpdatedAt = Schema::hasColumn('back_office_output_authors', 'updated_at');
+
+        DB::table('back_office_output_authors')
+            ->select(['id', 'role'])
+            ->where('user_id', $userId)
+            ->orderBy('id')
+            ->chunkById(200, function ($rows) use ($researchDisplayName, $fullName, $hasUpdatedAt): void {
+                foreach ($rows as $row) {
+                    $name = $row->role === 'awardee' ? $fullName : $researchDisplayName;
+                    if ($name === '') {
+                        continue;
+                    }
+
+                    $payload = ['name' => $name];
+
+                    if ($hasUpdatedAt) {
+                        $payload['updated_at'] = now();
+                    }
+
+                    DB::table('back_office_output_authors')
+                        ->where('id', $row->id)
+                        ->update($payload);
+                }
+            });
+    }
+
+    private static function syncBackOfficeOutputAwardRecipientLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('back_office_output_award_recipients') ||
+            !Schema::hasColumn('back_office_output_award_recipients', 'user_id') ||
+            !Schema::hasColumn('back_office_output_award_recipients', 'name')
+        ) {
+            return;
+        }
+
+        $payload = ['name' => $fullName];
+
+        if (Schema::hasColumn('back_office_output_award_recipients', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('back_office_output_award_recipients')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncBackOfficeOutputBookAuthorLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('back_office_output_book_authors') ||
+            !Schema::hasColumn('back_office_output_book_authors', 'user_id') ||
+            !Schema::hasColumn('back_office_output_book_authors', 'name')
+        ) {
+            return;
+        }
+
+        $payload = ['name' => $fullName];
+
+        if (Schema::hasColumn('back_office_output_book_authors', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('back_office_output_book_authors')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncBackOfficeOutputConferenceLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('back_office_output_conference_presenters') ||
+            !Schema::hasColumn('back_office_output_conference_presenters', 'user_id') ||
+            !Schema::hasColumn('back_office_output_conference_presenters', 'name')
+        ) {
+            return;
+        }
+
+        $payload = ['name' => $fullName];
+
+        if (Schema::hasColumn('back_office_output_conference_presenters', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('back_office_output_conference_presenters')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
     private static function syncOutputAuthors(array $replacements): void
     {
         if (
@@ -327,6 +465,53 @@ class UserDisplayNameSync
                         }
 
                         DB::table('output_book_authors')->where('id', $row->id)->update($payload);
+                    }
+                });
+        }
+    }
+
+    private static function syncOutputAuthorsForTable(string $table, array $replacements): void
+    {
+        $hasOutputIdColumn = Schema::hasColumn($table, 'output_id');
+        $hasBackOfficeOutputIdColumn = Schema::hasColumn($table, 'back_office_task_output_id');
+
+        if (
+            !Schema::hasTable($table) ||
+            !Schema::hasColumn($table, 'id') ||
+            (!$hasBackOfficeOutputIdColumn && !$hasOutputIdColumn) ||
+            !Schema::hasColumn($table, 'role') ||
+            !Schema::hasColumn($table, 'name')
+        ) {
+            return;
+        }
+
+        $outputIdColumn = $hasOutputIdColumn ? 'output_id' : 'back_office_task_output_id';
+        $hasUpdatedAt = Schema::hasColumn($table, 'updated_at');
+
+        foreach ($replacements as $old => $new) {
+            DB::table($table)
+                ->whereRaw('TRIM(name) = ?', [$old])
+                ->orderBy('id')
+                ->chunkById(200, function ($rows) use ($table, $outputIdColumn, $new, $hasUpdatedAt): void {
+                    foreach ($rows as $row) {
+                        $duplicateExists = DB::table($table)
+                            ->where($outputIdColumn, $row->{$outputIdColumn})
+                            ->where('role', $row->role)
+                            ->whereRaw('TRIM(name) = ?', [$new])
+                            ->where('id', '!=', $row->id)
+                            ->exists();
+
+                        if ($duplicateExists) {
+                            DB::table($table)->where('id', $row->id)->delete();
+                            continue;
+                        }
+
+                        $payload = ['name' => $new];
+                        if ($hasUpdatedAt) {
+                            $payload['updated_at'] = now();
+                        }
+
+                        DB::table($table)->where('id', $row->id)->update($payload);
                     }
                 });
         }
@@ -416,6 +601,113 @@ class UserDisplayNameSync
                         }
                     }
                     unset($author);
+
+                    if (!$changed) {
+                        continue;
+                    }
+
+                    $payload = [$column => json_encode($decoded, JSON_UNESCAPED_UNICODE)];
+                    if ($hasUpdatedAt) {
+                        $payload['updated_at'] = now();
+                    }
+
+                    DB::table($table)->where('id', $row->id)->update($payload);
+                }
+            });
+    }
+
+    private static function syncBackOfficeAuthorJsonColumn(string $table, string $column, array $replacements): void
+    {
+        if (!Schema::hasTable($table) || !Schema::hasColumn($table, $column) || !Schema::hasColumn($table, 'id')) {
+            return;
+        }
+
+        $hasUpdatedAt = Schema::hasColumn($table, 'updated_at');
+
+        DB::table($table)
+            ->whereNotNull($column)
+            ->orderBy('id')
+            ->chunkById(200, function ($rows) use ($table, $column, $replacements, $hasUpdatedAt): void {
+                foreach ($rows as $row) {
+                    $decoded = json_decode((string) $row->{$column}, true);
+                    if (!is_array($decoded) || $decoded === []) {
+                        continue;
+                    }
+
+                    $changed = false;
+                    foreach ($decoded as &$author) {
+                        if (!is_array($author)) {
+                            continue;
+                        }
+
+                        $name = trim((string) ($author['name'] ?? ''));
+                        if ($name !== '' && isset($replacements[$name])) {
+                            $author['name'] = $replacements[$name];
+                            $changed = true;
+                        }
+                    }
+                    unset($author);
+
+                    if (!$changed) {
+                        continue;
+                    }
+
+                    $payload = [$column => json_encode($decoded, JSON_UNESCAPED_UNICODE)];
+                    if ($hasUpdatedAt) {
+                        $payload['updated_at'] = now();
+                    }
+
+                    DB::table($table)->where('id', $row->id)->update($payload);
+                }
+            });
+    }
+
+    private static function syncBackOfficeConferenceJsonColumn(string $table, string $column, array $replacements): void
+    {
+        if (!Schema::hasTable($table) || !Schema::hasColumn($table, $column) || !Schema::hasColumn($table, 'id')) {
+            return;
+        }
+
+        $hasUpdatedAt = Schema::hasColumn($table, 'updated_at');
+
+        DB::table($table)
+            ->whereNotNull($column)
+            ->orderBy('id')
+            ->chunkById(200, function ($rows) use ($table, $column, $replacements, $hasUpdatedAt): void {
+                foreach ($rows as $row) {
+                    $decoded = json_decode((string) $row->{$column}, true);
+                    if (!is_array($decoded) || $decoded === []) {
+                        continue;
+                    }
+
+                    $changed = false;
+                    foreach ($decoded as &$conference) {
+                        if (!is_array($conference)) {
+                            continue;
+                        }
+
+                        $note = trim((string) ($conference['note'] ?? ''));
+                        if ($note !== '' && isset($replacements[$note])) {
+                            $conference['note'] = $replacements[$note];
+                            $changed = true;
+                        }
+
+                        if (!empty($conference['presenters']) && is_array($conference['presenters'])) {
+                            foreach ($conference['presenters'] as &$presenter) {
+                                if (!is_array($presenter)) {
+                                    continue;
+                                }
+
+                                $name = trim((string) ($presenter['name'] ?? ''));
+                                if ($name !== '' && isset($replacements[$name])) {
+                                    $presenter['name'] = $replacements[$name];
+                                    $changed = true;
+                                }
+                            }
+                            unset($presenter);
+                        }
+                    }
+                    unset($conference);
 
                     if (!$changed) {
                         continue;

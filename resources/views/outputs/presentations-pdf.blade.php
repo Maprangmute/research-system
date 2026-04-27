@@ -148,16 +148,19 @@
             line-height: 1.4;
         }
         .presentation-title {
-            font-size: 15.8pt;
+            font-size: 18.4pt;
             font-weight: bold;
-            line-height: 1.42;
+            line-height: 1.34;
             color: #0f172a;
         }
-        .presentation-year {
-            white-space: nowrap;
+        .presentation-head-main {
+            width: 80%;
+            padding-right: 10px;
+        }
+        .presentation-head-qr {
+            width: 20%;
             text-align: right;
-            font-size: 11.8pt;
-            color: #64748b;
+            vertical-align: middle;
         }
         .presentation-meta-inline {
             margin-top: 4px;
@@ -179,41 +182,47 @@
         .presentation-meta-grid td:last-child {
             padding-right: 0;
         }
-        .presentation-meta-grid .col-main { width: 48%; }
-        .presentation-meta-grid .col-side { width: 26%; }
-        .presentation-meta-grid .col-qr {
-            width: 40px;
-            text-align: center;
-            vertical-align: top;
-            padding-right: 0;
-        }
+        .presentation-meta-grid .col-main { width: 58%; }
+        .presentation-meta-grid .col-side { width: 42%; }
         .presentation-block {
             margin-top: 10px;
         }
+        .presentation-detail-row td {
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+        }
         .presentation-label {
-            margin-bottom: 4px;
-            font-size: 11.1pt;
+            margin-bottom: 5px;
+            font-size: 12.2pt;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748b;
+            letter-spacing: 0.06em;
+            color: #334155;
         }
         .presentation-value {
             font-size: 13.3pt;
-            line-height: 1.66;
+            line-height: 1.62;
             color: #1e293b;
             word-break: break-word;
             white-space: normal;
         }
         .qr-wrap {
-            width: 28px;
-            margin: 2px auto 0;
+            width: 18px;
+            margin: 0 auto;
             text-align: center;
         }
         .qr-wrap img {
             display: inline-block;
-            width: 28px;
-            height: 28px;
+            width: 18px;
+            height: 18px;
+        }
+        .qr-wrap.head {
+            width: 22px;
+            margin: 0 0 0 auto;
+        }
+        .qr-wrap.head img {
+            width: 22px;
+            height: 22px;
         }
         .empty-state {
             border: 1px dashed #cbd5e1;
@@ -312,7 +321,7 @@
                 return null;
             }
             try {
-                $renderer = new \BaconQrCode\Renderer\GDLibRenderer(120);
+                $renderer = new \BaconQrCode\Renderer\GDLibRenderer(80);
                 $writer = new \BaconQrCode\Writer($renderer);
                 $png = $writer->writeString($value);
                 return 'data:image/png;base64,' . base64_encode($png);
@@ -322,24 +331,43 @@
         };
 
         $generatedLabel = $generatedAt->locale('th')->translatedFormat('j F') . ' ' . ($generatedAt->year + 543) . $generatedAt->translatedFormat(' เวลา H:i');
+        $headerLogoPath = public_path('images/sihp-logo.png');
+        $headerLogo = file_exists($headerLogoPath) ? 'file://' . $headerLogoPath : null;
     @endphp
 
     <htmlpageheader name="Header">
-        <div class="header-line" style="font-size:13.6pt; color:#0f172a;">
-            Presentations in Academic Conferences
+        <div class="header-line">
+            <table style="width:100%; border-collapse:collapse; font-size:13.6pt; color:#0f172a;">
+                <tr>
+                    <td style="width:58%; text-align:left; vertical-align:middle;">
+                        <table style="border-collapse:collapse;">
+                            <tr>
+                                @if ($headerLogo)
+                                    <td style="vertical-align:middle; padding-right:7px;">
+                                        <img src="{{ $headerLogo }}" alt="SiHP Logo" style="height:18px; width:auto; vertical-align:middle;">
+                                    </td>
+                                @endif
+                                <td style="vertical-align:middle; font-size:13.2pt; color:#0f172a; font-weight:bold;">
+                                    SiHP Research Database Management System
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="width:42%; text-align:right; vertical-align:middle; font-size:13.6pt; font-weight:bold; color:#0f172a;">
+                        Presentations in Academic Conferences
+                    </td>
+                </tr>
+            </table>
         </div>
     </htmlpageheader>
 
     <htmlpagefooter name="Footer">
-        <div style="width:100%; font-size:11.2pt; color:#64748b; border-top:1px solid #dbe7f5; padding-top:6px;">
-            <div style="float:left;">
-                ผู้สร้างรายงาน {{ $reporter }}
-            </div>
-            <div style="float:right; text-align:right;">
-                หน้า {PAGENO} / {nbpg}<br>
-                {{ $generatedLabel }}
-            </div>
-        </div>
+        <table style="width:100%; border-top:1px solid #dbe7f5; padding-top:6px; font-size:11.2pt; color:#64748b; border-collapse:collapse;">
+            <tr>
+                <td style="width:76%; text-align:left;">ผู้สร้างรายงาน {{ $reporter }} เวลา {{ $generatedLabel }}</td>
+                <td style="width:24%; text-align:right; white-space:nowrap;">หน้า {PAGENO} / {nbpg}</td>
+            </tr>
+        </table>
     </htmlpagefooter>
 
     <div class="hero-shell">
@@ -408,12 +436,18 @@
             <div class="presentation-card">
                 <table class="presentation-topline">
                     <tr>
-                        <td class="presentation-index">{{ $index + 1 }}.</td>
-                        <td>
-                            <div class="presentation-title">{{ $row->title ?: '-' }}</div>
+                        <td class="presentation-index">
+                            {{ $index + 1 }}.
+                        </td>
+                        <td class="presentation-head-main">
+                            <div class="presentation-title">{{ $row->title ?: '-' }}@if($row->year_be) ({{ $row->year_be }})@endif</div>
                             <div class="presentation-meta-inline">{{ $metaLine ?: '-' }}</div>
                         </td>
-                        <td class="presentation-year">ปี {{ $row->year_be ?: '-' }}</td>
+                        <td class="presentation-head-qr">
+                            @if ($qrCode)
+                                <div class="qr-wrap head"><img src="{{ $qrCode }}" alt="QR"></div>
+                            @endif
+                        </td>
                     </tr>
                 </table>
 
@@ -424,12 +458,6 @@
                                 <div class="presentation-label">Conference / Event</div>
                                 <div class="presentation-value">{{ $row->conference_name ?: '-' }}</div>
                             </div>
-                            @if (!empty($row->detail))
-                                <div class="presentation-block">
-                                    <div class="presentation-label">รายละเอียด / ลิงก์ / โน้ต</div>
-                                    <div class="presentation-value">{{ $row->detail }}</div>
-                                </div>
-                            @endif
                         </td>
                         <td class="col-side">
                             <div class="presentation-block">
@@ -444,8 +472,6 @@
                                 <div class="presentation-label">Location</div>
                                 <div class="presentation-value">{{ $row->location ?: '-' }}</div>
                             </div>
-                        </td>
-                        <td class="col-side">
                             <div class="presentation-block">
                                 <div class="presentation-label">โครงการ / งานอ้างอิง</div>
                                 <div class="presentation-value">
@@ -460,12 +486,15 @@
                                 <div class="presentation-value">{{ $row->output_code ?: '-' }}</div>
                             </div>
                         </td>
-                        @if ($qrCode)
-                            <td class="col-qr">
-                                <div class="qr-wrap"><img src="{{ $qrCode }}" alt="QR"></div>
-                            </td>
-                        @endif
                     </tr>
+                    @if (!empty($row->detail))
+                        <tr class="presentation-detail-row">
+                            <td colspan="2">
+                                <div class="presentation-label">รายละเอียด / ลิงก์ / โน้ต</div>
+                                <div class="presentation-value">{{ $row->detail }}</div>
+                            </td>
+                        </tr>
+                    @endif
                 </table>
             </div>
         @empty

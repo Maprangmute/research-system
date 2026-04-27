@@ -318,15 +318,29 @@
                 default => 'chip',
             };
         };
+        $headerLogoPath = public_path('images/sihp-logo.png');
+        $headerLogo = file_exists($headerLogoPath) ? 'file://' . $headerLogoPath : null;
     @endphp
 
     <htmlpageheader name="Header">
-        <table style="width:100%; border-bottom: 1px solid #dbe7f5; padding-bottom: 6px;">
+        <table style="width:100%; border-bottom: 1px solid #dbe7f5; padding-bottom: 6px; border-collapse:collapse;">
             <tr>
-                <td style="width: 60%; font-size: 16pt; font-weight: bold; color: #0f172a;">Personal Output Report</td>
-                <td style="width: 40%; text-align: right; font-size: 11pt; color: #64748b;">
-                    Siriraj Health Policy<br>
-                    รายงานข้อมูลผลงานรายบุคคล
+                <td style="width:58%; text-align:left; vertical-align:middle;">
+                    <table style="border-collapse:collapse;">
+                        <tr>
+                            @if ($headerLogo)
+                                <td style="vertical-align:middle; padding-right:7px;">
+                                    <img src="{{ $headerLogo }}" alt="SiHP Logo" style="height:18px; width:auto; vertical-align:middle;">
+                                </td>
+                            @endif
+                            <td style="vertical-align:middle; font-size:13.2pt; color:#0f172a; font-weight:bold;">
+                                SiHP Research Database Management System
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="width:42%; text-align:right; vertical-align:middle; font-size:13.6pt; font-weight:bold; color:#0f172a;">
+                    Personal Output Report
                 </td>
             </tr>
         </table>

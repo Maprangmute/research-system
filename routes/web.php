@@ -238,6 +238,12 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/back-office/create', [BackOfficeController::class, 'create'])->name('back_office.create');
     Route::post('/back-office', [BackOfficeController::class, 'store'])->name('back_office.store');
     Route::get('/back-office/{task}', [BackOfficeController::class, 'show'])->name('back_office.show');
+    Route::post('/back-office/{task}/entries', [BackOfficeController::class, 'storeEntry'])->name('back_office.entries.store');
+    Route::put('/back-office/{task}/entries/{entry}', [BackOfficeController::class, 'updateEntry'])->name('back_office.entries.update');
+    Route::delete('/back-office/{task}/entries/{entry}', [BackOfficeController::class, 'destroyEntry'])->name('back_office.entries.destroy');
+    Route::post('/back-office/{task}/outputs', [BackOfficeController::class, 'storeOutput'])->name('back_office.outputs.store');
+    Route::put('/back-office/{task}/outputs/{output}', [BackOfficeController::class, 'updateOutput'])->name('back_office.outputs.update');
+    Route::delete('/back-office/{task}/outputs/{output}', [BackOfficeController::class, 'destroyOutput'])->name('back_office.outputs.destroy');
     Route::get('/back-office/{task}/edit', [BackOfficeController::class, 'edit'])->name('back_office.edit');
     Route::put('/back-office/{task}', [BackOfficeController::class, 'update'])->name('back_office.update');
     Route::delete('/back-office/{task}', [BackOfficeController::class, 'destroy'])->name('back_office.destroy');

@@ -11,7 +11,7 @@
 
             .people-table {
                 width: 100%;
-                min-width: 1320px;
+                min-width: 1400px;
                 table-layout: auto;
             }
 
@@ -153,9 +153,10 @@
                     <table class="people-table text-sm">
                         <thead class="bg-slate-50/90">
                             <tr>
-                                <th class="w-[34%] px-5 py-4 text-left font-semibold">บุคลากร</th>
-                                <th class="w-[16%] px-4 py-4 text-left font-semibold">Projects</th>
-                                <th class="w-[16%] px-4 py-4 text-left font-semibold">Outputs</th>
+                                <th class="w-[32%] px-5 py-4 text-left font-semibold">บุคลากร</th>
+                                <th class="w-[14%] px-4 py-4 text-left font-semibold">Projects</th>
+                                <th class="w-[10%] px-4 py-4 text-left font-semibold">Research</th>
+                                <th class="w-[10%] px-4 py-4 text-left font-semibold">Presentation</th>
                                 <th class="w-[10%] px-4 py-4 text-left font-semibold">Textbook</th>
                                 <th class="w-[10%] px-4 py-4 text-left font-semibold">Award</th>
                                 <th class="w-[14%] px-5 py-4 text-left font-semibold">จัดการ</th>
@@ -201,12 +202,13 @@
                                             <p>Co-Researcher {{ $stats['co_research_projects'] }}</p>
                                         </div>
                                     </td>
-                                    <td class="px-4 py-4 text-slate-700" data-label="Outputs">
-                                        <p class="text-lg font-bold text-slate-900">{{ number_format($stats['total_outputs']) }}</p>
-                                        <div class="mt-2 space-y-1 text-xs text-slate-500">
-                                            <p>Research {{ $stats['research_outputs'] }}</p>
-                                            <p>Presentation {{ $stats['presentation_outputs'] }}</p>
-                                        </div>
+                                    <td class="px-4 py-4" data-label="Research">
+                                        <p class="text-lg font-bold text-slate-900">{{ number_format($stats['research_outputs']) }}</p>
+                                        <p class="mt-2 text-xs text-slate-500">ผลงานวิจัย / paper</p>
+                                    </td>
+                                    <td class="px-4 py-4" data-label="Presentation">
+                                        <p class="text-lg font-bold text-slate-900">{{ number_format($stats['presentation_outputs']) }}</p>
+                                        <p class="mt-2 text-xs text-slate-500">การนำเสนอวิชาการ</p>
                                     </td>
                                     <td class="px-4 py-4" data-label="Textbook">
                                         <p class="text-lg font-bold text-slate-900">{{ number_format($stats['textbook_outputs']) }}</p>

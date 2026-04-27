@@ -862,7 +862,7 @@ class OutputController extends Controller
             ->values();
 
         $taskOutputQuery = BackOfficeTaskOutput::query()
-            ->with(['task:id,title,created_by'])
+            ->with(['task:id,backoffice_id,title,created_by'])
             ->when(!$canViewAll, function ($q) use ($user, $fullName) {
                 $q->whereHas('task', function ($taskQ) use ($user, $fullName) {
                     $taskQ->where('created_by', $user->id)
@@ -1057,7 +1057,7 @@ class OutputController extends Controller
                 'source_badge' => 'งานนอกโครงการวิจัย',
                 'detail' => null,
                 'related_link' => null,
-                'link' => $output->task ? route('back_office.show', $output->task->id) : null,
+                'link' => $output->task ? route('back_office.show', $output->task) : null,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
                 'sort_title' => mb_strtolower($output->title ?? ''),
@@ -1273,7 +1273,7 @@ class OutputController extends Controller
                     'title' => trim((string) ($output->title ?? '')) ?: '-',
                     'year_be' => $this->normalizeYearFilter($output->year),
                     'reference' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
-                    'link' => $output->task ? route('back_office.show', $output->task->id) : null,
+                    'link' => $output->task ? route('back_office.show', $output->task) : null,
                     'detail' => trim((string) ($output->project_output ?? '')),
                     'created_at' => $output->created_at,
                     'journal' => trim((string) ($output->journal ?? '')),
@@ -2075,7 +2075,7 @@ class OutputController extends Controller
                         'year_be' => $yearBe,
                         'project_label' => $output->task?->title ?: '-',
                         'project_code' => null,
-                        'project_link' => $output->task ? route('back_office.show', $output->task->id) : null,
+                        'project_link' => $output->task ? route('back_office.show', $output->task) : null,
                         'conference_name' => trim((string) (($conference['name'] ?? '') ?: '-')),
                         'presentation_type' => trim((string) (($conference['presentation_type'] ?? '') ?: '-')),
                         'location' => trim((string) (($conference['location'] ?? '') ?: '-')),
@@ -2630,7 +2630,7 @@ class OutputController extends Controller
                     'detail' => $output->project_output ?: null,
                     'project_label' => $output->task?->title ?: 'งานนอกโครงการวิจัย',
                     'project_code' => null,
-                    'project_link' => $output->task ? route('back_office.show', $output->task->id) : null,
+                    'project_link' => $output->task ? route('back_office.show', $output->task) : null,
                     'authors' => $authors->pluck('name')->filter()->values(),
                     'authors_by_role' => $authorsByRole,
                     'matched_author_roles' => $matchedAuthorRoles,
@@ -2900,7 +2900,7 @@ class OutputController extends Controller
                     'detail' => $output->project_output ?: null,
                     'project_label' => $output->task?->title ?: 'งานนอกโครงการวิจัย',
                     'project_code' => null,
-                    'project_link' => $output->task ? route('back_office.show', $output->task->id) : null,
+                    'project_link' => $output->task ? route('back_office.show', $output->task) : null,
                     'authors' => $authors,
                     'displayed_at' => $output->updated_at ?? $output->created_at,
                     'created_at' => $output->created_at,
@@ -3473,7 +3473,7 @@ class OutputController extends Controller
                     'role' => 'Back Office',
                     'roles' => ['Back Office'],
                     'sort_year' => $yearBe ?? 0,
-                    'link' => route('back_office.show', $task->id),
+                    'link' => route('back_office.show', $task),
                     'source_label' => 'Back Office',
                 ];
             });
@@ -3522,7 +3522,7 @@ class OutputController extends Controller
             });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
             ->where('type', 'like', 'EA101%')
             ->get()
             ->filter(function (BackOfficeTaskOutput $output) use ($user) {
@@ -3585,9 +3585,9 @@ class OutputController extends Controller
                     'author_line' => $authors->pluck('name')->implode(', '),
                     'source_label' => 'Back Office',
                     'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
-                    'reference_link' => $output->task ? route('back_office.show', $output->task->id) : null,
+                    'reference_link' => $output->task ? route('back_office.show', $output->task) : null,
                     'link' => $this->extractFirstUrlFromText($output->project_output)
-                        ?: ($output->task ? route('back_office.show', $output->task->id) : null),
+                        ?: ($output->task ? route('back_office.show', $output->task) : null),
                     'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
                 ];
             });
@@ -3661,7 +3661,7 @@ class OutputController extends Controller
             });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
             ->where('type', 'like', 'EA103%')
             ->get()
             ->flatMap(function (BackOfficeTaskOutput $output) use ($user) {
@@ -3701,7 +3701,7 @@ class OutputController extends Controller
                             'source_label' => 'Back Office',
                             'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
                             'link' => $this->extractFirstUrlFromText($output->project_output)
-                                ?: ($output->task ? route('back_office.show', $output->task->id) : null),
+                                ?: ($output->task ? route('back_office.show', $output->task) : null),
                             'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
                         ];
                     });
@@ -3767,7 +3767,7 @@ class OutputController extends Controller
             });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
             ->where('type', 'like', 'EA119%')
             ->get()
             ->filter(function (BackOfficeTaskOutput $output) use ($user) {
@@ -3795,7 +3795,7 @@ class OutputController extends Controller
                     'source_label' => 'Back Office',
                     'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
                     'link' => $this->extractFirstUrlFromText($output->project_output)
-                        ?: ($output->task ? route('back_office.show', $output->task->id) : null),
+                        ?: ($output->task ? route('back_office.show', $output->task) : null),
                     'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
                 ];
             });
@@ -3926,7 +3926,7 @@ class OutputController extends Controller
             });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
             ->where('type', 'like', 'EA105%')
             ->get()
             ->filter(function (BackOfficeTaskOutput $output) use ($user) {
@@ -3975,7 +3975,7 @@ class OutputController extends Controller
                     'source_label' => 'Back Office',
                     'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
                     'link' => $this->extractFirstUrlFromText($output->project_output)
-                        ?: ($output->task ? route('back_office.show', $output->task->id) : null),
+                        ?: ($output->task ? route('back_office.show', $output->task) : null),
                     'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
                 ];
             });
@@ -4072,7 +4072,7 @@ class OutputController extends Controller
                 });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
             ->get()
             ->filter(function (BackOfficeTaskOutput $output) use ($user, $excludedTypeCodes) {
                 $typeCode = $this->extractOutputTypeCode($output->type);
@@ -4116,7 +4116,7 @@ class OutputController extends Controller
                     'source_label' => 'Back Office',
                     'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
                     'link' => $this->extractFirstUrlFromText($output->project_output)
-                        ?: ($output->task ? route('back_office.show', $output->task->id) : null),
+                        ?: ($output->task ? route('back_office.show', $output->task) : null),
                     'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
                 ];
             });

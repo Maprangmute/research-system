@@ -43,6 +43,23 @@
         .textbook-submit-btn:hover {
             background: #065f46;
         }
+        .output-export-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 0.75rem;
+            background: #059669;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #fff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+            transition: background-color 0.2s ease;
+        }
+        .output-export-btn:hover {
+            background: #047857;
+        }
     </style>
 
     <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
@@ -61,6 +78,17 @@
         <form id="textbooks-filter-form" method="GET" action="{{ route('outputs.textbooks') }}"
             class="textbook-filter-panel rounded-2xl border bg-white p-5 shadow-sm">
             <input type="hidden" name="dir" value="{{ $currentDir }}">
+            <section class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-900">ตัวกรองหนังสือและบทในหนังสือ</h2>
+                    <p class="mt-1 text-sm text-slate-500">ค้นหา output, ชื่อหนังสือ, สำนักพิมพ์, ผู้เขียน หรือ project ได้ทันที</p>
+                </div>
+                <a href="{{ route('outputs.textbooks.pdf', request()->query()) }}"
+                    target="_blank" rel="noopener"
+                    class="output-export-btn">
+                    Export รายการ เป็น PDF
+                </a>
+            </section>
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <label class="block xl:col-span-2">
                     <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
@@ -110,7 +138,8 @@
                 </label>
             </div>
 
-            <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="text-xs text-slate-500">เลือก dropdown เพื่ออัปเดตทันที หรือพิมพ์ค้นหาแล้วระบบจะค้นให้อัตโนมัติ</div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="submit"
                         class="textbook-submit-btn inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-white shadow-sm transition">
@@ -121,12 +150,6 @@
                         ล้างฟิลเตอร์
                     </a>
                 </div>
-
-                <a href="{{ route('outputs.textbooks.pdf', request()->query()) }}"
-                    target="_blank" rel="noopener"
-                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">
-                    Export รายการ เป็น PDF
-                </a>
             </div>
         </form>
 

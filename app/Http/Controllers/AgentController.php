@@ -421,12 +421,14 @@ class AgentController extends Controller
 
             $taskId = $row->task?->id ?? $row->task_id ?? null;
             $taskTitle = trim((string)($row->task?->title ?? 'งาน Back Office'));
+            $taskRouteKey = $row->task?->getRouteKey()
+                ?? ($taskId ? BackOfficeTask::formatBackOfficeId((int) $taskId) : null);
             $pushContribution(
                 'task:'.($taskId ?? md5($taskTitle)),
                 'Back Office',
                 $taskTitle,
                 null,
-                $taskId ? route('back_office.show', $taskId) : '#',
+                $taskRouteKey ? route('back_office.show', $taskRouteKey) : '#',
                 $bounds['start'],
                 $bounds['end'],
                 (float)($row->fte_value ?? 0),
@@ -1591,7 +1593,7 @@ class AgentController extends Controller
                     $title = Str::limit((string)($output->title ?? 'ไม่ระบุ'), 80, '…');
                     return ($year !== '' ? "[{$year}] " : '').$type.' - '.$title;
                 })->implode(' | ') ?: '-',
-                'href' => route('back_office.show', $task->id),
+                'href' => route('back_office.show', $task),
             ];
         }
 
@@ -1707,7 +1709,7 @@ class AgentController extends Controller
                 'categories_brief' => $categories->take(5)->map(fn ($count, $name) => "{$name} ({$count})")->implode('; ') ?: '-',
                 'description' => (string)($task->description ?? '-'),
                 'purpose' => (string)($task->purpose ?? '-'),
-                'href' => route('back_office.show', $task->id),
+                'href' => route('back_office.show', $task),
             ];
         }
 

@@ -95,6 +95,23 @@
             letter-spacing: 0.02em;
             color: #475569;
         }
+        .output-export-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 0.75rem;
+            background: #059669;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #fff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+            transition: background-color 0.2s ease;
+        }
+        .output-export-btn:hover {
+            background: #047857;
+        }
     </style>
 
     <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
@@ -122,7 +139,7 @@
                     </div>
                     <a href="{{ route('outputs.papers.pdf', request()->query()) }}"
                         target="_blank" rel="noopener"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">
+                        class="output-export-btn">
                         Export รายการ เป็น PDF
                     </a>
                 </section>

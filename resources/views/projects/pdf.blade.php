@@ -10,7 +10,7 @@
     <title>{{ $project->project_name_th }}</title>
     <style>
         @page {
-            header: html_Header;
+            header: html_HeaderDefault;
             footer: html_Footer;
             margin-top: 92px;
             margin-bottom: 72px;
@@ -657,11 +657,59 @@
     $projectTitleFontPt = adaptive_project_font_pt($projectTitle);
     $ownerName = trim((string) (($project->createdBy->prefix ?? '') . ' ' . ($project->createdBy->name ?? '')));
     $projectStatus = text_or_dash($project->planning_status);
+    $headerLogoPath = public_path('images/sihp-logo.png');
+    $headerLogo = file_exists($headerLogoPath) ? 'file://' . $headerLogoPath : null;
 @endphp
 {{-- HEADER --}}
-<htmlpageheader name="Header">
+<htmlpageheader name="HeaderFirst">
     <div class="pdf-header-line">
-        Project Report
+        <table style="width:100%; border-collapse:collapse; margin:0; border:none;">
+            <tr>
+                <td style="width:58%; border:none; padding:0; text-align:left; vertical-align:middle;">
+                    <table style="border-collapse:collapse; width:auto; margin:0; border:none;">
+                        <tr>
+                            @if ($headerLogo)
+                                <td style="border:none; padding:0 7px 0 0; vertical-align:middle;">
+                                    <img src="{{ $headerLogo }}" alt="SiHP Logo" style="height:18px; width:auto; vertical-align:middle;">
+                                </td>
+                            @endif
+                            <td style="border:none; padding:0; vertical-align:middle; font-size:13.2pt; color:#0f172a; font-weight:bold;">
+                                SiHP Research Database Management System
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="width:42%; border:none; padding:0; text-align:right; vertical-align:middle; font-size:13.6pt; font-weight:bold; color:#0f172a;">
+                    Project Report
+                </td>
+            </tr>
+        </table>
+    </div>
+</htmlpageheader>
+
+<htmlpageheader name="HeaderDefault">
+    <div class="pdf-header-line">
+        <table style="width:100%; border-collapse:collapse; margin:0; border:none;">
+            <tr>
+                <td style="width:58%; border:none; padding:0; text-align:left; vertical-align:middle;">
+                    <table style="border-collapse:collapse; width:auto; margin:0; border:none;">
+                        <tr>
+                            @if ($headerLogo)
+                                <td style="border:none; padding:0 7px 0 0; vertical-align:middle;">
+                                    <img src="{{ $headerLogo }}" alt="SiHP Logo" style="height:18px; width:auto; vertical-align:middle;">
+                                </td>
+                            @endif
+                            <td style="border:none; padding:0; vertical-align:middle; font-size:13.2pt; color:#0f172a; font-weight:bold;">
+                                SiHP Research Database Management System
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td style="width:42%; border:none; padding:0; text-align:right; vertical-align:middle; font-size:13.6pt; font-weight:bold; color:#0f172a;">
+                    Project Report
+                </td>
+            </tr>
+        </table>
     </div>
     <div class="pdf-project-header" style="font-size: {{ $projectTitleFontPt }}pt; padding: 6px 0 0;">
         {{ $projectTitle }}
@@ -691,7 +739,7 @@
     </div>
 </htmlpagefooter>
 
-
+<sethtmlpageheader name="HeaderFirst" value="on" show-this-page="1" />
 <div class="report-shell">
     <div class="report-hero">
         <div class="report-kicker">Project Report</div>

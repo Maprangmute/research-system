@@ -163,16 +163,19 @@
             line-height: 1.4;
         }
         .paper-title {
-            font-size: 15.8pt;
+            font-size: 18.4pt;
             font-weight: bold;
-            line-height: 1.42;
+            line-height: 1.34;
             color: #0f172a;
         }
-        .paper-year {
-            white-space: nowrap;
+        .paper-head-main {
+            width: 80%;
+            padding-right: 10px;
+        }
+        .paper-head-qr {
+            width: 20%;
             text-align: right;
-            font-size: 11.8pt;
-            color: #64748b;
+            vertical-align: middle;
         }
         .badge {
             display: inline-block;
@@ -199,28 +202,26 @@
         .paper-meta-grid td:last-child {
             padding-right: 0;
         }
-        .paper-meta-grid .col-main { width: 56%; }
-        .paper-meta-grid .col-side { width: 22%; }
-        .paper-meta-grid .col-qr {
-            width: 40px;
-            text-align: center;
-            vertical-align: top;
-            padding-right: 0;
-        }
+        .paper-meta-grid .col-main { width: 58%; }
+        .paper-meta-grid .col-side { width: 42%; }
         .paper-block {
             margin-top: 8px;
         }
+        .paper-detail-row td {
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+        }
         .paper-label {
-            margin-bottom: 2px;
-            font-size: 10.2pt;
+            margin-bottom: 4px;
+            font-size: 11.8pt;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748b;
+            letter-spacing: 0.06em;
+            color: #334155;
         }
         .paper-value {
-            font-size: 12.2pt;
-            line-height: 1.58;
+            font-size: 12.6pt;
+            line-height: 1.62;
             color: #1e293b;
             word-break: break-word;
             white-space: normal;
@@ -239,14 +240,22 @@
             line-height: 1.52;
         }
         .qr-wrap {
-            width: 28px;
-            margin: 2px auto 0;
+            width: 18px;
+            margin: 0 auto;
             text-align: center;
         }
         .qr-wrap img {
             display: inline-block;
-            width: 28px;
-            height: 28px;
+            width: 18px;
+            height: 18px;
+        }
+        .qr-wrap.head {
+            width: 22px;
+            margin: 0 0 0 auto;
+        }
+        .qr-wrap.head img {
+            width: 22px;
+            height: 22px;
         }
         .empty-state {
             border: 1px dashed #cbd5e1;
@@ -345,7 +354,7 @@
                 return null;
             }
             try {
-                $renderer = new \BaconQrCode\Renderer\GDLibRenderer(120);
+                $renderer = new \BaconQrCode\Renderer\GDLibRenderer(80);
                 $writer = new \BaconQrCode\Writer($renderer);
                 $png = $writer->writeString($value);
                 return 'data:image/png;base64,' . base64_encode($png);
@@ -355,24 +364,43 @@
         };
 
         $generatedLabel = $generatedAt->locale('th')->translatedFormat('j F') . ' ' . ($generatedAt->year + 543) . $generatedAt->translatedFormat(' เวลา H:i');
+        $headerLogoPath = public_path('images/sihp-logo.png');
+        $headerLogo = file_exists($headerLogoPath) ? 'file://' . $headerLogoPath : null;
     @endphp
 
     <htmlpageheader name="Header">
-        <div class="header-line" style="font-size:13.6pt; color:#0f172a;">
-            Research Papers and Journal Articles
+        <div class="header-line">
+            <table style="width:100%; border-collapse:collapse; font-size:13.6pt; color:#0f172a;">
+                <tr>
+                    <td style="width:58%; text-align:left; vertical-align:middle;">
+                        <table style="border-collapse:collapse;">
+                            <tr>
+                                @if ($headerLogo)
+                                    <td style="vertical-align:middle; padding-right:7px;">
+                                        <img src="{{ $headerLogo }}" alt="SiHP Logo" style="height:18px; width:auto; vertical-align:middle;">
+                                    </td>
+                                @endif
+                                <td style="vertical-align:middle; font-size:13.2pt; color:#0f172a; font-weight:bold;">
+                                    SiHP Research Database Management System
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="width:42%; text-align:right; vertical-align:middle; font-size:13.6pt; font-weight:bold; color:#0f172a;">
+                        Research Papers and Journal Articles
+                    </td>
+                </tr>
+            </table>
         </div>
     </htmlpageheader>
 
     <htmlpagefooter name="Footer">
-        <div style="width:100%; font-size:11.2pt; color:#64748b; border-top:1px solid #dbe7f5; padding-top:6px;">
-            <div style="float:left;">
-                ผู้สร้างรายงาน {{ $reporter }}
-            </div>
-            <div style="float:right; text-align:right;">
-                หน้า {PAGENO} / {nbpg}<br>
-                {{ $generatedLabel }}
-            </div>
-        </div>
+        <table style="width:100%; border-top:1px solid #dbe7f5; padding-top:6px; font-size:11.2pt; color:#64748b; border-collapse:collapse;">
+            <tr>
+                <td style="width:76%; text-align:left;">ผู้สร้างรายงาน {{ $reporter }} เวลา {{ $generatedLabel }}</td>
+                <td style="width:24%; text-align:right; white-space:nowrap;">หน้า {PAGENO} / {nbpg}</td>
+            </tr>
+        </table>
     </htmlpagefooter>
 
     <div class="hero-shell">
@@ -449,15 +477,19 @@
             <div class="paper-card">
                 <table class="paper-topline">
                     <tr>
-                        <td class="paper-index">{{ $index + 1 }}.</td>
-                        <td>
-                            <div class="paper-title">{{ $paper->title ?: '-' }}</div>
+                        <td class="paper-index">
+                            {{ $index + 1 }}.
+                        </td>
+                        <td class="paper-head-main">
+                            <div class="paper-title">{{ $paper->title ?: '-' }}@if($paper->year_be) ({{ $paper->year_be }})@endif</div>
                             <div class="paper-value" style="margin-top: 4px; color: #475569;">
                                 {{ $metaParts->implode(' · ') ?: '-' }}
                             </div>
                         </td>
-                        <td class="paper-year">
-                            ปี {{ $paper->year_be ?: '-' }}
+                        <td class="paper-head-qr">
+                            @if ($qrCode)
+                                <div class="qr-wrap head"><img src="{{ $qrCode }}" alt="QR"></div>
+                            @endif
                         </td>
                     </tr>
                 </table>
@@ -479,12 +511,6 @@
                                 @endforelse
                             </div>
 
-                            @if (!empty($paper->detail))
-                                <div class="paper-block">
-                                    <div class="paper-label">รายละเอียด / ลิงก์ / โน้ต</div>
-                                    <div class="paper-value">{{ $paper->detail }}</div>
-                                </div>
-                            @endif
                         </td>
                         <td class="col-side">
                             <div class="paper-block">
@@ -495,8 +521,6 @@
                                 <div class="paper-label">Output Code</div>
                                 <div class="paper-value">{{ $paper->output_code ?: '-' }}</div>
                             </div>
-                        </td>
-                        <td class="col-side">
                             <div class="paper-block">
                                 <div class="paper-label">โครงการ / งานอ้างอิง</div>
                                 <div class="paper-value">
@@ -513,12 +537,15 @@
                                 </div>
                             @endif
                         </td>
-                        @if ($qrCode)
-                            <td class="col-qr">
-                                <div class="qr-wrap"><img src="{{ $qrCode }}" alt="QR"></div>
-                            </td>
-                        @endif
                     </tr>
+                    @if (!empty($paper->detail))
+                        <tr class="paper-detail-row">
+                            <td colspan="2">
+                                <div class="paper-label">รายละเอียด / ลิงก์ / โน้ต</div>
+                                <div class="paper-value">{{ $paper->detail }}</div>
+                            </td>
+                        </tr>
+                    @endif
                 </table>
             </div>
         @empty
