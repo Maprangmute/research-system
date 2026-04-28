@@ -16,7 +16,7 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     <x-nav-link href="{{ route('back_office.index') }}" :active="request()->routeIs('back_office.index')">
-                        {{ __('Back Office') }}
+                        {{ __('Missions') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -111,7 +111,7 @@
                                 </x-dropdown-link>
                             @endif
 
-                            @if (Auth::user()->hasRole(\App\Models\User::ROLE_ADMIN))
+                            @if (Auth::user()->isAdminEquivalent())
                                 <div class="border-t border-gray-200"></div>
                                 <div class="block px-4 py-2 text-xs text-gray-400">
                                     {{ __('Logs') }}
@@ -121,9 +121,11 @@
                                     {{ __('Project Log') }}
                                 </x-dropdown-link>
 
-                                <x-dropdown-link href="{{ route('back_office_action_logs.index') }}">
-                                    {{ __('Back Office Log') }}
-                                </x-dropdown-link>
+                                @if (Auth::user()->hasRole(\App\Models\User::ROLE_ADMIN))
+                                    <x-dropdown-link href="{{ route('back_office_action_logs.index') }}">
+                                        {{ __('Back Office Log') }}
+                                    </x-dropdown-link>
+                                @endif
 
                                 <x-dropdown-link href="{{ route('user_activity_logs.index') }}">
                                     {{ __('User Activity Log') }}
@@ -165,7 +167,7 @@
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link href="{{ route('back_office.index') }}" :active="request()->routeIs('back_office.index')">
-                {{ __('Back Office') }}
+                {{ __('Missions') }}
             </x-responsive-nav-link>
         </div>
 
@@ -196,7 +198,7 @@
                     </x-responsive-nav-link>
                 @endif
 
-                @if (Auth::user()->hasRole(\App\Models\User::ROLE_ADMIN))
+                @if (Auth::user()->isAdminEquivalent())
                     <div class="border-t border-gray-200"></div>
 
                     <div class="block px-4 py-2 text-xs text-gray-400">
@@ -207,9 +209,11 @@
                         {{ __('Project Log') }}
                     </x-responsive-nav-link>
 
-                    <x-responsive-nav-link href="{{ route('back_office_action_logs.index') }}" :active="request()->routeIs('back_office_action_logs.*')">
-                        {{ __('Back Office Log') }}
-                    </x-responsive-nav-link>
+                    @if (Auth::user()->hasRole(\App\Models\User::ROLE_ADMIN))
+                        <x-responsive-nav-link href="{{ route('back_office_action_logs.index') }}" :active="request()->routeIs('back_office_action_logs.*')">
+                            {{ __('Back Office Log') }}
+                        </x-responsive-nav-link>
+                    @endif
 
                     <x-responsive-nav-link href="{{ route('user_activity_logs.index') }}" :active="request()->routeIs('user_activity_logs.*')">
                         {{ __('User Activity Log') }}

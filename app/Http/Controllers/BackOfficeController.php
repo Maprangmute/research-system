@@ -24,6 +24,17 @@ class BackOfficeController extends Controller
 {
     private const BACK_OFFICE_UNIT_NAME = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
 
+    private const BACK_OFFICE_TASK_TITLE_ORDER = [
+        'ภาระงานด้านการศึกษาและการจัดการเรียนการสอนด้านการวิจัย',
+        'ภาระงานด้านการให้คำปรึกษางานวิจัย ด้าน Health Technology Assessment (HTA)',
+        'ภาระงานด้านการให้คำปรึกษางานวิจัย ด้าน Systematic Review',
+        'ภาระงานด้านเทคโนโลยีสารสนเทศและข้อมูล (IT & Information)',
+        'ภาระงานด้านการสื่อสารและประชาสัมพันธ์ (Corporate Communication)',
+        'ภาระงานด้านการบริหารงานทั่วไป (Administration)',
+        'ภาระงานด้านเลขานุการและผู้ช่วยผู้บริหาร (Executive Assistant / Secretary)',
+        'ภาระงานด้านทรัพยากรบุคคล',
+    ];
+
     private function backOfficeOutputRelations(): array
     {
         return [
@@ -53,6 +64,34 @@ class BackOfficeController extends Controller
             'งานด้านออกแบบ และผลิตสื่อ',
             'งานจัดงานหรือเข้าร่วมงานนิทรรศการ',
             'งานด้านการพัฒนาเทคโนโลยีและสารสนเทศ',
+        ];
+    }
+
+    private function ensureBackOfficeAdmin(): void
+    {
+        abort_unless(Auth::user()?->hasRole(User::ROLE_ADMIN), 403);
+    }
+
+    private function deriveBackOfficeTaskDateRange(array $entries): array
+    {
+        if (empty($entries)) {
+            return [null, null];
+        }
+
+        $startDates = [];
+        $endDates = [];
+
+        foreach ($entries as $entry) {
+            $startDates[] = Carbon::createFromFormat('d-m-Y', $entry['start_date'])->startOfDay();
+            $endDates[] = Carbon::createFromFormat('d-m-Y', $entry['end_date'])->startOfDay();
+        }
+
+        usort($startDates, fn (Carbon $a, Carbon $b) => $a->getTimestamp() <=> $b->getTimestamp());
+        usort($endDates, fn (Carbon $a, Carbon $b) => $b->getTimestamp() <=> $a->getTimestamp());
+
+        return [
+            $startDates[0]->format('d-m-Y'),
+            $endDates[0]->format('d-m-Y'),
         ];
     }
 
@@ -856,7 +895,7 @@ class BackOfficeController extends Controller
             ->orderBy('name')
             ->get();
 
-        $currentSort = $request->input('sort', 'latest');
+        $currentSort = $request->input('sort', 'back_office_order');
 
         $summaryQuery = BackOfficeTask::query();
         $this->applyVisibilityScope($summaryQuery, $user, $fullName);
@@ -887,7 +926,6 @@ class BackOfficeController extends Controller
         ];
 
         $tasks = $query
-            ->orderByDesc('created_at')
             ->paginate(15)
             ->withQueryString();
 
@@ -1002,6 +1040,9 @@ class BackOfficeController extends Controller
     private function applyIndexSorting($query, string $sort): void
     {
         switch ($sort) {
+            case 'back_office_order':
+                $this->applyBackOfficeTaskTitleOrder($query);
+                break;
             case 'oldest':
                 $query->orderBy('created_at');
                 break;
@@ -1024,11 +1065,25 @@ class BackOfficeController extends Controller
         }
     }
 
+    private function applyBackOfficeTaskTitleOrder($query): void
+    {
+        $caseSql = collect(self::BACK_OFFICE_TASK_TITLE_ORDER)
+            ->keys()
+            ->map(fn ($index) => 'WHEN ? THEN ' . ($index + 1))
+            ->implode(' ');
+
+        $query
+            ->orderByRaw("CASE title {$caseSql} ELSE 999 END", self::BACK_OFFICE_TASK_TITLE_ORDER)
+            ->orderBy('title')
+            ->orderByDesc('created_at');
+    }
+
     private function backOfficeSortLabel(string $sort): string
     {
         return match ($sort) {
+            'back_office_order' => 'ลำดับ Back Office',
             'oldest' => 'เก่าสุด',
-            'title' => 'ชื่องาน A-Z',
+            'title' => 'ชื่องาน ก-ฮ',
             'hours' => 'ชั่วโมงมากที่สุด',
             'fte' => 'FTE มากที่สุด',
             'outputs' => 'ผลงานมากที่สุด',
@@ -1038,6 +1093,8 @@ class BackOfficeController extends Controller
 
     public function create()
     {
+        $this->ensureBackOfficeAdmin();
+
         $users = User::select('prefix', 'name', 'prefix_en', 'name_en')->orderBy('name')->get();
         $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
         $researchPersonList = $users
@@ -1059,11 +1116,10 @@ class BackOfficeController extends Controller
 
     public function store(Request $request)
     {
+        $this->ensureBackOfficeAdmin();
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'start_date' => ['required', 'date_format:d-m-Y'],
-            'end_date' => ['required', 'date_format:d-m-Y', 'after_or_equal:start_date'],
-            'description' => ['nullable', 'string'],
             'purpose' => ['nullable', 'string'],
             'leaders' => ['nullable', 'array'],
             'leaders.*' => ['nullable', 'string', 'max:255'],
@@ -1106,22 +1162,22 @@ class BackOfficeController extends Controller
             'outputs.*.conference_presenters.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.conference_presenters.*.name' => ['nullable', 'string', 'max:500'],
             'outputs.*.conference_presenters.*.person_type' => ['nullable', 'in:internal,external'],
-            'entries' => ['required', 'array', 'min:1'],
+            'entries' => ['nullable', 'array'],
             'entries.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'entries.*.person_name' => ['required', 'string', 'max:500'],
             'entries.*.category' => ['required', Rule::in($this->backOfficeCategoryOptions())],
             'entries.*.job_name' => ['required', 'string', 'max:500'],
-            'entries.*.job_detail' => ['required', 'string','max:1000'],
+            'entries.*.job_detail' => ['required', 'string', 'max:10000'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.end_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.hours' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $startDate = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('d-m-Y');
-        $endDate = Carbon::createFromFormat('d-m-Y', $data['end_date'])->format('d-m-Y');
         $task = null;
 
-        foreach ($data['entries'] as $idx => $entry) {
+        $entries = $data['entries'] ?? [];
+
+        foreach ($entries as $idx => $entry) {
             $entryStart = Carbon::createFromFormat('d-m-Y', $entry['start_date']);
             $entryEnd = Carbon::createFromFormat('d-m-Y', $entry['end_date']);
             if ($entryEnd->lt($entryStart)) {
@@ -1131,13 +1187,15 @@ class BackOfficeController extends Controller
             }
         }
 
+        [$startDate, $endDate] = $this->deriveBackOfficeTaskDateRange($entries);
+
         DB::transaction(function () use ($data, $startDate, $endDate, &$task) {
             $lookup = $this->buildBackOfficeUserLookup();
             $task = BackOfficeTask::create([
                 'title' => $data['title'],
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-                'description' => $data['description'] ?? null,
+                'description' => null,
                 'purpose' => $data['purpose'] ?? null,
                 'leaders' => $data['leaders'] ?? null,
                 'created_by' => Auth::id(),
@@ -1172,7 +1230,7 @@ class BackOfficeController extends Controller
                 }
             }
 
-            foreach ($data['entries'] as $entry) {
+            foreach ($data['entries'] ?? [] as $entry) {
                 BackOfficeEntry::create(array_merge(
                     ['task_id' => $task->id],
                     $this->buildBackOfficeEntryPayload($entry, $lookup)
@@ -1248,7 +1306,7 @@ class BackOfficeController extends Controller
             'person_name' => ['required', 'string', 'max:500'],
             'category' => ['required', Rule::in($this->backOfficeCategoryOptions())],
             'job_name' => ['required', 'string', 'max:500'],
-            'job_detail' => ['required', 'string', 'max:1000'],
+            'job_detail' => ['required', 'string', 'max:10000'],
             'start_date' => ['required', 'string', 'max:255'],
             'end_date' => ['required', 'string', 'max:255'],
             'hours' => ['required', 'numeric', 'min:0'],
@@ -1308,6 +1366,8 @@ class BackOfficeController extends Controller
 
     public function updateEntry(Request $request, BackOfficeTask $task, BackOfficeEntry $entry)
     {
+        $this->ensureBackOfficeAdmin();
+
         if ((int) $entry->task_id !== (int) $task->id) {
             abort(404);
         }
@@ -1317,7 +1377,7 @@ class BackOfficeController extends Controller
             'person_name' => ['required', 'string', 'max:500'],
             'category' => ['required', Rule::in($this->backOfficeCategoryOptions())],
             'job_name' => ['required', 'string', 'max:500'],
-            'job_detail' => ['required', 'string', 'max:1000'],
+            'job_detail' => ['required', 'string', 'max:10000'],
             'start_date' => ['required', 'string', 'max:255'],
             'end_date' => ['required', 'string', 'max:255'],
             'hours' => ['required', 'numeric', 'min:0'],
@@ -1478,6 +1538,8 @@ class BackOfficeController extends Controller
 
     public function updateOutput(Request $request, BackOfficeTask $task, \App\Models\BackOfficeTaskOutput $output)
     {
+        $this->ensureBackOfficeAdmin();
+
         if ((int) $output->task_id !== (int) $task->id) {
             abort(404);
         }
@@ -1665,6 +1727,8 @@ class BackOfficeController extends Controller
 
     public function edit(BackOfficeTask $task)
     {
+        $this->ensureBackOfficeAdmin();
+
         $task->load(array_merge(['entries', 'outputs', 'creator', 'updater'], $this->backOfficeOutputRelations()));
 
         $users = User::select('prefix', 'name', 'prefix_en', 'name_en')->orderBy('name')->get();
@@ -1695,11 +1759,10 @@ class BackOfficeController extends Controller
 
     public function update(Request $request, BackOfficeTask $task)
     {
+        $this->ensureBackOfficeAdmin();
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'start_date' => ['required', 'date_format:d-m-Y'],
-            'end_date' => ['required', 'date_format:d-m-Y', 'after_or_equal:start_date'],
-            'description' => ['nullable', 'string'],
             'purpose' => ['nullable', 'string'],
             'leaders' => ['nullable', 'array'],
             'leaders.*' => ['nullable', 'string', 'max:255'],
@@ -1744,21 +1807,20 @@ class BackOfficeController extends Controller
             'outputs.*.conference_presenters.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.conference_presenters.*.name' => ['nullable', 'string', 'max:500'],
             'outputs.*.conference_presenters.*.person_type' => ['nullable', 'in:internal,external'],
-            'entries' => ['required', 'array', 'min:1'],
+            'entries' => ['nullable', 'array'],
             'entries.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'entries.*.person_name' => ['required', 'string', 'max:500'],
             'entries.*.category' => ['required', Rule::in($this->backOfficeCategoryOptions())],
             'entries.*.job_name' => ['required', 'string', 'max:500'],
-            'entries.*.job_detail' => ['required', 'string', 'max:1000'],
+            'entries.*.job_detail' => ['required', 'string', 'max:10000'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.end_date' => ['required', 'date_format:d-m-Y'],
             'entries.*.hours' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $startDate = Carbon::createFromFormat('d-m-Y', $data['start_date'])->format('d-m-Y');
-        $endDate = Carbon::createFromFormat('d-m-Y', $data['end_date'])->format('d-m-Y');
+        $entries = $data['entries'] ?? [];
 
-        foreach ($data['entries'] as $idx => $entry) {
+        foreach ($entries as $idx => $entry) {
             $entryStart = Carbon::createFromFormat('d-m-Y', $entry['start_date']);
             $entryEnd = Carbon::createFromFormat('d-m-Y', $entry['end_date']);
             if ($entryEnd->lt($entryStart)) {
@@ -1767,6 +1829,11 @@ class BackOfficeController extends Controller
                 ])->withInput();
             }
         }
+
+        [$startDate, $endDate] = $this->deriveBackOfficeTaskDateRange($entries);
+        $data['start_date'] = $startDate;
+        $data['end_date'] = $endDate;
+        $data['description'] = null;
 
         $originalSnapshot = $this->buildBackOfficeComparableSnapshot($task);
         $incomingSnapshot = $this->buildBackOfficeComparableInput($data);
@@ -1783,7 +1850,7 @@ class BackOfficeController extends Controller
                 'title' => $data['title'],
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-                'description' => $data['description'] ?? null,
+                'description' => null,
                 'purpose' => $data['purpose'] ?? null,
                 'leaders' => $data['leaders'] ?? null,
                 'updated_by' => Auth::id(),
@@ -1820,7 +1887,7 @@ class BackOfficeController extends Controller
 
             $task->entries()->delete();
 
-            foreach ($data['entries'] as $entry) {
+            foreach ($data['entries'] ?? [] as $entry) {
                 $task->entries()->create($this->buildBackOfficeEntryPayload($entry, $lookup));
             }
         });
@@ -1843,6 +1910,8 @@ class BackOfficeController extends Controller
 
     public function destroy(BackOfficeTask $task)
     {
+        $this->ensureBackOfficeAdmin();
+
         $user = Auth::user();
         if (!$this->canManageTask($task, $user)) {
             abort(403);
@@ -1868,7 +1937,7 @@ class BackOfficeController extends Controller
 
     private function canManageTask(BackOfficeTask $task, $user): bool
     {
-        return (bool) $user;
+        return $user?->hasRole(User::ROLE_ADMIN) ?? false;
     }
 
     public function pdf(BackOfficeTask $task)

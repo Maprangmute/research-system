@@ -382,7 +382,7 @@
         {{-- Header --}}
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">📊 รายการโครงการวิจัย</h2>
+                <h2 class="text-2xl font-bold text-gray-900">📊 Research Project</h2>
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('outputs.index') }}"

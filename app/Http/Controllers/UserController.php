@@ -23,6 +23,7 @@ class UserController extends Controller
         return [
             User::ROLE_USER,
             User::ROLE_ADMIN,
+            User::ROLE_SU_ADMIN,
             User::ROLE_USER_ALL,
             User::ROLE_RESEARCH_EXECUTIVE,
             User::ROLE_RESIGNED,
@@ -124,7 +125,7 @@ class UserController extends Controller
             'total_users' => $totalUsers,
             'matched_users' => $matchedUsers,
             'admin_users' => (int) ($roleCounts[User::ROLE_ADMIN] ?? 0),
-            'all_user_like' => (int) (($roleCounts[User::ROLE_USER_ALL] ?? 0) + ($roleCounts[User::ROLE_RESEARCH_EXECUTIVE] ?? 0) + ($roleCounts[User::ROLE_UNIT_EXECUTIVE] ?? 0)),
+            'all_user_like' => (int) (($roleCounts[User::ROLE_SU_ADMIN] ?? 0) + ($roleCounts[User::ROLE_USER_ALL] ?? 0) + ($roleCounts[User::ROLE_RESEARCH_EXECUTIVE] ?? 0) + ($roleCounts[User::ROLE_UNIT_EXECUTIVE] ?? 0)),
             'resigned_users' => (int) ($roleCounts[User::ROLE_RESIGNED] ?? 0),
         ];
 

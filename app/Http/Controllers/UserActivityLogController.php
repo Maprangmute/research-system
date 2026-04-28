@@ -13,7 +13,7 @@ class UserActivityLogController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user || !$user->hasRole(User::ROLE_ADMIN)) {
+        if (!$user || !$user->isAdminEquivalent()) {
             abort(403);
         }
     }

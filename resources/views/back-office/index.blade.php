@@ -2,6 +2,7 @@
 
 @section('content')
     @php
+        $canManageBackOffice = auth()->user()?->hasRole(\App\Models\User::ROLE_ADMIN) ?? false;
         $activeFilterCount = collect(request()->query())
             ->reject(fn($value, $key) => in_array($key, ['page', 'sort'], true))
             ->filter(fn($value) => filled($value))
@@ -771,8 +772,8 @@
             <section class="back-office-panel back-office-hero">
                 <div class="relative flex flex-col gap-4 px-4 py-4 md:px-6 md:py-5 lg:flex-row lg:items-start lg:justify-between">
                     <div class="max-w-3xl">
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">Back Office Workspace</p>
-                        <h1 class="mt-1.5 text-xl font-bold tracking-tight text-slate-900 md:text-2xl">🧾 งานนอกโครงการ</h1>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">Missions Workspace</p>
+                        <h1 class="mt-1.5 text-xl font-bold tracking-tight text-slate-900 md:text-2xl">🧾 Missions</h1>
                         <p class="mt-2 text-sm leading-5 text-slate-600 md:text-sm">
                             จัดการงานภายในที่ไม่ผูกกับโครงการวิจัย
                         </p>
@@ -782,10 +783,12 @@
                             class="back-office-action border border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
                             📈 ดูสรุป FTE
                         </a>
-                        <a href="{{ route('back_office.create') }}"
-                            class="back-office-action bg-emerald-600 text-white shadow-sm hover:bg-emerald-700">
-                            ➕ เพิ่มงาน
-                        </a>
+                        @if ($canManageBackOffice)
+                            <a href="{{ route('back_office.create') }}"
+                                class="back-office-action bg-emerald-600 text-white shadow-sm hover:bg-emerald-700">
+                                ➕ เพิ่มงาน
+                            </a>
+                        @endif
                     </div>
                 </div>
             </section>
@@ -880,12 +883,13 @@
                                     <label class="block sm:col-span-1 xl:col-span-2">
                                         <span class="text-xs font-semibold text-slate-600">เรียงลำดับ</span>
                                         <select name="sort" class="back-office-select mt-1" data-back-office-live="change">
+                                            <option value="back_office_order" @selected($currentSort === 'back_office_order')>Missions order</option>
                                             <option value="latest" @selected($currentSort === 'latest')>บันทึกล่าสุด</option>
                                             <option value="oldest" @selected($currentSort === 'oldest')>เก่าสุด</option>
                                             <option value="hours" @selected($currentSort === 'hours')>ชั่วโมงมากที่สุด</option>
                                             <option value="fte" @selected($currentSort === 'fte')>FTE มากที่สุด</option>
                                             <option value="outputs" @selected($currentSort === 'outputs')>ผลงานมากที่สุด</option>
-                                            <option value="title" @selected($currentSort === 'title')>ชื่องาน A-Z</option>
+                                            <option value="title" @selected($currentSort === 'title')>ชื่องาน ก-ฮ</option>
                                         </select>
                                     </label>
 
@@ -1008,12 +1012,13 @@
                     <label class="block">
                         <span class="text-xs font-semibold text-slate-600">เรียงลำดับ</span>
                         <select name="sort" class="back-office-select mt-1" data-back-office-live="change">
+                            <option value="back_office_order" @selected($currentSort === 'back_office_order')>Missions order</option>
                             <option value="latest" @selected($currentSort === 'latest')>บันทึกล่าสุด</option>
                             <option value="oldest" @selected($currentSort === 'oldest')>เก่าสุด</option>
                             <option value="hours" @selected($currentSort === 'hours')>ชั่วโมงมากที่สุด</option>
                             <option value="fte" @selected($currentSort === 'fte')>FTE มากที่สุด</option>
                             <option value="outputs" @selected($currentSort === 'outputs')>ผลงานมากที่สุด</option>
-                            <option value="title" @selected($currentSort === 'title')>ชื่องาน A-Z</option>
+                            <option value="title" @selected($currentSort === 'title')>ชื่องาน ก-ฮ</option>
                         </select>
                     </label>
 
@@ -1273,7 +1278,7 @@
                         queryAll('[name]', form).forEach((field) => {
                             if (!field.name) return;
                             const value = field.name === 'sort'
-                                ? (url.searchParams.get(field.name) ?? 'latest')
+                                ? (url.searchParams.get(field.name) ?? 'back_office_order')
                                 : (url.searchParams.get(field.name) ?? '');
                             setFieldValue(field, value);
                         });
@@ -1302,7 +1307,7 @@
                 for (const [key, rawValue] of formData.entries()) {
                     const value = String(rawValue ?? '').trim();
                     if (!value) continue;
-                    if (key === 'sort' && value === 'latest') continue;
+                    if (key === 'sort' && value === 'back_office_order') continue;
                     url.searchParams.append(key, value);
                 }
 
@@ -1616,7 +1621,7 @@
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'ยืนยันการลบงาน Back Office',
+                            title: 'ยืนยันการลบ Missions',
                             html: `Record #${escapeHtml(recordId)}<br>งาน: ${escapeHtml(title)}<br>ผู้บันทึก: ${escapeHtml(creator)}`,
                             showCancelButton: true,
                             confirmButtonText: 'ลบรายการนี้',

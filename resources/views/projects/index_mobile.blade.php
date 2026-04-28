@@ -220,7 +220,7 @@
         {{-- Header --}}
         <div class="flex flex-col gap-3">
             <div>
-                <h2 class="text-xl font-bold text-gray-900">📊 รายการโครงการวิจัย</h2>
+                <h2 class="text-xl font-bold text-gray-900">📊 Research Project</h2>
                 <p id="project-mobile-count" class="text-xs text-slate-500">แสดงผล {{ $projects->firstItem() ?? 0 }}–{{ $projects->lastItem() ?? 0 }} จากทั้งหมด
                     {{ $projects->total() }} รายการ</p>
             </div>

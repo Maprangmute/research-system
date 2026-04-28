@@ -22,6 +22,7 @@
                 <select name="role" class="border p-2 rounded text-sm flex-1">
                     <option value="user" @selected($user->role === 'user')>user</option>
                     <option value="admin" @selected($user->role === 'admin')>admin</option>
+                    <option value="su_admin" @selected($user->role === 'su_admin')>su_admin</option>
                     <option value="user_all" @selected($user->role === 'user_all')>user_all</option>
                     <option value="research_executive" @selected($user->role === 'research_executive')>research_executive</option>
                     <option value="unit_executive" @selected($user->role === 'unit_executive')>unit_executive</option>

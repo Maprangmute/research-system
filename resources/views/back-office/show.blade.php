@@ -2,6 +2,7 @@
 
 @section('content')
     @php
+        $canManageBackOffice = auth()->user()?->hasRole(\App\Models\User::ROLE_ADMIN) ?? false;
         $formatDateBE = function ($value) {
             if (!$value) {
                 return '-';
@@ -88,13 +89,13 @@
             position: relative;
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
-            gap: 1.5rem;
-            padding: 1.65rem;
+            gap: 1.15rem;
+            padding: 1.35rem 1.65rem;
         }
 
         .back-office-hero__content {
             min-width: 0;
-            max-width: 72rem;
+            max-width: none;
         }
 
         .back-office-hero__actions {
@@ -117,25 +118,42 @@
         .back-office-hero__title {
             margin-top: 0.45rem;
             color: #0f172a;
-            font-size: clamp(1.65rem, 3vw, 2.65rem);
+            font-size: clamp(1.45rem, 2.25vw, 2.15rem);
             font-weight: 850;
-            line-height: 1.18;
-            letter-spacing: -0.035em;
+            line-height: 1.22;
+            letter-spacing: -0.02em;
         }
 
         .back-office-hero__intro {
             margin-top: 1rem;
-            max-width: 58rem;
+            max-width: min(100%, 110rem);
             color: #475569;
             font-size: 0.98rem;
             line-height: 1.75;
+            overflow-wrap: anywhere;
+            text-align: left;
+        }
+
+        .back-office-hero__intro-label {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: #0f172a;
+            font-weight: 800;
+            text-align: left;
+        }
+
+        .back-office-hero__intro-text {
+            display: block;
+            white-space: pre-wrap;
+            text-align: left;
         }
 
         .back-office-meta-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: minmax(0, 1fr);
             gap: 0.75rem;
             margin-top: 1.15rem;
+            max-width: 64rem;
         }
 
         .back-office-meta-item {
@@ -175,11 +193,11 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 16px;
-            min-height: 3.45rem;
-            min-width: 6.1rem;
-            padding: 0.78rem 1.15rem;
-            font-size: 0.95rem;
+            border-radius: 13px;
+            min-height: 2.8rem;
+            min-width: 4.8rem;
+            padding: 0.55rem 0.9rem;
+            font-size: 0.84rem;
             font-weight: 800;
             letter-spacing: -0.01em;
             box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08);
@@ -220,7 +238,7 @@
             background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
             color: #065f46;
             box-shadow: 0 16px 30px rgba(16, 185, 129, 0.18);
-            min-width: 10.8rem;
+            min-width: 8.8rem;
         }
 
         .back-office-action--pdf:hover {
@@ -480,7 +498,8 @@
             bottom: 1rem;
             z-index: 70;
             transform: translateX(-50%);
-            width: min(88vw, 640px);
+            width: fit-content;
+            max-width: calc(100vw - 2rem);
             border: 1px solid rgba(226, 232, 240, 0.95);
             border-radius: 20px;
             background: rgba(255, 255, 255, 0.96);
@@ -493,10 +512,13 @@
         }
 
         .back-office-dock__grid {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 0.45rem;
             padding: 0.5rem;
+            width: fit-content;
+            max-width: calc(100vw - 2rem);
         }
 
         .back-office-dock__button {
@@ -510,6 +532,8 @@
             color: #334155;
             font-size: 0.82rem;
             font-weight: 600;
+            flex: 0 0 auto;
+            padding: 0 1rem;
             transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
         }
 
@@ -625,11 +649,10 @@
             }
 
             .back-office-dock {
-                left: auto;
-                left: 0.75rem;
+                left: 50%;
                 right: auto;
                 bottom: calc(0.75rem + env(safe-area-inset-bottom));
-                transform: none;
+                transform: translateX(-50%);
                 width: auto;
                 border-radius: 999px;
                 overflow: hidden;
@@ -639,6 +662,7 @@
             .back-office-dock.is-open {
                 left: 0.75rem;
                 right: 0.75rem;
+                transform: none;
                 width: auto;
                 border-radius: 24px;
             }
@@ -680,6 +704,7 @@
             .back-office-dock__button {
                 min-height: 2.7rem;
                 font-size: 0.88rem;
+                flex: none;
             }
         }
     </style>
@@ -690,29 +715,18 @@
                 <div class="back-office-hero__layout">
                     <div class="back-office-hero__content">
                         <a href="{{ route('back_office.index') }}" class="text-sm text-sky-700 hover:underline">← กลับไปยังรายการงาน</a>
-                        <p class="back-office-hero__eyebrow">Back Office Detail</p>
                         <h1 class="back-office-hero__title">{{ $task->title }}</h1>
 
-                        @if ($task->description)
-                            <p class="back-office-hero__intro">{{ $task->description }}</p>
-                        @endif
-
-                        @if ($task->purpose)
+                        @php($purposeText = trim((string) $task->purpose))
+                        @if ($purposeText !== '')
                             <div class="back-office-hero__intro">
-                                <span class="font-semibold text-slate-800">จุดประสงค์:</span> {{ $task->purpose }}
+                                <span class="back-office-hero__intro-label">จุดประสงค์:</span>
+                                <div class="back-office-hero__intro-text">{{ $purposeText }}</div>
                             </div>
                         @endif
 
                         <div class="back-office-meta-grid">
                             <div class="back-office-meta-item">
-                                <div class="back-office-meta-item__label">ช่วงเวลา</div>
-                                <div class="back-office-meta-item__value">{{ $formatDateBE($task->start_date) }} ถึง {{ $formatDateBE($task->end_date) }}</div>
-                            </div>
-                            <div class="back-office-meta-item">
-                                <div class="back-office-meta-item__label">ผู้บันทึก</div>
-                                <div class="back-office-meta-item__value">{{ $task->creator?->name ?? '-' }}</div>
-                            </div>
-                            <div class="back-office-meta-item md:col-span-2">
                                 <div class="back-office-meta-item__label">หัวหน้างานผู้รับผิดชอบ</div>
                                 <div class="back-office-meta-item__value">{{ !empty($task->leaders) ? implode(', ', $task->leaders) : '-' }}</div>
                             </div>
@@ -725,39 +739,37 @@
                                     | อัปเดทเมื่อ {{ $updatedAtThai }}
                                 @endif
                             </div>
-                            <div>
-                                สร้างโดย {{ $createdBy }}
-                                @if ($createdAtThai)
-                                    | สร้างเมื่อ {{ $createdAtThai }}
-                                @endif
-                            </div>
                         </div>
                     </div>
 
                     <div class="back-office-hero__actions">
-                        <a href="{{ route('back_office.edit', $task) }}"
-                            class="back-office-action back-office-action--edit"
-                            data-back-office-global-edit>
-                            แก้ไข
-                        </a>
+                        @if ($canManageBackOffice)
+                            <a href="{{ route('back_office.edit', $task) }}"
+                                class="back-office-action back-office-action--edit"
+                                data-back-office-global-edit>
+                                แก้ไข
+                            </a>
+                        @endif
                         <a href="{{ route('back_office.pdf', $task) }}" target="_blank" rel="noopener"
                             class="back-office-action back-office-action--pdf"
                             data-back-office-global-pdf>
                             <span class="back-office-action__icon" aria-hidden="true">🖨️</span>
                             <span>ดาวน์โหลด PDF</span>
                         </a>
-                        <form action="{{ route('back_office.destroy', $task) }}" method="POST" class="inline-flex"
-                            data-back-office-delete-form
-                            data-record-id="{{ $task->id }}"
-                            data-record-title="{{ $task->title }}"
-                            data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="back-office-action back-office-action--delete border-0"
-                                data-back-office-global-delete>
-                                ลบ
-                            </button>
-                        </form>
+                        @if ($canManageBackOffice)
+                            <form action="{{ route('back_office.destroy', $task) }}" method="POST" class="inline-flex"
+                                data-back-office-delete-form
+                                data-record-id="{{ $task->id }}"
+                                data-record-title="{{ $task->title }}"
+                                data-record-creator="{{ trim((string) ($task->creator?->name ?? '-')) }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="back-office-action back-office-action--delete border-0"
+                                    data-back-office-global-delete>
+                                    ลบ
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             </section>
@@ -789,15 +801,19 @@
             <button type="button" class="back-office-dock__button back-office-dock__button--output" data-back-office-dock-output>
                 เพิ่มผลงาน
             </button>
-            <button type="button" class="back-office-dock__button back-office-dock__button--edit" data-back-office-dock-edit>
-                แก้ไขงาน
-            </button>
+            @if ($canManageBackOffice)
+                <button type="button" class="back-office-dock__button back-office-dock__button--edit" data-back-office-dock-edit>
+                    แก้ไขงาน
+                </button>
+            @endif
             <button type="button" class="back-office-dock__button back-office-dock__button--pdf" data-back-office-dock-pdf>
                 ดาวน์โหลด PDF
             </button>
-            <button type="button" class="back-office-dock__button back-office-dock__button--delete" data-back-office-dock-delete>
-                ลบงาน
-            </button>
+            @if ($canManageBackOffice)
+                <button type="button" class="back-office-dock__button back-office-dock__button--delete" data-back-office-dock-delete>
+                    ลบงาน
+                </button>
+            @endif
         </div>
     </aside>
 

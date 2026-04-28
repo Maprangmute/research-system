@@ -94,6 +94,9 @@
                         <option value="admin" @selected($user->role === 'admin')>
                             admin (เข้าถึงทุกข้อมูล)
                         </option>
+                        <option value="su_admin" @selected($user->role === 'su_admin')>
+                            su_admin (เหมือน admin ยกเว้น Back Office)
+                        </option>
                         <option value="user_all" @selected($user->role === 'user_all')>
                             user_all (เข้าถึงทุกข้อมูลเหมือน admin)
                         </option>

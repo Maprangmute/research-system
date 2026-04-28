@@ -237,7 +237,7 @@
             line-height: 1.6;
             color: #1e293b;
             word-break: break-word;
-            white-space: normal;
+            white-space: pre-wrap;
         }
         .detail-row td {
             padding-top: 12px;

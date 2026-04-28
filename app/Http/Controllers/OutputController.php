@@ -33,7 +33,12 @@ use PDF;
 class OutputController extends Controller
 {
     private const EXTERNAL_JOB_CATEGORIES = [
-        'TBA xxxxxx by Aj. V',
+        '01 Aging and Frailty',
+        '02 Health Systems and HTA',
+        '03 Rational Drug Use (RDU)',
+        '04 Real-World Evidence (RWE) and Clinical–Technical Cohorts',
+        '05 Global Health',
+        '06 Other Areas',
     ];
 
     public function externalAcademic(Request $request)

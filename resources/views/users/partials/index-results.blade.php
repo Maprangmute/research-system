@@ -1,6 +1,7 @@
 @php
     $roleMeta = [
         'admin' => ['label' => 'ผู้ดูแลระบบ', 'class' => 'bg-sky-100 text-sky-800 border-sky-200'],
+        'su_admin' => ['label' => 'ผู้ดูแลพิเศษ', 'class' => 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200'],
         'user' => ['label' => 'ผู้ใช้งานทั่วไป', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-200'],
         'user_all' => ['label' => 'all_user', 'class' => 'bg-indigo-100 text-indigo-800 border-indigo-200'],
         'research_executive' => ['label' => 'ผู้บริหารงานวิจัย', 'class' => 'bg-cyan-100 text-cyan-800 border-cyan-200'],

@@ -517,7 +517,6 @@
     <div class="bo-editor-shell mx-auto max-w-[1720px] space-y-5 p-4 xl:px-6 2xl:px-8">
         <aside class="bo-section-nav" aria-label="เมนูลัดหัวข้อ">
             <button type="button" class="bo-section-dot" data-nav-target="bo-section-main" aria-label="1: ข้อมูลงานหลัก"><span class="bo-section-dot__short">1</span><span class="bo-section-dot__full">1: ข้อมูลงานหลัก</span></button>
-            <button type="button" class="bo-section-dot" data-nav-target="bo-section-entries" aria-label="2: ภาระงานและผู้รับผิดชอบ"><span class="bo-section-dot__short">2</span><span class="bo-section-dot__full">2: ภาระงานและผู้รับผิดชอบ</span></button>
             <button type="button" class="bo-section-dot" data-nav-target="bo-section-outputs" aria-label="3: ผลงานของงานนอกโครงการ"><span class="bo-section-dot__short">3</span><span class="bo-section-dot__full">3: ผลงานของงานนอกโครงการ</span></button>
         </aside>
         <section class="bo-editor-panel bo-editor-hero">
@@ -553,42 +552,20 @@
                         </div>
                     </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label class="block">
+                    <label class="block md:col-span-2">
                         <span class="text-sm font-semibold text-slate-600">ชื่องาน <span class="bo-required">*</span></span>
                         <input name="title" value="{{ old('title') }}" required
                             class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="เช่น งานจัดทำเอกสารประกอบการประชุม">
                     </label>
-                    <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">รายละเอียดเพิ่มเติม <span class="bo-required">*</span></span>
-                        <input name="description" value="{{ old('description') }}"
-                            class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="อธิบายสั้นๆ (ถ้ามี)">
-                    </label>
-                    <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">วันที่เริ่ม <span class="bo-required">*</span></span>
-                        <input type="text" name="start_date" value="{{ old('start_date') }}" required
-                            class="w-full mt-1 border border-slate-200 rounded-lg p-3 js-date-be"
-                            placeholder="กรุณาใส่วันที่เริ่มต้นภาระงาน" autocomplete="off">
-                    </label>
-                    <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">วันที่สิ้นสุด <span class="bo-required">*</span></span>
-                        <input type="text" name="end_date" value="{{ old('end_date') }}" required
-                            class="w-full mt-1 border border-slate-200 rounded-lg p-3 js-date-be"
-                            placeholder="กรุณาใส่วันที่สิ้นสุดภาระงาน" autocomplete="off">
-                    </label>
                     <label class="block md:col-span-2">
                         <span class="text-sm font-semibold text-slate-600">จุดประสงค์ของงาน</span>
-                        <textarea name="purpose" rows="2"
-                            class="w-full mt-1 border border-slate-200 rounded-lg p-3"
+                        <textarea name="purpose" rows="5"
+                            class="w-full mt-1 min-h-[9rem] border border-slate-200 rounded-lg p-3"
                             placeholder="อธิบายจุดประสงค์ของงาน">{{ old('purpose') }}</textarea>
                     </label>
                     <div class="block md:col-span-2">
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-semibold text-slate-600">หัวหน้างานผู้รับผิดชอบ (เพิ่มได้หลายคน)</span>
-                        </div>
-                        <div class="bo-editor-helper mt-3">
-                            <div class="text-xs leading-5 text-slate-600">
-                                พิมพ์ชื่อหัวหน้างาน แล้วกด <b>เพิ่มถัดไป</b> หรือกด <b>Enter</b> เพื่อสร้างช่องใหม่
-                            </div>
                         </div>
                         <div id="leaders-body" class="leader-stack mt-3"></div>
                         <div class="mt-4 flex justify-end">
@@ -602,15 +579,6 @@
             </div>
 
             <div id="bo-section-entries" class="bo-editor-panel bo-section-target p-6">
-                <div class="flex items-center gap-2 mb-4">
-                    <div class="flex items-center gap-2">
-                        <div class="bo-editor-step is-blue">2</div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-slate-800">ภาระงานและผู้รับผิดชอบ</h3>
-                        </div>
-                    </div>
-                </div>
-
                 <div id="entries-body" class="space-y-4"></div>
                 <div class="mt-4 flex justify-end">
                     <div class="flex flex-wrap items-center gap-2">
@@ -704,6 +672,7 @@
                     <textarea name="entries[__INDEX__][job_detail]" required rows="1"
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3 auto-grow"
                         placeholder="รายละเอียดงาน"></textarea>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">รองรับข้อความยาวและจะคงการเว้นบรรทัดตามที่พิมพ์ไว้เมื่อแสดงผล แก้ไข และส่งออก PDF</p>
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">วันที่เริ่ม <span class="bo-required">*</span></span>
@@ -1222,6 +1191,7 @@
         function bindMainTaskDateFix(retries = 0) {
             const startInput = backOfficeForm?.querySelector('input[name="start_date"]');
             const endInput = backOfficeForm?.querySelector('input[name="end_date"]');
+            if (!startInput?.classList.contains('js-date-be') || !endInput?.classList.contains('js-date-be')) return;
             const startFp = startInput?._flatpickr;
             const endFp = endInput?._flatpickr;
 
@@ -1302,7 +1272,7 @@
         function bindMainTaskDateMinRules() {
             const mainStart = backOfficeForm?.querySelector('input[name="start_date"]');
             const mainEnd = backOfficeForm?.querySelector('input[name="end_date"]');
-            if (mainStart && mainEnd) {
+            if (mainStart?.classList.contains('js-date-be') && mainEnd?.classList.contains('js-date-be')) {
                 bindMinDateFromSource(mainStart, mainEnd, 'main_range');
             }
         }
@@ -1318,7 +1288,7 @@
             if (entryStart && entryEnd) {
                 bindMinDateFromSource(entryStart, entryEnd, `entry_range_${index}`);
             }
-            if (mainStart && entryStart) {
+            if (mainStart?.classList.contains('js-date-be') && entryStart) {
                 bindMinDateFromSource(mainStart, entryStart, `entry_main_start_${index}`);
             }
         }
@@ -1327,7 +1297,7 @@
             const mainStart = backOfficeForm?.querySelector('input[name="start_date"]');
             const outputDate = row.querySelector(`input[name="outputs[${index}][year]"]`);
             if (outputDate) bindDateFieldBeSync(outputDate, `outputYear${index}`);
-            if (mainStart && outputDate) {
+            if (mainStart?.classList.contains('js-date-be') && outputDate) {
                 bindMinDateFromSource(mainStart, outputDate, `output_main_start_${index}`);
             }
         }
@@ -2248,8 +2218,6 @@
 
         if (Array.isArray(initialEntries) && initialEntries.length) {
             initialEntries.forEach(entry => addEntry(entry));
-        } else {
-            addEntry();
         }
 
         initBackOfficePersonSelect(document);

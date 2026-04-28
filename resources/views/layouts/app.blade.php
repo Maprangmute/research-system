@@ -507,14 +507,14 @@
                             Dashboard</a>
                         <a href="/rm"
                             class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📋
-                            รายการโปรเจค</a>
+                            Research Project</a>
                         <a href="/rm/create"
                             class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50">➕
                             เพิ่มโครงการ</a>
 
                         <a href="{{ route('back_office.index') }}"
                             class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧾
-                            Back Office</a>
+                            Missions</a>
 
                         <a href="{{ route('outputs.external-academic') }}"
                             class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧩
@@ -606,21 +606,23 @@
                                 <a href="{{ route('user_guide') }}"
                                     class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">📘 คู่มือ</a>
 
-                                @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
+                                @if ($authUser?->isAdminEquivalent())
                                     <a href="/user" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
                                         👥 จัดการผู้ใช้
                                     </a>
                                 @endif
 
-                                @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
+                                @if ($authUser?->isAdminEquivalent())
                                     <a href="/project-logs"
                                         class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
                                         📝 Project log
                                     </a>
-                                    <a href="{{ route('back_office_action_logs.index') }}"
-                                        class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                        📚 Back Office Log
-                                    </a>
+                                    @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
+                                        <a href="{{ route('back_office_action_logs.index') }}"
+                                            class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
+                                            📚 Back Office Log
+                                        </a>
+                                    @endif
                                     <a href="{{ route('user_activity_logs.index') }}"
                                         class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
                                         🛡️ User Activity Log
@@ -688,8 +690,8 @@
                             </div>
                         </div>
                         <a href="/dashboard">📊 Dashboard</a>
-                        <a href="/rm">📋 รายการโปรเจค</a>
-                        <a href="{{ route('back_office.index') }}">🧾 Back Office</a>
+                        <a href="/rm">📋 Research Project</a>
+                        <a href="{{ route('back_office.index') }}">🧾 Missions</a>
                         <a href="{{ route('outputs.external-academic') }}">🧩 Extra</a>
                         <a href="/rm/create">➕ เพิ่มโครงการ</a>
                         <div class="text-gray-700 font-medium">📑 Outputs</div>
@@ -700,17 +702,19 @@
                         <a href="{{ route('outputs.papers') }}">Research Papers</a>
                         <a href="{{ route('outputs.presentations') }}">Presentations</a>
                         <a href="{{ route('outputs.textbooks') }}">Textbook / Book chapter</a>
-                        <a href="{{ route('outputs.visualization') }}">📊 Visualization</a>
+                        <a href="{{ route('outputs.visualization') }}">ข้อมูลผลงาน สำหรับสัมมมนา</a>
                         <div class="text-gray-700 font-medium">🔥 FTE</div>
                         <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
                         <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
                         <a href="{{ route('user_guide') }}">📘 คู่มือ</a>
-                        @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
+                        @if ($authUser?->isAdminEquivalent())
                             <a href="/user">👥 จัดการผู้ใช้</a>
                         @endif
-                        @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
+                        @if ($authUser?->isAdminEquivalent())
                             <a href="/project-logs">📝 Project log</a>
-                            <a href="{{ route('back_office_action_logs.index') }}">📚 Back Office Log</a>
+                            @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
+                                <a href="{{ route('back_office_action_logs.index') }}">📚 Back Office Log</a>
+                            @endif
                             <a href="{{ route('user_activity_logs.index') }}">🛡️ User Activity Log</a>
                         @endif
                         <a href="{{ route('profile.show') }}">👤 แก้ไขข้อมูลส่วนตัว</a>

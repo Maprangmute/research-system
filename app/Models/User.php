@@ -16,6 +16,7 @@ class User extends Authenticatable
 
     public const ROLE_USER = 'user';
     public const ROLE_ADMIN = 'admin';
+    public const ROLE_SU_ADMIN = 'su_admin';
     public const ROLE_USER_ALL = 'user_all';
     public const ROLE_RESEARCH_EXECUTIVE = 'research_executive';
     public const ROLE_RESIGNED = 'resigned';
@@ -23,6 +24,7 @@ class User extends Authenticatable
 
     public const MANAGERIAL_ROLES = [
         self::ROLE_ADMIN,
+        self::ROLE_SU_ADMIN,
         self::ROLE_USER_ALL,
         self::ROLE_RESEARCH_EXECUTIVE,
         self::ROLE_UNIT_EXECUTIVE,
@@ -30,11 +32,13 @@ class User extends Authenticatable
 
     public const ADMIN_EQUIVALENT_ROLES = [
         self::ROLE_ADMIN,
+        self::ROLE_SU_ADMIN,
         self::ROLE_UNIT_EXECUTIVE,
     ];
 
     public const USER_MANAGEMENT_ROLES = [
         self::ROLE_ADMIN,
+        self::ROLE_SU_ADMIN,
         self::ROLE_USER_ALL,
         self::ROLE_RESEARCH_EXECUTIVE,
     ];

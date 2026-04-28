@@ -3,6 +3,7 @@
     $personList = $personList ?? collect();
     $researchPersonList = $researchPersonList ?? collect();
     $categoryOptions = $categoryOptions ?? [];
+    $canManageBackOffice = $canManageBackOffice ?? (auth()->user()?->hasRole(\App\Models\User::ROLE_ADMIN) ?? false);
     $openQuickEntry = $openQuickEntry ?? false;
     $openQuickOutput = $openQuickOutput ?? false;
     $inlineFieldClass = 'mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100';
@@ -98,10 +99,12 @@
                         class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                         เปิดหน้าเต็ม
                     </a>
-                    <a href="{{ route('back_office.edit', $task) }}"
-                        class="inline-flex items-center justify-center rounded-xl bg-amber-100 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-200">
-                        แก้ไข
-                    </a>
+                    @if ($canManageBackOffice)
+                        <a href="{{ route('back_office.edit', $task) }}"
+                            class="inline-flex items-center justify-center rounded-xl bg-amber-100 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-200">
+                            แก้ไข
+                        </a>
+                    @endif
                     <a href="{{ route('back_office.pdf', $task) }}" target="_blank" rel="noopener"
                         class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
                         🖨️ PDF
@@ -193,6 +196,7 @@
                         <label class="block">
                             <span class="text-xs font-semibold text-slate-600">รายละเอียดงาน <span class="bo-required">*</span></span>
                             <textarea name="job_detail" placeholder="รายละเอียดงานที่ทำ" required>{{ old('job_detail') }}</textarea>
+                            <p class="mt-1 text-xs leading-5 text-slate-500">รองรับข้อความยาวและจะคงการเว้นบรรทัดตามที่พิมพ์ไว้</p>
                             @error('job_detail')<div class="mt-1 text-xs text-red-600">{{ $message }}</div>@enderror
                         </label>
 
@@ -236,28 +240,30 @@
                     </div>
                     <div class="flex flex-col items-end gap-3">
                         <div class="back-office-record-card__actions">
-                            @if (!$drawerMode)
+                            @if (!$drawerMode && $canManageBackOffice)
                                 <button type="button"
                                     class="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100"
                                     data-back-office-entry-edit-toggle>
                                     แก้ไข
                                 </button>
                             @endif
-                            <form action="{{ route('back_office.entries.destroy', [$task, $entry->id]) }}" method="POST"
-                                data-back-office-entry-delete-form
-                                data-entry-person="{{ trim((string) $entry->person_name) }}"
-                                data-entry-job="{{ trim((string) $entry->job_name) }}"
-                                data-entry-category="{{ trim((string) $entry->category) }}"
-                                data-entry-hours="{{ number_format((float) $entry->hours, 2) }}"
-                                data-entry-start="{{ $formatDateBE($entry->start_date) }}"
-                                data-entry-end="{{ $formatDateBE($entry->end_date) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                    class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100">
-                                    ลบ
-                                </button>
-                            </form>
+                            @if (!$drawerMode)
+                                <form action="{{ route('back_office.entries.destroy', [$task, $entry->id]) }}" method="POST"
+                                    data-back-office-entry-delete-form
+                                    data-entry-person="{{ trim((string) $entry->person_name) }}"
+                                    data-entry-job="{{ trim((string) $entry->job_name) }}"
+                                    data-entry-category="{{ trim((string) $entry->category) }}"
+                                    data-entry-hours="{{ number_format((float) $entry->hours, 2) }}"
+                                    data-entry-start="{{ $formatDateBE($entry->start_date) }}"
+                                    data-entry-end="{{ $formatDateBE($entry->end_date) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                        class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100">
+                                        ลบ
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                         <div class="grid w-full grid-cols-2 gap-3 text-sm md:min-w-[220px]">
                             <div class="rounded-xl bg-slate-50 p-3 text-center">
@@ -291,7 +297,7 @@
                     </div>
                 </div>
 
-                @if (!$drawerMode)
+                @if (!$drawerMode && $canManageBackOffice)
                     @php
                         $openEditEntry = (string) old('_edit_entry_id') === (string) $entry->id;
                     @endphp
@@ -339,6 +345,7 @@
                             <label class="block">
                                 <span class="text-xs font-semibold text-slate-600">รายละเอียดงาน <span class="bo-required">*</span></span>
                                 <textarea name="job_detail" required class="{{ $inlineTextareaClass }}">{{ old('_edit_entry_id') == $entry->id ? old('job_detail') : $entry->job_detail }}</textarea>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">รองรับข้อความยาวและจะคงการเว้นบรรทัดตามที่พิมพ์ไว้</p>
                             </label>
                             <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
                                 <label class="block">
@@ -845,12 +852,14 @@
                                 <div class="mt-3 text-lg font-semibold leading-7 text-slate-900">{{ $output->title }}</div>
                             </div>
                             <div class="back-office-record-card__actions">
-                                @if (!$drawerMode)
+                                @if (!$drawerMode && $canManageBackOffice)
                                     <button type="button"
                                         class="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100"
                                         data-back-office-output-edit-toggle>
                                         แก้ไข
                                     </button>
+                                @endif
+                                @if (!$drawerMode)
                                     <form action="{{ route('back_office.outputs.destroy', [$task, $output->id]) }}" method="POST"
                                         data-back-office-output-delete-form
                                         data-output-title="{{ trim((string) $output->title) }}"
@@ -1012,7 +1021,7 @@
                             </div>
                         @endif
 
-                        @if (!$drawerMode)
+                        @if (!$drawerMode && $canManageBackOffice)
                             <section class="mt-5 rounded-[28px] border border-emerald-100 bg-emerald-50/80 p-5 shadow-inner {{ $openEditOutput ? '' : 'hidden' }}" data-back-office-output-edit-card>
                                 <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                                     <div>

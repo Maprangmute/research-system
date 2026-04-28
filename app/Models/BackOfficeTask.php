@@ -46,8 +46,16 @@ class BackOfficeTask extends Model
 
     protected static function booted(): void
     {
-        static::created(function (BackOfficeTask $task) {
+        static::creating(function (BackOfficeTask $task) {
             if ($task->backoffice_id) {
+                return;
+            }
+
+            $task->backoffice_id = 'BO_TMP_' . substr(str_replace('.', '', uniqid('', true)), -13);
+        });
+
+        static::created(function (BackOfficeTask $task) {
+            if ($task->backoffice_id && ! str_starts_with($task->backoffice_id, 'BO_TMP_')) {
                 return;
             }
 

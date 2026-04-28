@@ -304,6 +304,7 @@
                         <select name="role" class="users-select mt-1">
                             <option value="all" @selected(($role ?? 'all') === 'all')>ทั้งหมด</option>
                             <option value="admin" @selected(($role ?? '') === 'admin')>admin</option>
+                            <option value="su_admin" @selected(($role ?? '') === 'su_admin')>su_admin</option>
                             <option value="user" @selected(($role ?? '') === 'user')>user</option>
                             <option value="user_all" @selected(($role ?? '') === 'user_all')>user_all</option>
                             <option value="research_executive" @selected(($role ?? '') === 'research_executive')>research_executive</option>

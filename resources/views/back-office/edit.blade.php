@@ -567,45 +567,21 @@
                             <h3 class="text-lg font-semibold text-slate-800">ข้อมูลงานหลัก</h3>
                         </div>
                     </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4">
                     <label class="block">
                         <span class="text-sm font-semibold text-slate-600">ชื่องาน <span class="bo-required">*</span></span>
                         <input name="title" value="{{ old('title', $task->title) }}" required
                             class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="เช่น งานจัดทำเอกสารประกอบการประชุม">
                     </label>
                     <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">รายละเอียดเพิ่มเติม <span class="bo-required">*</span></span>
-                        <input name="description" value="{{ old('description', $task->description) }}"
-                            class="w-full mt-1 border border-slate-200 rounded-lg p-3" placeholder="อธิบายสั้นๆ (ถ้ามี)">
-                    </label>
-                    <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">วันที่เริ่ม <span class="bo-required">*</span></span>
-                        <input type="text" name="start_date" value="{{ old('start_date', $task->start_date) }}" required
-                            class="w-full mt-1 border border-slate-200 rounded-lg p-3 js-date-be"
-                            placeholder="กรุณาใส่วันที่เริ่มต้นภาระงาน" autocomplete="off">
-                    </label>
-                    <label class="block">
-                        <span class="text-sm font-semibold text-slate-600">วันที่สิ้นสุด <span class="bo-required">*</span></span>
-                        <input type="text" name="end_date" value="{{ old('end_date', $task->end_date) }}" required
-                            class="w-full mt-1 border border-slate-200 rounded-lg p-3 js-date-be"
-                            placeholder="กรุณาใส่วันที่สิ้นสุดภาระงาน" autocomplete="off">
-                    </label>
-                    <label class="block md:col-span-2">
                         <span class="text-sm font-semibold text-slate-600">จุดประสงค์ของงาน</span>
-                        <textarea name="purpose" rows="2"
-                            class="w-full mt-1 border border-slate-200 rounded-lg p-3"
+                        <textarea name="purpose" rows="5"
+                            class="w-full mt-1 min-h-[9rem] border border-slate-200 rounded-lg p-3"
                             placeholder="อธิบายจุดประสงค์ของงาน">{{ old('purpose', $task->purpose) }}</textarea>
                     </label>
-                    <div class="block md:col-span-2">
+                    <div class="block">
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-semibold text-slate-600">หัวหน้างานผู้รับผิดชอบ (เพิ่มได้หลายคน)</span>
-                        </div>
-                        <div class="bo-editor-helper mt-3">
-                            <div class="text-sm font-semibold text-slate-800">วิธีเพิ่มหลายคน</div>
-                            <div class="mt-1 text-xs leading-5 text-slate-600">
-                                พิมพ์ชื่อหัวหน้างานคนแรกในช่องด้านล่าง แล้วกด `เพิ่มถัดไป` หรือกด `Enter`
-                                ระบบจะสร้างช่องใหม่ให้ใส่คนถัดไปทันที
-                            </div>
                         </div>
                         <div id="leaders-body" class="leader-stack mt-3"></div>
                         <div class="mt-4 flex justify-end">
@@ -713,6 +689,7 @@
                     <textarea name="entries[__INDEX__][job_detail]" required rows="1"
                         class="w-full mt-1 border border-slate-200 rounded-lg p-3 auto-grow"
                         placeholder="รายละเอียดงาน"></textarea>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">รองรับข้อความยาวและจะคงการเว้นบรรทัดตามที่พิมพ์ไว้เมื่อแสดงผล แก้ไข และส่งออก PDF</p>
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">วันที่เริ่ม <span class="bo-required">*</span></span>
