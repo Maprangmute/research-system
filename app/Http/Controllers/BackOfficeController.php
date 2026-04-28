@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 
 class BackOfficeController extends Controller
 {
@@ -37,19 +38,21 @@ class BackOfficeController extends Controller
     private function backOfficeCategoryOptions(): array
     {
         return [
-            'งานบริการด้านเอกสารงานวิจัย',
-            'งานบริการด้านการขอคำปรึกษางานวิจัย',
-            'งานบริการหน่วยงาน',
-            'งานบริการด้านทรัพยากรบุคคล',
-            'งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย',
-            'งานบริการขนส่งสินค้าเเละเอกสาร',
+            'งานบริการ สนับสนุน และประสานงานภายในหน่วย',
             'งานด้านติดต่อประสานงาน',
             'งานด้านการลงตารางนัดหมายประชุม',
-            'งานด้านออกแบบ เเละผลิตสื่อ',
-            'งานด้านการสื่อสาร',
-            'งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ',
-            'การจัดงานหรือเข้าร่วมงานนิทรรศการ',
-            'การออกแบบหลักสูตร เเละ การเรียนการสอน',
+            'งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย',
+            'งานบริการส่งสินค้าและเอกสาร',
+            'งานบริการด้านเอกสาร',
+            'งานบริการด้านทรัพยากรบุคคล',
+            'งานบริการด้านการให้คำปรึกษางานวิจัย',
+            'งานออกแบบหลักสูตรและการเรียนการสอน',
+            'งานจัดการเรียนการสอน',
+            'งานพัฒนาศักยภาพและให้คำปรึกษานักศึกษา (Mentorship)',
+            'งานด้านการสื่อสาร และประชาสัมพันธ์',
+            'งานด้านออกแบบ และผลิตสื่อ',
+            'งานจัดงานหรือเข้าร่วมงานนิทรรศการ',
+            'งานด้านการพัฒนาเทคโนโลยีและสารสนเทศ',
         ];
     }
 
@@ -1050,6 +1053,7 @@ class BackOfficeController extends Controller
         return view('back-office.create', [
             'personList' => $personList,
             'researchPersonList' => $researchPersonList,
+            'categoryOptions' => $this->backOfficeCategoryOptions(),
         ]);
     }
 
@@ -1105,7 +1109,7 @@ class BackOfficeController extends Controller
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'entries.*.person_name' => ['required', 'string', 'max:500'],
-            'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านติดต่อประสานงาน,งานด้านการลงตารางนัดหมายประชุม,งานด้านออกแบบ เเละผลิตสื่อ,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
+            'entries.*.category' => ['required', Rule::in($this->backOfficeCategoryOptions())],
             'entries.*.job_name' => ['required', 'string', 'max:500'],
             'entries.*.job_detail' => ['required', 'string','max:1000'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],
@@ -1242,7 +1246,7 @@ class BackOfficeController extends Controller
         $validated = $request->validate([
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'person_name' => ['required', 'string', 'max:500'],
-            'category' => ['required', 'in:' . implode(',', $this->backOfficeCategoryOptions())],
+            'category' => ['required', Rule::in($this->backOfficeCategoryOptions())],
             'job_name' => ['required', 'string', 'max:500'],
             'job_detail' => ['required', 'string', 'max:1000'],
             'start_date' => ['required', 'string', 'max:255'],
@@ -1311,7 +1315,7 @@ class BackOfficeController extends Controller
         $validated = $request->validate([
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'person_name' => ['required', 'string', 'max:500'],
-            'category' => ['required', 'in:' . implode(',', $this->backOfficeCategoryOptions())],
+            'category' => ['required', Rule::in($this->backOfficeCategoryOptions())],
             'job_name' => ['required', 'string', 'max:500'],
             'job_detail' => ['required', 'string', 'max:1000'],
             'start_date' => ['required', 'string', 'max:255'],
@@ -1681,6 +1685,7 @@ class BackOfficeController extends Controller
             'task' => $task,
             'personList' => $personList,
             'researchPersonList' => $researchPersonList,
+            'categoryOptions' => $this->backOfficeCategoryOptions(),
             'initialTaskOutputs' => $task->outputs
                 ->map(fn (BackOfficeTaskOutput $output) => $this->serializeBackOfficeOutputForForm($output))
                 ->values()
@@ -1742,7 +1747,7 @@ class BackOfficeController extends Controller
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'entries.*.person_name' => ['required', 'string', 'max:500'],
-            'entries.*.category' => ['required', 'in:งานบริการด้านเอกสารงานวิจัย,งานบริการด้านการขอคำปรึกษางานวิจัย,งานบริการหน่วยงาน,งานบริการด้านทรัพยากรบุคคล,งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย,งานบริการขนส่งสินค้าเเละเอกสาร,งานด้านติดต่อประสานงาน,งานด้านการลงตารางนัดหมายประชุม,งานด้านออกแบบ เเละผลิตสื่อ,งานด้านการสื่อสาร,งานด้านการพัฒนาเทคโนโลยีเเละสารสนเทศ,การจัดงานหรือเข้าร่วมงานนิทรรศการ,การออกแบบหลักสูตร เเละ การเรียนการสอน'],
+            'entries.*.category' => ['required', Rule::in($this->backOfficeCategoryOptions())],
             'entries.*.job_name' => ['required', 'string', 'max:500'],
             'entries.*.job_detail' => ['required', 'string', 'max:1000'],
             'entries.*.start_date' => ['required', 'date_format:d-m-Y'],

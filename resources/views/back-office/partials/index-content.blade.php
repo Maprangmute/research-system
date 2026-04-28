@@ -72,7 +72,7 @@
                             <div class="flex items-start justify-between gap-2">
                                 <div>
                                     <div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Backoffice_id {{ $backofficeId }}</div>
-                                    <a href="{{ route('back_office.show', $task) }}" data-back-office-open
+                                    <a href="{{ route('back_office.show', $task) }}"
                                         class="mt-1 inline-block text-[0.95rem] font-semibold leading-5 text-sky-700 hover:text-sky-800 hover:underline">
                                         {{ $task->title }}
                                     </a>
@@ -107,7 +107,7 @@
                             <div class="mt-2 text-xs text-slate-500">ผู้บันทึก {{ $task->creator?->name ?? '-' }}</div>
                             <div class="mt-2.5">
                                 <div class="back-office-action-cluster">
-                                    <a href="{{ route('back_office.show', $task) }}" data-back-office-open
+                                    <a href="{{ route('back_office.show', $task) }}"
                                         class="back-office-action-primary">
                                         รายละเอียด
                                     </a>
@@ -199,7 +199,7 @@
                                         <td class="hidden text-sm text-slate-700 xl:table-cell">{{ $task->creator?->name ?? '-' }}</td>
                                         <td>
                                             <div class="back-office-action-cluster">
-                                                <a href="{{ route('back_office.show', $task) }}" data-back-office-open
+                                                <a href="{{ route('back_office.show', $task) }}"
                                                     class="back-office-action-primary">
                                                     รายละเอียด
                                                 </a>

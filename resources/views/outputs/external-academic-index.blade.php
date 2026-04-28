@@ -309,6 +309,20 @@
             const moveProjectIdInput = document.getElementById('moveExternalOutputProjectId');
             const projectOptionsData = document.getElementById('moveProjectOptionsData');
             const projectOptions = projectOptionsData ? JSON.parse(projectOptionsData.textContent || '[]') : [];
+            const decodeBase64Json = (encoded) => {
+                if (!encoded) {
+                    return {};
+                }
+
+                const binary = atob(encoded);
+
+                if (typeof TextDecoder !== 'undefined') {
+                    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+                    return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+                }
+
+                return JSON.parse(decodeURIComponent(escape(binary)));
+            };
 
             const escapeHtml = (value) => String(value ?? '')
                 .replace(/&/g, '&amp;')
@@ -450,7 +464,7 @@
                     const encoded = openButton.getAttribute('data-output-base64') || '';
                     let output = {};
                     try {
-                        output = encoded ? JSON.parse(atob(encoded)) : {};
+                        output = decodeBase64Json(encoded);
                     } catch (error) {
                         console.error('Cannot parse move output payload', error);
                         await Swal.fire({

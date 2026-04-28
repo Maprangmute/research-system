@@ -3,10 +3,17 @@
 // app/Http/Controllers/DashboardController.php
 namespace App\Http\Controllers;
 
+use App\Models\BackOfficeTask;
+use App\Models\ExternalOutput;
+use App\Models\FteRole;
+use App\Models\Output;
+use App\Models\ProgressReport;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\AuditLogger;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use PDF;
 
@@ -345,6 +352,613 @@ class DashboardController extends Controller
             'statusOptions',
             'fundingSources'
         ));
+    }
+
+    public function commandCenter(Request $request)
+    {
+        $today = now()->startOfDay();
+        $existingColumns = static function (string $table, array $desired): array {
+            static $cache = [];
+
+            if (!array_key_exists($table, $cache)) {
+                $cache[$table] = Schema::getColumnListing($table);
+            }
+
+            $selected = array_values(array_intersect($desired, $cache[$table]));
+
+            return $selected ?: ['*'];
+        };
+
+        $projects = Project::query()
+            ->withCount(['outputs', 'progressReports', 'irbs', 'tasks'])
+            ->with([
+                'irbs:id,project_id,code,source,exp_date',
+                'progressReports:id,project_id,submit_date,progress_title,created_at',
+                'tasks:id,project_id,title,end,status,workflow_status,progress,created_at',
+                'fteRoles' => fn ($query) => $query->select($existingColumns('fte_roles', [
+                    'id',
+                    'project_id',
+                    'name',
+                    'role_group',
+                    'fte_value',
+                    'fte_value_research',
+                    'hours',
+                    'job_detail',
+                    'task_detail',
+                    'start_date',
+                    'end_date',
+                    'created_at',
+                ])),
+            ])
+            ->select($existingColumns('projects', [
+                'id',
+                'project_code',
+                'project_name_th',
+                'project_type',
+                'funding_type',
+                'funding_source',
+                'planning_status',
+                'execution_status',
+                'start_year',
+                'start_date',
+                'end_date',
+                'total_budget',
+                'budget',
+                'pi_name',
+                'department',
+                'unit_name',
+                'created_at',
+                'updated_at',
+            ]))
+            ->orderByDesc('updated_at')
+            ->get();
+
+        $internalOutputs = Output::query()
+            ->with(['project:id,project_code,project_name_th,project_type,funding_type'])
+            ->select($existingColumns('outputs', [
+                'id',
+                'project_id',
+                'output_code',
+                'type',
+                'title',
+                'year',
+                'journal',
+                'quartile',
+                'impact_factor',
+                'created_at',
+                'updated_at',
+            ]))
+            ->latest()
+            ->get();
+
+        $externalOutputs = ExternalOutput::query()
+            ->select($existingColumns('external_outputs', [
+                'id',
+                'output_code',
+                'type',
+                'job_category',
+                'title',
+                'note',
+                'publish_date',
+                'journal',
+                'quartile',
+                'impact_factor',
+                'created_at',
+                'updated_at',
+            ]))
+            ->latest()
+            ->get();
+
+        $backOfficeTasks = BackOfficeTask::query()
+            ->withCount(['entries', 'outputs'])
+            ->with([
+                'creator:id,prefix,name',
+                'entries:id,task_id,hours,fte_value',
+            ])
+            ->select($existingColumns('back_office_tasks', [
+                'id',
+                'backoffice_id',
+                'title',
+                'description',
+                'purpose',
+                'start_date',
+                'end_date',
+                'created_by',
+                'updated_at',
+                'created_at',
+            ]))
+            ->latest()
+            ->get();
+
+        $progressReports = ProgressReport::query()
+            ->with(['project:id,project_code,project_name_th'])
+            ->select($existingColumns('progress_reports', [
+                'id',
+                'project_id',
+                'submit_date',
+                'progress_title',
+                'created_at',
+            ]))
+            ->latest()
+            ->get();
+
+        $projectsPayload = $projects->map(function (Project $project) use ($today) {
+            $latestIrb = $project->irbs
+                ->map(function ($irb) {
+                    $exp = $this->toCarbonOrNull($irb->exp_date);
+                    return [
+                        'code' => trim((string) ($irb->code ?? '')) ?: '-',
+                        'source' => trim((string) ($irb->source ?? '')) ?: '-',
+                        'exp_date' => $exp?->format('Y-m-d'),
+                    ];
+                })
+                ->sortBy('exp_date')
+                ->last();
+
+            $latestProgress = $project->progressReports
+                ->sortByDesc(fn ($report) => $this->toCarbonOrNull($report->submit_date)?->timestamp ?? 0)
+                ->first();
+
+            $taskRiskCount = $project->tasks->filter(function ($task) use ($today) {
+                $endDate = $this->toCarbonOrNull($task->end);
+                return $endDate && $endDate->lt($today) && !$this->isTaskCompleted($task->status, $task->workflow_status, $task->progress);
+            })->count();
+
+            $budgetValue = $this->toFloat($project->total_budget);
+            if ($budgetValue <= 0) {
+                $budgetValue = $this->toFloat($project->budget);
+            }
+
+            return [
+                'id' => $project->id,
+                'code' => trim((string) ($project->project_code ?? '')) ?: 'PRJ-' . $project->id,
+                'name' => trim((string) ($project->project_name_th ?? '')) ?: 'ไม่ระบุชื่อโครงการ',
+                'project_type' => trim((string) ($project->project_type ?? '')) ?: 'ไม่ระบุประเภท',
+                'funding_type' => trim((string) ($project->funding_type ?? '')) ?: 'ไม่ระบุประเภททุน',
+                'funding_source' => trim((string) ($project->funding_source ?? '')) ?: 'ไม่ระบุแหล่งทุน',
+                'planning_status' => trim((string) ($project->planning_status ?? '')) ?: '-',
+                'execution_status' => trim((string) ($project->execution_status ?? '')) ?: '-',
+                'derived_status' => $this->deriveProjectStatus($project, $today),
+                'start_year' => $this->extractYear($project->start_year ?: $project->start_date ?: $project->created_at),
+                'start_date' => $this->toCarbonOrNull($project->start_date)?->format('Y-m-d'),
+                'end_date' => $this->toCarbonOrNull($project->end_date)?->format('Y-m-d'),
+                'budget' => $budgetValue,
+                'pi_name' => trim((string) ($project->pi_name ?? '')) ?: 'ไม่ระบุ PI',
+                'department' => trim((string) ($project->department ?? '')) ?: 'ไม่ระบุหน่วยงาน',
+                'unit_name' => trim((string) ($project->unit_name ?? '')) ?: 'ไม่ระบุหน่วย',
+                'outputs_count' => (int) ($project->outputs_count ?? 0),
+                'progress_reports_count' => (int) ($project->progress_reports_count ?? 0),
+                'irbs_count' => (int) ($project->irbs_count ?? 0),
+                'tasks_count' => (int) ($project->tasks_count ?? 0),
+                'task_risk_count' => $taskRiskCount,
+                'latest_irb' => $latestIrb,
+                'latest_progress' => $latestProgress ? [
+                    'title' => trim((string) ($latestProgress->progress_title ?? '')) ?: 'รายงานความก้าวหน้า',
+                    'submit_date' => $this->toCarbonOrNull($latestProgress->submit_date)?->format('Y-m-d'),
+                ] : null,
+                'created_at' => optional($project->created_at)->toDateString(),
+                'updated_at' => optional($project->updated_at)->toDateString(),
+                'url' => route('projects.show', $project),
+            ];
+        })->values();
+
+        $ftePayload = $projects->flatMap(function (Project $project) {
+            return $project->fteRoles->map(function (FteRole $fteRole) use ($project) {
+                return [
+                    'id' => $fteRole->id,
+                    'project_id' => $project->id,
+                    'project_code' => trim((string) ($project->project_code ?? '')) ?: 'PRJ-' . $project->id,
+                    'project_name' => trim((string) ($project->project_name_th ?? '')) ?: 'ไม่ระบุโครงการ',
+                    'project_type' => trim((string) ($project->project_type ?? '')) ?: 'ไม่ระบุประเภท',
+                    'funding_type' => trim((string) ($project->funding_type ?? '')) ?: 'ไม่ระบุประเภททุน',
+                    'project_status' => $this->deriveProjectStatus($project, now()->startOfDay()),
+                    'name' => trim((string) ($fteRole->name ?? '')) ?: 'ไม่ระบุชื่อ',
+                    'role_group' => trim((string) ($fteRole->role_group ?? '')) ?: 'ไม่ระบุกลุ่ม',
+                    'fte_value' => round($this->toFloat($fteRole->fte_value), 4),
+                    'fte_research' => round($this->toFloat($fteRole->fte_value_research), 4),
+                    'hours' => round($this->toFloat($fteRole->hours), 2),
+                    'job_detail' => trim((string) ($fteRole->job_detail ?? '')),
+                    'task_detail' => trim((string) ($fteRole->task_detail ?? '')),
+                    'start_date' => $this->toCarbonOrNull($fteRole->start_date)?->format('Y-m-d'),
+                    'end_date' => $this->toCarbonOrNull($fteRole->end_date)?->format('Y-m-d'),
+                    'year' => $this->extractYear($fteRole->start_date ?: $fteRole->created_at ?: $project->start_date),
+                    'url' => route('projects.show', $project),
+                ];
+            });
+        })->values();
+
+        $internalOutputsPayload = $internalOutputs->map(function (Output $output) {
+            $project = $output->project;
+            $year = $this->extractYear($output->year ?: $output->created_at);
+            $categoryUrl = $this->resolveInternalOutputUrlByType($output->type);
+
+            return [
+                'id' => $output->id,
+                'code' => trim((string) ($output->output_code ?? '')) ?: Output::formatOutputCode((int) $output->id),
+                'title' => trim((string) ($output->title ?? '')) ?: 'ไม่ระบุชื่อผลงาน',
+                'type' => trim((string) ($output->type ?? '')) ?: 'ไม่ระบุประเภท',
+                'year' => $year,
+                'journal' => trim((string) ($output->journal ?? '')) ?: '-',
+                'quartile' => trim((string) ($output->quartile ?? '')) ?: '-',
+                'impact_factor' => $this->toFloat($output->impact_factor),
+                'project_id' => $project?->id,
+                'project_code' => trim((string) ($project?->project_code ?? '')) ?: '-',
+                'project_name' => trim((string) ($project?->project_name_th ?? '')) ?: 'ไม่ผูกโครงการ',
+                'project_type' => trim((string) ($project?->project_type ?? '')) ?: 'ไม่ระบุประเภท',
+                'funding_type' => trim((string) ($project?->funding_type ?? '')) ?: 'ไม่ระบุประเภททุน',
+                'created_at' => optional($output->created_at)->toDateString(),
+                'url' => $project ? route('projects.show', $project) : $categoryUrl,
+                'source_url' => $categoryUrl,
+            ];
+        })->values();
+
+        $externalOutputsPayload = $externalOutputs->map(function (ExternalOutput $output) {
+            $publishDate = $this->toCarbonOrNull($output->publish_date);
+
+            return [
+                'id' => $output->id,
+                'code' => trim((string) ($output->output_code ?? '')) ?: ExternalOutput::formatOutputCode((int) $output->id),
+                'title' => trim((string) ($output->title ?? '')) ?: 'ไม่ระบุชื่อผลงาน',
+                'type' => trim((string) ($output->type ?? '')) ?: 'ไม่ระบุประเภท',
+                'job_category' => trim((string) ($output->job_category ?? '')) ?: '-',
+                'publish_date' => $publishDate?->format('Y-m-d'),
+                'publish_year' => $publishDate?->year ?? $this->extractYear($output->created_at),
+                'journal' => trim((string) ($output->journal ?? '')) ?: '-',
+                'quartile' => trim((string) ($output->quartile ?? '')) ?: '-',
+                'impact_factor' => $this->toFloat($output->impact_factor),
+                'note' => trim((string) ($output->note ?? '')),
+                'created_at' => optional($output->created_at)->toDateString(),
+                'url' => route('outputs.external-academic.show', $output),
+            ];
+        })->values();
+
+        $backOfficePayload = $backOfficeTasks->map(function (BackOfficeTask $task) {
+            $hours = (float) $task->entries->sum(fn ($entry) => $this->toFloat($entry->hours));
+            $fte = (float) $task->entries->sum(fn ($entry) => $this->toFloat($entry->fte_value));
+            $creatorName = trim(implode(' ', array_filter([
+                trim((string) ($task->creator?->prefix ?? '')),
+                trim((string) ($task->creator?->name ?? '')),
+            ])));
+
+            return [
+                'id' => $task->id,
+                'code' => trim((string) ($task->backoffice_id ?? '')) ?: BackOfficeTask::formatBackOfficeId((int) $task->id),
+                'title' => trim((string) ($task->title ?? '')) ?: 'ไม่ระบุชื่องาน',
+                'description' => trim((string) ($task->description ?? '')),
+                'purpose' => trim((string) ($task->purpose ?? '')),
+                'start_date' => $this->toCarbonOrNull($task->start_date)?->format('Y-m-d'),
+                'end_date' => $this->toCarbonOrNull($task->end_date)?->format('Y-m-d'),
+                'year' => $this->extractYear($task->start_date ?: $task->created_at),
+                'entries_count' => (int) ($task->entries_count ?? 0),
+                'outputs_count' => (int) ($task->outputs_count ?? 0),
+                'hours' => round($hours, 2),
+                'fte' => round($fte, 4),
+                'creator_name' => $creatorName !== '' ? $creatorName : 'ไม่ระบุผู้บันทึก',
+                'created_at' => optional($task->created_at)->toDateString(),
+                'url' => route('back_office.show', $task),
+            ];
+        })->values();
+
+        $progressReportsPayload = $progressReports->map(function (ProgressReport $report) {
+            $submitDate = $this->toCarbonOrNull($report->submit_date);
+            return [
+                'id' => $report->id,
+                'project_id' => $report->project_id,
+                'project_code' => trim((string) ($report->project?->project_code ?? '')) ?: '-',
+                'project_name' => trim((string) ($report->project?->project_name_th ?? '')) ?: 'ไม่ระบุโครงการ',
+                'title' => trim((string) ($report->progress_title ?? '')) ?: 'รายงานความก้าวหน้า',
+                'submit_date' => $submitDate?->format('Y-m-d'),
+                'year' => $submitDate?->year ?? $this->extractYear($report->created_at),
+                'created_at' => optional($report->created_at)->toDateString(),
+                'url' => $report->project ? route('projects.show', $report->project) : route('overview'),
+            ];
+        })->values();
+
+        $alerts = $this->buildCommandCenterAlerts(
+            $projectsPayload,
+            $backOfficePayload,
+            $externalOutputsPayload,
+            $today
+        );
+
+        $yearOptions = collect()
+            ->merge($projectsPayload->pluck('start_year'))
+            ->merge($internalOutputsPayload->pluck('year'))
+            ->merge($externalOutputsPayload->pluck('publish_year'))
+            ->merge($backOfficePayload->pluck('year'))
+            ->merge($progressReportsPayload->pluck('year'))
+            ->filter(fn ($year) => is_numeric($year) && (int) $year > 2000)
+            ->map(fn ($year) => (int) $year)
+            ->unique()
+            ->sort()
+            ->values();
+
+        $projectTypeOptions = $projectsPayload->pluck('project_type')->filter()->unique()->sort()->values();
+        $fundingTypeOptions = $projectsPayload->pluck('funding_type')->filter()->unique()->sort()->values();
+        $projectStatusOptions = $projectsPayload->pluck('derived_status')->filter()->unique()->sort()->values();
+
+        $summary = [
+            'projects_total' => $projectsPayload->count(),
+            'projects_active' => $projectsPayload->where('derived_status', 'กำลังดำเนินการ')->count(),
+            'budget_total' => round((float) $projectsPayload->sum('budget'), 2),
+            'internal_outputs_total' => $internalOutputsPayload->count(),
+            'external_outputs_total' => $externalOutputsPayload->count(),
+            'fte_total' => round((float) $ftePayload->sum('fte_value'), 4),
+            'fte_hours_total' => round((float) $ftePayload->sum('hours'), 2),
+            'fte_people_total' => $ftePayload->pluck('name')->filter()->unique()->count(),
+            'backoffice_total' => $backOfficePayload->count(),
+            'backoffice_hours_total' => round((float) $backOfficePayload->sum('hours'), 2),
+            'progress_reports_total' => $progressReportsPayload->count(),
+            'alert_total' => collect($alerts)->sum(fn ($group) => count($group['rows'] ?? [])),
+        ];
+
+        return view('dashboard-command-center', [
+            'generatedAt' => now()->timezone('Asia/Bangkok')->format('d/m/Y H:i'),
+            'summary' => $summary,
+            'projectsData' => $projectsPayload,
+            'internalOutputsData' => $internalOutputsPayload,
+            'externalOutputsData' => $externalOutputsPayload,
+            'fteData' => $ftePayload,
+            'backOfficeData' => $backOfficePayload,
+            'progressReportsData' => $progressReportsPayload,
+            'alertsData' => array_values($alerts),
+            'yearOptions' => $yearOptions,
+            'projectTypeOptions' => $projectTypeOptions,
+            'fundingTypeOptions' => $fundingTypeOptions,
+            'projectStatusOptions' => $projectStatusOptions,
+        ]);
+    }
+
+    private function buildCommandCenterAlerts(
+        Collection $projects,
+        Collection $backOfficeTasks,
+        Collection $externalOutputs,
+        Carbon $today
+    ): array {
+        $alerts = [];
+
+        $alerts[] = [
+            'key' => 'irb_expired',
+            'title' => 'IRB หมดอายุแล้ว',
+            'severity' => 'critical',
+            'rows' => $projects
+                ->filter(function ($project) use ($today) {
+                    $expDate = $this->toCarbonOrNull(data_get($project, 'latest_irb.exp_date'));
+                    return $expDate && $expDate->lt($today);
+                })
+                ->sortBy('latest_irb.exp_date')
+                ->take(12)
+                ->map(fn ($project) => [
+                    'title' => $project['name'],
+                    'meta' => trim(($project['code'] ?? '-') . ' | IRB ' . data_get($project, 'latest_irb.code', '-')),
+                    'detail' => 'หมดอายุ ' . data_get($project, 'latest_irb.exp_date', '-'),
+                    'url' => $project['url'],
+                ])
+                ->values()
+                ->all(),
+        ];
+
+        $alerts[] = [
+            'key' => 'project_ending_soon',
+            'title' => 'โครงการใกล้ครบกำหนดใน 45 วัน',
+            'severity' => 'high',
+            'rows' => $projects
+                ->filter(function ($project) use ($today) {
+                    $endDate = $this->toCarbonOrNull($project['end_date'] ?? null);
+                    if (!$endDate || ($project['derived_status'] ?? '') === 'เสร็จสิ้น') {
+                        return false;
+                    }
+                    return $endDate->betweenIncluded($today, $today->copy()->addDays(45));
+                })
+                ->sortBy('end_date')
+                ->take(12)
+                ->map(fn ($project) => [
+                    'title' => $project['name'],
+                    'meta' => trim(($project['code'] ?? '-') . ' | ' . ($project['pi_name'] ?? '-')),
+                    'detail' => 'ครบกำหนด ' . ($project['end_date'] ?? '-'),
+                    'url' => $project['url'],
+                ])
+                ->values()
+                ->all(),
+        ];
+
+        $alerts[] = [
+            'key' => 'project_no_progress',
+            'title' => 'โครงการที่ยังไม่มี progress report',
+            'severity' => 'medium',
+            'rows' => $projects
+                ->filter(function ($project) use ($today) {
+                    $startDate = $this->toCarbonOrNull($project['start_date'] ?? null);
+                    if (!$startDate || ($project['derived_status'] ?? '') !== 'กำลังดำเนินการ') {
+                        return false;
+                    }
+                    return $startDate->lt($today->copy()->subDays(90)) && (int) ($project['progress_reports_count'] ?? 0) === 0;
+                })
+                ->sortBy('start_date')
+                ->take(12)
+                ->map(fn ($project) => [
+                    'title' => $project['name'],
+                    'meta' => trim(($project['code'] ?? '-') . ' | PI ' . ($project['pi_name'] ?? '-')),
+                    'detail' => 'เริ่มแล้วแต่ยังไม่มีรายงานความก้าวหน้า',
+                    'url' => $project['url'],
+                ])
+                ->values()
+                ->all(),
+        ];
+
+        $alerts[] = [
+            'key' => 'project_no_output',
+            'title' => 'โครงการ active แต่ยังไม่มี output',
+            'severity' => 'medium',
+            'rows' => $projects
+                ->filter(function ($project) use ($today) {
+                    $startDate = $this->toCarbonOrNull($project['start_date'] ?? null);
+                    if (!$startDate || ($project['derived_status'] ?? '') !== 'กำลังดำเนินการ') {
+                        return false;
+                    }
+                    return $startDate->lt($today->copy()->subDays(180)) && (int) ($project['outputs_count'] ?? 0) === 0;
+                })
+                ->sortByDesc('start_date')
+                ->take(12)
+                ->map(fn ($project) => [
+                    'title' => $project['name'],
+                    'meta' => trim(($project['code'] ?? '-') . ' | ' . ($project['project_type'] ?? '-')),
+                    'detail' => 'ดำเนินการมาระยะหนึ่งแล้วแต่ยังไม่มีผลงานเชื่อมกับโครงการ',
+                    'url' => $project['url'],
+                ])
+                ->values()
+                ->all(),
+        ];
+
+        $alerts[] = [
+            'key' => 'backoffice_no_output',
+            'title' => 'Back Office ปิดงานแล้วแต่ยังไม่ผูก output',
+            'severity' => 'medium',
+            'rows' => $backOfficeTasks
+                ->filter(function ($task) use ($today) {
+                    $endDate = $this->toCarbonOrNull($task['end_date'] ?? null);
+                    return $endDate && $endDate->lt($today) && (int) ($task['outputs_count'] ?? 0) === 0;
+                })
+                ->sortBy('end_date')
+                ->take(12)
+                ->map(fn ($task) => [
+                    'title' => $task['title'],
+                    'meta' => trim(($task['code'] ?? '-') . ' | ผู้บันทึก ' . ($task['creator_name'] ?? '-')),
+                    'detail' => 'สิ้นสุด ' . ($task['end_date'] ?? '-') . ' | ยังไม่มี output',
+                    'url' => $task['url'],
+                ])
+                ->values()
+                ->all(),
+        ];
+
+        $alerts[] = [
+            'key' => 'external_output_missing_metadata',
+            'title' => 'External Output ที่ metadata ยังไม่ครบ',
+            'severity' => 'low',
+            'rows' => $externalOutputs
+                ->filter(fn ($output) => empty($output['publish_date']) || trim((string) ($output['note'] ?? '')) === '')
+                ->take(12)
+                ->map(fn ($output) => [
+                    'title' => $output['title'],
+                    'meta' => trim(($output['code'] ?? '-') . ' | ' . ($output['type'] ?? '-')),
+                    'detail' => empty($output['publish_date']) ? 'ยังไม่มีวันที่เผยแพร่' : 'ยังไม่มี note / รายละเอียด',
+                    'url' => $output['url'],
+                ])
+                ->values()
+                ->all(),
+        ];
+
+        return $alerts;
+    }
+
+    private function resolveInternalOutputUrlByType(?string $type): string
+    {
+        $normalized = strtoupper(trim((string) $type));
+
+        return match (true) {
+            str_starts_with($normalized, 'EA101') => route('outputs.papers'),
+            str_starts_with($normalized, 'EA103') => route('outputs.presentations'),
+            str_starts_with($normalized, 'EA119') => route('outputs.textbooks'),
+            default => route('outputs.visualization'),
+        };
+    }
+
+    private function deriveProjectStatus(Project $project, Carbon $today): string
+    {
+        $execution = mb_strtolower(trim((string) ($project->execution_status ?? '')), 'UTF-8');
+        $planning = mb_strtolower(trim((string) ($project->planning_status ?? '')), 'UTF-8');
+        $startDate = $this->toCarbonOrNull($project->start_date);
+        $endDate = $this->toCarbonOrNull($project->end_date);
+
+        if ($this->containsAny($execution, ['เสร็จ', 'สิ้นสุด', 'ปิด', 'completed', 'closed', 'finish'])) {
+            return 'เสร็จสิ้น';
+        }
+
+        if ($endDate && $endDate->lt($today)) {
+            return 'เกินกำหนด';
+        }
+
+        if ($this->containsAny($planning, ['รอ', 'วางแผน', 'proposal', 'plan']) || ($startDate && $startDate->gt($today))) {
+            return 'วางแผน';
+        }
+
+        return 'กำลังดำเนินการ';
+    }
+
+    private function isTaskCompleted($status, $workflowStatus, $progress): bool
+    {
+        $statusText = mb_strtolower(trim(implode(' ', array_filter([
+            (string) $status,
+            (string) $workflowStatus,
+        ]))), 'UTF-8');
+
+        if ($this->containsAny($statusText, ['done', 'complete', 'completed', 'closed', 'finished', 'เสร็จ', 'ปิด'])) {
+            return true;
+        }
+
+        return $this->toFloat($progress) >= 100;
+    }
+
+    private function containsAny(string $haystack, array $needles): bool
+    {
+        foreach ($needles as $needle) {
+            if ($needle !== '' && str_contains($haystack, mb_strtolower($needle, 'UTF-8'))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function extractYear($value): ?int
+    {
+        if ($value instanceof Carbon) {
+            return $value->year;
+        }
+
+        $text = trim((string) $value);
+        if ($text === '') {
+            return null;
+        }
+
+        if (preg_match('/(20\d{2}|25\d{2})/', $text, $matches)) {
+            $year = (int) $matches[1];
+            return $year > 2400 ? $year - 543 : $year;
+        }
+
+        try {
+            return Carbon::parse($text)->year;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function toCarbonOrNull($value): ?Carbon
+    {
+        if ($value instanceof Carbon) {
+            return $value->copy();
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::instance($value);
+        }
+
+        $text = trim((string) $value);
+        if ($text === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($text);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function toFloat($value): float
+    {
+        $normalized = preg_replace('/[^0-9.\-]/', '', (string) $value);
+        return is_numeric($normalized) ? (float) $normalized : 0.0;
     }
 
     public function exportPdf(Request $request)

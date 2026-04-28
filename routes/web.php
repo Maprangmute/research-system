@@ -110,6 +110,7 @@ Route::middleware([
 ])->group(function () {
     // Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/new', [DashboardController::class, 'commandCenter'])->name('dashboard.command-center');
     Route::get('/overview', [OverviewController::class, 'index'])->name('overview');
 });
 
