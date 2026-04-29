@@ -427,7 +427,7 @@
             @php
                 $sourceLabel = $row->project_code
                     ? 'โครงการวิจัย'
-                    : (($row->output_code ? 'Extra Outputs' : 'งานนอกโครงการ'));
+                    : (($row->output_code ? 'Extra Outputs' : 'Mission'));
                 $metaLine = collect([
                     $sourceLabel,
                     $row->publisher_name && $row->publisher_name !== '-' ? $row->publisher_name : null,

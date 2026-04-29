@@ -85,11 +85,49 @@
             $label = trim((string) $type);
             return $typeStyleMap[$label] ?? $defaultTypeStyle;
         };
+        $outputSourceBadgeClass = function ($sourceBadge) {
+            return match (mb_strtolower(trim((string) $sourceBadge))) {
+                'mission' => 'output-source-badge output-source-badge--mission',
+                'extra' => 'output-source-badge output-source-badge--extra',
+                default => 'output-source-badge',
+            };
+        };
     @endphp
 
     <style>
         .output-shell {
             background: transparent;
+        }
+
+        .output-hero {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .output-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle at 87% 18%, rgba(16, 185, 129, 0.16), transparent 42%);
+        }
+
+        .output-chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 9999px;
+            padding: 0.25rem 0.65rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            color: #065f46;
+            background: #d1fae5;
+            border: 1px solid #86efac;
+        }
+
+        .output-filter-panel {
+            border-color: #86efac;
+            background: linear-gradient(180deg, #f6fffb 0%, #ffffff 100%);
         }
 
         .output-table {
@@ -166,13 +204,77 @@
             display: inline-flex;
             align-items: center;
             border-radius: 999px;
-            border: 1px solid #f9a8d4;
-            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
-            color: #9d174d;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
             font-size: 11px;
             font-weight: 700;
             padding: 0.18rem 0.55rem;
             margin-top: 0.35rem;
+        }
+
+        .output-source-badge--mission {
+            border-color: #5eead4;
+            background: linear-gradient(135deg, #ecfdf5 0%, #ccfbf1 100%);
+            color: #0f766e;
+        }
+
+        .output-source-badge--extra {
+            border-color: #f9a8d4;
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+            color: #9d174d;
+        }
+
+        .output-export-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 0.75rem;
+            background: #059669;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #fff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+            transition: background-color 0.2s ease;
+        }
+
+        .output-export-btn:hover {
+            background: #047857;
+        }
+
+        .output-export-btn--pdf {
+            background: #dc2626;
+        }
+
+        .output-export-btn--pdf:hover {
+            background: #b91c1c;
+        }
+
+        .outputs-export-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 70;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.42);
+            backdrop-filter: blur(6px);
+        }
+
+        .outputs-export-modal.is-open {
+            display: flex;
+        }
+
+        .outputs-export-dialog {
+            width: min(100%, 560px);
+            border-radius: 20px;
+            border: 1px solid #dbe7f5;
+            background: #fff;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+            overflow: hidden;
         }
 
         .outputs-filter-anchor {
@@ -385,47 +487,34 @@
 
     <div class="output-shell min-h-screen">
         <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
-            <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
-                <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
+            <section class="output-hero overflow-hidden rounded-[28px] border border-emerald-200/80 bg-white shadow-sm">
+                <div class="flex flex-col gap-5 px-5 py-6 md:px-7">
                     <div class="max-w-3xl">
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">📑 รายการ Output</h1>
+                        <span class="output-chip">All Outputs</span>
+                        <h1 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">รายการ Output</h1>
                         <p class="mt-2 text-sm leading-6 text-slate-600 md:text-[15px]">
-                            รวมผลงานจากโครงการวิจัย งานนอกโครงการ และผลงานภาระงานไว้ในหน้าเดียว เพื่อค้นหาและกรองได้เร็วขึ้น.
+                            รวมผลงานจากโครงการวิจัย Mission และ Extra ไว้ในหน้าเดียว เพื่อค้นหาและกรองได้เร็วขึ้น.
                         </p>
-                    </div>
-                    <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
-                        <a href="{{ route('projects.index') }}"
-                            class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                            ← กลับไปโครงการ
-                        </a>
-                        <a href="{{ route('projects.create') }}"
-                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">
-                            ➕ เพิ่มโครงการ
-                        </a>
                     </div>
                 </div>
             </section>
 
-            <section id="outputsFilterAnchor" class="outputs-filter-anchor rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <form id="outputsPrimaryFilterForm" method="GET" action="{{ route('outputs.index') }}" class="outputs-filter-anchor output-filter-panel rounded-2xl border bg-white p-5 shadow-sm">
+                <section id="outputsFilterAnchor" class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h2 class="text-base font-semibold text-slate-900">คัดกรองข้อมูล</h2>
+                        <p class="mt-1 text-sm text-slate-500">ค้นหาและ export ตามเงื่อนไขที่กำลังเลือกอยู่</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-                            <span>ฟิลเตอร์ที่ใช้อยู่</span>
-                            <span id="outputsActiveFilterPill" class="font-semibold text-slate-900">{{ $activeFilterCount }}</span>
-                        </span>
-                        <a href="{{ route('outputs.index') }}" data-output-reset
-                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                            ล้างฟิลเตอร์
-                        </a>
-                    </div>
-                </div>
+                    <button type="button"
+                        class="output-export-btn"
+                        data-output-export-trigger
+                        data-output-export-pdf="{{ route('outputs.pdf') }}"
+                        data-output-export-excel="{{ route('outputs.excel') }}">
+                        Export ข้อมูล
+                    </button>
+                </section>
 
-                <form id="outputsPrimaryFilterForm" method="GET" action="{{ route('outputs.index') }}" class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                    <input type="hidden" name="dir" value="{{ $currentDir }}">
-
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <label class="block xl:col-span-2">
                         <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
                         <input id="outputsPrimarySearchInput" type="text" name="search" value="{{ request('search') }}"
@@ -473,8 +562,36 @@
                             <option value="title" @selected($currentSort === 'title')>ชื่อผลงาน</option>
                         </select>
                     </label>
-                </form>
-            </section>
+
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ทิศทาง</span>
+                        <select name="dir" data-output-live="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
+                            <option value="desc" @selected($currentDir === 'desc')>มาก → น้อย</option>
+                            <option value="asc" @selected($currentDir === 'asc')>น้อย → มาก</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        <span>เลือก dropdown เพื่ออัปเดตทันที หรือพิมพ์ค้นหาแล้วระบบจะค้นให้อัตโนมัติ</span>
+                        <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 font-medium text-slate-600">
+                            <span>ฟิลเตอร์ที่ใช้อยู่</span>
+                            <span id="outputsActiveFilterPill" class="font-semibold text-slate-900">{{ $activeFilterCount }}</span>
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="submit"
+                            class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">
+                            ค้นหา
+                        </button>
+                        <a href="{{ route('outputs.index') }}" data-output-reset
+                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                            ล้างฟิลเตอร์
+                        </a>
+                    </div>
+                </div>
+            </form>
 
             <div id="outputsLoadingIndicator" class="hidden items-center gap-2 text-xs text-slate-500">
                 <span class="inline-block h-3 w-3 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin"></span>
@@ -526,7 +643,7 @@
                                 <div class="space-y-2">
                                     <h3 class="cell-clamp-3 text-sm font-semibold leading-6 text-slate-900">{{ $output->title ?: '-' }}</h3>
                                     @if (!empty($output->source_badge))
-                                        <span class="output-source-badge">{{ $output->source_badge }}</span>
+                                        <span class="{{ $outputSourceBadgeClass($output->source_badge) }}">{{ $output->source_badge }}</span>
                                     @endif
                                     <span class="output-type-pill rounded-full border px-2.5 py-1 text-[11px] font-semibold" style="{{ $outputTypeStyle($typeLabel) }}">
                                         {{ $typeLabel }}
@@ -611,7 +728,7 @@
                                         <td class="px-4 py-4 text-slate-900">
                                             <div class="cell-clamp-3 font-semibold leading-6">{{ $output->title ?: '-' }}</div>
                                             @if (!empty($output->source_badge))
-                                                <span class="output-source-badge">{{ $output->source_badge }}</span>
+                                                <span class="{{ $outputSourceBadgeClass($output->source_badge) }}">{{ $output->source_badge }}</span>
                                             @endif
                                         </td>
                                         <td class="px-4 py-4">
@@ -770,6 +887,80 @@
         <span id="outputsFilterFabBadge" class="outputs-filter-fab__badge @if ($activeFilterCount === 0) hidden @endif">{{ $activeFilterCount }}</span>
     </button>
 
+    <div id="outputsExportModal" class="outputs-export-modal" aria-hidden="true">
+        <div class="outputs-export-dialog" role="dialog" aria-modal="true" aria-labelledby="outputsExportTitle">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+                <div>
+                    <div id="outputsExportTitle" class="text-base font-semibold text-slate-900">Export ข้อมูล</div>
+                    <p class="mt-1 text-sm text-slate-500">เลือกชนิดไฟล์และขอบเขตข้อมูลก่อนโหลด</p>
+                </div>
+                <button type="button" class="rounded-lg px-2 py-1 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700" data-output-export-close>
+                    ปิด
+                </button>
+            </div>
+            <div class="space-y-4 px-5 py-5">
+                <div>
+                    <div class="mb-2 text-xs font-semibold text-slate-600">รูปแบบไฟล์</div>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
+                            <input type="radio" name="output_export_format" value="pdf" checked class="mt-1">
+                            <span>
+                                <span class="block text-sm font-semibold text-slate-900">PDF</span>
+                                <span class="mt-1 block text-xs leading-5 text-slate-500">รายงานสำหรับอ่านและพิมพ์</span>
+                            </span>
+                        </label>
+                        <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
+                            <input type="radio" name="output_export_format" value="excel" class="mt-1">
+                            <span>
+                                <span class="block text-sm font-semibold text-slate-900">Excel</span>
+                                <span class="mt-1 block text-xs leading-5 text-slate-500">ตารางข้อมูลสำหรับทำงานต่อ</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="mb-2 text-xs font-semibold text-slate-600">ช่วงข้อมูล</div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
+                        <input type="radio" name="output_export_scope" value="all" checked class="mt-1">
+                        <span>
+                            <span class="block text-sm font-semibold text-slate-900">ทั้งหมด</span>
+                            <span class="mt-1 block text-xs leading-5 text-slate-500">โหลดตามฟิลเตอร์ปัจจุบันทั้งหมด</span>
+                        </span>
+                    </label>
+                    <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
+                        <input type="radio" name="output_export_scope" value="range" class="mt-1">
+                        <span>
+                            <span class="block text-sm font-semibold text-slate-900">ช่วงเวลา</span>
+                            <span class="mt-1 block text-xs leading-5 text-slate-500">เลือกจากวันที่ลงข้อมูล</span>
+                        </span>
+                    </label>
+                </div>
+                </div>
+
+                <div id="outputsExportRangeFields" class="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ตั้งแต่วันที่</span>
+                        <input id="outputsExportStartDate" type="text" class="thai-datepicker mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm" placeholder="เลือกวันที่เริ่มต้น" data-min-date="{{ $exportMinDate ?? '' }}">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">ถึงวันที่</span>
+                        <input id="outputsExportEndDate" type="text" class="thai-datepicker mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm" placeholder="เลือกวันที่สิ้นสุด" data-min-date="{{ $exportMinDate ?? '' }}">
+                    </label>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end">
+                <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100" data-output-export-close>
+                    ยกเลิก
+                </button>
+                <button type="button" id="outputsExportDownloadBtn" class="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
+                    Export PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         (() => {
             'use strict';
@@ -790,6 +981,12 @@
                 fabBadge: '#outputsFilterFabBadge',
                 activeFilterStat: '#outputsActiveFilterStat',
                 activeFilterPill: '#outputsActiveFilterPill',
+                exportModal: '#outputsExportModal',
+                exportTitle: '#outputsExportTitle',
+                exportDownload: '#outputsExportDownloadBtn',
+                exportTrigger: '[data-output-export-trigger]',
+                exportClose: '[data-output-export-close]',
+                exportRangeFields: '#outputsExportRangeFields',
             };
 
             let controller = null;
@@ -797,6 +994,7 @@
             let debounceTimer = null;
             let drawerOpen = false;
             let previousBodyOverflow = '';
+            let exportUrls = { pdf: '', excel: '' };
 
             const query = (selector, root = document) => root.querySelector(selector);
             const queryAll = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -931,6 +1129,71 @@
 
                 url.searchParams.delete('page');
                 return url;
+            };
+
+            const buildExportUrl = () => {
+                const form = getPrimaryForm() || getDrawerForm();
+                const format = document.querySelector('input[name="output_export_format"]:checked')?.value || 'pdf';
+                const exportUrl = new URL(exportUrls[format] || exportUrls.pdf, window.location.origin);
+                if (form) {
+                    const currentUrl = buildUrlFromForm(form);
+                    currentUrl.searchParams.forEach((value, key) => {
+                        if (key !== 'page') exportUrl.searchParams.append(key, value);
+                    });
+                }
+
+                const scope = document.querySelector('input[name="output_export_scope"]:checked')?.value || 'all';
+                exportUrl.searchParams.set('export_scope', scope);
+                if (scope === 'range') {
+                    const startDate = query('#outputsExportStartDate')?.value?.trim() || '';
+                    const endDate = query('#outputsExportEndDate')?.value?.trim() || '';
+                    if (startDate) exportUrl.searchParams.set('export_start_date', startDate);
+                    if (endDate) exportUrl.searchParams.set('export_end_date', endDate);
+                }
+
+                return exportUrl;
+            };
+
+            const updateExportRangeState = () => {
+                const scope = document.querySelector('input[name="output_export_scope"]:checked')?.value || 'all';
+                const format = document.querySelector('input[name="output_export_format"]:checked')?.value || 'pdf';
+                const rangeFields = query(selectors.exportRangeFields);
+                if (rangeFields) {
+                    rangeFields.classList.toggle('opacity-45', scope !== 'range');
+                    rangeFields.querySelectorAll('input').forEach((input) => {
+                        input.disabled = scope !== 'range';
+                    });
+                }
+                const downloadButton = query(selectors.exportDownload);
+                if (downloadButton) {
+                    downloadButton.textContent = format === 'excel' ? 'Export Excel' : 'Export PDF';
+                }
+            };
+
+            const openExportModal = (button) => {
+                exportUrls = {
+                    pdf: button.dataset.outputExportPdf || '',
+                    excel: button.dataset.outputExportExcel || '',
+                };
+                const modal = query(selectors.exportModal);
+                const title = query(selectors.exportTitle);
+                if (!modal || !exportUrls.pdf) return;
+
+                if (title) title.textContent = 'Export ข้อมูล';
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                updateExportRangeState();
+                modal.querySelectorAll('[data-min-date]').forEach((input) => {
+                    const minDate = input.dataset.minDate;
+                    if (minDate && input._flatpickr) input._flatpickr.set('minDate', minDate);
+                });
+            };
+
+            const closeExportModal = () => {
+                const modal = query(selectors.exportModal);
+                if (!modal) return;
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
             };
 
             const syncFormsWithUrl = (url) => {
@@ -1091,6 +1354,49 @@
                 });
             };
 
+            const bindExportModal = () => {
+                if (window.__outputsExportModalBound) return;
+                window.__outputsExportModalBound = true;
+
+                document.addEventListener('click', (event) => {
+                    const trigger = event.target.closest(selectors.exportTrigger);
+                    if (trigger) {
+                        event.preventDefault();
+                        openExportModal(trigger);
+                        return;
+                    }
+
+                    if (event.target.closest(selectors.exportClose)) {
+                        event.preventDefault();
+                        closeExportModal();
+                    }
+                });
+
+                query(selectors.exportModal)?.addEventListener('click', (event) => {
+                    if (event.target === event.currentTarget) {
+                        closeExportModal();
+                    }
+                });
+
+                document.querySelectorAll('input[name="output_export_scope"]').forEach((input) => {
+                    input.addEventListener('change', updateExportRangeState);
+                });
+                document.querySelectorAll('input[name="output_export_format"]').forEach((input) => {
+                    input.addEventListener('change', updateExportRangeState);
+                });
+
+                query(selectors.exportDownload)?.addEventListener('click', () => {
+                    window.open(buildExportUrl().toString(), '_blank', 'noopener');
+                    closeExportModal();
+                });
+
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        closeExportModal();
+                    }
+                });
+            };
+
             const bindDrawer = () => {
                 if (window.__outputsDrawerBound) return;
                 window.__outputsDrawerBound = true;
@@ -1113,7 +1419,9 @@
                 bindResetLinks();
                 bindDelegatedLinks();
                 bindDrawer();
+                bindExportModal();
                 updateFilterBadges();
+                updateExportRangeState();
                 syncFabVisibility();
                 window.addEventListener('scroll', syncFabVisibility, { passive: true });
                 window.addEventListener('resize', syncFabVisibility);

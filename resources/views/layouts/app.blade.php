@@ -557,6 +557,10 @@
                                     class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
                                     ข้อมูลผลงาน สำหรับสัมมมนา
                                 </a>
+                                <a href="{{ route('outputs.project-data-quality') }}"
+                                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                    รายงานข้อมูลผิดพลาดของโปรเจค
+                                </a>
                             </div>
                         </div>
 
@@ -703,6 +707,7 @@
                         <a href="{{ route('outputs.presentations') }}">Presentations</a>
                         <a href="{{ route('outputs.textbooks') }}">Textbook / Book chapter</a>
                         <a href="{{ route('outputs.visualization') }}">ข้อมูลผลงาน สำหรับสัมมมนา</a>
+                        <a href="{{ route('outputs.project-data-quality') }}">รายงานข้อมูลผิดพลาดของโปรเจค</a>
                         <div class="text-gray-700 font-medium">🔥 FTE</div>
                         <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
                         <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>

@@ -301,6 +301,7 @@
         $originChipClass = static function (?string $source): string {
             return match (trim((string) $source)) {
                 'Project' => 'chip chip--project',
+                'Mission' => 'chip chip--back-office',
                 'Back Office' => 'chip chip--back-office',
                 'Extra' => 'chip chip--extra',
                 default => 'chip',
@@ -406,7 +407,7 @@
                     <td class="metric-card--project">
                         <div class="metric-label">Projects ทั้งหมด</div>
                         <div class="metric-value">{{ number_format($stats['total_projects']) }}</div>
-                        <div class="metric-note">รวมโครงการและงานนอกโครงการ</div>
+                        <div class="metric-note">รวมโครงการและ Mission</div>
                     </td>
                 </tr>
             </table>
@@ -440,7 +441,7 @@
             <div class="section-head section-head--projects">
                 <div class="section-kicker">Projects</div>
                 <div class="section-title">รายการโครงการที่เกี่ยวข้อง</div>
-                <div class="section-subtitle">แสดงทั้งโครงการวิจัยหลักและงานนอกโครงการที่เชื่อมโยงกับบุคคลนี้</div>
+                <div class="section-subtitle">แสดงทั้งโครงการวิจัยหลักและ Mission ที่เชื่อมโยงกับบุคคลนี้</div>
             </div>
             @if ($projectRows->isEmpty())
                 <div class="empty-card">ไม่พบโครงการที่เกี่ยวข้อง</div>

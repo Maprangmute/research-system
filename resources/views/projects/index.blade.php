@@ -576,6 +576,10 @@
                             <input type="checkbox" name="issue_duplicates" value="1" data-project-live="true" @checked(request('issue_duplicates'))>
                             โครงการซ้ำ
                         </label>
+                        <label class="inline-flex items-center gap-1">
+                            <input type="checkbox" name="issue_no_output" value="1" data-project-live="true" @checked(request('issue_no_output'))>
+                            ไม่มี output
+                        </label>
                     </div>
                 </label>
             </div>
@@ -922,7 +926,13 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-right font-semibold text-slate-700">
-                                    {{ $project->outputs_count ?? 0 }}
+                                    @if (($project->outputs_count ?? 0) > 0)
+                                        {{ $project->outputs_count }}
+                                    @else
+                                        <span class="inline-flex items-center justify-end rounded-none border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">
+                                            ไม่มี output
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3 text-slate-700 text-center">{{ $project->start_year ?: '-' }}</td>
                                 <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
@@ -1125,6 +1135,10 @@
                             <label class="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5">
                                 <input type="checkbox" name="issue_duplicates" value="1" data-project-live="true" @checked(request('issue_duplicates'))>
                                 โครงการซ้ำ
+                            </label>
+                            <label class="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5">
+                                <input type="checkbox" name="issue_no_output" value="1" data-project-live="true" @checked(request('issue_no_output'))>
+                                ไม่มี output
                             </label>
                         </div>
                     </div>

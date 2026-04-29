@@ -659,7 +659,7 @@
             <div class="section-toolbar mb-4">
                 <div>
                         <h2 class="section-heading research text-xl font-bold text-slate-900">Research Papers</h2>
-                        <p class="text-sm text-slate-500">รวม Project outputs, งานนอกโครงการ และ Extra outputs แล้ว</p>
+                        <p class="text-sm text-slate-500">รวม Project outputs, Mission และ Extra outputs แล้ว</p>
                 </div>
                 <div class="section-search-row">
                     <input id="researchSearchInput" type="text" placeholder="ค้นหาชื่อ paper / journal / ผู้เขียน / แหล่งอ้างอิง" class="live-search">
@@ -955,7 +955,7 @@
                 const sourceClass = (label) => {
                     const key = normalize(label);
                     if (key === 'extra') return 'source-extra';
-                    if (key === 'back office') return 'source-back-office';
+                    if (key === 'back office' || key === 'mission') return 'source-back-office';
                     return 'source-project';
                 };
                 const buildStyleMap = (values, palette) => {
@@ -1018,7 +1018,7 @@
                 const originLabel = (label) => {
                     const key = normalize(label);
                     if (key === 'extra') return 'skill ส่วนบุคคล';
-                    if (key === 'back office') return 'งานนอกโครงการ';
+                    if (key === 'back office' || key === 'mission') return 'Mission';
                     return 'โครงการ';
                 };
                 const statusClass = (status) => {
@@ -1205,7 +1205,7 @@
                     fillSelect(journalFilter, uniqueSorted(researchRows.map((row) => row.journal).filter((value) => value && value !== '-')), 'ทุก Journal');
                     fillSelect(quartileFilter, uniqueSorted(researchRows.map((row) => row.quartile).filter((value) => value && value !== '-')), 'ทุก Ranking');
                     fillSelect(roleFilter, uniqueSorted(researchRows.flatMap((row) => row.roles || [])), 'ทุกบทบาท');
-                    fillSelect(originFilter, ['โครงการ', 'งานนอกโครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
+                    fillSelect(originFilter, ['โครงการ', 'Mission', 'skill ส่วนบุคคล'], 'ทุกที่มา');
 
                     const render = () => {
                         const query = normalize(input.value);
@@ -1318,7 +1318,7 @@
                     let page = 1;
                     fillSelect(yearFilter, uniqueSorted(presentationRows.map((row) => row.year_be).filter((value) => value !== null && value !== ''), 'desc'), 'ทุกปี');
                     fillSelect(typeFilter, uniqueSorted(presentationRows.map((row) => row.presentation_type).filter((value) => value && value !== '-')), 'ทุกประเภท');
-                    fillSelect(originFilter, ['โครงการ', 'งานนอกโครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
+                    fillSelect(originFilter, ['โครงการ', 'Mission', 'skill ส่วนบุคคล'], 'ทุกที่มา');
 
                     const render = () => {
                         const query = normalize(input.value);
@@ -1417,7 +1417,7 @@
 
                     let page = 1;
                     fillSelect(yearFilter, uniqueSorted(textbookRows.map((row) => row.year_be).filter((value) => value !== null && value !== ''), 'desc'), 'ทุกปี');
-                    fillSelect(originFilter, ['โครงการ', 'งานนอกโครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
+                    fillSelect(originFilter, ['โครงการ', 'Mission', 'skill ส่วนบุคคล'], 'ทุกที่มา');
 
                     const render = () => {
                         const query = normalize(input.value);
@@ -1513,7 +1513,7 @@
 
                     let page = 1;
                     fillSelect(yearFilter, uniqueSorted(awardRows.map((row) => row.year_be).filter((value) => value !== null && value !== ''), 'desc'), 'ทุกปี');
-                    fillSelect(originFilter, ['โครงการ', 'งานนอกโครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
+                    fillSelect(originFilter, ['โครงการ', 'Mission', 'skill ส่วนบุคคล'], 'ทุกที่มา');
 
                     const render = () => {
                         const query = normalize(input.value);

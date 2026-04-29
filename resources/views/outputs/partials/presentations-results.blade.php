@@ -1,4 +1,13 @@
 <div id="presentations-results" class="space-y-6">
+    @php
+        $sourceBadgeClass = static function ($sourceBadge): string {
+            return match (mb_strtolower(trim((string) $sourceBadge))) {
+                'mission' => 'border-teal-200 bg-teal-50 text-teal-700',
+                'extra' => 'border-pink-200 bg-pink-50 text-pink-700',
+                default => 'border-slate-200 bg-slate-50 text-slate-700',
+            };
+        };
+    @endphp
     <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
             <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Presentations</div>
@@ -44,7 +53,7 @@
                             @endif
                             @if (!empty($row->source_badge))
                                 <div class="mt-1">
-                                    <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">{{ $row->source_badge }}</span>
+                                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold {{ $sourceBadgeClass($row->source_badge) }}">{{ $row->source_badge }}</span>
                                 </div>
                             @endif
                             <div class="font-semibold leading-6 text-slate-900">{{ $row->title }}</div>
@@ -145,7 +154,7 @@
                                     @endif
                                     @if (!empty($row->source_badge))
                                         <div class="mt-1">
-                                            <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">{{ $row->source_badge }}</span>
+                                            <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold {{ $sourceBadgeClass($row->source_badge) }}">{{ $row->source_badge }}</span>
                                         </div>
                                     @endif
                                     <div class="font-semibold leading-6">{{ $row->title }}</div>

@@ -46,5 +46,9 @@
             class="inline-flex items-center rounded-xl border px-3 py-2 text-sm font-medium {{ $tabClass($isActive(['outputs.external-academic', 'outputs.external-academic.*'])) }}">
             External Academic
         </a>
+        <a href="{{ route('outputs.project-data-quality') }}"
+            class="inline-flex items-center rounded-xl border px-3 py-2 text-sm font-medium {{ $tabClass($isActive('outputs.project-data-quality')) }}">
+            รายงานข้อมูลผิดพลาดของโปรเจค
+        </a>
     </nav>
 </section>

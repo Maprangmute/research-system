@@ -83,11 +83,13 @@
                     <h2 class="text-base font-semibold text-slate-900">ตัวกรองหนังสือและบทในหนังสือ</h2>
                     <p class="mt-1 text-sm text-slate-500">ค้นหา output, ชื่อหนังสือ, สำนักพิมพ์, ผู้เขียน หรือ project ได้ทันที</p>
                 </div>
-                <a href="{{ route('outputs.textbooks.pdf', request()->query()) }}"
-                    target="_blank" rel="noopener"
-                    class="output-export-btn">
-                    Export รายการ เป็น PDF
-                </a>
+                @include('outputs.partials.export-dialog', [
+                    'id' => 'textbooksExportModal',
+                    'pdfUrl' => route('outputs.textbooks.pdf'),
+                    'excelUrl' => route('outputs.textbooks.excel'),
+                    'formSelector' => '#textbooks-filter-form',
+                    'minDate' => $exportMinDate ?? null,
+                ])
             </section>
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <label class="block xl:col-span-2">

@@ -54,7 +54,7 @@
                 'pct' => $totalCount > 0 ? round(($projectOutputCount / $totalCount) * 100, 1) : 0.0,
             ],
             (object) [
-                'label' => 'ผลงานนอกโครงการวิจัย',
+                'label' => 'Mission',
                 'count' => $nonProjectOutputCount,
                 'pct' => $totalCount > 0 ? round(($nonProjectOutputCount / $totalCount) * 100, 1) : 0.0,
             ],
@@ -761,7 +761,7 @@
                                 <option value="{{ $sourceKey }}" @selected($selectedSource === $sourceKey)>{{ $sourceLabel }}</option>
                             @endforeach
                         </select>
-                        <span class="filter-hint">เลือกว่าต้องการดูเฉพาะในโครงการ งานนอกโครงการ หรือผลงานภายนอก</span>
+                        <span class="filter-hint">เลือกว่าต้องการดูเฉพาะในโครงการ Mission หรือ Extra</span>
                     </label>
                     <label class="filter-field">
                         <span class="filter-label">ประเภทผลงาน (EA)</span>
@@ -1268,7 +1268,7 @@
                             borderRadius: 8
                         },
                         {
-                            label: 'ผลงานนอกโครงการวิจัย',
+                            label: 'Mission',
                             data: nonProjectSeries,
                             backgroundColor: outputOutsideProjectColor,
                             borderColor: outputOutsideProjectBorder,

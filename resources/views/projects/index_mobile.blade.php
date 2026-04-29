@@ -259,6 +259,9 @@
             @if (request('issue_duplicates'))
                 <input type="hidden" name="issue_duplicates" value="1">
             @endif
+            @if (request('issue_no_output'))
+                <input type="hidden" name="issue_no_output" value="1">
+            @endif
             <label class="block">
                 <span class="text-xs font-semibold text-slate-600">ค้นหาชื่อโครงการ / Project ID</span>
                 <input id="project-mobile-search-input" type="text" name="search"
@@ -423,6 +426,10 @@
                         <label class="inline-flex items-center gap-1">
                             <input type="checkbox" name="issue_duplicates" value="1" @checked(request('issue_duplicates'))>
                             โครงการซ้ำ
+                        </label>
+                        <label class="inline-flex items-center gap-1">
+                            <input type="checkbox" name="issue_no_output" value="1" @checked(request('issue_no_output'))>
+                            ไม่มี output
                         </label>
                     </div>
                 </label>
@@ -674,7 +681,16 @@
                             </span>
                         </div>
                         <div class="flex flex-wrap gap-3 text-xs text-slate-600">
-                            <span>Outputs: {{ $project->outputs_count ?? 0 }}</span>
+                            <span>
+                                Outputs:
+                                @if (($project->outputs_count ?? 0) > 0)
+                                    {{ $project->outputs_count }}
+                                @else
+                                    <span class="inline-flex items-center rounded-none border border-amber-200 bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
+                                        ไม่มี output
+                                    </span>
+                                @endif
+                            </span>
                             <span>ปี: {{ $project->start_year ?: '-' }}</span>
                             <span>อัปเดท: {{ $updated ? $updated->locale('th')->translatedFormat('j F') . ' ' . ($updated->year + 543) : '-' }}</span>
                         </div>
@@ -876,6 +892,10 @@
                                 <input type="checkbox" name="issue_duplicates" value="1" @checked(request('issue_duplicates'))>
                                 โครงการซ้ำ
                             </label>
+                            <label class="inline-flex items-center gap-1">
+                                <input type="checkbox" name="issue_no_output" value="1" @checked(request('issue_no_output'))>
+                                ไม่มี output
+                            </label>
                         </div>
                     </label>
                     <label class="block">
@@ -973,7 +993,7 @@
                 'sort',
                 'dir',
             ];
-            const checkboxNames = ['issue_overdue', 'issue_missing_dates', 'issue_duplicates'];
+            const checkboxNames = ['issue_overdue', 'issue_missing_dates', 'issue_duplicates', 'issue_no_output'];
 
             let timer = null;
             let controller = null;

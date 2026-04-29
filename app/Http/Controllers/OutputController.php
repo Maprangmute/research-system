@@ -749,6 +749,83 @@ class OutputController extends Controller
 
     public function index(Request $request)
     {
+        $payload = $this->buildOutputsIndexPayload($request);
+
+        return view('outputs.index', [
+            'outputs' => $payload['outputs'],
+            'typeOptions' => $payload['typeOptions'],
+            'yearOptions' => $payload['yearOptions'],
+            'workStatusOptions' => $payload['workStatusOptions'],
+            'exportMinDate' => $this->exportMinDate($payload['items']),
+        ]);
+    }
+
+    public function outputsPdf(Request $request)
+    {
+        ini_set('pcre.backtrack_limit', '5000000');
+
+        $payload = $this->buildOutputsIndexPayload($request);
+        $rows = $payload['items'];
+        $generatedAt = now('Asia/Bangkok');
+        $generatedBy = trim((string) (auth()->user()?->full_name ?? '')) ?: 'ไม่ระบุ';
+        $generatedLabel = $generatedAt->locale('th')->translatedFormat('j F') . ' ' . ($generatedAt->year + 543) . $generatedAt->translatedFormat(' เวลา H:i');
+        $filterLabel = $this->buildOutputsExportFilterLabel($request);
+        $stamp = $generatedAt->format('Ymd_His');
+        $filename = "outputs_report_{$stamp}.pdf";
+
+        $pdf = PDF::loadView('outputs.export-pdf', [
+            'rows' => $rows,
+            'summary' => $this->buildOutputsExportSummary($rows),
+            'filterLabel' => $filterLabel,
+            'generatedAt' => $generatedAt,
+            'generatedBy' => $generatedBy,
+        ], [], [
+            'format' => 'A4-L',
+        ]);
+
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'outputs_export',
+            'subject_label' => 'Outputs PDF',
+        ], $request);
+
+        return $pdf->stream($filename);
+    }
+
+    public function outputsExcel(Request $request)
+    {
+        $payload = $this->buildOutputsIndexPayload($request);
+        $rows = $payload['items'];
+        $generatedAt = now('Asia/Bangkok');
+        $generatedBy = trim((string) (auth()->user()?->full_name ?? '')) ?: 'ไม่ระบุ';
+        $generatedLabel = $generatedAt->locale('th')->translatedFormat('j F') . ' ' . ($generatedAt->year + 543) . $generatedAt->translatedFormat(' เวลา H:i');
+        $filterLabel = $this->buildOutputsExportFilterLabel($request);
+        $stamp = $generatedAt->format('Ymd_His');
+        $filename = "outputs_report_{$stamp}.xlsx";
+        $summary = $this->buildOutputsExportSummary($rows);
+        $columns = $this->outputsExcelColumns();
+
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'outputs_export',
+            'subject_label' => 'Outputs Excel',
+        ], $request);
+
+        return $this->xlsxResponse(
+            $filename,
+            'Outputs',
+            $columns,
+            $rows->map(fn ($row, $index) => $this->outputExcelRow($row, (int) $index + 1))->values(),
+            [
+                ['รายงาน Output'],
+                ['เงื่อนไข', $filterLabel],
+                ['ออกรายงาน', $generatedLabel],
+                ['ผู้สร้างรายงาน', $generatedBy],
+                ['สรุป', 'ทั้งหมด ' . number_format($summary['total']) . ' รายการ | Project ' . number_format($summary['project']) . ' | Mission ' . number_format($summary['mission']) . ' | Extra ' . number_format($summary['extra'])],
+            ]
+        );
+    }
+
+    private function buildOutputsIndexPayload(Request $request): array
+    {
         $extractTypeCode = function ($rawType): ?string {
             $type = trim((string) ($rawType ?? ''));
             if ($type === '') {
@@ -783,6 +860,9 @@ class OutputController extends Controller
             'project:id,project_name_th,project_code',
             'authors:id,output_id,role,name',
             'awardRecipients:id,output_id,name',
+            'bookAuthors:id,output_id,name',
+            'conferences:id,output_id,name,presentation_type,location,note',
+            'conferences.presenters:id,output_conference_id,name',
         ]);
         $user = auth()->user();
         $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
@@ -867,7 +947,14 @@ class OutputController extends Controller
             ->values();
 
         $taskOutputQuery = BackOfficeTaskOutput::query()
-            ->with(['task:id,backoffice_id,title,created_by', 'contributorLinks.user'])
+            ->with([
+                'task:id,backoffice_id,title,created_by',
+                'contributorLinks.user',
+                'authorLinks.user',
+                'awardRecipientLinks.user',
+                'bookAuthorLinks.user',
+                'conferenceLinks.presenters.user',
+            ])
             ->when(!$canViewAll, function ($q) use ($user, $fullName) {
                 $q->where(function ($scope) use ($user, $fullName) {
                     $scope->where('owner_user_id', $user->id)
@@ -927,7 +1014,7 @@ class OutputController extends Controller
         $taskOutputs = $taskOutputQuery ? $taskOutputQuery->get() : collect();
 
         $externalOutputQuery = $this->visibleExternalOutputsQuery()->with([
-            'authors:id,external_output_id,name',
+            'authors:id,external_output_id,role,name',
             'awardRecipients:id,external_output_id,name',
             'bookAuthors:id,external_output_id,name',
             'conferences.presenters',
@@ -1021,6 +1108,84 @@ class OutputController extends Controller
             $y = $parseYear((string) $raw);
             return $y ? (int) $y : null;
         };
+        $formatImpactFactor = static function ($value): ?string {
+            if ($value === null || $value === '' || !is_numeric($value)) {
+                return null;
+            }
+
+            return rtrim(rtrim(number_format((float) $value, 3, '.', ''), '0'), '.');
+        };
+        $filterSpecialFields = static function (array $fields): array {
+            return collect($fields)
+                ->map(fn (array $field) => [
+                    'label' => trim((string) ($field['label'] ?? '')),
+                    'value' => trim((string) ($field['value'] ?? '')),
+                ])
+                ->filter(fn (array $field) => $field['label'] !== '' && $field['value'] !== '')
+                ->values()
+                ->all();
+        };
+        $formatAuthorRole = static function (?string $role): string {
+            return match (strtolower(trim((string) $role))) {
+                'first' => 'First-author',
+                'co' => 'Co-author',
+                'corresponding' => 'Corresponding-author',
+                'awardee' => 'Awardee',
+                default => '',
+            };
+        };
+        $formatPeopleWithRoles = static function ($items) use ($formatAuthorRole): array {
+            return collect($items)
+                ->map(function ($item) use ($formatAuthorRole) {
+                    $name = is_array($item) ? trim((string) ($item['name'] ?? '')) : trim((string) ($item->name ?? $item));
+                    $role = is_array($item) ? $formatAuthorRole($item['role'] ?? null) : $formatAuthorRole($item->role ?? null);
+
+                    return $name !== '' && $role !== '' ? "{$name} ({$role})" : $name;
+                })
+                ->filter()
+                ->values()
+                ->all();
+        };
+        $formatPeopleNames = static function ($items): array {
+            return collect($items)
+                ->map(fn ($item) => is_array($item) ? trim((string) ($item['name'] ?? '')) : trim((string) ($item->name ?? $item)))
+                ->filter()
+                ->values()
+                ->all();
+        };
+        $buildSpecialPayload = static function (
+            string $typeCode,
+            array $fields = [],
+            array $people = [],
+            ?string $peopleLabel = null
+        ) use ($filterSpecialFields): ?array {
+            $typeCode = strtoupper(trim($typeCode));
+            $config = [
+                'EA101' => ['heading' => 'ข้อมูล RESEARCH PAPER OR JOURNAL ARTICLE', 'tone' => 'paper', 'people_label' => 'Authors'],
+                'EA103' => ['heading' => 'ข้อมูล PRESENTATIONS IN ACADEMIC CONFERENCES', 'tone' => 'presentation', 'people_label' => 'Presenter'],
+                'EA118' => ['heading' => 'ข้อมูล AWARD AND RECOGNITION', 'tone' => 'award', 'people_label' => 'Awardee'],
+                'EA119' => ['heading' => 'ข้อมูล TEXTBOOK / BOOK CHAPTER', 'tone' => 'textbook', 'people_label' => 'Authors'],
+            ][$typeCode] ?? null;
+
+            if (!$config) {
+                return null;
+            }
+
+            $fields = $filterSpecialFields($fields);
+            $people = collect($people)->map(fn ($name) => trim((string) $name))->filter()->values()->all();
+
+            if (empty($fields) && empty($people)) {
+                return null;
+            }
+
+            return [
+                'heading' => $config['heading'],
+                'tone' => $config['tone'],
+                'fields' => $fields,
+                'people_label' => $peopleLabel ?: $config['people_label'],
+                'people' => $people,
+            ];
+        };
 
         $items = collect();
 
@@ -1040,6 +1205,32 @@ class OutputController extends Controller
             }
             $relatedLink = $this->extractFirstUrlFromText($detail);
             $detailText = $this->stripUrlsFromText($detail);
+            $conference = $output->conferences->first();
+            $special = $buildSpecialPayload($typeCode, match ($typeCode) {
+                'EA101' => [
+                    ['label' => 'Journal', 'value' => $output->journal],
+                    ['label' => 'Ranking', 'value' => $output->quartile],
+                    ['label' => 'IF', 'value' => $formatImpactFactor($output->impact_factor)],
+                ],
+                'EA103' => [
+                    ['label' => 'Conference', 'value' => $conference?->name],
+                    ['label' => 'Type', 'value' => $conference?->presentation_type],
+                    ['label' => 'Place', 'value' => $conference?->location],
+                ],
+                'EA119' => [
+                    ['label' => 'Book', 'value' => $output->book_title],
+                    ['label' => 'Publisher', 'value' => $output->publisher_name],
+                    ['label' => 'Pages', 'value' => $output->chapter_pages],
+                    ['label' => 'ISBN', 'value' => $output->isbn],
+                ],
+                default => [],
+            }, match ($typeCode) {
+                'EA101' => $formatPeopleWithRoles($output->authors),
+                'EA103' => $conference ? $formatPeopleNames($conference->presenters) : [],
+                'EA118' => $formatPeopleNames($output->awardRecipients),
+                'EA119' => $formatPeopleNames($output->bookAuthors),
+                default => [],
+            });
             $items->push((object) [
                 'title' => $output->title ?: '-',
                 'type' => $typeLabel,
@@ -1050,6 +1241,7 @@ class OutputController extends Controller
                 'detail' => $detailText !== '' ? $detailText : null,
                 'related_link' => $relatedLink,
                 'link' => $output->project ? route('projects.show', $output->project) : null,
+                'special' => $special,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
                 'sort_title' => mb_strtolower($output->title ?? ''),
@@ -1070,16 +1262,43 @@ class OutputController extends Controller
             $workStatus = $yearBe ? 'completed' : 'in_progress';
             $typeCode = $extractTypeCode($output->type) ?? '-';
             $typeLabel = $typeLabelByCode[$typeCode] ?? (trim((string) ($output->type ?? '')) ?: $typeCode);
+            $conference = collect($output->conferences ?? [])->first();
+            $special = $buildSpecialPayload($typeCode, match ($typeCode) {
+                'EA101' => [
+                    ['label' => 'Journal', 'value' => $output->journal],
+                    ['label' => 'Ranking', 'value' => $output->quartile],
+                    ['label' => 'IF', 'value' => $formatImpactFactor($output->impact_factor)],
+                ],
+                'EA103' => [
+                    ['label' => 'Conference', 'value' => $conference['name'] ?? null],
+                    ['label' => 'Type', 'value' => $conference['presentation_type'] ?? null],
+                    ['label' => 'Place', 'value' => $conference['location'] ?? null],
+                ],
+                'EA119' => [
+                    ['label' => 'Book', 'value' => $output->book_title],
+                    ['label' => 'Publisher', 'value' => $output->publisher_name],
+                    ['label' => 'Pages', 'value' => $output->chapter_pages],
+                    ['label' => 'ISBN', 'value' => $output->isbn],
+                ],
+                default => [],
+            }, match ($typeCode) {
+                'EA101' => $formatPeopleWithRoles($output->authors ?? []),
+                'EA103' => $formatPeopleNames($conference['presenters'] ?? []),
+                'EA118' => $formatPeopleNames($output->resolvedAwardRecipients()),
+                'EA119' => $formatPeopleNames($output->book_authors ?? []),
+                default => [],
+            });
             $items->push((object) [
                 'title' => $output->title ?: '-',
                 'type' => $typeLabel,
                 'year_be' => $yearBe,
                 'work_status' => $workStatus,
                 'project_label' => $output->task?->title,
-                'source_badge' => 'งานนอกโครงการวิจัย',
+                'source_badge' => 'Mission',
                 'detail' => null,
                 'related_link' => null,
                 'link' => $output->task ? route('back_office.show', $output->task) : null,
+                'special' => $special,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
                 'sort_title' => mb_strtolower($output->title ?? ''),
@@ -1107,6 +1326,32 @@ class OutputController extends Controller
             }
             $relatedLink = $this->extractFirstUrlFromText($detail);
             $detailText = $this->stripUrlsFromText($detail);
+            $conference = $output->conferences->first();
+            $special = $buildSpecialPayload($typeCode, match ($typeCode) {
+                'EA101' => [
+                    ['label' => 'Journal', 'value' => $output->journal],
+                    ['label' => 'Ranking', 'value' => $output->quartile],
+                    ['label' => 'IF', 'value' => $formatImpactFactor($output->impact_factor)],
+                ],
+                'EA103' => [
+                    ['label' => 'Conference', 'value' => $conference?->name],
+                    ['label' => 'Type', 'value' => $conference?->presentation_type],
+                    ['label' => 'Place', 'value' => $conference?->location],
+                ],
+                'EA119' => [
+                    ['label' => 'Book', 'value' => $output->book_title],
+                    ['label' => 'Publisher', 'value' => $output->publisher_name],
+                    ['label' => 'Pages', 'value' => $output->chapter_pages],
+                    ['label' => 'ISBN', 'value' => $output->isbn],
+                ],
+                default => [],
+            }, match ($typeCode) {
+                'EA101' => $formatPeopleWithRoles($output->authors),
+                'EA103' => $conference ? $formatPeopleNames($conference->presenters) : [],
+                'EA118' => $formatPeopleNames($output->awardRecipients),
+                'EA119' => $formatPeopleNames($output->bookAuthors),
+                default => [],
+            });
 
             $items->push((object) [
                 'title' => $output->title ?: '-',
@@ -1118,6 +1363,7 @@ class OutputController extends Controller
                 'detail' => $detailText !== '' ? $detailText : null,
                 'related_link' => $relatedLink,
                 'link' => route('outputs.external-academic.show', $output),
+                'special' => $special,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
                 'sort_title' => mb_strtolower($output->title ?? ''),
@@ -1129,6 +1375,21 @@ class OutputController extends Controller
             $workStatus = trim((string) $request->input('work_status'));
             if (in_array($workStatus, ['in_progress', 'completed'], true)) {
                 $items = $items->filter(fn ($item) => ($item->work_status ?? null) === $workStatus)->values();
+            }
+        }
+
+        if ($request->input('export_scope') === 'range') {
+            $exportStart = $this->normalizeThaiDateInput($request->input('export_start_date'));
+            $exportEnd = $this->normalizeThaiDateInput($request->input('export_end_date'));
+
+            if ($exportStart) {
+                $startDate = Carbon::parse($exportStart, 'Asia/Bangkok')->startOfDay();
+                $items = $items->filter(fn ($item) => $item->created_at && Carbon::parse($item->created_at)->greaterThanOrEqualTo($startDate))->values();
+            }
+
+            if ($exportEnd) {
+                $endDate = Carbon::parse($exportEnd, 'Asia/Bangkok')->endOfDay();
+                $items = $items->filter(fn ($item) => $item->created_at && Carbon::parse($item->created_at)->lessThanOrEqualTo($endDate))->values();
             }
         }
 
@@ -1152,15 +1413,63 @@ class OutputController extends Controller
             'query' => $request->query(),
         ]);
 
-        return view('outputs.index', [
+        return [
             'outputs' => $outputs,
+            'items' => $items->values(),
             'typeOptions' => $typeOptions->unique()->sort()->values(),
             'yearOptions' => $yearOptions,
             'workStatusOptions' => collect([
                 'in_progress' => 'อยู่ระหว่างการดำเนินงาน',
                 'completed' => 'เสร็จแล้ว',
             ]),
-        ]);
+        ];
+    }
+
+    private function buildOutputsExportSummary(Collection $rows): array
+    {
+        return [
+            'total' => $rows->count(),
+            'project' => $rows->filter(fn ($row) => blank($row->source_badge ?? null))->count(),
+            'mission' => $rows->filter(fn ($row) => trim((string) ($row->source_badge ?? '')) === 'Mission')->count(),
+            'extra' => $rows->filter(fn ($row) => trim((string) ($row->source_badge ?? '')) === 'Extra')->count(),
+            'types' => $rows->pluck('type')->filter()->unique()->count(),
+            'years' => $rows->pluck('year_be')->filter()->unique()->sortDesc()->values(),
+        ];
+    }
+
+    private function buildOutputsExportFilterLabel(Request $request): string
+    {
+        $parts = [];
+        if ($request->filled('search')) {
+            $parts[] = 'ค้นหา: ' . trim((string) $request->input('search'));
+        }
+        if ($request->filled('type')) {
+            $parts[] = 'ประเภท: ' . trim((string) $request->input('type'));
+        }
+        if ($request->filled('year')) {
+            $parts[] = 'ปี: ' . trim((string) $request->input('year'));
+        }
+        if ($request->filled('work_status')) {
+            $parts[] = 'สถานะ: ' . match (trim((string) $request->input('work_status'))) {
+                'completed' => 'เสร็จแล้ว',
+                'in_progress' => 'อยู่ระหว่างการดำเนินงาน',
+                default => trim((string) $request->input('work_status')),
+            };
+        }
+        if ($request->input('export_scope') === 'range') {
+            $start = $this->normalizeThaiDateInput($request->input('export_start_date'));
+            $end = $this->normalizeThaiDateInput($request->input('export_end_date'));
+            $formatDate = static function (?string $date): ?string {
+                if (! $date) {
+                    return null;
+                }
+                $carbon = Carbon::parse($date);
+                return $carbon->format('d/m/') . ($carbon->year + 543);
+            };
+            $parts[] = 'วันที่ลงข้อมูล: ' . (($formatDate($start) ?: 'เริ่มต้น') . ' - ' . ($formatDate($end) ?: 'ปัจจุบัน'));
+        }
+
+        return $parts ? implode(' | ', $parts) : 'ทั้งหมด';
     }
 
     public function visualization(Request $request)
@@ -1189,7 +1498,7 @@ class OutputController extends Controller
         };
         $sourceLabelMap = [
             'project' => 'โครงการวิจัย',
-            'back_office' => 'งานนอกโครงการ',
+            'back_office' => 'Mission',
             'external' => 'ผลงานภายนอก',
         ];
 
@@ -1291,7 +1600,7 @@ class OutputController extends Controller
                     'type_code' => $typeCode,
                     'title' => trim((string) ($output->title ?? '')) ?: '-',
                     'year_be' => $this->normalizeYearFilter($output->year),
-                    'reference' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
+                    'reference' => trim((string) ($output->task?->title ?? '')) ?: 'Mission',
                     'link' => $output->task ? route('back_office.show', $output->task) : null,
                     'detail' => trim((string) ($output->project_output ?? '')),
                     'created_at' => $output->created_at,
@@ -1717,6 +2026,8 @@ class OutputController extends Controller
             'textbookSummary' => $textbookSummary,
             'paperQuartileLabels' => $paperQuartileLabels,
             'paperQuartileValues' => $paperQuartileValues,
+            'paperRankingLabels' => $paperQuartileLabels,
+            'paperRankingValues' => $paperQuartileValues,
             'presentationActivityLabels' => $presentationActivity->keys()->values(),
             'presentationActivityValues' => $presentationActivity->values()->values(),
             'textbookYearLabels' => $textbookYears->keys()->values(),
@@ -1835,6 +2146,7 @@ class OutputController extends Controller
             ]),
             'currentSort' => $sort,
             'currentDir' => $dir,
+            'exportMinDate' => $this->exportMinDate($papers),
         ]);
     }
 
@@ -1845,6 +2157,8 @@ class OutputController extends Controller
             : 'created_at';
         $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
         $payload = $this->buildPapersPayload($request, $sort, $dir);
+        $payload['items'] = $this->filterRowsByExportDateRange($payload['items'], $request);
+        $payload['summary'] = $this->summarizeCategoryRows($payload['items'], 'papers');
 
         $user = auth()->user();
         $reporter = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
@@ -1857,6 +2171,7 @@ class OutputController extends Controller
                 ? 'Impact Factor <= ' . trim((string) $request->input('impact_max'))
                 : null,
             $request->filled('year') ? 'ปี: ' . trim((string) $request->input('year')) : null,
+            $this->exportDateRangeFilterLabel($request),
         ])->filter()->values();
 
         $pdf = PDF::loadView('outputs.papers-pdf', [
@@ -1875,6 +2190,43 @@ class OutputController extends Controller
         ], $request);
 
         return $pdf->stream($filename);
+    }
+
+    public function papersExcel(Request $request)
+    {
+        $sort = in_array($request->get('sort'), ['created_at', 'year', 'title', 'journal', 'quartile'], true)
+            ? $request->get('sort')
+            : 'created_at';
+        $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
+        $payload = $this->buildPapersPayload($request, $sort, $dir);
+        $rows = $this->filterRowsByExportDateRange($payload['items'], $request);
+        $filename = $this->buildOutputExportFilename('OUTPUT_PAPERS', 'xlsx');
+        $columns = [
+            'title' => 'ชื่อผลงาน',
+            'type' => 'ประเภท',
+            'source_badge' => 'ที่มา',
+            'year_be' => 'ปี พ.ศ.',
+            'project_label' => 'รายการอ้างอิง',
+            'journal' => 'Journal',
+            'quartile' => 'Ranking',
+            'impact_factor' => 'Impact Factor',
+            'authors_text' => 'Authors',
+            'detail' => 'รายละเอียด',
+            'project_link' => 'ลิงก์ผลงาน',
+        ];
+
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'output_papers_excel',
+            'subject_label' => 'Research Papers and Journal Articles',
+        ], $request);
+
+        return $this->xlsxResponse(
+            $filename,
+            'Research Papers',
+            array_merge(['#' => '#'], $columns),
+            $rows->map(fn ($row, $index) => $this->categoryExcelRow($row, $columns, (int) $index + 1))->values(),
+            $this->categoryExcelMetaRows('Research Papers and Journal Articles', $rows, $request)
+        );
     }
 
     public function presentations(Request $request)
@@ -1896,6 +2248,7 @@ class OutputController extends Controller
             'yearOptions' => $payload['yearOptions'],
             'currentSort' => $sort,
             'currentDir' => $dir,
+            'exportMinDate' => $this->exportMinDate($rows),
         ]);
     }
 
@@ -1906,6 +2259,8 @@ class OutputController extends Controller
             : 'created_at';
         $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
         $payload = $this->buildPresentationsPayload($request, $sort, $dir);
+        $payload['items'] = $this->filterRowsByExportDateRange($payload['items'], $request);
+        $payload['summary'] = $this->summarizeCategoryRows($payload['items'], 'presentations');
 
         $user = auth()->user();
         $reporter = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
@@ -1914,6 +2269,7 @@ class OutputController extends Controller
             $request->filled('presenter') ? 'ผู้นำเสนอ: ' . trim((string) $request->input('presenter')) : null,
             $request->filled('activity') ? 'กิจกรรม: ' . trim((string) $request->input('activity')) : null,
             $request->filled('year') ? 'ปี: ' . trim((string) $request->input('year')) : null,
+            $this->exportDateRangeFilterLabel($request),
         ])->filter()->values();
 
         $pdf = PDF::loadView('outputs.presentations-pdf', [
@@ -1930,6 +2286,42 @@ class OutputController extends Controller
         ], $request);
 
         return $pdf->stream($filename);
+    }
+
+    public function presentationsExcel(Request $request)
+    {
+        $sort = in_array($request->get('sort'), ['created_at', 'year', 'title', 'conference', 'activity'], true)
+            ? $request->get('sort')
+            : 'created_at';
+        $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
+        $payload = $this->buildPresentationsPayload($request, $sort, $dir);
+        $rows = $this->filterRowsByExportDateRange($payload['items'], $request);
+        $filename = $this->buildOutputExportFilename('OUTPUT_PRESENTATIONS', 'xlsx');
+        $columns = [
+            'title' => 'ชื่อผลงาน',
+            'source_badge' => 'ที่มา',
+            'year_be' => 'ปี พ.ศ.',
+            'project_label' => 'รายการอ้างอิง',
+            'conference_name' => 'Conference',
+            'presentation_type' => 'ประเภทการนำเสนอ',
+            'presenter_name' => 'ผู้นำเสนอ',
+            'location' => 'สถานที่',
+            'detail' => 'รายละเอียด',
+            'project_link' => 'ลิงก์ผลงาน',
+        ];
+
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'output_presentations_excel',
+            'subject_label' => 'Presentations in Academic Conferences',
+        ], $request);
+
+        return $this->xlsxResponse(
+            $filename,
+            'Presentations',
+            array_merge(['#' => '#'], $columns),
+            $rows->map(fn ($row, $index) => $this->categoryExcelRow($row, $columns, (int) $index + 1))->values(),
+            $this->categoryExcelMetaRows('Presentations in Academic Conferences', $rows, $request)
+        );
     }
 
     public function textbooks(Request $request)
@@ -1949,6 +2341,7 @@ class OutputController extends Controller
             'yearOptions' => $payload['yearOptions'],
             'currentSort' => $sort,
             'currentDir' => $dir,
+            'exportMinDate' => $this->exportMinDate($payload['items']),
         ]);
     }
 
@@ -1959,6 +2352,8 @@ class OutputController extends Controller
             : 'created_at';
         $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
         $payload = $this->buildTextbooksPayload($request, $sort, $dir);
+        $payload['items'] = $this->filterRowsByExportDateRange($payload['items'], $request);
+        $payload['summary'] = $this->summarizeCategoryRows($payload['items'], 'textbooks');
 
         $user = auth()->user();
         $reporter = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
@@ -1966,6 +2361,7 @@ class OutputController extends Controller
             $request->filled('search') ? 'ค้นหา: ' . trim((string) $request->input('search')) : null,
             $request->filled('author') ? 'Author: ' . trim((string) $request->input('author')) : null,
             $request->filled('year') ? 'ปี: ' . trim((string) $request->input('year')) : null,
+            $this->exportDateRangeFilterLabel($request),
         ])->filter()->values();
 
         $pdf = PDF::loadView('outputs.textbooks-pdf', [
@@ -1986,6 +2382,43 @@ class OutputController extends Controller
         return $pdf->stream($filename);
     }
 
+    public function textbooksExcel(Request $request)
+    {
+        $sort = in_array($request->get('sort'), ['created_at', 'year', 'title', 'book_title', 'publisher'], true)
+            ? $request->get('sort')
+            : 'created_at';
+        $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
+        $payload = $this->buildTextbooksPayload($request, $sort, $dir);
+        $rows = $this->filterRowsByExportDateRange($payload['items'], $request);
+        $filename = $this->buildOutputExportFilename('OUTPUT_TEXTBOOKS', 'xlsx');
+        $columns = [
+            'title' => 'ชื่อผลงาน',
+            'source_badge' => 'ที่มา',
+            'year_be' => 'ปี พ.ศ.',
+            'project_label' => 'รายการอ้างอิง',
+            'book_title' => 'Book',
+            'publisher_name' => 'Publisher',
+            'chapter_pages' => 'Pages',
+            'isbn' => 'ISBN',
+            'authors_text' => 'Authors',
+            'detail' => 'รายละเอียด',
+            'project_link' => 'ลิงก์ผลงาน',
+        ];
+
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'output_textbooks_excel',
+            'subject_label' => 'Textbook / Book Chapter',
+        ], $request);
+
+        return $this->xlsxResponse(
+            $filename,
+            'Textbooks',
+            array_merge(['#' => '#'], $columns),
+            $rows->map(fn ($row, $index) => $this->categoryExcelRow($row, $columns, (int) $index + 1))->values(),
+            $this->categoryExcelMetaRows('Textbook / Book Chapter', $rows, $request)
+        );
+    }
+
     private function buildOutputPdfFilename(string $prefix, ?string $subject = null): string
     {
         $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
@@ -2002,6 +2435,363 @@ class OutputController extends Controller
         }
 
         return $base . '.pdf';
+    }
+
+    private function buildOutputExportFilename(string $prefix, string $extension): string
+    {
+        $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
+        return strtoupper(trim($prefix)) . '_' . $dateStr . '.' . ltrim($extension, '.');
+    }
+
+    private function xlsxResponse(string $filename, string $sheetName, array $columns, Collection $rows, array $metaRows = [])
+    {
+        $content = $this->buildXlsxWorkbook($sheetName, array_values($columns), $rows, $metaRows);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Length' => (string) strlen($content),
+        ]);
+    }
+
+    private function buildXlsxWorkbook(string $sheetName, array $headers, Collection $rows, array $metaRows = []): string
+    {
+        $tmpPath = tempnam(sys_get_temp_dir(), 'outputs_xlsx_');
+        $zip = new \ZipArchive();
+        $zip->open($tmpPath, \ZipArchive::OVERWRITE);
+
+        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            . '<Default Extension="xml" ContentType="application/xml"/>'
+            . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+            . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+            . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+            . '</Types>');
+
+        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            . '</Relationships>');
+
+        $zip->addFromString('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . '<sheets><sheet name="' . $this->xlsxEscapeAttribute(Str::limit($sheetName, 31, '')) . '" sheetId="1" r:id="rId1"/></sheets>'
+            . '</workbook>');
+
+        $zip->addFromString('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+            . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+            . '</Relationships>');
+
+        $zip->addFromString('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'
+            . '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDDEBFF"/><bgColor indexed="64"/></patternFill></fill></fills>'
+            . '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFCBD5E1"/></left><right style="thin"><color rgb="FFCBD5E1"/></right><top style="thin"><color rgb="FFCBD5E1"/></top><bottom style="thin"><color rgb="FFCBD5E1"/></bottom><diagonal/></border></borders>'
+            . '<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs>'
+            . '</styleSheet>');
+
+        $zip->addFromString('xl/worksheets/sheet1.xml', $this->buildXlsxWorksheet($headers, $rows, $metaRows));
+        $zip->close();
+
+        $content = (string) file_get_contents($tmpPath);
+        @unlink($tmpPath);
+
+        return $content;
+    }
+
+    private function buildXlsxWorksheet(array $headers, Collection $rows, array $metaRows): string
+    {
+        $rowIndex = 1;
+        $xmlRows = [];
+
+        foreach ($metaRows as $metaRow) {
+            $xmlRows[] = $this->xlsxRow($rowIndex++, collect($metaRow)->values()->all(), 2);
+        }
+
+        if (!empty($metaRows)) {
+            $xmlRows[] = '<row r="' . $rowIndex++ . '"/>';
+        }
+
+        $headerRowIndex = $rowIndex;
+        $xmlRows[] = $this->xlsxRow($rowIndex++, $headers, 1);
+
+        foreach ($rows as $row) {
+            $xmlRows[] = $this->xlsxRow($rowIndex++, array_values((array) $row), 2);
+        }
+
+        $columnCount = max(count($headers), 1);
+        $lastColumn = $this->xlsxColumnName($columnCount);
+
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . '<sheetViews><sheetView workbookViewId="0"><pane ySplit="' . ($headerRowIndex) . '" topLeftCell="A' . ($headerRowIndex + 1) . '" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+            . '<cols>' . collect(range(1, $columnCount))->map(fn ($i) => '<col min="' . $i . '" max="' . $i . '" width="' . ($i === 1 ? 8 : 24) . '" customWidth="1"/>')->implode('') . '</cols>'
+            . '<sheetData>' . implode('', $xmlRows) . '</sheetData>'
+            . '<autoFilter ref="A' . $headerRowIndex . ':' . $lastColumn . max($headerRowIndex, $rowIndex - 1) . '"/>'
+            . '</worksheet>';
+    }
+
+    private function xlsxRow(int $rowIndex, array $values, int $style = 0): string
+    {
+        $cells = [];
+        foreach (array_values($values) as $columnIndex => $value) {
+            $cell = $this->xlsxColumnName($columnIndex + 1) . $rowIndex;
+            $styleAttribute = $style > 0 ? ' s="' . $style . '"' : '';
+            $cells[] = '<c r="' . $cell . '" t="inlineStr"' . $styleAttribute . '><is><t xml:space="preserve">' . $this->xlsxEscapeText($value) . '</t></is></c>';
+        }
+
+        return '<row r="' . $rowIndex . '">' . implode('', $cells) . '</row>';
+    }
+
+    private function xlsxColumnName(int $index): string
+    {
+        $name = '';
+        while ($index > 0) {
+            $index--;
+            $name = chr(65 + ($index % 26)) . $name;
+            $index = intdiv($index, 26);
+        }
+
+        return $name;
+    }
+
+    private function xlsxEscapeText($value): string
+    {
+        $text = trim((string) ($value ?? ''));
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $text) ?? '';
+
+        return htmlspecialchars($text, ENT_XML1 | ENT_COMPAT, 'UTF-8');
+    }
+
+    private function xlsxEscapeAttribute(string $value): string
+    {
+        return htmlspecialchars($value, ENT_XML1 | ENT_COMPAT, 'UTF-8');
+    }
+
+    private function outputsExcelColumns(): array
+    {
+        return [
+            '#',
+            'ชื่อผลงาน',
+            'ประเภท',
+            'ปี พ.ศ.',
+            'ที่มา',
+            'รายการอ้างอิง',
+            'รายละเอียด',
+            'ลิงก์ผลงาน',
+            'Journal',
+            'Ranking',
+            'Impact Factor',
+            'Authors',
+            'Conference',
+            'ประเภทการนำเสนอ',
+            'สถานที่',
+            'Presenter',
+            'Awardee',
+            'Book',
+            'Publisher',
+            'Pages',
+            'ISBN',
+            'วันที่ลงข้อมูล',
+        ];
+    }
+
+    private function outputExcelRow($row, int $index): array
+    {
+        $created = $row->created_at ? Carbon::parse($row->created_at) : null;
+        $createdLabel = $created ? $created->locale('th')->translatedFormat('j F') . ' ' . ($created->year + 543) : '-';
+        $type = (string) ($row->type ?? '');
+
+        return [
+            $index,
+            $row->title ?: '-',
+            $row->type ?: '-',
+            $row->year_be ?: '-',
+            trim((string) ($row->source_badge ?? '')) !== '' ? $row->source_badge : 'Project',
+            $row->project_label ?: '-',
+            $row->detail ?: '-',
+            $row->related_link ?: ($row->link ?: '-'),
+            $this->specialFieldValue($row, 'Journal') ?: '-',
+            $this->specialFieldValue($row, 'Ranking') ?: '-',
+            $this->specialFieldValue($row, 'IF') ?: '-',
+            str_starts_with($type, 'EA101') || str_contains($type, 'Research Paper') ? ($this->specialPeopleValue($row) ?: '-') : '-',
+            $this->specialFieldValue($row, 'Conference') ?: '-',
+            $this->specialFieldValue($row, 'Type') ?: '-',
+            $this->specialFieldValue($row, 'Place') ?: '-',
+            str_starts_with($type, 'EA103') || str_contains($type, 'Presentations') ? ($this->specialPeopleValue($row) ?: '-') : '-',
+            str_starts_with($type, 'EA118') || str_contains($type, 'Award') ? ($this->specialPeopleValue($row) ?: '-') : '-',
+            $this->specialFieldValue($row, 'Book') ?: '-',
+            $this->specialFieldValue($row, 'Publisher') ?: '-',
+            $this->specialFieldValue($row, 'Pages') ?: '-',
+            $this->specialFieldValue($row, 'ISBN') ?: '-',
+            $createdLabel,
+        ];
+    }
+
+    private function specialFieldValue($row, string $label): string
+    {
+        $field = collect(data_get($row, 'special.fields', []))->firstWhere('label', $label);
+
+        return trim((string) ($field['value'] ?? ''));
+    }
+
+    private function specialPeopleValue($row): string
+    {
+        return collect(data_get($row, 'special.people', []))->filter()->implode(', ');
+    }
+
+    private function categoryExcelRow($row, array $columns, int $index): array
+    {
+        $values = ['#' => $index];
+        foreach ($columns as $key => $label) {
+            $values[$key] = $this->categoryExcelValue($row, (string) $key) ?: '-';
+        }
+
+        return $values;
+    }
+
+    private function categoryExcelValue($row, string $key): string
+    {
+        if ($key === 'source_badge') {
+            return trim((string) ($row->source_badge ?? '')) !== '' ? (string) $row->source_badge : 'Project';
+        }
+
+        if ($key === 'authors_text') {
+            if (!empty($row->authors_text)) {
+                return (string) $row->authors_text;
+            }
+
+            if (!empty($row->authors_by_role) && is_iterable($row->authors_by_role)) {
+                $roleLabels = [
+                    'first' => 'First-author',
+                    'co' => 'Co-author',
+                    'corresponding' => 'Corresponding-author',
+                ];
+
+                return collect($row->authors_by_role)
+                    ->flatMap(function ($names, $role) use ($roleLabels) {
+                        $roleLabel = $roleLabels[$role] ?? ucfirst((string) $role);
+
+                        return collect($names)
+                            ->filter()
+                            ->map(fn ($name) => "{$name} ({$roleLabel})");
+                    })
+                    ->values()
+                    ->implode(', ');
+            }
+
+            if (!empty($row->authors) && is_iterable($row->authors)) {
+                return collect($row->authors)->filter()->implode(', ');
+            }
+        }
+
+        return trim((string) data_get($row, $key, ''));
+    }
+
+    private function categoryExcelMetaRows(string $title, Collection $rows, Request $request): array
+    {
+        $generatedAt = now()->setTimezone('Asia/Bangkok');
+        $generatedLabel = $generatedAt->locale('th')->translatedFormat('j F') . ' ' . ($generatedAt->year + 543) . $generatedAt->translatedFormat(' เวลา H:i');
+        $filters = $this->buildCategoryExportFilters($request);
+
+        return [
+            [$title],
+            ['ออกรายงาน', $generatedLabel],
+            ['เงื่อนไข', $filters->isNotEmpty() ? $filters->implode(' | ') : 'ทั้งหมด'],
+            ['ทั้งหมด', number_format($rows->count()) . ' รายการ'],
+        ];
+    }
+
+    private function exportMinDate(Collection $rows): ?string
+    {
+        $date = $rows
+            ->pluck('created_at')
+            ->filter()
+            ->map(fn ($value) => Carbon::parse($value)->format('Y-m-d'))
+            ->sort()
+            ->first();
+
+        return $date ?: null;
+    }
+
+    private function filterRowsByExportDateRange(Collection $rows, Request $request): Collection
+    {
+        if ($request->input('export_scope') !== 'range') {
+            return $rows->values();
+        }
+
+        $start = $this->normalizeThaiDateInput($request->input('export_start_date'));
+        $end = $this->normalizeThaiDateInput($request->input('export_end_date'));
+
+        if ($start) {
+            $startDate = Carbon::parse($start, 'Asia/Bangkok')->startOfDay();
+            $rows = $rows->filter(fn ($row) => !empty($row->created_at) && Carbon::parse($row->created_at)->greaterThanOrEqualTo($startDate));
+        }
+
+        if ($end) {
+            $endDate = Carbon::parse($end, 'Asia/Bangkok')->endOfDay();
+            $rows = $rows->filter(fn ($row) => !empty($row->created_at) && Carbon::parse($row->created_at)->lessThanOrEqualTo($endDate));
+        }
+
+        return $rows->values();
+    }
+
+    private function exportDateRangeFilterLabel(Request $request): ?string
+    {
+        if ($request->input('export_scope') !== 'range') {
+            return null;
+        }
+
+        $format = static function (?string $date): ?string {
+            if (!$date) {
+                return null;
+            }
+            $carbon = Carbon::parse($date);
+            return $carbon->format('d/m/') . ($carbon->year + 543);
+        };
+
+        $start = $format($this->normalizeThaiDateInput($request->input('export_start_date')));
+        $end = $format($this->normalizeThaiDateInput($request->input('export_end_date')));
+
+        return 'วันที่ลงข้อมูล: ' . (($start ?: 'เริ่มต้น') . ' - ' . ($end ?: 'ปัจจุบัน'));
+    }
+
+    private function buildCategoryExportFilters(Request $request): Collection
+    {
+        return collect([
+            $request->filled('search') ? 'ค้นหา: ' . trim((string) $request->input('search')) : null,
+            $request->filled('author') ? 'Author: ' . trim((string) $request->input('author')) : null,
+            $request->filled('presenter') ? 'ผู้นำเสนอ: ' . trim((string) $request->input('presenter')) : null,
+            $request->filled('activity') ? 'กิจกรรม: ' . trim((string) $request->input('activity')) : null,
+            $request->filled('year') ? 'ปี: ' . trim((string) $request->input('year')) : null,
+            $this->exportDateRangeFilterLabel($request),
+        ])->filter()->values();
+    }
+
+    private function summarizeCategoryRows(Collection $rows, string $kind): array
+    {
+        return match ($kind) {
+            'presentations' => [
+                'total_presentations' => $rows->count(),
+                'unique_presenters' => $rows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->count(),
+                'top_presenter' => $this->topLabel($rows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()),
+                'top_conference' => $this->topLabel($rows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()),
+            ],
+            'textbooks' => [
+                'total_textbooks' => $rows->count(),
+                'unique_authors' => $rows->flatMap(fn ($row) => collect($row->authors ?? []))->filter()->unique()->count(),
+                'top_publisher' => $this->topLabel($rows->pluck('publisher_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()),
+            ],
+            default => [
+                'total_papers' => $rows->count(),
+                'unique_authors' => $rows->flatMap(fn ($paper) => collect($paper->authors ?? []))->filter()->unique()->count(),
+                'top_journal' => $this->topLabel($rows->pluck('journal')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()),
+                'top_quartile' => $this->topLabel($rows->pluck('quartile')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()),
+            ],
+        };
     }
 
     private function buildPresentationsPayload(Request $request, string $sort, string $dir): array
@@ -2096,7 +2886,7 @@ class OutputController extends Controller
                     return (object) [
                         'output_id' => $output->id,
                         'output_code' => null,
-                        'source_badge' => 'งานนอกโครงการ',
+                        'source_badge' => 'Mission',
                         'conference_id' => $conference['id'] ?? ('bo-' . $output->id . '-' . $index),
                         'title' => $output->title ?: '-',
                         'detail' => $output->project_output ?: null,
@@ -2672,7 +3462,7 @@ class OutputController extends Controller
                 return (object) [
                     'id' => $output->id,
                     'output_code' => null,
-                    'source_badge' => 'งานนอกโครงการ',
+                    'source_badge' => 'Mission',
                     'title' => $output->title ?: '-',
                     'type' => $output->type ?: '-',
                     'year_be' => $yearBe,
@@ -2680,7 +3470,7 @@ class OutputController extends Controller
                     'quartile' => $output->quartile ?: '-',
                     'impact_factor' => $output->impact_factor,
                     'detail' => $output->project_output ?: null,
-                    'project_label' => $output->task?->title ?: 'งานนอกโครงการวิจัย',
+                    'project_label' => $output->task?->title ?: 'Mission',
                     'project_code' => null,
                     'project_link' => $output->task ? route('back_office.show', $output->task) : null,
                     'authors' => $authors->pluck('name')->filter()->values(),
@@ -2950,7 +3740,7 @@ class OutputController extends Controller
                     'chapter_pages' => $output->chapter_pages ?: '-',
                     'year_be' => $yearBe,
                     'detail' => $output->project_output ?: null,
-                    'project_label' => $output->task?->title ?: 'งานนอกโครงการวิจัย',
+                    'project_label' => $output->task?->title ?: 'Mission',
                     'project_code' => null,
                     'project_link' => $output->task ? route('back_office.show', $output->task) : null,
                     'authors' => $authors,
@@ -3533,17 +4323,17 @@ class OutputController extends Controller
 
                 return (object) [
                     'project_id' => 'backoffice-' . $task->id,
-                    'project_name' => trim((string) ($task->title ?? '')) ?: 'งานนอกโครงการ',
+                    'project_name' => trim((string) ($task->title ?? '')) ?: 'Mission',
                     'project_code' => null,
                     'year_be' => $yearBe,
-                    'execution_status' => 'งานนอกโครงการ',
-                    'content_theme' => 'งานนอกโครงการวิจัย',
-                    'project_type_label' => 'Back Office Task',
-                    'role' => 'Back Office',
-                    'roles' => ['Back Office'],
+                    'execution_status' => 'Mission',
+                    'content_theme' => 'Mission',
+                    'project_type_label' => 'Mission',
+                    'role' => 'Mission',
+                    'roles' => ['Mission'],
                     'sort_year' => $yearBe ?? 0,
                     'link' => route('back_office.show', $task),
-                    'source_label' => 'Back Office',
+                    'source_label' => 'Mission',
                 ];
             });
 
@@ -3652,8 +4442,8 @@ class OutputController extends Controller
                     'impact_factor' => $output->impact_factor,
                     'roles' => $userRoles,
                     'author_line' => $authors->pluck('name')->implode(', '),
-                    'source_label' => 'Back Office',
-                    'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
+                    'source_label' => 'Mission',
+                    'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'Mission',
                     'reference_link' => $output->task ? route('back_office.show', $output->task) : null,
                     'link' => $this->extractFirstUrlFromText($output->project_output)
                         ?: ($output->task ? route('back_office.show', $output->task) : null),
@@ -3767,8 +4557,8 @@ class OutputController extends Controller
                             'location' => trim((string) (($conference['location'] ?? '') ?: '')) ?: null,
                             'presenter_name' => $presenter !== '' ? $presenter : ($authors->first() ?: $user->full_name),
                             'year_be' => $this->normalizeYearFilter($output->year),
-                            'source_label' => 'Back Office',
-                            'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
+                            'source_label' => 'Mission',
+                            'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'Mission',
                             'link' => $this->extractFirstUrlFromText($output->project_output)
                                 ?: ($output->task ? route('back_office.show', $output->task) : null),
                             'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
@@ -3861,8 +4651,8 @@ class OutputController extends Controller
                     'publisher_name' => trim((string) ($output->publisher_name ?? '')) ?: '-',
                     'chapter_pages' => trim((string) ($output->chapter_pages ?? '')) ?: null,
                     'year_be' => $this->normalizeYearFilter($output->year),
-                    'source_label' => 'Back Office',
-                    'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
+                    'source_label' => 'Mission',
+                    'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'Mission',
                     'link' => $this->extractFirstUrlFromText($output->project_output)
                         ?: ($output->task ? route('back_office.show', $output->task) : null),
                     'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
@@ -4041,8 +4831,8 @@ class OutputController extends Controller
                     'year_be' => $this->normalizeYearFilter($output->year),
                     'contributors' => $contributors->implode(', '),
                     'roles' => $userRoles,
-                    'source_label' => 'Back Office',
-                    'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
+                    'source_label' => 'Mission',
+                    'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'Mission',
                     'link' => $this->extractFirstUrlFromText($output->project_output)
                         ?: ($output->task ? route('back_office.show', $output->task) : null),
                     'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
@@ -4182,8 +4972,8 @@ class OutputController extends Controller
                     'type_label' => $this->resolveOutputTypeLabel($typeCode),
                     'year_be' => $this->normalizeYearFilter($output->year),
                     'contributors' => $contributors,
-                    'source_label' => 'Back Office',
-                    'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'งานนอกโครงการวิจัย',
+                    'source_label' => 'Mission',
+                    'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'Mission',
                     'link' => $this->extractFirstUrlFromText($output->project_output)
                         ?: ($output->task ? route('back_office.show', $output->task) : null),
                     'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,

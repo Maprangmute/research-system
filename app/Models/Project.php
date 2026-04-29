@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\ProjectLog;
 use Illuminate\Support\Facades\Auth;
@@ -219,6 +220,11 @@ class Project extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(ProjectLog::class, 'project_id');
+    }
+
+    public function latestLog(): HasOne
+    {
+        return $this->hasOne(ProjectLog::class, 'project_id')->latestOfMany();
     }
 
     // public function updatedBy()

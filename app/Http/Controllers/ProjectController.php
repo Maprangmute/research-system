@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use PDF;
@@ -117,6 +118,7 @@ class ProjectController extends Controller
         $issueOverdue = $request->boolean('issue_overdue');
         $issueMissingDates = $request->boolean('issue_missing_dates');
         $issueDuplicates = $request->boolean('issue_duplicates');
+        $issueNoOutput = $request->boolean('issue_no_output');
 
         if ($request->filled('last_update')) {
             $now = now();
@@ -158,7 +160,7 @@ class ProjectController extends Controller
             $this->applyProjectNameSearch($query, $searchScope, $search);
         }
 
-        if ($issueOverdue || $issueMissingDates || $issueDuplicates) {
+        if ($issueOverdue || $issueMissingDates || $issueDuplicates || $issueNoOutput) {
             $startDateExpr = $this->projectNormalizedDateSql('start_date');
             $endDateExpr = $this->projectNormalizedDateSql('end_date');
             $duplicateProjectIds = $issueDuplicates ? $this->findDuplicateProjectIds(clone $query) : [];
@@ -167,6 +169,7 @@ class ProjectController extends Controller
                 $issueOverdue,
                 $issueMissingDates,
                 $issueDuplicates,
+                $issueNoOutput,
                 $startDateExpr,
                 $endDateExpr,
                 $duplicateProjectIds
@@ -185,6 +188,10 @@ class ProjectController extends Controller
                     } else {
                         $issueQuery->orWhereIn('id', $duplicateProjectIds);
                     }
+                }
+
+                if ($issueNoOutput) {
+                    $issueQuery->orWhereDoesntHave('outputs');
                 }
             });
         }
@@ -269,6 +276,798 @@ class ProjectController extends Controller
             'budgetMin' => $budgetMin,
             'budgetMax' => $budgetMax,
         ]);
+    }
+
+    public function dataQualityReport(Request $request)
+    {
+        $payload = $this->buildProjectDataQualityReportPayload($request);
+        $rows = $payload['rows'];
+
+        return view('outputs.project-data-quality', array_merge($payload, [
+            'rows' => $this->paginateProjectDataQualityRows($rows, $request, 12),
+            'totalRows' => $rows->count(),
+            'exportMinDate' => $this->projectDataQualityExportMinDate($rows),
+        ]));
+    }
+
+    public function dataQualityReportPdf(Request $request)
+    {
+        ini_set('pcre.backtrack_limit', '5000000');
+
+        $payload = $this->buildProjectDataQualityReportPayload($request);
+        $rows = $this->filterProjectDataQualityRowsByExportDateRange($payload['rows'], $request);
+        $summary = $this->summarizeProjectDataQualityRows($rows);
+        $generatedAt = now('Asia/Bangkok');
+        $reporter = trim((string) (auth()->user()?->full_name ?? '')) ?: 'ผู้ใช้ระบบ';
+        $filters = $this->buildProjectDataQualityExportFilters($request);
+        $filename = $this->buildProjectDataQualityExportFilename('PROJECT_DATA_QUALITY', 'pdf');
+
+        $pdf = PDF::loadView('outputs.project-data-quality-pdf', [
+            'rows' => $rows,
+            'summary' => $summary,
+            'categoryOptions' => collect($this->projectDataQualityCategories()),
+            'reporter' => $reporter,
+            'generatedAt' => $generatedAt,
+            'filters' => $filters,
+        ], [], [
+            'format' => 'A4-L',
+        ]);
+
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'project_data_quality_pdf',
+            'subject_label' => 'Project Data Quality Report',
+        ], $request);
+
+        return $pdf->stream($filename);
+    }
+
+    public function dataQualityReportExcel(Request $request)
+    {
+        $payload = $this->buildProjectDataQualityReportPayload($request);
+        $rows = $this->filterProjectDataQualityRowsByExportDateRange($payload['rows'], $request);
+        $summary = $this->summarizeProjectDataQualityRows($rows);
+        $filename = $this->buildProjectDataQualityExportFilename('PROJECT_DATA_QUALITY', 'xlsx');
+        $columns = [
+            '#',
+            'Project ID',
+            'ชื่อโครงการ',
+            'PI',
+            'สถานะ',
+            'Theme / ประเภท',
+            'จำนวน Output',
+            'ระดับ',
+            'จำนวน Issue',
+            'หมวดปัญหา',
+            'รายละเอียดปัญหา',
+            'Fields',
+            'ควรทำ',
+            'สร้างโดย',
+            'สร้างเมื่อ',
+            'อัปเดทล่าสุดโดย',
+            'อัปเดทล่าสุดเมื่อ',
+        ];
+
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'project_data_quality_excel',
+            'subject_label' => 'Project Data Quality Report',
+        ], $request);
+
+        return $this->projectDataQualityXlsxResponse(
+            $filename,
+            'Data Quality',
+            $columns,
+            $this->projectDataQualityExcelRows($rows),
+            [
+                ['รายงานข้อมูลผิดพลาดของโปรเจค'],
+                ['เงื่อนไข', $this->buildProjectDataQualityExportFilters($request)->implode(' | ') ?: 'ทั้งหมด'],
+                ['ออกรายงาน', $this->formatProjectDateTimeThai(now('Asia/Bangkok'))],
+                ['ผู้สร้างรายงาน', trim((string) (auth()->user()?->full_name ?? '')) ?: 'ผู้ใช้ระบบ'],
+                ['สรุป', 'Projects ' . number_format($summary['projects']) . ' | Issues ' . number_format($summary['issues'])],
+            ]
+        );
+    }
+
+    private function buildProjectDataQualityReportPayload(Request $request): array
+    {
+        $user = auth()->user();
+        $applyPermission = function ($q) use ($user) {
+            if ($user->isAdminLike()) {
+                return;
+            }
+
+            $fullName = trim(($user->prefix ?? '').' '.$user->name);
+            $q->where(function ($inner) use ($fullName, $user) {
+                $inner->where('user_id', $user->id)
+                    ->orWhereHas('fteRoles', function ($subQ) use ($fullName) {
+                        $subQ->where('name', $fullName);
+                    });
+            });
+        };
+
+        $baseQuery = Project::query();
+        $applyPermission($baseQuery);
+        $duplicateProjectIds = $this->findDuplicateProjectIds(clone $baseQuery);
+
+        $projectsQuery = Project::query()
+            ->withCount(['outputs', 'fteRoles', 'progressReports'])
+            ->with([
+                'createdBy:id,prefix,name',
+                'updatedBy:id,prefix,name',
+                'latestLog' => fn ($query) => $query->select([
+                    'project_logs.id',
+                    'project_logs.project_id',
+                    'project_logs.user_id',
+                    'project_logs.action',
+                    'project_logs.created_at',
+                ]),
+                'latestLog.user:id,prefix,name',
+                'fteRoles:id,project_id,name,fte_value',
+                'progressReports:id,project_id,submit_date,created_at',
+            ]);
+        $applyPermission($projectsQuery);
+
+        $rows = $this->buildProjectDataQualityRows($projectsQuery->get(), $duplicateProjectIds);
+
+        $category = trim((string) $request->input('category', ''));
+        if ($category !== '') {
+            $rows = $rows
+                ->filter(fn ($row) => collect($row->issues)->contains(fn ($issue) => $issue['category'] === $category))
+                ->values();
+        }
+
+        $severity = trim((string) $request->input('severity', ''));
+        if ($severity !== '') {
+            $rows = $rows
+                ->filter(fn ($row) => (int) $row->severity_score === (int) $severity)
+                ->values();
+        }
+
+        $outputStatus = trim((string) $request->input('output_status', ''));
+        if ($outputStatus === 'none') {
+            $rows = $rows->filter(fn ($row) => (int) $row->outputs_count === 0)->values();
+        } elseif ($outputStatus === 'has') {
+            $rows = $rows->filter(fn ($row) => (int) $row->outputs_count > 0)->values();
+        }
+
+        $activity = trim((string) $request->input('activity', ''));
+        if ($activity !== '') {
+            $now = now('Asia/Bangkok');
+            $rows = $rows->filter(function ($row) use ($activity, $now) {
+                $updatedAt = $row->updated_at ? Carbon::parse($row->updated_at)->setTimezone('Asia/Bangkok') : null;
+                return match ($activity) {
+                    'updated_30' => $updatedAt && $updatedAt->gte($now->copy()->subDays(30)),
+                    'updated_90' => $updatedAt && $updatedAt->gte($now->copy()->subDays(90)),
+                    'stale_90' => ! $updatedAt || $updatedAt->lt($now->copy()->subDays(90)),
+                    default => true,
+                };
+            })->values();
+        }
+
+        $search = mb_strtolower(trim((string) $request->input('search', '')), 'UTF-8');
+        if ($search !== '') {
+            $rows = $rows
+                ->filter(function ($row) use ($search) {
+                    $haystack = mb_strtolower(implode(' ', array_filter([
+                        $row->project_code,
+                        $row->project_name,
+                        $row->pi_name,
+                        $row->project_type,
+                        $row->planning_status,
+                        collect($row->issues)->pluck('reason')->implode(' '),
+                        collect($row->issues)->pluck('fields')->flatten()->implode(' '),
+                    ])), 'UTF-8');
+
+                    return str_contains($haystack, $search);
+                })
+                ->values();
+        }
+
+        $sort = trim((string) $request->input('sort', 'severity'));
+        $rows = (match ($sort) {
+            'project_code' => $rows->sortBy(fn ($row) => $row->project_code ?: ''),
+            'outputs' => $rows->sortBy(fn ($row) => (int) $row->outputs_count),
+            'issues' => $rows->sortByDesc(fn ($row) => count($row->issues)),
+            'updated_at' => $rows->sortByDesc(fn ($row) => $row->updated_at?->timestamp ?? 0),
+            default => $rows->sortByDesc(fn ($row) => ((int) $row->severity_score * 100) + count($row->issues)),
+        })->values();
+
+        $summary = $this->summarizeProjectDataQualityRows($rows);
+        $categoryOptions = collect($this->projectDataQualityCategories());
+
+        return [
+            'rows' => $rows,
+            'summary' => $summary,
+            'categoryOptions' => $categoryOptions,
+            'selectedCategory' => $category,
+            'selectedSeverity' => $severity,
+            'selectedOutputStatus' => $outputStatus,
+            'selectedActivity' => $activity,
+            'search' => $request->input('search', ''),
+            'sort' => $sort,
+        ];
+    }
+
+    private function projectDataQualityCategories(): array
+    {
+        return [
+            'duplicate' => 'ข้อมูลซ้ำ',
+            'incomplete' => 'ข้อมูลไม่ครบ / วันที่ไม่ครบ',
+            'overdue' => 'Overdue',
+            'no_output' => 'ไม่มี output',
+            'other' => 'อื่นๆ',
+        ];
+    }
+
+    private function buildProjectDataQualityRows(Collection $projects, array $duplicateProjectIds): Collection
+    {
+        $duplicateLookup = array_fill_keys(array_map('intval', $duplicateProjectIds), true);
+        $today = now('Asia/Bangkok')->startOfDay();
+
+        return $projects
+            ->map(function (Project $project) use ($duplicateLookup, $today) {
+                $issues = [];
+                $startDate = $this->parseProjectDateInput((string) $project->start_date);
+                $endDate = $this->parseProjectDateInput((string) $project->end_date);
+                $teamStartDate = $this->parseProjectDateInput((string) $project->team_start_date);
+                $teamEndDate = $this->parseProjectDateInput((string) $project->team_end_date);
+
+                if (isset($duplicateLookup[(int) $project->id])) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'duplicate',
+                        'ข้อมูลซ้ำ',
+                        'ชื่อโครงการซ้ำหรือใกล้เคียงกับโปรเจคอื่นในระบบ',
+                        ['project_name_th'],
+                        'ตรวจชื่อ ปี และ Project ID ก่อน merge หรือแก้ชื่อให้ชัดเจน',
+                        4
+                    );
+                }
+
+                $missingCore = collect([
+                    'Project ID' => $project->project_code,
+                    'ชื่อโครงการ (TH)' => $project->project_name_th,
+                    'PI' => $project->pi_name,
+                    'กลุ่มเนื้อหาหลักของงาน (Content/Theme)' => $project->project_type,
+                    'ลักษณะโครงการ' => $project->project_list,
+                    'ประเภทของโครงการ/กิจกรรม (TYPE)' => $project->theme,
+                    'เอกสารโครงการ (proposal, IRB)' => $project->shortcut_link,
+                    'ขนาด' => $project->size,
+                    'รหัสโครงการ R' => $project->r_code,
+                    'ปีโปรเจค' => $project->start_year,
+                    'สถานะ' => $project->planning_status,
+                ])->filter(fn ($value) => $this->isProjectDataQualityBlank($value))->keys()->values();
+
+                $missingDates = collect([
+                    'BA001 proposal_date' => $project->proposal_date,
+                    'BC101 contract_date' => $project->contract_date,
+                    'BC102 start_date' => $project->start_date,
+                    'BC103 end_date' => $project->end_date,
+                    'team_start_date' => $project->team_start_date,
+                    'team_end_date' => $project->team_end_date,
+                ])->filter(fn ($value) => $this->isProjectDataQualityBlank($value))->keys()->values();
+
+                if ($missingCore->isNotEmpty() || $missingDates->isNotEmpty()) {
+                    $reasonParts = [];
+                    if ($missingCore->isNotEmpty()) {
+                        $reasonParts[] = 'ข้อมูลหลักไม่ครบ: '.$missingCore->implode(', ');
+                    }
+                    if ($missingDates->isNotEmpty()) {
+                        $reasonParts[] = 'วันที่ไม่ครบ: '.$missingDates->implode(', ');
+                    }
+
+                    $issues[] = $this->projectDataQualityIssue(
+                        'incomplete',
+                        'ข้อมูลไม่ครบ / วันที่ไม่ครบ',
+                        implode(' | ', $reasonParts),
+                        $missingCore->merge($missingDates)->all(),
+                        'เติมข้อมูลในหน้าแก้ไขโปรเจคให้ครบก่อนใช้รายงานหรือ dashboard',
+                        3
+                    );
+                }
+
+                $hasNoFunding = $this->projectHasNoFunding($project);
+                if ($this->isProjectDataQualityBlank($project->funding_type)) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'incomplete',
+                        'ข้อมูลแหล่งทุนไม่ครบ',
+                        'ยังไม่ได้ระบุ DA102 - ประเภทแหล่งทุน',
+                        ['DA102 funding_type'],
+                        'เลือกประเภทแหล่งทุนเป็น ไม่มีแหล่งทุน / ภายใน / ภายนอก ให้ชัดเจน',
+                        3
+                    );
+                } elseif (! $hasNoFunding) {
+                    $missingFunding = collect([
+                        'DA103 funding_source' => $project->funding_source,
+                        'DA104 funding_org_type' => $project->funding_org_type,
+                        'DA105 funding_name' => $project->funding_name,
+                    ])->filter(fn ($value) => $this->isProjectDataQualityBlank($value))->keys()->values();
+
+                    $budgetMissing = $project->budget === null || (float) $project->budget <= 0;
+                    if ($budgetMissing) {
+                        $missingFunding->push('DA106 budget');
+                    }
+
+                    if ($missingFunding->isNotEmpty()) {
+                        $issues[] = $this->projectDataQualityIssue(
+                            'incomplete',
+                            'ข้อมูลแหล่งทุนไม่ครบ',
+                            'DA102 ระบุว่า '.$project->funding_type.' แต่ข้อมูลแหล่งทุนยังไม่ครบ: '.$missingFunding->implode(', '),
+                            $missingFunding->all(),
+                            'ถ้ามีแหล่งทุน ให้กรอก DA103-DA106 ให้ครบ; ถ้าไม่มีทุนให้เลือก DA102 เป็น ไม่มีแหล่งทุน',
+                            3
+                        );
+                    }
+                }
+
+                if ($startDate && $endDate && $endDate->lt($startDate)) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'incomplete',
+                        'วันที่ผิดลำดับ',
+                        'วันที่สิ้นสุดตามสัญญาน้อยกว่าวันที่เริ่มตามสัญญา',
+                        ['start_date', 'end_date'],
+                        'ตรวจ BC102 และ BC103 อีกครั้ง',
+                        4
+                    );
+                }
+
+                if ($teamStartDate && $teamEndDate && $teamEndDate->lt($teamStartDate)) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'incomplete',
+                        'วันที่ทีมผิดลำดับ',
+                        'วันที่สิ้นสุดการทำงานของทีมวิจัยน้อยกว่าวันที่เริ่มทำงาน',
+                        ['team_start_date', 'team_end_date'],
+                        'ตรวจช่วงเวลาทำงานของทีมวิจัย',
+                        3
+                    );
+                }
+
+                if ($endDate && $endDate->lt($today) && ! $this->projectLooksClosed($project)) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'overdue',
+                        'Overdue',
+                        'สิ้นสุดตามสัญญา '.$this->formatProjectDateThai($endDate).' แล้ว แต่สถานะยังไม่ปิด/เสร็จสิ้น',
+                        ['end_date', 'planning_status', 'closure_status'],
+                        'อัปเดตสถานะโครงการหรือปรับ end_date หากมีการขยายเวลา',
+                        4
+                    );
+                }
+
+                if ((int) ($project->outputs_count ?? 0) === 0) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'no_output',
+                        'ไม่มี output',
+                        'โปรเจคนี้ยังไม่มี output ที่ผูกกับโครงการ',
+                        ['outputs'],
+                        'ตรวจว่ามีผลงานที่ควรเพิ่ม หรือยืนยันว่าโครงการยังไม่เกิด output',
+                        3
+                    );
+                }
+
+                if ((int) ($project->fte_roles_count ?? 0) === 0) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'other',
+                        'ไม่มี FTE',
+                        'ยังไม่มีรายชื่อหรือภาระงาน FTE ในโปรเจค',
+                        ['fte_roles'],
+                        'เพิ่มผู้รับผิดชอบ/FTE เพื่อให้ workload และ dashboard ถูกต้อง',
+                        2
+                    );
+                } elseif (($project->fteRoles ?? collect())->contains(fn ($role) => $role->fte_value === null || (float) $role->fte_value <= 0)) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'other',
+                        'FTE ไม่ครบ',
+                        'มี FTE บางรายการที่ยังไม่ได้กรอกค่า หรือค่าเป็น 0',
+                        ['fte_value'],
+                        'ตรวจค่า FTE ของผู้เกี่ยวข้องในโปรเจค',
+                        2
+                    );
+                }
+
+                if ((int) ($project->progress_reports_count ?? 0) === 0 && ! $this->projectLooksClosed($project)) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'other',
+                        'ไม่มี progress report',
+                        'ยังไม่มี progress report สำหรับโปรเจคที่ยังไม่ปิด',
+                        ['progress_reports'],
+                        'เพิ่ม progress report หรือปิดสถานะหากโครงการเสร็จแล้ว',
+                        1
+                    );
+                }
+
+                $updatedAt = $project->updated_at ? Carbon::parse($project->updated_at)->setTimezone('Asia/Bangkok') : null;
+                if ($updatedAt && $updatedAt->lt(now('Asia/Bangkok')->subMonths(3)) && ! $this->projectLooksClosed($project)) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'other',
+                        'ไม่อัปเดตเกิน 3 เดือน',
+                        'ข้อมูลโปรเจคไม่ได้อัปเดตตั้งแต่ '.$this->formatProjectDateThai($updatedAt),
+                        ['updated_at'],
+                        'ตรวจสถานะล่าสุด หรือเพิ่ม progress report',
+                        1
+                    );
+                }
+
+                if ($issues === []) {
+                    return null;
+                }
+
+                $createdAt = $project->created_at ? Carbon::parse($project->created_at)->setTimezone('Asia/Bangkok') : null;
+                $updatedAtForDisplay = $project->latestLog?->created_at
+                    ? Carbon::parse($project->latestLog->created_at)->setTimezone('Asia/Bangkok')
+                    : ($project->updated_at ? Carbon::parse($project->updated_at)->setTimezone('Asia/Bangkok') : null);
+                $updatedUser = $project->latestLog?->user ?: $project->updatedBy ?: $project->createdBy;
+
+                return (object) [
+                    'project' => $project,
+                    'project_code' => trim((string) ($project->project_code ?? '')) ?: '-',
+                    'project_name' => trim((string) ($project->project_name_th ?? '')) ?: '-',
+                    'pi_name' => trim((string) ($project->pi_name ?? '')) ?: '-',
+                    'project_type' => trim(implode(' / ', array_filter([
+                        trim((string) ($project->project_type ?? '')),
+                        trim((string) ($project->theme ?? '')),
+                    ]))) ?: '-',
+                    'planning_status' => trim((string) ($project->planning_status ?? '')) ?: 'ยังไม่ได้ระบุ',
+                    'outputs_count' => (int) ($project->outputs_count ?? 0),
+                    'updated_at' => $project->updated_at,
+                    'created_by_name' => $this->projectDataQualityUserName($project->createdBy),
+                    'created_at_label' => $createdAt ? $this->formatProjectDateTimeThai($createdAt) : '-',
+                    'updated_by_name' => $this->projectDataQualityUserName($updatedUser),
+                    'updated_at_label' => $updatedAtForDisplay ? $this->formatProjectDateTimeThai($updatedAtForDisplay) : '-',
+                    'updated_action_label' => $project->latestLog?->action_label ?? null,
+                    'issues' => $issues,
+                    'severity_score' => collect($issues)->max('severity') ?? 0,
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
+    private function projectDataQualityIssue(string $category, string $label, string $reason, array $fields, string $suggestion, int $severity): array
+    {
+        return [
+            'category' => $category,
+            'label' => $label,
+            'reason' => $reason,
+            'fields' => array_values(array_filter($fields)),
+            'suggestion' => $suggestion,
+            'severity' => $severity,
+        ];
+    }
+
+    private function isProjectDataQualityBlank($value): bool
+    {
+        $text = trim((string) ($value ?? ''));
+        $normalized = mb_strtolower($text, 'UTF-8');
+
+        return $text === ''
+            || in_array($normalized, ['-', '–', '—', 'n/a', 'na', 'null', 'ไม่มี', 'ไม่ระบุ'], true);
+    }
+
+    private function projectHasNoFunding(Project $project): bool
+    {
+        $fundingType = mb_strtolower(trim((string) ($project->funding_type ?? '')), 'UTF-8');
+
+        return $fundingType !== ''
+            && (str_contains($fundingType, 'ไม่มีแหล่งทุน')
+                || str_contains($fundingType, 'ไม่มีทุน')
+                || $fundingType === 'no funding');
+    }
+
+    private function summarizeProjectDataQualityRows(Collection $rows): array
+    {
+        $issues = $rows->flatMap(fn ($row) => $row->issues);
+
+        return [
+            'projects' => $rows->count(),
+            'issues' => $issues->count(),
+            'by_category' => collect($this->projectDataQualityCategories())
+                ->mapWithKeys(fn ($label, $key) => [$key => [
+                    'label' => $label,
+                    'projects' => $rows->filter(fn ($row) => collect($row->issues)->contains(fn ($issue) => $issue['category'] === $key))->count(),
+                    'issues' => $issues->where('category', $key)->count(),
+                ]])
+                ->all(),
+        ];
+    }
+
+    private function projectLooksClosed(Project $project): bool
+    {
+        $text = mb_strtolower(implode(' ', array_filter([
+            $project->planning_status,
+            $project->execution_status,
+            $project->closure_status,
+        ])), 'UTF-8');
+
+        return str_contains($text, 'completed')
+            || str_contains($text, 'complete')
+            || str_contains($text, 'closed')
+            || str_contains($text, 'เสร็จ')
+            || str_contains($text, 'ปิด')
+            || str_contains($text, 'สิ้นสุด');
+    }
+
+    private function formatProjectDateThai(Carbon $date): string
+    {
+        $date = $date->copy()->locale('th')->setTimezone('Asia/Bangkok');
+
+        return $date->translatedFormat('j F').' '.($date->year + 543);
+    }
+
+    private function formatProjectDateTimeThai(Carbon $date): string
+    {
+        $date = $date->copy()->locale('th')->setTimezone('Asia/Bangkok');
+
+        return $date->translatedFormat('j F').' '.($date->year + 543).' '.$date->format('H:i').' น.';
+    }
+
+    private function projectDataQualityUserName($user): string
+    {
+        $name = trim((string) ($user?->full_name ?? ''));
+
+        return $name !== '' ? $name : 'ไม่ทราบผู้ใช้';
+    }
+
+    private function projectDataQualityExportMinDate(Collection $rows): ?string
+    {
+        $min = $rows
+            ->pluck('updated_at')
+            ->filter()
+            ->map(fn ($date) => Carbon::parse($date)->setTimezone('Asia/Bangkok'))
+            ->sortBy(fn (Carbon $date) => $date->timestamp)
+            ->first();
+
+        return $min ? $min->format('Y-m-d') : null;
+    }
+
+    private function paginateProjectDataQualityRows(Collection $rows, Request $request, int $perPage)
+    {
+        $page = max(1, (int) $request->input('page', 1));
+        $items = $rows->forPage($page, $perPage)->values();
+
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $rows->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
+    }
+
+    private function filterProjectDataQualityRowsByExportDateRange(Collection $rows, Request $request): Collection
+    {
+        if ($request->input('export_scope') !== 'range') {
+            return $rows->values();
+        }
+
+        $start = $this->parseProjectDateInput($request->input('export_start_date'));
+        $end = $this->parseProjectDateInput($request->input('export_end_date'));
+
+        if ($start) {
+            $rows = $rows->filter(fn ($row) => $row->updated_at && Carbon::parse($row->updated_at)->setTimezone('Asia/Bangkok')->gte($start->copy()->startOfDay()));
+        }
+
+        if ($end) {
+            $rows = $rows->filter(fn ($row) => $row->updated_at && Carbon::parse($row->updated_at)->setTimezone('Asia/Bangkok')->lte($end->copy()->endOfDay()));
+        }
+
+        return $rows->values();
+    }
+
+    private function buildProjectDataQualityExportFilters(Request $request): Collection
+    {
+        $categoryLabels = $this->projectDataQualityCategories();
+        $severityLabels = ['4' => 'สูง', '3' => 'กลาง', '2' => 'ควรตรวจ', '1' => 'ติดตาม'];
+        $outputLabels = ['none' => 'ไม่มี output', 'has' => 'มี output'];
+        $activityLabels = [
+            'updated_30' => 'อัปเดทใน 30 วัน',
+            'updated_90' => 'อัปเดทใน 90 วัน',
+            'stale_90' => 'ไม่อัปเดทเกิน 90 วัน',
+        ];
+
+        return collect([
+            $request->filled('search') ? 'ค้นหา: '.trim((string) $request->input('search')) : null,
+            $request->filled('category') ? 'หมวดปัญหา: '.($categoryLabels[$request->input('category')] ?? $request->input('category')) : null,
+            $request->filled('severity') ? 'ระดับ: '.($severityLabels[(string) $request->input('severity')] ?? $request->input('severity')) : null,
+            $request->filled('output_status') ? 'Output: '.($outputLabels[$request->input('output_status')] ?? $request->input('output_status')) : null,
+            $request->filled('activity') ? 'ความเคลื่อนไหว: '.($activityLabels[$request->input('activity')] ?? $request->input('activity')) : null,
+            $request->filled('sort') ? 'เรียงลำดับ: '.trim((string) $request->input('sort')) : null,
+            $this->projectDataQualityExportDateRangeLabel($request),
+        ])->filter()->values();
+    }
+
+    private function projectDataQualityExportDateRangeLabel(Request $request): ?string
+    {
+        if ($request->input('export_scope') !== 'range') {
+            return null;
+        }
+
+        $format = fn (?Carbon $date) => $date ? $date->format('d/m/').($date->year + 543) : null;
+        $start = $format($this->parseProjectDateInput($request->input('export_start_date')));
+        $end = $format($this->parseProjectDateInput($request->input('export_end_date')));
+
+        return 'วันที่อัปเดท record: '.($start ?: 'เริ่มต้น').' - '.($end ?: 'ปัจจุบัน');
+    }
+
+    private function buildProjectDataQualityExportFilename(string $prefix, string $extension): string
+    {
+        return strtoupper($prefix).'_'.now('Asia/Bangkok')->format('Ymd_Hi').'.'.ltrim($extension, '.');
+    }
+
+    private function projectDataQualityExcelRows(Collection $rows): Collection
+    {
+        $severityLabel = fn ($score) => match ((int) $score) {
+            4 => 'สูง',
+            3 => 'กลาง',
+            2 => 'ควรตรวจ',
+            default => 'ติดตาม',
+        };
+
+        return $rows->map(function ($row, $index) use ($severityLabel) {
+            $issues = collect($row->issues);
+
+            return [
+                (int) $index + 1,
+                $row->project_code,
+                $row->project_name,
+                $row->pi_name,
+                $row->planning_status,
+                $row->project_type,
+                $row->outputs_count,
+                $severityLabel($row->severity_score),
+                $issues->count(),
+                $issues->pluck('label')->unique()->implode(' | '),
+                $issues->pluck('reason')->implode("\n"),
+                $issues->pluck('fields')->flatten()->unique()->implode(', '),
+                $issues->pluck('suggestion')->unique()->implode("\n"),
+                $row->created_by_name,
+                $row->created_at_label,
+                $row->updated_by_name,
+                $row->updated_at_label,
+            ];
+        })->values();
+    }
+
+    private function projectDataQualityXlsxResponse(string $filename, string $sheetName, array $columns, Collection $rows, array $metaRows = [])
+    {
+        $content = $this->buildProjectDataQualityXlsxWorkbook($sheetName, $columns, $rows, $metaRows);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Length' => (string) strlen($content),
+        ]);
+    }
+
+    private function buildProjectDataQualityXlsxWorkbook(string $sheetName, array $headers, Collection $rows, array $metaRows = []): string
+    {
+        $tmpPath = tempnam(sys_get_temp_dir(), 'project_data_quality_xlsx_');
+        $zip = new \ZipArchive();
+        $zip->open($tmpPath, \ZipArchive::OVERWRITE);
+
+        $dataSheetName = mb_substr($sheetName, 0, 31);
+
+        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+        $zip->addFromString('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="list" sheetId="1" r:id="rId1"/><sheet name="'.$this->projectDataQualityXlsxEscapeAttribute($dataSheetName).'" sheetId="2" r:id="rId2"/></sheets><calcPr calcMode="auto" fullCalcOnLoad="1"/></workbook>');
+        $zip->addFromString('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+        $zip->addFromString('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEAF2FF"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFCBD5E1"/></left><right style="thin"><color rgb="FFCBD5E1"/></right><top style="thin"><color rgb="FFCBD5E1"/></top><bottom style="thin"><color rgb="FFCBD5E1"/></bottom><diagonal/></border></borders><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>');
+        $zip->addFromString('xl/worksheets/sheet1.xml', $this->buildProjectDataQualityXlsxListWorksheet($rows, $metaRows, $dataSheetName));
+        $zip->addFromString('xl/worksheets/sheet2.xml', $this->buildProjectDataQualityXlsxWorksheet($headers, $rows));
+        $zip->close();
+
+        $content = (string) file_get_contents($tmpPath);
+        @unlink($tmpPath);
+
+        return $content;
+    }
+
+    private function buildProjectDataQualityXlsxListWorksheet(Collection $rows, array $metaRows, string $detailSheetName): string
+    {
+        $rowIndex = 1;
+        $xmlRows = [];
+        foreach ($metaRows as $metaRow) {
+            $xmlRows[] = $this->projectDataQualityXlsxRow($rowIndex++, collect($metaRow)->values()->all(), 2);
+        }
+        if (!empty($metaRows)) {
+            $xmlRows[] = '<row r="'.$rowIndex++.'"/>';
+        }
+
+        $xmlRows[] = $this->projectDataQualityXlsxRow($rowIndex++, ['สารบัญรายการ: คลิก "เปิดรายละเอียด" เพื่อไปยังแถวรายละเอียดของ record นั้น'], 1);
+        $indexHeaderRowIndex = $rowIndex;
+        $xmlRows[] = $this->projectDataQualityXlsxRow($rowIndex++, ['#', 'Project ID', 'ชื่อโครงการ', 'ระดับ', 'Issues', 'Output', 'เปิดรายละเอียด'], 1);
+        $detailStartRowIndex = 2;
+
+        foreach ($rows->values() as $index => $row) {
+            $rowValues = array_values((array) $row);
+            $detailRowIndex = $detailStartRowIndex + $index;
+            $xmlRows[] = $this->projectDataQualityXlsxRow($rowIndex++, [
+                (int) $index + 1,
+                $rowValues[1] ?? '',
+                $rowValues[2] ?? '',
+                $rowValues[7] ?? '',
+                $rowValues[8] ?? '',
+                $rowValues[6] ?? '',
+                $this->projectDataQualityXlsxFormula('HYPERLINK("#'.$this->projectDataQualityXlsxSheetCellReference($detailSheetName, 'A'.$detailRowIndex).'","เปิดรายละเอียด")'),
+            ], 2);
+        }
+
+        $lastRow = max($indexHeaderRowIndex, $rowIndex - 1);
+
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="'.$indexHeaderRowIndex.'" topLeftCell="A'.($indexHeaderRowIndex + 1).'" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="8" customWidth="1"/><col min="2" max="2" width="22" customWidth="1"/><col min="3" max="3" width="60" customWidth="1"/><col min="4" max="4" width="16" customWidth="1"/><col min="5" max="5" width="12" customWidth="1"/><col min="6" max="6" width="12" customWidth="1"/><col min="7" max="7" width="18" customWidth="1"/></cols><sheetData>'.implode('', $xmlRows).'</sheetData><autoFilter ref="A'.$indexHeaderRowIndex.':G'.$lastRow.'"/></worksheet>';
+    }
+
+    private function buildProjectDataQualityXlsxWorksheet(array $headers, Collection $rows): string
+    {
+        $rowIndex = 1;
+        $xmlRows = [];
+        $headerRowIndex = $rowIndex;
+        $xmlRows[] = $this->projectDataQualityXlsxRow($rowIndex++, $headers, 1);
+        foreach ($rows as $row) {
+            $xmlRows[] = $this->projectDataQualityXlsxRow($rowIndex++, array_values((array) $row), 2);
+        }
+        $columnCount = max(count($headers), 1);
+        $lastColumn = $this->projectDataQualityXlsxColumnName($columnCount);
+
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'.collect(range(1, $columnCount))->map(fn ($i) => '<col min="'.$i.'" max="'.$i.'" width="'.($i === 1 ? 8 : ($i >= 10 && $i <= 13 ? 42 : 24)).'" customWidth="1"/>')->implode('').'</cols><sheetData>'.implode('', $xmlRows).'</sheetData><autoFilter ref="A'.$headerRowIndex.':'.$lastColumn.max($headerRowIndex, $rowIndex - 1).'"/></worksheet>';
+    }
+
+    private function projectDataQualityXlsxRow(int $rowIndex, array $values, int $style = 0): string
+    {
+        $cells = [];
+        foreach (array_values($values) as $columnIndex => $value) {
+            $cell = $this->projectDataQualityXlsxColumnName($columnIndex + 1).$rowIndex;
+            $styleAttribute = $style > 0 ? ' s="'.$style.'"' : '';
+            if (is_array($value) && array_key_exists('formula', $value)) {
+                $formula = ltrim((string) ($value['formula'] ?? ''), '=');
+                $cells[] = '<c r="'.$cell.'"'.$styleAttribute.'><f>'.$this->projectDataQualityXlsxEscapeFormula($formula).'</f><v></v></c>';
+                continue;
+            }
+
+            $cells[] = '<c r="'.$cell.'" t="inlineStr"'.$styleAttribute.'><is><t xml:space="preserve">'.$this->projectDataQualityXlsxEscapeText($value).'</t></is></c>';
+        }
+
+        return '<row r="'.$rowIndex.'">'.implode('', $cells).'</row>';
+    }
+
+    private function projectDataQualityXlsxFormula(string $formula): array
+    {
+        return ['formula' => $formula];
+    }
+
+    private function projectDataQualityXlsxSheetCellReference(string $sheetName, string $cell): string
+    {
+        return "'".str_replace("'", "''", $sheetName)."'!".$cell;
+    }
+
+    private function projectDataQualityXlsxColumnName(int $index): string
+    {
+        $name = '';
+        while ($index > 0) {
+            $index--;
+            $name = chr(65 + ($index % 26)).$name;
+            $index = intdiv($index, 26);
+        }
+
+        return $name;
+    }
+
+    private function projectDataQualityXlsxEscapeText($value): string
+    {
+        $text = trim((string) ($value ?? ''));
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $text) ?? '';
+
+        return htmlspecialchars($text, ENT_XML1 | ENT_COMPAT, 'UTF-8');
+    }
+
+    private function projectDataQualityXlsxEscapeFormula(string $formula): string
+    {
+        return htmlspecialchars($formula, ENT_XML1 | ENT_COMPAT, 'UTF-8');
+    }
+
+    private function projectDataQualityXlsxEscapeAttribute(string $value): string
+    {
+        return htmlspecialchars($value, ENT_XML1 | ENT_COMPAT, 'UTF-8');
     }
 
     private function normalizePersonName(string $value): string

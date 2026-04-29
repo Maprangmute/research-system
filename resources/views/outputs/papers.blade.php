@@ -137,11 +137,13 @@
                         <h2 class="text-base font-semibold text-slate-900">ตัวกรองผลงานตีพิมพ์</h2>
                         <p class="mt-1 text-sm text-slate-500">ค้นหา title, author, journal หรือ project และปรับเงื่อนไขเสริมได้ทันที</p>
                     </div>
-                    <a href="{{ route('outputs.papers.pdf', request()->query()) }}"
-                        target="_blank" rel="noopener"
-                        class="output-export-btn">
-                        Export รายการ เป็น PDF
-                    </a>
+                    @include('outputs.partials.export-dialog', [
+                        'id' => 'papersExportModal',
+                        'pdfUrl' => route('outputs.papers.pdf'),
+                        'excelUrl' => route('outputs.papers.excel'),
+                        'formSelector' => '#papers-filter-form',
+                        'minDate' => $exportMinDate ?? null,
+                    ])
                 </section>
 
                 <section>
