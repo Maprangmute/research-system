@@ -760,6 +760,15 @@
                         class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="รายละเอียด / ลิงค์ผลงาน">
                 </label>
                 <label class="block">
+                    <span class="text-xs font-semibold text-slate-600">ผู้มีส่วนร่วมในงาน</span>
+                    <select name="outputs[__TINDEX__][contributors][0][user_id]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" data-back-office-person-select data-placeholder="กรุณาเลือกผู้มีส่วนร่วม" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้มีส่วนร่วม">
+                        <option value="">กรุณาเลือกผู้มีส่วนร่วม</option>
+                        @foreach (($thaiPersonOptions ?? collect()) as $person)
+                            <option value="{{ $person['id'] }}">{{ $person['name'] }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
                     <span class="text-xs font-semibold text-slate-600">วันที่เผยแพร่ <span class="bo-required">*</span></span>
                     <input type="text" name="outputs[__TINDEX__][year]"
                         class="w-full mt-1 border border-slate-200 rounded-lg p-2 js-date-be"
@@ -939,6 +948,11 @@
             return false;
         }
 
+        function isOptionalOutputMetricField(input) {
+            const name = String(input?.name || '').trim();
+            return name === 'quartile' || name === 'impact_factor' || name.endsWith('[quartile]') || name.endsWith('[impact_factor]');
+        }
+
         function validateSingleField(input) {
             if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement || input instanceof HTMLTextAreaElement)) {
                 return true;
@@ -951,6 +965,7 @@
             const label = getBackOfficeFieldLabel(input);
 
             if (rawValue === '') {
+                if (isOptionalOutputMetricField(input)) return true;
                 input.dataset.invalidSummary = label;
                 markFieldInvalid(input, `กรุณากรอก${label}`);
                 return false;
@@ -1421,17 +1436,19 @@
                             <input name="${prefix}[journal]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น IEEE Access">
                         </label>
                         <label class="block">
-                            <span class="text-xs font-semibold text-slate-600">Quartile (Q)</span>
+                            <span class="text-xs font-semibold text-slate-600">Ranking</span>
                             <select name="${prefix}[quartile]" class="w-full mt-1 border border-slate-200 rounded-lg p-2">
-                                <option value="">เลือก Quartile</option>
+                                <option value="">เลือก Ranking</option>
                                 <option value="Q1">Q1</option>
                                 <option value="Q2">Q2</option>
                                 <option value="Q3">Q3</option>
                                 <option value="Q4">Q4</option>
+          <option value="TCI 1">TCI 1</option>
+          <option value="TCI 2">TCI 2</option>
                             </select>
                         </label>
                         <label class="block">
-                            <span class="text-xs font-semibold text-slate-600">Impact Factor (IF)</span>
+                            <span class="text-xs font-semibold text-slate-600">Impact Factor</span>
                             <input name="${prefix}[impact_factor]" type="number" step="0.001"
                                 class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น 3.215">
                         </label>
@@ -1461,7 +1478,7 @@
                         <div class="bo-special-panel__title">EA103 Presentations in Academic Conferences</div>
                     </div>
                 </div>
-                <div class="bo-special-row grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bo-special-row grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
                     <label class="block md:col-span-3">
                         <span class="text-xs font-semibold text-slate-600">ชื่อเวที/Conference</span>
                         <input name="${prefix}[conference_name]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น PMAC 2025">
@@ -1534,6 +1551,10 @@
                     <label class="block">
                         <span class="text-xs font-semibold text-slate-600">ชื่อบท / เลขหน้า</span>
                         <input name="${prefix}[chapter_pages]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เช่น Chapter 2, pp. 45-66">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">เลข ISBN</span>
+                        <input name="${prefix}[isbn]" class="w-full mt-1 border border-slate-200 rounded-lg p-2" placeholder="เลข ISBN">
                     </label>
                 </div>
                 <div class="bo-special-row">
@@ -2000,6 +2021,8 @@
             if (publisherName) publisherName.value = data.publisher_name || '';
             const chapterPages = row.querySelector(`[name="${prefix}[chapter_pages]"]`);
             if (chapterPages) chapterPages.value = data.chapter_pages || '';
+            const isbn = row.querySelector(`[name="${prefix}[isbn]"]`);
+            if (isbn) isbn.value = data.isbn || '';
 
             if (Array.isArray(data.authors)) {
                 const btn = row.querySelector('.ea101-section button');
@@ -2044,6 +2067,7 @@
 
             row.querySelector(`[name="outputs[${index}][title]"]`).value = data.title || '';
             row.querySelector(`[name="outputs[${index}][type]"]`).value = data.type || '';
+            row.querySelector(`[name="outputs[${index}][contributors][0][user_id]"]`).value = data.contributors?.[0]?.user_id || data.owner_user_id || '';
             row.querySelector(`[name="outputs[${index}][project_output]"]`).value = data.project_output || '';
             row.querySelector(`[name="outputs[${index}][year]"]`).value = data.year || '';
 
@@ -2056,6 +2080,7 @@
 
             bindTaskOutput(row);
             taskOutputsBody.appendChild(row);
+            initBackOfficePersonSelect(row);
             updateTaskOutputIndex();
             if (window.initDateBE) initDateBE(row);
             bindTaskOutputDateRules(row, index);

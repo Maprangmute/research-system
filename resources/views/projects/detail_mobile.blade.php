@@ -1055,7 +1055,7 @@
                                                 </div>
                                                 <div class="grid gap-3 sm:grid-cols-2">
                                                     <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
-                                                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quartile</div>
+                                                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Ranking</div>
                                                         <div class="mt-2 font-semibold leading-6">{{ $output->quartile ?: '-' }}</div>
                                                     </div>
                                                     <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">

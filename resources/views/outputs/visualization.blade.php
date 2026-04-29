@@ -967,7 +967,7 @@
                     <div class="section-tag section-tag--rose">Publications</div>
                     <h2 class="text-base font-semibold text-slate-900">ผลงานการตีพิมพ์ต่างๆ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($paperCount) }} รายการ)</span></h2>
                     <div class="mt-4 flex flex-1 items-center justify-center">
-                        <div class="h-[360px] w-full max-w-[880px]"><canvas id="chartPaperQuartile"></canvas></div>
+                        <div class="h-[360px] w-full max-w-[880px]"><canvas id="chartPaperRanking"></canvas></div>
                     </div>
                 </article>
                 <article class="fade-up panel section-panel section-panel--rose flex h-full flex-col p-5 md:p-6">
@@ -992,7 +992,7 @@
                                     ผู้ทำ: {{ collect($row->authors ?? [])->filter()->implode(', ') ?: 'ไม่ระบุผู้ทำ' }}
                                 </div>
                                 <div class="mt-1 text-xs text-slate-500">
-                                    {{ $row->journal ?: 'ไม่ระบุวารสาร' }} • {{ $row->quartile ?: 'ไม่ระบุ Quartile' }} • IF {{ is_numeric($row->impact_factor) ? number_format((float) $row->impact_factor, 2) : '-' }} • {{ $row->year_be ?: '-' }}
+                                    {{ $row->journal ?: 'ไม่ระบุวารสาร' }} • {{ $row->quartile ?: 'ไม่ระบุ Ranking' }} • IF {{ is_numeric($row->impact_factor) ? number_format((float) $row->impact_factor, 2) : '-' }} • {{ $row->year_be ?: '-' }}
                                 </div>
                             </button>
                         @empty
@@ -1220,8 +1220,8 @@
             const typeColors = @json($typeChartColors);
             const typeBorderColors = @json($typeChartBorderColors);
             const sourceLabelMap = @json($sourceLabelMap);
-            const paperQuartileLabels = @json($paperQuartileLabels);
-            const paperQuartileValues = @json($paperQuartileValues);
+            const paperRankingLabels = @json($paperRankingLabels);
+            const paperRankingValues = @json($paperRankingValues);
             const presentationActivityLabels = @json($presentationActivityLabels);
             const presentationActivityValues = @json($presentationActivityValues);
             const textbookYearLabels = @json($textbookYearLabels);
@@ -1389,13 +1389,13 @@
                 }
             });
 
-            new Chart(document.getElementById('chartPaperQuartile'), {
+            new Chart(document.getElementById('chartPaperRanking'), {
                 type: 'bar',
                 data: {
-                    labels: safeLabels(paperQuartileLabels),
+                    labels: safeLabels(paperRankingLabels),
                     datasets: [{
                         label: 'จำนวน Paper',
-                        data: safeValues(paperQuartileValues),
+                        data: safeValues(paperRankingValues),
                         backgroundColor: '#4f46e5',
                         borderColor: '#3730a3',
                         borderWidth: 1,
@@ -1416,7 +1416,7 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            suggestedMax: suggestedAxisMax(safeValues(paperQuartileValues), 5),
+                            suggestedMax: suggestedAxisMax(safeValues(paperRankingValues), 5),
                             ticks: { precision: 0, color: textColor },
                             grid: { color: gridColor }
                         },

@@ -748,7 +748,10 @@
     </main>
 
     @php
-        $hideAiChatOnPage = $isModalView || request()->routeIs('projects.create') || request()->routeIs('projects.edit');
+        $hideAiChatOnPage = $isModalView
+            || request()->routeIs('projects.create')
+            || request()->routeIs('projects.edit')
+            || request()->routeIs('back_office.*');
     @endphp
     @unless ($hideAiChatOnPage)
         @include('partials.global-ai-chat')

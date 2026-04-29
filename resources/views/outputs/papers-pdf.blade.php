@@ -459,7 +459,7 @@
     </table>
 
     <div class="section-title">รายการบทความ</div>
-    <div class="section-subtitle">รายละเอียดบทความ วารสาร ค่า IF, Quartile, ผู้แต่ง และแหล่งอ้างอิงของแต่ละรายการ</div>
+    <div class="section-subtitle">รายละเอียดบทความ วารสาร ค่า IF, Ranking, ผู้แต่ง และแหล่งอ้างอิงของแต่ละรายการ</div>
     <div class="paper-list">
         @forelse ($papers as $index => $paper)
             @php

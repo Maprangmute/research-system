@@ -1193,7 +1193,7 @@
                                         <strong>Journal:</strong> {{ text_or_dash($output->journal) }}
                                     </div>
                                     <div class="output-meta-row">
-                                        <strong>Quartile:</strong> {{ text_or_dash($output->quartile) }}
+                                        <strong>Ranking:</strong> {{ text_or_dash($output->quartile) }}
                                         |
                                         <strong>Impact Factor:</strong> {{ text_or_dash($output->impact_factor) }}
                                     </div>

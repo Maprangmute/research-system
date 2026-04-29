@@ -1685,12 +1685,12 @@
                                                 placeholder="เช่น IEEE Access">
                                         </label>
                                         <label>
-                                            <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
+                                            <span class="block text-sm text-gray-700 mb-1">Ranking</span>
                                             @php $q = old("outputs.$i.quartile", $out->quartile); @endphp
                                             <select name="outputs[{{ $i }}][quartile]"
                                                 class="w-full border p-2 rounded">
                                                 <option value="" {{ !$q ? 'selected' : '' }}>เลือก
-                                                    Quartile</option>
+                                                    Ranking</option>
                                                 <option value="Q1" {{ $q === 'Q1' ? 'selected' : '' }}>Q1
                                                 </option>
                                                 <option value="Q2" {{ $q === 'Q2' ? 'selected' : '' }}>Q2
@@ -1699,10 +1699,14 @@
                                                 </option>
                                                 <option value="Q4" {{ $q === 'Q4' ? 'selected' : '' }}>Q4
                                                 </option>
+                                                <option value="TCI 1" {{ $q === 'TCI 1' ? 'selected' : '' }}>TCI 1
+                                                </option>
+                                                <option value="TCI 2" {{ $q === 'TCI 2' ? 'selected' : '' }}>TCI 2
+                                                </option>
                                             </select>
                                         </label>
                                         <label>
-                                            <span class="block text-sm text-gray-700 mb-1">Impact Factor (IF)</span>
+                                            <span class="block text-sm text-gray-700 mb-1">Impact Factor</span>
                                             <input name="outputs[{{ $i }}][impact_factor]" type="number"
                                                 step="0.001" class="w-full border p-2 rounded"
                                                 value="{{ old("outputs.$i.impact_factor", $out->impact_factor) }}"
@@ -3916,17 +3920,19 @@
         <input name="outputs[${idx}][journal]" class="w-full border p-2 rounded" placeholder="เช่น IEEE Access">
       </label>
       <label>
-        <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
+        <span class="block text-sm text-gray-700 mb-1">Ranking</span>
         <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded">
-          <option value="" selected>เลือก Quartile</option>
+          <option value="" selected>เลือก Ranking</option>
           <option value="Q1">Q1</option>
           <option value="Q2">Q2</option>
           <option value="Q3">Q3</option>
           <option value="Q4">Q4</option>
+          <option value="TCI 1">TCI 1</option>
+          <option value="TCI 2">TCI 2</option>
         </select>
       </label>
       <label>
-        <span class="block text-sm text-gray-700 mb-1">Impact Factor (IF)</span>
+        <span class="block text-sm text-gray-700 mb-1">Impact Factor</span>
         <input name="outputs[${idx}][impact_factor]" type="number" step="0.001" class="w-full border p-2 rounded" placeholder="เช่น 3.215">
       </label>
     </div>

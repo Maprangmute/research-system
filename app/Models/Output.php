@@ -146,7 +146,7 @@ public function bookAuthors()
     // ==== Mutators ====
 
     /**
-     * บังคับ quartile ให้เป็น Q1..Q4, รองรับกรอก "1","2"
+     * Normalize ranking values. Historically this column was named quartile.
      */
     public function setQuartileAttribute($value): void
     {
@@ -155,7 +155,7 @@ public function bookAuthors()
             return;
         }
         $v = strtoupper(trim((string)$value));
-        if (in_array($v, ['Q1','Q2','Q3','Q4'], true)) {
+        if (in_array($v, ['Q1', 'Q2', 'Q3', 'Q4', 'TCI 1', 'TCI 2'], true)) {
             $this->attributes['quartile'] = $v;
             return;
         }

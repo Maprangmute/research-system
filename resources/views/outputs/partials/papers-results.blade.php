@@ -100,7 +100,7 @@
                                     <div class="mt-1">{{ $paper->journal }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quartile / ปี</div>
+                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Ranking / ปี</div>
                                     <div class="mt-1">{{ $paper->quartile }} / {{ $paper->year_be ?: '-' }}</div>
                                 </div>
                             </div>
@@ -138,7 +138,7 @@
                             <th class="px-4 py-3"><a href="{{ $sortUrl('title') }}">ชื่อผลงาน <span class="ml-1">{{ $sortIcon('title') }}</span></a></th>
                             <th class="px-4 py-3">Authors</th>
                             <th class="px-4 py-3"><a href="{{ $sortUrl('journal') }}">Journal <span class="ml-1">{{ $sortIcon('journal') }}</span></a></th>
-                            <th class="px-4 py-3 text-center"><a href="{{ $sortUrl('quartile') }}">Quartile <span class="ml-1">{{ $sortIcon('quartile') }}</span></a></th>
+                            <th class="px-4 py-3 text-center"><a href="{{ $sortUrl('quartile') }}">Ranking <span class="ml-1">{{ $sortIcon('quartile') }}</span></a></th>
                             <th class="px-4 py-3 text-center"><a href="{{ $sortUrl('year') }}">ปี <span class="ml-1">{{ $sortIcon('year') }}</span></a></th>
                             <th class="px-4 py-3">Project Name</th>
                         </tr>

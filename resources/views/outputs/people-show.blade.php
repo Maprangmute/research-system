@@ -672,8 +672,8 @@
                 <select id="researchJournalFilter" class="filter-select">
                     <option value="">ทุก Journal</option>
                 </select>
-                <select id="researchQuartileFilter" class="filter-select">
-                    <option value="">ทุก Quartile</option>
+                <select id="researchRankingFilter" class="filter-select">
+                    <option value="">ทุก Ranking</option>
                 </select>
                 <select id="researchRoleFilter" class="filter-select">
                     <option value="">ทุกบทบาท</option>
@@ -700,7 +700,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold">ชื่อผลงาน</th>
                                 <th class="px-4 py-3 text-left font-semibold">Journal</th>
-                                <th class="px-4 py-3 text-left font-semibold">IF / Quartile</th>
+                                <th class="px-4 py-3 text-left font-semibold">IF / Ranking</th>
                                 <th class="px-4 py-3 text-left font-semibold">ปี</th>
                                 <th class="px-4 py-3 text-left font-semibold" style="min-width: 190px;">บทบาท</th>
                                 <th class="px-4 py-3 text-left font-semibold">โครงการ / skill ส่วนบุคคล</th>
@@ -1194,7 +1194,7 @@
                     const section = input.closest('.person-panel');
                     const yearFilter = document.getElementById('researchYearFilter');
                     const journalFilter = document.getElementById('researchJournalFilter');
-                    const quartileFilter = document.getElementById('researchQuartileFilter');
+                    const quartileFilter = document.getElementById('researchRankingFilter');
                     const roleFilter = document.getElementById('researchRoleFilter');
                     const originFilter = document.getElementById('researchOriginFilter');
                     const sortSelect = document.getElementById('researchSortSelect');
@@ -1203,7 +1203,7 @@
                     let page = 1;
                     fillSelect(yearFilter, uniqueSorted(researchRows.map((row) => row.year_be).filter((value) => value !== null && value !== ''), 'desc'), 'ทุกปี');
                     fillSelect(journalFilter, uniqueSorted(researchRows.map((row) => row.journal).filter((value) => value && value !== '-')), 'ทุก Journal');
-                    fillSelect(quartileFilter, uniqueSorted(researchRows.map((row) => row.quartile).filter((value) => value && value !== '-')), 'ทุก Quartile');
+                    fillSelect(quartileFilter, uniqueSorted(researchRows.map((row) => row.quartile).filter((value) => value && value !== '-')), 'ทุก Ranking');
                     fillSelect(roleFilter, uniqueSorted(researchRows.flatMap((row) => row.roles || [])), 'ทุกบทบาท');
                     fillSelect(originFilter, ['โครงการ', 'งานนอกโครงการ', 'skill ส่วนบุคคล'], 'ทุกที่มา');
 
@@ -1256,7 +1256,7 @@
                                     ${row.author_line ? `<p class="mt-1 text-xs leading-5 text-slate-500">${row.author_line}</p>` : ''}
                                 </td>
                                 <td class="px-4 py-4 text-slate-600" data-label="Journal">${row.journal || '-'}</td>
-                                <td class="px-4 py-4 text-slate-600" data-label="IF / Quartile">
+                                <td class="px-4 py-4 text-slate-600" data-label="IF / Ranking">
                                     IF ${row.impact_factor ?? '-'}
                                     <div class="mt-1 text-xs text-slate-500">${row.quartile || '-'}</div>
                                 </td>

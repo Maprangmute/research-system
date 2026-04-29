@@ -47,6 +47,7 @@
             'book_title',
             'publisher_name',
             'chapter_pages',
+            'isbn',
             'journal_author_name',
             'journal_author_role',
             'book_author_name',
@@ -59,6 +60,7 @@
 
     <style>
         .back-office-shell {
+            --bo-table-sticky-top: 0px;
             background:
                 linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.55) 100%);
         }
@@ -384,7 +386,426 @@
             border-radius: 28px;
             background: #ffffff;
             box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+            scroll-margin-top: 1rem;
+        }
+
+        .back-office-table-wrap {
+            display: none;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            background: #ffffff;
+        }
+
+        .back-office-data-table {
+            width: 100%;
+            min-width: 900px;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.86rem;
+        }
+
+        .back-office-data-table th {
+            position: sticky;
+            top: var(--bo-table-sticky-top);
+            z-index: 42;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            box-shadow: 0 1px 0 #e2e8f0, 0 8px 14px rgba(15, 23, 42, 0.05);
+            padding: 0.78rem 0.85rem;
+            color: #475569;
+            font-size: 0.72rem;
+            font-weight: 850;
+            letter-spacing: 0.04em;
+            text-align: left;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .back-office-data-table td {
+            border-bottom: 1px solid #edf2f7;
+            padding: 1rem 0.95rem;
+            color: #334155;
+            vertical-align: top;
+        }
+
+        .back-office-data-table tbody tr:hover td {
+            background: #fbfdff;
+        }
+
+        .back-office-data-table tbody tr.back-office-output-special-row:hover td {
+            background: #ffffff;
+        }
+
+        .back-office-data-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .back-office-output-table {
+            table-layout: fixed;
+        }
+
+        .back-office-output-table__index {
+            width: 2.75rem;
+        }
+
+        .back-office-output-table__title {
+            width: 36%;
+        }
+
+        .back-office-output-table__type {
+            width: 17%;
+        }
+
+        .back-office-output-table__people {
+            width: 16rem;
+        }
+
+        .back-office-output-table__actions {
+            width: 7.5rem;
+        }
+
+        .back-office-output-title-cell {
+            min-width: 0;
+        }
+
+        .back-office-output-title-main,
+        .back-office-output-title-meta {
+            display: block;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .back-office-entry-title-cell,
+        .back-office-entry-detail-cell {
+            min-width: 0;
+            max-width: 26rem;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .back-office-entry-detail-cell {
+            white-space: pre-wrap;
+            color: #475569;
+            font-size: 0.78rem;
+            font-weight: 650;
+            line-height: 1.65;
+        }
+
+        .back-office-table-pill {
+            display: inline-flex;
+            max-width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: #f8fafc;
+            padding: 0.28rem 0.55rem;
+            color: #475569;
+            font-size: 0.72rem;
+            font-weight: 750;
+            line-height: 1.35;
+        }
+
+        .back-office-table-pill--tone-0 { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+        .back-office-table-pill--tone-1 { border-color: #bae6fd; background: #f0f9ff; color: #0369a1; }
+        .back-office-table-pill--tone-2 { border-color: #99f6e4; background: #f0fdfa; color: #0f766e; }
+        .back-office-table-pill--tone-3 { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; }
+        .back-office-table-pill--tone-4 { border-color: #fde68a; background: #fffbeb; color: #b45309; }
+        .back-office-table-pill--tone-5 { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
+        .back-office-table-pill--tone-6 { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+        .back-office-table-pill--tone-7 { border-color: #fbcfe8; background: #fdf2f8; color: #be185d; }
+        .back-office-table-pill--tone-8 { border-color: #ddd6fe; background: #f5f3ff; color: #6d28d9; }
+        .back-office-table-pill--tone-9 { border-color: #c7d2fe; background: #eef2ff; color: #4338ca; }
+        .back-office-table-pill--tone-10 { border-color: #cbd5e1; background: #f8fafc; color: #475569; }
+        .back-office-table-pill--tone-11 { border-color: #d6d3d1; background: #fafaf9; color: #57534e; }
+        .back-office-table-pill--tone-default { border-color: #e2e8f0; background: #f8fafc; color: #475569; }
+
+        .back-office-table-index {
+            width: 3.5rem;
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 850;
+        }
+
+        .back-office-output-special-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+            gap: 0.45rem;
+        }
+
+        .back-office-output-special-row td {
+            border-bottom-color: #e2e8f0;
+            padding-top: 0;
+            padding-left: 0.95rem;
+            padding-right: 0.95rem;
+        }
+
+        .back-office-output-special-inline {
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            background: #f8fbff;
+            padding: 0.75rem;
+        }
+
+        .back-office-output-special-inline--split {
+            padding: 0.85rem;
+        }
+
+        .back-office-output-special-inline--ea101 {
+            border-color: #bfdbfe;
+            background: #f8fbff;
+        }
+
+        .back-office-output-special-inline--ea103 {
+            border-color: #fcd34d;
+            background: #fffbeb;
+        }
+
+        .back-office-output-special-inline--ea118 {
+            border-color: #ddd6fe;
+            background: #faf5ff;
+        }
+
+        .back-office-output-special-inline--ea119 {
+            border-color: #a7f3d0;
+            background: #ecfdf5;
+        }
+
+        .back-office-output-special-title {
+            margin-bottom: 0.55rem;
+            color: #0369a1;
+            font-size: 0.72rem;
+            font-weight: 850;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .back-office-output-special-inline--ea103 .back-office-output-special-title {
+            color: #b45309;
+        }
+
+        .back-office-output-special-inline--ea118 .back-office-output-special-title {
+            color: #6d28d9;
+        }
+
+        .back-office-output-special-inline--ea119 .back-office-output-special-title {
+            color: #047857;
+        }
+
+        .back-office-output-special-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            padding: 0.56rem 0.65rem;
+        }
+
+        .back-office-output-special-item--compact {
+            max-width: none;
+        }
+
+        .back-office-output-special-split-grid {
+            display: grid;
+            grid-template-columns: minmax(15rem, 0.42fr) minmax(26rem, 1fr);
+            gap: 0.65rem;
+            align-items: start;
+        }
+
+        .back-office-output-special-inline--single-detail .back-office-output-special-split-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .back-office-output-special-inline--single-detail .back-office-output-special-left {
+            display: none;
+        }
+
+        .back-office-output-special-left {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .back-office-output-special-left .back-office-output-special-item--full {
+            grid-column: 1 / -1;
+        }
+
+        .back-office-output-special-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+
+        .back-office-output-special-item--authors {
+            min-height: auto;
+        }
+
+        .back-office-output-special-list {
+            margin-top: 0.3rem;
+            display: grid;
+            gap: 0.22rem;
+            color: #0f172a;
+            font-size: 0.8rem;
+            font-weight: 800;
+            line-height: 1.45;
+            list-style: decimal;
+            padding-left: 1.15rem;
+        }
+
+        .back-office-output-special-list--inline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+            gap: 0.38rem 0.85rem;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .back-office-output-special-list--inline li {
+            display: flex;
+            gap: 0.2rem;
+            align-items: baseline;
+            min-width: 0;
+        }
+
+        .back-office-output-special-list__number {
+            flex: 0 0 auto;
+            color: #64748b;
+            font-weight: 850;
+        }
+
+        .back-office-output-special-list--inline li::before {
+            content: none;
+        }
+
+        .back-office-output-special-list--inline li + li {
+            margin-left: 0;
+        }
+
+        .back-office-output-special-item span {
+            display: block;
+            color: #64748b;
+            font-size: 0.66rem;
+            font-weight: 850;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .back-office-output-special-item strong {
+            display: block;
+            margin-top: 0.2rem;
+            color: #0f172a;
+            font-size: 0.8rem;
+            font-weight: 800;
+            line-height: 1.45;
+        }
+
+        .back-office-output-special-item:not(.back-office-output-special-item--compact):has(strong) {
+            min-width: 0;
+        }
+
+        .back-office-output-empty-special {
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+            padding: 0.75rem;
+            color: #94a3b8;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .back-office-table-actions {
+            display: inline-flex;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: center;
+            gap: 0;
+            min-width: 0;
             overflow: hidden;
+            border: 1px solid #dbeafe;
+            border-radius: 6px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+
+        .back-office-table-actions button {
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            padding: 0.36rem 0.58rem;
+            color: #1d4ed8;
+            font-size: 0.74rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .back-office-table-actions button.danger {
+            border-left: 1px solid #fee2e2;
+            color: #dc2626;
+        }
+
+        .back-office-table-actions form {
+            margin: 0;
+        }
+
+        .back-office-data-table th:last-child,
+        .back-office-data-table td:last-child {
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .back-office-table-wrap {
+                display: block;
+                overflow: visible;
+            }
+
+            .back-office-detail-card {
+                display: none;
+            }
+
+            .back-office-detail-card.bo-card-expanded,
+            .back-office-detail-card:has([data-back-office-entry-edit-card]:not(.hidden)),
+            .back-office-detail-card:has([data-back-office-output-edit-card]:not(.hidden)) {
+                display: block;
+            }
+
+            .back-office-inline-edit-row > td {
+                border-bottom-color: #dbeafe;
+                background: #fff;
+                padding: 0 0.9rem 1rem;
+                text-align: left;
+            }
+
+            .back-office-detail-card.bo-edit-inline-mode {
+                display: block;
+                margin: 0;
+                border: 0;
+                background: transparent;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            .back-office-detail-card.bo-edit-inline-mode > .back-office-record-card__top,
+            .back-office-detail-card.bo-edit-inline-mode > [data-bo-card-detail] {
+                display: none !important;
+            }
+
+            .back-office-detail-card.bo-edit-inline-mode [data-back-office-entry-edit-card],
+            .back-office-detail-card.bo-edit-inline-mode [data-back-office-output-edit-card] {
+                margin-top: 0;
+                text-align: left;
+            }
+
+            .back-office-detail-card.bo-edit-inline-mode label,
+            .back-office-detail-card.bo-edit-inline-mode span,
+            .back-office-detail-card.bo-edit-inline-mode div {
+                text-align: left;
+            }
+        }
+
+        .back-office-section:has(.project-search-select__menu:not(.hidden)) {
+            position: relative;
+            z-index: 90;
+        }
+
+        .back-office-section .project-search-select__menu {
+            z-index: 120;
         }
 
         .back-office-section__head {
@@ -599,6 +1020,10 @@
                 padding: 1rem;
             }
 
+            .back-office-output-special-split-grid {
+                grid-template-columns: 1fr;
+            }
+
             .back-office-section__head > div:last-child {
                 justify-content: stretch;
             }
@@ -717,7 +1142,9 @@
                         <a href="{{ route('back_office.index') }}" class="text-sm text-sky-700 hover:underline">← กลับไปยังรายการงาน</a>
                         <h1 class="back-office-hero__title">{{ $task->title }}</h1>
 
-                        @php($purposeText = trim((string) $task->purpose))
+                        @php
+                            $purposeText = trim((string) $task->purpose);
+                        @endphp
                         @if ($purposeText !== '')
                             <div class="back-office-hero__intro">
                                 <span class="back-office-hero__intro-label">จุดประสงค์:</span>
@@ -780,6 +1207,7 @@
                     'summary' => $summary,
                     'drawerMode' => false,
                     'personList' => $personList,
+                    'thaiPersonOptions' => $thaiPersonOptions ?? collect(),
                     'researchPersonList' => $researchPersonList ?? collect(),
                     'categoryOptions' => $categoryOptions,
                     'openQuickEntry' => $openQuickEntry,
@@ -819,6 +1247,7 @@
 
     <script>
         window.__backOfficePeople = @json(($personList ?? collect())->values());
+        window.__backOfficeThaiPeople = @json(($thaiPersonOptions ?? collect())->values());
         window.__backOfficeResearchPeople = @json(($researchPersonList ?? collect())->values());
         window.__backOfficeEscapeHtml = window.__backOfficeEscapeHtml || ((value) => String(value || '')
             .replace(/&/g, '&amp;')
@@ -1159,6 +1588,11 @@
                 return false;
             };
 
+            const isOptionalOutputMetricField = (input) => {
+                const name = String(input?.name || '').trim();
+                return name === 'quartile' || name === 'impact_factor' || name.endsWith('[quartile]') || name.endsWith('[impact_factor]');
+            };
+
             const validateSingleField = (input) => {
                 clearFieldInvalid(input);
                 if (shouldSkipRequiredField(input)) return true;
@@ -1170,6 +1604,7 @@
                         : (input.value ?? '')
                 ).trim();
                 if (value === '') {
+                    if (isOptionalOutputMetricField(input)) return true;
                     input.dataset.invalidSummary = getFieldLabel(input);
                     markFieldInvalid(input, `กรุณากรอก${getFieldLabel(input)}`);
                     return false;
@@ -1440,6 +1875,11 @@
             window.__backOfficeDeleteConfirmBound = true;
 
             const escapeHtml = window.__backOfficeEscapeHtml;
+            const setSectionCount = (sectionSelector, count) => {
+                if (!Number.isFinite(Number(count))) return;
+                const countNode = document.querySelector(`${sectionSelector} .back-office-section__count`);
+                if (countNode) countNode.textContent = `รวม ${Number(count).toLocaleString('th-TH')} รายการ`;
+            };
 
             document.addEventListener('submit', (event) => {
                 const form = event.target?.closest('form[data-back-office-delete-form]');
@@ -1478,6 +1918,12 @@
 
         (() => {
             const escapeHtml = window.__backOfficeEscapeHtml;
+            const cssEscape = (value) => window.CSS?.escape ? CSS.escape(String(value)) : String(value).replace(/["\\]/g, '\\$&');
+            const setSectionCount = (sectionSelector, count) => {
+                if (!Number.isFinite(Number(count))) return;
+                const countNode = document.querySelector(`${sectionSelector} .back-office-section__count`);
+                if (countNode) countNode.textContent = `รวม ${Number(count).toLocaleString('th-TH')} รายการ`;
+            };
 
             document.addEventListener('submit', (event) => {
                 const form = event.target?.closest('form[data-back-office-entry-delete-form]');
@@ -1532,10 +1978,20 @@
                     if (!response.ok) {
                         throw new Error('Delete failed');
                     }
+                    const payload = await response.json().catch(() => ({}));
 
+                    const entryId = form.dataset.entryId || form.closest('[data-back-office-entry-card]')?.id?.replace('entry-', '');
+                    if (entryId) {
+                        document.querySelectorAll(`[data-back-office-entry-id="${cssEscape(entryId)}"]`).forEach((row) => row.remove());
+                        document.getElementById(`entry-${entryId}`)?.remove();
+                    }
                     const card = form.closest('[data-back-office-entry-card]');
                     const list = document.querySelector('[data-back-office-entry-list]');
                     card?.remove();
+                    document.querySelectorAll('.back-office-inline-edit-row').forEach((row) => {
+                        if (!row.querySelector('.back-office-detail-card')) row.remove();
+                    });
+                    setSectionCount('#back-office-entry-section', payload.remaining_entries);
 
                     const hasCards = !!list?.querySelector('[data-back-office-entry-card]');
                     const hasEmpty = !!list?.querySelector('[data-back-office-entry-empty]');
@@ -1574,10 +2030,16 @@
 
         (() => {
             const people = Array.isArray(window.__backOfficePeople) ? window.__backOfficePeople : [];
+            const thaiPeople = Array.isArray(window.__backOfficeThaiPeople) ? window.__backOfficeThaiPeople : [];
             const researchPeople = Array.isArray(window.__backOfficeResearchPeople) ? window.__backOfficeResearchPeople : [];
             const SPECIAL_UNIT_NAME = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
             const fieldClassInline = 'mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100';
             const optionHtml = people.map((name) => `<option value="${String(name).replace(/"/g, '&quot;')}">${String(name).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</option>`).join('');
+            const thaiPersonOptionHtml = thaiPeople.map((person) => {
+                const id = String(person?.id || '').replace(/"/g, '&quot;');
+                const name = String(person?.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return id && name ? `<option value="${id}">${name}</option>` : '';
+            }).join('');
             const researchOptionHtml = researchPeople.map((name) => `<option value="${String(name).replace(/"/g, '&quot;')}">${String(name).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</option>`).join('');
 
             const syncConditionalPersonRow = (row) => {
@@ -1591,8 +2053,9 @@
                 const isInternal = type === 'internal';
                 const isExternal = type === 'external';
                 const isUnit = type === 'unit';
+                const showIdleSelect = type === '' && row.hasAttribute('data-show-idle-person-select');
                 manualWrap?.classList.toggle('hidden', !isExternal && !isUnit);
-                selectWrap?.classList.toggle('hidden', !isInternal);
+                selectWrap?.classList.toggle('hidden', !isInternal && !showIdleSelect);
                 if (manualInput) {
                     const unitLabel = manualInput.dataset.unitPlaceholder || SPECIAL_UNIT_NAME;
                     manualInput.disabled = !isExternal && !isUnit;
@@ -1613,11 +2076,17 @@
                 }
                 if (select) {
                     select.disabled = !isInternal;
+                    select.tomselect?.wrapper?.classList.toggle('is-disabled', !isInternal);
+                    const searchButton = select.tomselect?.wrapper?.querySelector?.('[data-project-search-select-toggle]');
+                    if (searchButton instanceof HTMLButtonElement) {
+                        searchButton.disabled = !isInternal;
+                    }
                     if (!isInternal) {
                         try {
                             select.tomselect?.clear?.(true);
                         } catch (_) {}
                         select.value = '';
+                        select.tomselect?.refreshOptions?.();
                     }
                 }
                 if (isUnit) hidden.value = (manualInput?.dataset.unitPlaceholder || SPECIAL_UNIT_NAME);
@@ -1662,11 +2131,19 @@
                 </div>`;
             };
 
+            const buildOutputContributorRow = (index, mode = 'quick') => {
+                const f = mode === 'inline' ? fieldClassInline : '';
+                return `<div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto]" data-output-contributor-row>
+                    <label class="block"><span class="text-xs font-semibold text-slate-600">ชื่อผู้มีส่วนร่วม <span class="bo-required">*</span></span><select name="contributors[${index}][user_id]" required class="${f}" data-back-office-person-select data-placeholder="กรุณาเลือกผู้มีส่วนร่วม" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้มีส่วนร่วม"><option value="">กรุณาเลือกผู้มีส่วนร่วม</option>${thaiPersonOptionHtml}</select></label>
+                    <div class="flex items-end justify-end"><button type="button" class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" data-remove-output-contributor>ลบ</button></div>
+                </div>`;
+            };
+
             const buildConferencePresenterRow = (index, mode = 'quick') => {
                 const f = mode === 'inline' ? fieldClassInline : '';
-                return `<div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,1fr)_auto]" data-conference-presenter-row data-conditional-person-row>
+                return `<div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,1fr)_auto]" data-conference-presenter-row data-conditional-person-row data-show-idle-person-select>
                     <label class="block"><span class="text-xs font-semibold text-slate-600">ประเภทผู้นำเสนอ <span class="bo-required">*</span></span><select name="conference_presenters[${index}][person_type]" class="${f}" data-person-type-select><option value="">กรุณาเลือก</option><option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option><option value="external">คนนอก</option></select></label>
-                    <div class="hidden" data-person-select-wrap><span class="text-xs font-semibold text-slate-600">เลือกผู้นำเสนอ <span class="bo-required">*</span></span><select class="${f}" data-back-office-person-select data-person-search-select data-placeholder="กรุณาเลือกชื่อผู้นำเสนอ" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ"><option value="">พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ</option>${optionHtml}</select></div>
+                    <div class="hidden" data-person-select-wrap><span class="text-xs font-semibold text-slate-600">เลือกผู้นำเสนอ <span class="bo-required">*</span></span><select class="${f}" data-back-office-person-select data-person-search-select data-placeholder="เลือกผู้นำเสนอ" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ"><option value="">เลือกผู้นำเสนอ</option>${optionHtml}</select></div>
                     <label data-person-manual-wrap><span class="text-xs font-semibold text-slate-600">ชื่อ - นามสกุล ผู้นำเสนอ <span class="bo-required">*</span></span><input class="${f}" placeholder="เลือกประเภทผู้นำเสนอก่อน" data-idle-placeholder="เลือกประเภทผู้นำเสนอก่อน" data-external-placeholder="ชื่อ - นามสกุล ผู้นำเสนอ" data-person-manual-input disabled></label>
                     <input type="hidden" name="conference_presenters[${index}][name]" data-person-name-hidden>
                     <div class="flex items-end justify-end"><button type="button" class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" data-remove-conference-presenter>ลบผู้นำเสนอ</button></div>
@@ -1675,9 +2152,9 @@
 
             const buildAwardRecipientRow = (index, mode = 'quick') => {
                 const f = mode === 'inline' ? fieldClassInline : '';
-                return `<div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,1fr)_auto]" data-award-recipient-row data-conditional-person-row>
+                return `<div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,1fr)_auto]" data-award-recipient-row data-conditional-person-row data-show-idle-person-select>
                     <label class="block"><span class="text-xs font-semibold text-slate-600">คนในหน่วย / คนนอก <span class="bo-required">*</span></span><select name="award_recipients[${index}][person_type]" class="${f}" data-person-type-select><option value="">กรุณาเลือก</option><option value="unit">หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option><option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option><option value="external">คนนอก</option></select></label>
-                    <div class="hidden" data-person-select-wrap><span class="text-xs font-semibold text-slate-600">ชื่อผู้ได้รับรางวัล <span class="bo-required">*</span></span><select class="${f}" data-back-office-person-select data-person-search-select data-placeholder="กรุณาเลือกชื่อผู้ได้รับรางวัล" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล"><option value="">พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล</option>${optionHtml}</select></div>
+                    <div class="hidden" data-person-select-wrap><span class="text-xs font-semibold text-slate-600">ชื่อผู้ได้รับรางวัล <span class="bo-required">*</span></span><select class="${f}" data-back-office-person-select data-person-search-select data-placeholder="เลือกผู้ได้รับรางวัล" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้ได้รับรางวัล"><option value="">เลือกผู้ได้รับรางวัล</option>${optionHtml}</select></div>
                     <label class="hidden" data-person-manual-wrap><span class="text-xs font-semibold text-slate-600">ชื่อผู้ได้รับรางวัล <span class="bo-required">*</span></span><input class="${f}" placeholder="เลือกประเภทผู้ได้รับรางวัลก่อน" data-idle-placeholder="เลือกประเภทผู้ได้รับรางวัลก่อน" data-external-placeholder="ชื่อผู้ได้รับรางวัล" data-unit-placeholder="หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ" data-person-manual-input disabled></label>
                     <input type="hidden" name="award_recipients[${index}][name]" data-person-name-hidden>
                     <div class="flex items-end justify-end"><button type="button" class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" data-remove-award-recipient>ลบรายชื่อ</button></div>
@@ -1686,10 +2163,10 @@
 
             const buildBookAuthorRow = (index, mode = 'quick') => {
                 const f = mode === 'inline' ? fieldClassInline : '';
-                return `<div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,1fr)_auto]" data-book-author-row data-conditional-person-row>
+                return `<div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,1fr)_auto]" data-book-author-row data-conditional-person-row data-show-idle-person-select>
                     <label class="block"><span class="text-xs font-semibold text-slate-600">ประเภทผู้เขียน <span class="bo-required">*</span></span><select name="book_authors[${index}][person_type]" class="${f}" data-person-type-select><option value="">กรุณาเลือก</option><option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option><option value="external">คนนอก</option></select></label>
-                    <div class="hidden" data-person-select-wrap><span class="text-xs font-semibold text-slate-600">เลือกชื่อผู้เขียน <span class="bo-required">*</span></span><select class="${f}" data-back-office-person-select data-person-search-select data-placeholder="กรุณาเลือกชื่อผู้เขียน" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้เขียน"><option value="">พิมพ์เพื่อค้นหาชื่อผู้เขียน</option>${optionHtml}</select></div>
-                    <label class="hidden" data-person-manual-wrap><span class="text-xs font-semibold text-slate-600">ชื่อผู้เขียน <span class="bo-required">*</span></span><input class="${f}" placeholder="ชื่อผู้เขียน" data-person-manual-input disabled></label>
+                    <div class="hidden" data-person-select-wrap><span class="text-xs font-semibold text-slate-600">เลือกชื่อผู้เขียน <span class="bo-required">*</span></span><select class="${f}" data-back-office-person-select data-person-search-select data-placeholder="เลือกผู้เขียน" data-search-placeholder="พิมพ์เพื่อค้นหาชื่อผู้เขียน"><option value="">เลือกผู้เขียน</option>${optionHtml}</select></div>
+                    <label class="hidden" data-person-manual-wrap><span class="text-xs font-semibold text-slate-600">ชื่อผู้เขียน <span class="bo-required">*</span></span><input class="${f}" placeholder="เลือกประเภทผู้เขียนก่อน" data-idle-placeholder="เลือกประเภทผู้เขียนก่อน" data-external-placeholder="ชื่อผู้เขียน" data-person-manual-input disabled></label>
                     <input type="hidden" name="book_authors[${index}][name]" data-person-name-hidden>
                     <div class="flex items-end justify-end"><button type="button" class="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" data-remove-book-author>ลบ</button></div>
                 </div>`;
@@ -1704,6 +2181,29 @@
             };
 
             document.addEventListener('click', (event) => {
+                const addContributor = event.target.closest('[data-add-output-contributor]');
+                if (addContributor) {
+                    const list = addContributor.closest('div')?.parentElement?.querySelector('[data-output-contributor-list]');
+                    if (!list) return;
+                    const index = list.querySelectorAll('[data-output-contributor-row]').length;
+                    const mode = addContributor.closest('[data-back-office-output-edit-card]') ? 'inline' : 'quick';
+                    list.insertAdjacentHTML('beforeend', buildOutputContributorRow(index, mode));
+                    window.initBackOfficePersonSelect?.(list.lastElementChild);
+                    return;
+                }
+
+                const removeContributor = event.target.closest('[data-remove-output-contributor]');
+                if (removeContributor) {
+                    const list = removeContributor.closest('[data-output-contributor-list]');
+                    removeContributor.closest('[data-output-contributor-row]')?.remove();
+                    if (list && !list.querySelector('[data-output-contributor-row]')) {
+                        list.insertAdjacentHTML('beforeend', buildOutputContributorRow(0, removeContributor.closest('[data-back-office-output-edit-card]') ? 'inline' : 'quick'));
+                        window.initBackOfficePersonSelect?.(list.lastElementChild);
+                    }
+                    if (list) reindexNamedRows(list, '[data-output-contributor-row]', ['contributors']);
+                    return;
+                }
+
                 const addQuickAuthor = event.target.closest('[data-add-quick-author]');
                 if (addQuickAuthor) {
                     const list = addQuickAuthor.closest('#quick-output-ea101')?.querySelector('[data-quick-author-list]');
@@ -1815,6 +2315,121 @@
                     const list = removeBookAuthor.closest('[data-quick-book-author-list], [data-inline-book-author-list]');
                     removeBookAuthor.closest('[data-book-author-row]')?.remove();
                     if (list) reindexNamedRows(list, '[data-book-author-row]', ['book_authors']);
+                }
+            });
+        })();
+
+        (() => {
+            const getInlineEditStash = () => {
+                let stash = document.getElementById('back-office-inline-edit-stash');
+                if (!stash) {
+                    stash = document.createElement('div');
+                    stash.id = 'back-office-inline-edit-stash';
+                    stash.hidden = true;
+                    document.body.appendChild(stash);
+                }
+                return stash;
+            };
+
+            const clearInlineEditRows = (activeCard = null) => {
+                document.querySelectorAll('.back-office-inline-edit-row').forEach((row) => {
+                    if (activeCard && row.contains(activeCard)) return;
+                    row.remove();
+                });
+                document.querySelectorAll('[data-output-special-for].hidden').forEach((row) => {
+                    row.classList.remove('hidden');
+                });
+            };
+
+            const insertInlineEditRow = (sourceRow, card, targetId) => {
+                if (!sourceRow || !card) return null;
+
+                clearInlineEditRows(card);
+
+                let editRow = sourceRow.nextElementSibling?.matches?.('.back-office-inline-edit-row')
+                    ? sourceRow.nextElementSibling
+                    : null;
+
+                if (!editRow) {
+                    editRow = document.createElement('tr');
+                    editRow.className = 'back-office-inline-edit-row';
+                    const cell = document.createElement('td');
+                    cell.colSpan = sourceRow.children.length || 1;
+                    editRow.appendChild(cell);
+                    sourceRow.parentNode.insertBefore(editRow, sourceRow.nextSibling);
+                }
+
+                const cell = editRow.querySelector('td');
+                cell.colSpan = sourceRow.children.length || cell.colSpan || 1;
+                cell.appendChild(card);
+
+                const safeTargetId = window.CSS?.escape
+                    ? CSS.escape(targetId)
+                    : String(targetId).replace(/["\\]/g, '\\$&');
+                const specialRow = document.querySelector(`[data-output-special-for="${safeTargetId}"]`);
+                specialRow?.classList.add('hidden');
+
+                return editRow;
+            };
+
+            const revealCardById = (id, mode = 'edit', sourceRow = null) => {
+                const card = id ? document.getElementById(id) : null;
+                if (!card) return;
+
+                const inlineRow = mode === 'edit' && sourceRow
+                    ? insertInlineEditRow(sourceRow, card, id)
+                    : null;
+
+                card.classList.toggle('bo-edit-inline-mode', Boolean(inlineRow));
+                card.classList.add('bo-card-expanded');
+                card.classList.remove('hidden');
+
+                if (mode === 'edit') {
+                    const editCard = card.querySelector('[data-back-office-entry-edit-card], [data-back-office-output-edit-card]');
+                    if (editCard) {
+                        editCard.classList.remove('hidden');
+                        window.initBackOfficePersonSelect?.(editCard);
+                        editCard.querySelectorAll('[data-conditional-person-row]').forEach((row) => window.bindBackOfficeConditionalPersonRow?.(row));
+                        window.__backOfficeInitDatepickers?.(editCard);
+                        editCard.querySelector('input, select, textarea')?.focus?.();
+                    } else {
+                        const editToggle = card.querySelector('[data-back-office-entry-edit-toggle], [data-back-office-output-edit-toggle]');
+                        editToggle?.click();
+                    }
+                    (inlineRow || card).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    clearInlineEditRows();
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            };
+
+            window.__backOfficeCloseInlineEditCard = (editCard) => {
+                if (!(editCard instanceof HTMLElement)) return false;
+
+                const recordCard = editCard.closest('.back-office-detail-card');
+                const inlineRow = recordCard?.closest('.back-office-inline-edit-row');
+                if (!recordCard || !inlineRow) return false;
+
+                editCard.classList.add('hidden');
+                recordCard.classList.remove('bo-edit-inline-mode', 'bo-card-expanded');
+                recordCard.classList.add('hidden');
+
+                if (recordCard.id) {
+                    const safeTargetId = window.CSS?.escape
+                        ? CSS.escape(recordCard.id)
+                        : String(recordCard.id).replace(/["\\]/g, '\\$&');
+                    document.querySelector(`[data-output-special-for="${safeTargetId}"]`)?.classList.remove('hidden');
+                }
+
+                getInlineEditStash().appendChild(recordCard);
+                inlineRow.remove();
+                return true;
+            };
+
+            document.addEventListener('click', (event) => {
+                const edit = event.target.closest('[data-bo-table-edit]');
+                if (edit) {
+                    revealCardById(edit.dataset.targetCard, 'edit', edit.closest('tr'));
                 }
             });
         })();
@@ -2039,7 +2654,9 @@
                 const closeBtn = event.target.closest('[data-back-office-entry-edit-close]');
                 if (closeBtn) {
                     const card = closeBtn.closest('[data-back-office-entry-edit-card]');
-                    card?.classList.add('hidden');
+                    if (!window.__backOfficeCloseInlineEditCard?.(card)) {
+                        card?.classList.add('hidden');
+                    }
                 }
             });
         })();
@@ -2127,6 +2744,7 @@
                 root.querySelectorAll?.('[data-conditional-person-row]').forEach((row) => window.bindBackOfficeConditionalPersonRow?.(row));
                 syncQuickOutputPanels();
                 window.__backOfficeInitDatepickers?.(root);
+                window.__backOfficeApplyListSearch?.();
             };
 
             document.addEventListener('click', (event) => {
@@ -2196,7 +2814,9 @@
                 const closeBtn = event.target.closest('[data-back-office-output-edit-close]');
                 if (closeBtn) {
                     const card = closeBtn.closest('[data-back-office-output-edit-card]');
-                    card?.classList.add('hidden');
+                    if (!window.__backOfficeCloseInlineEditCard?.(card)) {
+                        card?.classList.add('hidden');
+                    }
                 }
             });
 
@@ -2205,6 +2825,12 @@
 
         (() => {
             const escapeHtml = window.__backOfficeEscapeHtml;
+            const cssEscape = (value) => window.CSS?.escape ? CSS.escape(String(value)) : String(value).replace(/["\\]/g, '\\$&');
+            const setSectionCount = (sectionSelector, count) => {
+                if (!Number.isFinite(Number(count))) return;
+                const countNode = document.querySelector(`${sectionSelector} .back-office-section__count`);
+                if (countNode) countNode.textContent = `รวม ${Number(count).toLocaleString('th-TH')} รายการ`;
+            };
 
             document.addEventListener('submit', (event) => {
                 const form = event.target?.closest('form[data-back-office-output-delete-form]');
@@ -2234,9 +2860,20 @@
                         if (!response.ok) {
                             throw new Error('Delete failed');
                         }
+                        const payload = await response.json().catch(() => ({}));
 
+                        const outputId = form.dataset.outputId || form.closest('[data-back-office-output-card]')?.id?.replace('output-', '');
+                        if (outputId) {
+                            document.querySelectorAll(`[data-back-office-output-id="${cssEscape(outputId)}"]`).forEach((row) => row.remove());
+                            document.querySelectorAll(`[data-output-special-for="output-${cssEscape(outputId)}"]`).forEach((row) => row.remove());
+                            document.getElementById(`output-${outputId}`)?.remove();
+                        }
                         const card = form.closest('[data-back-office-output-card]');
                         card?.remove();
+                        document.querySelectorAll('.back-office-inline-edit-row').forEach((row) => {
+                            if (!row.querySelector('.back-office-detail-card')) row.remove();
+                        });
+                        setSectionCount('#back-office-output-section', payload.remaining_outputs);
 
                         if (window.Swal) {
                             Swal.fire({
@@ -2388,6 +3025,33 @@
 
             window.setTimeout(() => window.__backOfficeInitDatepickers(document), 50);
             window.setTimeout(() => window.__backOfficeInitDatepickers(document), 500);
+        })();
+
+        (() => {
+            const shell = document.querySelector('.back-office-shell');
+            const nav = document.getElementById('main-nav');
+            if (!shell) return;
+
+            let ticking = false;
+            const syncStickyTop = () => {
+                ticking = false;
+                const navVisible = nav instanceof HTMLElement && !nav.classList.contains('nav-hidden');
+                const top = navVisible ? Math.ceil(nav.getBoundingClientRect().height) : 0;
+                shell.style.setProperty('--bo-table-sticky-top', `${top}px`);
+            };
+
+            const schedule = () => {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(syncStickyTop);
+            };
+
+            syncStickyTop();
+            window.addEventListener('scroll', schedule, { passive: true });
+            window.addEventListener('resize', schedule);
+            if (nav instanceof HTMLElement) {
+                new MutationObserver(schedule).observe(nav, { attributes: true, attributeFilter: ['class', 'style'] });
+            }
         })();
 
     </script>

@@ -8,6 +8,7 @@ use App\Models\BackOfficeOutputAwardRecipient;
 use App\Models\BackOfficeOutputBookAuthor;
 use App\Models\BackOfficeOutputConference;
 use App\Models\BackOfficeOutputConferencePresenter;
+use App\Models\BackOfficeOutputContributor;
 use App\Models\BackOfficeTask;
 use App\Models\BackOfficeTaskOutput;
 use App\Models\User;
@@ -35,6 +36,17 @@ class BackOfficeController extends Controller
         'ภาระงานด้านทรัพยากรบุคคล',
     ];
 
+    private const BACK_OFFICE_TASK_ID_ORDER = [
+        'BO_0008',
+        'BO_0020',
+        'BO_0007',
+        'BO_0001',
+        'BO_0002',
+        'BO_0003',
+        'BO_0018',
+        'BO_0019',
+    ];
+
     private function backOfficeOutputRelations(): array
     {
         return [
@@ -43,6 +55,8 @@ class BackOfficeController extends Controller
             'outputs.bookAuthorLinks.user',
             'outputs.conferenceLinks.user',
             'outputs.conferenceLinks.presenters.user',
+            'outputs.contributorLinks.user',
+            'outputs.owner',
         ];
     }
 
@@ -70,6 +84,64 @@ class BackOfficeController extends Controller
     private function ensureBackOfficeAdmin(): void
     {
         abort_unless(Auth::user()?->hasRole(User::ROLE_ADMIN), 403);
+    }
+
+    private function backOfficeThaiPersonOptions(Collection $users): Collection
+    {
+        return $users
+            ->map(function (User $user): array {
+                return [
+                    'id' => (int) $user->id,
+                    'name' => trim((string) $user->full_name),
+                ];
+            })
+            ->filter(fn (array $person) => $person['id'] > 0 && $person['name'] !== '')
+            ->values();
+    }
+
+    private function backOfficeOutputOwnerPayload(?int $userId): array
+    {
+        $user = $userId ? User::query()->find($userId) : null;
+
+        return [
+            'owner_user_id' => $user?->id,
+            'owner_name' => $user ? $this->backOfficeInternalFullName($user) : null,
+        ];
+    }
+
+    private function normalizeBackOfficeOutputContributors(array $contributors): array
+    {
+        return collect($contributors)
+            ->map(function ($item): ?array {
+                $userId = isset($item['user_id']) && (int) $item['user_id'] > 0 ? (int) $item['user_id'] : null;
+                if (! $userId) {
+                    return null;
+                }
+
+                $user = User::query()->find($userId);
+                if (! $user) {
+                    return null;
+                }
+
+                return [
+                    'user_id' => (int) $user->id,
+                    'name' => $this->backOfficeInternalFullName($user),
+                ];
+            })
+            ->filter()
+            ->unique('user_id')
+            ->values()
+            ->all();
+    }
+
+    private function firstBackOfficeOutputContributorPayload(array $contributors): array
+    {
+        $first = $contributors[0] ?? null;
+
+        return [
+            'owner_user_id' => !empty($first['user_id']) ? (int) $first['user_id'] : null,
+            'owner_name' => trim((string) ($first['name'] ?? '')) ?: null,
+        ];
     }
 
     private function deriveBackOfficeTaskDateRange(array $entries): array
@@ -578,6 +650,7 @@ class BackOfficeController extends Controller
             'outputs' => $task->outputs
                 ->map(function ($output) {
                     return [
+                        'contributors' => $output->resolvedContributors()->all(),
                         'title' => trim((string) $output->title),
                         'type' => trim((string) ($output->type ?? '')),
                         'project_output' => trim((string) ($output->project_output ?? '')),
@@ -588,6 +661,7 @@ class BackOfficeController extends Controller
                         'book_title' => trim((string) ($output->book_title ?? '')),
                         'publisher_name' => trim((string) ($output->publisher_name ?? '')),
                         'chapter_pages' => trim((string) ($output->chapter_pages ?? '')),
+                        'isbn' => trim((string) ($output->isbn ?? '')),
                         'book_authors' => $this->normalizeBackOfficeBookAuthors($output->resolvedBookAuthors()),
                         'authors' => $this->normalizeBackOfficeAuthors($output->resolvedAuthors()),
                         'conferences' => $this->normalizeBackOfficeConferences($output->resolvedConferences()),
@@ -608,6 +682,7 @@ class BackOfficeController extends Controller
 
         return [
             'id' => $output->id,
+            'contributors' => $output->resolvedContributors()->all(),
             'title' => trim((string) $output->title),
             'type' => $type,
             'project_output' => trim((string) ($output->project_output ?? '')),
@@ -618,6 +693,7 @@ class BackOfficeController extends Controller
             'book_title' => trim((string) ($output->book_title ?? '')),
             'publisher_name' => trim((string) ($output->publisher_name ?? '')),
             'chapter_pages' => trim((string) ($output->chapter_pages ?? '')),
+            'isbn' => trim((string) ($output->isbn ?? '')),
             'authors' => str_starts_with($type, 'EA118') ? [] : $authors,
             'award_recipients' => str_starts_with($type, 'EA118') ? $awardRecipients : [],
             'book_authors' => $bookAuthors,
@@ -652,6 +728,7 @@ class BackOfficeController extends Controller
                 ->map(function ($output) {
                     $type = trim((string) ($output['type'] ?? ''));
                     return [
+                        'contributors' => $this->normalizeBackOfficeOutputContributors((array) ($output['contributors'] ?? [])),
                         'title' => trim((string) ($output['title'] ?? '')),
                         'type' => $type,
                         'project_output' => trim((string) ($output['project_output'] ?? '')),
@@ -662,6 +739,7 @@ class BackOfficeController extends Controller
                         'book_title' => trim((string) ($output['book_title'] ?? '')),
                         'publisher_name' => trim((string) ($output['publisher_name'] ?? '')),
                         'chapter_pages' => trim((string) ($output['chapter_pages'] ?? '')),
+                        'isbn' => trim((string) ($output['isbn'] ?? '')),
                         'book_authors' => $this->normalizeBackOfficeBookAuthors((array) ($output['book_authors'] ?? [])),
                         'authors' => str_starts_with($type, 'EA118')
                             ? $this->mapAwardRecipientsToBackOfficeAuthors((array) ($output['award_recipients'] ?? []))
@@ -711,6 +789,41 @@ class BackOfficeController extends Controller
         $this->syncBackOfficeOutputAwardRecipients($output, str_starts_with($type, 'EA118') ? $awardRecipients : []);
         $this->syncBackOfficeOutputBookAuthors($output, str_starts_with($type, 'EA119') ? $bookAuthors : []);
         $this->syncBackOfficeOutputConferences($output, str_starts_with($type, 'EA103') ? $conferences : []);
+    }
+
+    private function syncBackOfficeOutputContributors(BackOfficeTaskOutput $output, array $contributors): void
+    {
+        $output->contributorLinks()->delete();
+
+        if ($contributors === []) {
+            return;
+        }
+
+        $rows = collect($contributors)
+            ->map(function ($contributor) use ($output) {
+                $userId = ! empty($contributor['user_id']) ? (int) $contributor['user_id'] : null;
+                $name = trim((string) ($contributor['name'] ?? ''));
+
+                if (! $userId && $name === '') {
+                    return null;
+                }
+
+                return [
+                    'back_office_task_output_id' => $output->id,
+                    'user_id' => $userId,
+                    'name' => $name !== '' ? $name : null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            })
+            ->filter()
+            ->unique(fn (array $row) => $row['user_id'] ? 'user:'.$row['user_id'] : 'name:'.($row['name'] ?? ''))
+            ->values()
+            ->all();
+
+        if ($rows !== []) {
+            BackOfficeOutputContributor::insert($rows);
+        }
     }
 
     private function syncBackOfficeOutputAuthors(BackOfficeTaskOutput $output, array $authors): void
@@ -806,6 +919,7 @@ class BackOfficeController extends Controller
                 ];
             })
             ->filter()
+            ->unique(fn (array $row): string => mb_strtolower(trim((string) $row['name']), 'UTF-8'))
             ->values()
             ->all();
 
@@ -1067,15 +1181,21 @@ class BackOfficeController extends Controller
 
     private function applyBackOfficeTaskTitleOrder($query): void
     {
-        $caseSql = collect(self::BACK_OFFICE_TASK_TITLE_ORDER)
+        $idCaseSql = collect(self::BACK_OFFICE_TASK_ID_ORDER)
+            ->keys()
+            ->map(fn ($index) => 'WHEN ? THEN ' . ($index + 1))
+            ->implode(' ');
+
+        $titleCaseSql = collect(self::BACK_OFFICE_TASK_TITLE_ORDER)
             ->keys()
             ->map(fn ($index) => 'WHEN ? THEN ' . ($index + 1))
             ->implode(' ');
 
         $query
-            ->orderByRaw("CASE title {$caseSql} ELSE 999 END", self::BACK_OFFICE_TASK_TITLE_ORDER)
-            ->orderBy('title')
-            ->orderByDesc('created_at');
+            ->orderByRaw("CASE COALESCE(backoffice_id, CONCAT('BO_', LPAD(id, 4, '0'))) {$idCaseSql} ELSE 999 END", self::BACK_OFFICE_TASK_ID_ORDER)
+            ->orderByRaw("CASE title {$titleCaseSql} ELSE 999 END", self::BACK_OFFICE_TASK_TITLE_ORDER)
+            ->orderBy('created_at')
+            ->orderBy('id');
     }
 
     private function backOfficeSortLabel(string $sort): string
@@ -1095,8 +1215,9 @@ class BackOfficeController extends Controller
     {
         $this->ensureBackOfficeAdmin();
 
-        $users = User::select('prefix', 'name', 'prefix_en', 'name_en')->orderBy('name')->get();
+        $users = User::select('id', 'prefix', 'name', 'prefix_en', 'name_en')->orderBy('name')->get();
         $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
+        $thaiPersonOptions = $this->backOfficeThaiPersonOptions($users);
         $researchPersonList = $users
             ->map(fn ($user) => trim((string) $user->research_display_name))
             ->filter()
@@ -1109,6 +1230,7 @@ class BackOfficeController extends Controller
 
         return view('back-office.create', [
             'personList' => $personList,
+            'thaiPersonOptions' => $thaiPersonOptions,
             'researchPersonList' => $researchPersonList,
             'categoryOptions' => $this->backOfficeCategoryOptions(),
         ]);
@@ -1125,15 +1247,18 @@ class BackOfficeController extends Controller
             'leaders.*' => ['nullable', 'string', 'max:255'],
             'outputs' => ['nullable', 'array'],
             'outputs.*.title' => ['required_with:outputs', 'string', 'max:500'],
+            'outputs.*.contributors' => ['nullable', 'array'],
+            'outputs.*.contributors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.type' => ['nullable', 'string', 'max:255'],
             'outputs.*.project_output' => ['nullable', 'string', 'max:500'],
             'outputs.*.year' => ['nullable', 'string', 'max:255'],
             'outputs.*.journal' => ['nullable', 'string', 'max:500'],
-            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4,TCI 1,TCI 2'],
             'outputs.*.impact_factor' => ['nullable', 'numeric'],
             'outputs.*.book_title' => ['nullable', 'string', 'max:1000'],
             'outputs.*.publisher_name' => ['nullable', 'string', 'max:1000'],
             'outputs.*.chapter_pages' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.isbn' => ['nullable', 'string', 'max:1000'],
             'outputs.*.book_authors' => ['nullable', 'array'],
             'outputs.*.book_authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.book_authors.*.name' => ['nullable', 'string', 'max:500'],
@@ -1211,7 +1336,11 @@ class BackOfficeController extends Controller
                         : $this->normalizeBackOfficeAuthors((array) ($output['authors'] ?? []), $lookup);
                     $bookAuthors = $this->normalizeBackOfficeBookAuthors((array) ($output['book_authors'] ?? []), $lookup);
                     $conferences = $this->normalizeDetailOutputConferences($output);
+                    $contributors = $this->normalizeBackOfficeOutputContributors((array) ($output['contributors'] ?? []));
+                    $ownerPayload = $this->firstBackOfficeOutputContributorPayload($contributors);
                     $createdOutput = $task->outputs()->create([
+                        'owner_user_id' => $ownerPayload['owner_user_id'],
+                        'owner_name' => $ownerPayload['owner_name'],
                         'title' => $output['title'],
                         'type' => $type ?: null,
                         'project_output' => $output['project_output'] ?? null,
@@ -1222,10 +1351,9 @@ class BackOfficeController extends Controller
                         'book_title' => $output['book_title'] ?? null,
                         'publisher_name' => $output['publisher_name'] ?? null,
                         'chapter_pages' => $output['chapter_pages'] ?? null,
-                        'book_authors' => !empty($bookAuthors) ? $bookAuthors : null,
-                        'authors' => !empty($authors) ? $authors : null,
-                        'conferences' => !empty($conferences) ? $conferences : null,
+                        'isbn' => $output['isbn'] ?? null,
                     ]);
+                    $this->syncBackOfficeOutputContributors($createdOutput, $contributors);
                     $this->syncBackOfficeOutputLinks($createdOutput, $type, $authors, $awardRecipients, $bookAuthors, $conferences);
                 }
             }
@@ -1257,8 +1385,9 @@ class BackOfficeController extends Controller
     public function show(Request $request, BackOfficeTask $task)
     {
         $task->load(array_merge(['entries', 'outputs', 'creator', 'updater'], $this->backOfficeOutputRelations()));
-        $users = User::select('prefix', 'name', 'prefix_en', 'name_en')->orderBy('name')->get();
+        $users = User::select('id', 'prefix', 'name', 'prefix_en', 'name_en')->orderBy('name')->get();
         $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
+        $thaiPersonOptions = $this->backOfficeThaiPersonOptions($users);
         $researchPersonList = $users
             ->map(function ($user) {
                 $display = trim((string) ($user->research_display_name ?? ''));
@@ -1294,6 +1423,7 @@ class BackOfficeController extends Controller
             'task' => $task,
             'summary' => $summary,
             'personList' => $personList,
+            'thaiPersonOptions' => $thaiPersonOptions,
             'researchPersonList' => $researchPersonList,
             'categoryOptions' => $this->backOfficeCategoryOptions(),
         ]);
@@ -1366,8 +1496,6 @@ class BackOfficeController extends Controller
 
     public function updateEntry(Request $request, BackOfficeTask $task, BackOfficeEntry $entry)
     {
-        $this->ensureBackOfficeAdmin();
-
         if ((int) $entry->task_id !== (int) $task->id) {
             abort(404);
         }
@@ -1437,15 +1565,18 @@ class BackOfficeController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:500'],
+            'contributors' => ['required', 'array', 'min:1'],
+            'contributors.*.user_id' => ['required', 'integer', 'exists:users,id'],
             'type' => ['nullable', 'string', 'max:255'],
             'project_output' => ['nullable', 'string', 'max:1000'],
             'year' => ['nullable', 'string', 'max:255'],
             'journal' => ['nullable', 'string', 'max:500'],
-            'quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4,TCI 1,TCI 2'],
             'impact_factor' => ['nullable', 'numeric'],
             'book_title' => ['nullable', 'string', 'max:1000'],
             'publisher_name' => ['nullable', 'string', 'max:1000'],
             'chapter_pages' => ['nullable', 'string', 'max:1000'],
+            'isbn' => ['nullable', 'string', 'max:1000'],
             'authors' => ['nullable', 'array'],
             'authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'authors.*.name' => ['nullable', 'string', 'max:500'],
@@ -1493,8 +1624,12 @@ class BackOfficeController extends Controller
         $authors = $this->normalizeDetailOutputAuthors($validated, $type);
         $bookAuthors = $this->normalizeDetailOutputBookAuthors($validated);
         $conferences = $this->normalizeDetailOutputConferences($validated);
+        $contributors = $this->normalizeBackOfficeOutputContributors((array) ($validated['contributors'] ?? []));
+        $ownerPayload = $this->firstBackOfficeOutputContributorPayload($contributors);
 
         $output = $task->outputs()->create([
+            'owner_user_id' => $ownerPayload['owner_user_id'],
+            'owner_name' => $ownerPayload['owner_name'],
             'title' => $validated['title'],
             'type' => $type ?: null,
             'project_output' => $validated['project_output'] ?? null,
@@ -1505,10 +1640,9 @@ class BackOfficeController extends Controller
             'book_title' => $validated['book_title'] ?? null,
             'publisher_name' => $validated['publisher_name'] ?? null,
             'chapter_pages' => $validated['chapter_pages'] ?? null,
-            'authors' => !empty($authors) ? $authors : null,
-            'book_authors' => !empty($bookAuthors) ? $bookAuthors : null,
-            'conferences' => !empty($conferences) ? $conferences : null,
+            'isbn' => $validated['isbn'] ?? null,
         ]);
+        $this->syncBackOfficeOutputContributors($output, $contributors);
         $this->syncBackOfficeOutputLinks($output, $type, $authors, $awardRecipients, $bookAuthors, $conferences);
 
         AuditLogger::logBackOfficeAction('add_output_from_detail', [
@@ -1538,23 +1672,24 @@ class BackOfficeController extends Controller
 
     public function updateOutput(Request $request, BackOfficeTask $task, \App\Models\BackOfficeTaskOutput $output)
     {
-        $this->ensureBackOfficeAdmin();
-
         if ((int) $output->task_id !== (int) $task->id) {
             abort(404);
         }
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:500'],
+            'contributors' => ['required', 'array', 'min:1'],
+            'contributors.*.user_id' => ['required', 'integer', 'exists:users,id'],
             'type' => ['nullable', 'string', 'max:255'],
             'project_output' => ['nullable', 'string', 'max:1000'],
             'year' => ['nullable', 'string', 'max:255'],
             'journal' => ['nullable', 'string', 'max:500'],
-            'quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4,TCI 1,TCI 2'],
             'impact_factor' => ['nullable', 'numeric'],
             'book_title' => ['nullable', 'string', 'max:1000'],
             'publisher_name' => ['nullable', 'string', 'max:1000'],
             'chapter_pages' => ['nullable', 'string', 'max:1000'],
+            'isbn' => ['nullable', 'string', 'max:1000'],
             'authors' => ['nullable', 'array'],
             'authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'authors.*.name' => ['nullable', 'string', 'max:500'],
@@ -1603,8 +1738,12 @@ class BackOfficeController extends Controller
         $authors = $this->normalizeDetailOutputAuthors($validated, $type);
         $bookAuthors = $this->normalizeDetailOutputBookAuthors($validated);
         $conferences = $this->normalizeDetailOutputConferences($validated);
+        $contributors = $this->normalizeBackOfficeOutputContributors((array) ($validated['contributors'] ?? []));
+        $ownerPayload = $this->firstBackOfficeOutputContributorPayload($contributors);
 
         $output->update([
+            'owner_user_id' => $ownerPayload['owner_user_id'],
+            'owner_name' => $ownerPayload['owner_name'],
             'title' => $validated['title'],
             'type' => $type ?: null,
             'project_output' => $validated['project_output'] ?? null,
@@ -1615,10 +1754,9 @@ class BackOfficeController extends Controller
             'book_title' => $validated['book_title'] ?? null,
             'publisher_name' => $validated['publisher_name'] ?? null,
             'chapter_pages' => $validated['chapter_pages'] ?? null,
-            'authors' => !empty($authors) ? $authors : null,
-            'book_authors' => !empty($bookAuthors) ? $bookAuthors : null,
-            'conferences' => !empty($conferences) ? $conferences : null,
+            'isbn' => $validated['isbn'] ?? null,
         ]);
+        $this->syncBackOfficeOutputContributors($output, $contributors);
         $this->syncBackOfficeOutputLinks($output, $type, $authors, $awardRecipients, $bookAuthors, $conferences);
 
         AuditLogger::logBackOfficeAction('update_output_from_detail', [
@@ -1731,8 +1869,9 @@ class BackOfficeController extends Controller
 
         $task->load(array_merge(['entries', 'outputs', 'creator', 'updater'], $this->backOfficeOutputRelations()));
 
-        $users = User::select('prefix', 'name', 'prefix_en', 'name_en')->orderBy('name')->get();
+        $users = User::select('id', 'prefix', 'name', 'prefix_en', 'name_en')->orderBy('name')->get();
         $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
+        $thaiPersonOptions = $this->backOfficeThaiPersonOptions($users);
         $researchPersonList = $users
             ->map(fn ($user) => trim((string) $user->research_display_name))
             ->filter()
@@ -1748,6 +1887,7 @@ class BackOfficeController extends Controller
         return view('back-office.edit', [
             'task' => $task,
             'personList' => $personList,
+            'thaiPersonOptions' => $thaiPersonOptions,
             'researchPersonList' => $researchPersonList,
             'categoryOptions' => $this->backOfficeCategoryOptions(),
             'initialTaskOutputs' => $task->outputs
@@ -1768,15 +1908,18 @@ class BackOfficeController extends Controller
             'leaders.*' => ['nullable', 'string', 'max:255'],
             'outputs' => ['nullable', 'array'],
             'outputs.*.title' => ['required_with:outputs', 'string', 'max:500'],
+            'outputs.*.contributors' => ['nullable', 'array'],
+            'outputs.*.contributors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.type' => ['nullable', 'string', 'max:255'],
             'outputs.*.project_output' => ['nullable', 'string', 'max:500'],
             'outputs.*.year' => ['nullable', 'string', 'max:255'],
             'outputs.*.journal' => ['nullable', 'string', 'max:500'],
-            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4,TCI 1,TCI 2'],
             'outputs.*.impact_factor' => ['nullable', 'numeric'],
             'outputs.*.book_title' => ['nullable', 'string', 'max:1000'],
             'outputs.*.publisher_name' => ['nullable', 'string', 'max:1000'],
             'outputs.*.chapter_pages' => ['nullable', 'string', 'max:1000'],
+            'outputs.*.isbn' => ['nullable', 'string', 'max:1000'],
             'outputs.*.book_authors' => ['nullable', 'array'],
             'outputs.*.book_authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
             'outputs.*.book_authors.*.name' => ['nullable', 'string', 'max:500'],
@@ -1866,7 +2009,11 @@ class BackOfficeController extends Controller
                         : $this->normalizeBackOfficeAuthors((array) ($output['authors'] ?? []), $lookup);
                     $bookAuthors = $this->normalizeBackOfficeBookAuthors((array) ($output['book_authors'] ?? []), $lookup);
                     $conferences = $this->normalizeDetailOutputConferences($output);
+                    $contributors = $this->normalizeBackOfficeOutputContributors((array) ($output['contributors'] ?? []));
+                    $ownerPayload = $this->firstBackOfficeOutputContributorPayload($contributors);
                     $createdOutput = $task->outputs()->create([
+                        'owner_user_id' => $ownerPayload['owner_user_id'],
+                        'owner_name' => $ownerPayload['owner_name'],
                         'title' => $output['title'],
                         'type' => $type ?: null,
                         'project_output' => $output['project_output'] ?? null,
@@ -1877,10 +2024,9 @@ class BackOfficeController extends Controller
                         'book_title' => $output['book_title'] ?? null,
                         'publisher_name' => $output['publisher_name'] ?? null,
                         'chapter_pages' => $output['chapter_pages'] ?? null,
-                        'book_authors' => !empty($bookAuthors) ? $bookAuthors : null,
-                        'authors' => !empty($authors) ? $authors : null,
-                        'conferences' => !empty($conferences) ? $conferences : null,
+                        'isbn' => $output['isbn'] ?? null,
                     ]);
+                    $this->syncBackOfficeOutputContributors($createdOutput, $contributors);
                     $this->syncBackOfficeOutputLinks($createdOutput, $type, $authors, $awardRecipients, $bookAuthors, $conferences);
                 }
             }
@@ -1952,7 +2098,7 @@ class BackOfficeController extends Controller
 
         $user = auth()->user();
         $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
-        $filename = 'BACK_OFFICE_' . ($task->backoffice_id ?: BackOfficeTask::formatBackOfficeId((int) $task->id)) . "_{$dateStr}.pdf";
+        $filename = 'MISSIONS_' . ($task->backoffice_id ?: BackOfficeTask::formatBackOfficeId((int) $task->id)) . "_{$dateStr}.pdf";
 
         $pdf = PDF::loadView('back-office.pdf', [
             'task' => $task,

@@ -237,7 +237,7 @@ class OutputController extends Controller
             'outputs.*.note' => ['nullable', 'string', 'max:5000'],
             'outputs.*.publish_date' => ['required', 'date'],
             'outputs.*.journal' => ['required_if:outputs.*.type,EA101', 'nullable', 'string', 'max:255'],
-            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4,TCI 1,TCI 2'],
             'outputs.*.impact_factor' => ['nullable', 'numeric', 'min:0', 'max:99999.999'],
             'outputs.*.book_title' => ['required_if:outputs.*.type,EA119', 'nullable', 'string', 'max:1000'],
             'outputs.*.publisher_name' => ['required_if:outputs.*.type,EA119', 'nullable', 'string', 'max:1000'],
@@ -400,7 +400,7 @@ class OutputController extends Controller
             'note' => ['nullable', 'string', 'max:5000'],
             'publish_date' => ['required', 'date'],
             'journal' => ['required_if:type,EA101', 'nullable', 'string', 'max:255'],
-            'quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4,TCI 1,TCI 2'],
             'impact_factor' => ['nullable', 'numeric', 'min:0', 'max:99999.999'],
             'book_title' => ['required_if:type,EA119', 'nullable', 'string', 'max:1000'],
             'publisher_name' => ['required_if:type,EA119', 'nullable', 'string', 'max:1000'],
@@ -867,22 +867,38 @@ class OutputController extends Controller
             ->values();
 
         $taskOutputQuery = BackOfficeTaskOutput::query()
-            ->with(['task:id,backoffice_id,title,created_by'])
+            ->with(['task:id,backoffice_id,title,created_by', 'contributorLinks.user'])
             ->when(!$canViewAll, function ($q) use ($user, $fullName) {
-                $q->whereHas('task', function ($taskQ) use ($user, $fullName) {
-                    $taskQ->where('created_by', $user->id)
-                        ->orWhereHas('entries', function ($entryQ) use ($fullName) {
-                            $entryQ->where('person_name', $fullName);
+                $q->where(function ($scope) use ($user, $fullName) {
+                    $scope->where('owner_user_id', $user->id)
+                        ->orWhere('owner_name', $fullName)
+                        ->orWhereHas('contributorLinks', function ($contributorQ) use ($user, $fullName) {
+                            $contributorQ->where('user_id', $user->id)
+                                ->orWhere('name', $fullName);
+                        })
+                        ->orWhereHas('task', function ($taskQ) use ($user, $fullName) {
+                            $taskQ->where('created_by', $user->id)
+                                ->orWhereHas('entries', function ($entryQ) use ($fullName) {
+                                    $entryQ->where('person_name', $fullName);
+                                });
                         });
                 });
             });
 
         $taskTypeSourceQuery = BackOfficeTaskOutput::query()
             ->when(!$canViewAll, function ($q) use ($user, $fullName) {
-                $q->whereHas('task', function ($taskQ) use ($user, $fullName) {
-                    $taskQ->where('created_by', $user->id)
-                        ->orWhereHas('entries', function ($entryQ) use ($fullName) {
-                            $entryQ->where('person_name', $fullName);
+                $q->where(function ($scope) use ($user, $fullName) {
+                    $scope->where('owner_user_id', $user->id)
+                        ->orWhere('owner_name', $fullName)
+                        ->orWhereHas('contributorLinks', function ($contributorQ) use ($user, $fullName) {
+                            $contributorQ->where('user_id', $user->id)
+                                ->orWhere('name', $fullName);
+                        })
+                        ->orWhereHas('task', function ($taskQ) use ($user, $fullName) {
+                            $taskQ->where('created_by', $user->id)
+                                ->orWhereHas('entries', function ($entryQ) use ($fullName) {
+                                    $entryQ->where('person_name', $fullName);
+                                });
                         });
                 });
             });
@@ -890,6 +906,7 @@ class OutputController extends Controller
         if ($request->filled('search')) {
             $taskOutputQuery->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
+                    ->orWhere('owner_name', 'like', '%' . $request->search . '%')
                     ->orWhereHas('task', function ($taskQ) use ($request) {
                         $taskQ->where('title', 'like', '%' . $request->search . '%');
                     });
@@ -1253,9 +1270,6 @@ class OutputController extends Controller
                 'impact_factor',
                 'book_title',
                 'publisher_name',
-                'authors',
-                'book_authors',
-                'conferences',
                 'created_at',
             ])
             ->get()
@@ -1560,7 +1574,7 @@ class OutputController extends Controller
         $textbookRows = $filtered->where('type_code', 'EA119')->values();
         $categorizedTotal = (int) ($paperRows->count() + $presentationRows->count() + $textbookRows->count());
 
-        $paperQuartileLabels = collect(['Q1', 'Q2', 'Q3', 'Q4', 'ไม่ระบุ']);
+        $paperQuartileLabels = collect(['Q1', 'Q2', 'Q3', 'Q4', 'TCI 1', 'TCI 2', 'ไม่ระบุ']);
         $paperQuartileValues = $paperQuartileLabels->map(function ($label) use ($paperRows) {
             if ($label === 'ไม่ระบุ') {
                 return (int) $paperRows->filter(fn ($row) => trim((string) ($row->quartile ?? '')) === '')->count();
@@ -1838,7 +1852,7 @@ class OutputController extends Controller
             $request->filled('search') ? 'ค้นหา: ' . trim((string) $request->input('search')) : null,
             $request->filled('author') ? 'Author: ' . trim((string) $request->input('author')) : null,
             $request->filled('role') ? 'Role: ' . trim((string) $request->input('role')) : null,
-            $request->filled('quartile') ? 'Quartile: ' . trim((string) $request->input('quartile')) : null,
+            $request->filled('quartile') ? 'Ranking: ' . trim((string) $request->input('quartile')) : null,
             $request->filled('impact_max')
                 ? 'Impact Factor <= ' . trim((string) $request->input('impact_max'))
                 : null,
@@ -2024,8 +2038,17 @@ class OutputController extends Controller
         $baseRows = $baseQuery->get()
             ->flatMap(function (Output $output) {
                 $yearBe = $this->normalizeYearFilter($output->year);
+                $conferences = $output->conferences->isNotEmpty()
+                    ? $output->conferences
+                    : collect([(object) [
+                        'id' => 'missing-' . $output->id,
+                        'name' => '-',
+                        'presentation_type' => '-',
+                        'location' => '-',
+                        'created_at' => null,
+                    ]]);
 
-                return $output->conferences->map(function ($conference) use ($output, $yearBe) {
+                return $conferences->map(function ($conference) use ($output, $yearBe) {
                     return (object) [
                         'output_id' => $output->id,
                         'output_code' => $output->output_code,
@@ -2040,7 +2063,7 @@ class OutputController extends Controller
                         'conference_name' => $conference->name ?: '-',
                         'presentation_type' => $conference->presentation_type ?: '-',
                         'location' => $conference->location ?: '-',
-                        'presenter_name' => $conference->presenterDisplay() ?: '-',
+                        'presenter_name' => method_exists($conference, 'presenterDisplay') ? ($conference->presenterDisplay() ?: '-') : '-',
                         'displayed_at' => $output->updated_at ?? $output->created_at,
                         'created_at' => $output->created_at,
                         'sort_year' => $yearBe ?? 0,
@@ -2098,8 +2121,17 @@ class OutputController extends Controller
         $externalRows = $externalQuery->get()
             ->flatMap(function (ExternalOutput $output) {
                 $yearBe = $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
+                $conferences = $output->conferences->isNotEmpty()
+                    ? $output->conferences
+                    : collect([(object) [
+                        'id' => 'external-missing-' . $output->id,
+                        'name' => '-',
+                        'presentation_type' => '-',
+                        'location' => '-',
+                        'created_at' => null,
+                    ]]);
 
-                return $output->conferences->map(function ($conference) use ($output, $yearBe) {
+                return $conferences->map(function ($conference) use ($output, $yearBe) {
                     return (object) [
                         'output_id' => $output->id,
                         'output_code' => $output->output_code,
@@ -2114,7 +2146,7 @@ class OutputController extends Controller
                         'conference_name' => $conference->name ?: '-',
                         'presentation_type' => $conference->presentation_type ?: '-',
                         'location' => $conference->location ?: '-',
-                        'presenter_name' => $conference->presenterDisplay() ?: '-',
+                        'presenter_name' => method_exists($conference, 'presenterDisplay') ? ($conference->presenterDisplay() ?: '-') : '-',
                         'displayed_at' => $output->updated_at ?? $output->created_at,
                         'created_at' => $output->created_at,
                         'sort_year' => $yearBe ?? 0,
@@ -2220,16 +2252,31 @@ class OutputController extends Controller
 
     private function visibleBackOfficeOutputsQuery(): Builder
     {
-        $query = BackOfficeTaskOutput::query()->with('task:id,title,created_by');
+        $query = BackOfficeTaskOutput::query()->with([
+            'task:id,title,created_by',
+            'contributorLinks.user',
+            'authorLinks.user',
+            'awardRecipientLinks.user',
+            'bookAuthorLinks.user',
+            'conferenceLinks.presenters.user',
+        ]);
         $user = auth()->user();
         $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
         $canViewAll = $user->isAdminLike();
 
         if (!$canViewAll) {
-            $query->whereHas('task', function (Builder $q) use ($user, $fullName) {
-                $q->where('created_by', $user->id)
-                    ->orWhereHas('entries', function (Builder $subQ) use ($fullName) {
-                        $subQ->where('person_name', $fullName);
+            $query->where(function (Builder $scope) use ($user, $fullName) {
+                $scope->where('owner_user_id', $user->id)
+                    ->orWhere('owner_name', $fullName)
+                    ->orWhereHas('contributorLinks', function (Builder $q) use ($user, $fullName) {
+                        $q->where('user_id', $user->id)
+                            ->orWhere('name', $fullName);
+                    })
+                    ->orWhereHas('task', function (Builder $q) use ($user, $fullName) {
+                        $q->where('created_by', $user->id)
+                            ->orWhereHas('entries', function (Builder $subQ) use ($fullName) {
+                                $subQ->where('person_name', $fullName);
+                            });
                     });
             });
         }
@@ -3199,7 +3246,15 @@ class OutputController extends Controller
         );
 
         BackOfficeTask::query()
-            ->with(['entries:id,task_id,person_name', 'outputs:id,task_id,type,conferences,authors,book_authors'])
+            ->with([
+                'entries:id,task_id,person_name',
+                'outputs:id,task_id,type,owner_user_id,owner_name',
+                'outputs.contributorLinks.user',
+                'outputs.authorLinks.user',
+                'outputs.awardRecipientLinks.user',
+                'outputs.bookAuthorLinks.user',
+                'outputs.conferenceLinks.presenters.user',
+            ])
             ->get()
             ->each(function (BackOfficeTask $task) use (&$statsMap, $nameUserIdsMap) {
                 foreach ($task->outputs as $output) {
@@ -3277,8 +3332,12 @@ class OutputController extends Controller
 
     private function resolveMatchedBackOfficeOutputUserIds(BackOfficeTaskOutput $output, array $nameUserIdsMap, ?BackOfficeTask $task = null): array
     {
-        $matchedUserIds = $this->extractBackOfficeOutputContributorNames($output)
+        $matchedUserIds = $output->resolvedContributors()
+            ->pluck('user_id')
+            ->filter()
+            ->concat($this->extractBackOfficeOutputContributorNames($output)
             ->flatMap(fn ($name) => $this->resolveMatchedUserIds($name, $nameUserIdsMap))
+            )
             ->unique()
             ->values();
 
@@ -3297,6 +3356,10 @@ class OutputController extends Controller
 
     private function extractBackOfficeOutputContributorNames(BackOfficeTaskOutput $output): Collection
     {
+        $ownerNames = method_exists($output, 'resolvedContributors')
+            ? $output->resolvedContributors()->pluck('name')->map(fn ($name) => trim((string) $name))
+            : collect([$output->owner_name ?? null])->map(fn ($name) => trim((string) $name));
+
         $authorNames = collect($output->authors ?? [])
             ->map(function ($author) {
                 if (is_array($author)) {
@@ -3322,7 +3385,8 @@ class OutputController extends Controller
                 return trim((string) ($conference['presenter_name'] ?? ''));
             });
 
-        return $authorNames
+        return $ownerNames
+            ->concat($authorNames)
             ->concat($bookAuthorNames)
             ->concat($presenterNames)
             ->filter()
@@ -3527,7 +3591,7 @@ class OutputController extends Controller
             });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name', 'contributorLinks.user'])
             ->where('type', 'like', 'EA101%')
             ->get()
             ->filter(function (BackOfficeTaskOutput $output) use ($user) {
@@ -3666,7 +3730,7 @@ class OutputController extends Controller
             });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name', 'contributorLinks.user'])
             ->where('type', 'like', 'EA103%')
             ->get()
             ->flatMap(function (BackOfficeTaskOutput $output) use ($user) {
@@ -3772,7 +3836,7 @@ class OutputController extends Controller
             });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name', 'contributorLinks.user'])
             ->where('type', 'like', 'EA119%')
             ->get()
             ->filter(function (BackOfficeTaskOutput $output) use ($user) {
@@ -3931,7 +3995,7 @@ class OutputController extends Controller
             });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name', 'contributorLinks.user'])
             ->where('type', 'like', 'EA105%')
             ->get()
             ->filter(function (BackOfficeTaskOutput $output) use ($user) {
@@ -4077,7 +4141,7 @@ class OutputController extends Controller
                 });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name', 'contributorLinks.user'])
             ->get()
             ->filter(function (BackOfficeTaskOutput $output) use ($user, $excludedTypeCodes) {
                 $typeCode = $this->extractOutputTypeCode($output->type);

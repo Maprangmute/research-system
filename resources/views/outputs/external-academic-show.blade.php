@@ -66,7 +66,7 @@
         ['label' => 'วันที่ publish', 'value' => $externalOutput->publish_date ? $thaiDate($externalOutput->publish_date) : null],
         ['label' => 'Journal', 'value' => $externalOutput->type === 'EA101' ? $externalOutput->journal : null],
         [
-            'label' => 'Quartile / IF',
+            'label' => 'Ranking / IF',
             'value' => $externalOutput->type === 'EA101' && ($hasValue($externalOutput->quartile) || $hasValue($externalOutput->impact_factor))
                 ? collect([$externalOutput->quartile, $externalOutput->impact_factor])->filter($hasValue(...))->implode(' / ')
                 : null,

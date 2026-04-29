@@ -233,16 +233,16 @@
                                 placeholder="เช่น IEEE Access">
                         </label>
                         <label class="block">
-                            <span class="text-sm font-semibold text-slate-700">Quartile (Q)</span>
+                            <span class="text-sm font-semibold text-slate-700">Ranking</span>
                             <select name="quartile" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                                <option value="">เลือก Quartile</option>
-                                @foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $quartile)
+                                <option value="">เลือก Ranking</option>
+                                @foreach (['Q1', 'Q2', 'Q3', 'Q4', 'TCI 1', 'TCI 2'] as $quartile)
                                     <option value="{{ $quartile }}" @selected(($formData['quartile'] ?? '') === $quartile)>{{ $quartile }}</option>
                                 @endforeach
                             </select>
                         </label>
                         <label class="block">
-                            <span class="text-sm font-semibold text-slate-700">Impact Factor (IF)</span>
+                            <span class="text-sm font-semibold text-slate-700">Impact Factor</span>
                             <input type="number" step="0.001" name="impact_factor" value="{{ $formData['impact_factor'] }}"
                                 class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                                 placeholder="เช่น 3.215">

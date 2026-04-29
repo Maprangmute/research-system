@@ -1877,17 +1877,19 @@
         <input name="outputs[${idx}][journal]" type="text" class="w-full border p-2 rounded" placeholder="เช่น IEEE Access">
       </label>
       <label class="w-full">
-        <span class="block text-sm text-gray-700 mb-1">Quartile (Q)</span>
+        <span class="block text-sm text-gray-700 mb-1">Ranking</span>
         <select name="outputs[${idx}][quartile]" class="w-full border p-2 rounded">
-          <option value="">เลือก Quartile</option>
+          <option value="">เลือก Ranking</option>
           <option value="Q1">Q1</option>
           <option value="Q2">Q2</option>
           <option value="Q3">Q3</option>
           <option value="Q4">Q4</option>
+          <option value="TCI 1">TCI 1</option>
+          <option value="TCI 2">TCI 2</option>
         </select>
       </label>
       <label class="w-full">
-        <span class="block text-sm text-gray-700 mb-1">Impact Factor (IF)</span>
+        <span class="block text-sm text-gray-700 mb-1">Impact Factor</span>
         <input name="outputs[${idx}][impact_factor]" type="number" step="0.001" class="w-full border p-2 rounded" placeholder="เช่น 3.215">
       </label>
     </div>

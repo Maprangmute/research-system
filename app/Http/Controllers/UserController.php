@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Support\UserDisplayNameSync;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class UserController extends Controller
 {
@@ -48,6 +50,98 @@ class UserController extends Controller
             }
         }
         return $view;
+    }
+
+    private function nullUserReference(string $table, string $column, int $userId): void
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
+            return;
+        }
+
+        $payload = [$column => null];
+
+        if (Schema::hasColumn($table, 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table($table)
+            ->where($column, $userId)
+            ->update($payload);
+    }
+
+    private function reassignRequiredUserReference(string $table, string $column, int $userId, int $replacementUserId): void
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
+            return;
+        }
+
+        $payload = [$column => $replacementUserId];
+
+        if (Schema::hasColumn($table, 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table($table)
+            ->where($column, $userId)
+            ->update($payload);
+    }
+
+    private function replacementUserIdForDeletion(User $user): ?int
+    {
+        $authId = auth()->id();
+        if ($authId && (int) $authId !== (int) $user->id) {
+            return (int) $authId;
+        }
+
+        return User::query()
+            ->where('id', '!=', $user->id)
+            ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_SU_ADMIN])
+            ->orderBy('id')
+            ->value('id');
+    }
+
+    private function releaseUserReferencesBeforeDelete(User $user): void
+    {
+        $userId = (int) $user->id;
+        $replacementUserId = $this->replacementUserIdForDeletion($user);
+
+        foreach ([
+            ['projects', 'user_id'],
+            ['projects', 'updated_by'],
+            ['projects', 'pi_user_id'],
+            ['project_logs', 'user_id'],
+            ['fte_roles', 'user_id'],
+            ['copis', 'user_id'],
+            ['co_research', 'user_id'],
+            ['output_authors', 'user_id'],
+            ['output_award_recipients', 'user_id'],
+            ['output_book_authors', 'user_id'],
+            ['output_conferences', 'user_id'],
+            ['output_conference_presenters', 'user_id'],
+            ['external_outputs', 'created_by'],
+            ['external_outputs', 'updated_by'],
+            ['external_output_authors', 'user_id'],
+            ['external_output_award_recipients', 'user_id'],
+            ['external_output_book_authors', 'user_id'],
+            ['external_output_conferences', 'user_id'],
+            ['external_output_conference_presenters', 'user_id'],
+            ['back_office_entries', 'user_id'],
+            ['back_office_task_outputs', 'owner_user_id'],
+            ['back_office_output_contributors', 'user_id'],
+            ['back_office_output_authors', 'user_id'],
+            ['back_office_output_award_recipients', 'user_id'],
+            ['back_office_output_book_authors', 'user_id'],
+            ['back_office_output_conferences', 'user_id'],
+            ['back_office_output_conference_presenters', 'user_id'],
+            ['back_office_action_logs', 'user_id'],
+            ['user_activity_logs', 'user_id'],
+        ] as [$table, $column]) {
+            $this->nullUserReference($table, $column, $userId);
+        }
+
+        if ($replacementUserId) {
+            $this->reassignRequiredUserReference('back_office_tasks', 'created_by', $userId, (int) $replacementUserId);
+        }
     }
 
     public function index(Request $request)
@@ -189,7 +283,8 @@ class UserController extends Controller
         }
 
         $validated['password'] = Hash::make($validated['password']);
-        User::create($validated);
+        $user = User::create($validated);
+        UserDisplayNameSync::linkExistingRecordsForUserAfterResponse($user);
 
         return redirect()->route('users.index')->with('success', 'สร้างผู้ใช้งานเรียบร้อย');
     }
@@ -241,6 +336,7 @@ class UserController extends Controller
             (string) ($user->name ?? ''),
             $user->id
         );
+        UserDisplayNameSync::linkExistingRecordsForUserAfterResponse($user);
 
         return redirect()->route('users.index')->with('success', 'อัปเดตข้อมูลผู้ใช้งานเรียบร้อยแล้ว');
     }
@@ -253,7 +349,11 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', 'ไม่สามารถลบผู้ใช้งานของคุณเองได้');
         }
 
-        $user->delete();
+        DB::transaction(function () use ($user): void {
+            $this->releaseUserReferencesBeforeDelete($user);
+            $user->delete();
+        });
+
         return redirect()->route('users.index')->with('success', 'ลบผู้ใช้งานเรียบร้อยแล้ว');
     }
 }

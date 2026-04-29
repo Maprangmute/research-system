@@ -140,7 +140,7 @@
                 @php
                     $creatorName = trim(((optional($output->creator)->prefix ?? '') . ' ' . (optional($output->creator)->name ?? '')));
                     $summaryItems = collect([
-                        ['label' => 'ประเภทของงาน', 'value' => $output->job_category],
+                        ['label' => 'Theme', 'value' => $output->job_category],
                         ['label' => 'Journal', 'value' => $output->type === 'EA101' ? $output->journal : null],
                         [
                             'label' => 'Author',
@@ -157,7 +157,7 @@
                                 : null,
                         ],
                         [
-                            'label' => 'Quartile / IF',
+                            'label' => 'Ranking / IF',
                             'value' => $output->type === 'EA101' && ($hasValue($output->quartile) || $hasValue($output->impact_factor))
                                 ? collect([$output->quartile, $output->impact_factor])->filter($hasValue(...))->implode(' / ')
                                 : null,

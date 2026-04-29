@@ -183,14 +183,14 @@
                                 </label>
 
                                 <label class="block">
-                                    <span class="text-sm font-semibold text-slate-700">ไม่แน่ใจ <span class="text-rose-500">*</span></span>
+                                    <span class="text-sm font-semibold text-slate-700">Theme <span class="text-rose-500">*</span></span>
                                     <select name="outputs[{{ $outputIndex }}][job_category]"
                                         required
-                                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของงาน')"
+                                        oninvalid="this.setCustomValidity('กรุณาเลือก Theme')"
                                         oninput="this.setCustomValidity('')"
                                         @if ($errors->has("outputs.$outputIndex.job_category")) data-server-invalid="1" @endif
                                         class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm{{ $errors->has("outputs.$outputIndex.job_category") ? ' border-red-500 bg-red-50 ' : '' }}">
-                                        <option value="">เลือกประเภทของงาน</option>
+                                        <option value="">เลือก Theme</option>
                                         @foreach ($jobCategoryOptions as $jobCategory)
                                             <option value="{{ $jobCategory }}" @selected(($output['job_category'] ?? '') === $jobCategory)>{{ $jobCategory }}</option>
                                         @endforeach
@@ -244,18 +244,18 @@
                                     </label>
 
                                     <label class="block">
-                                        <span class="text-sm font-semibold text-slate-700">Quartile (Q)</span>
+                                        <span class="text-sm font-semibold text-slate-700">Ranking</span>
                                         <select name="outputs[{{ $outputIndex }}][quartile]"
                                             class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                                            <option value="">เลือก Quartile</option>
-                                            @foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $quartile)
+                                            <option value="">เลือก Ranking</option>
+                                            @foreach (['Q1', 'Q2', 'Q3', 'Q4', 'TCI 1', 'TCI 2'] as $quartile)
                                                 <option value="{{ $quartile }}" @selected(($output['quartile'] ?? '') === $quartile)>{{ $quartile }}</option>
                                             @endforeach
                                         </select>
                                     </label>
 
                                     <label class="block">
-                                        <span class="text-sm font-semibold text-slate-700">Impact Factor (IF)</span>
+                                        <span class="text-sm font-semibold text-slate-700">Impact Factor</span>
                                         <input type="number"
                                             step="0.001"
                                             name="outputs[{{ $outputIndex }}][impact_factor]"
@@ -609,9 +609,9 @@
                         </select>
                     </label>
                     <label class="block">
-                        <span class="text-sm font-semibold text-slate-700">ไม่แน่ใจ <span class="text-rose-500">*</span></span>
-                        <select name="outputs[__INDEX__][job_category]" required oninvalid="this.setCustomValidity('กรุณาเลือกประเภทของงาน')" oninput="this.setCustomValidity('')" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                            <option value="">เลือกประเภทของงาน</option>
+                        <span class="text-sm font-semibold text-slate-700">Theme <span class="text-rose-500">*</span></span>
+                        <select name="outputs[__INDEX__][job_category]" required oninvalid="this.setCustomValidity('กรุณาเลือก Theme')" oninput="this.setCustomValidity('')" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                            <option value="">เลือก Theme</option>
                             @foreach ($jobCategoryOptions as $jobCategory)
                                 <option value="{{ $jobCategory }}">{{ $jobCategory }}</option>
                             @endforeach
@@ -637,17 +637,19 @@
                             <input type="text" name="outputs[__INDEX__][journal]" data-required-ea101="true" oninvalid="this.setCustomValidity('กรุณากรอก Journal')" oninput="this.setCustomValidity('')" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เช่น IEEE Access">
                         </label>
                         <label class="block">
-                            <span class="text-sm font-semibold text-slate-700">Quartile (Q)</span>
+                            <span class="text-sm font-semibold text-slate-700">Ranking</span>
                             <select name="outputs[__INDEX__][quartile]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                                <option value="">เลือก Quartile</option>
+                                <option value="">เลือก Ranking</option>
                                 <option value="Q1">Q1</option>
                                 <option value="Q2">Q2</option>
                                 <option value="Q3">Q3</option>
                                 <option value="Q4">Q4</option>
+          <option value="TCI 1">TCI 1</option>
+          <option value="TCI 2">TCI 2</option>
                             </select>
                         </label>
                         <label class="block">
-                            <span class="text-sm font-semibold text-slate-700">Impact Factor (IF)</span>
+                            <span class="text-sm font-semibold text-slate-700">Impact Factor</span>
                             <input type="number" step="0.001" name="outputs[__INDEX__][impact_factor]" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="เช่น 3.215">
                         </label>
                     </div>

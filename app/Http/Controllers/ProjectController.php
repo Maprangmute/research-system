@@ -1524,7 +1524,7 @@ public function store(Request $request)
             'outputs.*.year' => ['nullable', 'string'],
 
             'outputs.*.journal' => ['nullable', 'string'],
-            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4'],
+            'outputs.*.quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4,TCI 1,TCI 2'],
             'outputs.*.impact_factor' => ['nullable', 'numeric'],
 
             'outputs.*.authors' => ['nullable', 'array'],
@@ -1581,25 +1581,7 @@ public function store(Request $request)
                 }
             }
 
-            $seen = [];
-            foreach ((array) ($row['book_authors'] ?? []) as $authorIndex => $author) {
-                $name = trim((string) ($author['name'] ?? ''));
-                if ($name === '') {
-                    continue;
-                }
-
-                $normalizedName = $this->normalizeAuthorNameForDuplicateCheck($name);
-                if ($normalizedName === '') {
-                    continue;
-                }
-
-                if (isset($seen[$normalizedName])) {
-                    $errors["outputs.$index.book_authors.$authorIndex.name"][] = 'พบชื่อผู้เขียนซ้ำ กรุณาเลือกชื่อที่ไม่ซ้ำ';
-                    continue;
-                }
-
-                $seen[$normalizedName] = true;
-            }
+            // Duplicate textbook authors are ignored during sync instead of blocking the whole save.
         }
 
         if (! empty($errors)) {
@@ -2150,7 +2132,7 @@ public function store(Request $request)
             return null;
         }
         $q = strtoupper(trim($q));
-        if (in_array($q, ['Q1', 'Q2', 'Q3', 'Q4'], true)) {
+        if (in_array($q, ['Q1', 'Q2', 'Q3', 'Q4', 'TCI 1', 'TCI 2'], true)) {
             return $q;
         }
         if (in_array($q, ['1', '2', '3', '4'], true)) {

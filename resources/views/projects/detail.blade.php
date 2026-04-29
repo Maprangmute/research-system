@@ -1563,7 +1563,7 @@
                                                         <div class="text-gray-800">{{ $output->journal ?: '-' }}</div>
                                                     </div>
                                                     <div>
-                                                        <div class="text-gray-500">Quartile (Q)</div>
+                                                        <div class="text-gray-500">Ranking</div>
                                                         <div class="text-gray-800">
                                                             @if ($output->quartile)
                                                                 <span
@@ -1576,7 +1576,7 @@
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <div class="text-gray-500">Impact Factor (IF)</div>
+                                                        <div class="text-gray-500">Impact Factor</div>
                                                         <div class="text-gray-800">
                                                             {{ $output->impact_factor !== null && $output->impact_factor !== '' ? $output->impact_factor : '-' }}
                                                         </div>
@@ -1610,7 +1610,7 @@
                                                                     <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">{{ $output->journal ?: '-' }}</div>
                                                                 </div>
                                                                 <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                                                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Quartile</div>
+                                                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Ranking</div>
                                                                     <div class="mt-2 text-sm font-semibold leading-6 text-slate-800">{{ $output->quartile ?: '-' }}</div>
                                                                 </div>
                                                                 <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">

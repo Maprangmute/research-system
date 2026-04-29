@@ -9,6 +9,59 @@ use Illuminate\Support\Facades\Schema;
 
 class UserDisplayNameSync
 {
+    public static function linkExistingRecordsForUserAfterResponse(User $user): void
+    {
+        if (app()->runningInConsole()) {
+            self::linkExistingRecordsForUser($user);
+            return;
+        }
+
+        app()->terminating(static function () use ($user): void {
+            self::linkExistingRecordsForUser($user->fresh() ?? $user);
+        });
+    }
+
+    public static function linkExistingRecordsForUser(User $user): void
+    {
+        $userId = (int) $user->id;
+        if ($userId <= 0) {
+            return;
+        }
+
+        $fullName = trim((string) $user->full_name);
+        $researchDisplayName = trim((string) $user->research_display_name);
+        $candidates = self::userNameCandidates($user);
+
+        if ($candidates === []) {
+            return;
+        }
+
+        DB::transaction(function () use ($userId, $fullName, $researchDisplayName, $candidates): void {
+            self::linkProjectPiByNames($userId, $fullName, $candidates);
+            self::linkNameTableByNames('copis', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('co_research', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('fte_roles', 'user_id', 'name', $userId, $fullName, $candidates);
+
+            self::linkNameTableByNames('output_authors', 'user_id', 'name', $userId, $researchDisplayName, $candidates);
+            self::linkNameTableByNames('external_output_authors', 'user_id', 'name', $userId, $researchDisplayName, $candidates);
+            self::linkNameTableByNames('output_award_recipients', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('external_output_award_recipients', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('output_book_authors', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('external_output_book_authors', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('output_conference_presenters', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('external_output_conference_presenters', 'user_id', 'name', $userId, $fullName, $candidates);
+
+            self::linkNameTableByNames('back_office_entries', 'user_id', 'person_name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('back_office_task_outputs', 'owner_user_id', 'owner_name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('back_office_output_contributors', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkBackOfficeOutputContributorsByNames($userId, $fullName, $candidates);
+            self::linkNameTableByNames('back_office_output_authors', 'user_id', 'name', $userId, $researchDisplayName, $candidates);
+            self::linkNameTableByNames('back_office_output_award_recipients', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('back_office_output_book_authors', 'user_id', 'name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('back_office_output_conference_presenters', 'user_id', 'name', $userId, $fullName, $candidates);
+        });
+    }
+
     public static function syncAfterResponse(string $oldPrefix, string $oldName, string $newPrefix, string $newName, ?int $userId = null): void
     {
         if (app()->runningInConsole()) {
@@ -50,10 +103,14 @@ class UserDisplayNameSync
             self::syncOutputBookAuthorLinkedUsers($userId, $newFull);
             self::syncOutputConferenceLinkedUsers($userId, $newFull);
             self::syncBackOfficeEntryLinkedUsers($userId, $newFull);
+            self::syncBackOfficeOutputContributorLinkedUsers($userId, $newFull);
             self::syncBackOfficeOutputAuthorLinkedUsers($userId);
             self::syncBackOfficeOutputAwardRecipientLinkedUsers($userId, $newFull);
             self::syncBackOfficeOutputBookAuthorLinkedUsers($userId, $newFull);
             self::syncBackOfficeOutputConferenceLinkedUsers($userId, $newFull);
+            if ($user = User::query()->find($userId)) {
+                self::linkExistingRecordsForUser($user);
+            }
         }
 
         if ($replacements === []) {
@@ -78,6 +135,7 @@ class UserDisplayNameSync
             self::syncSimpleNameColumn('external_output_conference_presenters', 'name', $replacements);
 
             self::syncSimpleNameColumn('back_office_entries', 'person_name', $replacements);
+            self::syncSimpleNameColumn('back_office_output_contributors', 'name', $replacements);
             self::syncOutputAuthorsForTable('back_office_output_authors', $replacements);
             self::syncSimpleNameColumn('back_office_output_award_recipients', 'name', $replacements);
             self::syncSimpleNameColumn('back_office_output_book_authors', 'name', $replacements);
@@ -85,6 +143,7 @@ class UserDisplayNameSync
             self::syncSimpleNameColumn('progress_reports', 'submitter_name', $replacements);
 
             self::syncBackOfficeTaskLeaders($replacements);
+            self::syncBackOfficeContributorsJsonColumn('back_office_task_outputs', 'contributors', $replacements);
             self::syncBackOfficeAuthorJsonColumn('back_office_task_outputs', 'authors', $replacements);
             self::syncBackOfficeConferenceJsonColumn('back_office_task_outputs', 'conferences', $replacements);
             self::syncBookAuthorJsonColumn('back_office_task_outputs', 'book_authors', $replacements);
@@ -276,6 +335,27 @@ class UserDisplayNameSync
         }
 
         DB::table('back_office_entries')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncBackOfficeOutputContributorLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('back_office_output_contributors') ||
+            !Schema::hasColumn('back_office_output_contributors', 'user_id') ||
+            !Schema::hasColumn('back_office_output_contributors', 'name')
+        ) {
+            return;
+        }
+
+        $payload = ['name' => $fullName];
+
+        if (Schema::hasColumn('back_office_output_contributors', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('back_office_output_contributors')
             ->where('user_id', $userId)
             ->update($payload);
     }
@@ -535,6 +615,76 @@ class UserDisplayNameSync
         }
     }
 
+    /**
+     * @return array<int, string>
+     */
+    private static function userNameCandidates(User $user): array
+    {
+        $values = [
+            trim((string) $user->full_name),
+            trim((string) $user->name),
+            trim(((string) ($user->prefix_en ?? '')) . ' ' . ((string) ($user->name_en ?? ''))),
+            trim((string) ($user->name_en ?? '')),
+            trim((string) $user->research_display_name),
+        ];
+
+        return collect($values)
+            ->map(fn ($value) => preg_replace('/\s+/u', ' ', trim((string) $value)) ?? '')
+            ->filter()
+            ->unique(fn ($value) => mb_strtolower($value, 'UTF-8'))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $candidateNames
+     */
+    private static function linkProjectPiByNames(int $userId, string $fullName, array $candidateNames): void
+    {
+        if (
+            !Schema::hasTable('projects') ||
+            !Schema::hasColumn('projects', 'pi_user_id') ||
+            !Schema::hasColumn('projects', 'pi_name')
+        ) {
+            return;
+        }
+
+        self::linkNameTableByNames('projects', 'pi_user_id', 'pi_name', $userId, $fullName, $candidateNames);
+    }
+
+    /**
+     * @param  array<int, string>  $candidateNames
+     */
+    private static function linkNameTableByNames(string $table, string $userIdColumn, string $nameColumn, int $userId, string $storedName, array $candidateNames): void
+    {
+        if (
+            $storedName === '' ||
+            !Schema::hasTable($table) ||
+            !Schema::hasColumn($table, $userIdColumn) ||
+            !Schema::hasColumn($table, $nameColumn)
+        ) {
+            return;
+        }
+
+        $payload = [
+            $userIdColumn => $userId,
+            $nameColumn => $storedName,
+        ];
+
+        if (Schema::hasColumn($table, 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table($table)
+            ->whereNull($userIdColumn)
+            ->where(function ($query) use ($nameColumn, $candidateNames): void {
+                foreach ($candidateNames as $candidate) {
+                    $query->orWhereRaw("TRIM({$nameColumn}) = ?", [$candidate]);
+                }
+            })
+            ->update($payload);
+    }
+
     private static function syncBackOfficeTaskLeaders(array $replacements): void
     {
         if (!Schema::hasTable('back_office_tasks') || !Schema::hasColumn('back_office_tasks', 'leaders')) {
@@ -601,6 +751,116 @@ class UserDisplayNameSync
                         }
                     }
                     unset($author);
+
+                    if (!$changed) {
+                        continue;
+                    }
+
+                    $payload = [$column => json_encode($decoded, JSON_UNESCAPED_UNICODE)];
+                    if ($hasUpdatedAt) {
+                        $payload['updated_at'] = now();
+                    }
+
+                    DB::table($table)->where('id', $row->id)->update($payload);
+                }
+            });
+    }
+
+    /**
+     * @param  array<int, string>  $candidateNames
+     */
+    private static function linkBackOfficeOutputContributorsByNames(int $userId, string $fullName, array $candidateNames): void
+    {
+        if (
+            !Schema::hasTable('back_office_task_outputs') ||
+            !Schema::hasColumn('back_office_task_outputs', 'id') ||
+            !Schema::hasColumn('back_office_task_outputs', 'contributors')
+        ) {
+            return;
+        }
+
+        $hasUpdatedAt = Schema::hasColumn('back_office_task_outputs', 'updated_at');
+
+        DB::table('back_office_task_outputs')
+            ->whereNotNull('contributors')
+            ->orderBy('id')
+            ->chunkById(200, function ($rows) use ($userId, $fullName, $candidateNames, $hasUpdatedAt): void {
+                foreach ($rows as $row) {
+                    $decoded = json_decode((string) $row->contributors, true);
+                    if (!is_array($decoded) || $decoded === []) {
+                        continue;
+                    }
+
+                    $changed = false;
+                    foreach ($decoded as &$contributor) {
+                        if (!is_array($contributor)) {
+                            continue;
+                        }
+
+                        if (!empty($contributor['user_id'])) {
+                            continue;
+                        }
+
+                        $name = preg_replace('/\s+/u', ' ', trim((string) ($contributor['name'] ?? ''))) ?? '';
+                        if ($name === '' || !in_array($name, $candidateNames, true)) {
+                            continue;
+                        }
+
+                        $contributor['user_id'] = $userId;
+                        $contributor['name'] = $fullName;
+                        $changed = true;
+                    }
+                    unset($contributor);
+
+                    if (!$changed) {
+                        continue;
+                    }
+
+                    $payload = ['contributors' => json_encode($decoded, JSON_UNESCAPED_UNICODE)];
+                    if ($hasUpdatedAt) {
+                        $payload['updated_at'] = now();
+                    }
+
+                    DB::table('back_office_task_outputs')->where('id', $row->id)->update($payload);
+                }
+            });
+    }
+
+    private static function syncBackOfficeContributorsJsonColumn(string $table, string $column, array $replacements): void
+    {
+        if (!Schema::hasTable($table) || !Schema::hasColumn($table, $column) || !Schema::hasColumn($table, 'id')) {
+            return;
+        }
+
+        $hasUpdatedAt = Schema::hasColumn($table, 'updated_at');
+
+        DB::table($table)
+            ->whereNotNull($column)
+            ->orderBy('id')
+            ->chunkById(200, function ($rows) use ($table, $column, $replacements, $hasUpdatedAt): void {
+                foreach ($rows as $row) {
+                    $decoded = json_decode((string) $row->{$column}, true);
+                    if (!is_array($decoded) || $decoded === []) {
+                        continue;
+                    }
+
+                    $changed = false;
+                    foreach ($decoded as &$contributor) {
+                        if (!is_array($contributor)) {
+                            continue;
+                        }
+
+                        if (!empty($contributor['user_id'])) {
+                            continue;
+                        }
+
+                        $name = trim((string) ($contributor['name'] ?? ''));
+                        if ($name !== '' && isset($replacements[$name])) {
+                            $contributor['name'] = $replacements[$name];
+                            $changed = true;
+                        }
+                    }
+                    unset($contributor);
 
                     if (!$changed) {
                         continue;

@@ -13,6 +13,8 @@ class BackOfficeTaskOutput extends Model
 
     protected $fillable = [
         'task_id',
+        'owner_user_id',
+        'owner_name',
         'title',
         'type',
         'project_output',
@@ -23,15 +25,7 @@ class BackOfficeTaskOutput extends Model
         'book_title',
         'publisher_name',
         'chapter_pages',
-        'book_authors',
-        'authors',
-        'conferences',
-    ];
-
-    protected $casts = [
-        'book_authors' => 'array',
-        'authors' => 'array',
-        'conferences' => 'array',
+        'isbn',
     ];
 
     public function task(): BelongsTo
@@ -39,9 +33,98 @@ class BackOfficeTaskOutput extends Model
         return $this->belongsTo(BackOfficeTask::class, 'task_id');
     }
 
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    public function resolvedOwnerName(): string
+    {
+        $user = $this->relationLoaded('owner') ? $this->owner : $this->owner()->first();
+
+        if ($user) {
+            $name = trim((string) $user->full_name);
+            if ($name !== '') {
+                return $name;
+            }
+        }
+
+        return trim((string) ($this->owner_name ?? ''));
+    }
+
+    public function resolvedContributors(): Collection
+    {
+        $links = $this->relationLoaded('contributorLinks')
+            ? $this->contributorLinks
+            : $this->contributorLinks()->with('user')->get();
+
+        if ($links->isNotEmpty()) {
+            return $links
+                ->map(function (BackOfficeOutputContributor $contributor): array {
+                    $user = $contributor->relationLoaded('user') ? $contributor->user : $contributor->user()->first();
+                    $freshName = $user ? trim((string) $user->full_name) : '';
+                    $snapshotName = trim((string) ($contributor->name ?? ''));
+
+                    return [
+                        'user_id' => $contributor->user_id ? (int) $contributor->user_id : null,
+                        'name' => $freshName !== '' ? $freshName : $snapshotName,
+                    ];
+                })
+                ->filter(fn (array $item) => $item['name'] !== '' || !empty($item['user_id']))
+                ->values();
+        }
+
+        $contributors = collect($this->rawJsonArray('contributors'))
+            ->map(function ($item): array {
+                $item = is_array($item) ? $item : [];
+                return [
+                    'user_id' => !empty($item['user_id']) ? (int) $item['user_id'] : null,
+                    'name' => trim((string) ($item['name'] ?? '')),
+                ];
+            })
+            ->filter(fn (array $item) => $item['name'] !== '' || !empty($item['user_id']))
+            ->values();
+
+        if ($contributors->isNotEmpty()) {
+            $usersById = User::query()
+                ->whereIn('id', $contributors->pluck('user_id')->filter()->unique()->values())
+                ->get()
+                ->keyBy('id');
+
+            return $contributors
+                ->map(function (array $contributor) use ($usersById): array {
+                    $userId = !empty($contributor['user_id']) ? (int) $contributor['user_id'] : null;
+                    $user = $userId ? $usersById->get($userId) : null;
+                    $freshName = $user ? trim((string) $user->full_name) : '';
+
+                    return [
+                        'user_id' => $userId,
+                        'name' => $freshName !== '' ? $freshName : $contributor['name'],
+                    ];
+                })
+                ->filter(fn (array $item) => $item['name'] !== '' || !empty($item['user_id']))
+                ->values();
+        }
+
+        $ownerName = $this->resolvedOwnerName();
+        if ($ownerName === '' && empty($this->owner_user_id)) {
+            return collect();
+        }
+
+        return collect([[
+            'user_id' => $this->owner_user_id ? (int) $this->owner_user_id : null,
+            'name' => $ownerName,
+        ]]);
+    }
+
     public function authorLinks(): HasMany
     {
         return $this->hasMany(BackOfficeOutputAuthor::class, 'back_office_task_output_id');
+    }
+
+    public function contributorLinks(): HasMany
+    {
+        return $this->hasMany(BackOfficeOutputContributor::class, 'back_office_task_output_id');
     }
 
     public function awardRecipientLinks(): HasMany
@@ -91,7 +174,7 @@ class BackOfficeTaskOutput extends Model
                 ->all();
         }
 
-        return collect($this->authors ?? [])
+        return collect($this->rawJsonArray('authors'))
             ->map(fn ($item) => is_array($item) ? $item : [])
             ->values()
             ->all();
@@ -128,7 +211,7 @@ class BackOfficeTaskOutput extends Model
                 ->all();
         }
 
-        return collect($this->authors ?? [])
+        return collect($this->rawJsonArray('authors'))
             ->filter(fn ($item) => is_array($item) && (($item['role'] ?? '') === 'awardee'))
             ->map(function (array $item): array {
                 $personType = trim((string) ($item['person_type'] ?? ''));
@@ -168,7 +251,7 @@ class BackOfficeTaskOutput extends Model
                 ->all();
         }
 
-        return collect($this->book_authors ?? [])
+        return collect($this->rawJsonArray('book_authors'))
             ->map(fn ($item) => is_array($item) ? $item : [])
             ->values()
             ->all();
@@ -222,9 +305,50 @@ class BackOfficeTaskOutput extends Model
                 ->all();
         }
 
-        return collect($this->conferences ?? [])
+        return collect($this->rawJsonArray('conferences'))
             ->map(fn ($item) => is_array($item) ? $item : [])
             ->values()
             ->all();
+    }
+
+    public function getContributorsAttribute(): array
+    {
+        return $this->resolvedContributors()->all();
+    }
+
+    public function getAuthorsAttribute(): array
+    {
+        return $this->resolvedAuthors();
+    }
+
+    public function getBookAuthorsAttribute(): array
+    {
+        return $this->resolvedBookAuthors();
+    }
+
+    public function getConferencesAttribute(): array
+    {
+        return $this->resolvedConferences();
+    }
+
+    private function rawJsonArray(string $key): array
+    {
+        if (! array_key_exists($key, $this->attributes)) {
+            return [];
+        }
+
+        $value = $this->attributes[$key] ?? null;
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 }

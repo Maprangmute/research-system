@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>Back Office Report</title>
+    <title>Missions Report</title>
     <style>
         @page {
             header: html_Header;
@@ -439,8 +439,6 @@
         $headerLogoPath = public_path('images/sihp-logo.png');
         $headerLogo = file_exists($headerLogoPath) ? 'file://' . $headerLogoPath : null;
         $leadersText = !empty($task->leaders) ? implode(', ', $task->leaders) : '-';
-        $periodText = $formatDateBE($task->start_date) . ' ถึง ' . $formatDateBE($task->end_date);
-        $creatorText = trim((string) ($task->creator?->name ?? '-'));
         $updatedUser = $task->updated_by ? $task->updater : $task->creator;
         $updatedBy = $updatedUser ? trim((string) ($updatedUser->name ?? '-')) : '-';
         $updatedAtThai = $task->updated_at ? $generatedAt->copy()->parse($task->updated_at)->locale('th')->translatedFormat('j F') . ' ' . ($task->updated_at->year + 543) . $task->updated_at->format(' H:i') . ' น.' : '-';
@@ -473,7 +471,7 @@
                         </table>
                     </td>
                     <td style="width:42%; text-align:right; vertical-align:middle; font-size:13.6pt; font-weight:bold; color:#0f172a;">
-                        Back Office Report
+                        Missions Report
                     </td>
                 </tr>
             </table>
@@ -490,19 +488,16 @@
     </htmlpagefooter>
 
     <div class="hero-shell">
-        <div class="report-kicker">Back Office Report</div>
-        <div class="report-title">รายงานงานนอกโครงการ: {{ $task->title }}</div>
-        <div class="report-subtitle">
-            สรุปภาระงาน ชั่วโมง FTE และผลงานที่เกิดขึ้นจากงานนอกโครงการ พร้อมรายละเอียดเฉพาะของแต่ละประเภทผลงาน
-        </div>
-        <div class="hero-meta">
-            วันที่ออกรายงาน {{ $generatedLabel }}<br>
-            ผู้สร้างรายงาน {{ $reporter }}<br>
-            ผู้บันทึก {{ $creatorText }} • ข้อมูลล่าสุดโดย {{ $updatedBy }}
-        </div>
+        <div class="report-kicker">Missions Report</div>
+        <div class="report-title">รายงาน Mission: {{ $task->title }}</div>
+        @if (trim((string) $task->purpose) !== '')
+            <div style="margin-top:10px; border:1px solid #dbe7f5; border-radius:12px; background:#ffffff; padding:10px 12px;">
+                <div style="font-size:11.2pt; color:#64748b; font-weight:bold;">จุดประสงค์</div>
+                <div style="margin-top:4px; font-size:12.4pt; color:#334155; line-height:1.5;">{!! nl2br(e($task->purpose)) !!}</div>
+            </div>
+        @endif
         <div style="margin-top:10px;">
             <span class="chip chip--leader">หัวหน้างาน: {{ $leadersText }}</span>
-            <span class="chip chip--period">ช่วงเวลา {{ $periodText }}</span>
         </div>
     </div>
 
@@ -526,13 +521,13 @@
             <td>
                 <div class="summary-label">จำนวนผลงาน</div>
                 <div class="summary-value">{{ number_format($task->outputs->count()) }}</div>
-                <div class="summary-note">ผลงานที่ผูกกับงานนอกโครงการนี้</div>
+                <div class="summary-note">ผลงานที่ผูกกับ Mission นี้</div>
             </td>
         </tr>
     </table>
 
     <div class="section-title section-title--entries">A. ภาระงาน</div>
-    <div class="section-subtitle">รายละเอียดภาระงาน ผู้รับผิดชอบ ช่วงเวลา ชั่วโมง และ FTE ของงานนอกโครงการนี้</div>
+    <div class="section-subtitle">รายละเอียดภาระงาน ผู้รับผิดชอบ ประเภทงาน ชั่วโมง และ FTE ของ Mission นี้</div>
     <div class="entry-list">
         @forelse ($task->entries as $entry)
             <div class="entry-card">
@@ -542,7 +537,7 @@
                         <td>
                             <div class="entry-title">{{ $entry->job_name ?: 'ภาระงานที่ ' . $loop->iteration }}</div>
                             <div class="entry-meta-inline">
-                                {{ $entry->person_name }} · {{ $entry->category }} · {{ $formatDateBE($entry->start_date) }} ถึง {{ $formatDateBE($entry->end_date) }}
+                                {{ $entry->person_name }} · {{ $entry->category }}
                             </div>
                         </td>
                     </tr>
@@ -574,7 +569,7 @@
     </div>
 
     <div class="section-title section-title--outputs">B. ผลงาน</div>
-    <div class="section-subtitle">ผลงานที่เกิดขึ้นจากงานนอกโครงการ พร้อมประเภท ลิงก์ และรายละเอียดเฉพาะของ EA พิเศษ</div>
+    <div class="section-subtitle">ผลงานที่เกิดขึ้นจาก Mission พร้อมประเภท ลิงก์ และรายละเอียดเฉพาะของ EA พิเศษ</div>
     <div class="output-list">
         @forelse ($task->outputs as $output)
             @php
@@ -586,6 +581,7 @@
                 $bookAuthors = collect($output->resolvedBookAuthors());
                 $conferences = collect($output->resolvedConferences());
                 $awardees = collect($output->resolvedAwardRecipients());
+                $outputContributorNames = $output->resolvedContributors()->pluck('name')->filter()->values();
                 $outputUrl = $firstUrlOrNull($output->project_output);
                 $outputQr = $outputUrl ? $qrDataUri($outputUrl) : null;
             @endphp
@@ -613,6 +609,11 @@
                 <table class="output-meta-grid">
                     <tr>
                         <td class="col-main">
+                            <div class="output-block">
+                                <div class="output-label">ผู้มีส่วนร่วมในงาน</div>
+                                <div class="output-value">{{ $outputContributorNames->isNotEmpty() ? $outputContributorNames->implode(', ') : '-' }}</div>
+                            </div>
+
                             <div class="output-block">
                                 <div class="output-label">รายละเอียด / ลิงก์ผลงาน</div>
                                 <div class="output-value">{{ $output->project_output ?: '-' }}</div>
@@ -704,7 +705,7 @@
                                 <div class="output-block">
                                     <div class="output-label">Journal</div>
                                     <div class="special-value">{{ $output->journal ?: '-' }}</div>
-                                    <div class="special-note"><span class="special-inline-label">Quartile:</span> {{ $output->quartile ?: '-' }}</div>
+                                    <div class="special-note"><span class="special-inline-label">Ranking:</span> {{ $output->quartile ?: '-' }}</div>
                                     <div class="special-note"><span class="special-inline-label">IF:</span> {{ $output->impact_factor ?: '-' }}</div>
                                 </div>
                             @elseif ($isEA119)
@@ -713,6 +714,7 @@
                                     <div class="special-note"><span class="special-inline-label">ชื่อหนังสือ:</span> {{ $output->book_title ?: '-' }}</div>
                                     <div class="special-note"><span class="special-inline-label">สำนักพิมพ์:</span> {{ $output->publisher_name ?: '-' }}</div>
                                     <div class="special-note"><span class="special-inline-label">บท / เลขหน้า:</span> {{ $output->chapter_pages ?: '-' }}</div>
+                                    <div class="special-note"><span class="special-inline-label">ISBN:</span> {{ $output->isbn ?: '-' }}</div>
                                 </div>
                             @else
                                 <div class="output-block">

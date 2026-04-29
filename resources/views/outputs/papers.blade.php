@@ -184,10 +184,10 @@
                         </label>
 
                         <label class="block">
-                            <span class="text-xs font-semibold text-slate-600">Quartile</span>
+                            <span class="text-xs font-semibold text-slate-600">Ranking</span>
                             <select name="quartile" data-paper-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50">
                                 <option value="">ทั้งหมด</option>
-                                @foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $quartile)
+                                @foreach (['Q1', 'Q2', 'Q3', 'Q4', 'TCI 1', 'TCI 2'] as $quartile)
                                     <option value="{{ $quartile }}" @selected(request('quartile') === $quartile)>{{ $quartile }}</option>
                                 @endforeach
                             </select>
@@ -230,7 +230,7 @@
                                 <option value="year" @selected($currentSort === 'year')>ปี</option>
                                 <option value="title" @selected($currentSort === 'title')>ชื่อผลงาน</option>
                                 <option value="journal" @selected($currentSort === 'journal')>Journal</option>
-                                <option value="quartile" @selected($currentSort === 'quartile')>Quartile</option>
+                                <option value="quartile" @selected($currentSort === 'quartile')>Ranking</option>
                             </select>
                         </label>
 
