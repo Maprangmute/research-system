@@ -64,11 +64,11 @@
                 <th class="w-code">Project ID</th>
                 <th class="w-name">ชื่อโครงการ</th>
                 <th class="w-pi">PI</th>
-                <th class="w-year">ปี</th>
-                <th class="w-budget">งบประมาณ(บาท)</th>
-                <th class="w-type">ประเภททุน</th>
+                <th class="w-year">ปีโครงการ</th>
+                <th class="w-budget">งบประมาณ (บาท)</th>
+                <th class="w-type">ประเภทแหล่งทุน</th>
                 <th class="w-source">แหล่งทุน</th>
-                <th class="w-status">Status</th>
+                <th class="w-status">สถานะโครงการ</th>
             </tr>
         </thead>
         <tbody>

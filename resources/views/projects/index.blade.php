@@ -513,7 +513,7 @@
                     </select>
                 </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">Project Status</span>
+                    <span class="text-xs font-semibold text-slate-600">สถานะโครงการ (Project Status)</span>
                     <select name="project_status" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
@@ -592,7 +592,7 @@
                         <option value="created_at" @selected(request('sort') === 'created_at')>สร้างล่าสุด → เก่าสุด</option>
                         <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
                         <option value="start_year" @selected(request('sort') === 'start_year')>ปีโครงการ</option>
-                        <option value="planning_status" @selected(request('sort') === 'planning_status')>Project Status</option>
+                        <option value="planning_status" @selected(request('sort') === 'planning_status')>สถานะโครงการ</option>
                         <option value="project_name_th" @selected(request('sort') === 'project_name_th')>ชื่อโครงการ</option>
                     </select>
                 </label>
@@ -721,7 +721,7 @@
 
                 <p class="text-sm mb-3 font-medium">
                     คุณมีรายชื่อเป็นผู้ร่วมงานในโครงการด้านล่างนี้ แต่ยังไม่ได้กรอกค่า FTE โปรดดำเนินการโดยเร็วที่สุด
-                    <span class=""><br>กดที่ชื่อโปรเจคเพื่อดูรายละเอียดได้ทันที</span>
+                    <span class=""><br>กดที่ชื่อโครงการเพื่อดูรายละเอียดได้ทันที</span>
 
                 </p>
 
@@ -812,7 +812,7 @@
                                         class="ml-1">{{ $sortIcon('funding_type') }}</span></a>
                             </th>
                             <th class="px-4 py-3">
-                                <a href="{{ $sortUrl('planning_status') }}" class="hover:text-indigo-700">Project Status <span
+                                <a href="{{ $sortUrl('planning_status') }}" class="hover:text-indigo-700">สถานะโครงการ <span
                                         class="ml-1">{{ $sortIcon('planning_status') }}</span></a>
                             </th>
                             <th class="px-4 py-3 text-right">
@@ -1094,7 +1094,7 @@
                         </select>
                     </label>
                     <label class="block">
-                        <span class="text-xs font-semibold text-slate-600">Project Status</span>
+                        <span class="text-xs font-semibold text-slate-600">สถานะโครงการ (Project Status)</span>
                         <select name="project_status" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                             <option value="">ทั้งหมด</option>
                             <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
@@ -1149,7 +1149,7 @@
                             <option value="created_at" @selected(request('sort') === 'created_at')>สร้างล่าสุด → เก่าสุด</option>
                             <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
                             <option value="start_year" @selected(request('sort') === 'start_year')>ปีโครงการ</option>
-                            <option value="planning_status" @selected(request('sort') === 'planning_status')>Project Status</option>
+                            <option value="planning_status" @selected(request('sort') === 'planning_status')>สถานะโครงการ</option>
                             <option value="project_name_th" @selected(request('sort') === 'project_name_th')>ชื่อโครงการ</option>
                         </select>
                     </label>
@@ -1209,7 +1209,7 @@
             <button type="button" data-action="progress"
                 class="w-full text-left px-3 py-2 hover:bg-sky-50 text-sky-700">📑 Progress Report</button>
             <button type="button" data-action="fte-project"
-                class="w-full text-left px-3 py-2 hover:bg-emerald-50 text-emerald-700">📊 FTE โปรเจค</button>
+                class="w-full text-left px-3 py-2 hover:bg-emerald-50 text-emerald-700">📊 FTE โครงการ</button>
             <div class="my-1 border-t border-slate-100"></div>
             <button type="button" data-action="delete"
                 class="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600">🗑️ ลบข้อมูล</button>

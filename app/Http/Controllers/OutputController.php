@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BackOfficeTask;
+use App\Models\BackOfficeEntry;
 use App\Models\BackOfficeTaskOutput;
 use App\Models\CoResearch;
 use App\Models\ExternalOutput;
@@ -1240,7 +1241,7 @@ class OutputController extends Controller
                 'source_badge' => null,
                 'detail' => $detailText !== '' ? $detailText : null,
                 'related_link' => $relatedLink,
-                'link' => $output->project ? route('projects.show', $output->project) : null,
+                'link' => $output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null,
                 'special' => $special,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
@@ -2048,17 +2049,6 @@ class OutputController extends Controller
 
         if (! $canViewAll) {
             $usersQuery->whereKey($viewer->id);
-        }
-
-        if ($search !== '') {
-            $usersQuery->where(function (Builder $query) use ($search) {
-                $query->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('prefix', 'like', '%' . $search . '%')
-                    ->orWhere('name_en', 'like', '%' . $search . '%')
-                    ->orWhere('prefix_en', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%')
-                    ->orWhere('position', 'like', '%' . $search . '%');
-            });
         }
 
         $users = $usersQuery->get()->values();
@@ -4066,12 +4056,8 @@ class OutputController extends Controller
                         'EA103' => 'presentation_outputs',
                         'EA118' => 'award_outputs',
                         'EA119' => 'textbook_outputs',
-                        default => null,
+                        default => 'other_outputs',
                     };
-
-                    if ($field === null) {
-                        continue;
-                    }
 
                     $increment = $typeCode === 'EA103'
                         ? count(is_array($output->conferences) ? $output->conferences : [])
@@ -4090,7 +4076,7 @@ class OutputController extends Controller
             });
 
         return $statsMap->map(function (array $stats) {
-            $stats['total_outputs'] = $stats['research_outputs'] + $stats['presentation_outputs'] + $stats['textbook_outputs'] + $stats['award_outputs'];
+            $stats['total_outputs'] = $stats['research_outputs'] + $stats['presentation_outputs'] + $stats['textbook_outputs'] + $stats['award_outputs'] + $stats['other_outputs'];
 
             return $stats;
         });
@@ -4187,10 +4173,12 @@ class OutputController extends Controller
     private function buildPersonalOutputPayload(User $user): array
     {
         $projectRows = $this->buildPersonalProjectRows($user);
+        $missionRows = $this->buildPersonalMissionRows($user);
         $researchRows = $this->buildPersonalResearchRows($user);
         $presentationRows = $this->buildPersonalPresentationRows($user);
         $textbookRows = $this->buildPersonalTextbookRows($user);
         $awardRows = $this->buildPersonalAwardRows($user);
+        $otherRows = $this->buildPersonalOtherRows($user);
         $projectStatRows = $projectRows->where('source_label', 'Project')->values();
 
         $stats = [
@@ -4201,8 +4189,13 @@ class OutputController extends Controller
             'presentation_outputs' => (int) $presentationRows->count(),
             'textbook_outputs' => (int) $textbookRows->count(),
             'award_outputs' => (int) $awardRows->count(),
+            'other_outputs' => (int) $otherRows->count(),
+            'missions' => (int) $missionRows->count(),
+            'mission_entries' => (int) $missionRows->sum('entry_count'),
+            'mission_hours' => (float) $missionRows->sum('hours'),
+            'mission_fte' => (float) $missionRows->sum('fte_value'),
         ];
-        $stats['total_outputs'] = $stats['research_outputs'] + $stats['presentation_outputs'] + $stats['textbook_outputs'] + $stats['award_outputs'];
+        $stats['total_outputs'] = $stats['research_outputs'] + $stats['presentation_outputs'] + $stats['textbook_outputs'] + $stats['award_outputs'] + $stats['other_outputs'];
         $stats['total_projects'] = (int) $projectRows->count();
 
         return [
@@ -4210,10 +4203,12 @@ class OutputController extends Controller
             'subjectRouteKey' => $this->personalOutputRouteKey($user),
             'stats' => $stats,
             'projectRows' => $projectRows,
+            'missionRows' => $missionRows,
             'researchRows' => $researchRows,
             'presentationRows' => $presentationRows,
             'textbookRows' => $textbookRows,
             'awardRows' => $awardRows,
+            'otherRows' => $otherRows,
             'profilePhotoUrl' => $this->resolveUserProfilePhotoUrl($user),
         ];
     }
@@ -4300,44 +4295,63 @@ class OutputController extends Controller
             })
             ->values();
 
-        $backOfficeRows = BackOfficeTask::query()
-            ->with(['entries:id,task_id,person_name', 'outputs:id,task_id,year', 'creator:id,prefix,name'])
-            ->get()
-            ->filter(function (BackOfficeTask $task) use ($user) {
-                return $task->entries->contains(fn ($entry) => $this->matchesUserThaiName($entry->person_name ?? null, $user));
-            })
-            ->map(function (BackOfficeTask $task) {
-                $yearBe = $task->outputs
-                    ->map(fn ($output) => $this->normalizeYearFilter($output->year))
-                    ->filter()
-                    ->max();
+        return $projectRows
+            ->sortByDesc(fn ($row) => $row->sort_year)
+            ->values();
+    }
 
-                if ($yearBe === null && filled($task->start_date)) {
-                    try {
-                        $year = Carbon::parse($task->start_date)->year;
-                        $yearBe = $year < 2400 ? $year + 543 : $year;
-                    } catch (\Throwable $exception) {
-                        $yearBe = null;
-                    }
-                }
+    private function buildPersonalMissionRows(User $user): Collection
+    {
+        $entries = BackOfficeEntry::query()
+            ->with('task:id,backoffice_id,title')
+            ->get()
+            ->filter(fn (BackOfficeEntry $entry) => $this->matchesUserThaiName($entry->person_name ?? null, $user))
+            ->map(function (BackOfficeEntry $entry) {
+                $yearBe = $this->extractBackOfficeEntryFiscalYearBe($entry);
 
                 return (object) [
-                    'project_id' => 'backoffice-' . $task->id,
-                    'project_name' => trim((string) ($task->title ?? '')) ?: 'Mission',
-                    'project_code' => null,
+                    'task_id' => (int) $entry->task_id,
+                    'backoffice_id' => $entry->task?->backoffice_id,
+                    'mission_title' => trim((string) ($entry->task?->title ?? '')) ?: 'Mission',
+                    'category' => trim((string) ($entry->category ?? '')) ?: '-',
+                    'job_name' => trim((string) ($entry->job_name ?? '')) ?: '-',
+                    'job_detail' => trim((string) ($entry->job_detail ?? '')) ?: null,
+                    'start_date' => trim((string) ($entry->start_date ?? '')) ?: null,
+                    'end_date' => trim((string) ($entry->end_date ?? '')) ?: null,
+                    'start_date_be' => $this->formatBackOfficeDateBe($entry->start_date),
+                    'end_date_be' => $this->formatBackOfficeDateBe($entry->end_date),
+                    'hours' => (float) ($entry->hours ?? 0),
+                    'fte_value' => (float) ($entry->fte_value ?? 0),
                     'year_be' => $yearBe,
-                    'execution_status' => 'Mission',
-                    'content_theme' => 'Mission',
-                    'project_type_label' => 'Mission',
-                    'role' => 'Mission',
-                    'roles' => ['Mission'],
+                    'link' => $entry->task ? route('back_office.show', $entry->task) : null,
                     'sort_year' => $yearBe ?? 0,
-                    'link' => route('back_office.show', $task),
-                    'source_label' => 'Mission',
                 ];
             });
 
-        return $projectRows->concat($backOfficeRows)
+        return $entries
+            ->groupBy(fn ($entry) => ($entry->task_id ?: 0) . '|' . ($entry->year_be ?: 'unknown'))
+            ->map(function (Collection $group) {
+                $first = $group->first();
+                $jobNames = $group->pluck('job_name')->filter(fn ($value) => trim((string) $value) !== '' && $value !== '-')->unique()->values();
+                $categories = $group->pluck('category')->filter(fn ($value) => trim((string) $value) !== '' && $value !== '-')->unique()->values();
+
+                return (object) [
+                    'task_id' => $first->task_id,
+                    'backoffice_id' => $first->backoffice_id,
+                    'mission_title' => $first->mission_title,
+                    'year_be' => $first->year_be,
+                    'entry_count' => (int) $group->count(),
+                    'hours' => (float) $group->sum('hours'),
+                    'fte_value' => (float) $group->sum('fte_value'),
+                    'job_summary' => $jobNames->take(3)->implode(', '),
+                    'category_summary' => $categories->take(3)->implode(', '),
+                    'link' => $first->link,
+                    'detail_rows' => $group
+                        ->sortBy(fn ($entry) => ($entry->start_date ?? '') . '|' . ($entry->job_name ?? ''))
+                        ->values(),
+                    'sort_year' => $first->sort_year,
+                ];
+            })
             ->sortByDesc(fn ($row) => $row->sort_year)
             ->values();
     }
@@ -4902,36 +4916,9 @@ class OutputController extends Controller
     private function buildPersonalOtherRows(User $user): Collection
     {
         $excludedTypeCodes = ['EA101', 'EA103', 'EA118', 'EA119'];
-        $projectIds = $this->personalProjectIds($user);
-
-        $projectRows = $projectIds->isEmpty()
-            ? collect()
-            : Output::query()
-                ->with(['project:id,project_name_th,project_code', 'authors:id,output_id,user_id,name'])
-                ->whereIn('project_id', $projectIds)
-                ->get()
-                ->filter(function (Output $output) use ($excludedTypeCodes) {
-                    $typeCode = $this->extractOutputTypeCode($output->type);
-                    return $typeCode !== null && !in_array($typeCode, $excludedTypeCodes, true);
-                })
-                ->map(function (Output $output) {
-                    $typeCode = $this->extractOutputTypeCode($output->type) ?? 'OTHER';
-                    return (object) [
-                        'title' => trim((string) ($output->title ?? '')) ?: '-',
-                        'type_code' => $typeCode,
-                        'type_label' => $this->resolveOutputTypeLabel($typeCode),
-                        'year_be' => $this->normalizeYearFilter($output->year),
-                        'contributors' => $output->authors->pluck('name')->filter()->implode(', '),
-                        'source_label' => 'Project',
-                        'reference_label' => trim((string) ($output->project?->project_name_th ?? '')) ?: '-',
-                        'link' => $this->extractFirstUrlFromText($output->project_output)
-                            ?: ($output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null),
-                        'sort_year' => $this->normalizeYearFilter($output->year) ?? 0,
-                    ];
-                });
 
         $backOfficeRows = BackOfficeTaskOutput::query()
-            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name', 'contributorLinks.user'])
+            ->with(['task:id,backoffice_id,title', 'task.entries:id,task_id,person_name', 'contributorLinks.user', 'authorLinks.user'])
             ->get()
             ->filter(function (BackOfficeTaskOutput $output) use ($user, $excludedTypeCodes) {
                 $typeCode = $this->extractOutputTypeCode($output->type);
@@ -4942,20 +4929,14 @@ class OutputController extends Controller
                 $matchedContributor = $this->extractBackOfficeOutputContributorNames($output)
                     ->contains(fn ($name) => $this->matchesUserOutputContributor($name, $user));
 
-                if ($matchedContributor) {
-                    return true;
-                }
-
-                if ($this->extractBackOfficeOutputContributorNames($output)->isNotEmpty()) {
-                    return false;
-                }
-
-                return collect($output->task?->entries ?? [])
+                $matchedTaskPerson = collect($output->task?->entries ?? [])
                     ->contains(fn ($entry) => $this->matchesUserThaiName($entry->person_name ?? null, $user));
+
+                return $matchedContributor || $matchedTaskPerson;
             })
             ->map(function (BackOfficeTaskOutput $output) {
                 $typeCode = $this->extractOutputTypeCode($output->type) ?? 'OTHER';
-                $contributors = collect($output->authors ?? [])
+                $contributors = collect($output->resolvedAuthors())
                     ->map(function ($author) {
                         if (is_array($author)) {
                             return trim((string) ($author['name'] ?? ''));
@@ -4964,14 +4945,22 @@ class OutputController extends Controller
                         return trim((string) $author);
                     })
                     ->filter()
-                    ->implode(', ');
+                    ->values();
+
+                if ($contributors->isEmpty()) {
+                    $contributors = $output->resolvedContributors()
+                        ->pluck('name')
+                        ->map(fn ($name) => trim((string) $name))
+                        ->filter()
+                        ->values();
+                }
 
                 return (object) [
                     'title' => trim((string) ($output->title ?? '')) ?: '-',
                     'type_code' => $typeCode,
                     'type_label' => $this->resolveOutputTypeLabel($typeCode),
                     'year_be' => $this->normalizeYearFilter($output->year),
-                    'contributors' => $contributors,
+                    'contributors' => $contributors->implode(', '),
                     'source_label' => 'Mission',
                     'reference_label' => trim((string) ($output->task?->title ?? '')) ?: 'Mission',
                     'link' => $this->extractFirstUrlFromText($output->project_output)
@@ -4980,35 +4969,7 @@ class OutputController extends Controller
                 ];
             });
 
-        $externalRows = ExternalOutput::query()
-            ->with(['authors:id,external_output_id,user_id,name'])
-            ->whereHas('authors', function (Builder $query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->get()
-            ->filter(function (ExternalOutput $output) use ($excludedTypeCodes) {
-                $typeCode = $this->extractOutputTypeCode($output->type);
-                return $typeCode !== null && !in_array($typeCode, $excludedTypeCodes, true);
-            })
-            ->map(function (ExternalOutput $output) {
-                $typeCode = $this->extractOutputTypeCode($output->type) ?? 'OTHER';
-                $yearBe = $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
-
-                return (object) [
-                    'title' => trim((string) ($output->title ?? '')) ?: '-',
-                    'type_code' => $typeCode,
-                    'type_label' => $this->resolveOutputTypeLabel($typeCode),
-                    'year_be' => $yearBe,
-                    'contributors' => $output->authors->pluck('name')->filter()->implode(', '),
-                    'source_label' => 'Extra',
-                    'reference_label' => trim((string) ($output->job_category ?? '')) ?: 'External Academic',
-                    'link' => $this->extractFirstUrlFromText($output->note)
-                        ?: route('outputs.external-academic.show', $output),
-                    'sort_year' => $yearBe ?? 0,
-                ];
-            });
-
-        return $projectRows->concat($backOfficeRows)->concat($externalRows)
+        return $backOfficeRows
             ->sortByDesc(fn ($row) => $row->sort_year)
             ->values();
     }
@@ -5107,6 +5068,56 @@ class OutputController extends Controller
         }
     }
 
+    private function extractBackOfficeEntryFiscalYearBe(BackOfficeEntry $entry): ?int
+    {
+        $date = $this->parseBackOfficeDate($entry->start_date)
+            ?: $this->parseBackOfficeDate($entry->end_date)
+            ?: $this->parseBackOfficeDate($entry->task?->start_date)
+            ?: $this->parseBackOfficeDate($entry->task?->end_date);
+
+        if (! $date) {
+            return null;
+        }
+
+        $year = (int) $date->format('Y');
+        if ((int) $date->format('n') >= 10) {
+            $year++;
+        }
+
+        return $year + 543;
+    }
+
+    private function parseBackOfficeDate(?string $value): ?Carbon
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        foreach (['d-m-Y', 'Y-m-d', 'd/m/Y', 'Y/m/d'] as $format) {
+            try {
+                $date = Carbon::createFromFormat($format, $value);
+                if ($date !== false) {
+                    return $date->startOfDay();
+                }
+            } catch (\Throwable $exception) {
+                // Try the next supported date format.
+            }
+        }
+
+        return null;
+    }
+
+    private function formatBackOfficeDateBe(?string $value): ?string
+    {
+        $date = $this->parseBackOfficeDate($value);
+        if (! $date) {
+            return null;
+        }
+
+        return $date->format('d-m-') . ($date->year + 543);
+    }
+
     private function formatAuthorRoleLabel(string $role): string
     {
         return match (strtolower(trim($role))) {
@@ -5128,6 +5139,7 @@ class OutputController extends Controller
             'presentation_outputs' => 0,
             'textbook_outputs' => 0,
             'award_outputs' => 0,
+            'other_outputs' => 0,
             'total_outputs' => 0,
             'total_projects' => 0,
         ];

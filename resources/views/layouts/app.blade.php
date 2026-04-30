@@ -1352,6 +1352,8 @@
                         inst.set('minDate', getClientTodayLocal());
                     }
                     forceHeaderBE(inst);
+                    setTimeout(() => forceHeaderBE(inst), 0);
+                    setTimeout(() => forceHeaderBE(inst), 50);
                 },
 
                 onMonthChange(_, __, inst) {

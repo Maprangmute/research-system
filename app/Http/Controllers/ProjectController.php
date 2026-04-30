@@ -287,11 +287,22 @@ class ProjectController extends Controller
             'rows' => $this->paginateProjectDataQualityRows($rows, $request, 12),
             'totalRows' => $rows->count(),
             'exportMinDate' => $this->projectDataQualityExportMinDate($rows),
+            'quickFixFields' => $this->projectDataQualityQuickFixFields(),
+            'quickFixUsers' => User::query()
+                ->orderBy('name')
+                ->get(['id', 'prefix', 'name'])
+                ->map(fn ($user) => [
+                    'id' => $user->id,
+                    'name' => $user->full_name,
+                ])
+                ->values(),
         ]));
     }
 
     public function dataQualityReportPdf(Request $request)
     {
+        set_time_limit(120);
+        ini_set('max_execution_time', '120');
         ini_set('pcre.backtrack_limit', '5000000');
 
         $payload = $this->buildProjectDataQualityReportPayload($request);
@@ -332,19 +343,25 @@ class ProjectController extends Controller
             'Project ID',
             'ชื่อโครงการ',
             'PI',
-            'สถานะ',
-            'Theme / ประเภท',
+            'สถานะโครงการ',
+            'กลุ่มเนื้อหาหลักของงาน / ประเภทของโครงการ',
             'จำนวน Output',
             'ระดับ',
             'จำนวน Issue',
             'หมวดปัญหา',
             'รายละเอียดปัญหา',
-            'Fields',
+            'Field ที่ต้องแก้',
             'ควรทำ',
+            'ผลกระทบถ้าไม่แก้',
             'สร้างโดย',
             'สร้างเมื่อ',
             'อัปเดทล่าสุดโดย',
             'อัปเดทล่าสุดเมื่อ',
+            'ลิงก์เปิด Record',
+            'ลิงก์แก้ไข Record',
+            'Quick Fix Fields',
+            'Field Target',
+            'ข้อมูลซ้ำที่พบ',
         ];
 
         AuditLogger::logFileDownload($filename, [
@@ -358,13 +375,133 @@ class ProjectController extends Controller
             $columns,
             $this->projectDataQualityExcelRows($rows),
             [
-                ['รายงานข้อมูลผิดพลาดของโปรเจค'],
+                ['รายงานข้อมูลผิดพลาดของโครงการ'],
                 ['เงื่อนไข', $this->buildProjectDataQualityExportFilters($request)->implode(' | ') ?: 'ทั้งหมด'],
                 ['ออกรายงาน', $this->formatProjectDateTimeThai(now('Asia/Bangkok'))],
                 ['ผู้สร้างรายงาน', trim((string) (auth()->user()?->full_name ?? '')) ?: 'ผู้ใช้ระบบ'],
                 ['สรุป', 'Projects ' . number_format($summary['projects']) . ' | Issues ' . number_format($summary['issues'])],
             ]
         );
+    }
+
+    public function dataQualityQuickFix(Request $request, Project $project)
+    {
+        $fullName = trim((Auth::user()?->prefix ?? '').' '.(Auth::user()?->name ?? ''));
+        $hasPermission = Auth::user()?->isAdminLike()
+            || Auth::id() === $project->user_id
+            || $project->fteRoles()->where('name', $fullName)->exists();
+
+        abort_unless($hasPermission, 403);
+
+        $allowedFields = $this->projectDataQualityQuickFixFields();
+        $incoming = collect($request->only(array_keys($allowedFields)))
+            ->filter(fn ($value) => $value !== null)
+            ->map(fn ($value) => is_string($value) ? trim($value) : $value)
+            ->all();
+
+        if ($incoming === []) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'ไม่มีข้อมูลที่เลือกแก้ไข'], 422);
+            }
+
+            return back()->with('error', 'ไม่มีข้อมูลที่เลือกแก้ไข');
+        }
+
+        if (array_key_exists('budget', $incoming)) {
+            $request->merge(['budget' => str_replace(',', '', (string) $incoming['budget'])]);
+            $incoming['budget'] = $request->input('budget');
+        }
+
+        $rules = [];
+        foreach (array_keys($incoming) as $field) {
+            $rules[$field] = $allowedFields[$field]['rule'];
+        }
+
+        $validated = $request->validate($rules);
+        $dateFields = ['team_start_date', 'team_end_date', 'proposal_date', 'contract_date', 'start_date', 'end_date'];
+        foreach ($dateFields as $field) {
+            if (array_key_exists($field, $validated)) {
+                $rawDate = trim((string) ($validated[$field] ?? ''));
+                if ($rawDate === '') {
+                    $validated[$field] = null;
+                    continue;
+                }
+
+                $date = $this->parseProjectDateInput($rawDate);
+                if (! $date) {
+                    if ($request->expectsJson()) {
+                        return response()->json([
+                            'message' => 'รูปแบบวันที่ไม่ถูกต้อง',
+                            'errors' => [$field => ['รูปแบบวันที่ไม่ถูกต้อง']],
+                        ], 422);
+                    }
+
+                    return back()
+                        ->withErrors([$field => 'รูปแบบวันที่ไม่ถูกต้อง'])
+                        ->withInput();
+                }
+
+                $validated[$field] = $date->format('d-m-Y');
+            }
+        }
+
+        if (array_key_exists('budget', $validated)) {
+            $budget = (string) $validated['budget'];
+            $validated['budget'] = $budget === '' ? null : (float) $budget;
+        }
+
+        if (array_key_exists('pi_user_id', $validated) && filled($validated['pi_user_id'])) {
+            $user = User::query()->find((int) $validated['pi_user_id']);
+            if ($user) {
+                $validated['pi_name'] = $user->full_name;
+                $validated['pi_affiliation'] = self::PI_INTERNAL_AFFILIATION;
+            }
+        }
+        unset($validated['pi_user_id']);
+
+        $project->fill($validated);
+        $project->updated_by = Auth::id();
+        $redirectFields = collect(array_keys($incoming))
+            ->reject(fn ($field) => $field === 'pi_user_id')
+            ->when(
+                array_key_exists('pi_user_id', $incoming),
+                fn ($fields) => $fields->prepend('pi_name')->push('pi_affiliation')
+            )
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $firstRedirectField = $redirectFields[0] ?? null;
+        $redirectUrl = route('projects.edit', array_filter([
+            'project' => $project,
+            'view' => 'desktop',
+            'dq_fields' => $redirectFields !== [] ? implode(',', $redirectFields) : null,
+        ], fn ($value) => $value !== null));
+
+        if ($firstRedirectField) {
+            $redirectUrl .= '#field-' . rawurlencode($firstRedirectField);
+        }
+
+        if ($project->isDirty()) {
+            $project->save();
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'บันทึก Quick Fix เรียบร้อยแล้ว',
+                    'project_id' => $project->getKey(),
+                ]);
+            }
+
+            return redirect($redirectUrl)->with('success', 'บันทึก Quick Fix เรียบร้อยแล้ว');
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'ไม่มีข้อมูลเปลี่ยนแปลง',
+                'project_id' => $project->getKey(),
+            ]);
+        }
+
+        return redirect($redirectUrl)->with('success', 'ไม่มีข้อมูลเปลี่ยนแปลง');
     }
 
     private function buildProjectDataQualityReportPayload(Request $request): array
@@ -389,7 +526,7 @@ class ProjectController extends Controller
         $duplicateProjectIds = $this->findDuplicateProjectIds(clone $baseQuery);
 
         $projectsQuery = Project::query()
-            ->withCount(['outputs', 'fteRoles', 'progressReports'])
+            ->withCount(['outputs', 'fteRoles', 'progressReports', 'irbs'])
             ->with([
                 'createdBy:id,prefix,name',
                 'updatedBy:id,prefix,name',
@@ -402,16 +539,30 @@ class ProjectController extends Controller
                 ]),
                 'latestLog.user:id,prefix,name',
                 'fteRoles:id,project_id,name,fte_value',
+                'irbs:id,project_id,code,source,exp_date',
                 'progressReports:id,project_id,submit_date,created_at',
             ]);
         $applyPermission($projectsQuery);
 
         $rows = $this->buildProjectDataQualityRows($projectsQuery->get(), $duplicateProjectIds);
+        $issueLabelOptions = $rows
+            ->flatMap(fn ($row) => collect($row->issues)->pluck('label'))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
 
         $category = trim((string) $request->input('category', ''));
         if ($category !== '') {
             $rows = $rows
                 ->filter(fn ($row) => collect($row->issues)->contains(fn ($issue) => $issue['category'] === $category))
+                ->values();
+        }
+
+        $issueLabel = trim((string) $request->input('issue_label', ''));
+        if ($issueLabel !== '') {
+            $rows = $rows
+                ->filter(fn ($row) => collect($row->issues)->contains(fn ($issue) => (string) ($issue['label'] ?? '') === $issueLabel))
                 ->values();
         }
 
@@ -478,7 +629,9 @@ class ProjectController extends Controller
             'rows' => $rows,
             'summary' => $summary,
             'categoryOptions' => $categoryOptions,
+            'issueLabelOptions' => $issueLabelOptions,
             'selectedCategory' => $category,
+            'selectedIssueLabel' => $issueLabel,
             'selectedSeverity' => $severity,
             'selectedOutputStatus' => $outputStatus,
             'selectedActivity' => $activity,
@@ -501,10 +654,11 @@ class ProjectController extends Controller
     private function buildProjectDataQualityRows(Collection $projects, array $duplicateProjectIds): Collection
     {
         $duplicateLookup = array_fill_keys(array_map('intval', $duplicateProjectIds), true);
+        $duplicateMatches = $this->projectDataQualityDuplicateMatches($projects, $duplicateProjectIds);
         $today = now('Asia/Bangkok')->startOfDay();
 
         return $projects
-            ->map(function (Project $project) use ($duplicateLookup, $today) {
+            ->map(function (Project $project) use ($duplicateLookup, $duplicateMatches, $today) {
                 $issues = [];
                 $startDate = $this->parseProjectDateInput((string) $project->start_date);
                 $endDate = $this->parseProjectDateInput((string) $project->end_date);
@@ -512,37 +666,60 @@ class ProjectController extends Controller
                 $teamEndDate = $this->parseProjectDateInput((string) $project->team_end_date);
 
                 if (isset($duplicateLookup[(int) $project->id])) {
-                    $issues[] = $this->projectDataQualityIssue(
+                    $matches = collect($duplicateMatches[(int) $project->id] ?? [])->take(4)->values();
+                    $matchLabels = $matches
+                        ->map(fn ($match) => trim(implode(' | ', array_filter([
+                            $match['project_code'] ?? null,
+                            $match['project_name'] ?? null,
+                            isset($match['start_year']) && $match['start_year'] !== '' ? 'ปี '.$match['start_year'] : null,
+                        ]))))
+                        ->filter()
+                        ->values();
+                    $duplicateIssue = $this->projectDataQualityIssue(
                         'duplicate',
                         'ข้อมูลซ้ำ',
-                        'ชื่อโครงการซ้ำหรือใกล้เคียงกับโปรเจคอื่นในระบบ',
-                        ['project_name_th'],
-                        'ตรวจชื่อ ปี และ Project ID ก่อน merge หรือแก้ชื่อให้ชัดเจน',
+                        $matchLabels->isNotEmpty()
+                            ? 'ชื่อโครงการซ้ำหรือใกล้เคียงกับโครงการด้านล่าง'
+                            : 'ชื่อโครงการซ้ำหรือใกล้เคียงกับโครงการอื่นในระบบ',
+                        [],
+                        'ตรวจว่าเป็นโครงการเดียวกันหรือคนละโครงการ โดยดู Project ID, ปีโครงการ และเจ้าของ record ก่อน merge หรือปิด record ซ้ำ',
                         4
                     );
+                    $duplicateIssue['duplicate_matches'] = $matches
+                        ->take(4)
+                        ->map(fn ($match) => [
+                            'id' => (int) ($match['id'] ?? 0),
+                            'project_code' => $match['project_code'] ?? '',
+                            'project_name' => $match['project_name'] ?? '',
+                            'start_year' => $match['start_year'] ?? '',
+                        ])
+                        ->filter(fn ($match) => $match['id'] > 0)
+                        ->values()
+                        ->all();
+                    $issues[] = $duplicateIssue;
                 }
 
                 $missingCore = collect([
                     'Project ID' => $project->project_code,
-                    'ชื่อโครงการ (TH)' => $project->project_name_th,
+                    'ชื่อโครงการ (ภาษาไทย)' => $project->project_name_th,
                     'PI' => $project->pi_name,
                     'กลุ่มเนื้อหาหลักของงาน (Content/Theme)' => $project->project_type,
                     'ลักษณะโครงการ' => $project->project_list,
                     'ประเภทของโครงการ/กิจกรรม (TYPE)' => $project->theme,
-                    'เอกสารโครงการ (proposal, IRB)' => $project->shortcut_link,
+                    'เอกสารโครงการ (Proposal / IRB)' => $project->shortcut_link,
                     'ขนาด' => $project->size,
                     'รหัสโครงการ R' => $project->r_code,
-                    'ปีโปรเจค' => $project->start_year,
-                    'สถานะ' => $project->planning_status,
+                    'ปีโครงการ' => $project->start_year,
+                    'สถานะโครงการ (Project Status)' => $project->planning_status,
                 ])->filter(fn ($value) => $this->isProjectDataQualityBlank($value))->keys()->values();
 
                 $missingDates = collect([
-                    'BA001 proposal_date' => $project->proposal_date,
-                    'BC101 contract_date' => $project->contract_date,
-                    'BC102 start_date' => $project->start_date,
-                    'BC103 end_date' => $project->end_date,
-                    'team_start_date' => $project->team_start_date,
-                    'team_end_date' => $project->team_end_date,
+                    'BA001 - วันที่เริ่มเขียน Proposal' => $project->proposal_date,
+                    'BC101 - วันที่สัญญาอนุมัติ' => $project->contract_date,
+                    'BC102 - วันที่โครงการเริ่ม (ตามสัญญา)' => $project->start_date,
+                    'BC103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)' => $project->end_date,
+                    'วันที่โครงการเริ่มทำงานของทีมวิจัย' => $project->team_start_date,
+                    'วันที่สิ้นสุดการทำงานของทีมวิจัย' => $project->team_end_date,
                 ])->filter(fn ($value) => $this->isProjectDataQualityBlank($value))->keys()->values();
 
                 if ($missingCore->isNotEmpty() || $missingDates->isNotEmpty()) {
@@ -559,7 +736,7 @@ class ProjectController extends Controller
                         'ข้อมูลไม่ครบ / วันที่ไม่ครบ',
                         implode(' | ', $reasonParts),
                         $missingCore->merge($missingDates)->all(),
-                        'เติมข้อมูลในหน้าแก้ไขโปรเจคให้ครบก่อนใช้รายงานหรือ dashboard',
+                        'เติมข้อมูลในหน้าแก้ไขโครงการให้ครบก่อนใช้รายงานหรือ dashboard',
                         3
                     );
                 }
@@ -570,20 +747,20 @@ class ProjectController extends Controller
                         'incomplete',
                         'ข้อมูลแหล่งทุนไม่ครบ',
                         'ยังไม่ได้ระบุ DA102 - ประเภทแหล่งทุน',
-                        ['DA102 funding_type'],
+                        ['DA102 - ประเภทแหล่งทุน'],
                         'เลือกประเภทแหล่งทุนเป็น ไม่มีแหล่งทุน / ภายใน / ภายนอก ให้ชัดเจน',
                         3
                     );
                 } elseif (! $hasNoFunding) {
                     $missingFunding = collect([
-                        'DA103 funding_source' => $project->funding_source,
-                        'DA104 funding_org_type' => $project->funding_org_type,
-                        'DA105 funding_name' => $project->funding_name,
+                        'DA103 - ชื่อแหล่งทุน' => $project->funding_source,
+                        'DA104 - รัฐบาล / เอกชน / มูลนิธิ' => $project->funding_org_type,
+                        'DA105 - ชื่อทุน' => $project->funding_name,
                     ])->filter(fn ($value) => $this->isProjectDataQualityBlank($value))->keys()->values();
 
                     $budgetMissing = $project->budget === null || (float) $project->budget <= 0;
                     if ($budgetMissing) {
-                        $missingFunding->push('DA106 budget');
+                        $missingFunding->push('DA106 - งบประมาณ (บาท)');
                     }
 
                     if ($missingFunding->isNotEmpty()) {
@@ -592,7 +769,7 @@ class ProjectController extends Controller
                             'ข้อมูลแหล่งทุนไม่ครบ',
                             'DA102 ระบุว่า '.$project->funding_type.' แต่ข้อมูลแหล่งทุนยังไม่ครบ: '.$missingFunding->implode(', '),
                             $missingFunding->all(),
-                            'ถ้ามีแหล่งทุน ให้กรอก DA103-DA106 ให้ครบ; ถ้าไม่มีทุนให้เลือก DA102 เป็น ไม่มีแหล่งทุน',
+                            'ถ้ามีแหล่งทุน ให้กรอก DA103 - ชื่อแหล่งทุน, DA104 - รัฐบาล / เอกชน / มูลนิธิ, DA105 - ชื่อทุน และ DA106 - งบประมาณ (บาท) ให้ครบ; ถ้าไม่มีทุนให้เลือก DA102 - ประเภทแหล่งทุน เป็น ไม่มีแหล่งทุน',
                             3
                         );
                     }
@@ -603,7 +780,7 @@ class ProjectController extends Controller
                         'incomplete',
                         'วันที่ผิดลำดับ',
                         'วันที่สิ้นสุดตามสัญญาน้อยกว่าวันที่เริ่มตามสัญญา',
-                        ['start_date', 'end_date'],
+                        ['BC102 - วันที่โครงการเริ่ม (ตามสัญญา)', 'BC103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)'],
                         'ตรวจ BC102 และ BC103 อีกครั้ง',
                         4
                     );
@@ -614,10 +791,58 @@ class ProjectController extends Controller
                         'incomplete',
                         'วันที่ทีมผิดลำดับ',
                         'วันที่สิ้นสุดการทำงานของทีมวิจัยน้อยกว่าวันที่เริ่มทำงาน',
-                        ['team_start_date', 'team_end_date'],
+                        ['วันที่โครงการเริ่มทำงานของทีมวิจัย', 'วันที่สิ้นสุดการทำงานของทีมวิจัย'],
                         'ตรวจช่วงเวลาทำงานของทีมวิจัย',
                         3
                     );
+                }
+
+                $irbs = collect($project->irbs ?? []);
+                if ((int) ($project->irbs_count ?? 0) === 0) {
+                    $issues[] = $this->projectDataQualityIssue(
+                        'incomplete',
+                        'ไม่มีรหัส IRB',
+                        'ยังไม่มีรหัส IRB ที่ผูกกับโครงการ',
+                        ['รหัส IRB'],
+                        'เพิ่มรหัส IRB ใน section E หากโครงการนี้มีการขอ IRB',
+                        2
+                    );
+                } else {
+                    $incompleteIrbs = $irbs->filter(fn ($irb) =>
+                        $this->isProjectDataQualityBlank($irb->code ?? null)
+                        || $this->isProjectDataQualityBlank($irb->source ?? null)
+                        || $this->isProjectDataQualityBlank($irb->exp_date ?? null)
+                    );
+
+                    if ($incompleteIrbs->isNotEmpty()) {
+                        $issues[] = $this->projectDataQualityIssue(
+                            'incomplete',
+                            'ข้อมูล IRB ไม่ครบ',
+                            'มีรหัส IRB บางรายการที่ยังขาดรหัส หน่วยงาน หรือวันหมดอายุ',
+                            ['รหัส IRB'],
+                            'ตรวจรหัส IRB, หน่วยงาน และวันหมดอายุใน section E ให้ครบ',
+                            2
+                        );
+                    }
+
+                    if (! $this->projectLooksClosed($project)) {
+                        $latestIrb = $irbs->sortByDesc(fn ($irb) => (int) ($irb->id ?? 0))->first();
+                        $latestIrbDate = $latestIrb
+                            ? $this->parseProjectDateInput((string) ($latestIrb->exp_date ?? ''))
+                            : null;
+
+                        if ($latestIrbDate && $latestIrbDate->lt($today)) {
+                            $code = trim((string) ($latestIrb->code ?? ''));
+                            $issues[] = $this->projectDataQualityIssue(
+                                'overdue',
+                                'IRB หมดอายุ',
+                                'IRB record ล่าสุดหมดอายุแล้ว'.($code !== '' ? ': '.$code : ''),
+                                ['รหัส IRB'],
+                                'ตรวจ IRB record ล่าสุดด้านล่างสุดใน section E และเพิ่ม record ต่ออายุหากมีการต่อ IRB แล้ว',
+                                3
+                            );
+                        }
+                    }
                 }
 
                 if ($endDate && $endDate->lt($today) && ! $this->projectLooksClosed($project)) {
@@ -625,8 +850,8 @@ class ProjectController extends Controller
                         'overdue',
                         'Overdue',
                         'สิ้นสุดตามสัญญา '.$this->formatProjectDateThai($endDate).' แล้ว แต่สถานะยังไม่ปิด/เสร็จสิ้น',
-                        ['end_date', 'planning_status', 'closure_status'],
-                        'อัปเดตสถานะโครงการหรือปรับ end_date หากมีการขยายเวลา',
+                        ['BC103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)', 'สถานะโครงการ (Project Status)'],
+                        'อัปเดตสถานะโครงการ (Project Status) หรือปรับ BC103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)',
                         4
                     );
                 }
@@ -635,8 +860,8 @@ class ProjectController extends Controller
                     $issues[] = $this->projectDataQualityIssue(
                         'no_output',
                         'ไม่มี output',
-                        'โปรเจคนี้ยังไม่มี output ที่ผูกกับโครงการ',
-                        ['outputs'],
+                        'โครงการนี้ยังไม่มี output ที่ผูกกับโครงการ',
+                        ['ผลงานวิจัย (Outputs)'],
                         'ตรวจว่ามีผลงานที่ควรเพิ่ม หรือยืนยันว่าโครงการยังไม่เกิด output',
                         3
                     );
@@ -646,8 +871,8 @@ class ProjectController extends Controller
                     $issues[] = $this->projectDataQualityIssue(
                         'other',
                         'ไม่มี FTE',
-                        'ยังไม่มีรายชื่อหรือภาระงาน FTE ในโปรเจค',
-                        ['fte_roles'],
+                        'ยังไม่มีรายชื่อหรือภาระงาน FTE ในโครงการ',
+                        ['รายชื่อผู้มีส่วนร่วมในการทำงาน'],
                         'เพิ่มผู้รับผิดชอบ/FTE เพื่อให้ workload และ dashboard ถูกต้อง',
                         2
                     );
@@ -656,8 +881,8 @@ class ProjectController extends Controller
                         'other',
                         'FTE ไม่ครบ',
                         'มี FTE บางรายการที่ยังไม่ได้กรอกค่า หรือค่าเป็น 0',
-                        ['fte_value'],
-                        'ตรวจค่า FTE ของผู้เกี่ยวข้องในโปรเจค',
+                        ['FTE (ผู้วิจัย)'],
+                        'ตรวจค่า FTE ของผู้เกี่ยวข้องในโครงการ',
                         2
                     );
                 }
@@ -666,8 +891,8 @@ class ProjectController extends Controller
                     $issues[] = $this->projectDataQualityIssue(
                         'other',
                         'ไม่มี progress report',
-                        'ยังไม่มี progress report สำหรับโปรเจคที่ยังไม่ปิด',
-                        ['progress_reports'],
+                        'ยังไม่มี progress report สำหรับโครงการที่ยังไม่ปิด',
+                        ['ความก้าวหน้าของการดำเนินงาน'],
                         'เพิ่ม progress report หรือปิดสถานะหากโครงการเสร็จแล้ว',
                         1
                     );
@@ -678,8 +903,8 @@ class ProjectController extends Controller
                     $issues[] = $this->projectDataQualityIssue(
                         'other',
                         'ไม่อัปเดตเกิน 3 เดือน',
-                        'ข้อมูลโปรเจคไม่ได้อัปเดตตั้งแต่ '.$this->formatProjectDateThai($updatedAt),
-                        ['updated_at'],
+                        'ข้อมูลโครงการไม่ได้อัปเดตตั้งแต่ '.$this->formatProjectDateThai($updatedAt),
+                        ['อัปเดตล่าสุด'],
                         'ตรวจสถานะล่าสุด หรือเพิ่ม progress report',
                         1
                     );
@@ -720,15 +945,290 @@ class ProjectController extends Controller
             ->values();
     }
 
-    private function projectDataQualityIssue(string $category, string $label, string $reason, array $fields, string $suggestion, int $severity): array
+    private function projectDataQualityIssue(string $category, string $label, string $reason, array $fields, string $suggestion, int $severity, ?array $quickFixFields = null, ?string $impact = null): array
     {
+        $fields = array_values(array_filter($fields));
+        $derivedQuickFixFields = collect($fields)
+            ->map(fn ($field) => $this->projectDataQualityFieldTarget((string) $field))
+            ->filter(fn ($target) => $target && !str_starts_with($target, 'section-'))
+            ->unique()
+            ->values()
+            ->all();
+
         return [
             'category' => $category,
             'label' => $label,
             'reason' => $reason,
-            'fields' => array_values(array_filter($fields)),
+            'fields' => $fields,
+            'field_targets' => collect($fields)
+                ->mapWithKeys(fn ($field) => [$field => $this->projectDataQualityFieldTarget((string) $field)])
+                ->filter()
+                ->all(),
+            'quick_fix_fields' => $quickFixFields ?? $derivedQuickFixFields,
             'suggestion' => $suggestion,
+            'impact' => $impact ?: $this->projectDataQualityImpact($category, $label, $fields),
             'severity' => $severity,
+        ];
+    }
+
+    private function projectDataQualityImpact(string $category, string $label, array $fields): string
+    {
+        $fieldText = mb_strtolower(implode(' ', $fields), 'UTF-8');
+
+        if ($label === 'ข้อมูลซ้ำ') {
+            return 'Dashboard และรายงานสรุปจำนวนโครงการอาจนับซ้ำ โดยเฉพาะ KPI จำนวนโครงการ, กราฟสัดส่วนสถานะโครงการ และรายงาน Excel/PDF ที่ export จากระบบ';
+        }
+
+        if ($label === 'ข้อมูลแหล่งทุนไม่ครบ' || str_contains($fieldText, 'da102') || str_contains($fieldText, 'da106') || str_contains($fieldText, 'ทุน')) {
+            return 'กราฟ Dashboard ชื่อ Funding Stack, งบประมาณรวม, Funding Split และกราฟงบประมาณรายปีจะคลาดเคลื่อน เพราะระบบจัดกลุ่มทุนหรือรวมงบประมาณไม่ได้ถูกต้อง';
+        }
+
+        if ($label === 'Overdue') {
+            return 'Dashboard จะจัดโครงการนี้เป็นงานเกินกำหนด ทำให้ Alert Center, กราฟสถานะพอร์ต, กราฟโครงการเกินกำหนด และสรุปเปิดประชุมแสดงความเสี่ยงสูงกว่าความจริง';
+        }
+
+        if ($label === 'ไม่มี output') {
+            return 'Dashboard ส่วนภาพรวมผลงาน, Output coverage, รายการโครงการ active แต่ยังไม่มี output และรายงาน Outputs จะนับผลงานของโครงการนี้ไม่ครบ';
+        }
+
+        if ($label === 'ไม่มี FTE' || $label === 'FTE เป็น 0') {
+            return 'Dashboard ส่วน Capacity + Funding, FTE by Role Group, แผนที่โครงการและภาระงาน และรายงาน FTE จะไม่สะท้อน workload จริงของทีม';
+        }
+
+        if ($label === 'ไม่มี progress report' || $label === 'ไม่อัปเดตเกิน 3 เดือน') {
+            return 'Dashboard ส่วน Alert Center, โครงการที่ควรหยิบมาดูก่อน และสรุปความคืบหน้าจะประเมินสถานะติดตามงานคลาดเคลื่อน';
+        }
+
+        if ($label === 'ไม่มีรหัส IRB' || $label === 'ข้อมูล IRB ไม่ครบ' || $label === 'IRB หมดอายุ') {
+            return 'Dashboard ส่วน IRB หมดอายุแล้ว, กราฟ IRB ใกล้หมดอายุ และ Alert Center จะติดตามความเสี่ยงด้าน IRB ไม่ถูกต้อง';
+        }
+
+        if (str_contains($fieldText, 'สถานะโครงการ')) {
+            return 'Dashboard ชื่อสัดส่วนสถานะโครงการ, สถานะพอร์ต และกราฟสถานะรายปีจะจัดกลุ่มโครงการผิด';
+        }
+
+        if (str_contains($fieldText, 'วันที่') || str_contains($fieldText, 'bc') || str_contains($fieldText, 'ba')) {
+            return 'Dashboard ที่ใช้ timeline เช่น การเคลื่อนไหวรายเดือน, โครงการใกล้ครบกำหนด, โครงการเกินกำหนด และกราฟรายปีจะวางช่วงเวลาไม่ถูกต้อง';
+        }
+
+        return 'Dashboard, รายงาน Excel/PDF และตัวกรองที่อ้างอิงข้อมูลนี้อาจแสดงผลไม่ตรงกับสถานะจริงของโครงการ';
+    }
+
+    private function projectDataQualityDuplicateMatches(Collection $projects, array $duplicateProjectIds): array
+    {
+        $duplicateLookup = array_fill_keys(array_map('intval', $duplicateProjectIds), true);
+        if ($duplicateLookup === []) {
+            return [];
+        }
+
+        $prepared = [];
+        $exactGroups = [];
+        foreach ($projects as $project) {
+            if (!isset($duplicateLookup[(int) $project->id])) {
+                continue;
+            }
+
+            $rawName = trim((string) $project->project_name_th);
+            $normalized = $this->normalizeSearchText($rawName);
+            if ($normalized === '') {
+                continue;
+            }
+
+            $years = $this->collectComparableProjectYears($project->start_year, $rawName);
+            $primaryYear = $years[0] ?? '__unknown__';
+            $item = [
+                'id' => (int) $project->id,
+                'project_code' => trim((string) ($project->project_code ?? '')),
+                'project_name' => $rawName,
+                'normalized' => $normalized,
+                'tokens' => $this->tokenizeSearchTerms($rawName),
+                'years' => $years,
+                'start_year' => $this->normalizeComparableYearValue($project->start_year),
+            ];
+
+            $prepared[] = $item;
+            $exactGroups[$normalized.'|'.$primaryYear][] = $item;
+        }
+
+        $matches = [];
+        $addMatch = static function (array $left, array $right) use (&$matches): void {
+            $matches[$left['id']][$right['id']] = [
+                'id' => $right['id'],
+                'project_code' => $right['project_code'],
+                'project_name' => $right['project_name'],
+                'start_year' => $right['start_year'],
+            ];
+            $matches[$right['id']][$left['id']] = [
+                'id' => $left['id'],
+                'project_code' => $left['project_code'],
+                'project_name' => $left['project_name'],
+                'start_year' => $left['start_year'],
+            ];
+        };
+
+        foreach ($exactGroups as $group) {
+            $count = count($group);
+            if ($count < 2) {
+                continue;
+            }
+
+            for ($i = 0; $i < $count; $i++) {
+                for ($j = $i + 1; $j < $count; $j++) {
+                    $addMatch($group[$i], $group[$j]);
+                }
+            }
+        }
+
+        $count = count($prepared);
+        for ($i = 0; $i < $count; $i++) {
+            for ($j = $i + 1; $j < $count; $j++) {
+                if (($prepared[$i]['normalized'] ?? '') === ($prepared[$j]['normalized'] ?? '')) {
+                    continue;
+                }
+
+                if ($this->areProjectNamesNearDuplicates($prepared[$i], $prepared[$j])) {
+                    $addMatch($prepared[$i], $prepared[$j]);
+                }
+            }
+        }
+
+        return array_map(static fn ($items) => array_values($items), $matches);
+    }
+
+    private function projectDataQualityFieldTarget(string $field): ?string
+    {
+        $normalized = mb_strtolower(trim($field), 'UTF-8');
+        $normalized = preg_replace('/\s+/u', ' ', $normalized) ?: $normalized;
+
+        $map = [
+            'project id' => 'section-a',
+            'ชื่อโครงการ (ภาษาไทย)' => 'project_name_th',
+            'pi' => 'pi_name',
+            'กลุ่มเนื้อหาหลักของงาน (content/theme)' => 'project_type',
+            'ลักษณะโครงการ' => 'project_list',
+            'ประเภทของโครงการ/กิจกรรม (type)' => 'theme',
+            'เอกสารโครงการ (proposal / irb)' => 'shortcut_link',
+            'ขนาด' => 'size',
+            'รหัสโครงการ r' => 'r_code',
+            'ปีโครงการ' => 'start_year',
+            'สถานะโครงการ (project status)' => 'planning_status',
+            'วันที่โครงการเริ่มทำงานของทีมวิจัย' => 'team_start_date',
+            'วันที่สิ้นสุดการทำงานของทีมวิจัย' => 'team_end_date',
+            'ba001 - วันที่เริ่มเขียน proposal' => 'proposal_date',
+            'bc101 - วันที่สัญญาอนุมัติ' => 'contract_date',
+            'bc102 - วันที่โครงการเริ่ม (ตามสัญญา)' => 'start_date',
+            'bc103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)' => 'end_date',
+            'da102 - ประเภทแหล่งทุน' => 'funding_type',
+            'da103 - ชื่อแหล่งทุน' => 'funding_source',
+            'da104 - รัฐบาล / เอกชน / มูลนิธิ' => 'funding_org_type',
+            'da105 - ชื่อทุน' => 'funding_name',
+            'da106 - งบประมาณ (บาท)' => 'budget',
+            'รหัส irb' => 'section-e',
+            'ผลงานวิจัย (outputs)' => 'section-g',
+            'รายชื่อผู้มีส่วนร่วมในการทำงาน' => 'section-f',
+            'fte (ผู้วิจัย)' => 'section-f',
+            'ความก้าวหน้าของการดำเนินงาน' => 'section-i',
+            'อัปเดตล่าสุด' => 'section-b',
+        ];
+
+        return $map[$normalized] ?? null;
+    }
+
+    private function projectDataQualityQuickFixFields(): array
+    {
+        return [
+            'project_name_th' => ['label' => 'ชื่อโครงการ (ภาษาไทย)', 'type' => 'text', 'rule' => 'nullable|string|max:5000'],
+            'project_name_en' => ['label' => 'ชื่อโครงการ (ภาษาอังกฤษ)', 'type' => 'text', 'rule' => 'nullable|string|max:5000'],
+            'project_type' => [
+                'label' => 'กลุ่มเนื้อหาหลักของงาน (Content/Theme)',
+                'type' => 'select',
+                'rule' => 'nullable|string|max:255',
+                'options' => [
+                    '01 Aging and Frailty',
+                    '02 Health Systems and HTA',
+                    '03 Rational Drug Use (RDU)',
+                    '04 Real-World Evidence (RWE) and Clinical–Technical Cohorts',
+                    '05 Global Health',
+                    '06 Other Areas',
+                ],
+            ],
+            'theme' => [
+                'label' => 'ประเภทของโครงการ/กิจกรรม (TYPE)',
+                'type' => 'select',
+                'rule' => 'nullable|string|max:255',
+                'options' => [
+                    'T101_Research_วิจัยที่ Health Policy เป็น ผู้วิจัยหลัก',
+                    'T102_Research: โครงการวิจัยที่ Team Health Policy เป็น ผู้ร่วมวิจัย',
+                    'T103_Research: โครงการวิจัยที่เป็นไปในลักษณะ Individual Expertise contribution (Skill รายบุคคล) เช่น การเข้าร่วมเขียน paper',
+                    'T301_Model of Care development (Clinic)',
+                    'T401_Cohort Study',
+                    'T501_Curriculum Development (Education)',
+                    'T601_Consult',
+                    'T701_Process Improvement (Siriraj Health Policy)',
+                    'T801_Conference Session / Knowledge Sharing',
+                    'T901_Capacity Building / Skill Development',
+                ],
+            ],
+            'project_list' => [
+                'label' => 'ลักษณะโครงการ',
+                'type' => 'select',
+                'rule' => 'nullable|string|max:255',
+                'options' => [
+                    'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ',
+                    'โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ',
+                    'โครงการวิจัยนอกคณะ',
+                ],
+            ],
+            'shortcut_link' => ['label' => 'เอกสารโครงการ (Proposal / IRB)', 'type' => 'text', 'rule' => 'nullable|string'],
+            'size' => [
+                'label' => 'ขนาดโครงการ (S/M/L)',
+                'type' => 'select',
+                'rule' => 'nullable|string|max:10',
+                'options' => ['S', 'M', 'L', 'XL', 'FTE Hours'],
+            ],
+            'r_code' => ['label' => 'รหัสโครงการ R', 'type' => 'text', 'rule' => 'nullable|string'],
+            'start_year' => [
+                'label' => 'ปีโครงการ',
+                'type' => 'year',
+                'rule' => 'nullable|string',
+            ],
+            'planning_status' => [
+                'label' => 'สถานะโครงการ (Project Status)',
+                'type' => 'select',
+                'rule' => 'nullable|string',
+                'options' => [
+                    'Project Planing (เริ่มต้น - submit IRB)',
+                    'เก็บข้อมูล',
+                    'วิเคราะห์ข้อมูล',
+                    'เขียนรายงานและpublication',
+                    'ปิดโปรเจค',
+                    'ยกเลิกโปรเจค',
+                ],
+            ],
+            'team_start_date' => ['label' => 'วันที่โครงการเริ่มทำงานของทีมวิจัย', 'type' => 'date', 'rule' => 'nullable|string'],
+            'team_end_date' => ['label' => 'วันที่สิ้นสุดการทำงานของทีมวิจัย', 'type' => 'date', 'rule' => 'nullable|string'],
+            'proposal_date' => ['label' => 'BA001 - วันที่เริ่มเขียน Proposal', 'type' => 'date', 'rule' => 'nullable|string'],
+            'contract_date' => ['label' => 'BC101 - วันที่สัญญาอนุมัติ', 'type' => 'date', 'rule' => 'nullable|string'],
+            'start_date' => ['label' => 'BC102 - วันที่โครงการเริ่ม (ตามสัญญา)', 'type' => 'date', 'rule' => 'nullable|string'],
+            'end_date' => ['label' => 'BC103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)', 'type' => 'date', 'rule' => 'nullable|string'],
+            'funding_type' => [
+                'label' => 'DA102 - ประเภทแหล่งทุน',
+                'type' => 'select',
+                'rule' => 'nullable|string',
+                'options' => ['ไม่มีแหล่งทุน', 'ภายใน', 'ภายนอก'],
+            ],
+            'funding_source' => ['label' => 'DA103 - ชื่อแหล่งทุน', 'type' => 'text', 'rule' => 'nullable|string'],
+            'funding_org_type' => [
+                'label' => 'DA104 - รัฐบาล / เอกชน / มูลนิธิ',
+                'type' => 'select',
+                'rule' => 'nullable|string',
+                'options' => ['รัฐบาล', 'เอกชน', 'มูลนิธิ'],
+            ],
+            'funding_name' => ['label' => 'DA105 - ชื่อทุน', 'type' => 'text', 'rule' => 'nullable|string'],
+            'budget' => ['label' => 'DA106 - งบประมาณ (บาท)', 'type' => 'number', 'rule' => 'nullable|numeric|min:0'],
+            'pi_name' => ['label' => 'CA102 - ชื่อ PI (ผู้วิจัยหลัก)', 'type' => 'text', 'rule' => 'nullable|string'],
+            'pi_affiliation' => ['label' => 'CA103 - สังกัดผู้วิจัยหลัก', 'type' => 'text', 'rule' => 'nullable|string'],
+            'pi_user_id' => ['label' => 'CA102 - เลือก PI จากรายชื่อบุคลากร', 'type' => 'user', 'rule' => 'nullable|integer|exists:users,id'],
         ];
     }
 
@@ -820,7 +1320,17 @@ class ProjectController extends Controller
     private function paginateProjectDataQualityRows(Collection $rows, Request $request, int $perPage)
     {
         $page = max(1, (int) $request->input('page', 1));
+        $focusProjectId = (int) $request->input('focus_project', 0);
+        if ($focusProjectId > 0) {
+            $focusIndex = $rows->search(fn ($row) => (int) $row->project->getKey() === $focusProjectId);
+            if ($focusIndex !== false) {
+                $page = (int) floor($focusIndex / $perPage) + 1;
+            }
+        }
+
         $items = $rows->forPage($page, $perPage)->values();
+        $query = $request->query();
+        unset($query['focus_project']);
 
         return new \Illuminate\Pagination\LengthAwarePaginator(
             $items,
@@ -829,7 +1339,7 @@ class ProjectController extends Controller
             $page,
             [
                 'path' => $request->url(),
-                'query' => $request->query(),
+                'query' => $query,
             ]
         );
     }
@@ -868,6 +1378,7 @@ class ProjectController extends Controller
         return collect([
             $request->filled('search') ? 'ค้นหา: '.trim((string) $request->input('search')) : null,
             $request->filled('category') ? 'หมวดปัญหา: '.($categoryLabels[$request->input('category')] ?? $request->input('category')) : null,
+            $request->filled('issue_label') ? 'ชนิดปัญหา: '.trim((string) $request->input('issue_label')) : null,
             $request->filled('severity') ? 'ระดับ: '.($severityLabels[(string) $request->input('severity')] ?? $request->input('severity')) : null,
             $request->filled('output_status') ? 'Output: '.($outputLabels[$request->input('output_status')] ?? $request->input('output_status')) : null,
             $request->filled('activity') ? 'ความเคลื่อนไหว: '.($activityLabels[$request->input('activity')] ?? $request->input('activity')) : null,
@@ -905,6 +1416,35 @@ class ProjectController extends Controller
 
         return $rows->map(function ($row, $index) use ($severityLabel) {
             $issues = collect($row->issues);
+            $fieldTargets = $issues
+                ->flatMap(fn ($issue) => collect($issue['field_targets'] ?? [])->values())
+                ->filter()
+                ->unique()
+                ->values();
+            $quickFixFields = $issues
+                ->flatMap(fn ($issue) => $issue['quick_fix_fields'] ?? [])
+                ->filter()
+                ->unique()
+                ->values();
+            $duplicateMatches = $issues
+                ->flatMap(fn ($issue) => collect($issue['duplicate_matches'] ?? []))
+                ->map(fn ($match) => trim(implode(' | ', array_filter([
+                    $match['project_code'] ?? null,
+                    $match['project_name'] ?? null,
+                    isset($match['start_year']) && $match['start_year'] !== '' ? 'ปี '.$match['start_year'] : null,
+                ]))))
+                ->filter()
+                ->unique()
+                ->values();
+            $editUrl = route('projects.edit', array_filter([
+                'project' => $row->project,
+                'view' => 'desktop',
+                'dq_fields' => $fieldTargets->isNotEmpty() ? $fieldTargets->implode(',') : null,
+            ], fn ($value) => $value !== null));
+            $firstTarget = $fieldTargets->first();
+            if ($firstTarget) {
+                $editUrl .= '#' . (str_starts_with((string) $firstTarget, 'section-') ? rawurlencode($firstTarget) : 'field-' . rawurlencode($firstTarget));
+            }
 
             return [
                 (int) $index + 1,
@@ -920,10 +1460,16 @@ class ProjectController extends Controller
                 $issues->pluck('reason')->implode("\n"),
                 $issues->pluck('fields')->flatten()->unique()->implode(', '),
                 $issues->pluck('suggestion')->unique()->implode("\n"),
+                $issues->pluck('impact')->filter()->unique()->implode("\n"),
                 $row->created_by_name,
                 $row->created_at_label,
                 $row->updated_by_name,
                 $row->updated_at_label,
+                route('projects.show', $row->project),
+                $editUrl,
+                $quickFixFields->implode(', '),
+                $fieldTargets->implode(', '),
+                $duplicateMatches->implode("\n"),
             ];
         })->values();
     }
@@ -1009,7 +1555,7 @@ class ProjectController extends Controller
         $columnCount = max(count($headers), 1);
         $lastColumn = $this->projectDataQualityXlsxColumnName($columnCount);
 
-        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'.collect(range(1, $columnCount))->map(fn ($i) => '<col min="'.$i.'" max="'.$i.'" width="'.($i === 1 ? 8 : ($i >= 10 && $i <= 13 ? 42 : 24)).'" customWidth="1"/>')->implode('').'</cols><sheetData>'.implode('', $xmlRows).'</sheetData><autoFilter ref="A'.$headerRowIndex.':'.$lastColumn.max($headerRowIndex, $rowIndex - 1).'"/></worksheet>';
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'.collect(range(1, $columnCount))->map(fn ($i) => '<col min="'.$i.'" max="'.$i.'" width="'.($i === 1 ? 8 : ($i >= 10 ? 42 : 24)).'" customWidth="1"/>')->implode('').'</cols><sheetData>'.implode('', $xmlRows).'</sheetData><autoFilter ref="A'.$headerRowIndex.':'.$lastColumn.max($headerRowIndex, $rowIndex - 1).'"/></worksheet>';
     }
 
     private function projectDataQualityXlsxRow(int $rowIndex, array $values, int $style = 0): string
@@ -1698,7 +2244,7 @@ public function store(Request $request)
             return response()->streamDownload(function () use ($rows) {
                 $handle = fopen('php://output', 'w');
                 fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-                fputcsv($handle, ['Project ID', 'ชื่อโครงการ', 'PI', 'ปี', 'งบประมาณ(บาท)', 'ประเภททุน', 'แหล่งทุน', 'Project Type', 'Project Status', 'อัปเดตล่าสุด']);
+                fputcsv($handle, ['Project ID', 'ชื่อโครงการ', 'PI', 'ปีโครงการ', 'งบประมาณ (บาท)', 'ประเภทแหล่งทุน', 'แหล่งทุน', 'กลุ่มเนื้อหาหลักของงาน (Content/Theme)', 'สถานะโครงการ', 'อัปเดตล่าสุด']);
 
                 foreach ($rows as $row) {
                     fputcsv($handle, [
@@ -1812,7 +2358,7 @@ public function store(Request $request)
             'coresearch.*.unit_status' => 'nullable|string|max:255',
             'coresearch.*.user_id' => 'nullable|integer|exists:users,id',
         ], [
-            'planning_status.required' => 'กรุณาเลือก Project Status',
+            'planning_status.required' => 'กรุณาเลือกสถานะโครงการ',
             'fte_roles.*.fte_value.numeric' => 'ค่า FTE (ผู้วิจัย) ต้องเป็นตัวเลข',
             'fte_roles.*.fte_value.min' => 'ค่า FTE (ผู้วิจัย) ต้องไม่ติดลบ',
             'fte_roles.*.fte_value_research.numeric' => 'ค่า FTE (ผู้บริหาร) ต้องเป็นตัวเลข',
@@ -1863,7 +2409,7 @@ public function store(Request $request)
             'proposal_date' => 'BA001 - วันที่เริ่มเขียน Proposal',
             'contract_date' => 'BC101 - วันที่สัญญาอนุมัติ',
             'start_date' => 'BC102 - วันที่โครงการเริ่ม (ตามสัญญา)',
-            'end_date' => 'BC103 - วันที่สิ้นสุด (ตามสัญญา)',
+            'end_date' => 'BC103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)',
         ];
 
         $errors = [];
@@ -2073,7 +2619,7 @@ public function store(Request $request)
         $contractStart = $this->parseProjectDateInput((string) $request->input('start_date', ''));
         $contractEnd = $this->parseProjectDateInput((string) $request->input('end_date', ''));
         if ($contractStart && $contractEnd && $contractEnd->lt($contractStart)) {
-            $errors['end_date'] = 'BC103 - วันที่สิ้นสุด (ตามสัญญา) ต้องไม่น้อยกว่า BC102 - วันที่โครงการเริ่ม (ตามสัญญา)';
+            $errors['end_date'] = 'BC103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ) ต้องไม่น้อยกว่า BC102 - วันที่โครงการเริ่ม (ตามสัญญา)';
         }
 
         foreach ((array) $request->input('fte_roles', []) as $idx => $fteRow) {

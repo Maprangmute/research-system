@@ -21,6 +21,7 @@ use PhpOffice\PhpWord\SimpleType\Jc;
 use PhpOffice\PhpWord\SimpleType\JcTable;
 use PhpOffice\PhpWord\SimpleType\TblWidth;
 use PhpOffice\PhpWord\SimpleType\VerticalJc;
+use PhpOffice\PhpWord\Settings;
 
 
 class FteController extends Controller
@@ -801,7 +802,7 @@ public function exportWord(Request $request, $person)
     $this->buildFteWordDocument(
         array_merge($data, [
             'user' => $user,
-            'profilePhotoPath' => $this->resolveUserProfilePhotoPathForExport($data['profile'] ?? null),
+            'profilePhotoPath' => $this->resolveUserProfilePhotoPathForWordExport($data['profile'] ?? null),
         ]),
         $docxPath
     );
@@ -1019,7 +1020,14 @@ private function buildFteWordDocument(array $data, string $targetPath): void
     $section->addText('ช่วงข้อมูลของ output: ' . ($pdfFilter['output_label'] ?? $filterLabel), ['size' => 13, 'color' => '64748B']);
     $section->addTextBreak(2);
 
-    IOFactory::createWriter($phpWord, 'Word2007')->save($targetPath);
+    $previousEscaping = Settings::isOutputEscapingEnabled();
+    Settings::setOutputEscapingEnabled(true);
+
+    try {
+        IOFactory::createWriter($phpWord, 'Word2007')->save($targetPath);
+    } finally {
+        Settings::setOutputEscapingEnabled($previousEscaping);
+    }
 }
 
 private function buildFteDetailData(string $person, array $filter = []): array
@@ -1988,6 +1996,26 @@ private function buildFteProjectData(Project $project): array
         ];
 
         return collect($candidates)->first(fn ($path) => is_file($path) && is_readable($path));
+    }
+
+    private function resolveUserProfilePhotoPathForWordExport(?User $user): ?string
+    {
+        $fullPath = $this->resolveUserProfilePhotoPathForExport($user);
+        if (! $fullPath) {
+            return null;
+        }
+
+        $imageInfo = @getimagesize($fullPath);
+        if (! is_array($imageInfo)) {
+            return null;
+        }
+
+        $mime = strtolower((string) ($imageInfo['mime'] ?? mime_content_type($fullPath) ?: ''));
+        if (! in_array($mime, ['image/jpeg', 'image/png', 'image/gif'], true)) {
+            return null;
+        }
+
+        return $fullPath;
     }
 
 }

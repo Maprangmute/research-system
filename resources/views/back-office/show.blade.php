@@ -30,10 +30,11 @@
                 return (string) $value;
             }
         };
-        $updatedUser = $task->updated_by ? $task->updater : $task->creator;
+        $latestMutationLog = $latestMutationLog ?? null;
+        $updatedUser = $latestMutationLog?->user ?: ($task->updated_by ? $task->updater : $task->creator);
         $updatedBy = $updatedUser ? trim(($updatedUser->prefix ?? '') . ' ' . ($updatedUser->name ?? '')) : '-';
         $createdBy = $task->creator ? trim(($task->creator->prefix ?? '') . ' ' . ($task->creator->name ?? '')) : '-';
-        $updatedAtThai = $formatDateTimeThai($task->updated_at);
+        $updatedAtThai = $formatDateTimeThai($latestMutationLog?->created_at ?: $task->updated_at);
         $createdAtThai = $formatDateTimeThai($task->created_at);
         $openQuickEntry = old('_quick_add_entry') || $errors->hasAny(['person_name', 'category', 'job_name', 'job_detail', 'start_date', 'end_date', 'hours']);
         $openQuickOutput = old('_quick_add_output') || $errors->hasAny([
@@ -232,6 +233,32 @@
         .back-office-action--add:hover {
             background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
             border-color: #93c5fd;
+        }
+
+        .back-office-action--save {
+            gap: 0.55rem;
+            border: 1px solid #86efac;
+            background: linear-gradient(135deg, #ecfdf5 0%, #bbf7d0 100%);
+            color: #047857;
+            box-shadow: 0 10px 22px rgba(16, 185, 129, 0.14);
+        }
+
+        .back-office-action--save:hover {
+            background: linear-gradient(135deg, #d1fae5 0%, #86efac 100%);
+            border-color: #4ade80;
+        }
+
+        .back-office-action--cancel {
+            border: 1px solid #fecaca;
+            background: #fff;
+            color: #dc2626;
+            box-shadow: 0 10px 22px rgba(220, 38, 38, 0.08);
+        }
+
+        .back-office-action--cancel:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #b91c1c;
         }
 
         .back-office-action--pdf {
@@ -1822,6 +1849,7 @@
                 window.initBackOfficePersonSelect?.(next);
                 document.dispatchEvent(new CustomEvent('backoffice:detail-refreshed', { detail: { root: next } }));
             };
+            window.__backOfficeRefreshDetailContent = refreshDetailContent;
 
             window.__backOfficeSubmitInlineForm = async (form) => {
                 if (!(form instanceof HTMLFormElement) || form.dataset.boSubmitting === '1') return;
@@ -1963,6 +1991,7 @@
             const submitEntryDelete = async (form) => {
                 const submitButton = form.querySelector('button[type="submit"]');
                 submitButton?.setAttribute('disabled', 'disabled');
+                let deletionSucceeded = false;
 
                 try {
                     const formData = new FormData(form);
@@ -1978,31 +2007,10 @@
                     if (!response.ok) {
                         throw new Error('Delete failed');
                     }
-                    const payload = await response.json().catch(() => ({}));
+                    deletionSucceeded = true;
+                    await response.json().catch(() => ({}));
 
-                    const entryId = form.dataset.entryId || form.closest('[data-back-office-entry-card]')?.id?.replace('entry-', '');
-                    if (entryId) {
-                        document.querySelectorAll(`[data-back-office-entry-id="${cssEscape(entryId)}"]`).forEach((row) => row.remove());
-                        document.getElementById(`entry-${entryId}`)?.remove();
-                    }
-                    const card = form.closest('[data-back-office-entry-card]');
-                    const list = document.querySelector('[data-back-office-entry-list]');
-                    card?.remove();
-                    document.querySelectorAll('.back-office-inline-edit-row').forEach((row) => {
-                        if (!row.querySelector('.back-office-detail-card')) row.remove();
-                    });
-                    setSectionCount('#back-office-entry-section', payload.remaining_entries);
-
-                    const hasCards = !!list?.querySelector('[data-back-office-entry-card]');
-                    const hasEmpty = !!list?.querySelector('[data-back-office-entry-empty]');
-
-                    if (list && !hasCards && !hasEmpty) {
-                        const empty = document.createElement('div');
-                        empty.className = 'rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-400';
-                        empty.setAttribute('data-back-office-entry-empty', '1');
-                        empty.textContent = 'ไม่มีข้อมูลภาระงาน';
-                        list.appendChild(empty);
-                    }
+                    await window.__backOfficeRefreshDetailContent?.();
 
                     if (window.Swal) {
                         Swal.fire({
@@ -2013,17 +2021,19 @@
                         });
                     }
                 } catch (error) {
+                    const title = deletionSucceeded ? 'ลบสำเร็จ แต่อัปเดตหน้าจอไม่สำเร็จ' : 'ลบไม่สำเร็จ';
+                    const text = deletionSucceeded ? 'กรุณาลองโหลดข้อมูลใหม่อีกครั้ง' : 'กรุณาลองใหม่อีกครั้ง';
                     if (window.Swal) {
                         Swal.fire({
-                            icon: 'error',
-                            title: 'ลบไม่สำเร็จ',
-                            text: 'กรุณาลองใหม่อีกครั้ง',
+                            icon: deletionSucceeded ? 'warning' : 'error',
+                            title,
+                            text,
                             confirmButtonColor: '#dc2626',
                         });
                     } else {
-                        window.alert('ลบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+                        window.alert(`${title} ${text}`);
                     }
-                    submitButton?.removeAttribute('disabled');
+                    if (!deletionSucceeded) submitButton?.removeAttribute('disabled');
                 }
             };
         })();
@@ -2846,6 +2856,7 @@
                 const submitOutputDelete = async () => {
                     const submitButton = form.querySelector('button[type="submit"]');
                     submitButton?.setAttribute('disabled', 'disabled');
+                    let deletionSucceeded = false;
 
                     try {
                         const formData = new FormData(form);
@@ -2860,20 +2871,10 @@
                         if (!response.ok) {
                             throw new Error('Delete failed');
                         }
-                        const payload = await response.json().catch(() => ({}));
+                        deletionSucceeded = true;
+                        await response.json().catch(() => ({}));
 
-                        const outputId = form.dataset.outputId || form.closest('[data-back-office-output-card]')?.id?.replace('output-', '');
-                        if (outputId) {
-                            document.querySelectorAll(`[data-back-office-output-id="${cssEscape(outputId)}"]`).forEach((row) => row.remove());
-                            document.querySelectorAll(`[data-output-special-for="output-${cssEscape(outputId)}"]`).forEach((row) => row.remove());
-                            document.getElementById(`output-${outputId}`)?.remove();
-                        }
-                        const card = form.closest('[data-back-office-output-card]');
-                        card?.remove();
-                        document.querySelectorAll('.back-office-inline-edit-row').forEach((row) => {
-                            if (!row.querySelector('.back-office-detail-card')) row.remove();
-                        });
-                        setSectionCount('#back-office-output-section', payload.remaining_outputs);
+                        await window.__backOfficeRefreshDetailContent?.();
 
                         if (window.Swal) {
                             Swal.fire({
@@ -2884,17 +2885,19 @@
                             });
                         }
                     } catch (error) {
+                        const title = deletionSucceeded ? 'ลบสำเร็จ แต่อัปเดตหน้าจอไม่สำเร็จ' : 'ลบไม่สำเร็จ';
+                        const text = deletionSucceeded ? 'กรุณาลองโหลดข้อมูลใหม่อีกครั้ง' : 'กรุณาลองใหม่อีกครั้ง';
                         if (window.Swal) {
                             Swal.fire({
-                                icon: 'error',
-                                title: 'ลบไม่สำเร็จ',
-                                text: 'กรุณาลองใหม่อีกครั้ง',
+                                icon: deletionSucceeded ? 'warning' : 'error',
+                                title,
+                                text,
                                 confirmButtonColor: '#dc2626',
                             });
                         } else {
-                            window.alert('ลบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+                            window.alert(`${title} ${text}`);
                         }
-                        submitButton?.removeAttribute('disabled');
+                        if (!deletionSucceeded) submitButton?.removeAttribute('disabled');
                     }
                 };
 

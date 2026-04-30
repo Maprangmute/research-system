@@ -704,7 +704,7 @@
                         class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (English)</span>
+                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาอังกฤษ)</span>
                     <input name="project_name_en" value="{{ old('project_name_en', $project->project_name_en) }}"
                         class="w-full border p-2 rounded">
                 </label>
@@ -793,7 +793,7 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">เอกสารโครงการ (proposal , IRB)</span>
+                    <span class="block text-sm text-gray-700 mb-1">เอกสารโครงการ (Proposal / IRB)</span>
                     <input name="shortcut_link" value="{{ old('shortcut_link', $project->shortcut_link) }}"
                         class="w-full border p-2 rounded">
                 </label>
@@ -825,7 +825,7 @@
                     <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L) </span>
                     <select name="size" class="w-full border p-2 rounded">
                         <option value="" disabled {{ old('size', $project->size) ? '' : 'selected' }}>
-                            กรุณาเลือกขนาดของโปรเจค
+                            กรุณาเลือกขนาดโครงการ
                         </option>
                         <option value="S" {{ old('size', $project->size) == 'S' ? 'selected' : '' }}>
                             S (ภายนอก ต่ำกว่า 1 ล้าน / ภายใน)
@@ -850,11 +850,11 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค <span class="text-red-500">*</span></span>
+                    <span class="block text-sm text-gray-700 mb-1">ปีโครงการ <span class="text-red-500">*</span></span>
                     <select name="start_year" class="w-full border p-2 rounded" required
-                        oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')" oninput="this.setCustomValidity('')">
+                        oninvalid="this.setCustomValidity('กรุณาเลือกปีโครงการ')" oninput="this.setCustomValidity('')">
                         <option value="" disabled
-                            {{ old('start_year', $project->start_year ?? '') == '' ? 'selected' : '' }}>เลือกปีโปรเจค
+                            {{ old('start_year', $project->start_year ?? '') == '' ? 'selected' : '' }}>เลือกปีโครงการ
                         </option>
                         @for ($year = now()->year + 2 + 543; $year >= 2557; $year--)
                             <option value="{{ $year }}"
@@ -892,7 +892,7 @@
                     @enderror
                 </label>
 
-                <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal (เดือน/ปี)"
+                <x-date-be name="proposal_date" label="BA001 - วันที่เริ่มเขียน Proposal"
                     value="{{ old('proposal_date', $project->proposal_date) }}"
                     placeholder="กรุณาเลือกวันที่เริ่มเขียน Proposal" />
 
@@ -925,15 +925,15 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">Project Status <span class="text-red-500">*</span></span>
+                    <span class="block text-sm text-gray-700 mb-1">สถานะโครงการ (Project Status) <span class="text-red-500">*</span></span>
                     <select name="planning_status" id="planning_status" class="w-full border p-2 rounded font-semibold"
                         onchange="updateStatusColor(this)" required
-                        oninvalid="this.setCustomValidity('กรุณาเลือก Project Status')"
+                        oninvalid="this.setCustomValidity('กรุณาเลือกสถานะโครงการ')"
                         oninput="this.setCustomValidity('')">
                         <option value="" disabled
                             {{ old('planning_status', $project->planning_status) ? '' : 'selected' }}
                             style="background-color: #fff; color: #222;">
-                            ระบุสถานะของโปรเจค
+                            ระบุสถานะโครงการ
                         </option>
                         <option value="Project Planing (เริ่มต้น - submit IRB)" data-color="#FFE599"
                             style="background-color:#FFE599; color:#222;"
@@ -6786,6 +6786,87 @@
 
     <script>
         (() => {
+            @php
+                $dataQualityTargets = collect(explode(',', (string) request('dq_fields', '')))
+                    ->map(fn ($value) => trim($value))
+                    ->filter()
+                    ->values()
+                    ->all();
+            @endphp
+            const dataQualityTargets = @json($dataQualityTargets);
+
+            const focusProjectEditTarget = () => {
+                const targetsToHighlight = new Set(dataQualityTargets);
+                if (!window.location.hash && targetsToHighlight.size === 0) return;
+
+                let hash = window.location.hash.slice(1);
+                try {
+                    hash = decodeURIComponent(hash);
+                } catch (error) {}
+
+                const fieldPrefix = 'field-';
+                const isField = hash.startsWith(fieldPrefix);
+                const target = isField ? hash.slice(fieldPrefix.length) : hash;
+                if (target) {
+                    targetsToHighlight.add(target);
+                }
+                if (targetsToHighlight.size === 0) return;
+
+                const cssEscape = window.CSS?.escape || ((value) => String(value).replace(/["\\]/g, '\\$&'));
+                let firstElement = null;
+
+                targetsToHighlight.forEach((item) => {
+                    const isSectionTarget = item.startsWith('section-');
+                    const input = isSectionTarget ? null : document.querySelector(`[name="${cssEscape(item)}"]`);
+                    const element = input || document.getElementById(item);
+                    if (!element) return;
+
+                    const visualTarget = isSectionTarget ? element : (element.closest('label, .w-full, .project-zone-card') || element);
+                    visualTarget.classList.add('project-data-quality-highlight');
+                    input?._flatpickr?.altInput?.classList.add('project-data-quality-highlight-input');
+                    if (input?.classList?.contains('flatpickr-hidden')) {
+                        input.closest('.relative')?.classList.add('project-data-quality-highlight');
+                    }
+                    firstElement ||= element;
+                });
+
+                if (!firstElement) return;
+                firstElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                const focusInput = isField
+                    ? document.querySelector(`[name="${cssEscape(target)}"]`)
+                    : null;
+
+                if (focusInput && typeof focusInput.focus === 'function') {
+                    window.setTimeout(() => focusInput.focus({ preventScroll: true }), 500);
+                }
+            };
+
+            const style = document.createElement('style');
+            style.textContent = `
+                .project-focus-highlight {
+                    outline: 3px solid rgba(37, 99, 235, 0.55);
+                    outline-offset: 4px;
+                    background: rgba(219, 234, 254, 0.55) !important;
+                    transition: background-color 0.2s ease, outline-color 0.2s ease;
+                }
+                .project-data-quality-highlight {
+                    outline: 3px solid rgba(220, 38, 38, 0.7);
+                    outline-offset: 4px;
+                    background: rgba(254, 226, 226, 0.75) !important;
+                    transition: background-color 0.2s ease, outline-color 0.2s ease;
+                }
+                .project-data-quality-highlight-input {
+                    border-color: rgb(220, 38, 38) !important;
+                    background: rgba(254, 226, 226, 0.75) !important;
+                    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.22) !important;
+                }
+            `;
+            document.head.appendChild(style);
+
+            window.addEventListener('load', () => window.setTimeout(focusProjectEditTarget, 700), { once: true });
+            window.addEventListener('hashchange', focusProjectEditTarget);
+
             const navDots = Array.from(document.querySelectorAll('.edit-section-dot[data-nav-target]'));
             if (navDots.length) {
                 const quickNav = document.querySelector('.edit-section-nav');

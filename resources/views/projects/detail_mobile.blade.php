@@ -442,7 +442,7 @@
                 <span class="font-semibold text-slate-700">{{ $project->project_code ?: '-' }}</span>
             </div>
             <span class="tag {{ $bgClass }} border border-slate-300 text-slate-900">
-                สถานะ: {{ $statusText }}
+                สถานะโครงการ: {{ $statusText }}
             </span>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('projects.edit', $project) }}"
@@ -482,11 +482,11 @@
         <div class="mobile-section space-y-3">
             <h3 class="font-semibold text-lg text-blue-700">A: ข้อมูลโครงการ</h3>
             <div class="field-row">
-                <div class="field-label">ชื่อโครงการ (TH)</div>
+                <div class="field-label">ชื่อโครงการ (ภาษาไทย)</div>
                 <div class="field-value">{{ $project->project_name_th ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">ชื่อโครงการ (EN)</div>
+                <div class="field-label">ชื่อโครงการ (ภาษาอังกฤษ)</div>
                 <div class="field-value">{{ $project->project_name_en ?? '-' }}</div>
             </div>
             <div class="field-row">
@@ -503,7 +503,7 @@
             </div>
 
             <div class="field-row">
-                <div class="field-label">เอกสารโครงการ (proposal , IRB) : </div>
+                <div class="field-label">เอกสารโครงการ (Proposal / IRB)</div>
                 <div class="field-value">
                     @if ($project->shortcut_link)
                         <a href="{{ $project->shortcut_link }}"
@@ -525,11 +525,11 @@
                 <div class="field-value">{{ $project->r_code ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">ปีโปรเจค</div>
+                <div class="field-label">ปีโครงการ</div>
                 <div class="field-value">{{ $project->start_year ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">สถานะ</div>
+                <div class="field-label">สถานะโครงการ (Project Status)</div>
                 <div class="field-value">{{ $project->planning_status ?? '-' }}</div>
             </div>
         </div>
@@ -537,23 +537,23 @@
         <div class="mobile-section space-y-3">
             <h3 class="font-semibold text-lg text-blue-700">B: ระยะเวลาดำเนินโครงการ</h3>
             <div class="field-row">
-                <div class="field-label">เริ่มทำงานของทีมวิจัย</div>
+                <div class="field-label">วันที่โครงการเริ่มทำงานของทีมวิจัย</div>
                 <div class="field-value">{{ $formatDateBE($project->team_start_date ?? null) }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">สิ้นสุดทีมวิจัย</div>
+                <div class="field-label">วันที่สิ้นสุดการทำงานของทีมวิจัย</div>
                 <div class="field-value">{{ $formatDateBE($project->team_end_date ?? null) }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">BA001 Proposal</div>
+                <div class="field-label">BA001 - วันที่เริ่มเขียน Proposal</div>
                 <div class="field-value">{{ $formatDateBE($project->proposal_date ?? null) }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">BC101 สัญญาอนุมัติ</div>
+                <div class="field-label">BC101 - วันที่สัญญาอนุมัติ</div>
                 <div class="field-value">{{ $formatDateBE($project->contract_date ?? null) }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">BC102 เริ่มโครงการ</div>
+                <div class="field-label">BC102 - วันที่โครงการเริ่ม (ตามสัญญา)</div>
                 <div class="field-value">{{ $formatDateBE($project->start_date ?? null) }}</div>
             </div>
             <div class="field-row">
@@ -565,23 +565,23 @@
         <div class="mobile-section space-y-3">
             <h3 class="font-semibold text-lg text-blue-700">C: ข้อมูลแหล่งทุน</h3>
             <div class="field-row">
-                <div class="field-label">ประเภทแหล่งทุน</div>
+                <div class="field-label">DA102 - ประเภทแหล่งทุน</div>
                 <div class="field-value">{{ $project->funding_type ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">ชื่อแหล่งทุน</div>
+                <div class="field-label">DA103 - ชื่อแหล่งทุน</div>
                 <div class="field-value">{{ $project->funding_source ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">รัฐบาล/เอกชน/มูลนิธิ</div>
+                <div class="field-label">DA104 - รัฐบาล / เอกชน / มูลนิธิ</div>
                 <div class="field-value">{{ $project->funding_org_type ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">ชื่อทุน</div>
+                <div class="field-label">DA105 - ชื่อทุน</div>
                 <div class="field-value">{{ $project->funding_name ?? '-' }}</div>
             </div>
             <div class="field-row">
-                <div class="field-label">งบประมาณ</div>
+                <div class="field-label">DA106 - งบประมาณ (บาท)</div>
                 <div class="field-value">{{ $project->budget ? number_format($project->budget, 2) : '-' }}</div>
             </div>
         </div>
@@ -1553,6 +1553,37 @@
                 });
             });
         }
+
+        (function() {
+            const focusOutputHash = () => {
+                if (!window.location.hash || !window.location.hash.startsWith('#output-')) return;
+
+                let targetId = window.location.hash.slice(1);
+                try {
+                    targetId = decodeURIComponent(targetId);
+                } catch (error) {}
+
+                const target = document.getElementById(targetId);
+                if (!target) return;
+
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.classList.add('mobile-output-focus-highlight');
+                window.setTimeout(() => target.classList.remove('mobile-output-focus-highlight'), 3200);
+            };
+
+            const style = document.createElement('style');
+            style.textContent = `
+                .mobile-output-focus-highlight {
+                    outline: 3px solid rgba(16, 185, 129, 0.72);
+                    outline-offset: 4px;
+                    background: rgba(236, 253, 245, 0.85) !important;
+                    transition: background-color 0.2s ease, outline-color 0.2s ease;
+                }
+            `;
+            document.head.appendChild(style);
+            window.addEventListener('load', () => window.setTimeout(focusOutputHash, 450), { once: true });
+            window.addEventListener('hashchange', () => window.setTimeout(focusOutputHash, 100));
+        })();
 
         (function() {
             const fabBtn = document.getElementById('detailFabBtn');

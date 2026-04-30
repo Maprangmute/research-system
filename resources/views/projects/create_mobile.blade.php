@@ -406,7 +406,7 @@
                     <input name="project_name_th" type="text" class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (English)</span>
+                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาอังกฤษ)</span>
                     <input name="project_name_en" type="text" class="w-full border p-2 rounded">
                 </label>
                 <label class="w-full">
@@ -454,7 +454,7 @@
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">เอกสารโครงการ (proposal , IRB)</span>
+                    <span class="block text-sm text-gray-700 mb-1">เอกสารโครงการ (Proposal / IRB)</span>
                     <input name="shortcut_link" type="text" class="w-full border p-2 rounded">
                 </label>
 
@@ -474,7 +474,7 @@
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ขนาดโครงการ (S/M/L)</span>
                     <select name="size" class="w-full border p-2 rounded">
-                        <option value="" disabled selected>กรุณาเลือกขนาดของโปรเจค</option>
+                        <option value="" disabled selected>กรุณาเลือกขนาดโครงการ</option>
                         <option value="S">S (ภายนอก ต่ำกว่า 1 ล้าน / ภายใน)</option>
                         <option value="M">M (ภายนอก 1-3 ล้าน / ภายใน / Cohort Study (Perioperative, SEAPOD))</option>
                         <option value="L">L (ภายนอก 3-5 ล้าน / ภายใน / Cohort Study (GSC, PCU, DM))</option>
@@ -483,16 +483,16 @@
                     </select>
                 </label>
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1"> รหัสโครงการ R</span>
+                    <span class="block text-sm text-gray-700 mb-1">รหัสโครงการ R</span>
                     <input name="r_code" type="text" placeholder="R:001" class="w-full border p-2 rounded">
                 </label>
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ปีโปรเจค <span class="text-red-500">*</span></span>
+                    <span class="block text-sm text-gray-700 mb-1">ปีโครงการ <span class="text-red-500">*</span></span>
                     <select name="start_year" class="w-full border p-2 rounded" required
-                        oninvalid="this.setCustomValidity('กรุณาเลือกปีโปรเจค')" oninput="this.setCustomValidity('')">
+                        oninvalid="this.setCustomValidity('กรุณาเลือกปีโครงการ')" oninput="this.setCustomValidity('')">
                         <option value="" disabled
-                            {{ old('start_year', $project->start_year ?? '') == '' ? 'selected' : '' }}>เลือกปีโปรเจค
+                            {{ old('start_year', $project->start_year ?? '') == '' ? 'selected' : '' }}>เลือกปีโครงการ
                         </option>
                         @for ($year = now()->year + 2 + 543; $year >= 2557; $year--)
                             <option value="{{ $year }}"
@@ -621,13 +621,13 @@
 
                 <label class="w-full">
                     {{-- BA000 - Project Planning (Status) --}}
-                    <span class="block text-sm text-gray-700 mb-1">Project Status <span class="text-red-500">*</span></span>
+                    <span class="block text-sm text-gray-700 mb-1">สถานะโครงการ (Project Status) <span class="text-red-500">*</span></span>
                     <select name="planning_status" id="planning_status" class="w-full border p-2 rounded font-semibold"
                         onchange="updateStatusColor(this)" required
-                        oninvalid="this.setCustomValidity('กรุณาเลือก Project Status')"
+                        oninvalid="this.setCustomValidity('กรุณาเลือกสถานะโครงการ')"
                         oninput="this.setCustomValidity('')">
                         <option value="" disabled selected style="background-color: #fff; color: #222;">
-                            ระบุสถานะของโปรเจค</option>
+                            ระบุสถานะโครงการ</option>
                         <option value="Project Planing (เริ่มต้น - submit IRB)" data-color="#FFE599"
                             style="background-color:#FFE599; color:#222;">Project Planing (เริ่มต้น - submit IRB)</option>
                         <option value="เก็บข้อมูล" data-color="#B6E2D3" style="background-color:#B6E2D3; color:#222;">
@@ -710,7 +710,7 @@
                         oninput="this.setCustomValidity('')">
                         <option value="">กรุณาเลือก</option>
                         <option value="internal" {{ old('pi_person_type') === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
-                        <option value="external" {{ old('pi_person_type', 'external') === 'external' ? 'selected' : '' }}>คนนอก</option>
+                        <option value="external" {{ old('pi_person_type') === 'external' ? 'selected' : '' }}>คนนอก</option>
                     </select>
                 </label>
 

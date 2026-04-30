@@ -44,11 +44,11 @@
                 <th>ชื่อโครงการ</th>
                 <th>PI</th>
                 <th>ปี</th>
-                <th>งบประมาณ(บาท)</th>
-                <th>ประเภททุน</th>
+                <th>งบประมาณ (บาท)</th>
+                <th>ประเภทแหล่งทุน</th>
                 <th>แหล่งทุน</th>
-                <th>Project Type</th>
-                <th>Project Status</th>
+                <th>กลุ่มเนื้อหาหลักของงาน (Content/Theme)</th>
+                <th>สถานะโครงการ</th>
                 <th>อัปเดตล่าสุด</th>
             </tr>
         </thead>

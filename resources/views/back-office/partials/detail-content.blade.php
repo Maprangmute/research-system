@@ -229,7 +229,7 @@
                             <h2 class="text-lg font-semibold text-slate-900">เพิ่มภาระงานจากหน้านี้</h2>
                             <p class="text-sm text-slate-500">กรอกข้อมูลภาระงานต่อได้ทันทีใน section นี้</p>
                         </div>
-                        <button type="button" id="close-quick-entry" class="text-sm back-office-text-danger">ยกเลิกการเพิ่ม</button>
+                        <button type="button" id="close-quick-entry" class="text-sm font-semibold text-red-600 hover:text-red-700">ยกเลิกการเพิ่ม</button>
                     </div>
 
                     <form action="{{ route('back_office.entries.store', $task) }}" method="POST" class="space-y-4" novalidate data-back-office-required-form>
@@ -288,8 +288,8 @@
                         </div>
 
                         <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                            <button type="button" id="cancel-quick-entry" class="back-office-action border border-slate-200 bg-white text-slate-700">ยกเลิก</button>
-                            <button type="submit" class="back-office-action back-office-action--add">บันทึกภาระงาน</button>
+                            <button type="button" id="cancel-quick-entry" class="back-office-action back-office-action--cancel">ยกเลิก</button>
+                            <button type="submit" class="back-office-action back-office-action--save">บันทึกภาระงาน</button>
                         </div>
                     </form>
                 </div>
@@ -494,7 +494,7 @@
                                 <button type="button" class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100" data-back-office-entry-edit-close>
                                     ยกเลิก
                                 </button>
-                                <button type="submit" class="inline-flex items-center justify-center rounded-xl border border-sky-200 bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
+                                <button type="submit" class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">
                                     บันทึกการแก้ไข
                                 </button>
                             </div>
@@ -540,7 +540,7 @@
                                     <h2 class="text-lg font-semibold text-slate-900">เพิ่มผลงานจากหน้านี้</h2>
                                     <p class="text-sm text-slate-500">กรอกข้อมูลงานที่เกิดขึ้นจาก Back Office ได้ทันทีใน section นี้</p>
                                 </div>
-                                <button type="button" id="close-quick-output" class="text-sm font-medium text-slate-500 hover:text-slate-800">ยกเลิกการเพิ่ม</button>
+                                <button type="button" id="close-quick-output" class="text-sm font-semibold text-red-600 hover:text-red-700">ยกเลิกการเพิ่ม</button>
                             </div>
 
                             <form action="{{ route('back_office.outputs.store', $task) }}" method="POST" class="space-y-4" novalidate data-back-office-required-form>
@@ -969,8 +969,8 @@
                                 </div>
 
                                 <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                                    <button type="button" id="cancel-quick-output" class="back-office-action border border-slate-200 bg-white text-slate-700">ยกเลิก</button>
-                                    <button type="submit" class="back-office-action back-office-action--add">บันทึกผลงาน</button>
+                                    <button type="button" id="cancel-quick-output" class="back-office-action back-office-action--cancel">ยกเลิก</button>
+                                    <button type="submit" class="back-office-action back-office-action--save">บันทึกผลงาน</button>
                                 </div>
                             </form>
                         </div>

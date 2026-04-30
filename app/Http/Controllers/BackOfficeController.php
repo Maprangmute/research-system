@@ -9,6 +9,7 @@ use App\Models\BackOfficeOutputBookAuthor;
 use App\Models\BackOfficeOutputConference;
 use App\Models\BackOfficeOutputConferencePresenter;
 use App\Models\BackOfficeOutputContributor;
+use App\Models\BackOfficeActionLog;
 use App\Models\BackOfficeTask;
 use App\Models\BackOfficeTaskOutput;
 use App\Models\User;
@@ -78,12 +79,21 @@ class BackOfficeController extends Controller
             'งานด้านออกแบบ และผลิตสื่อ',
             'งานจัดงานหรือเข้าร่วมงานนิทรรศการ',
             'งานด้านการพัฒนาเทคโนโลยีและสารสนเทศ',
+            'งานด้านการพัฒนาคลินิก',
         ];
     }
 
     private function ensureBackOfficeAdmin(): void
     {
         abort_unless(Auth::user()?->hasRole(User::ROLE_ADMIN), 403);
+    }
+
+    private function markBackOfficeTaskUpdated(BackOfficeTask $task): void
+    {
+        $task->forceFill([
+            'updated_by' => Auth::id(),
+            'updated_at' => now(),
+        ])->saveQuietly();
     }
 
     private function backOfficeThaiPersonOptions(Collection $users): Collection
@@ -1385,6 +1395,13 @@ class BackOfficeController extends Controller
     public function show(Request $request, BackOfficeTask $task)
     {
         $task->load(array_merge(['entries', 'outputs', 'creator', 'updater'], $this->backOfficeOutputRelations()));
+        $latestMutationLog = BackOfficeActionLog::query()
+            ->with('user')
+            ->where('task_id', $task->id)
+            ->whereNotIn('action', ['view_index', 'view_task', 'view_create_form', 'view_edit_form', 'export_pdf'])
+            ->latest('created_at')
+            ->latest('id')
+            ->first();
         $users = User::select('id', 'prefix', 'name', 'prefix_en', 'name_en')->orderBy('name')->get();
         $personList = $users->map(fn($u) => trim($u->prefix . ' ' . $u->name));
         $thaiPersonOptions = $this->backOfficeThaiPersonOptions($users);
@@ -1422,6 +1439,7 @@ class BackOfficeController extends Controller
         return view('back-office.show', [
             'task' => $task,
             'summary' => $summary,
+            'latestMutationLog' => $latestMutationLog,
             'personList' => $personList,
             'thaiPersonOptions' => $thaiPersonOptions,
             'researchPersonList' => $researchPersonList,
@@ -1466,6 +1484,7 @@ class BackOfficeController extends Controller
                 'end_date' => $endDate,
             ]))
         ));
+        $this->markBackOfficeTaskUpdated($task);
 
         AuditLogger::logBackOfficeAction('add_entry_from_detail', [
             'task_id' => $task->id,
@@ -1533,6 +1552,7 @@ class BackOfficeController extends Controller
             'start_date' => $startDate,
             'end_date' => $endDate,
         ])));
+        $this->markBackOfficeTaskUpdated($task);
 
         AuditLogger::logBackOfficeAction('update_entry_from_detail', [
             'task_id' => $task->id,
@@ -1644,6 +1664,7 @@ class BackOfficeController extends Controller
         ]);
         $this->syncBackOfficeOutputContributors($output, $contributors);
         $this->syncBackOfficeOutputLinks($output, $type, $authors, $awardRecipients, $bookAuthors, $conferences);
+        $this->markBackOfficeTaskUpdated($task);
 
         AuditLogger::logBackOfficeAction('add_output_from_detail', [
             'task_id' => $task->id,
@@ -1758,6 +1779,7 @@ class BackOfficeController extends Controller
         ]);
         $this->syncBackOfficeOutputContributors($output, $contributors);
         $this->syncBackOfficeOutputLinks($output, $type, $authors, $awardRecipients, $bookAuthors, $conferences);
+        $this->markBackOfficeTaskUpdated($task);
 
         AuditLogger::logBackOfficeAction('update_output_from_detail', [
             'task_id' => $task->id,
@@ -1808,6 +1830,7 @@ class BackOfficeController extends Controller
         ], $request);
 
         $output->delete();
+        $this->markBackOfficeTaskUpdated($task);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
@@ -1849,6 +1872,7 @@ class BackOfficeController extends Controller
         ], $request);
 
         $entry->delete();
+        $this->markBackOfficeTaskUpdated($task);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([

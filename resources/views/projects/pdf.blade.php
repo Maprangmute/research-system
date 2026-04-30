@@ -756,29 +756,29 @@
         </div>
         <div class="hero-meta">
             ผู้สร้างโครงการ: {{ text_or_dash($ownerName) }} |
-            สถานะ: {{ text_or_dash($project->planning_status) }} |
+            สถานะโครงการ: {{ text_or_dash($project->planning_status) }} |
             ช่วงเวลาโครงการ: {{ th_date_or_dash($project->start_date) }} ถึง {{ th_date_or_dash($project->end_date) }}
         </div>
         <div class="hero-inline-details">
             <strong>ลักษณะโครงการ:</strong> {{ text_or_dash($project->project_list) }}
             |
-            <strong>ขนาด / ปีโปรเจค:</strong> {{ text_or_dash($project->size) }} / {{ text_or_dash($project->start_year) }}
+            <strong>ขนาดโครงการ / ปีโครงการ:</strong> {{ text_or_dash($project->size) }} / {{ text_or_dash($project->start_year) }}
             |
             <strong>รหัสโครงการ R:</strong> {{ text_or_dash($project->r_code) }}
             |
-            <strong>เอกสารโครงการ:</strong> {{ text_or_dash($project->shortcut_link) }}
+            <strong>เอกสารโครงการ (Proposal / IRB):</strong> {{ text_or_dash($project->shortcut_link) }}
         </div>
     </div>
 
     <table class="summary-grid">
         <tr>
             <td style="background:#eff6ff;">
-                <div class="summary-label">ประเภทโครงการ</div>
+                <div class="summary-label">กลุ่มเนื้อหาหลักของงาน (Content/Theme)</div>
                 <div class="summary-value" style="font-size:15pt;">{{ text_or_dash($project->project_type) }}</div>
-                <div class="summary-note">ประเภทหลักของโครงการ</div>
+                <div class="summary-note">Content/Theme ของโครงการ</div>
             </td>
             <td style="background:#f5f3ff;">
-                <div class="summary-label">Theme</div>
+                <div class="summary-label">ประเภทของโครงการ/กิจกรรม (TYPE)</div>
                 <div class="summary-value" style="font-size:15pt;">{{ text_or_dash($project->theme) }}</div>
                 <div class="summary-note">กลุ่มเนื้อหาของงาน</div>
             </td>
@@ -819,7 +819,7 @@
         <thead>
             <tr>
                 <th>BC102 - วันที่โครงการเริ่ม (ตามสัญญา)</th>
-                <th>BC103 - วันที่สิ้นสุด (ตามสัญญา)</th>
+                <th>BC103 - วันที่สิ้นสุด (ตามสัญญา / หากมีการขอขยายเวลาให้ใส่วันที่ใหม่ที่ได้รับการอนุมัติ)</th>
             </tr>
         </thead>
         <tbody>
@@ -837,31 +837,31 @@
         <tr>
             <td style="width:18%;">
                 <div class="funding-card">
-                    <div class="funding-label">ประเภทแหล่งทุน</div>
+                    <div class="funding-label">DA102 - ประเภทแหล่งทุน</div>
                     <div class="funding-value">{{ text_or_dash($project->funding_type) }}</div>
                 </div>
             </td>
             <td style="width:28%;">
                 <div class="funding-card">
-                    <div class="funding-label">ชื่อแหล่งทุน</div>
+                    <div class="funding-label">DA103 - ชื่อแหล่งทุน</div>
                     <div class="funding-value">{{ text_or_dash($project->funding_source) }}</div>
                 </div>
             </td>
             <td style="width:16%;">
                 <div class="funding-card">
-                    <div class="funding-label">หน่วยงานผู้สนับสนุน</div>
+                    <div class="funding-label">DA104 - รัฐบาล / เอกชน / มูลนิธิ</div>
                     <div class="funding-value">{{ text_or_dash($project->funding_org_type) }}</div>
                 </div>
             </td>
             <td style="width:23%;">
                 <div class="funding-card">
-                    <div class="funding-label">ชื่อทุน</div>
+                    <div class="funding-label">DA105 - ชื่อทุน</div>
                     <div class="funding-value">{{ text_or_dash($project->funding_name) }}</div>
                 </div>
             </td>
             <td style="width:15%;">
                 <div class="funding-card funding-card--budget">
-                    <div class="funding-label">งบประมาณ</div>
+                    <div class="funding-label">DA106 - งบประมาณ (บาท)</div>
                     <div class="funding-value">{{ $project->budget !== null ? number_format($project->budget, 2) : '-' }}</div>
                     <div class="funding-note">บาท</div>
                 </div>

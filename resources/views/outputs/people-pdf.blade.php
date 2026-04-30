@@ -118,6 +118,14 @@
             background: #fffbeb;
             border-color: #fde68a;
         }
+        .summary-box td.metric-card--other {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+        .summary-box td.metric-card--mission {
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
         .metric-label {
             font-size: 11pt;
             color: #475569;
@@ -160,6 +168,14 @@
             border-color: #fed7aa;
         }
         .section-head--award {
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+        .section-head--other {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+        .section-head--mission {
             background: #fffbeb;
             border-color: #fde68a;
         }
@@ -214,6 +230,12 @@
             background: #fff7ed;
         }
         .table-award thead th {
+            background: #fffbeb;
+        }
+        .table-other thead th {
+            background: #f8fafc;
+        }
+        .table-mission thead th {
             background: #fffbeb;
         }
         .title-main {
@@ -407,10 +429,36 @@
                     <td class="metric-card--project">
                         <div class="metric-label">Projects ทั้งหมด</div>
                         <div class="metric-value">{{ number_format($stats['total_projects']) }}</div>
-                        <div class="metric-note">รวมโครงการและ Mission</div>
+                        <div class="metric-note">รวมโครงการวิจัยจริง</div>
                     </td>
                 </tr>
             </table>
+            @if (($stats['missions'] ?? 0) > 0)
+                <table class="summary-box" style="margin-top: 10px;">
+                    <tr>
+                        <td class="metric-card--mission">
+                            <div class="metric-label">Missions</div>
+                            <div class="metric-value">{{ number_format($stats['missions']) }}</div>
+                            <div class="metric-note">{{ number_format($stats['mission_entries'] ?? 0) }} ภาระงาน</div>
+                        </td>
+                        <td class="metric-card--mission">
+                            <div class="metric-label">Mission Hours</div>
+                            <div class="metric-value">{{ number_format((float) ($stats['mission_hours'] ?? 0), 1) }}</div>
+                            <div class="metric-note">ชั่วโมงรวม</div>
+                        </td>
+                        <td class="metric-card--mission">
+                            <div class="metric-label">Mission FTE</div>
+                            <div class="metric-value">{{ number_format((float) ($stats['mission_fte'] ?? 0), 3) }}</div>
+                            <div class="metric-note">FTE รวม</div>
+                        </td>
+                        <td class="metric-card--mission">
+                            <div class="metric-label">ปีงบประมาณ</div>
+                            <div class="metric-value">{{ $missionRows->pluck('year_be')->filter()->unique()->sortDesc()->implode(', ') ?: '-' }}</div>
+                            <div class="metric-note">ปีที่มีภาระงาน</div>
+                        </td>
+                    </tr>
+                </table>
+            @endif
             <table class="summary-box" style="margin-top: 10px;">
                 <tr>
                     <td class="metric-card--research">
@@ -435,13 +483,24 @@
                     </td>
                 </tr>
             </table>
+            @if (($stats['other_outputs'] ?? 0) > 0)
+                <table class="summary-box" style="margin-top: 10px;">
+                    <tr>
+                        <td class="metric-card--other">
+                            <div class="metric-label">Other Outputs</div>
+                            <div class="metric-value">{{ number_format($stats['other_outputs']) }}</div>
+                            <div class="metric-note">ผลงานประเภทอื่นๆ</div>
+                        </td>
+                    </tr>
+                </table>
+            @endif
         </div>
 
         <div class="section">
-            <div class="section-head section-head--projects">
+                <div class="section-head section-head--projects">
                 <div class="section-kicker">Projects</div>
                 <div class="section-title">รายการโครงการที่เกี่ยวข้อง</div>
-                <div class="section-subtitle">แสดงทั้งโครงการวิจัยหลักและ Mission ที่เชื่อมโยงกับบุคคลนี้</div>
+                <div class="section-subtitle">แสดงเฉพาะโครงการวิจัยจริงที่เชื่อมโยงกับบุคคลนี้</div>
             </div>
             @if ($projectRows->isEmpty())
                 <div class="empty-card">ไม่พบโครงการที่เกี่ยวข้อง</div>
@@ -656,6 +715,104 @@
                 </table>
             @endif
         </div>
+
+        <div class="section">
+            <div class="section-head section-head--mission">
+                <div class="section-kicker">Missions</div>
+                <div class="section-title">ภาระงาน Back Office</div>
+                <div class="section-subtitle">แยกตามปีงบประมาณ หัวข้อใหญ่ และรายการภาระงานย่อย</div>
+            </div>
+            @if ($missionRows->isEmpty())
+                <div class="empty-card">ไม่พบภาระงาน Mission ที่เกี่ยวข้อง</div>
+            @else
+                <table class="data-table table-mission">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">ปีงบ</th>
+                            <th style="width: 28%;">Mission</th>
+                            <th style="width: 12%;">สรุป</th>
+                            <th style="width: 52%;">ภาระงานย่อย</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($missionRows as $row)
+                            <tr>
+                                <td>{{ $row->year_be ?: '-' }}</td>
+                                <td>
+                                    <div class="title-main">{{ $row->mission_title }}</div>
+                                    @if ($row->backoffice_id)
+                                        <div class="title-sub">{{ $row->backoffice_id }}</div>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div><strong>{{ number_format($row->entry_count) }}</strong> รายการ</div>
+                                    <div class="title-sub">{{ number_format($row->hours, 1) }} ชั่วโมง</div>
+                                    <div class="title-sub">FTE {{ number_format($row->fte_value, 3) }}</div>
+                                </td>
+                                <td>
+                                    @foreach ($row->detail_rows as $detail)
+                                        <p style="margin: 0 0 2px 0; font-weight: bold; color: #0f172a;">
+                                            {{ $detail->job_name }}
+                                        </p>
+                                        <p style="margin: 0 0 3px 0; color: #64748b; font-size: 10.75pt;">
+                                            {{ $detail->category }}
+                                        </p>
+                                        @if ($detail->job_detail)
+                                            <p style="margin: 0 0 3px 0; color: #334155; font-size: 11.25pt; line-height: 1.35;">
+                                                {{ $detail->job_detail }}
+                                            </p>
+                                        @endif
+                                        <p style="margin: 0 0 10px 0; color: #475569; font-size: 10.75pt;">
+                                            ช่วงวันที่ {{ $detail->start_date_be ?: '-' }} - {{ $detail->end_date_be ?: '-' }}
+                                            | ชั่วโมง {{ number_format($detail->hours, 1) }}
+                                            | FTE {{ number_format($detail->fte_value, 3) }}
+                                        </p>
+                                    @endforeach
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+
+        @if ($otherRows->isNotEmpty())
+            <div class="section">
+                <div class="section-head section-head--other">
+                    <div class="section-kicker">Other</div>
+                    <div class="section-title">Other Outputs</div>
+                    <div class="section-subtitle">ผลงานประเภทอื่นๆ</div>
+                </div>
+                <table class="data-table table-other">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">ปี</th>
+                            <th style="width: 30%;">ชื่อผลงาน</th>
+                            <th style="width: 18%;">ประเภท</th>
+                            <th style="width: 22%;">ผู้เกี่ยวข้อง</th>
+                            <th style="width: 22%;">Back Office</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($otherRows as $row)
+                            <tr>
+                                <td>{{ $row->year_be ?: '-' }}</td>
+                                <td><div class="title-main">{{ $row->title }}</div></td>
+                                <td>
+                                    <span class="chip">{{ $row->type_code ?: 'OTHER' }}</span>
+                                    <div class="title-sub">{{ $row->type_label ?: 'Other Outputs' }}</div>
+                                </td>
+                                <td>{{ $row->contributors ?: '-' }}</td>
+                                <td>
+                                    <span class="{{ $originChipClass($row->source_label ?? null) }}">{{ $row->source_label ?: 'Mission' }}</span>
+                                    <div class="title-sub">{{ $row->reference_label ?: '-' }}</div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </div>
 </body>
 </html>

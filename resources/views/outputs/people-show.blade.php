@@ -381,6 +381,141 @@
                 color: #15803d;
             }
 
+            .mission-table {
+                border: 1px solid #e2e8f0;
+                border-radius: 18px;
+                overflow: hidden;
+                background: #fff;
+            }
+
+            .mission-grid {
+                display: grid;
+                grid-template-columns: minmax(280px, 2fr) minmax(110px, 0.55fr) minmax(280px, 1.8fr) minmax(140px, 0.75fr) minmax(92px, 0.45fr);
+                gap: 1rem;
+                align-items: start;
+            }
+
+            .mission-head {
+                background: #f8fafc;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 0.9rem 1rem;
+                font-size: 12px;
+                font-weight: 700;
+                color: #475569;
+            }
+
+            .mission-row {
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .mission-row:last-child {
+                border-bottom: 0;
+            }
+
+            .mission-row summary {
+                list-style: none;
+                cursor: pointer;
+                padding: 1rem;
+                transition: background-color 0.18s ease;
+            }
+
+            .mission-row summary::-webkit-details-marker {
+                display: none;
+            }
+
+            .mission-row summary:hover {
+                background: #f8fafc;
+            }
+
+            .mission-toggle {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 72px;
+                border-radius: 999px;
+                border: 1px solid #cbd5e1;
+                background: #fff;
+                color: #475569;
+                padding: 0.3rem 0.65rem;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .mission-toggle::before {
+                content: 'เปิด';
+            }
+
+            .mission-row[open] .mission-toggle::before {
+                content: 'ปิด';
+            }
+
+            .mission-drawer {
+                border-top: 1px solid #e2e8f0;
+                background: #fbfdff;
+                padding: 1rem;
+            }
+
+            .mission-detail-grid {
+                display: grid;
+                gap: 0.75rem;
+            }
+
+            .mission-detail-item {
+                border: 1px solid #e2e8f0;
+                border-radius: 14px;
+                background: #fff;
+                padding: 0.9rem 1rem;
+            }
+
+            .mission-metrics {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.45rem;
+                justify-content: flex-start;
+            }
+
+            .mission-metric {
+                display: inline-flex;
+                flex-direction: column;
+                gap: 0.12rem;
+                min-width: 96px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                background: #f8fafc;
+                padding: 0.42rem 0.62rem;
+            }
+
+            .mission-metric-label {
+                font-size: 10px;
+                font-weight: 800;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: #64748b;
+            }
+
+            .mission-metric-value {
+                font-size: 13px;
+                font-weight: 800;
+                color: #334155;
+                line-height: 1.25;
+            }
+
+            .mission-metric.is-date {
+                min-width: 185px;
+                background: #eff6ff;
+                border-color: #bfdbfe;
+            }
+
+            .mission-metric.is-hours {
+                background: #f0fdfa;
+                border-color: #99f6e4;
+            }
+
+            .mission-metric.is-fte {
+                background: #fff7ed;
+                border-color: #fed7aa;
+            }
+
             .live-search {
                 width: 100%;
                 border-radius: 14px;
@@ -446,6 +581,15 @@
                 .summary-grid,
                 .summary-mini-grid {
                     grid-template-columns: 1fr;
+                }
+
+                .mission-head {
+                    display: none;
+                }
+
+                .mission-grid {
+                    grid-template-columns: 1fr;
+                    gap: 0.65rem;
                 }
 
                 .section-table,
@@ -565,6 +709,16 @@
                                     <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($stats['total_projects']) }}</p>
                                     <p class="mt-1 text-sm text-slate-500">All Roles</p>
                                 </div>
+                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                    <p class="text-xs font-semibold text-slate-500">Missions</p>
+                                    <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($stats['missions'] ?? 0) }}</p>
+                                    <p class="mt-1 text-sm text-slate-500">{{ number_format($stats['mission_entries'] ?? 0) }} tasks</p>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                    <p class="text-xs font-semibold text-slate-500">Mission FTE</p>
+                                    <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format((float) ($stats['mission_fte'] ?? 0), 3) }}</p>
+                                    <p class="mt-1 text-sm text-slate-500">{{ number_format((float) ($stats['mission_hours'] ?? 0), 1) }} hours</p>
+                                </div>
                             </div>
                         </article>
                         <article class="summary-card">
@@ -589,6 +743,11 @@
                                     <p class="text-xs font-semibold text-slate-500">Award</p>
                                     <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($stats['award_outputs']) }}</p>
                                     <p class="mt-1 text-sm text-slate-500">Outputs</p>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                                    <p class="text-xs font-semibold text-slate-500">Other</p>
+                                    <p class="mt-2 text-3xl font-bold text-slate-900">{{ number_format($stats['other_outputs'] ?? 0) }}</p>
+                                    <p class="mt-1 text-sm text-slate-500">Mission</p>
                                 </div>
                                 <div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
                                     <p class="text-xs font-semibold text-slate-500">Total Outputs</p>
@@ -870,6 +1029,146 @@
                 @endif
             </article>
 
+            <article class="person-panel p-5 md:p-6">
+                <div class="section-toolbar mb-4">
+                    <div>
+                        <h2 class="section-heading other text-xl font-bold text-slate-900">Missions</h2>
+                        <p class="text-sm text-slate-500">ภาระงาน Back Office แยกตามปีงบประมาณและหัวข้อใหญ่</p>
+                    </div>
+                </div>
+
+                @if ($missionRows->isEmpty())
+                    <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-500">
+                        ไม่พบภาระงาน Mission ที่ผูกกับผู้ใช้นี้
+                    </div>
+                @else
+                    <div class="mission-table">
+                        <div class="mission-head mission-grid">
+                            <div>Mission</div>
+                            <div>ปีงบประมาณ</div>
+                            <div>ภาระงาน</div>
+                            <div>ชั่วโมง / FTE</div>
+                            <div></div>
+                        </div>
+
+                        @foreach ($missionRows as $row)
+                            <details class="mission-row">
+                                <summary class="mission-grid">
+                                    <div>
+                                        <p class="font-semibold leading-6 text-slate-900">{{ $row->mission_title }}</p>
+                                        @if ($row->backoffice_id)
+                                            <p class="mt-1 text-xs text-slate-500">{{ $row->backoffice_id }}</p>
+                                        @endif
+                                    </div>
+                                    <div class="text-slate-600">{{ $row->year_be ?: '-' }}</div>
+                                    <div class="text-slate-600">
+                                        <p class="font-semibold text-slate-900">{{ number_format($row->entry_count) }} รายการ</p>
+                                        @if ($row->job_summary)
+                                            <p class="mt-1 text-xs leading-5 text-slate-500">{{ $row->job_summary }}</p>
+                                        @endif
+                                        @if ($row->category_summary)
+                                            <p class="mt-1 text-xs leading-5 text-slate-500">{{ $row->category_summary }}</p>
+                                        @endif
+                                    </div>
+                                    <div class="text-slate-600">
+                                        <p>{{ number_format($row->hours, 1) }} ชั่วโมง</p>
+                                        <p class="mt-1 text-xs text-slate-500">FTE {{ number_format($row->fte_value, 3) }}</p>
+                                    </div>
+                                    <div class="flex justify-start md:justify-end">
+                                        <span class="mission-toggle"></span>
+                                    </div>
+                                </summary>
+
+                                <div class="mission-drawer">
+                                    <div class="mission-detail-grid">
+                                        @foreach ($row->detail_rows as $detail)
+                                            <div class="mission-detail-item">
+                                                <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                                                    <div class="min-w-0">
+                                                        @if ($row->link)
+                                                            <a href="{{ $row->link }}" target="_blank" rel="noopener noreferrer" class="font-semibold leading-6 text-slate-900 no-underline hover:text-slate-900 hover:underline">
+                                                                {{ $detail->job_name }}
+                                                            </a>
+                                                        @else
+                                                            <p class="font-semibold leading-6 text-slate-900">{{ $detail->job_name }}</p>
+                                                        @endif
+                                                        <p class="mt-1 text-xs font-semibold text-slate-500">{{ $detail->category }}</p>
+                                                    </div>
+                                                    <div class="mission-metrics">
+                                                        <span class="mission-metric is-date">
+                                                            <span class="mission-metric-label">ช่วงวันที่</span>
+                                                            <span class="mission-metric-value">{{ $detail->start_date_be ?: '-' }} - {{ $detail->end_date_be ?: '-' }}</span>
+                                                        </span>
+                                                        <span class="mission-metric is-hours">
+                                                            <span class="mission-metric-label">ชั่วโมง</span>
+                                                            <span class="mission-metric-value">{{ number_format($detail->hours, 1) }}</span>
+                                                        </span>
+                                                        <span class="mission-metric is-fte">
+                                                            <span class="mission-metric-label">FTE</span>
+                                                            <span class="mission-metric-value">{{ number_format($detail->fte_value, 3) }}</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                @if ($detail->job_detail)
+                                                    <p class="mt-3 text-sm leading-6 text-slate-600">{{ $detail->job_detail }}</p>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </details>
+                        @endforeach
+                    </div>
+                @endif
+            </article>
+
+            @if ($otherRows->isNotEmpty())
+                <article class="person-panel p-5 md:p-6">
+                    <div class="section-toolbar mb-4">
+                        <div>
+                            <h2 class="section-heading other text-xl font-bold text-slate-900">Other</h2>
+                            <p class="text-sm text-slate-500">ผลงานประเภทอื่นๆ</p>
+                        </div>
+                        <div class="section-search-row">
+                            <input id="otherSearchInput" type="text" placeholder="ค้นหาชื่อผลงาน / ประเภท / ผู้เกี่ยวข้อง / ที่มา" class="live-search">
+                        </div>
+                    </div>
+                    <div class="section-filter-row">
+                        <select id="otherYearFilter" class="filter-select">
+                            <option value="">ทุกปี</option>
+                        </select>
+                        <select id="otherTypeFilter" class="filter-select">
+                            <option value="">ทุกประเภท</option>
+                        </select>
+                        <select id="otherSortSelect" class="filter-select">
+                            <option value="year_desc">เรียงปีล่าสุด</option>
+                            <option value="year_asc">เรียงปีเก่าสุด</option>
+                            <option value="title_asc">ชื่อ A-Z</option>
+                            <option value="type_asc">ประเภท A-Z</option>
+                        </select>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                        <table class="section-table text-sm">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-semibold">ชื่อผลงาน</th>
+                                    <th class="px-4 py-3 text-left font-semibold">ประเภท</th>
+                                    <th class="px-4 py-3 text-left font-semibold">ผู้เกี่ยวข้อง</th>
+                                    <th class="px-4 py-3 text-left font-semibold">ปี</th>
+                                    <th class="px-4 py-3 text-left font-semibold">Back Office</th>
+                                </tr>
+                            </thead>
+                            <tbody id="otherTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+                        <p id="otherResultMeta" class="text-sm text-slate-500"></p>
+                        <div id="otherPager" class="pager"></div>
+                    </div>
+                </article>
+            @endif
+
         </section>
 
         @php
@@ -930,6 +1229,17 @@
                 'reference_label' => $row->reference_label,
                 'link' => $row->link,
             ])->values();
+
+            $otherRowsJson = $otherRows->map(fn ($row) => [
+                'title' => $row->title,
+                'type_code' => $row->type_code,
+                'type_label' => $row->type_label,
+                'contributors' => $row->contributors,
+                'year_be' => $row->year_be,
+                'source_label' => $row->source_label,
+                'reference_label' => $row->reference_label,
+                'link' => $row->link,
+            ])->values();
         @endphp
 
         <script>
@@ -939,6 +1249,7 @@
                 const presentationRows = @json($presentationRowsJson);
                 const textbookRows = @json($textbookRowsJson);
                 const awardRows = @json($awardRowsJson);
+                const otherRows = @json($otherRowsJson);
                 const perPage = 8;
 
                 const normalize = (value) => String(value || '').toLowerCase().trim();
@@ -1592,11 +1903,109 @@
                     render();
                 }
 
+                function setupOtherTable() {
+                    const input = document.getElementById('otherSearchInput');
+                    const body = document.getElementById('otherTableBody');
+                    const meta = document.getElementById('otherResultMeta');
+                    const pager = document.getElementById('otherPager');
+                    const section = input?.closest('.person-panel');
+                    const yearFilter = document.getElementById('otherYearFilter');
+                    const typeFilter = document.getElementById('otherTypeFilter');
+                    const sortSelect = document.getElementById('otherSortSelect');
+                    if (!input || !body || !meta || !pager || !yearFilter || !typeFilter || !sortSelect) return;
+
+                    let page = 1;
+                    fillSelect(yearFilter, uniqueSorted(otherRows.map((row) => row.year_be).filter((value) => value !== null && value !== ''), 'desc'), 'ทุกปี');
+                    fillSelect(typeFilter, uniqueSorted(otherRows.map((row) => row.type_code).filter(Boolean)), 'ทุกประเภท');
+
+                    const render = () => {
+                        const query = normalize(input.value);
+                        const filtered = otherRows.filter((row) => {
+                            if (!query) return true;
+                            return normalize([
+                                row.title,
+                                row.type_code,
+                                row.type_label,
+                                row.contributors,
+                                row.year_be,
+                                row.reference_label,
+                            ].join(' ')).includes(query);
+                        }).filter((row) => !yearFilter.value || String(row.year_be || '') === yearFilter.value)
+                            .filter((row) => !typeFilter.value || String(row.type_code || '') === typeFilter.value);
+
+                        const sorted = [...filtered].sort((a, b) => {
+                            switch (sortSelect.value) {
+                                case 'year_asc':
+                                    return (Number(a.year_be) || 0) - (Number(b.year_be) || 0);
+                                case 'title_asc':
+                                    return String(a.title || '').localeCompare(String(b.title || ''), 'th');
+                                case 'type_asc':
+                                    return String(a.type_code || '').localeCompare(String(b.type_code || ''), 'th');
+                                case 'year_desc':
+                                default:
+                                    return (Number(b.year_be) || 0) - (Number(a.year_be) || 0);
+                            }
+                        });
+
+                        const totalPages = Math.max(1, Math.ceil(sorted.length / perPage));
+                        if (page > totalPages) page = totalPages;
+                        const start = (page - 1) * perPage;
+                        const current = sorted.slice(start, start + perPage);
+
+                        body.innerHTML = current.map((row) => `
+                            <tr class="border-t border-slate-200">
+                                <td class="px-4 py-4" data-label="ชื่อผลงาน">
+                                    ${row.link
+                                        ? `<a href="${row.link}" target="_blank" rel="noopener noreferrer" class="font-semibold text-slate-900 no-underline hover:text-slate-900">${row.title || '-'}</a>`
+                                        : `<p class="font-semibold text-slate-900">${row.title || '-'}</p>`}
+                                </td>
+                                <td class="px-4 py-4" data-label="ประเภท">
+                                    <span class="role-badge type-pill ${otherTypeClass(row.type_code)}">
+                                        <span class="type-pill-code">${row.type_code || 'OTHER'}</span>
+                                        <span>${row.type_label || 'Other Outputs'}</span>
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 text-slate-600" data-label="ผู้เกี่ยวข้อง">${row.contributors || '-'}</td>
+                                <td class="px-4 py-4 text-slate-600" data-label="ปี">${row.year_be || '-'}</td>
+                                <td class="px-4 py-4 text-slate-600" data-label="Back Office">
+                                    <span class="role-badge ${sourceClass(row.source_label)}">${originLabel(row.source_label)}</span>
+                                    <div class="mt-2 leading-6">${row.reference_label || '-'}</div>
+                                </td>
+                            </tr>
+                        `).join('');
+
+                        if (current.length === 0) {
+                            body.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">ไม่พบ other output ที่ตรงกับคำค้น</td></tr>`;
+                        }
+
+                        meta.textContent = `แสดง ${sorted.length === 0 ? 0 : start + 1}-${Math.min(start + current.length, sorted.length)} จาก ${sorted.length} รายการ`;
+                        renderPager(pager, page, totalPages, (nextPage) => {
+                            page = nextPage;
+                            render();
+                            section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        });
+                    };
+
+                    input.addEventListener('input', () => {
+                        page = 1;
+                        render();
+                    });
+                    [yearFilter, typeFilter, sortSelect].forEach((element) => {
+                        element.addEventListener('change', () => {
+                            page = 1;
+                            render();
+                        });
+                    });
+
+                    render();
+                }
+
                 setupProjectsTable();
                 setupResearchTable();
                 setupPresentationTable();
                 setupTextbookTable();
                 setupAwardTable();
+                setupOtherTable();
             })();
         </script>
     </div>

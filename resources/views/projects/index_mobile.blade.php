@@ -385,7 +385,7 @@
                     </select>
                 </label>
                 <label class="block">
-                    <span class="text-xs font-semibold text-slate-600">Project Status</span>
+                    <span class="text-xs font-semibold text-slate-600">สถานะโครงการ (Project Status)</span>
                     <select name="project_status" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
                         <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
@@ -440,7 +440,7 @@
                         <option value="created_at" @selected(request('sort') === 'created_at')>สร้างล่าสุด → เก่าสุด</option>
                         <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
                         <option value="start_year" @selected(request('sort') === 'start_year')>ปีโครงการ</option>
-                        <option value="planning_status" @selected(request('sort') === 'planning_status')>Project Status</option>
+                        <option value="planning_status" @selected(request('sort') === 'planning_status')>สถานะโครงการ</option>
                         <option value="project_name_th" @selected(request('sort') === 'project_name_th')>ชื่อโครงการ</option>
                     </select>
                 </label>
@@ -566,7 +566,7 @@
                     <h3 class="font-semibold text-base mb-2">⚠️ แจ้งเตือน: กรุณากรอกค่า FTE ของคุณ</h3>
                     <p class="text-sm mb-3 font-medium">
                         คุณมีรายชื่อเป็นผู้ร่วมงานในโครงการด้านล่างนี้ แต่ยังไม่ได้กรอกค่า FTE โปรดดำเนินการโดยเร็วที่สุด
-                        <span class="block">กดที่ชื่อโปรเจคเพื่อดูรายละเอียดได้ทันที</span>
+                        <span class="block">กดที่ชื่อโครงการเพื่อดูรายละเอียดได้ทันที</span>
                     </p>
                     <ul class="list-disc pl-5 space-y-1 text-sm">
                         @foreach ($missingFTE as $fte)
@@ -671,7 +671,7 @@
                             Theme: <span class="text-slate-900">{{ $project->theme ?: '-' }}</span>
                         </div>
                         <div class="text-sm text-slate-700">
-                            Project Status:
+                            สถานะโครงการ:
                             @php
                                 $projectStatus = trim((string) ($project->planning_status ?? ''));
                             @endphp
@@ -850,7 +850,7 @@
                         </select>
                     </label>
                     <label class="block">
-                        <span class="text-xs font-semibold text-slate-600">Project Status</span>
+                        <span class="text-xs font-semibold text-slate-600">สถานะโครงการ (Project Status)</span>
                         <select name="project_status" class="w-full border border-slate-200 rounded-lg p-2">
                             <option value="">ทั้งหมด</option>
                             <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
@@ -905,7 +905,7 @@
                             <option value="created_at" @selected(request('sort') === 'created_at')>สร้างล่าสุด → เก่าสุด</option>
                             <option value="budget" @selected(request('sort') === 'budget')>งบประมาณ</option>
                             <option value="start_year" @selected(request('sort') === 'start_year')>ปีโครงการ</option>
-                            <option value="planning_status" @selected(request('sort') === 'planning_status')>Project Status</option>
+                            <option value="planning_status" @selected(request('sort') === 'planning_status')>สถานะโครงการ</option>
                             <option value="project_name_th" @selected(request('sort') === 'project_name_th')>ชื่อโครงการ</option>
                         </select>
                     </label>

@@ -209,11 +209,6 @@
             font-size: 14.4pt;
             line-height: 1.5;
         }
-        .toc-link {
-            color: #0369a1;
-            font-weight: bold;
-            text-decoration: none;
-        }
         .badge {
             display: inline-block;
             padding: 3px 9px;
@@ -227,6 +222,26 @@
         .badge-overdue { color:#b91c1c; background:#fef2f2; border-color:#fecaca; }
         .badge-no_output { color:#0369a1; background:#f0f9ff; border-color:#bae6fd; }
         .badge-other { color:#475569; background:#f8fafc; border-color:#e2e8f0; }
+        .link-line {
+            margin-top: 5px;
+            font-size: 11.4pt;
+            line-height: 1.45;
+        }
+        .sub-note {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 11.2pt;
+            line-height: 1.4;
+        }
+        .duplicate-list {
+            margin-top: 6px;
+            padding: 6px 8px;
+            border: 1px solid #fecdd3;
+            background: #fff1f2;
+            color: #9f1239;
+            font-size: 11.2pt;
+            line-height: 1.42;
+        }
         .empty-state {
             border: 1px dashed #cbd5e1;
             border-radius: 12px;
@@ -287,9 +302,9 @@
 
     <div class="hero-shell">
         <div class="report-kicker">Project Data Quality</div>
-        <div class="report-title">รายงานข้อมูลผิดพลาดของโปรเจค</div>
+        <div class="report-title">รายงานข้อมูลผิดพลาดของโครงการ</div>
         <div class="report-subtitle">
-            ตรวจข้อมูลซ้ำ ข้อมูลไม่ครบ วันที่ไม่ครบ Overdue โปรเจคที่ไม่มี output และสัญญาณอื่นที่กระทบ dashboard, FTE และรายงานผลงาน
+            ตรวจข้อมูลซ้ำ ข้อมูลไม่ครบ วันที่ไม่ครบ Overdue โครงการที่ไม่มี output และสัญญาณอื่นที่กระทบ dashboard, FTE และรายงานผลงาน
         </div>
         <div class="hero-meta">
             วันที่ออกรายงาน {{ $generatedLabel }}<br>
@@ -332,7 +347,7 @@
     </table>
 
     <div class="section-title">สารบัญรายการ</div>
-    <div class="section-subtitle">คลิก Project ID เพื่อไปยังรายละเอียดของ record นั้นในรายงาน</div>
+    <div class="section-subtitle">สรุปรายการ record ที่อยู่ในรายงานชุดนี้</div>
     <table class="toc-table">
         <thead>
             <tr>
@@ -347,9 +362,7 @@
                 <tr>
                     <td>{{ $index + 1 }}</td>
                     <td>
-                        <a class="toc-link" href="#project-data-quality-{{ $index + 1 }}">
-                            {{ $row->project_code }}
-                        </a>
+                        {{ $row->project_code }}
                     </td>
                     <td>{{ $row->project_name }}</td>
                     <td>{{ $severityLabel($row->severity_score) }}</td>
@@ -362,11 +375,10 @@
         </tbody>
     </table>
 
-    <div class="section-title">รายการโปรเจคที่ควรตรวจ</div>
+    <div class="section-title">รายการโครงการที่ควรตรวจ</div>
     <div class="section-subtitle">แต่ละ record แสดงผู้สร้าง ผู้แก้ไขล่าสุด สถานะ และรายการปัญหาที่พบ</div>
 
     @forelse ($rows as $index => $row)
-        <a name="project-data-quality-{{ $index + 1 }}"></a>
         <div id="project-data-quality-{{ $index + 1 }}" class="project-card">
             <table class="project-head">
                 <tr>
@@ -378,6 +390,26 @@
                             <span class="chip">{{ $row->planning_status }}</span>
                             <span class="chip">ระดับ {{ $severityLabel($row->severity_score) }}</span>
                             <span class="chip">{{ count($row->issues) }} issues</span>
+                        </div>
+                        @php
+                            $rowFieldTargets = collect($row->issues)
+                                ->flatMap(fn ($issue) => collect($issue['field_targets'] ?? [])->values())
+                                ->filter()
+                                ->unique()
+                                ->values();
+                            $editUrl = route('projects.edit', array_filter([
+                                'project' => $row->project,
+                                'view' => 'desktop',
+                                'dq_fields' => $rowFieldTargets->isNotEmpty() ? $rowFieldTargets->implode(',') : null,
+                            ], fn ($value) => $value !== null));
+                            $firstTarget = $rowFieldTargets->first();
+                            if ($firstTarget) {
+                                $editUrl .= '#' . (str_starts_with((string) $firstTarget, 'section-') ? rawurlencode($firstTarget) : 'field-' . rawurlencode($firstTarget));
+                            }
+                        @endphp
+                        <div class="link-line">
+                            เปิด Record: {{ route('projects.show', $row->project) }}<br>
+                            แก้ไข Record: {{ $editUrl }}
                         </div>
                     </td>
                 </tr>
@@ -406,7 +438,7 @@
                 </tr>
                 <tr>
                     <td colspan="4">
-                        <div class="label">Theme / ประเภท</div>
+                        <div class="label">กลุ่มเนื้อหาหลักของงาน / ประเภทของโครงการ</div>
                         <div class="value">{{ $row->project_type }}</div>
                     </td>
                 </tr>
@@ -415,19 +447,40 @@
             <table class="issue-table">
                 <thead>
                     <tr>
-                        <th style="width:16%;">หมวด</th>
-                        <th style="width:19%;">Field</th>
-                        <th style="width:35%;">ปัญหา</th>
-                        <th style="width:30%;">ควรทำ</th>
+                        <th style="width:14%;">หมวด</th>
+                        <th style="width:18%;">Field</th>
+                        <th style="width:28%;">ปัญหา</th>
+                        <th style="width:20%;">ควรทำ</th>
+                        <th style="width:20%;">ผลกระทบ</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($row->issues as $issue)
                         <tr>
                             <td><span class="badge badge-{{ $issue['category'] }}">{{ $issue['label'] }}</span></td>
-                            <td>{{ collect($issue['fields'] ?? [])->implode(', ') ?: '-' }}</td>
-                            <td>{{ $issue['reason'] }}</td>
+                            <td>
+                                {{ collect($issue['fields'] ?? [])->implode(', ') ?: '-' }}
+                                @if (!empty($issue['quick_fix_fields']))
+                                    <div class="sub-note">Quick Fix: {{ collect($issue['quick_fix_fields'])->implode(', ') }}</div>
+                                @endif
+                            </td>
+                            <td>
+                                {{ $issue['reason'] }}
+                                @if (!empty($issue['duplicate_matches']))
+                                    <div class="duplicate-list">
+                                        <strong>รายการซ้ำที่พบ</strong><br>
+                                        @foreach ($issue['duplicate_matches'] as $match)
+                                            {{ trim(implode(' | ', array_filter([
+                                                $match['project_code'] ?? null,
+                                                $match['project_name'] ?? null,
+                                                isset($match['start_year']) && $match['start_year'] !== '' ? 'ปี '.$match['start_year'] : null,
+                                            ]))) }}@if (!$loop->last)<br>@endif
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </td>
                             <td>{{ $issue['suggestion'] }}</td>
+                            <td>{{ $issue['impact'] ?? '-' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

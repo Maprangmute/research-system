@@ -676,7 +676,7 @@
                     {{-- Status (1 full row) --}}
                     <span
                         class="project-status-chip mt-1 mb-1 w-fit rounded-full text-xs font-semibold {{ $bgClass }} text-slate-900 border">
-                        สถานะ: {{ $statusText }}
+                        สถานะโครงการ: {{ $statusText }}
                     </span>
 
 
@@ -733,14 +733,14 @@
             <div class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
                 <h3 id="section-a" class="edit-section-target font-semibold text-lg text-blue-700 border-b border-slate-200 pb-3 mb-4">A: ข้อมูลโครงการ</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm text-slate-700">
-                    <div><span class="font-semibold">ชื่อโครงการ (TH):</span> {{ $project->project_name_th ?? '-' }}</div>
-                    <div><span class="font-semibold">ชื่อโครงการ (EN):</span> {{ $project->project_name_en ?? '-' }}</div>
+                    <div><span class="font-semibold">ชื่อโครงการ (ภาษาไทย):</span> {{ $project->project_name_th ?? '-' }}</div>
+                    <div><span class="font-semibold">ชื่อโครงการ (ภาษาอังกฤษ):</span> {{ $project->project_name_en ?? '-' }}</div>
                     <div><span class="font-semibold">กลุ่มเนื้อหาหลักของงาน (Content/Theme):</span> {{ $project->project_type ?? '-' }}</div>
                     <div><span class="font-semibold">ลักษณะโครงการ:</span> {{ $project->project_list ?? '-' }}</div>
                     <div><span class="font-semibold">ประเภทของโครงการ/กิจกรรม (TYPE):</span> {{ $project->theme ?? '-' }}</div>
 
                     <div class="md:col-span-2">
-                        <span class="font-semibold">เอกสารโครงการ (proposal , IRB) : </span>
+                        <span class="font-semibold">เอกสารโครงการ (Proposal / IRB):</span>
                         @if ($project->shortcut_link)
                             <a href="{{ $project->shortcut_link }}"
                                 class="ml-1 inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700 underline-offset-2 hover:bg-blue-100 hover:underline"
@@ -753,8 +753,8 @@
                     </div>
                     <div><span class="font-semibold">ขนาด:</span> {{ $project->size ?? '-' }}</div>
                     <div><span class="font-semibold">รหัสโครงการ R:</span> {{ $project->r_code ?? '-' }}</div>
-                    <div><span class="font-semibold">ปีโปรเจค:</span> {{ $project->start_year ?? '-' }}</div>
-                    <div><span class="font-semibold">สถานะ:</span> {{ $project->planning_status ?? '-' }}</div>
+                    <div><span class="font-semibold">ปีโครงการ:</span> {{ $project->start_year ?? '-' }}</div>
+                    <div><span class="font-semibold">สถานะโครงการ (Project Status):</span> {{ $project->planning_status ?? '-' }}</div>
                 </div>
             </div>
 
@@ -2046,6 +2046,40 @@
                     sectionCard.classList.add('project-zone-card--alt');
                 }
             });
+        })();
+    </script>
+    <script>
+        (() => {
+            const focusHashTarget = () => {
+                if (!window.location.hash || !window.location.hash.startsWith('#output-')) return;
+
+                let targetId = window.location.hash.slice(1);
+                try {
+                    targetId = decodeURIComponent(targetId);
+                } catch (error) {}
+
+                const cssEscape = window.CSS?.escape || ((value) => String(value).replace(/["\\]/g, '\\$&'));
+                const target = document.getElementById(targetId) || document.querySelector(`#${cssEscape(targetId)}`);
+                if (!target) return;
+
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.classList.add('project-output-focus-highlight');
+                window.setTimeout(() => target.classList.remove('project-output-focus-highlight'), 3200);
+            };
+
+            const style = document.createElement('style');
+            style.textContent = `
+                .project-output-focus-highlight {
+                    outline: 3px solid rgba(16, 185, 129, 0.72);
+                    outline-offset: 5px;
+                    background: rgba(236, 253, 245, 0.85) !important;
+                    transition: background-color 0.2s ease, outline-color 0.2s ease;
+                }
+            `;
+            document.head.appendChild(style);
+
+            window.addEventListener('load', () => window.setTimeout(focusHashTarget, 450), { once: true });
+            window.addEventListener('hashchange', () => window.setTimeout(focusHashTarget, 100));
         })();
     </script>
     <script>
