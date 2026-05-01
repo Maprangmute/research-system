@@ -1500,7 +1500,7 @@ class OutputController extends Controller
         $sourceLabelMap = [
             'project' => 'โครงการวิจัย',
             'back_office' => 'Mission',
-            'external' => 'ผลงานภายนอก',
+            'external' => 'Extra',
         ];
 
         $projectRows = $this->visibleProjectOutputsQuery($request)

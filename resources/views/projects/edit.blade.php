@@ -185,18 +185,6 @@
         box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.08);
     }
 
-    .fte-row.fte-row-deleted::after {
-        content: '';
-        position: absolute;
-        left: 1rem;
-        right: 1rem;
-        top: 50%;
-        height: 2px;
-        background: rgba(190, 24, 93, 0.45);
-        transform: rotate(-1.4deg);
-        pointer-events: none;
-    }
-
     .fte-row.fte-row-deleted .fte-summary-shell {
         border-color: #fda4af;
         background: #ffe4e6;
@@ -425,9 +413,9 @@
     }
 
     .fte-row.fte-row-remote-updated {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
-        background: #eff6ff;
+        border-color: #eab308;
+        box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.16);
+        background: #fefce8;
     }
 
     .fte-row.fte-row-remote-new::after,
@@ -451,8 +439,8 @@
     }
 
     .fte-row.fte-row-remote-updated::after {
-        background: #dbeafe;
-        color: #1d4ed8;
+        background: #fef3c7;
+        color: #92400e;
     }
 
     .fte-row.fte-row-remote-new .fte-summary-shell,
@@ -463,8 +451,8 @@
 
     .fte-row.fte-row-remote-updated .fte-summary-shell,
     .fte-row.fte-row-remote-updated .fte-editor-body {
-        border-color: #93c5fd;
-        background: rgba(239, 246, 255, 0.86);
+        border-color: #fde047;
+        background: rgba(254, 252, 232, 0.9);
     }
 
     .edit-section-nav {

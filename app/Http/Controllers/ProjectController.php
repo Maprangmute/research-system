@@ -2917,7 +2917,6 @@ public function store(Request $request)
                 'book_title' => 'ชื่อหนังสือ',
                 'publisher_name' => 'ชื่อสำนักพิมพ์',
                 'chapter_pages' => 'ชื่อบท / เลขหน้า',
-                'isbn' => 'เลข ISBN',
             ];
 
             foreach ($requiredEa119Fields as $field => $label) {

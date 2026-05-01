@@ -46,7 +46,6 @@
         $trendLatestYearLabel = ((int) ($trendLatestYear ?? 0) === $currentYearBe) ? 'ปีนี้' : 'ปีล่าสุด';
 
         $projectOutputCount = (int) ($sourceCounts['project'] ?? 0);
-        $nonProjectOutputCount = (int) (($sourceCounts['back_office'] ?? 0) + ($sourceCounts['external'] ?? 0));
         $graphShareRows = collect([
             (object) [
                 'label' => 'ผลงานในโครงการวิจัย',
@@ -55,8 +54,13 @@
             ],
             (object) [
                 'label' => 'Mission',
-                'count' => $nonProjectOutputCount,
-                'pct' => $totalCount > 0 ? round(($nonProjectOutputCount / $totalCount) * 100, 1) : 0.0,
+                'count' => (int) ($sourceCounts['back_office'] ?? 0),
+                'pct' => $totalCount > 0 ? round((((int) ($sourceCounts['back_office'] ?? 0)) / $totalCount) * 100, 1) : 0.0,
+            ],
+            (object) [
+                'label' => 'Extra',
+                'count' => (int) ($sourceCounts['external'] ?? 0),
+                'pct' => $totalCount > 0 ? round((((int) ($sourceCounts['external'] ?? 0)) / $totalCount) * 100, 1) : 0.0,
             ],
         ])->values();
         $eaFullNameMap = [
@@ -805,11 +809,12 @@
                     <div>
                         <div class="section-tag section-tag--teal">Theme Output</div>
                         <h2 class="text-lg font-semibold text-slate-900">กลุ่มเนื้อหา  (6 กลุ่ม) จาก Output</h2>
-                        <p class="mt-1 text-sm text-slate-500">สรุปจำนวนผลงาน แยกตามกลุ่มเนื้อหา พร้อมรายการผลงานในแต่ละกลุ่ม</p>
+                        <p class="mt-1 text-sm text-slate-500">สรุปเฉพาะผลงานในโครงการวิจัยที่นำไปจัดกลุ่มเนื้อหา พร้อมรายการผลงานในแต่ละกลุ่ม</p>
                     </div>
                     <div class="focus-kpi px-4 py-2">
-                        <div class="text-[11px] uppercase tracking-wide text-slate-500">Total Outputs</div>
+                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Project Outputs</div>
                         <div class="metric text-xl font-semibold text-slate-900">{{ number_format((int) ($projectTypeTotalOutputs ?? 0)) }}</div>
+                        <div class="text-[11px] leading-tight text-slate-500">เฉพาะในโครงการวิจัย</div>
                     </div>
                 </div>
 
@@ -1235,12 +1240,26 @@
             const chartAnim = { duration: 760, easing: 'easeOutCubic' };
             const outputInProjectColor = '#4f46e5';
             const outputInProjectBorder = '#3730a3';
-            const outputOutsideProjectColor = '#0f766e';
-            const outputOutsideProjectBorder = '#115e59';
+            const missionColor = '#0f766e';
+            const missionBorder = '#115e59';
+            const extraColor = '#ea580c';
+            const extraBorder = '#c2410c';
 
             const safeLabels = (labels) => (labels && labels.length ? labels : ['ไม่มีข้อมูล']);
             const safeValues = (values, fallback = 0) => (values && values.length ? values : [fallback]);
             const safeColors = (colors) => (colors && colors.length ? colors : ['#64748b']);
+            const renderChart = (canvasId, config) => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas || typeof Chart === 'undefined') return null;
+
+                try {
+                    Chart.getChart?.(canvas)?.destroy();
+                    return new Chart(canvas, config);
+                } catch (error) {
+                    console.error(`Unable to render ${canvasId}`, error);
+                    return null;
+                }
+            };
             const suggestedAxisMax = (values, min = 5) => {
                 const maxVal = Math.max(...(values || [0]), 0);
                 if (maxVal <= 0) return min;
@@ -1248,12 +1267,11 @@
             };
             const labelsForYearChart = safeLabels(yearLabels);
             const projectSeries = labelsForYearChart.map((_, index) => Number(sourceSeries?.project?.[index] || 0));
-            const nonProjectSeries = labelsForYearChart.map((_, index) =>
-                Number(sourceSeries?.back_office?.[index] || 0) + Number(sourceSeries?.external?.[index] || 0)
-            );
-            const totalsByYear = labelsForYearChart.map((_, i) => projectSeries[i] + nonProjectSeries[i]);
+            const missionSeries = labelsForYearChart.map((_, index) => Number(sourceSeries?.back_office?.[index] || 0));
+            const extraSeries = labelsForYearChart.map((_, index) => Number(sourceSeries?.external?.[index] || 0));
+            const totalsByYear = labelsForYearChart.map((_, i) => projectSeries[i] + missionSeries[i] + extraSeries[i]);
 
-            new Chart(document.getElementById('chartOutputsByYear'), {
+            renderChart('chartOutputsByYear', {
                 type: 'bar',
                 data: {
                     labels: labelsForYearChart,
@@ -1269,11 +1287,20 @@
                         },
                         {
                             label: 'Mission',
-                            data: nonProjectSeries,
-                            backgroundColor: outputOutsideProjectColor,
-                            borderColor: outputOutsideProjectBorder,
+                            data: missionSeries,
+                            backgroundColor: missionColor,
+                            borderColor: missionBorder,
                             borderWidth: 1,
-                            hoverBackgroundColor: outputOutsideProjectBorder,
+                            hoverBackgroundColor: missionBorder,
+                            borderRadius: 8
+                        },
+                        {
+                            label: 'Extra',
+                            data: extraSeries,
+                            backgroundColor: extraColor,
+                            borderColor: extraBorder,
+                            borderWidth: 1,
+                            hoverBackgroundColor: extraBorder,
                             borderRadius: 8
                         },
                     ]
@@ -1311,9 +1338,9 @@
                             font: { weight: '700', size: 11 },
                             formatter: (value, ctx) => {
                                 const index = ctx.dataIndex;
-                                const isTopStack = ctx.datasetIndex === 1;
+                                const isTopStack = ctx.datasetIndex === 2;
                                 if (!isTopStack) return '';
-                                const total = Number(projectSeries[index] || 0) + Number(nonProjectSeries[index] || 0);
+                                const total = Number(projectSeries[index] || 0) + Number(missionSeries[index] || 0) + Number(extraSeries[index] || 0);
                                 return total > 0 ? total : '';
                             }
                         },
@@ -1321,7 +1348,7 @@
                 }
             });
 
-            new Chart(document.getElementById('chartOutputTypes'), {
+            renderChart('chartOutputTypes', {
                 type: 'doughnut',
                 data: {
                     labels: safeLabels(typeLabels),
@@ -1389,7 +1416,7 @@
                 }
             });
 
-            new Chart(document.getElementById('chartPaperRanking'), {
+            renderChart('chartPaperRanking', {
                 type: 'bar',
                 data: {
                     labels: safeLabels(paperRankingLabels),
@@ -1437,7 +1464,7 @@
                 }
             });
 
-            new Chart(document.getElementById('chartPresentationActivity'), {
+            renderChart('chartPresentationActivity', {
                 type: 'doughnut',
                 data: {
                     labels: safeLabels(presentationActivityLabels),
@@ -1506,66 +1533,135 @@
                 }
             });
 
-            const textbookCanvas = document.getElementById('chartTextbookYear');
-            if (textbookCanvas) {
-                new Chart(textbookCanvas, {
-                    type: 'bar',
-                    data: {
-                        labels: safeLabels(textbookYearLabels),
-                        datasets: [{
-                            label: 'จำนวน Textbook',
-                            data: safeValues(textbookYearValues),
-                            backgroundColor: safeColors(textbookYearColors),
-                            borderColor: safeColors(textbookYearColors),
-                            borderWidth: 1,
-                            borderRadius: 8,
-                            hoverBackgroundColor: safeColors(textbookYearColors),
-                            maxBarThickness: 68
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: chartAnim,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                suggestedMax: suggestedAxisMax(safeValues(textbookYearValues), 5),
-                                ticks: { precision: 0, color: textColor },
-                                grid: { color: gridColor }
-                            },
-                            x: {
-                                ticks: { color: textColor },
-                                grid: { color: gridColor }
-                            }
+            renderChart('chartTextbookYear', {
+                type: 'bar',
+                data: {
+                    labels: safeLabels(textbookYearLabels),
+                    datasets: [{
+                        label: 'จำนวน Textbook',
+                        data: safeValues(textbookYearValues),
+                        backgroundColor: safeColors(textbookYearColors),
+                        borderColor: safeColors(textbookYearColors),
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        hoverBackgroundColor: safeColors(textbookYearColors),
+                        maxBarThickness: 68
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: chartAnim,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: suggestedAxisMax(safeValues(textbookYearValues), 5),
+                            ticks: { precision: 0, color: textColor },
+                            grid: { color: gridColor }
                         },
-                        plugins: {
-                            legend: { display: false },
-                            datalabels: {
-                                color: '#0f172a',
-                                anchor: 'end',
-                                align: 'end',
-                                offset: 2,
-                                clamp: true,
-                                font: { weight: '700', size: 11 },
-                                formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
-                            }
+                        x: {
+                            ticks: { color: textColor },
+                            grid: { color: gridColor }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#0f172a',
+                            anchor: 'end',
+                            align: 'end',
+                            offset: 2,
+                            clamp: true,
+                            font: { weight: '700', size: 11 },
+                            formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
                         }
                     }
-                });
-            }
+                }
+            });
 
             const form = document.getElementById('vizFilters');
             const loading = document.getElementById('filterLoading');
             if (form) {
+                const ajaxState = window.__outputVizAjaxState || (window.__outputVizAjaxState = {
+                    controller: null,
+                    popstateBound: false,
+                });
+                const getFilterUrl = () => {
+                    const url = new URL(form.action, window.location.origin);
+                    const params = new URLSearchParams(new FormData(form));
+                    params.forEach((value, key) => {
+                        const cleanValue = String(value || '').trim();
+                        if (cleanValue !== '') {
+                            url.searchParams.set(key, cleanValue);
+                        }
+                    });
+                    return url;
+                };
+                const executeVisualizationScript = (doc) => {
+                    const script = Array.from(doc.scripts).find((item) =>
+                        item.textContent.includes('OutlabelsWithLinesPlugin')
+                    );
+                    if (!script) return;
+
+                    const nextScript = document.createElement('script');
+                    nextScript.textContent = script.textContent;
+                    document.body.appendChild(nextScript);
+                    nextScript.remove();
+                };
+                const loadVisualization = async (url, options = {}) => {
+                    const push = options.push !== false;
+                    const scrollY = window.scrollY;
+
+                    ajaxState.controller?.abort();
+                    ajaxState.controller = new AbortController();
+                    if (loading) loading.classList.remove('hidden');
+
+                    try {
+                        const response = await fetch(url.toString(), {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            signal: ajaxState.controller.signal,
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                        const html = await response.text();
+                        const doc = new DOMParser().parseFromString(html, 'text/html');
+                        const currentPage = document.querySelector('.viz-page');
+                        const nextPage = doc.querySelector('.viz-page');
+                        if (!currentPage || !nextPage) throw new Error('Visualization content not found');
+
+                        nextPage.querySelectorAll('.fade-up').forEach((el) => el.classList.add('in'));
+                        currentPage.replaceWith(nextPage);
+                        if (doc.title) document.title = doc.title;
+                        if (push) window.history.pushState({}, '', url);
+                        window.scrollTo(0, scrollY);
+                        executeVisualizationScript(doc);
+                    } catch (error) {
+                        if (error.name === 'AbortError') return;
+                        window.location.href = url.toString();
+                    }
+                };
+
                 let timer = null;
+                form.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    loadVisualization(getFilterUrl());
+                });
                 form.querySelectorAll('.js-auto-filter').forEach((el) => {
                     el.addEventListener('change', () => {
                         window.clearTimeout(timer);
-                        if (loading) loading.classList.remove('hidden');
-                        timer = window.setTimeout(() => form.requestSubmit(), 160);
+                        timer = window.setTimeout(() => loadVisualization(getFilterUrl()), 160);
                     });
                 });
+                form.querySelector('a[href]')?.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    loadVisualization(new URL(event.currentTarget.href), { push: true });
+                });
+                if (!ajaxState.popstateBound) {
+                    ajaxState.popstateBound = true;
+                    window.addEventListener('popstate', () => {
+                        loadVisualization(new URL(window.location.href), { push: false });
+                    });
+                }
             }
 
             const fades = document.querySelectorAll('.fade-up');

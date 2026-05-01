@@ -2475,18 +2475,6 @@
             position: relative;
         }
 
-        .fte-table-grid tbody tr.fte-table-row-deleted::after {
-            content: '';
-            position: absolute;
-            left: 0.6rem;
-            right: 0.6rem;
-            top: 50%;
-            height: 2px;
-            background: rgba(190, 24, 93, 0.45);
-            transform: rotate(-1deg);
-            pointer-events: none;
-        }
-
         .fte-table-grid input,
         .fte-table-grid select {
             width: 100%;
