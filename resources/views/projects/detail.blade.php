@@ -738,6 +738,7 @@
                     <div><span class="font-semibold">กลุ่มเนื้อหาหลักของงาน (Content/Theme):</span> {{ $project->project_type ?? '-' }}</div>
                     <div><span class="font-semibold">ลักษณะโครงการ:</span> {{ $project->project_list ?? '-' }}</div>
                     <div><span class="font-semibold">ประเภทของโครงการ/กิจกรรม (TYPE):</span> {{ $project->theme ?? '-' }}</div>
+                    <div class="md:col-span-2"><span class="font-semibold">แหล่งที่มาของข้อมูล (Data source) และวิธีการใช้ข้อมูล (Method / approach):</span> {{ $project->data_source ?? '-' }}</div>
 
                     <div class="md:col-span-2">
                         <span class="font-semibold">เอกสารโครงการ (Proposal / IRB):</span>

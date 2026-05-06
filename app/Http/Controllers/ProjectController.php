@@ -23,9 +23,21 @@ class ProjectController extends Controller
     private const CO_RESEARCH_INTERNAL_UNIT = 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
     private const CO_RESEARCH_INTERNAL_AFFILIATION = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
     private const PI_INTERNAL_AFFILIATION = self::CO_RESEARCH_INTERNAL_AFFILIATION;
+    private const PERSON_TYPE_INTERNAL_FACULTY = 'ภายในคณะแพทยศาสตร์ศิริราชพยาบาล';
+    private const PERSON_TYPE_EXTERNAL_FACULTY = 'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล';
+    private const PERSON_TYPE_INTERNAL_UNIT = self::CO_RESEARCH_INTERNAL_UNIT;
+    private const LEGACY_PERSON_TYPE_MAP = [
+        'internal' => self::PERSON_TYPE_INTERNAL_UNIT,
+        'external' => self::PERSON_TYPE_EXTERNAL_FACULTY,
+    ];
+    private const ROLE_PERSON_TYPES = [
+        self::PERSON_TYPE_INTERNAL_FACULTY,
+        self::PERSON_TYPE_EXTERNAL_FACULTY,
+        self::PERSON_TYPE_INTERNAL_UNIT,
+    ];
     private const CO_RESEARCH_ALLOWED_UNIT_STATUSES = [
-        'ภายในคณะแพทยศาสตร์ศิริราชพยาบาล',
-        'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล',
+        self::PERSON_TYPE_INTERNAL_FACULTY,
+        self::PERSON_TYPE_EXTERNAL_FACULTY,
         self::CO_RESEARCH_INTERNAL_UNIT,
     ];
 
@@ -2311,10 +2323,11 @@ public function store(Request $request)
             'project_name_en' => 'nullable|string|max:5000',
             'project_type' => 'required|string|max:255',
             'theme' => 'required|string|max:255',
+            'data_source' => 'nullable|string|max:255',
             'shortcut_link' => 'nullable|string',
             'r_code' => 'nullable|string',
             'size' => 'nullable|string|max:10',
-            'funding_type' => 'nullable|string',
+            'funding_type' => 'required|string',
             'funding_source' => 'nullable|string',
             'funding_org_type' => 'nullable|string',
             'funding_name' => 'nullable|string',
@@ -2324,7 +2337,7 @@ public function store(Request $request)
             'team_end_date' => 'nullable|string',
             'pi_name' => 'nullable|string',
             'pi_user_id' => 'nullable|integer|exists:users,id',
-            'pi_person_type' => 'nullable|string|in:internal,external',
+            'pi_person_type' => 'nullable|string|max:255',
             'pi_affiliation' => 'nullable|string',
             'planning_status' => 'required|string',
             'proposal_date' => 'nullable|string',
@@ -2349,7 +2362,7 @@ public function store(Request $request)
             'copis.*.id' => 'nullable|integer',
             'copis.*.name' => 'nullable|string|max:255',
             'copis.*.affiliation' => 'nullable|string|max:255',
-            'copis.*.person_type' => 'nullable|string|in:internal,external',
+            'copis.*.person_type' => 'nullable|string|max:255',
             'copis.*.user_id' => 'nullable|integer|exists:users,id',
             'coresearch' => 'nullable|array',
             'coresearch.*.id' => 'nullable|integer',
@@ -2379,19 +2392,54 @@ public function store(Request $request)
 
     private function normalizeValidatedPi(array $validated, Request $request): array
     {
-        $piPersonType = trim((string) $request->input('pi_person_type', ''));
+        $piPersonType = $this->normalizeRolePersonType($request->input('pi_person_type'));
         $piUserId = $request->input('pi_user_id');
         $piUserId = $piUserId !== null && $piUserId !== '' ? (int) $piUserId : null;
 
-        if ($piPersonType !== 'internal' || ! $piUserId) {
+        $validated['pi_person_type'] = $piPersonType !== '' ? $piPersonType : null;
+
+        if ($piPersonType === '') {
+            throw ValidationException::withMessages([
+                'pi_person_type' => 'กรุณาเลือกประเภท PI',
+            ]);
+        }
+
+        if (! in_array($piPersonType, self::ROLE_PERSON_TYPES, true)) {
+            throw ValidationException::withMessages([
+                'pi_person_type' => 'ประเภท PI ไม่ถูกต้อง',
+            ]);
+        }
+
+        if ($piPersonType !== self::PERSON_TYPE_INTERNAL_UNIT) {
             $validated['pi_user_id'] = null;
+            $validated['pi_name'] = trim((string) ($validated['pi_name'] ?? ''));
+            $validated['pi_affiliation'] = trim((string) ($validated['pi_affiliation'] ?? ''));
+
+            $errors = [];
+            if ($validated['pi_name'] === '') {
+                $errors['pi_name'] = 'กรุณาระบุชื่อ PI';
+            }
+            if ($validated['pi_affiliation'] === '') {
+                $errors['pi_affiliation'] = 'กรุณาระบุสังกัด PI';
+            }
+            if ($errors !== []) {
+                throw ValidationException::withMessages($errors);
+            }
+
             return $validated;
+        }
+
+        if (! $piUserId) {
+            throw ValidationException::withMessages([
+                'pi_user_id' => 'กรุณาเลือก PI จากรายชื่อบุคลากร',
+            ]);
         }
 
         $user = User::query()->find($piUserId);
         if (! $user) {
-            $validated['pi_user_id'] = null;
-            return $validated;
+            throw ValidationException::withMessages([
+                'pi_user_id' => 'ไม่พบข้อมูลบุคลากรที่เลือก',
+            ]);
         }
 
         $validated['pi_user_id'] = $user->id;
@@ -2399,6 +2447,13 @@ public function store(Request $request)
         $validated['pi_affiliation'] = self::PI_INTERNAL_AFFILIATION;
 
         return $validated;
+    }
+
+    private function normalizeRolePersonType(?string $value): string
+    {
+        $normalized = trim((string) $value);
+
+        return self::LEGACY_PERSON_TYPE_MAP[$normalized] ?? $normalized;
     }
 
     private function normalizeValidatedProjectDates(array $validated, Request $request): array
@@ -3534,7 +3589,7 @@ public function store(Request $request)
     private function buildCopiPayload(array $copi, int $idx, array &$errors): ?array
     {
         $rowErrors = [];
-        $personType = trim((string) ($copi['person_type'] ?? ''));
+        $personType = $this->normalizeRolePersonType($copi['person_type'] ?? null);
         $name = trim((string) ($copi['name'] ?? ''));
         $affiliation = trim((string) ($copi['affiliation'] ?? ''));
         $userId = isset($copi['user_id']) && $copi['user_id'] !== '' ? (int) $copi['user_id'] : null;
@@ -3550,7 +3605,13 @@ public function store(Request $request)
             return null;
         }
 
-        if ($personType === 'internal') {
+        if (! in_array($personType, self::ROLE_PERSON_TYPES, true)) {
+            $rowErrors["copis.$idx.person_type"] = 'ประเภท COPI ไม่ถูกต้อง';
+            $errors = array_merge($errors, $rowErrors);
+            return null;
+        }
+
+        if ($personType === self::PERSON_TYPE_INTERNAL_UNIT) {
             if (! $userId) {
                 $rowErrors["copis.$idx.user_id"] = 'กรุณาเลือก COPI จากรายชื่อบุคลากร';
                 $errors = array_merge($errors, $rowErrors);
@@ -3568,6 +3629,7 @@ public function store(Request $request)
                 'user_id' => $user->id,
                 'name' => $user->full_name,
                 'affiliation' => self::PI_INTERNAL_AFFILIATION,
+                'person_type' => $personType,
             ];
         }
 
@@ -3588,6 +3650,7 @@ public function store(Request $request)
             'user_id' => null,
             'name' => $name,
             'affiliation' => $affiliation,
+            'person_type' => $personType,
         ];
     }
 

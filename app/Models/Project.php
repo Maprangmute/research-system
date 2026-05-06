@@ -23,6 +23,7 @@ class Project extends Model
         'project_name_en',
         'project_type',
         'theme',
+        'data_source',
         'shortcut_link',
         'size',
         'r_code',
@@ -46,6 +47,7 @@ class Project extends Model
         'pi_name',
         'pi_user_id',
         'pi_affiliation',
+        'pi_person_type',
         'task_detail',
         // Strategy flags
         'strategy_1',

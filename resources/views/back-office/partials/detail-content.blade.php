@@ -748,7 +748,7 @@
                                                 <span class="text-xs font-semibold text-slate-600">ประเภทนำเสนอ <span class="bo-required">*</span></span>
                                                 <select name="conference_presentation_type">
                                                     <option value="">เลือก</option>
-                                                    @foreach (['Oral Presentation', 'Poster Presentation', 'Panel Discussion', 'Keynote Speech'] as $presentationType)
+                                                    @foreach (['Oral Presentation', 'Poster Presentation', 'Abstract Presentation', 'Panel Discussion', 'Keynote Speech', 'World café', 'Moderator'] as $presentationType)
                                                         <option value="{{ $presentationType }}" @selected(($quickConference['presentation_type'] ?? '') === $presentationType)>{{ $presentationType }}</option>
                                                     @endforeach
                                                 </select>
@@ -1652,7 +1652,7 @@
                                                     <span class="text-xs font-semibold text-slate-600">ประเภทนำเสนอ <span class="bo-required">*</span></span>
                                                     <select name="conference_presentation_type" class="{{ $inlineFieldClass }}">
                                                         <option value="">เลือก</option>
-                                                        @foreach (['Oral Presentation', 'Poster Presentation', 'Panel Discussion', 'Keynote Speech'] as $presentationType)
+                                                        @foreach (['Oral Presentation', 'Poster Presentation', 'Abstract Presentation', 'Panel Discussion', 'Keynote Speech', 'World café', 'Moderator'] as $presentationType)
                                                             <option value="{{ $presentationType }}" @selected(($inlineConference['presentation_type'] ?? '') === $presentationType)>{{ $presentationType }}</option>
                                                         @endforeach
                                                     </select>

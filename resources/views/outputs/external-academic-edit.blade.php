@@ -303,7 +303,7 @@
                             <span class="text-sm font-medium text-slate-700">ประเภทนำเสนอ</span>
                             <select name="conference_presentation_type" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
                                 <option value="">เลือก</option>
-                                @foreach (['Oral Presentation', 'Poster Presentation', 'Abstract Presentation', 'Panel Discussion', 'Keynote Speech', 'World café'] as $presentationType)
+                                @foreach (['Oral Presentation', 'Poster Presentation', 'Abstract Presentation', 'Panel Discussion', 'Keynote Speech', 'World café', 'Moderator'] as $presentationType)
                                     <option value="{{ $presentationType }}" @selected(($formData['conference_presentation_type'] ?? '') === $presentationType)>{{ $presentationType }}</option>
                                 @endforeach
                             </select>

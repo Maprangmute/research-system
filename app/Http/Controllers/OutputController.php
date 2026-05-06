@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use PDF;
@@ -251,7 +252,7 @@ class OutputController extends Controller
             'outputs.*.authors.*.name' => ['nullable', 'string', 'max:255'],
             'outputs.*.conference_id' => ['nullable', 'integer', 'exists:external_output_conferences,id'],
             'outputs.*.conference_name' => ['required_if:outputs.*.type,EA103', 'nullable', 'string', 'max:255'],
-            'outputs.*.conference_presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Abstract Presentation,Panel Discussion,Keynote Speech,World café'],
+            'outputs.*.conference_presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Abstract Presentation,Panel Discussion,Keynote Speech,World café,Moderator'],
             'outputs.*.conference_location' => ['nullable', 'string', 'max:255'],
             'outputs.*.conference_presenters' => ['nullable', 'array'],
             'outputs.*.conference_presenters.*.id' => ['nullable', 'integer', 'exists:external_output_conference_presenters,id'],
@@ -414,7 +415,7 @@ class OutputController extends Controller
             'authors.*.name' => ['nullable', 'string', 'max:255'],
             'conference_id' => ['nullable', 'integer', 'exists:external_output_conferences,id'],
             'conference_name' => ['required_if:type,EA103', 'nullable', 'string', 'max:255'],
-            'conference_presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Abstract Presentation,Panel Discussion,Keynote Speech,World café'],
+            'conference_presentation_type' => ['nullable', 'in:Oral Presentation,Poster Presentation,Abstract Presentation,Panel Discussion,Keynote Speech,World café,Moderator'],
             'conference_location' => ['nullable', 'string', 'max:255'],
             'conference_presenters' => ['nullable', 'array'],
             'conference_presenters.*.id' => ['nullable', 'integer', 'exists:external_output_conference_presenters,id'],
@@ -1882,6 +1883,7 @@ class OutputController extends Controller
         $paperRows = $filtered->where('type_code', 'EA101')->values();
         $presentationRows = $filtered->where('type_code', 'EA103')->values();
         $textbookRows = $filtered->where('type_code', 'EA119')->values();
+        $networkingRows = $filtered->whereIn('type_code', ['EA115', 'EA117'])->values();
         $categorizedTotal = (int) ($paperRows->count() + $presentationRows->count() + $textbookRows->count());
 
         $paperQuartileLabels = collect(['Q1', 'Q2', 'Q3', 'Q4', 'TCI 1', 'TCI 2', 'ไม่ระบุ']);
@@ -1903,6 +1905,21 @@ class OutputController extends Controller
             ->filter()
             ->countBy()
             ->sortKeys();
+        $networkingYears = $networkingRows
+            ->map(fn ($row) => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null)
+            ->filter()
+            ->countBy()
+            ->sortKeys();
+        $networkingYearSeries = collect(['EA115', 'EA117'])->mapWithKeys(function ($typeCode) use ($networkingRows, $networkingYears) {
+            return [
+                $typeCode => $networkingYears->keys()
+                    ->map(fn ($year) => (int) $networkingRows
+                        ->where('type_code', $typeCode)
+                        ->where('year_be', (int) $year)
+                        ->count())
+                    ->values(),
+            ];
+        });
 
         $paperSummary = [
             'count' => $paperRows->count(),
@@ -1928,6 +1945,15 @@ class OutputController extends Controller
             'peak_year' => $textbookYears->sortDesc()->keys()->first(),
             'peak_year_count' => (int) ($textbookYears->max() ?? 0),
             'latest' => $sortRowsNewestFirst($textbookRows)->take(5)->map($buildSummaryListItem)->values(),
+        ];
+        $networkingSummary = [
+            'count' => $networkingRows->count(),
+            'latest_year' => $networkingYears->keys()->last(),
+            'peak_year' => $networkingYears->sortDesc()->keys()->first(),
+            'peak_year_count' => (int) ($networkingYears->max() ?? 0),
+            'ea115_count' => (int) $networkingRows->where('type_code', 'EA115')->count(),
+            'ea117_count' => (int) $networkingRows->where('type_code', 'EA117')->count(),
+            'latest' => $sortRowsNewestFirst($networkingRows)->take(5)->map($buildSummaryListItem)->values(),
         ];
 
         $yearTotals = $filtered
@@ -1983,6 +2009,1353 @@ class OutputController extends Controller
             return (object) $item;
         })->sortByDesc('count')->values();
 
+        $dataSourceOptions = collect([
+            'Real-World data',
+            'Primary data collection',
+        ]);
+        $normalizeDataSourceCategory = static function (mixed $value): ?string {
+            $text = mb_strtolower(trim((string) $value), 'UTF-8');
+            if ($text === '') {
+                return null;
+            }
+
+            if (Str::contains($text, [
+                'primary data collection',
+                'primary / generated',
+                'generated data',
+                'generate data',
+            ])) {
+                return 'Primary data collection';
+            }
+
+            if (Str::contains($text, [
+                'real-world data',
+                'real world data',
+                'secondary / existing',
+                'existing data',
+                'raw data analysis',
+                'contextualised / integrated',
+                'contextualized / integrated',
+                'integrated data',
+                'improvised data',
+            ])) {
+                return 'Real-World data';
+            }
+
+            return null;
+        };
+        $isSirirajPerson = static function (...$parts): bool {
+            $text = mb_strtolower(trim(collect($parts)->filter()->implode(' ')), 'UTF-8');
+            if ($text === '') {
+                return false;
+            }
+            if (Str::contains($text, ['ภายนอก', 'external'])) {
+                return false;
+            }
+
+            return Str::contains($text, [
+                'siriraj',
+                'ศิริราช',
+                'คณะแพทยศาสตร์ศิริราช',
+                'ภายในคณะ',
+                'ภายในหน่วย',
+            ]);
+        };
+        $projectSelectColumns = [
+            'id',
+            'project_code',
+            'project_name_th',
+            'project_type',
+            'theme',
+            'budget',
+            'start_year',
+            'pi_name',
+            'pi_affiliation',
+        ];
+        foreach (['data_source', 'pi_user_id', 'pi_person_type'] as $optionalProjectColumn) {
+            if (Schema::hasColumn('projects', $optionalProjectColumn)) {
+                $projectSelectColumns[] = $optionalProjectColumn;
+            }
+        }
+        $copiSelectColumns = ['id', 'project_id', 'name', 'affiliation'];
+        foreach (['user_id', 'person_type'] as $optionalCopiColumn) {
+            if (Schema::hasColumn('copis', $optionalCopiColumn)) {
+                $copiSelectColumns[] = $optionalCopiColumn;
+            }
+        }
+        $coResearchSelectColumns = ['id', 'project_id', 'name', 'affiliation', 'unit_status'];
+        if (Schema::hasColumn('co_research', 'user_id')) {
+            $coResearchSelectColumns[] = 'user_id';
+        }
+        $projectAnalysisAllRows = Project::query()
+            ->with([
+                'copis' => fn ($query) => $query->select($copiSelectColumns),
+                'coResearches' => fn ($query) => $query->select($coResearchSelectColumns),
+                'outputs:id,project_id,type,title,year,project_output',
+            ])
+            ->select($projectSelectColumns)
+            ->get()
+            ->values();
+        $projectAnalysisRows = $projectAnalysisAllRows
+            ->filter(function (Project $project) use ($yearFrom, $yearTo) {
+                $year = $this->normalizeYearFilter($project->start_year);
+                if ($yearFrom !== null && ($year === null || $year < $yearFrom)) {
+                    return false;
+                }
+                if ($yearTo !== null && ($year === null || $year > $yearTo)) {
+                    return false;
+                }
+                return true;
+            })
+            ->values();
+        $buildParticipantRows = function (Project $project) use ($isSirirajPerson): Collection {
+            $participants = collect();
+            $piName = trim((string) ($project->pi_name ?? ''));
+            if ($piName !== '') {
+                $isInternal = (int) ($project->pi_user_id ?? 0) > 0
+                    || $isSirirajPerson($project->pi_person_type, $project->pi_affiliation, $piName);
+                $participants->push((object) [
+                    'role' => 'PI',
+                    'name' => $piName,
+                    'affiliation' => trim((string) ($project->pi_affiliation ?? '')),
+                    'user_id' => (int) ($project->pi_user_id ?? 0) ?: null,
+                    'is_siriraj' => $isInternal,
+                ]);
+            }
+
+            foreach ($project->copis as $copi) {
+                $name = trim((string) ($copi->name ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+                $participants->push((object) [
+                    'role' => 'Co-PI',
+                    'name' => $name,
+                    'affiliation' => trim((string) ($copi->affiliation ?? '')),
+                    'user_id' => (int) ($copi->user_id ?? 0) ?: null,
+                    'is_siriraj' => (int) ($copi->user_id ?? 0) > 0
+                        || $isSirirajPerson($copi->person_type, $copi->affiliation, $name),
+                ]);
+            }
+
+            foreach ($project->coResearches as $coResearch) {
+                $name = trim((string) ($coResearch->name ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+                $participants->push((object) [
+                    'role' => 'Co-Research',
+                    'name' => $name,
+                    'affiliation' => trim((string) ($coResearch->affiliation ?? '')),
+                    'user_id' => (int) ($coResearch->user_id ?? 0) ?: null,
+                    'is_siriraj' => (int) ($coResearch->user_id ?? 0) > 0
+                        || $isSirirajPerson($coResearch->unit_status, $coResearch->affiliation, $name),
+                ]);
+            }
+
+            return $participants;
+        };
+        $hasSirirajInvolvement = fn (Project $project): bool => $buildParticipantRows($project)
+            ->contains(fn ($participant) => (bool) ($participant->is_siriraj ?? false));
+        $matchesProjectTypeKeyword = static function (Project $project, array $keywords): bool {
+            $text = mb_strtolower(trim(($project->project_type ?? '') . ' ' . ($project->theme ?? '') . ' ' . ($project->project_name_th ?? '')), 'UTF-8');
+            return $text !== '' && Str::contains($text, $keywords);
+        };
+        $sirirajProjects = $projectAnalysisRows
+            ->filter($hasSirirajInvolvement)
+            ->sortByDesc(fn (Project $project) => (int) ($this->normalizeYearFilter($project->start_year) ?? 0))
+            ->values();
+        $sirirajParticipants = $projectAnalysisRows
+            ->flatMap($buildParticipantRows)
+            ->filter(fn ($participant) => (bool) ($participant->is_siriraj ?? false))
+            ->values();
+        $sirirajRoleCounts = [
+            'pi' => (int) $projectAnalysisRows->filter(fn (Project $project) => $buildParticipantRows($project)
+                ->contains(fn ($participant) => (bool) ($participant->is_siriraj ?? false) && ($participant->role ?? '') === 'PI'))->count(),
+            'co_pi' => (int) $projectAnalysisRows->filter(fn (Project $project) => $buildParticipantRows($project)
+                ->contains(fn ($participant) => (bool) ($participant->is_siriraj ?? false) && ($participant->role ?? '') === 'Co-PI'))->count(),
+            'co_research' => (int) $projectAnalysisRows->filter(fn (Project $project) => $buildParticipantRows($project)
+                ->contains(fn ($participant) => (bool) ($participant->is_siriraj ?? false) && ($participant->role ?? '') === 'Co-Research'))->count(),
+        ];
+        $personIdentityKey = function ($participant): string {
+            $userId = (int) ($participant->user_id ?? 0);
+            if ($userId > 0) {
+                return 'user:' . $userId;
+            }
+
+            $nameKey = $this->normalizePersonNameForMatch($participant->name ?? null);
+
+            return $nameKey !== '' ? 'name:' . $nameKey : '';
+        };
+        $sirirajRolePersonCounts = [
+            'pi' => (int) $sirirajParticipants
+                ->filter(fn ($participant) => ($participant->role ?? '') === 'PI')
+                ->map($personIdentityKey)
+                ->filter()
+                ->unique()
+                ->count(),
+            'co_pi' => (int) $sirirajParticipants
+                ->filter(fn ($participant) => ($participant->role ?? '') === 'Co-PI')
+                ->map($personIdentityKey)
+                ->filter()
+                ->unique()
+                ->count(),
+            'co_research' => (int) $sirirajParticipants
+                ->filter(fn ($participant) => ($participant->role ?? '') === 'Co-Research')
+                ->map($personIdentityKey)
+                ->filter()
+                ->unique()
+                ->count(),
+        ];
+        $classifyPeopleType = static function (?string $rawType, bool $isSiriraj): string {
+            $text = mb_strtolower(trim((string) $rawType), 'UTF-8');
+            if (Str::contains($text, ['ภายนอก', 'external'])) {
+                return 'external';
+            }
+            if (Str::contains($text, ['ภายในหน่วย', 'unit'])) {
+                return 'unit';
+            }
+            if ($isSiriraj || Str::contains($text, ['ศิริราช', 'siriraj', 'ภายในคณะ'])) {
+                return 'siriraj';
+            }
+
+            return $isSiriraj ? 'siriraj' : 'external';
+        };
+        $buildProjectParticipantAnalysisRows = function (Collection $projects) use ($buildParticipantRows, $classifyPeopleType, $normalizeProjectType, $personIdentityKey): Collection {
+            return $projects
+                ->flatMap(function (Project $project) use ($buildParticipantRows, $classifyPeopleType, $normalizeProjectType, $personIdentityKey) {
+                    $year = $this->normalizeYearFilter($project->start_year);
+
+                    return $buildParticipantRows($project)->map(function ($participant) use ($project, $classifyPeopleType, $normalizeProjectType, $personIdentityKey, $year) {
+                        $rawType = match ($participant->role ?? '') {
+                            'PI' => $project->pi_person_type ?? null,
+                            'Co-PI' => $project->copis->first(fn ($copi) => trim((string) $copi->name) === trim((string) $participant->name))?->person_type,
+                            'Co-Research' => $project->coResearches->first(fn ($co) => trim((string) $co->name) === trim((string) $participant->name))?->unit_status,
+                            default => null,
+                        };
+                        $participantPersonKey = $personIdentityKey($participant);
+                        $hasUserId = (int) ($participant->user_id ?? 0) > 0;
+                        $peopleType = $hasUserId
+                            ? 'unit'
+                            : $classifyPeopleType($rawType, (bool) ($participant->is_siriraj ?? false));
+                        if (!$hasUserId && $peopleType === 'unit') {
+                            $peopleType = (bool) ($participant->is_siriraj ?? false) ? 'siriraj' : 'external';
+                        }
+
+                        return (object) [
+                            'project_id' => (int) $project->id,
+                            'project_name' => trim((string) ($project->project_name_th ?? '')) ?: '-',
+                            'project_link' => route('projects.show', $project),
+                            'year' => $year,
+                            'theme' => $normalizeProjectType($project->project_type),
+                            'role' => $participant->role,
+                            'name' => $participant->name,
+                            'affiliation' => $participant->affiliation ?? '',
+                            'user_id' => (int) ($participant->user_id ?? 0) ?: null,
+                            'person_key' => $participantPersonKey,
+                            'researcher_key' => ($normalizedResearcherName = $this->normalizePersonNameForMatch($participant->name ?? null)) !== ''
+                                ? 'name:' . $normalizedResearcherName
+                                : $participantPersonKey,
+                            'people_type' => $peopleType,
+                            'is_siriraj' => (bool) ($participant->is_siriraj ?? false),
+                        ];
+                    });
+                })
+                ->filter(fn ($row) => trim((string) $row->person_key) !== '')
+                ->values();
+        };
+        $projectParticipantRows = $buildProjectParticipantAnalysisRows($projectAnalysisRows);
+        $projectParticipantAllRows = $buildProjectParticipantAnalysisRows($projectAnalysisAllRows);
+        $resolvedPeopleTypesByResearcher = $projectParticipantAllRows
+                ->groupBy('researcher_key')
+                ->map(function (Collection $personRows): string {
+                    if ($personRows->contains(fn ($row) => (int) ($row->user_id ?? 0) > 0)) {
+                        return 'unit';
+                    }
+                    if ($personRows->contains(fn ($row) => ($row->people_type ?? '') === 'siriraj' || (bool) ($row->is_siriraj ?? false))) {
+                        return 'siriraj';
+                    }
+
+                    return 'external';
+                });
+        $resolvePeopleTypesByResearcher = static function (Collection $rows) use ($resolvedPeopleTypesByResearcher): Collection {
+            return $rows
+                ->map(function ($row) use ($resolvedPeopleTypesByResearcher) {
+                    $row->people_type = $resolvedPeopleTypesByResearcher->get($row->researcher_key, $row->people_type);
+                    return $row;
+                })
+                ->values();
+        };
+        $projectParticipantRows = $resolvePeopleTypesByResearcher($projectParticipantRows);
+        $projectParticipantAllRows = $resolvePeopleTypesByResearcher($projectParticipantAllRows);
+        $htaProjects = $projectAnalysisRows
+            ->filter(fn (Project $project) => $matchesProjectTypeKeyword($project, ['hta', 'health systems', 'health technology assessment', '02']))
+            ->values();
+        $clinicalLedProjects = $projectAnalysisRows
+            ->filter(fn (Project $project) => $matchesProjectTypeKeyword($project, ['aging', 'ageing', 'frailty', 'real-world evidence', 'real world evidence', 'rwe', 'clinical']))
+            ->values();
+        $htaBudgetByYear = $htaProjects
+            ->groupBy(fn (Project $project) => $this->normalizeYearFilter($project->start_year) ?: 'ไม่ระบุปี')
+            ->map(fn (Collection $group) => (float) $group->sum(fn (Project $project) => $parseBudget($project->budget)))
+            ->sortKeys()
+            ->map(fn ($value, $year) => (object) ['year' => $year, 'budget' => (float) $value])
+            ->values();
+        $maxHtaBudget = (float) max(1, $htaBudgetByYear->max('budget') ?: 1);
+        $impactCodes = collect(['EA109', 'EA102', 'EA106']);
+        $impactOutputRows = $impactCodes->mapWithKeys(fn ($code) => [
+            $code => (int) $filtered->where('type_code', $code)->count(),
+        ]);
+        $impactOutputItems = $impactCodes->mapWithKeys(function ($code) use ($filtered, $sortRowsNewestFirst, $eaFullNameMap) {
+            return [
+                $code => $sortRowsNewestFirst($filtered->where('type_code', $code)->values())
+                    ->take(8)
+                    ->map(fn ($row) => (object) [
+                        'title' => trim((string) ($row->title ?? '')) ?: '-',
+                        'reference' => trim((string) ($row->reference ?? '')) ?: '-',
+                        'year' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null,
+                        'source_label' => trim((string) ($row->source_label ?? '')),
+                        'type_code' => $code,
+                        'type_label' => $eaFullNameMap[$code] ?? $code,
+                        'link' => trim((string) ($row->link ?? '')) ?: null,
+                    ])
+                    ->values(),
+            ];
+        });
+        $impactTrendYears = $filtered
+            ->whereIn('type_code', $impactCodes->all())
+            ->pluck('year_be')
+            ->filter(fn ($year) => is_numeric($year))
+            ->map(fn ($year) => (int) $year)
+            ->unique()
+            ->sort()
+            ->values();
+        $impactTrendSeries = $impactCodes->mapWithKeys(function ($code) use ($filtered, $impactTrendYears) {
+            return [
+                $code => $impactTrendYears
+                    ->map(fn ($year) => (int) $filtered
+                        ->where('type_code', $code)
+                        ->where('year_be', (int) $year)
+                        ->count())
+                    ->values(),
+            ];
+        });
+        $impactTrendItems = $impactCodes->mapWithKeys(function ($code) use ($filtered, $impactTrendYears, $sortRowsNewestFirst, $eaFullNameMap) {
+            return [
+                $code => $impactTrendYears
+                    ->mapWithKeys(function ($year) use ($filtered, $sortRowsNewestFirst, $code, $eaFullNameMap) {
+                        return [(string) $year => $sortRowsNewestFirst($filtered
+                            ->where('type_code', $code)
+                            ->where('year_be', (int) $year)
+                            ->values())
+                            ->map(fn ($row) => [
+                                'title' => trim((string) ($row->title ?? '')) ?: '-',
+                                'meta' => trim((string) ($row->reference ?? '')) ?: '-',
+                                'type' => $code . ' ' . ($eaFullNameMap[$code] ?? $code),
+                                'link' => trim((string) ($row->link ?? '')) ?: null,
+                                'year' => (int) $year,
+                                'people' => [],
+                            ])
+                            ->values()];
+                    }),
+            ];
+        });
+        $impactTrendItemsByYear = $impactTrendYears->mapWithKeys(function ($year) use ($filtered, $impactCodes, $sortRowsNewestFirst, $eaFullNameMap) {
+            return [(string) $year => $sortRowsNewestFirst($filtered
+                ->whereIn('type_code', $impactCodes->all())
+                ->where('year_be', (int) $year)
+                ->values())
+                ->map(function ($row) use ($eaFullNameMap) {
+                    $code = trim((string) ($row->type_code ?? ''));
+
+                    return [
+                        'title' => trim((string) ($row->title ?? '')) ?: '-',
+                        'meta' => trim((string) ($row->reference ?? '')) ?: '-',
+                        'type' => trim($code . ' ' . ($eaFullNameMap[$code] ?? $code)),
+                        'link' => trim((string) ($row->link ?? '')) ?: null,
+                        'year' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : (int) $year,
+                        'people' => [],
+                    ];
+                })
+                ->values()];
+        });
+        $communicationOutputCount = (int) $filtered
+            ->whereIn('type_code', ['EA108', 'EA112', 'EA114', 'EA115'])
+            ->count();
+        $adoptionOutputCount = (int) $filtered->where('type_code', 'EA109')->count();
+        $buildOutputItems = fn (Collection $rows, int $limit = 6): Collection => $sortRowsNewestFirst($rows->values())
+            ->take($limit)
+            ->map(fn ($row) => (object) [
+                'title' => trim((string) ($row->title ?? '')) ?: '-',
+                'reference' => trim((string) ($row->reference ?? '')) ?: '-',
+                'year' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null,
+                'type_code' => trim((string) ($row->type_code ?? '')),
+                'source_label' => trim((string) ($row->source_label ?? '')),
+                'link' => trim((string) ($row->link ?? '')) ?: null,
+            ]);
+        $longCycleProjects = $projectAnalysisRows
+            ->filter(fn (Project $project) => $matchesProjectTypeKeyword($project, ['cohort', 'prospective', 'longitudinal', 'ติดตาม', 'ระยะยาว']))
+            ->take(6)
+            ->map(fn (Project $project) => (object) [
+                'name' => trim((string) ($project->project_name_th ?? '')) ?: '-',
+                'code' => trim((string) ($project->project_code ?? '')),
+                'year' => $this->normalizeYearFilter($project->start_year),
+                'type' => $normalizeProjectType($project->project_type),
+                'link' => route('projects.show', $project),
+            ])
+            ->values();
+        $dataSourceCounts = $dataSourceOptions
+            ->mapWithKeys(fn ($option) => [
+                $option => (int) $projectAnalysisRows
+                    ->filter(fn (Project $project) => $normalizeDataSourceCategory($project->data_source ?? null) === $option)
+                    ->count(),
+            ]);
+        $dataSourceTrendYears = $projectAnalysisRows
+            ->map(fn (Project $project) => $this->normalizeYearFilter($project->start_year))
+            ->filter(fn ($year) => is_numeric($year))
+            ->map(fn ($year) => (int) $year)
+            ->unique()
+            ->sort()
+            ->values();
+        $dataSourceTrend = [
+            'years' => $dataSourceTrendYears,
+            'series' => $dataSourceOptions->mapWithKeys(fn ($option) => [
+                $option => $dataSourceTrendYears
+                    ->map(fn ($year) => (int) $projectAnalysisRows
+                        ->filter(fn (Project $project) => (int) $this->normalizeYearFilter($project->start_year) === (int) $year)
+                        ->filter(fn (Project $project) => $normalizeDataSourceCategory($project->data_source ?? null) === $option)
+                        ->count())
+                    ->values(),
+            ]),
+        ];
+        $missingDataSourceCount = (int) $projectAnalysisRows
+            ->filter(fn (Project $project) => trim((string) ($project->data_source ?? '')) === '')
+            ->count();
+        $missingDataSourceProjects = $projectAnalysisRows
+            ->filter(fn (Project $project) => trim((string) ($project->data_source ?? '')) === '')
+            ->take(6)
+            ->map(fn (Project $project) => (object) [
+                'name' => trim((string) ($project->project_name_th ?? '')) ?: '-',
+                'code' => trim((string) ($project->project_code ?? '')),
+                'year' => $this->normalizeYearFilter($project->start_year),
+                'type' => $normalizeProjectType($project->project_type),
+                'link' => route('projects.show', $project),
+            ])
+            ->values();
+        $projectAnalysisTotal = (int) $projectAnalysisRows->count();
+        $analysisUsers = User::query()
+            ->select(['id', 'prefix', 'name', 'prefix_en', 'name_en', 'email', 'role', 'position', 'profile_photo_path', 'updated_at'])
+            ->where('role', '!=', User::ROLE_RESIGNED)
+            ->orderBy('name')
+            ->get()
+            ->values();
+        $personalStatsMap = $this->buildPersonalUserStatsMap($analysisUsers);
+        $personHighlights = $analysisUsers
+            ->map(function (User $user) use ($projectAnalysisRows, $buildParticipantRows, $normalizeProjectType, $personalStatsMap, $sirirajProjects, $yearFrom, $yearTo, $currentYearBe) {
+                $aliases = collect([
+                    $this->normalizePersonNameForMatch($user->full_name),
+                    $this->normalizePersonNameForMatch((string) $user->name),
+                    $this->normalizePersonNameForMatch($user->research_display_name),
+                    $this->normalizePersonNameForMatch((string) ($user->name_en ?? '')),
+                ])->filter()->unique()->values();
+
+                $matchedProjects = $projectAnalysisRows->map(function (Project $project) use ($buildParticipantRows, $user, $aliases) {
+                    $matchedRoles = $buildParticipantRows($project)
+                        ->filter(function ($participant) use ($user, $aliases) {
+                            if ((int) ($participant->user_id ?? 0) > 0 && (int) $participant->user_id === (int) $user->id) {
+                                return true;
+                            }
+
+                            return $aliases->contains($this->normalizePersonNameForMatch($participant->name ?? null));
+                        })
+                        ->pluck('role')
+                        ->unique()
+                        ->values();
+
+                    if ($matchedRoles->isEmpty()) {
+                        return null;
+                    }
+
+                    return (object) [
+                        'project' => $project,
+                        'roles' => $matchedRoles,
+                    ];
+                })->filter()->values();
+
+                $roleCounts = [
+                    'pi' => (int) $matchedProjects->filter(fn ($row) => $row->roles->contains('PI'))->count(),
+                    'co_pi' => (int) $matchedProjects->filter(fn ($row) => $row->roles->contains('Co-PI'))->count(),
+                    'co_research' => (int) $matchedProjects->filter(fn ($row) => $row->roles->contains('Co-Research'))->count(),
+                ];
+                $totalProjects = array_sum($roleCounts);
+                if ($totalProjects <= 0) {
+                    return null;
+                }
+
+                $topTheme = $matchedProjects
+                    ->map(fn ($row) => $normalizeProjectType($row->project->project_type))
+                    ->filter()
+                    ->countBy()
+                    ->sortDesc()
+                    ->keys()
+                    ->first();
+                $rangeStart = is_numeric($yearFrom) ? (int) $yearFrom : 2565;
+                $rangeEnd = is_numeric($yearTo) ? (int) $yearTo : $currentYearBe;
+                $rangeLabel = $rangeEnd === $currentYearBe
+                    ? 'ปี ' . $rangeStart . '-ปัจจุบัน'
+                    : 'ปี ' . $rangeStart . '-' . $rangeEnd;
+                $denominator = max(1, (int) $sirirajProjects->count());
+                $sharePct = round(($totalProjects / $denominator) * 100, 1);
+                $trendText = $rangeLabel . ' มี ' . number_format($totalProjects) . ' โครงการ คิดเป็น ' . number_format($sharePct, 1) . '% ของโครงการที่มีคนศิริราชร่วม';
+                $stats = $personalStatsMap->get((int) $user->id, $this->emptyPersonalStats());
+
+                return (object) [
+                    'user' => $user,
+                    'name' => $user->full_name ?: $user->name,
+                    'position' => trim((string) ($user->position ?? '')),
+                    'profile_photo_url' => $this->resolveUserProfilePhotoUrl($user),
+                    'role_counts' => $roleCounts,
+                    'total_projects' => $totalProjects,
+                    'total_outputs' => (int) ($stats['total_outputs'] ?? 0),
+                    'top_theme' => $topTheme ?: '-',
+                    'trend_text' => $trendText,
+                    'link' => route('outputs.people.show', $this->personalOutputRouteKey($user)),
+                ];
+            })
+            ->filter()
+            ->sortByDesc(fn ($person) => ($person->total_projects * 10) + $person->total_outputs)
+            ->take(8)
+            ->values();
+        $userById = $analysisUsers->keyBy('id');
+        $positionForParticipant = function ($row) use ($userById): string {
+            $user = ((int) ($row->user_id ?? 0) > 0) ? $userById->get((int) $row->user_id) : null;
+
+            return trim((string) ($user?->position ?? ''));
+        };
+        $clinicalAffiliationKeywords = [
+            'department of medicine',
+            'division of endocrinology',
+            'endocrinology',
+            'metabolism',
+            'surgery',
+            'pediatrics',
+            'paediatrics',
+            'orthopaedic',
+            'orthopedic',
+            'radiology',
+            'anesthesiology',
+            'anaesthesiology',
+            'obstetrics',
+            'gynecology',
+            'gynaecology',
+            'psychiatry',
+            'dentistry',
+            'dental',
+            'ภาควิชาอายุรศาสตร์',
+            'ภาควิชาศัลยศาสตร์',
+            'ภาควิชากุมาร',
+            'ภาควิชารังสี',
+            'ภาควิชาวิสัญญี',
+            'ภาควิชาจิตเวช',
+            'ภาควิชาสูติ',
+            'ทันต',
+        ];
+        $hasClinicalAffiliationSignal = static function ($row) use ($clinicalAffiliationKeywords): bool {
+            $affiliation = mb_strtolower(trim((string) ($row->affiliation ?? '')), 'UTF-8');
+
+            return $affiliation !== '' && Str::contains($affiliation, $clinicalAffiliationKeywords);
+        };
+        $hasNursingSignal = static function ($row): bool {
+            $name = mb_strtolower(trim((string) ($row->name ?? '')), 'UTF-8');
+            $affiliation = mb_strtolower(trim((string) ($row->affiliation ?? '')), 'UTF-8');
+            if ($name !== '' && Str::contains($name, ['พว.', 'พยาบาล', 'nurse'])) {
+                return true;
+            }
+
+            return $affiliation !== '' && Str::contains($affiliation, [
+                'ฝ่ายการพยาบาล',
+                'งานการพยาบาล',
+                'คณะพยาบาล',
+                'สำนักวิชาพยาบาล',
+                'nursing department',
+                'department of nursing',
+                'school of nursing',
+                'faculty of nursing',
+            ]);
+        };
+        $professionGroup = function ($row) use ($positionForParticipant, $hasNursingSignal): string {
+            $text = mb_strtolower(trim(($positionForParticipant($row) ?: '') . ' ' . ($row->name ?? '')), 'UTF-8');
+            if (Str::contains($text, ['พยาบาล', 'nurse']) || $hasNursingSignal($row)) {
+                return 'พยาบาล';
+            }
+            if (Str::contains($text, ['นพ.', 'พญ.', 'แพทย์', 'doctor', 'physician'])) {
+                return 'แพทย์ / Clinical expert';
+            }
+            if (Str::contains($text, ['เภสัช', 'pharmac'])) {
+                return 'เภสัชกร';
+            }
+            if (Str::contains($text, ['data', 'engineer', 'developer', 'analyst', 'สถิติ', 'วิเคราะห์'])) {
+                return 'Data / Analyst';
+            }
+
+            return 'นักวิจัย / เจ้าหน้าที่วิจัย';
+        };
+        $professionSourceForParticipant = function ($row) use ($positionForParticipant, $hasNursingSignal): array {
+            $position = $positionForParticipant($row);
+            if ($position !== '') {
+                return ['label' => 'จากข้อมูลตำแหน่ง', 'position' => $position, 'evidence' => null];
+            }
+            if ($hasNursingSignal($row)) {
+                return [
+                    'label' => 'จากชื่อ/affiliation พยาบาล',
+                    'position' => null,
+                    'evidence' => trim((string) ($row->affiliation ?? '')) ?: trim((string) ($row->name ?? '')),
+                ];
+            }
+
+            return ['label' => 'จากคำนำหน้า/คำในชื่อ', 'position' => null, 'evidence' => null];
+        };
+        $peopleTypeLabels = [
+            'unit' => 'คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ',
+            'siriraj' => 'คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล',
+            'external' => 'คนนอกคณะฯ',
+        ];
+        $professionPeopleTypeLabels = collect($peopleTypeLabels)->only(['unit', 'siriraj'])->all();
+        $peopleTypeMix = collect($peopleTypeLabels)->map(function ($label, $key) use ($projectParticipantRows) {
+            $rows = $projectParticipantRows->where('people_type', $key)->values();
+
+            return (object) [
+                'key' => $key,
+                'label' => $label,
+                'projects' => (int) $rows->pluck('project_id')->unique()->count(),
+                'people' => (int) $rows->pluck('researcher_key')->filter()->unique()->count(),
+                'role_entries' => (int) $rows->count(),
+                'pi_projects' => (int) $rows->where('role', 'PI')->pluck('project_id')->unique()->count(),
+                'co_pi_projects' => (int) $rows->where('role', 'Co-PI')->pluck('project_id')->unique()->count(),
+                'co_research_projects' => (int) $rows->where('role', 'Co-Research')->pluck('project_id')->unique()->count(),
+            ];
+        })->values();
+        $contributionTotalResearchers = (int) $projectParticipantRows
+            ->whereIn('people_type', ['unit', 'siriraj', 'external'])
+            ->pluck('researcher_key')
+            ->filter()
+            ->unique()
+            ->count();
+        $sirirajExpertRows = $projectParticipantRows
+            ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
+            ->filter(fn ($row) => $professionGroup($row) === 'แพทย์ / Clinical expert')
+            ->filter(fn ($row) => Str::startsWith(trim((string) ($row->theme ?? '')), ['01', '02', '04']))
+            ->values();
+        $sirirajExpertAllRows = $projectParticipantAllRows
+            ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
+            ->filter(fn ($row) => $professionGroup($row) === 'แพทย์ / Clinical expert')
+            ->filter(fn ($row) => Str::startsWith(trim((string) ($row->theme ?? '')), ['01', '02', '04']))
+            ->values();
+        $sirirajClinicalRows = $projectParticipantRows
+            ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
+            ->filter(fn ($row) => $professionGroup($row) === 'แพทย์ / Clinical expert')
+            ->values();
+        $expertYears = $sirirajClinicalRows
+            ->pluck('year')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+        $firstYearByExpert = $sirirajClinicalRows
+            ->groupBy('researcher_key')
+            ->map(fn ($rows) => (int) $rows->pluck('year')->filter()->min());
+        $expertTrend = [
+            'years' => $expertYears,
+            'people' => $expertYears->map(fn ($year) => (int) $sirirajClinicalRows->where('year', (int) $year)->pluck('researcher_key')->filter()->unique()->count())->values(),
+            'new_people' => $expertYears->map(fn ($year) => (int) $firstYearByExpert->filter(fn ($firstYear) => (int) $firstYear === (int) $year)->count())->values(),
+            'projects' => $expertYears->map(fn ($year) => (int) $sirirajClinicalRows->where('year', (int) $year)->pluck('project_id')->unique()->count())->values(),
+            'total_people' => (int) $sirirajClinicalRows->pluck('researcher_key')->filter()->unique()->count(),
+            'total_projects' => (int) $sirirajClinicalRows->pluck('project_id')->unique()->count(),
+        ];
+        $newExpertsByYear = $expertYears
+            ->reverse()
+            ->take(4)
+            ->map(function ($year) use ($sirirajClinicalRows, $firstYearByExpert, $userById, $professionGroup) {
+                $rows = $sirirajClinicalRows
+                    ->filter(fn ($row) => (int) ($firstYearByExpert[$row->researcher_key] ?? 0) === (int) $year)
+                    ->unique('researcher_key')
+                    ->take(6)
+                    ->map(function ($row) use ($userById, $professionGroup) {
+                        $user = ((int) ($row->user_id ?? 0) > 0) ? $userById->get((int) $row->user_id) : null;
+
+                        return (object) [
+                            'name' => $user?->full_name ?: $row->name,
+                            'position' => trim((string) ($user?->position ?? '')),
+                            'profile_photo_url' => $user ? $this->resolveUserProfilePhotoUrl($user) : 'https://ui-avatars.com/api/?name=' . urlencode((string) $row->name) . '&background=0F172A&color=fff&size=128',
+                            'role' => $row->role,
+                            'theme' => $row->theme,
+                        ];
+                    })
+                    ->values();
+
+                return (object) [
+                    'year' => (int) $year,
+                    'count' => (int) $rows->count(),
+                    'people' => $rows,
+                ];
+            })
+            ->values();
+        $clinicalLedThemeMeta = [
+            'ageing' => [
+                'label' => 'Ageing and Frailty',
+                'prefixes' => ['01'],
+                'color' => '#4f46e5',
+            ],
+            'rwe' => [
+                'label' => 'Real-World Evidence',
+                'prefixes' => ['04'],
+                'color' => '#0f766e',
+            ],
+        ];
+        $clinicalLedThemeKey = static function (?string $theme) use ($clinicalLedThemeMeta): ?string {
+            $text = trim((string) $theme);
+            foreach ($clinicalLedThemeMeta as $key => $meta) {
+                if (Str::startsWith($text, $meta['prefixes'])) {
+                    return $key;
+                }
+            }
+
+            return null;
+        };
+        $clinicalLedIntegrationRows = $projectParticipantRows
+            ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
+            ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) !== null)
+            ->values();
+        $clinicalLedIntegrationYears = $clinicalLedIntegrationRows
+            ->pluck('year')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+        $clinicalLedIntegrationTrend = [
+            'years' => $clinicalLedIntegrationYears,
+            'people' => $clinicalLedIntegrationYears
+                ->map(fn ($year) => (int) $clinicalLedIntegrationRows
+                    ->where('year', (int) $year)
+                    ->pluck('researcher_key')
+                    ->filter()
+                    ->unique()
+                    ->count())
+                ->values(),
+            'projects' => $clinicalLedIntegrationYears
+                ->map(fn ($year) => (int) $clinicalLedIntegrationRows
+                    ->where('year', (int) $year)
+                    ->pluck('project_id')
+                    ->unique()
+                    ->count())
+                ->values(),
+            'ageing_projects' => $clinicalLedIntegrationYears
+                ->map(fn ($year) => (int) $clinicalLedIntegrationRows
+                    ->where('year', (int) $year)
+                    ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === 'ageing')
+                    ->pluck('project_id')
+                    ->unique()
+                    ->count())
+                ->values(),
+            'ageing_people' => $clinicalLedIntegrationYears
+                ->map(fn ($year) => (int) $clinicalLedIntegrationRows
+                    ->where('year', (int) $year)
+                    ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === 'ageing')
+                    ->pluck('researcher_key')
+                    ->filter()
+                    ->unique()
+                    ->count())
+                ->values(),
+            'rwe_projects' => $clinicalLedIntegrationYears
+                ->map(fn ($year) => (int) $clinicalLedIntegrationRows
+                    ->where('year', (int) $year)
+                    ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === 'rwe')
+                    ->pluck('project_id')
+                    ->unique()
+                    ->count())
+                ->values(),
+            'rwe_people' => $clinicalLedIntegrationYears
+                ->map(fn ($year) => (int) $clinicalLedIntegrationRows
+                    ->where('year', (int) $year)
+                    ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === 'rwe')
+                    ->pluck('researcher_key')
+                    ->filter()
+                    ->unique()
+                    ->count())
+                ->values(),
+        ];
+        $clinicalLedIntegrationRoleStats = collect([
+            ['key' => 'pi', 'label' => 'PI', 'role' => 'PI'],
+            ['key' => 'co_pi', 'label' => 'Co-PI', 'role' => 'Co-PI'],
+            ['key' => 'co_research', 'label' => 'Co-Research', 'role' => 'Co-Research'],
+        ])->map(function ($roleMeta) use ($clinicalLedIntegrationRows) {
+            $rows = $clinicalLedIntegrationRows->where('role', $roleMeta['role'])->values();
+
+            return (object) [
+                'key' => $roleMeta['key'],
+                'label' => $roleMeta['label'],
+                'projects' => (int) $rows->pluck('project_id')->unique()->count(),
+                'people' => (int) $rows->pluck('researcher_key')->filter()->unique()->count(),
+            ];
+        })->values();
+        $clinicalLedIntegrationRoleTrend = collect([
+            'PI' => 'pi',
+            'Co-PI' => 'co_pi',
+            'Co-Research' => 'co_research',
+        ])->mapWithKeys(fn ($key, $role) => [
+            $key => $clinicalLedIntegrationYears
+                ->map(fn ($year) => (int) $clinicalLedIntegrationRows
+                    ->where('year', (int) $year)
+                    ->where('role', $role)
+                    ->pluck('researcher_key')
+                    ->filter()
+                    ->unique()
+                    ->count())
+                ->values(),
+        ]);
+        $clinicalLedIntegrationItemsByThemeYear = collect($clinicalLedThemeMeta)
+            ->mapWithKeys(function ($meta, $themeKey) use ($clinicalLedIntegrationRows, $clinicalLedThemeKey, $userById) {
+                $themeRows = $clinicalLedIntegrationRows
+                    ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === $themeKey)
+                    ->values();
+
+                $itemsByYear = $themeRows
+                    ->groupBy(fn ($row) => (string) ((int) ($row->year ?? 0)))
+                    ->map(function (Collection $yearRows) use ($meta, $userById) {
+                        return $yearRows
+                            ->groupBy('project_id')
+                            ->map(function (Collection $projectRows) use ($meta, $userById) {
+                                $first = $projectRows->first();
+                                $people = $projectRows
+                                    ->groupBy('person_key')
+                                    ->map(function (Collection $personRows) use ($userById) {
+                                        $personFirst = $personRows->first();
+                                        $user = ((int) ($personFirst->user_id ?? 0) > 0)
+                                            ? $userById->get((int) $personFirst->user_id)
+                                            : null;
+                                        $name = trim((string) ($user?->full_name ?: $personFirst->name)) ?: '-';
+
+                                        return (object) [
+                                            'name' => $name,
+                                            'role' => $personRows->pluck('role')->filter()->unique()->sort()->implode(' / '),
+                                            'affiliation' => trim((string) ($personFirst->affiliation ?? '')),
+                                            'profile_photo_url' => $user
+                                                ? $this->resolveUserProfilePhotoUrl($user)
+                                                : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=0F172A&color=fff&size=128',
+                                        ];
+                                    })
+                                    ->sortBy(fn ($person) => (string) ($person->role ?? ''))
+                                    ->values();
+
+                                return (object) [
+                                    'title' => trim((string) ($first->project_name ?? '')) ?: '-',
+                                    'meta' => 'คนศิริราชร่วม ' . number_format((int) $people->count()) . ' คน',
+                                    'type' => $meta['label'],
+                                    'year' => (int) ($first->year ?? 0),
+                                    'link' => trim((string) ($first->project_link ?? '')) ?: null,
+                                    'people' => $people,
+                                ];
+                            })
+                            ->sortByDesc(fn ($item) => (int) ($item->year ?? 0))
+                            ->values();
+                    })
+                    ->all();
+
+                return [$themeKey => $itemsByYear];
+            });
+        $clinicalLedIntegrationPeopleByYear = $clinicalLedIntegrationYears
+            ->map(function ($year) use ($clinicalLedIntegrationRows, $clinicalLedThemeKey, $clinicalLedThemeMeta, $userById) {
+                $yearRows = $clinicalLedIntegrationRows
+                    ->where('year', (int) $year)
+                    ->values();
+                $people = $yearRows
+                    ->groupBy('researcher_key')
+                    ->map(function (Collection $personRows) use ($clinicalLedThemeKey, $clinicalLedThemeMeta, $userById) {
+                        $first = $personRows->first();
+                        $user = ((int) ($first->user_id ?? 0) > 0) ? $userById->get((int) $first->user_id) : null;
+                        $name = trim((string) ($user?->full_name ?: $first->name)) ?: '-';
+                        $themeKeys = $personRows
+                            ->map(fn ($row) => $clinicalLedThemeKey($row->theme ?? null))
+                            ->filter()
+                            ->unique()
+                            ->values();
+
+                        return (object) [
+                            'name' => $name,
+                            'position' => trim((string) ($user?->position ?? '')),
+                            'affiliation' => trim((string) ($first->affiliation ?? '')),
+                            'profile_photo_url' => $user
+                                ? $this->resolveUserProfilePhotoUrl($user)
+                                : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=0F172A&color=fff&size=128',
+                            'roles' => $personRows->pluck('role')->filter()->unique()->sort()->values(),
+                            'theme_labels' => $themeKeys
+                                ->map(fn ($key) => $clinicalLedThemeMeta[$key]['label'] ?? $key)
+                                ->values(),
+                            'projects' => (int) $personRows->pluck('project_id')->unique()->count(),
+                        ];
+                    })
+                    ->sortByDesc(fn ($person) => (int) $person->projects)
+                    ->take(10)
+                    ->values();
+
+                return (object) [
+                    'year' => (int) $year,
+                    'people' => $people,
+                    'people_count' => (int) $yearRows->pluck('researcher_key')->filter()->unique()->count(),
+                    'project_count' => (int) $yearRows->pluck('project_id')->unique()->count(),
+                    'ageing_people_count' => (int) $yearRows
+                        ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === 'ageing')
+                        ->pluck('researcher_key')
+                        ->filter()
+                        ->unique()
+                        ->count(),
+                    'ageing_project_count' => (int) $yearRows
+                        ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === 'ageing')
+                        ->pluck('project_id')
+                        ->unique()
+                        ->count(),
+                    'rwe_people_count' => (int) $yearRows
+                        ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === 'rwe')
+                        ->pluck('researcher_key')
+                        ->filter()
+                        ->unique()
+                        ->count(),
+                    'rwe_project_count' => (int) $yearRows
+                        ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === 'rwe')
+                        ->pluck('project_id')
+                        ->unique()
+                        ->count(),
+                    'pi_count' => (int) $yearRows->where('role', 'PI')->pluck('researcher_key')->filter()->unique()->count(),
+                    'co_pi_count' => (int) $yearRows->where('role', 'Co-PI')->pluck('researcher_key')->filter()->unique()->count(),
+                    'co_research_count' => (int) $yearRows->where('role', 'Co-Research')->pluck('researcher_key')->filter()->unique()->count(),
+                ];
+            })
+            ->values();
+        $clinicalLedIntegrationThemes = collect($clinicalLedThemeMeta)
+            ->map(function ($meta, $key) use ($clinicalLedIntegrationRows, $clinicalLedThemeKey, $userById) {
+                $rows = $clinicalLedIntegrationRows
+                    ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) === $key)
+                    ->values();
+                $people = $rows
+                    ->groupBy('researcher_key')
+                    ->map(function (Collection $personRows) use ($userById) {
+                        $first = $personRows->first();
+                        $user = ((int) ($first->user_id ?? 0) > 0) ? $userById->get((int) $first->user_id) : null;
+                        $name = trim((string) ($user?->full_name ?: $first->name)) ?: '-';
+
+                        return (object) [
+                            'name' => $name,
+                            'position' => trim((string) ($user?->position ?? '')),
+                            'affiliation' => trim((string) ($first->affiliation ?? '')),
+                            'profile_photo_url' => $user
+                                ? $this->resolveUserProfilePhotoUrl($user)
+                                : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=0F172A&color=fff&size=128',
+                            'roles' => $personRows->pluck('role')->filter()->unique()->sort()->values(),
+                            'projects' => (int) $personRows->pluck('project_id')->unique()->count(),
+                            'years' => $personRows->pluck('year')->filter()->unique()->sort()->values(),
+                            'project_names' => $personRows->groupBy('project_id')
+                                ->map(fn ($projectRows) => trim((string) ($projectRows->first()->project_name ?? '')) ?: '-')
+                                ->take(3)
+                                ->values(),
+                        ];
+                    })
+                    ->sortByDesc(fn ($person) => (int) $person->projects)
+                    ->values();
+
+                return (object) [
+                    'key' => $key,
+                    'label' => $meta['label'],
+                    'color' => $meta['color'],
+                    'projects' => (int) $rows->pluck('project_id')->unique()->count(),
+                    'people' => (int) $rows->pluck('researcher_key')->filter()->unique()->count(),
+                    'people_list' => $people,
+                ];
+            })
+            ->values();
+        $clinicalLedIntegration = [
+            'trend' => $clinicalLedIntegrationTrend,
+            'items_by_theme_year' => $clinicalLedIntegrationItemsByThemeYear,
+            'role_trend' => $clinicalLedIntegrationRoleTrend,
+            'role_stats' => $clinicalLedIntegrationRoleStats,
+            'people_by_year' => $clinicalLedIntegrationPeopleByYear,
+            'themes' => $clinicalLedIntegrationThemes,
+            'total_people' => (int) $clinicalLedIntegrationRows->pluck('researcher_key')->filter()->unique()->count(),
+            'total_projects' => (int) $clinicalLedIntegrationRows->pluck('project_id')->unique()->count(),
+        ];
+        $frameworkTrendYears = $projectAnalysisRows
+            ->map(fn (Project $project) => $this->normalizeYearFilter($project->start_year))
+            ->merge($filtered->pluck('year_be'))
+            ->filter(fn ($year) => is_numeric($year))
+            ->map(fn ($year) => (int) $year)
+            ->unique()
+            ->sort()
+            ->values();
+        $frameworkTrendSeries = [
+            'trust' => $frameworkTrendYears
+                ->map(fn ($year) => (int) $projectParticipantRows
+                    ->whereIn('people_type', ['unit', 'siriraj'])
+                    ->where('year', (int) $year)
+                    ->pluck('project_id')
+                    ->unique()
+                    ->count())
+                ->values(),
+            'truth' => $frameworkTrendYears
+                ->map(fn ($year) => (int) $sirirajExpertRows
+                    ->where('year', (int) $year)
+                    ->pluck('project_id')
+                    ->unique()
+                    ->count())
+                ->values(),
+            'policy_impact' => $frameworkTrendYears
+                ->map(fn ($year) => (int) $filtered
+                    ->whereIn('type_code', ['EA109', 'EA102', 'EA106'])
+                    ->where('year_be', (int) $year)
+                    ->count())
+                ->values(),
+        ];
+        $latestFrameworkMetric = static function (Collection $rows, callable $countForYear) use ($currentYearBe): array {
+            $latestYear = $rows
+                ->pluck('year')
+                ->filter(fn ($year) => is_numeric($year))
+                ->map(fn ($year) => (int) $year)
+                ->filter(fn ($year) => $year <= (int) $currentYearBe)
+                ->max();
+
+            return [
+                'year' => $latestYear ? (int) $latestYear : null,
+                'value' => $latestYear ? (int) $countForYear((int) $latestYear) : 0,
+            ];
+        };
+        $latestImpactOutputYear = $rows
+            ->whereIn('type_code', ['EA109', 'EA102', 'EA106'])
+            ->pluck('year_be')
+            ->filter(fn ($year) => is_numeric($year))
+            ->map(fn ($year) => (int) $year)
+            ->filter(fn ($year) => $year <= (int) $currentYearBe)
+            ->max();
+        $frameworkLatestMetrics = [
+            'trust' => $latestFrameworkMetric(
+                $projectParticipantAllRows->whereIn('people_type', ['unit', 'siriraj'])->values(),
+                fn (int $year) => $projectParticipantAllRows
+                    ->whereIn('people_type', ['unit', 'siriraj'])
+                    ->where('year', $year)
+                    ->pluck('project_id')
+                    ->unique()
+                    ->count()
+            ),
+            'truth' => $latestFrameworkMetric(
+                $sirirajExpertAllRows,
+                fn (int $year) => $sirirajExpertAllRows
+                    ->where('year', $year)
+                    ->pluck('project_id')
+                    ->unique()
+                    ->count()
+            ),
+            'policy_impact' => [
+                'year' => $latestImpactOutputYear ? (int) $latestImpactOutputYear : null,
+                'value' => $latestImpactOutputYear
+                    ? (int) $rows
+                        ->whereIn('type_code', ['EA109', 'EA102', 'EA106'])
+                        ->where('year_be', (int) $latestImpactOutputYear)
+                        ->count()
+                    : 0,
+            ],
+        ];
+        $frameworkPeopleForRows = function (Collection $rows) use ($userById): Collection {
+            return $rows
+                ->unique('researcher_key')
+                ->take(6)
+                ->map(function ($row) use ($userById) {
+                    $user = ((int) ($row->user_id ?? 0) > 0) ? $userById->get((int) $row->user_id) : null;
+                    $name = trim((string) ($user?->full_name ?: $row->name)) ?: '-';
+
+                    return [
+                        'name' => $name,
+                        'role' => trim((string) ($row->role ?? '')),
+                        'affiliation' => trim((string) ($row->affiliation ?? '')),
+                        'profile_photo_url' => $user
+                            ? $this->resolveUserProfilePhotoUrl($user)
+                            : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=0F172A&color=fff&size=128',
+                    ];
+                })
+                ->values();
+        };
+        $frameworkTrendItems = [
+            'trust' => $frameworkTrendYears
+                ->mapWithKeys(function ($year) use ($projectParticipantRows, $frameworkPeopleForRows) {
+                    return [(string) $year => $projectParticipantRows
+                        ->whereIn('people_type', ['unit', 'siriraj'])
+                        ->where('year', (int) $year)
+                        ->groupBy('project_id')
+                        ->map(function ($rows) use ($frameworkPeopleForRows) {
+                            $first = $rows->first();
+
+                            return [
+                                'title' => $first->project_name,
+                                'meta' => collect($rows)->pluck('name')->filter()->unique()->take(4)->implode(', '),
+                                'type' => $first->theme,
+                                'link' => $first->project_link,
+                                'year' => (int) ($first->year ?? 0) ?: null,
+                                'people' => $frameworkPeopleForRows(collect($rows)),
+                            ];
+                        })
+                        ->values()];
+                }),
+            'truth' => $frameworkTrendYears
+                ->mapWithKeys(function ($year) use ($sirirajExpertRows, $frameworkPeopleForRows) {
+                    return [(string) $year => $sirirajExpertRows
+                        ->where('year', (int) $year)
+                        ->groupBy('project_id')
+                        ->map(function ($rows) use ($frameworkPeopleForRows) {
+                            $first = $rows->first();
+
+                            return [
+                                'title' => $first->project_name,
+                                'meta' => collect($rows)->pluck('name')->filter()->unique()->take(4)->implode(', '),
+                                'type' => $first->theme,
+                                'link' => $first->project_link,
+                                'year' => (int) ($first->year ?? 0) ?: null,
+                                'people' => $frameworkPeopleForRows(collect($rows)),
+                            ];
+                        })
+                        ->values()];
+                }),
+            'policy_impact' => $frameworkTrendYears
+                ->mapWithKeys(function ($year) use ($filtered, $normalizeProjectType, $sortRowsNewestFirst) {
+                    return [(string) $year => $sortRowsNewestFirst($filtered
+                        ->whereIn('type_code', ['EA109', 'EA102', 'EA106'])
+                        ->where('year_be', (int) $year)
+                        ->values())
+                        ->map(fn ($row) => [
+                            'title' => trim((string) ($row->title ?? '')) ?: '-',
+                            'meta' => trim((string) ($row->reference ?? '')) ?: '-',
+                            'type' => trim((string) ($row->project_type ?? '')) !== ''
+                                ? $normalizeProjectType($row->project_type)
+                                : (trim((string) ($row->source_label ?? '')) ?: trim((string) ($row->type_code ?? ''))),
+                            'link' => trim((string) ($row->link ?? '')) ?: null,
+                            'year' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null,
+                        ])
+                        ->values()];
+                }),
+        ];
+        $frameworkAllItems = collect($frameworkTrendItems)
+            ->mapWithKeys(fn ($yearGroups, $key) => [
+                $key => collect($yearGroups)
+                    ->flatMap(fn ($items) => collect($items))
+                    ->unique(fn ($item) => ($item['title'] ?? '') . '|' . ($item['meta'] ?? ''))
+                    ->sortByDesc(fn ($item) => (int) ($item['year'] ?? 0))
+                    ->values(),
+            ]);
+        $facultySirirajRoleStats = collect([
+            ['key' => 'pi', 'label' => 'PI', 'role' => 'PI'],
+            ['key' => 'co_pi', 'label' => 'Co-PI', 'role' => 'Co-PI'],
+            ['key' => 'co_research', 'label' => 'Co-Research', 'role' => 'Co-Research'],
+        ])->map(function ($roleMeta) use ($projectParticipantRows) {
+            $rows = $projectParticipantRows
+                ->whereIn('people_type', ['unit', 'siriraj'])
+                ->where('role', $roleMeta['role'])
+                ->values();
+
+            return (object) [
+                'key' => $roleMeta['key'],
+                'label' => $roleMeta['label'],
+                'projects' => (int) $rows->pluck('project_id')->unique()->count(),
+                'people' => (int) $rows->pluck('researcher_key')->filter()->unique()->count(),
+            ];
+        })->values();
+        $frameworkInterpretRows = collect([
+            [
+                'key' => 'trust',
+                'label' => 'Contribute to Siriraj',
+                'title' => 'โครงการที่คนศิริราชมีส่วนร่วม',
+                'unit' => 'โครงการ',
+                'detail' => 'โครงการที่มีคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพและคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลร่วมเป็น PI, Co-PI หรือ Co-Research ในการสร้าง evidence จากบริบทจริงของศิริราช',
+                'role_stats' => $facultySirirajRoleStats,
+            ],
+            [
+                'key' => 'truth',
+                'label' => 'Integrate Clinical Skill',
+                'title' => 'การมีส่วนร่วมของบุคลากรสายแพทย์ศิริราชในงานวิจัยเชิงระบบ',
+                'subtitle' => 'ด้าน Aging and Frailty, Health Systems and HTA และ Real-World Evidence',
+                'unit' => 'โครงการ',
+                'detail' => 'มีแพทย์/clinical expert ศิริราชร่วม เพื่อดูการ integrate clinical skill เข้ากับงานวิจัยเชิงระบบ',
+            ],
+            [
+                'key' => 'policy_impact',
+                'label' => 'Contribution',
+                'title' => 'ผลงานที่สนับสนุนระบบสุขภาพระดับประเทศ',
+                'unit' => 'รายการ',
+                'detail' => 'สู่การขยายขอบเขตงานวิจัยจากเดิมที่เน้น “นวัตกรรมภายนอก” สู่การสร้าง evidence จากบริบทจริงของศิริราช (real-world data & practice-based evidence) เพื่อสนับสนุนการกำหนดนโยบายสุขภาพ',
+            ],
+        ])->map(function ($row) use ($frameworkTrendYears, $frameworkTrendSeries, $frameworkLatestMetrics) {
+            $values = collect($frameworkTrendSeries[$row['key']] ?? [])->map(fn ($value) => (int) $value)->values();
+            $latestMetric = $frameworkLatestMetrics[$row['key']] ?? ['year' => null, 'value' => 0];
+            $latest = (int) ($latestMetric['value'] ?? 0);
+            $latestYear = (int) ($latestMetric['year'] ?? 0);
+            $peak = (int) ($values->max() ?? 0);
+            $peakIndex = $values->search($peak);
+            $peakYear = $peakIndex !== false ? (int) ($frameworkTrendYears->values()->get($peakIndex) ?? 0) : null;
+
+            return (object) array_merge($row, [
+                'latest' => $latest,
+                'latest_year' => $latestYear,
+                'total' => (int) $values->sum(),
+                'peak' => $peak,
+                'peak_year' => $peakYear,
+            ]);
+        })->values();
+        $frameworkTrendSummary = (object) [
+            'headline' => 'ช่วงปี 2567-2568 กลุ่มโครงการและผลงานโตชัดที่สุด',
+            'body' => 'เห็นทั้งโครงการที่มีคนศิริราชร่วม และโครงการที่มีแพทย์/clinical expert ศิริราชร่วมเพิ่มขึ้น แปลว่ากลุ่มโครงการเริ่มขยับจากงานที่พึ่งนวัตกรรมภายนอก ไปสู่ evidence จากบริบทจริงของศิริราชมากขึ้น',
+            'focus' => 'แต่จำนวน Contribution ยังน้อยกว่า volume ของโครงการ จึงควรอ่านว่า “มีฐาน evidence และ clinical contribution มากขึ้นแล้ว แต่การแปลงเป็น report, policy recommendation หรือ change in practice ยังเป็นช่องว่างหลัก”',
+            'note' => 'ปี 2569 ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร',
+        ];
+        $professionMix = $projectParticipantRows
+            ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
+            ->groupBy(fn ($row) => $professionGroup($row))
+            ->map(fn ($rows, $label) => (object) [
+                'label' => $label,
+                'people' => (int) $rows->pluck('researcher_key')->filter()->unique()->count(),
+                'projects' => (int) $rows->pluck('project_id')->unique()->count(),
+                'role_entries' => (int) $rows->count(),
+            ])
+            ->sortByDesc('people')
+            ->values();
+        $professionTypeMatrix = $projectParticipantRows
+            ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
+            ->groupBy(fn ($row) => $professionGroup($row))
+            ->map(function ($rows, $professionLabel) use ($professionPeopleTypeLabels, $positionForParticipant, $professionSourceForParticipant) {
+                $cells = collect($professionPeopleTypeLabels)->mapWithKeys(function ($typeLabel, $typeKey) use ($rows, $positionForParticipant, $professionSourceForParticipant) {
+                    $typeRows = $rows->where('people_type', $typeKey)->values();
+                    $peopleList = $typeRows
+                        ->groupBy('researcher_key')
+                        ->map(function ($personRows) use ($positionForParticipant, $professionSourceForParticipant) {
+                            $first = $personRows->first();
+                            $position = $positionForParticipant($first);
+                            $professionSource = $professionSourceForParticipant($first);
+
+                            return (object) [
+                                'name' => trim((string) ($first->name ?? '-')) ?: '-',
+                                'position' => $position,
+                                'profession_source' => $professionSource['label'],
+                                'profession_evidence' => $professionSource['evidence'],
+                                'affiliation' => trim((string) ($first->affiliation ?? '')),
+                                'roles' => $personRows->pluck('role')->filter()->unique()->sort()->values(),
+                                'projects' => (int) $personRows->pluck('project_id')->unique()->count(),
+                                'years' => $personRows->pluck('year')->filter()->unique()->sort()->values(),
+                                'themes' => $personRows->pluck('theme')->filter()->unique()->take(2)->values(),
+                            ];
+                        })
+                        ->sortBy('name', SORT_NATURAL)
+                        ->values();
+
+                    return [$typeKey => (object) [
+                        'label' => $typeLabel,
+                        'people' => (int) $typeRows->pluck('researcher_key')->filter()->unique()->count(),
+                        'projects' => (int) $typeRows->pluck('project_id')->unique()->count(),
+                        'people_list' => $peopleList,
+                    ]];
+                });
+
+                return (object) [
+                    'label' => $professionLabel,
+                    'cells' => $cells,
+                    'total_people' => (int) $rows->pluck('researcher_key')->filter()->unique()->count(),
+                    'total_projects' => (int) $rows->pluck('project_id')->unique()->count(),
+                ];
+            })
+            ->sortByDesc('total_people')
+            ->values();
+        $contributionNetwork = [
+            'people_type_mix' => $peopleTypeMix,
+            'total_researchers' => $contributionTotalResearchers,
+            'expert_trend' => $expertTrend,
+            'new_experts_by_year' => $newExpertsByYear,
+            'clinical_led_integration' => $clinicalLedIntegration,
+            'profession_mix' => $professionMix,
+            'profession_type_matrix' => $professionTypeMatrix,
+        ];
+        $policyImpact = [
+            'project_count' => $projectAnalysisTotal,
+            'siriraj_project_count' => (int) $sirirajProjects->count(),
+            'siriraj_participant_count' => (int) $sirirajParticipants->count(),
+            'siriraj_role_counts' => $sirirajRoleCounts,
+            'siriraj_role_person_counts' => $sirirajRolePersonCounts,
+            'siriraj_projects' => $sirirajProjects->take(8)->map(function (Project $project) use ($buildParticipantRows, $normalizeProjectType, $parseBudget) {
+                $participants = $buildParticipantRows($project)
+                    ->filter(fn ($participant) => (bool) ($participant->is_siriraj ?? false))
+                    ->map(fn ($participant) => trim(($participant->role ?? '') . ': ' . ($participant->name ?? '')))
+                    ->values();
+
+                return (object) [
+                    'name' => trim((string) ($project->project_name_th ?? '')) ?: '-',
+                    'code' => trim((string) ($project->project_code ?? '')),
+                    'type' => $normalizeProjectType($project->project_type),
+                    'year' => $this->normalizeYearFilter($project->start_year),
+                    'budget' => $parseBudget($project->budget),
+                    'people' => $participants,
+                    'link' => route('projects.show', $project),
+                ];
+            })->values(),
+            'impact_outputs' => $impactOutputRows,
+            'impact_output_items' => $impactOutputItems,
+            'impact_trend' => [
+                'years' => $impactTrendYears,
+                'series' => $impactTrendSeries,
+                'items' => $impactTrendItems,
+                'items_by_year' => $impactTrendItemsByYear,
+            ],
+            'framework_trend' => [
+                'years' => $frameworkTrendYears,
+                'series' => $frameworkTrendSeries,
+                'items' => $frameworkTrendItems,
+                'all_items' => $frameworkAllItems,
+                'interpretation' => $frameworkInterpretRows,
+                'summary' => $frameworkTrendSummary,
+            ],
+            'people_highlights' => $personHighlights,
+            'contribution_network' => $contributionNetwork,
+            'data_source_counts' => $dataSourceCounts,
+            'data_source_trend' => $dataSourceTrend,
+            'data_source_missing_count' => $missingDataSourceCount,
+            'hta' => [
+                'project_count' => (int) $htaProjects->count(),
+                'budget_total' => (float) $htaProjects->sum(fn (Project $project) => $parseBudget($project->budget)),
+                'siriraj_project_count' => (int) $htaProjects->filter($hasSirirajInvolvement)->count(),
+                'siriraj_participant_count' => (int) $htaProjects
+                    ->flatMap($buildParticipantRows)
+                    ->filter(fn ($participant) => (bool) ($participant->is_siriraj ?? false))
+                    ->count(),
+                'budget_by_year' => $htaBudgetByYear,
+                'max_budget' => $maxHtaBudget,
+                'projects' => $htaProjects->filter($hasSirirajInvolvement)->take(6)->map(fn (Project $project) => (object) [
+                    'name' => trim((string) ($project->project_name_th ?? '')) ?: '-',
+                    'code' => trim((string) ($project->project_code ?? '')),
+                    'year' => $this->normalizeYearFilter($project->start_year),
+                    'link' => route('projects.show', $project),
+                ])->values(),
+            ],
+            'clinical_led' => [
+                'project_count' => (int) $clinicalLedProjects->count(),
+                'siriraj_project_count' => (int) $clinicalLedProjects->filter($hasSirirajInvolvement)->count(),
+                'siriraj_participant_count' => (int) $clinicalLedProjects
+                    ->flatMap($buildParticipantRows)
+                    ->filter(fn ($participant) => (bool) ($participant->is_siriraj ?? false))
+                    ->count(),
+            ],
+            'weakness' => [
+                'publication_count' => (int) $paperRows->count(),
+                'policy_output_count' => (int) $impactOutputRows->sum(),
+                'communication_output_count' => $communicationOutputCount,
+                'adoption_output_count' => $adoptionOutputCount,
+                'data_source_missing_pct' => $projectAnalysisTotal > 0 ? round(($missingDataSourceCount / $projectAnalysisTotal) * 100, 1) : 0.0,
+                'publication_items' => $buildOutputItems($paperRows),
+                'communication_items' => $buildOutputItems($filtered->whereIn('type_code', ['EA108', 'EA112', 'EA114', 'EA115'])->values()),
+                'adoption_items' => $buildOutputItems($filtered->where('type_code', 'EA109')->values()),
+                'long_cycle_projects' => $longCycleProjects,
+                'missing_data_source_projects' => $missingDataSourceProjects,
+            ],
+        ];
+
         return view('outputs.visualization', [
             'rows' => $filtered,
             'sourceLabelMap' => $sourceLabelMap,
@@ -2025,6 +3398,7 @@ class OutputController extends Controller
             'paperSummary' => $paperSummary,
             'presentationSummary' => $presentationSummary,
             'textbookSummary' => $textbookSummary,
+            'networkingSummary' => $networkingSummary,
             'paperQuartileLabels' => $paperQuartileLabels,
             'paperQuartileValues' => $paperQuartileValues,
             'paperRankingLabels' => $paperQuartileLabels,
@@ -2033,6 +3407,10 @@ class OutputController extends Controller
             'presentationActivityValues' => $presentationActivity->values()->values(),
             'textbookYearLabels' => $textbookYears->keys()->values(),
             'textbookYearValues' => $textbookYears->values()->values(),
+            'networkingYearLabels' => $networkingYears->keys()->values(),
+            'networkingYearValues' => $networkingYears->values()->values(),
+            'networkingYearSeries' => $networkingYearSeries,
+            'policyImpact' => $policyImpact,
         ]);
     }
 
@@ -2986,6 +4364,7 @@ class OutputController extends Controller
             'Panel Discussion',
             'Keynote Speech',
             'World café',
+            'Moderator',
         ]);
 
         return [
@@ -5176,7 +6555,9 @@ class OutputController extends Controller
     private function normalizePersonNameForMatch(?string $value): string
     {
         $value = mb_strtolower(trim((string) $value), 'UTF-8');
-        $value = preg_replace('/\s+/u', '', $value) ?? '';
+        $value = preg_replace('/[\s.\x{200B}\x{200C}\x{200D}\x{FEFF}]+/u', '', $value) ?? '';
+        $titlePattern = '/^(?:ศาสตราจารย์|รองศาสตราจารย์|ผู้ช่วยศาสตราจารย์|อาจารย์|พันเอกหญิง|นายแพทย์|แพทย์หญิง|ทันตแพทย์หญิง|ทันตแพทย์|ดร|รศ|ผศ|ศ|อ|นพ|พญ|ทพญ|ทพ|ภกญ|ภก|คุณ|นาย|นางสาว|นาง|professor|associateprofessor|assistantprofessor|assocprof|asstprof|prof|doctor|dr|mr|mrs|ms)+/u';
+        $value = preg_replace($titlePattern, '', $value) ?? $value;
 
         return $value;
     }

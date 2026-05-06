@@ -488,7 +488,7 @@
                         <ul class="text-sm text-gray-600 mt-2 list-disc list-inside">
                             <li>เมื่อเลือก EA103 ระบบจะเปิดส่วน Conference</li>
                             <li>กรอกชื่อเวที/Conference</li>
-                            <li>ประเภทการนำเสนอ (Oral/Poster/Panel/Invited)</li>
+                            <li>ประเภทการนำเสนอ (Oral/Poster/Abstract/Panel/Keynote/World café/Moderator)</li>
                             <li>สถานที่และหมายเหตุ</li>
                         </ul>
                     </div>

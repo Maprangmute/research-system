@@ -739,7 +739,7 @@
 
     <!-- ✅ main ก็ใช้ container เช่นกัน -->
     @php
-        $isFullWidthPage = request()->routeIs('users.index');
+        $isFullWidthPage = request()->routeIs('users.index') || request()->routeIs('outputs.visualization');
     @endphp
     <main class="{{ $isModalView ? 'pt-4 pb-4' : 'pt-24 pb-6' }} {{ $isFullWidthPage ? 'w-full px-0' : 'container mx-auto px-4' }}">
         @if (isset($header))
@@ -1743,11 +1743,13 @@
         }
 
         if (field instanceof HTMLSelectElement && field.tomselect) {
-            toggleClasses(field.tomselect.wrapper);
             toggleClasses(field.tomselect.control);
             const controlInput = field.tomselect.control_input;
             if (controlInput instanceof HTMLElement) {
                 toggleClasses(controlInput);
+            }
+            if (field.tomselect.wrapper instanceof HTMLElement) {
+                field.tomselect.wrapper.classList.remove('border-red-500', 'bg-red-50');
             }
             if (invalid) {
                 field.tomselect.wrapper?.setAttribute?.('aria-invalid', 'true');
@@ -5155,8 +5157,8 @@
             });
 
             return Array.from(rows.entries())
-                ->sort((a, b) => Number(a[0]) - Number(b[0]))
-                ->map(([, row]) => row);
+                .sort((a, b) => Number(a[0]) - Number(b[0]))
+                .map(([, row]) => row);
         };
 
         const disablePackedFields = (form) => {

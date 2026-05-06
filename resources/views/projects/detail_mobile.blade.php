@@ -498,6 +498,10 @@
                 <div class="field-value">{{ $project->theme ?? '-' }}</div>
             </div>
             <div class="field-row">
+                <div class="field-label">แหล่งที่มาของข้อมูล (Data source) และวิธีการใช้ข้อมูล (Method / approach)</div>
+                <div class="field-value">{{ $project->data_source ?? '-' }}</div>
+            </div>
+            <div class="field-row">
                 <div class="field-label">ลักษณะโครงการ</div>
                 <div class="field-value">{{ $project->project_list ?? '-' }}</div>
             </div>

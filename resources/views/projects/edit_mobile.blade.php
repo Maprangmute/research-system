@@ -24,6 +24,9 @@
     $piInternalAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
     $internalCoresearchUnit = 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
     $internalCoresearchAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
+    $rolePersonTypeInternalFaculty = 'ภายในคณะแพทยศาสตร์ศิริราชพยาบาล';
+    $rolePersonTypeExternalFaculty = 'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล';
+    $rolePersonTypeInternalUnit = $internalCoresearchUnit;
     $bookAuthorNameOptions = $allUsers
         ->map(fn($user) => trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')))
         ->filter()
@@ -611,9 +614,11 @@
             <h3 class="font-semibold text-lg text-blue-700 mb-2">A: ข้อมูลโครงการ</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาไทย)</span>
+                    <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาไทย) <span class="text-red-500">*</span></span>
                     <input name="project_name_th" value="{{ old('project_name_th', $project->project_name_th) }}"
-                        class="w-full border p-2 rounded">
+                        class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาระบุชื่อโครงการภาษาไทย')"
+                        oninput="this.setCustomValidity('')">
                 </label>
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">ชื่อโครงการ (ภาษาอังกฤษ)</span>
@@ -704,6 +709,8 @@
                     </select>
                 </label>
 
+                @include('projects.partials.data_classification_fields', ['project' => $project])
+
                 <label class="w-full">
                     <span class="block text-sm text-gray-700 mb-1">เอกสารโครงการ (Proposal / IRB)</span>
                     <input name="shortcut_link" value="{{ old('shortcut_link', $project->shortcut_link) }}"
@@ -780,8 +787,10 @@
 
 
                 <label class="w-full">
-                    <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน</span>
-                    <select name="funding_type" class="w-full border p-2 rounded">
+                    <span class="block text-sm text-gray-700 mb-1">DA102 - ประเภทแหล่งทุน <span class="text-red-500">*</span></span>
+                    <select name="funding_type" class="w-full border p-2 rounded" required
+                        oninvalid="this.setCustomValidity('กรุณาเลือกประเภทแหล่งทุน')"
+                        oninput="this.setCustomValidity('')">
                         <option value="" disabled
                             {{ old('funding_type', $project->funding_type) ? '' : 'selected' }}>
                             กรุณาเลือกประเภทแหล่งทุน
@@ -1026,8 +1035,10 @@
                     <select name="pi_person_type" data-pi-person-type class="w-full border p-2 rounded" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกประเภทผู้วิจัยหลัก')" oninput="this.setCustomValidity('')">
                         <option value="">กรุณาเลือก</option>
-                        <option value="internal" {{ old('pi_person_type', $project->pi_user_id ? 'internal' : 'external') === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
-                        <option value="external" {{ old('pi_person_type', $project->pi_user_id ? 'internal' : 'external') === 'external' ? 'selected' : '' }}>คนนอก</option>
+                        @php $selectedPiPersonType = old('pi_person_type', $project->pi_person_type ?: ($project->pi_user_id ? $rolePersonTypeInternalUnit : $rolePersonTypeExternalFaculty)); @endphp
+                        <option value="{{ $rolePersonTypeInternalFaculty }}" {{ $selectedPiPersonType === $rolePersonTypeInternalFaculty ? 'selected' : '' }}>{{ $rolePersonTypeInternalFaculty }}</option>
+                        <option value="{{ $rolePersonTypeExternalFaculty }}" {{ in_array($selectedPiPersonType, [$rolePersonTypeExternalFaculty, 'external'], true) ? 'selected' : '' }}>{{ $rolePersonTypeExternalFaculty }}</option>
+                        <option value="{{ $rolePersonTypeInternalUnit }}" {{ in_array($selectedPiPersonType, [$rolePersonTypeInternalUnit, 'internal'], true) ? 'selected' : '' }}>{{ $rolePersonTypeInternalUnit }}</option>
                     </select>
                 </label>
 
@@ -1103,8 +1114,10 @@
                                     oninvalid="this.setCustomValidity('กรุณาเลือกประเภท COPI')"
                                     oninput="this.setCustomValidity('')">
                                     <option value="">กรุณาเลือก</option>
-                                    <option value="internal" {{ old('copis.' . $i . '.person_type', !empty($copi['user_id'] ?? null) ? 'internal' : 'external') === 'internal' ? 'selected' : '' }}>คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
-                                    <option value="external" {{ old('copis.' . $i . '.person_type', !empty($copi['user_id'] ?? null) ? 'internal' : 'external') === 'external' ? 'selected' : '' }}>คนนอก</option>
+                                    @php $selectedCopiPersonType = old('copis.' . $i . '.person_type', ($copi['person_type'] ?? null) ?: (!empty($copi['user_id'] ?? null) ? $rolePersonTypeInternalUnit : $rolePersonTypeExternalFaculty)); @endphp
+                                    <option value="{{ $rolePersonTypeInternalFaculty }}" {{ $selectedCopiPersonType === $rolePersonTypeInternalFaculty ? 'selected' : '' }}>{{ $rolePersonTypeInternalFaculty }}</option>
+                                    <option value="{{ $rolePersonTypeExternalFaculty }}" {{ in_array($selectedCopiPersonType, [$rolePersonTypeExternalFaculty, 'external'], true) ? 'selected' : '' }}>{{ $rolePersonTypeExternalFaculty }}</option>
+                                    <option value="{{ $rolePersonTypeInternalUnit }}" {{ in_array($selectedCopiPersonType, [$rolePersonTypeInternalUnit, 'internal'], true) ? 'selected' : '' }}>{{ $rolePersonTypeInternalUnit }}</option>
                                 </select>
                             </label>
 
@@ -1929,6 +1942,7 @@
                                                 <option value="Panel Discussion" {{ $pt === 'Panel Discussion' ? 'selected' : '' }}>Panel Discussion</option>
                                                 <option value="Keynote Speech" {{ $pt === 'Keynote Speech' ? 'selected' : '' }}>Keynote Speech</option>
                                                 <option value="World café" {{ $pt === 'World café' ? 'selected' : '' }}>World café</option>
+                                                <option value="Moderator" {{ $pt === 'Moderator' ? 'selected' : '' }}>Moderator</option>
                                             </select>
                                         </label>
                                         <label>
@@ -2608,8 +2622,9 @@
                         oninvalid="this.setCustomValidity('กรุณาเลือกประเภท COPI')"
                         oninput="this.setCustomValidity('')">
                         <option value="">กรุณาเลือก</option>
-                        <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
-                        <option value="external">คนนอก</option>
+                        <option value="${ROLE_PERSON_TYPE_INTERNAL_FACULTY}">${ROLE_PERSON_TYPE_INTERNAL_FACULTY}</option>
+                        <option value="${ROLE_PERSON_TYPE_EXTERNAL_FACULTY}">${ROLE_PERSON_TYPE_EXTERNAL_FACULTY}</option>
+                        <option value="${ROLE_PERSON_TYPE_INTERNAL_UNIT}">${ROLE_PERSON_TYPE_INTERNAL_UNIT}</option>
                     </select>
                 </label>
                 <label class="col-span-12 md:col-span-5">
@@ -4579,6 +4594,9 @@
         }
 
         const PI_INTERNAL_AFFILIATION = @json($piInternalAffiliation);
+        const ROLE_PERSON_TYPE_INTERNAL_FACULTY = @json($rolePersonTypeInternalFaculty);
+        const ROLE_PERSON_TYPE_EXTERNAL_FACULTY = @json($rolePersonTypeExternalFaculty);
+        const ROLE_PERSON_TYPE_INTERNAL_UNIT = @json($rolePersonTypeInternalUnit);
         const CORESEARCH_INTERNAL_UNIT = @json($internalCoresearchUnit);
         const CORESEARCH_INTERNAL_AFFILIATION = @json($internalCoresearchAffiliation);
 
@@ -4609,14 +4627,45 @@
             element.style.display = visible ? '' : 'none';
         }
 
+        function syncSearchSelectInvalidState(select) {
+            const wrapper = select?.tomselect?.wrapper;
+            if (!(select instanceof HTMLSelectElement) || !(wrapper instanceof HTMLElement)) return;
+            const control = select.tomselect?.control || wrapper.querySelector('[data-project-search-select-toggle]');
+            if (!(control instanceof HTMLElement)) return;
+            const invalid = select.required && !select.disabled && !select.checkValidity();
+            wrapper.classList.remove('border-red-500', 'bg-red-50', 'ring-1', 'ring-red-300');
+            wrapper.style.borderColor = '';
+            wrapper.style.backgroundColor = '';
+            control.classList.toggle('border-red-500', invalid);
+            control.classList.toggle('bg-red-50', invalid);
+            control.style.borderColor = invalid ? '#ef4444' : '';
+            control.style.backgroundColor = invalid ? '#fef2f2' : '';
+        }
+
+        function bindSearchSelectInvalidState(select) {
+            if (!(select instanceof HTMLSelectElement) || select.dataset.searchInvalidBound === '1') return;
+            select.dataset.searchInvalidBound = '1';
+            ['change', 'input', 'blur', 'invalid'].forEach((eventName) => {
+                select.addEventListener(eventName, () => requestAnimationFrame(() => syncSearchSelectInvalidState(select)));
+            });
+        }
+
+        document.addEventListener('submit', (event) => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            form.querySelectorAll('select').forEach((select) => syncSearchSelectInvalidState(select));
+        }, true);
+
         function setTomSelectWrapperState(select, visible, disabled) {
             const wrapper = select?.tomselect?.wrapper;
             if (!(wrapper instanceof HTMLElement)) return;
+            bindSearchSelectInvalidState(select);
             wrapper.classList.toggle('hidden', !visible);
             wrapper.hidden = !visible;
             wrapper.style.display = visible ? '' : 'none';
             wrapper.classList.toggle('opacity-60', !!disabled);
             wrapper.classList.toggle('pointer-events-none', !!disabled);
+            syncSearchSelectInvalidState(select);
         }
 
         function syncPiPersonFields(scope = document) {
@@ -4647,12 +4696,12 @@
             const tom = userSelect.tomselect || null;
             const modeChanged = previousMode !== '' && previousMode !== mode;
 
-            if (mode === 'internal' && userIdInput.value && !String(userSelect.value || '').trim()) {
+            if (mode === ROLE_PERSON_TYPE_INTERNAL_UNIT && userIdInput.value && !String(userSelect.value || '').trim()) {
                 userSelect.value = String(userIdInput.value).trim();
                 if (tom) tom.setValue(String(userIdInput.value).trim(), true);
             }
 
-            if (mode === 'internal') {
+            if (mode === ROLE_PERSON_TYPE_INTERNAL_UNIT) {
                 if (modeChanged) {
                     manualInput.value = '';
                     userIdInput.value = '';
@@ -4685,7 +4734,7 @@
 
                 if (tom) tom.enable();
                 setTomSelectWrapperState(userSelect, true, false);
-            } else if (mode === 'external') {
+            } else if (mode !== '') {
                 if (modeChanged) {
                     if (tom) {
                         tom.clear(true);
@@ -4839,17 +4888,17 @@
                 ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
                 : null;
 
-            if (mode === 'internal' && userIdInput.value && String(userSelect.value || '').trim() !== String(userIdInput.value).trim()) {
+            if (mode === ROLE_PERSON_TYPE_INTERNAL_UNIT && userIdInput.value && String(userSelect.value || '').trim() !== String(userIdInput.value).trim()) {
                 userSelect.value = String(userIdInput.value).trim();
                 if (tom) tom.setValue(String(userIdInput.value).trim(), true);
             }
 
-            if (mode === 'internal' && !userSelect.value && matchedUser) {
+            if (mode === ROLE_PERSON_TYPE_INTERNAL_UNIT && !userSelect.value && matchedUser) {
                 userSelect.value = String(matchedUser.id);
                 if (tom) tom.setValue(String(matchedUser.id), true);
             }
 
-            if (mode === 'internal') {
+            if (mode === ROLE_PERSON_TYPE_INTERNAL_UNIT) {
                 if (modeChanged) {
                     manualInput.value = '';
                     userIdInput.value = '';
@@ -4882,7 +4931,7 @@
 
                 if (tom) tom.enable();
                 setTomSelectWrapperState(userSelect, true, false);
-            } else if (mode === 'external') {
+            } else if (mode !== '') {
                 if (modeChanged) {
                     if (tom) {
                         tom.clear(true);
@@ -5376,6 +5425,7 @@
           <option value="Panel Discussion">Panel Discussion</option>
           <option value="Keynote Speech">Keynote Speech</option>
           <option value="World café">World café</option>
+                                <option value="Moderator">Moderator</option>
         </select>
       </label>
       <label>

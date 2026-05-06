@@ -12,7 +12,7 @@ class Copi extends Model
     protected $touches = ['project'];
 
     protected $fillable = [
-        'project_id', 'user_id', 'name', 'affiliation'
+        'project_id', 'user_id', 'name', 'affiliation', 'person_type'
     ];
 
     // ==== Log ทุก action ที่เกี่ยวกับ Copi ====

@@ -782,11 +782,18 @@
                 <div class="summary-value" style="font-size:15pt;">{{ text_or_dash($project->theme) }}</div>
                 <div class="summary-note">กลุ่มเนื้อหาของงาน</div>
             </td>
+            <td style="background:#f8fafc;">
+                <div class="summary-label">Data source / Method</div>
+                <div class="summary-value" style="font-size:13pt;">{{ text_or_dash($project->data_source) }}</div>
+                <div class="summary-note">แหล่งที่มาของข้อมูลและวิธีการใช้ข้อมูล</div>
+            </td>
             <td style="background:#ecfeff;">
                 <div class="summary-label">งบประมาณ</div>
                 <div class="summary-value">{{ $project->budget !== null ? number_format($project->budget, 2) : '-' }}</div>
                 <div class="summary-note">บาท</div>
             </td>
+        </tr>
+        <tr>
             <td style="background:#fff7ed;">
                 <div class="summary-label">จำนวน Outputs</div>
                 <div class="summary-value">{{ number_format($project->outputs->count()) }}</div>
