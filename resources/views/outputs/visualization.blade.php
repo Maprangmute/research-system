@@ -1597,6 +1597,9 @@
             <section class="fade-up hero-panel section-panel section-panel--slate p-7 md:p-10">
                 <div class="hero-kicker">Research Outputs Overview</div>
                 <h1 class="hero-title mt-3 font-semibold text-slate-900">{{ $pageTitle }}</h1>
+                <p class="mt-3 max-w-5xl text-sm font-normal leading-relaxed text-slate-500 md:text-base">
+                    เป็นการใช้ AI ช่วยวิเคราะห์เบื้องต้น อันเกิดจาก data ของหน่วย และยังต้องอาศัยการร่วมกันคิดของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน
+                </p>
 
             </section>
 
@@ -1678,22 +1681,35 @@
             <section class="fade-up panel section-panel section-panel--indigo policy-shell p-5 md:p-6">
                 <div class="policy-brief">
                     <div class="section-tag section-tag--indigo">การเชื่อมโยงงานวิจัยสู่การตัดสินใจเชิงนโยบาย</div>
-                    <div class="max-w-5xl">
-                        <h2 class="mt-4 text-3xl font-semibold leading-tight text-slate-900 md:text-4xl">
-                            จากโจทย์บริการจริง ไปสู่ผลต่อระบบบริการและนโยบาย
+                    <div class="w-full">
+                        <h2 class="mt-4 max-w-[1500px] font-semibold text-slate-900" style="font-size: clamp(24px, 1.9vw, 32px); line-height: 1.42; letter-spacing: 0;">
+                            โครงการและผลงาน Siriraj Health Policy สามารถสร้างและใช้ประโยชน์จากบริบทศิริราช เพื่อขับเคลื่อนการตัดสินใจเชิงนโยบายได้มากเพียงใด
                         </h2>
-                        <p class="mt-4 max-w-4xl text-base leading-relaxed text-slate-600">
-                            ดูว่าโครงการและผลงานของหน่วยสร้าง evidence จากบริบทจริงของศิริราช
-                            และเชื่อมต่อไปสู่การตัดสินใจเชิงนโยบายได้มากเพียงใด
+                        <p class="mt-4 max-w-none text-base leading-relaxed text-slate-600 md:text-lg">
+                            Policy-Relevant Decision-Making = (Clinical Insight + Epidemiological Evidence + Economic Value) × Communication = Policy Impact
                         </p>
+                        <div class="mt-4 grid gap-3 md:grid-cols-3">
+                            <div class="rounded-2xl border border-indigo-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Trust (Credibility)</div>
+                                <div class="mt-1 text-sm leading-relaxed text-slate-700">Clinical Relevance (Siriraj, Real-world)</div>
+                            </div>
+                            <div class="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Truth (Validation)</div>
+                                <div class="mt-1 text-sm leading-relaxed text-slate-700">System Analysis / Epidemiology + Health Economics (HTA)</div>
+                            </div>
+                            <div class="rounded-2xl border border-orange-100 bg-white/80 px-4 py-3">
+                                <div class="text-xs font-semibold uppercase tracking-wide text-orange-700">Translation (Impact)</div>
+                                <div class="mt-1 text-sm leading-relaxed text-slate-700">Strategic Communication (to policy & practice)</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="policy-axis-card mt-4">
-                    <div class="policy-section-title">
-                        <div>
-                            <h3 class="text-base font-semibold text-slate-900">Policy-Relevant Decision-Making Trend</h3>
-                            <p class="mt-1 text-sm text-slate-600">ดูแนวโน้มว่ากลุ่มโครงการและผลงานเชื่อมจาก clinical insight และ evidence ไปถึง communication และ policy impact แค่ไหน</p>
+                        <div class="policy-section-title">
+                            <div>
+                            <h3 class="text-base font-semibold text-slate-900">Trend of our work toward Policy-Relevant Decision-Making</h3>
+                            <p class="mt-1 text-sm text-slate-600">แนวโน้มของโครงการต่างๆ ว่าสามารถเชื่อม Clinical Insight ผ่านกระบวนการสร้าง Evidence และไปถึง communication และ policy impact แค่ไหน</p>
                         </div>
                         <span class="policy-pill">แสดงเป็นจำนวนต่อปี</span>
                     </div>
@@ -1704,7 +1720,7 @@
                             </div>
                             @if ($policyFrameworkSummary)
                                 <div class="mt-4 flex-1 rounded-2xl border border-sky-300 bg-sky-50 px-4 py-4">
-                                    <div class="text-xl font-semibold text-sky-950">สรุปจากแนวโน้ม</div>
+                                    <div class="text-xl font-semibold text-sky-950">Analysis Insight</div>
                                     <div class="mt-3 grid gap-2">
                                         <div class="rounded-xl bg-white/80 px-3 py-2">
                                             <div class="text-[11px] font-semibold text-sky-700">เกิดอะไรขึ้น</div>
@@ -1750,7 +1766,7 @@
                                                 <div class="mt-1 text-[11px] text-slate-500">{{ $item->unit ?? 'รายการ' }}</div>
                                             </div>
                                         </div>
-                                        <div class="text-xs leading-relaxed text-slate-600">{{ $item->detail }}</div>
+                                        <div class="whitespace-pre-line text-xs leading-relaxed text-slate-600">{{ $item->detail }}</div>
                                         @if (!empty($item->role_stats))
                                             <div class="grid gap-2 sm:grid-cols-3">
                                                 @foreach (collect($item->role_stats) as $roleStat)
@@ -1790,7 +1806,7 @@
                 <div class="policy-axis-card mt-4 hidden">
                     <div class="policy-section-title rounded-xl border border-indigo-100 px-3 py-3" style="background-color: #eef2ff;">
                         <div>
-                            <h3 class="text-xl font-semibold text-slate-900">Contribute to Siriraj</h3>
+                            <h3 class="text-xl font-semibold text-slate-900">Credibility</h3>
                             <p class="mt-1 max-w-4xl text-sm leading-relaxed text-indigo-950/80">สรุปว่าโครงการที่มีคนศิริราชร่วมเชื่อมกับคนกลุ่มใดบ้าง ทั้งคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล และคนนอกคณะฯ เพื่อเห็นฐาน evidence ที่เกิดจากบริบทจริงของศิริราชชัดขึ้น</p>
                         </div>
                         <span class="policy-pill">People / Projects</span>
@@ -1880,7 +1896,7 @@
                                         </div>
                                     </div>
                                     <div class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4">
-                                        <div class="text-sm font-semibold text-indigo-950">สรุปจากแนวโน้ม</div>
+                                        <div class="text-sm font-semibold text-indigo-950">Analysis Insight</div>
                                         <div class="mt-3 grid gap-3">
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
                                                 <div class="text-[11px] font-semibold text-indigo-700">เกิดอะไรขึ้น</div>
@@ -1997,10 +2013,10 @@
                     <div class="policy-axis-card">
                             <div class="policy-section-title rounded-xl border border-orange-200 px-3 py-3" style="background-color: #fff7ed;">
                                 <div>
-                                    <div class="text-xs font-semibold uppercase tracking-wide text-orange-700">Policy / Process / People</div>
-                                    <h3 class="mt-1 text-xl font-semibold text-slate-900">Contribution</h3>
+                                    <div class="text-xs font-semibold uppercase tracking-wide text-orange-700">IMPACT</div>
+                                    <h3 class="mt-1 text-xl font-semibold text-slate-900">Outputs contributing to Policy-Impact or Practice Change (No)</h3>
                                     <p class="mt-2 max-w-4xl text-sm leading-relaxed text-slate-700">
-                                        สรุปผลงานที่แปลงงานวิจัยไปสู่รายงาน ข้อเสนอเชิงนโยบาย และการเปลี่ยนแปลงในระบบบริการ เพื่อดูว่าหลักฐานจากโครงการถูกนำไปสนับสนุนระบบสุขภาพระดับประเทศมากแค่ไหน
+                                        จำนวนผลงานและรายละเอียดของผลงานที่มีส่วนในการผลักดันการเปลี่ยนแปลงในเชิงนโยบายหรือการปฏิบัติในระบบสุขภาพ โดยแบ่งตามประเภทผลงาน Change in Practices, Procedure, Policy / Reports and White Paper / Policy Recommendation
                                     </p>
                                 </div>
                             </div>
@@ -2009,7 +2025,7 @@
                                     <div class="flex flex-wrap items-center justify-between gap-2">
                                         <div>
                                             <div class="text-sm font-semibold text-slate-900">Trend ตามปี</div>
-                                            <div class="text-xs text-slate-500">จำนวน output ที่เกี่ยวกับ policy / process / people</div>
+                                            <div class="text-xs text-slate-500">จำนวน output ของ Change in Practices, Procedure, Policy / Reports and White Paper / Policy Recommendation</div>
                                         </div>
                                         <span class="policy-pill">{{ number_format((int) $policyImpactOutputs->sum()) }} รายการ</span>
                                     </div>
@@ -2018,7 +2034,7 @@
                                     </div>
                                     @if ($policyImpactTrendSummaryRows->isNotEmpty())
                                         <div class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4">
-                                            <div class="text-xl font-semibold text-indigo-950">สรุปจากแนวโน้ม</div>
+                                            <div class="text-xl font-semibold text-indigo-950">Analysis Insight</div>
                                             <div class="mt-3 grid gap-3">
                                                 <div class="rounded-xl bg-white/85 px-3 py-3">
                                                     <div class="text-[13px] font-semibold text-indigo-700">เกิดอะไรขึ้น</div>
@@ -2076,12 +2092,16 @@
 
                 <div class="policy-axis-card mt-4">
                     <div class="contribution-card">
-                                <div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4">
-                                    <div class="flex flex-wrap items-start justify-between gap-4">
-                                        <div>
-                                            <div class="text-xs font-semibold uppercase tracking-wide text-sky-700">Clinical-Led Integration</div>
-                                            <div class="mt-1 text-xl font-semibold text-slate-900">กลุ่มเนื้อหา Ageing, Health Systems and HTA และ Real-World Evidence (RWE)</div>
-                                            <div class="mt-2 max-w-5xl text-sm leading-relaxed text-slate-700">ดูแนวโน้มรายปีของจำนวนคนศิริราชที่มีส่วนร่วมในกลุ่ม Ageing, Health Systems and HTA และ Real-World Evidence (RWE) พร้อมแจกแจงตามบทบาท PI, Co-PI และ Co-Research</div>
+                                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+                                    <div class="flex w-full flex-wrap items-start justify-between gap-4">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Validation</div>
+                                            <div class="mt-1 text-xl font-semibold text-slate-900">Trend in Interest in policy work Among Siriraj Health Professionals</div>
+                                            <div class="mt-2 w-full whitespace-pre-line text-sm leading-relaxed text-slate-700">แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health Sytem)
+
+จำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย ที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์)  เข้ามาเป็นส่วนร่วม โดยแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย
+Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Technical Cohorts</div>
+                                            <div class="mt-4 w-full text-sm italic leading-relaxed text-slate-500">*Theme/เนื้อหา Rational Drug Use (RDU) และ Global Health อาจยังถูกมองเป็น Operational project ภายในคณะแพทยศาสตร์ศิริราชพยาบาล  มากกว่า Research model จึงยังไม่ถูกรวมในการวิเคราะห์</div>
                                         </div>
                                     </div>
                                 </div>
@@ -2169,10 +2189,10 @@
                                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
                                             <div>
-                                                <div class="text-sm font-semibold text-slate-900">Trend กลุ่มเนื้อหา Ageing / HTA / RWE ตามปี</div>
-                                                <div class="mt-1 text-xs text-slate-500">นับจำนวนคนศิริราชไม่ซ้ำในแต่ละกลุ่มเนื้อหาของแต่ละปี</div>
+                                                <div class="text-sm font-semibold text-slate-900">Trend กลุ่มเนื้อหา Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE) ตามปี</div>
+                                                <div class="mt-1 text-xs text-slate-500">แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health Sytem)</div>
                                             </div>
-                                            <span class="policy-pill">Ageing / HTA / RWE</span>
+                                            <span class="policy-pill">Ageing and Frailty / Health Systems and HTA / Real-World Evidence (RWE)</span>
                                         </div>
                                         <div class="clinical-led-chart-scroll">
                                             <div class="clinical-led-chart-inner">
@@ -2182,12 +2202,12 @@
                                     </div>
 
                                     <div class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4">
-                                        <div class="text-xl font-semibold text-indigo-950">สรุปจากแนวโน้ม</div>
+                                        <div class="text-xl font-semibold text-indigo-950">Analysis Insight</div>
                                         <div class="mt-3 grid gap-3">
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
                                         <div class="text-[13px] font-semibold text-indigo-700">ทิศทางหลัก</div>
                                         <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    ช่วงปี {{ $clinicalLedFirstYearRow?->year ?: '-' }} - {{ $clinicalLedLastYearRow?->year ?: '-' }} กลุ่ม Ageing / HTA / RWE {{ $clinicalLedTotalTrendShape }} จาก {{ number_format($clinicalLedFirstCount) }} เป็น {{ number_format($clinicalLedLastCount) }} คน จุดสูงสุดปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} ที่ {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คน โดยกลุ่มสะสมสูงสุดคือ {{ $clinicalLedTopTheme?->label ?? '-' }} {{ number_format((int) ($clinicalLedTopTheme?->people ?? 0)) }} คน
+                                                    ช่วงปี {{ $clinicalLedFirstYearRow?->year ?: '-' }} - {{ $clinicalLedLastYearRow?->year ?: '-' }} กลุ่ม Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE) {{ $clinicalLedTotalTrendShape }} จาก {{ number_format($clinicalLedFirstCount) }} เป็น {{ number_format($clinicalLedLastCount) }} คน จุดสูงสุดปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} ที่ {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คน โดยกลุ่มสะสมสูงสุดคือ {{ $clinicalLedTopTheme?->label ?? '-' }} {{ number_format((int) ($clinicalLedTopTheme?->people ?? 0)) }} คน
                                         </div>
                                     </div>
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
@@ -2199,7 +2219,7 @@
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
                                         <div class="text-[13px] font-semibold text-indigo-700">สิ่งที่เกิดขึ้น</div>
                                         <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    ปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} เป็นจุดสูงสุดของช่วงข้อมูล โดยมีบุคลากรศิริราชรวม {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คนในสามกลุ่มนี้ {{ $clinicalLedRweInterpretation }}
+                                                    ปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} เป็นจุดสูงสุดของช่วงข้อมูล โดยมีคนในหน่วยวิจัยฯ และคนภายในคณะแพทยศาสตร์ศิริราชรวม {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คนในสามกลุ่มนี้ {{ $clinicalLedRweInterpretation }}
                                         </div>
                                     </div>
                                             @if ((int) $currentYearBe === 2569)
@@ -2217,15 +2237,11 @@
                 <div class="policy-axis-card mt-4">
                     <div class="contribution-card">
                         <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-4">
-                            <div class="flex flex-wrap items-start justify-between gap-4">
-                                <div>
+                            <div class="flex w-full flex-wrap items-start justify-between gap-4">
+                                <div class="min-w-0 flex-1">
                                     <div class="text-xs font-semibold uppercase tracking-wide text-cyan-700">Data Literacy Skill</div>
-                                    <div class="mt-1 text-xl font-semibold text-slate-900">ทักษะการใช้ข้อมูลของกลุ่มโครงการ</div>
-                                    <div class="mt-2 max-w-5xl text-sm leading-relaxed text-slate-700">ดูว่ากลุ่มโครงการใช้ข้อมูลจากโลกจริงหรือเก็บข้อมูลใหม่มากน้อยแค่ไหน เพื่ออ่านทักษะการแปล ใช้ และสร้างข้อมูลในการตอบโจทย์วิจัย</div>
-                                </div>
-                                <div class="rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
-                                    <div class="metric text-2xl font-semibold text-slate-900">{{ number_format((int) $policyDataSourceCounts->sum()) }}</div>
-                                    <div class="text-xs text-slate-500">โครงการที่ระบุข้อมูล</div>
+                                    <div class="mt-1 text-xl font-semibold text-slate-900">ทักษะและประสบการณ์การใช้ข้อมูลประเภท Real-World Data</div>
+                                    <div class="mt-2 w-full text-sm leading-relaxed text-slate-700">จำนวนโครงการวิจัยทั้งหมดที่มีการใช้ข้อมูล Real-World Data, Big Data เช่น NHSO, National health exam survey, Si-Data plus</div>
                                 </div>
                             </div>
                         </div>
@@ -2289,7 +2305,7 @@
                                             ? 'น้ำหนักหลักอยู่ที่การเก็บข้อมูลใหม่เพื่อให้ตอบโจทย์โครงการ'
                                             : 'ยังไม่มีหมวด Data Source / Method ที่เด่นชัด');
                                 @endphp
-                                <div class="text-xl font-semibold text-cyan-950">สรุปจากแนวโน้ม</div>
+                                <div class="text-xl font-semibold text-cyan-950">Analysis Insight</div>
                                 <div class="mt-3 grid gap-3">
                                     <div class="rounded-xl bg-white/90 px-3 py-3">
                                         <div class="text-[13px] font-semibold text-cyan-700">เกิดอะไรขึ้น</div>
@@ -2462,11 +2478,14 @@
 
             </section>
 
-            <div class="fade-up mt-8">
-                <h2 class="text-2xl font-semibold leading-tight text-slate-950">ผลงานที่เกิดขึ้นในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</h2>
-            </div>
+            <section class="fade-up panel section-panel section-panel--teal mt-8 p-5 md:p-6">
+                <div class="section-tag section-tag--teal">Output Intelligence</div>
+                <h2 class="max-w-[1500px] font-semibold text-slate-900" style="font-size: clamp(24px, 1.9vw, 32px); line-height: 1.42; letter-spacing: 0;">
+                    ผลงานที่เกิดขึ้นในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
+                </h2>
+            </section>
 
-            <section class="fade-up panel section-panel section-panel--teal p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--teal mt-4 p-5 md:p-6">
                 <div class="flex flex-wrap items-end justify-between gap-3">
                     <div>
                         <div class="section-tag section-tag--teal">Theme Output</div>
@@ -3170,10 +3189,10 @@
 
             const frameworkTrendLabels = safeLabels(policyFrameworkTrendYears);
             const frameworkTrendMeta = {
-                trust: 'Contribute to Siriraj',
-                truth: 'Integrate Clinical Skill',
-                policy_impact: 'Contribution',
-                clinical_led: 'กลุ่มเนื้อหา Ageing / HTA / RWE'
+                trust: 'Credibility',
+                truth: 'Validation',
+                policy_impact: 'Impact',
+                clinical_led: 'กลุ่มเนื้อหา Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE)'
             };
             const frameworkOutputTypeStyles = @json($typeStyleMap);
             const frameworkTrendUnits = {
@@ -3995,7 +4014,7 @@
                 const items = normalizeFrameworkItems(policyImpactTrendItemsByYear?.[String(year)]);
                 if (!frameworkModal || !frameworkModalBody) return;
                 frameworkModalTone = frameworkToneStyles.policy_impact;
-                frameworkModalTitle.textContent = 'Contribution';
+                frameworkModalTitle.textContent = 'Impact';
                 frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} รายการ</span></span>`;
                 setFrameworkModalItems(items, 'รายการ', { year: String(year || '') });
                 showFrameworkModal();

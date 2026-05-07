@@ -3047,7 +3047,7 @@ class OutputController extends Controller
         $clinicalLedIntegrationRoleStats = collect([
             ['key' => 'pi', 'label' => 'PI', 'role' => 'PI'],
             ['key' => 'co_pi', 'label' => 'Co-PI', 'role' => 'Co-PI'],
-            ['key' => 'co_research', 'label' => 'Co-Research', 'role' => 'Co-Research'],
+            ['key' => 'co_research', 'label' => 'Co-Researcher', 'role' => 'Co-Research'],
         ])->map(function ($roleMeta) use ($clinicalLedIntegrationRows, $clinicalLedThemeKey, $clinicalLedThemeMeta) {
             $rows = $clinicalLedIntegrationRows->where('role', $roleMeta['role'])->values();
             $topTheme = $rows
@@ -3120,7 +3120,7 @@ class OutputController extends Controller
 
                                 return (object) [
                                     'title' => trim((string) ($first->project_name ?? '')) ?: '-',
-                                    'meta' => 'คนศิริราชร่วม ' . number_format((int) $people->count()) . ' คน',
+                                    'meta' => 'คนในหน่วยฯ/คณะศิริราชร่วม ' . number_format((int) $people->count()) . ' คน',
                                     'type' => $meta['label'],
                                     'year' => (int) ($first->year ?? 0),
                                     'link' => trim((string) ($first->project_link ?? '')) ?: null,
@@ -3431,7 +3431,7 @@ class OutputController extends Controller
         $facultySirirajRoleStats = collect([
             ['key' => 'pi', 'label' => 'PI', 'role' => 'PI'],
             ['key' => 'co_pi', 'label' => 'Co-PI', 'role' => 'Co-PI'],
-            ['key' => 'co_research', 'label' => 'Co-Research', 'role' => 'Co-Research'],
+            ['key' => 'co_research', 'label' => 'Co-Researcher', 'role' => 'Co-Research'],
         ])->map(function ($roleMeta) use ($projectParticipantRows) {
             $rows = $projectParticipantRows
                 ->whereIn('people_type', ['unit', 'siriraj'])
@@ -3448,26 +3448,26 @@ class OutputController extends Controller
         $frameworkInterpretRows = collect([
             [
                 'key' => 'trust',
-                'label' => 'Contribute to Siriraj',
-                'title' => 'โครงการที่คนศิริราชมีส่วนร่วม',
+                'label' => 'Credibility',
+                'title' => 'Trend in collaboration interest with Siriraj Health Policy among Siriraj professionals',
                 'unit' => 'โครงการ',
-                'detail' => 'โครงการที่มีคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพและคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลร่วมเป็น PI, Co-PI หรือ Co-Research ในการสร้าง evidence จากบริบทจริงของศิริราช',
+                'detail' => "แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานร่วมกับ Siriraj Health Policy\n\nจำนวนโครงการวิจัยที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาลเข้ามามีส่วนร่วม และเข้ามาอยู่ในบทบาทใดบ้าง (PI, Co-PI และ Co-Researcher)",
                 'role_stats' => $facultySirirajRoleStats,
             ],
             [
                 'key' => 'truth',
-                'label' => 'Integrate Clinical Skill',
-                'title' => 'การมีส่วนร่วมของบุคลากรสายแพทย์ศิริราชในงานวิจัยเชิงระบบ',
-                'subtitle' => 'ด้าน Aging and Frailty, Health Systems and HTA และ Real-World Evidence',
+                'label' => 'Validation',
+                'title' => 'Trend in Interest in policy work Among Siriraj Health Professionals',
                 'unit' => 'โครงการ',
-                'detail' => 'มีแพทย์/clinical expert ศิริราชร่วม เพื่อดูการ integrate clinical skill เข้ากับงานวิจัยเชิงระบบ',
+                'detail' => "แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health System)\n\nจำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย ที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) เข้ามาเป็นส่วนร่วม โดยแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย\nAgeing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Technical Cohorts\n\n*Theme/เนื้อหา Rational Drug Use (RDU) และ Global Health อาจยังถูกมองเป็น Operational project ภายในคณะแพทยศาสตร์ศิริราชพยาบาล มากกว่า Research model จึงยังไม่ถูกรวมในการวิเคราะห์",
+                'role_stats' => $clinicalLedIntegrationRoleStats,
             ],
             [
                 'key' => 'policy_impact',
-                'label' => 'Contribution',
-                'title' => 'ผลงานที่สนับสนุนระบบสุขภาพระดับประเทศ',
+                'label' => 'Impact',
+                'title' => 'Trend in outputs contributing to Policy-Impact or Practice Change',
                 'unit' => 'รายการ',
-                'detail' => 'สู่การขยายขอบเขตงานวิจัยจากเดิมที่เน้น “นวัตกรรมภายนอก” สู่การสร้าง evidence จากบริบทจริงของศิริราช (real-world data & practice-based evidence) เพื่อสนับสนุนการกำหนดนโยบายสุขภาพ',
+                'detail' => 'แนวโน้มผลงานที่มีส่วนในการผลักดันการเปลี่ยนแปลงในเชิงนโยบายหรือการปฏิบัติในระบบสุขภาพ (Change in Practices, Procedure, Reports and White Paper, Policy Recommendation)',
             ],
         ])->map(function ($row) use ($frameworkTrendYears, $frameworkTrendSeries, $frameworkLatestMetrics) {
             $values = collect($frameworkTrendSeries[$row['key']] ?? [])->map(fn ($value) => (int) $value)->values();
@@ -3535,9 +3535,9 @@ class OutputController extends Controller
         ]);
         $frameworkTopKey = $frameworkDimensionTotals->sortDesc()->keys()->first();
         $frameworkTopLabels = [
-            'trust' => 'Contribute to Siriraj',
-            'truth' => 'Integrate Clinical Skill',
-            'policy_impact' => 'Contribution',
+            'trust' => 'Credibility',
+            'truth' => 'Validation',
+            'policy_impact' => 'Impact',
         ];
         $frameworkTopLabel = $frameworkTopLabels[$frameworkTopKey] ?? '-';
         $frameworkPolicyTotal = (int) ($frameworkDimensionTotals['policy_impact'] ?? 0);
@@ -3590,15 +3590,15 @@ class OutputController extends Controller
             : 'จำนวนโครงการและการมีส่วนร่วมยังไม่เพิ่มขึ้นชัดเจนในภาพรวม';
         $frameworkBody = str_contains($frameworkTruthShape, 'เพิ่ม')
             ? 'แนวโน้มสะท้อนการเพิ่มขึ้นของการมีส่วนร่วมของบุคลากรศิริราชในงานวิจัยเชิงระบบและงานที่เชื่อมกับบริการจริงมากขึ้น โดยเฉพาะการดึง clinical skill เข้ามาผสานกับงานวิจัย'
-            : 'แนวโน้มยังไม่สะท้อนการเพิ่มขึ้นของ Integrate Clinical Skill อย่างชัดเจน จึงควรอ่านร่วมกับจำนวนโครงการและ output ในแต่ละปี';
+            : 'แนวโน้มยังไม่สะท้อนการเพิ่มขึ้นของ Validation อย่างชัดเจน จึงควรอ่านร่วมกับจำนวนโครงการและ output ในแต่ละปี';
         $frameworkBody .= str_contains($frameworkPolicyShape, 'เพิ่ม')
-            ? ' รวมถึงเริ่มเห็น output ที่ต่อยอดไปสู่ contribution ต่อระบบสุขภาพและการตัดสินใจเชิงนโยบายมากขึ้นในช่วงหลัง'
-            : ' ส่วน Contribution ยังไม่เพิ่มชัดเจนในช่วงข้อมูลนี้';
+            ? ' รวมถึงเริ่มเห็น output ที่ต่อยอดไปสู่ Impact ต่อระบบสุขภาพและการตัดสินใจเชิงนโยบายมากขึ้นในช่วงหลัง'
+            : ' ส่วน Impact ยังไม่เพิ่มชัดเจนในช่วงข้อมูลนี้';
         $frameworkFocus = (str_contains($frameworkTruthShape, 'เพิ่ม') && str_contains($frameworkPolicyShape, 'เพิ่ม'))
-            ? 'ภาพรวมแสดงให้เห็นว่า การเติบโตของโครงการไม่ได้เพิ่มเฉพาะจำนวนงานวิจัย แต่รวมถึงการมีส่วนร่วมของ clinical expert และการต่อยอดไปสู่ผลลัพธ์ที่เชื่อมกับระบบสุขภาพมากขึ้น โดยปี ' . ($frameworkPeak?->year ?: '-') . ' เป็นจุดสูงสุดทั้งในด้านการบูรณาการ clinical skill และ contribution ต่อระบบสุขภาพ'
-            : 'ภาพรวมยังควรอ่านแบบแยกเส้น เพราะ Integrate Clinical Skill และ Contribution ไม่ได้เพิ่มพร้อมกันอย่างชัดเจนในทุกปี';
+            ? 'ภาพรวมแสดงให้เห็นว่า การเติบโตของโครงการไม่ได้เพิ่มเฉพาะจำนวนงานวิจัย แต่รวมถึงการมีส่วนร่วมของ clinical expert และการต่อยอดไปสู่ผลลัพธ์ที่เชื่อมกับระบบสุขภาพมากขึ้น โดยปี ' . ($frameworkPeak?->year ?: '-') . ' เป็นจุดสูงสุดทั้งในด้านการบูรณาการ clinical skill และ Impact ต่อระบบสุขภาพ'
+            : 'ภาพรวมยังควรอ่านแบบแยกเส้น เพราะ Validation และ Impact ไม่ได้เพิ่มพร้อมกันอย่างชัดเจนในทุกปี';
         $frameworkTrendSummary = (object) [
-            'headline' => 'ช่วงปี ' . ($frameworkFirst?->year ?: '-') . ' - ' . ($frameworkLast?->year ?: '-') . ' ' . $frameworkHeadlineLead . ' โดย Integrate Clinical Skill ' . $frameworkTruthShape . ' จาก ' . number_format((int) ($frameworkFirst?->truth ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->truth ?? 0)) . ' โครงการ ขณะที่ Contribution ' . $frameworkPolicyShape . ' จาก ' . number_format((int) ($frameworkFirst?->policy_impact ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->policy_impact ?? 0)) . ' รายการ และสูงสุดในปี ' . ($frameworkPolicyPeak?->year ?: '-'),
+            'headline' => 'ช่วงปี ' . ($frameworkFirst?->year ?: '-') . ' - ' . ($frameworkLast?->year ?: '-') . ' ' . $frameworkHeadlineLead . ' โดย Validation ' . $frameworkTruthShape . ' จาก ' . number_format((int) ($frameworkFirst?->truth ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->truth ?? 0)) . ' โครงการ ขณะที่ Impact ' . $frameworkPolicyShape . ' จาก ' . number_format((int) ($frameworkFirst?->policy_impact ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->policy_impact ?? 0)) . ' รายการ และสูงสุดในปี ' . ($frameworkPolicyPeak?->year ?: '-'),
             'body' => $frameworkBody,
             'focus' => $frameworkFocus,
             'note' => 'ปี 2569 ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร',
