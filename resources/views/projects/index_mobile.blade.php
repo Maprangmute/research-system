@@ -225,12 +225,8 @@
                     {{ $projects->total() }} รายการ</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('outputs.index') }}"
-                    class="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 text-slate-700 text-sm rounded-lg bg-white">
-                    📑 รายการ Output
-                </a>
                 <a href="{{ route('projects.create') }}"
-                    class="inline-flex items-center gap-2 px-3 py-2 bg-purple-600 text-white text-sm rounded-lg shadow-sm">
+                    class="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-200 px-3 py-2 text-sm font-semibold text-slate-950 shadow-sm">
                     ➕ เพิ่มโครงการ
                 </a>
             </div>

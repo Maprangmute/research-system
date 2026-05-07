@@ -55,7 +55,7 @@
                 'pct' => $totalCount > 0 ? round(($projectOutputCount / $totalCount) * 100, 1) : 0.0,
             ],
             (object) [
-                'label' => 'Mission',
+                'label' => 'พันธกิจ',
                 'count' => (int) ($sourceCounts['back_office'] ?? 0),
                 'pct' => $totalCount > 0 ? round((((int) ($sourceCounts['back_office'] ?? 0)) / $totalCount) * 100, 1) : 0.0,
             ],
@@ -82,7 +82,7 @@
             'EA114' => 'Events / Forum',
             'EA115' => 'Capacity Building / Knowledge Sharing',
             'EA116' => 'Research Project',
-            'EA117' => 'MOU',
+            'EA117' => 'Memorandum of Understanding (MOU)',
             'EA118' => 'Award and Recognition',
             'EA119' => 'Textbook / Book Chapter',
             'EA120' => 'Manual / Instruction / Guideline',
@@ -119,6 +119,38 @@
                 return '#cbd5e1';
             }
             return '#' . $base . $alpha;
+        };
+        $projectTypeTonePalette = [
+            ['bg' => '#fffdfd', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fffefd', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fffefd', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fefffd', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fdfffe', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fdfffe', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fdffff', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fdfeff', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fdfeff', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fdfdff', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fefdff', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fffdff', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+            ['bg' => '#fffdfd', 'cell' => '#ffffff', 'text' => '#0f172a', 'border' => '#e8edf3'],
+        ];
+        $projectTypeToneStyle = static function ($label) use ($projectTypeTonePalette): string {
+            $normalized = mb_strtolower(trim((string) $label), 'UTF-8');
+            if ($normalized === '') {
+                return '--doctor-row-bg:#f8fafc; --doctor-row-cell-bg:#ffffff; --doctor-row-border:#e2e8f0; --doctor-row-accent:#475569;';
+            }
+
+            $hash = hexdec(substr(md5($normalized), 0, 8));
+            $tone = $projectTypeTonePalette[$hash % count($projectTypeTonePalette)];
+
+            return sprintf(
+                '--doctor-row-bg:%s; --doctor-row-cell-bg:%s; --doctor-row-border:%s; --doctor-row-accent:%s;',
+                $tone['bg'],
+                $tone['cell'],
+                $tone['border'],
+                $tone['text']
+            );
         };
         $textbookYearPalette = [
             '#2563eb',
@@ -281,15 +313,18 @@
         $policyFrameworkInterpretation = collect($policyFrameworkTrend['interpretation'] ?? []);
         $policyFrameworkSummary = $policyFrameworkTrend['summary'] ?? null;
         $policyPeopleHighlights = collect($policyImpact['people_highlights'] ?? []);
+        $doctorContributionStarts = collect($policyImpact['doctor_contribution_starts'] ?? []);
+        $doctorContributionTimeline = collect($policyImpact['doctor_contribution_timeline'] ?? []);
         $contributionNetwork = $policyImpact['contribution_network'] ?? [];
         $peopleTypeMix = collect($contributionNetwork['people_type_mix'] ?? []);
         $expertTrend = $contributionNetwork['expert_trend'] ?? ['years' => collect(), 'people' => collect(), 'new_people' => collect(), 'projects' => collect()];
         $newExpertsByYear = collect($contributionNetwork['new_experts_by_year'] ?? []);
         $clinicalLedIntegration = $contributionNetwork['clinical_led_integration'] ?? [];
-        $clinicalLedIntegrationTrend = $clinicalLedIntegration['trend'] ?? ['years' => collect(), 'people' => collect(), 'projects' => collect(), 'ageing_projects' => collect(), 'rwe_projects' => collect()];
+        $clinicalLedIntegrationTrend = $clinicalLedIntegration['trend'] ?? ['years' => collect(), 'people' => collect(), 'projects' => collect(), 'ageing_projects' => collect(), 'hta_projects' => collect(), 'rwe_projects' => collect()];
         $clinicalLedPeopleByYear = collect($clinicalLedIntegration['people_by_year'] ?? []);
         $clinicalLedIntegrationThemes = collect($clinicalLedIntegration['themes'] ?? []);
         $clinicalLedIntegrationRoleStats = collect($clinicalLedIntegration['role_stats'] ?? []);
+        $clinicalLedIntegrationRoleTrend = collect($clinicalLedIntegration['role_trend'] ?? []);
         $clinicalLedRoleSummaryText = $clinicalLedIntegrationRoleStats
             ->map(fn ($role) => ($role->label ?? '-') . ' ' . number_format((int) ($role->people ?? 0)) . ' คน')
             ->implode(' · ');
@@ -352,9 +387,109 @@
             ->keys()
             ->first();
         $policyImpactTopLabel = $policyImpactCodeLabels[$policyImpactTopCode] ?? null;
+        $policyImpactTopCount = (int) ($policyImpactOutputs[$policyImpactTopCode] ?? 0);
         $policyImpactTrendDirection = (int) ($policyImpactTrendLast?->total ?? 0) > (int) ($policyImpactTrendFirst?->total ?? 0)
             ? 'เพิ่มขึ้น'
             : ((int) ($policyImpactTrendLast?->total ?? 0) < (int) ($policyImpactTrendFirst?->total ?? 0) ? 'ลดลง' : 'ทรงตัว');
+        $trendShape = static function ($values): string {
+            $numbers = collect($values)->map(fn ($value) => (int) $value)->values();
+            if ($numbers->count() < 2) {
+                return 'ข้อมูลยังมีไม่พอสำหรับอ่านแนวโน้ม';
+            }
+
+            $first = (int) $numbers->first();
+            $last = (int) $numbers->last();
+            $nonDecreasing = true;
+            $nonIncreasing = true;
+
+            for ($index = 1; $index < $numbers->count(); $index += 1) {
+                if ((int) $numbers[$index] < (int) $numbers[$index - 1]) {
+                    $nonDecreasing = false;
+                }
+                if ((int) $numbers[$index] > (int) $numbers[$index - 1]) {
+                    $nonIncreasing = false;
+                }
+            }
+
+            if ($nonDecreasing && $last > $first) {
+                return 'เพิ่มขึ้นต่อเนื่อง';
+            }
+            if ($nonIncreasing && $last < $first) {
+                return 'ลดลงต่อเนื่อง';
+            }
+            if ($last > $first) {
+                return 'เพิ่มขึ้นเมื่อเทียบกับปีแรก แต่มีความผันผวนระหว่างทาง';
+            }
+            if ($last < $first) {
+                return 'ลดลงเมื่อเทียบกับปีแรก และมีความผันผวนระหว่างทาง';
+            }
+
+            return 'ทรงตัวเมื่อเทียบปีแรกกับปีล่าสุด แต่มีความผันผวนระหว่างทาง';
+        };
+        $policyImpactLineSummaries = collect($policyImpactCodeLabels)
+            ->map(function ($label, $code) use ($policyImpactTrendRows, $trendShape) {
+                $rows = $policyImpactTrendRows->map(fn ($row) => (object) [
+                    'year' => (int) ($row->year ?? 0),
+                    'value' => (int) (collect($row->by_code ?? [])->get($code) ?? 0),
+                ])->values();
+                $first = $rows->first();
+                $last = $rows->last();
+                $peak = $rows->sortByDesc(fn ($row) => (int) ($row->value ?? 0))->first();
+                $largestIncrease = null;
+                for ($index = 1; $index < $rows->count(); $index += 1) {
+                    $previous = $rows[$index - 1];
+                    $current = $rows[$index];
+                    $change = (int) ($current->value ?? 0) - (int) ($previous->value ?? 0);
+                    if ($largestIncrease === null || $change > (int) ($largestIncrease['change'] ?? 0)) {
+                        $largestIncrease = [
+                            'from_year' => (int) ($previous->year ?? 0),
+                            'to_year' => (int) ($current->year ?? 0),
+                            'change' => $change,
+                        ];
+                    }
+                }
+
+                return (object) [
+                    'code' => $code,
+                    'label' => $label,
+                    'rows' => $rows,
+                    'first' => (int) ($first?->value ?? 0),
+                    'last' => (int) ($last?->value ?? 0),
+                    'peak' => (int) ($peak?->value ?? 0),
+                    'peak_year' => (int) ($peak?->year ?? 0),
+                    'total' => (int) $rows->sum('value'),
+                    'shape' => $trendShape($rows->pluck('value')),
+                    'largest_increase' => $largestIncrease,
+                ];
+            })
+            ->values();
+        $policyImpactTopLine = $policyImpactLineSummaries
+            ->sortByDesc(fn ($row) => (int) ($row->total ?? 0))
+            ->first();
+        $policyImpactRecommendationLine = $policyImpactLineSummaries->firstWhere('code', 'EA106');
+        $policyImpactPracticeLine = $policyImpactLineSummaries->firstWhere('code', 'EA109');
+        $policyImpactReportLine = $policyImpactLineSummaries->firstWhere('code', 'EA102');
+        $policyImpactGraphFirst = $policyImpactTrendRows->first();
+        $policyImpactGraphLast = $policyImpactTrendRows->last();
+        $policyRecommendationIncrease = $policyImpactRecommendationLine?->largest_increase ?? null;
+        $policyRecommendationIncreaseText = ((int) ($policyRecommendationIncrease['change'] ?? 0) > 0)
+            ? 'เพิ่มขึ้นชัดเจนในช่วงปี ' . ($policyRecommendationIncrease['from_year'] ?? '-') . '-' . ($policyRecommendationIncrease['to_year'] ?? '-')
+            : 'ยังไม่เห็นช่วงที่เพิ่มขึ้นชัดเจน';
+        $policyReportContinuityText = collect($policyImpactReportLine?->rows ?? [])->every(fn ($row) => (int) ($row->value ?? 0) > 0)
+            ? 'ยังคงเป็น output หลักและมีจำนวนต่อเนื่องตลอดช่วงข้อมูล'
+            : 'ยังคงเป็น output หลักของช่วงข้อมูล แม้บางปีมีจำนวนลดลงหรือไม่มีรายการ';
+        $policyPracticePatternText = (int) ($policyImpactPracticeLine?->peak ?? 0) <= 2
+            ? 'มีจำนวนไม่สูงและเปลี่ยนแปลงค่อนข้างผันผวนในแต่ละปี'
+            : 'มีจำนวนเพิ่มขึ้นในบางปี แต่ยังเปลี่ยนแปลงผันผวนเมื่อเทียบกับ output อีกสองกลุ่ม';
+        $policyRecommendationIsGrowing = str_contains((string) ($policyImpactRecommendationLine?->shape ?? ''), 'เพิ่ม');
+        $policyPracticeIsGrowing = str_contains((string) ($policyImpactPracticeLine?->shape ?? ''), 'เพิ่ม');
+        $policyImpactTrendReading = 'ช่วงปี ' . ($policyImpactGraphFirst?->year ?: '-') . '-' . ($policyImpactGraphLast?->year ?: '-') . ' Reports and White Papers ' . $policyReportContinuityText . ' ขณะที่ Policy Recommendations ' . $policyRecommendationIncreaseText . ' และขึ้นสูงสุดในปี ' . ($policyImpactRecommendationLine?->peak_year ?: '-') . ' ส่วน Change in Practices / Procedures / Policy ' . $policyPracticePatternText;
+        $policyImpactMeaning = $policyRecommendationIsGrowing
+            ? 'แนวโน้มของ output ในช่วงหลังเริ่มขยับจากรายงาน/white paper ไปสู่ข้อเสนอเชิงนโยบายมากขึ้น โดย Policy Recommendations เพิ่มขึ้นเด่นในปี ' . ($policyImpactRecommendationLine?->peak_year ?: '-') . ' ขณะที่ Reports and White Papers ยังคงเป็น output หลักของระบบ' . ($policyPracticeIsGrowing ? ' และเริ่มเห็นสัญญาณของการเชื่อมไปสู่การเปลี่ยนแปลงเชิงปฏิบัติและนโยบายมากขึ้น' : ' แต่ Change in Practices / Procedures / Policy ยังไม่เพิ่มชัดเจน')
+            : 'แนวโน้มของ output ยังมี Reports and White Papers เป็นฐานหลัก ขณะที่ Policy Recommendations ยังไม่เพิ่มชัดเจนในช่วงข้อมูลนี้ จึงควรอ่านว่า output ส่วนใหญ่ยังอยู่ในระดับรายงาน/white paper มากกว่าข้อเสนอเชิงนโยบาย';
+        $policyImpactWhatHappened = $policyRecommendationIsGrowing
+            ? 'ภาพรวมสะท้อนว่า output ส่วนใหญ่ยังอยู่ในรูปแบบ Reports and White Papers แต่ในช่วงหลังเริ่มมีการต่อยอดไปสู่ Policy Recommendations มากขึ้น โดยเฉพาะในปี ' . ($policyImpactRecommendationLine?->peak_year ?: '-') . ' ซึ่งแสดงให้เห็นการขยับจากการผลิตองค์ความรู้ ไปสู่การใช้ประโยชน์เชิงนโยบายและการตัดสินใจในระบบสุขภาพมากขึ้น ขณะที่ Change in Practices / Procedures / Policy ยังเกิดขึ้นในวงจำกัดและไม่ต่อเนื่องเมื่อเทียบกับ output อีกสองกลุ่ม'
+            : 'ภาพรวมสะท้อนว่า output ส่วนใหญ่ยังอยู่ในรูปแบบ Reports and White Papers และยังไม่เห็นการต่อยอดไปสู่ Policy Recommendations อย่างเด่นชัดในช่วงข้อมูลนี้ ขณะที่ Change in Practices / Procedures / Policy ยังเกิดขึ้นในวงจำกัดและไม่ต่อเนื่องเมื่อเทียบกับ output อีกสองกลุ่ม';
     @endphp
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -367,6 +502,12 @@
             width: 100vw;
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
+            overflow-x: hidden;
+        }
+        .viz-page *,
+        .viz-page *::before,
+        .viz-page *::after {
+            min-width: 0;
         }
         .panel {
             background: #fff;
@@ -914,10 +1055,189 @@
             grid-template-columns: repeat(1, minmax(0, 1fr));
         }
         .policy-person-card {
+            display: block;
             border: 1px solid #e2e8f0;
             border-radius: 14px;
             background: #ffffff;
             padding: 12px;
+            min-height: 100%;
+            transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+        }
+        .policy-person-card:hover {
+            transform: translateY(-1px);
+            border-color: #cbd5e1;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, .07);
+        }
+        .policy-person-card:focus-visible {
+            outline: 3px solid rgba(79, 70, 229, .24);
+            outline-offset: 2px;
+        }
+        .policy-role-chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .doctor-lane-board {
+            overflow-x: auto;
+            overflow-y: visible;
+            padding-bottom: 6px;
+        }
+        .doctor-lane-grid {
+            min-width: 760px;
+            display: grid;
+            gap: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            overflow: visible;
+            background: #ffffff;
+        }
+        .doctor-lane-row,
+        .doctor-lane-head {
+            display: grid;
+            grid-template-columns: minmax(210px, 1.25fr) repeat(var(--doctor-year-count, 1), minmax(118px, 1fr));
+            gap: 0;
+            align-items: stretch;
+        }
+        .doctor-lane-row {
+            position: relative;
+            background: var(--doctor-row-bg, #ffffff);
+        }
+        .doctor-lane-row:hover {
+            z-index: 3;
+        }
+        .doctor-lane-head {
+            position: sticky;
+            top: 0;
+            z-index: 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .doctor-lane-theme,
+        .doctor-lane-year,
+        .doctor-lane-cell {
+            background: #ffffff;
+            padding: 12px;
+            border-right: 1px solid #e2e8f0;
+        }
+        .doctor-lane-theme:last-child,
+        .doctor-lane-year:last-child,
+        .doctor-lane-cell:last-child {
+            border-right: 0;
+        }
+        .doctor-lane-theme {
+            background: #f8fafc;
+        }
+        .doctor-lane-row .doctor-lane-theme {
+            background: var(--doctor-row-bg, #f8fafc);
+            color: #0f172a;
+        }
+        .doctor-lane-row .doctor-lane-theme div {
+            color: #0f172a;
+        }
+        .doctor-lane-year {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: #4338ca;
+            background: #f8fafc;
+        }
+        .doctor-lane-cell {
+            min-height: 78px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--doctor-row-cell-bg, #ffffff);
+            border-color: var(--doctor-row-border, #e2e8f0);
+        }
+        .doctor-lane-cell.is-empty {
+            background: var(--doctor-row-cell-bg, #ffffff);
+            color: #cbd5e1;
+        }
+        .doctor-lane-row + .doctor-lane-row {
+            border-top: 1px solid var(--doctor-row-border, #e2e8f0);
+        }
+        .doctor-avatar-stack {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            isolation: isolate;
+        }
+        .doctor-avatar-stack a,
+        .doctor-avatar-stack img {
+            position: relative;
+            display: inline-flex;
+            flex: none;
+            border-radius: 999px;
+            transition: transform .18s ease, box-shadow .18s ease, z-index .18s ease;
+            transform-origin: center center;
+        }
+        .doctor-avatar-stack img {
+            width: 58px;
+            height: 58px;
+            border-radius: 999px;
+            border: 3px solid #ffffff;
+            object-fit: cover;
+            box-shadow: 0 0 0 1px #cbd5e1, 0 8px 16px rgba(15, 23, 42, .10);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .doctor-avatar-stack a:hover,
+            .doctor-avatar-stack a:focus-visible,
+            .doctor-avatar-stack img:hover {
+                z-index: 5;
+                transform: scale(1.12);
+            }
+            .doctor-avatar-stack a:hover img,
+            .doctor-avatar-stack a:focus-visible img,
+            .doctor-avatar-stack img:hover {
+                box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px #94a3b8, 0 14px 26px rgba(15, 23, 42, .18);
+            }
+        }
+        .doctor-mobile-timeline {
+            display: none;
+        }
+        .doctor-mobile-theme {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #ffffff;
+            overflow: visible;
+        }
+        .doctor-mobile-theme__head {
+            border-bottom: 1px solid #e2e8f0;
+            background: var(--doctor-row-bg, #f8fafc);
+            padding: 12px;
+        }
+        .doctor-mobile-year {
+            display: grid;
+            gap: 8px;
+            padding: 12px;
+        }
+        .doctor-mobile-year + .doctor-mobile-year {
+            border-top: 1px solid #e2e8f0;
+        }
+        .doctor-mobile-year__label {
+            font-size: 12px;
+            font-weight: 800;
+            color: #4338ca;
+        }
+        .doctor-mobile-empty {
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+        .clinical-led-chart-scroll {
+            margin-top: 12px;
+            height: 390px;
+            overflow-x: auto;
+            overflow-y: visible;
+            padding-bottom: 4px;
+        }
+        .clinical-led-chart-inner {
+            height: 100%;
+            min-width: 920px;
         }
         .policy-trend-panel {
             border: 1px solid #e2e8f0;
@@ -985,6 +1305,101 @@
                 gap: 6px;
             }
         }
+        @media (min-width: 641px) and (max-width: 1279px) {
+            .viz-page > div {
+                padding-left: 20px !important;
+                padding-right: 20px !important;
+            }
+            .hero-panel,
+            .panel {
+                padding: 20px !important;
+            }
+            .policy-brief,
+            .policy-axis-card,
+            .policy-trend-panel,
+            .contribution-card {
+                padding: 14px;
+            }
+            .chart-sticky {
+                position: relative;
+                top: auto;
+            }
+            .scene {
+                min-height: auto;
+            }
+            .viz-page [class*="h-[340px]"],
+            .viz-page [class*="h-[360px]"],
+            .viz-page [class*="h-[380px]"],
+            .viz-page [class*="h-[390px]"] {
+                height: 340px !important;
+            }
+            .type-chart-wrap {
+                height: 420px;
+            }
+            .scroll-card,
+            .paper-record-scroll,
+            .policy-list-compact {
+                max-height: 420px;
+            }
+            .policy-mini-list {
+                max-height: 280px;
+            }
+            .type-table-head,
+            .type-table-row {
+                grid-template-columns: minmax(220px, 2fr) 96px 88px 104px;
+                gap: 10px;
+            }
+            .section-tag,
+            .policy-pill {
+                max-width: 100%;
+                white-space: normal;
+                line-height: 1.3;
+            }
+            #frameworkTrendModal {
+                padding: 12px !important;
+            }
+            #frameworkTrendModalCard {
+                max-height: calc(100vh - 24px) !important;
+            }
+            #frameworkTrendModalBody {
+                max-height: calc(100vh - 128px) !important;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+            .viz-page > div {
+                padding-left: 18px !important;
+                padding-right: 18px !important;
+            }
+            .type-table-head,
+            .type-table-row {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            .policy-people-grid {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+            }
+            .policy-mini-list {
+                max-height: 320px;
+            }
+        }
+        @media (min-width: 1024px) and (max-width: 1279px) and (orientation: landscape) {
+            .viz-page > div {
+                padding-left: 24px !important;
+                padding-right: 24px !important;
+            }
+            .viz-page [class*="h-[340px]"],
+            .viz-page [class*="h-[360px]"],
+            .viz-page [class*="h-[380px]"],
+            .viz-page [class*="h-[390px]"] {
+                height: 360px !important;
+            }
+            .type-chart-wrap {
+                height: 460px;
+            }
+            .policy-mini-list {
+                max-height: 300px;
+            }
+        }
         @media (max-width: 640px) {
             .viz-page {
                 width: 100%;
@@ -996,11 +1411,6 @@
             .viz-page > div {
                 padding-left: 12px !important;
                 padding-right: 12px !important;
-            }
-            .viz-page *,
-            .viz-page *::before,
-            .viz-page *::after {
-                min-width: 0;
             }
             .fade-up {
                 opacity: 1;
@@ -1046,6 +1456,10 @@
             }
             .policy-section-title {
                 align-items: flex-start;
+            }
+            .policy-section-title h3 {
+                font-size: 18px;
+                line-height: 1.35;
             }
             .framework-card {
                 min-height: auto;
@@ -1110,6 +1524,51 @@
             #frameworkTrendModalBody {
                 max-height: calc(100vh - 112px) !important;
                 padding: 12px !important;
+            }
+            .doctor-lane-board {
+                display: none;
+            }
+            .doctor-mobile-timeline {
+                display: grid;
+                gap: 12px;
+            }
+            .doctor-mobile-theme__head {
+                padding: 12px;
+            }
+            .doctor-mobile-year {
+                padding: 12px;
+            }
+            .doctor-mobile-year .doctor-avatar-stack {
+                justify-content: flex-start;
+            }
+            .doctor-avatar-stack {
+                gap: 10px;
+            }
+            .doctor-avatar-stack img {
+                width: 56px;
+                height: 56px;
+                border-width: 3px;
+            }
+            .doctor-avatar-stack a:hover,
+            .doctor-avatar-stack a:focus-visible,
+            .doctor-avatar-stack img:hover {
+                transform: none;
+            }
+            .doctor-avatar-stack a:hover img,
+            .doctor-avatar-stack a:focus-visible img,
+            .doctor-avatar-stack img:hover {
+                box-shadow: 0 0 0 1px #cbd5e1, 0 8px 16px rgba(15, 23, 42, .10);
+            }
+            .clinical-led-chart-scroll {
+                height: 320px;
+                margin-left: 0;
+                margin-right: 0;
+                padding-bottom: 8px;
+                overflow-x: hidden;
+            }
+            .clinical-led-chart-inner {
+                min-width: 0;
+                width: 100%;
             }
         }
         @media (min-width: 768px) {
@@ -1177,7 +1636,7 @@
                                 <option value="{{ $sourceKey }}" @selected($selectedSource === $sourceKey)>{{ $sourceLabel }}</option>
                             @endforeach
                         </select>
-                        <span class="filter-hint">เลือกว่าต้องการดูเฉพาะในโครงการ Mission หรือ Extra</span>
+                        <span class="filter-hint">เลือกว่าต้องการดูเฉพาะในพันธกิจหรือ Extra</span>
                     </label>
                     <label class="filter-field">
                         <span class="filter-label">ประเภทผลงาน (EA)</span>
@@ -1245,8 +1704,8 @@
                             </div>
                             @if ($policyFrameworkSummary)
                                 <div class="mt-4 flex-1 rounded-2xl border border-sky-300 bg-sky-50 px-4 py-4">
-                                    <div class="text-sm font-semibold text-sky-950">สรุปจากแนวโน้ม</div>
-                                    <div class="mt-8 grid gap-2">
+                                    <div class="text-xl font-semibold text-sky-950">สรุปจากแนวโน้ม</div>
+                                    <div class="mt-3 grid gap-2">
                                         <div class="rounded-xl bg-white/80 px-3 py-2">
                                             <div class="text-[11px] font-semibold text-sky-700">เกิดอะไรขึ้น</div>
                                             <div class="mt-1 text-sm font-semibold leading-relaxed text-slate-900">{{ $policyFrameworkSummary->headline }}</div>
@@ -1256,7 +1715,7 @@
                                             <div class="mt-1 text-sm leading-relaxed text-slate-700">{{ $policyFrameworkSummary->body }}</div>
                                         </div>
                                         <div class="rounded-xl bg-white/80 px-3 py-2">
-                                            <div class="text-[11px] font-semibold text-sky-700">ช่องว่างหลัก</div>
+                                            <div class="text-[11px] font-semibold text-sky-700">สิ่งที่เกิดขึ้น</div>
                                             <div class="mt-1 text-sm leading-relaxed text-slate-700">{{ $policyFrameworkSummary->focus }}</div>
                                         </div>
                                     </div>
@@ -1398,8 +1857,13 @@
                                 }
                                 $expertTrendFirst = $expertTrendSummaryRows->first();
                                 $expertTrendLast = $expertTrendSummaryRows->last();
-                                $expertPeopleGrowth = max(0, (int) ($expertTrendLast?->people ?? 0) - (int) ($expertTrendFirst?->people ?? 0));
-                                $expertProjectGrowth = max(0, (int) ($expertTrendLast?->projects ?? 0) - (int) ($expertTrendFirst?->projects ?? 0));
+                                $expertPeopleTrendShape = $trendShape($expertTrendSummaryRows->pluck('people'));
+                                $expertProjectTrendShape = $trendShape($expertTrendSummaryRows->pluck('projects'));
+                                $expertClinicalInterpretation = str_contains($expertPeopleTrendShape, 'เพิ่ม')
+                                    ? 'ข้อมูลสะท้อนว่ากลุ่มโครงการมีฐานผู้ร่วมจากฝั่ง clinical มากขึ้น ทำให้การอ่าน evidence เชื่อมกับโจทย์บริการจริงได้ชัดขึ้น'
+                                    : (str_contains($expertPeopleTrendShape, 'ลด')
+                                        ? 'ข้อมูลสะท้อนว่าฐานผู้ร่วมจากฝั่ง clinical ลดลงเมื่อเทียบกับช่วงต้นข้อมูล จึงควรดูต่อว่าการลดลงมาจากข้อมูลยังไม่ครบหรือจากจำนวนโครงการที่ลดลงจริง'
+                                        : 'ข้อมูลยังไม่ชี้การเปลี่ยนแปลงของฐานผู้ร่วมจากฝั่ง clinical อย่างชัดเจน จึงควรอ่านประกอบกับจำนวนโครงการและประเภท output');
                             @endphp
                             @if ($expertTrendRows->isNotEmpty())
                                 <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
@@ -1421,19 +1885,19 @@
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
                                                 <div class="text-[11px] font-semibold text-indigo-700">เกิดอะไรขึ้น</div>
                                                 <div class="mt-1 text-sm font-semibold leading-relaxed text-slate-900">
-                                                    ปี {{ $expertTrendFirst?->year }} - {{ $expertTrendLast?->year }} แพทย์ศิริราชที่ร่วมในกลุ่มโครงการเพิ่มจาก {{ number_format((int) ($expertTrendFirst?->people ?? 0)) }} คน เป็น {{ number_format((int) ($expertTrendLast?->people ?? 0)) }} คน
+                                                    ปี {{ $expertTrendFirst?->year }} - {{ $expertTrendLast?->year }} แพทย์ศิริราชที่ร่วมในกลุ่มโครงการ {{ $expertPeopleTrendShape }} จาก {{ number_format((int) ($expertTrendFirst?->people ?? 0)) }} เป็น {{ number_format((int) ($expertTrendLast?->people ?? 0)) }} คน
                                                 </div>
                                             </div>
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
                                                 <div class="text-[11px] font-semibold text-indigo-700">แปลว่าอะไร</div>
                                                 <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    งานวิจัยเริ่มมีแพทย์ศิริราชเข้ามามีส่วนร่วมกับโจทย์จากบริการจริงและ real-world / practice-based evidence มากขึ้น โดยจำนวนโครงการที่มีแพทย์ศิริราชร่วมเพิ่มขึ้น {{ number_format($expertProjectGrowth) }} โครงการในช่วงเดียวกัน
+                                                    จำนวนโครงการที่มีแพทย์ศิริราชร่วม {{ $expertProjectTrendShape }} ในช่วงเดียวกัน จึงควรอ่านจำนวนคนและจำนวนโครงการควบคู่กัน ไม่ใช่อ่านจากจำนวนคนเพียงอย่างเดียว
                                                 </div>
                                             </div>
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
                                                 <div class="text-[11px] font-semibold text-indigo-700">จุดที่ควรอ่าน</div>
                                                 <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    การเพิ่มขึ้นนี้สะท้อนว่า evidence ของกลุ่มโครงการไม่ได้มาจากข้อมูลอย่างเดียว แต่เริ่มเชื่อมกับ clinical insight และความเชี่ยวชาญของแพทย์ศิริราชมากขึ้น
+                                                    {{ $expertClinicalInterpretation }}
                                                 </div>
                                             </div>
                                         </div>
@@ -1539,7 +2003,6 @@
                                         สรุปผลงานที่แปลงงานวิจัยไปสู่รายงาน ข้อเสนอเชิงนโยบาย และการเปลี่ยนแปลงในระบบบริการ เพื่อดูว่าหลักฐานจากโครงการถูกนำไปสนับสนุนระบบสุขภาพระดับประเทศมากแค่ไหน
                                     </p>
                                 </div>
-                                <span class="policy-pill">{{ number_format((int) ($policyImpact['project_count'] ?? 0)) }} โครงการในช่วงที่เลือก</span>
                             </div>
                             <div class="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
                                 <div class="policy-trend-panel">
@@ -1555,26 +2018,31 @@
                                     </div>
                                     @if ($policyImpactTrendSummaryRows->isNotEmpty())
                                         <div class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4">
-                                            <div class="text-sm font-semibold text-indigo-950">สรุปจากแนวโน้ม</div>
+                                            <div class="text-xl font-semibold text-indigo-950">สรุปจากแนวโน้ม</div>
                                             <div class="mt-3 grid gap-3">
                                                 <div class="rounded-xl bg-white/85 px-3 py-3">
-                                                    <div class="text-[11px] font-semibold text-indigo-700">แนวโน้มรวม</div>
+                                                    <div class="text-[13px] font-semibold text-indigo-700">เกิดอะไรขึ้น</div>
                                                     <div class="mt-1 text-sm font-semibold leading-relaxed text-slate-900">
-                                                        ปี {{ $policyImpactTrendFirst?->year ?: '-' }} - {{ $policyImpactTrendLast?->year ?: '-' }} ผลงานกลุ่ม policy / process / people {{ $policyImpactTrendDirection }} จาก {{ number_format((int) ($policyImpactTrendFirst?->total ?? 0)) }} เป็น {{ number_format((int) ($policyImpactTrendLast?->total ?? 0)) }} รายการ โดยปี {{ $policyImpactTrendPeak?->year ?: '-' }} เป็นจุดสูงสุดที่ {{ number_format((int) ($policyImpactTrendPeak?->total ?? 0)) }} รายการ
+                                                        {{ $policyImpactTrendReading }}
                                                     </div>
                                                 </div>
                                                 <div class="rounded-xl bg-white/85 px-3 py-3">
-                                                    <div class="text-[11px] font-semibold text-indigo-700">อ่านเส้นกราฟอย่างไร</div>
+                                                    <div class="text-[13px] font-semibold text-indigo-700">แปลว่าอะไร</div>
                                                     <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                        Reports and White Papers คือหลักฐานเชิงรายงานหรือ white paper, Policy Recommendations คือข้อเสนอเชิงนโยบาย และ Change in Practices / Procedures / Policy คือ output ที่ใกล้การเปลี่ยนระบบหรือแนวปฏิบัติมากที่สุด ดังนั้นการอ่าน trend ควรดูทั้งจำนวนรวมและสัดส่วนของแต่ละเส้น ไม่ใช่อ่านเป็นจำนวนโครงการ
+                                                        {{ $policyImpactMeaning }}
                                                     </div>
                                                 </div>
                                                 <div class="rounded-xl bg-white/85 px-3 py-3">
-                                                    <div class="text-[11px] font-semibold text-indigo-700">ภาพรวมที่เห็น</div>
+                                                    <div class="text-[13px] font-semibold text-indigo-700">สิ่งที่เกิดขึ้น</div>
                                                     <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                        จากข้อมูลในช่วงที่เลือก ผลงานที่พบมากที่สุดคือ {{ $policyImpactTopLabel ?: '-' }} {{ number_format((int) ($policyImpactOutputs[$policyImpactTopCode] ?? 0)) }} รายการ หมายความว่างานจำนวนมากถูกถ่ายทอดออกมาเป็นรายงานหรือ white paper แล้ว แต่การต่อยอดให้กลายเป็นข้อเสนอเชิงนโยบาย หรือการเปลี่ยนแนวปฏิบัติจริง ยังเกิดขึ้นน้อยกว่า
+                                                        {{ $policyImpactWhatHappened }}
                                                     </div>
                                                 </div>
+                                                @if ((int) $currentYearBe === 2569)
+                                                    <div class="rounded-xl bg-white/70 px-3 py-3 text-sm leading-relaxed text-slate-500">
+                                                        ปี 2569 ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร
+                                                    </div>
+                                                @endif
                                             </div>
                                         </div>
                                     @endif
@@ -1612,8 +2080,8 @@
                                     <div class="flex flex-wrap items-start justify-between gap-4">
                                         <div>
                                             <div class="text-xs font-semibold uppercase tracking-wide text-sky-700">Clinical-Led Integration</div>
-                                            <div class="mt-1 text-xl font-semibold text-slate-900">กลุ่มเนื้อหา Ageing และ Real-World Evidence (RWE)</div>
-                                            <div class="mt-2 max-w-5xl text-sm leading-relaxed text-slate-700">ดูแนวโน้มรายปีว่าในกลุ่ม Ageing และ Real-World Evidence (RWE) มีคนศิริราชเข้ามามีส่วนร่วมกี่คน พร้อมดูสัดส่วนบทบาท PI, Co-PI และ Co-Research ในสองกลุ่มเนื้อหานี้</div>
+                                            <div class="mt-1 text-xl font-semibold text-slate-900">กลุ่มเนื้อหา Ageing, Health Systems and HTA และ Real-World Evidence (RWE)</div>
+                                            <div class="mt-2 max-w-5xl text-sm leading-relaxed text-slate-700">ดูแนวโน้มรายปีของจำนวนคนศิริราชที่มีส่วนร่วมในกลุ่ม Ageing, Health Systems and HTA และ Real-World Evidence (RWE) พร้อมแจกแจงตามบทบาท PI, Co-PI และ Co-Research</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1623,43 +2091,122 @@
                                     $clinicalLedLastYearRow = $clinicalLedTrendRowsForSummary->last();
                                     $clinicalLedPeakYearRow = $clinicalLedTrendRowsForSummary->sortByDesc(fn ($row) => (int) ($row->people_count ?? 0))->first();
                                     $clinicalLedTopTheme = $clinicalLedIntegrationThemes->sortByDesc(fn ($row) => (int) ($row->people ?? 0))->first();
+                                    $clinicalLedFirstCount = (int) ($clinicalLedFirstYearRow?->people_count ?? 0);
+                                    $clinicalLedLastCount = (int) ($clinicalLedLastYearRow?->people_count ?? 0);
+                                    $clinicalLedDelta = $clinicalLedLastCount - $clinicalLedFirstCount;
+                                    $clinicalLedDeltaLabel = $clinicalLedDelta > 0 ? '+' . number_format($clinicalLedDelta) : number_format($clinicalLedDelta);
+                                    $clinicalLedTotalTrendShape = $trendShape($clinicalLedTrendRowsForSummary->pluck('people_count'));
+                                    $clinicalLedThemeTrendRows = collect($clinicalLedIntegrationTrend['years'] ?? [])
+                                        ->values()
+                                        ->map(fn ($year, $index) => (object) [
+                                            'year' => (int) $year,
+                                            'ageing' => (int) (collect($clinicalLedIntegrationTrend['ageing_people'] ?? [])->values()->get($index) ?? 0),
+                                            'hta' => (int) (collect($clinicalLedIntegrationTrend['hta_people'] ?? [])->values()->get($index) ?? 0),
+                                            'rwe' => (int) (collect($clinicalLedIntegrationTrend['rwe_people'] ?? [])->values()->get($index) ?? 0),
+                                        ])
+                                        ->filter(fn ($row) => (int) ($row->year ?? 0) < (int) $currentYearBe)
+                                        ->values();
+                                    if ($clinicalLedThemeTrendRows->isEmpty()) {
+                                        $clinicalLedThemeTrendRows = collect($clinicalLedIntegrationTrend['years'] ?? [])
+                                            ->values()
+                                            ->map(fn ($year, $index) => (object) [
+                                                'year' => (int) $year,
+                                                'ageing' => (int) (collect($clinicalLedIntegrationTrend['ageing_people'] ?? [])->values()->get($index) ?? 0),
+                                                'hta' => (int) (collect($clinicalLedIntegrationTrend['hta_people'] ?? [])->values()->get($index) ?? 0),
+                                                'rwe' => (int) (collect($clinicalLedIntegrationTrend['rwe_people'] ?? [])->values()->get($index) ?? 0),
+                                            ])
+                                            ->values();
+                                    }
+                                    $clinicalLedThemeFirst = $clinicalLedThemeTrendRows->first();
+                                    $clinicalLedThemeLast = $clinicalLedThemeTrendRows->last();
+                                    $clinicalLedHtaTrendShape = $trendShape($clinicalLedThemeTrendRows->pluck('hta'));
+                                    $clinicalLedRweTrendShape = $trendShape($clinicalLedThemeTrendRows->pluck('rwe'));
+                                    $clinicalLedHtaInterpretation = str_contains($clinicalLedHtaTrendShape, 'เพิ่ม')
+                                        ? 'ควบคู่กับการเติบโตของกลุ่ม HTA ในช่วงเวลาเดียวกัน'
+                                        : (str_contains($clinicalLedHtaTrendShape, 'ลด')
+                                            ? 'ในขณะที่กลุ่ม HTA ลดลงเมื่อเทียบกับช่วงต้นข้อมูล'
+                                            : 'ในขณะที่กลุ่ม HTA ยังทรงตัวในภาพรวม');
+                                    $clinicalLedRweInterpretation = str_contains($clinicalLedRweTrendShape, 'เพิ่ม')
+                                        ? 'ขณะที่ RWE มีแนวโน้ม' . $clinicalLedRweTrendShape . 'ในช่วงหลัง สะท้อนการขยายตัวของงานที่เชื่อมโจทย์บริการสุขภาพเข้ากับ real-world evidence มากขึ้น ' . $clinicalLedHtaInterpretation
+                                        : (str_contains($clinicalLedRweTrendShape, 'ลด')
+                                            ? 'ขณะที่ RWE มีแนวโน้มลดลงเมื่อเทียบกับช่วงต้นข้อมูล จึงยังไม่ควรสรุปว่าเกิดการขยายตัวของงานที่เชื่อมโจทย์บริการสุขภาพเข้ากับ real-world evidence ในช่วงข้อมูลนี้'
+                                            : 'ขณะที่ RWE ยังไม่เปลี่ยนแปลงชัดเจน จึงยังไม่เห็นการขยายตัวของงานที่เชื่อมโจทย์บริการสุขภาพเข้ากับ real-world evidence ในช่วงข้อมูลนี้');
+                                    $clinicalLedRoleYears = collect($clinicalLedIntegrationTrend['years'] ?? [])->values();
+                                    $clinicalLedRoleTrendSummaries = collect([
+                                        'pi' => 'PI',
+                                        'co_pi' => 'Co-PI',
+                                        'co_research' => 'Co-Research',
+                                    ])->map(function ($label, $key) use ($clinicalLedIntegrationRoleTrend, $clinicalLedIntegrationRoleStats, $clinicalLedRoleYears, $currentYearBe) {
+                                        $roleStat = $clinicalLedIntegrationRoleStats->firstWhere('key', $key);
+                                        $topTheme = $roleStat?->top_theme ?? null;
+                                        $topThemeText = $topTheme
+                                            ? ' เด่นที่ ' . ($topTheme->label ?? '-') . ' (' . number_format((int) ($topTheme->people ?? 0)) . ' คน)'
+                                            : '';
+                                        $rows = $clinicalLedRoleYears
+                                            ->map(fn ($year, $index) => (object) [
+                                                'year' => (int) $year,
+                                                'value' => (int) (collect($clinicalLedIntegrationRoleTrend[$key] ?? [])->values()->get($index) ?? 0),
+                                            ])
+                                            ->filter(fn ($row) => (int) ($row->year ?? 0) < (int) $currentYearBe)
+                                            ->values();
+                                        if ($rows->isEmpty()) {
+                                            $rows = $clinicalLedRoleYears
+                                                ->map(fn ($year, $index) => (object) [
+                                                    'year' => (int) $year,
+                                                    'value' => (int) (collect($clinicalLedIntegrationRoleTrend[$key] ?? [])->values()->get($index) ?? 0),
+                                                ])
+                                                ->values();
+                                        }
+
+                                        $first = $rows->first();
+                                        $last = $rows->last();
+                                        return $label . ' จาก ' . number_format((int) ($first?->value ?? 0)) . ' เป็น ' . number_format((int) ($last?->value ?? 0)) . ' คน' . $topThemeText;
+                                    })->values();
+                                    $clinicalLedRoleExpansionSignal = 'ภาพรวมแสดงว่าการเติบโตของสามกลุ่มนี้ไม่ได้เพิ่มเฉพาะหัวหน้าโครงการ แต่ขยายไปถึง Co-PI และ Co-Research ด้วย';
                                 @endphp
 
                                 <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_430px]">
                                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
                                             <div>
-                                                <div class="text-sm font-semibold text-slate-900">Trend กลุ่มเนื้อหา Ageing / RWE ตามปี</div>
+                                                <div class="text-sm font-semibold text-slate-900">Trend กลุ่มเนื้อหา Ageing / HTA / RWE ตามปี</div>
                                                 <div class="mt-1 text-xs text-slate-500">นับจำนวนคนศิริราชไม่ซ้ำในแต่ละกลุ่มเนื้อหาของแต่ละปี</div>
                                             </div>
-                                            <span class="policy-pill">Ageing / RWE</span>
+                                            <span class="policy-pill">Ageing / HTA / RWE</span>
                                         </div>
-                                        <div class="mt-3 h-[380px]">
-                                            <canvas id="chartClinicalLedIntegrationTrend" class="block h-full w-full"></canvas>
+                                        <div class="clinical-led-chart-scroll">
+                                            <div class="clinical-led-chart-inner">
+                                                <canvas id="chartClinicalLedIntegrationTrend" class="block h-full w-full"></canvas>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4">
-                                        <div class="text-sm font-semibold text-indigo-950">สรุปจากแนวโน้ม</div>
+                                        <div class="text-xl font-semibold text-indigo-950">สรุปจากแนวโน้ม</div>
                                         <div class="mt-3 grid gap-3">
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
-                                                <div class="text-[11px] font-semibold text-indigo-700">ทิศทางหลัก</div>
+                                        <div class="text-[13px] font-semibold text-indigo-700">ทิศทางหลัก</div>
+                                        <div class="mt-1 text-sm leading-relaxed text-slate-700">
+                                                    ช่วงปี {{ $clinicalLedFirstYearRow?->year ?: '-' }} - {{ $clinicalLedLastYearRow?->year ?: '-' }} กลุ่ม Ageing / HTA / RWE {{ $clinicalLedTotalTrendShape }} จาก {{ number_format($clinicalLedFirstCount) }} เป็น {{ number_format($clinicalLedLastCount) }} คน จุดสูงสุดปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} ที่ {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คน โดยกลุ่มสะสมสูงสุดคือ {{ $clinicalLedTopTheme?->label ?? '-' }} {{ number_format((int) ($clinicalLedTopTheme?->people ?? 0)) }} คน
+                                        </div>
+                                    </div>
+                                            <div class="rounded-xl bg-white/90 px-3 py-3">
+                                                <div class="text-[13px] font-semibold text-indigo-700">บทบาทที่เข้ามาร่วม</div>
                                                 <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    แนวโน้มสะท้อนว่าการมีส่วนร่วมของคนศิริราชในกลุ่ม Ageing ขยายตัวก่อนกลุ่ม RWE โดย Ageing มี {{ number_format((int) ($clinicalLedFirstYearRow?->ageing_people_count ?? 0)) }} คนในปี {{ $clinicalLedFirstYearRow?->year ?: '-' }} และไปสู่จุดสูงสุด {{ number_format((int) ($clinicalLedPeakYearRow?->ageing_people_count ?? 0)) }} คนในปี {{ $clinicalLedPeakYearRow?->year ?: '-' }}
+                                                    {{ $clinicalLedRoleTrendSummaries->implode(', ') }}. {{ $clinicalLedRoleExpansionSignal }}
                                                 </div>
                                             </div>
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
-                                                <div class="text-[11px] font-semibold text-indigo-700">บทบาทที่เข้ามาร่วม</div>
-                                                <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    ในสองกลุ่มเนื้อหานี้มีคนศิริราชร่วมสะสมตามบทบาท: {{ $clinicalLedRoleSummaryText ?: '-' }} ทำให้เห็นว่าไม่ได้มีเฉพาะหัวหน้าโครงการ แต่มีการกระจายบทบาททั้ง PI, Co-PI และ Co-Research
+                                        <div class="text-[13px] font-semibold text-indigo-700">สิ่งที่เกิดขึ้น</div>
+                                        <div class="mt-1 text-sm leading-relaxed text-slate-700">
+                                                    ปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} เป็นจุดสูงสุดของช่วงข้อมูล โดยมีบุคลากรศิริราชรวม {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คนในสามกลุ่มนี้ {{ $clinicalLedRweInterpretation }}
+                                        </div>
+                                    </div>
+                                            @if ((int) $currentYearBe === 2569)
+                                                <div class="rounded-xl bg-white/70 px-3 py-3 text-sm leading-relaxed text-slate-500">
+                                                    ปี 2569 ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร
                                                 </div>
-                                            </div>
-                                            <div class="rounded-xl bg-white/90 px-3 py-3">
-                                                <div class="text-[11px] font-semibold text-indigo-700">ข้อควรตีความ</div>
-                                                <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    ปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} เป็นจุดสูงสุดของช่วงข้อมูล มีคนศิริราชรวม {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คนในสองกลุ่มนี้ ขณะที่ RWE เริ่มเห็นการเพิ่มขึ้นต่อเนื่องกว่าเดิม จึงควรอ่านเป็นสัญญาณของการขยับจาก HTA/system research ไปสู่งานที่เชื่อมโจทย์บริการกับ real-world evidence มากขึ้น
-                                                </div>
-                                            </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -1688,7 +2235,7 @@
                                 <div class="flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <div class="text-sm font-semibold text-slate-900">Trend Data Source / Method ตามปี</div>
-                                        <div class="mt-1 text-xs text-slate-500">นับจำนวนโครงการในแต่ละปีตามแหล่งที่มาและวิธีใช้ข้อมูล</div>
+                                        <div class="mt-1 text-xs text-slate-500">นับจำนวนโครงการในแต่ละปีตามแหล่งที่มาและวิธีใช้ข้อมูล กดที่จุดบนกราฟเพื่อดูรายการโปรเจค</div>
                                     </div>
                                     <span class="policy-pill">Real-world / Primary</span>
                                 </div>
@@ -1698,40 +2245,75 @@
                             </div>
 
                             <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-4">
-                                <div class="text-sm font-semibold text-cyan-950">สรุป Data Literacy Skill</div>
-                                <div class="mt-3 grid gap-3">
-                                    @foreach ($policyDataLabels as $label => $meta)
-                                        @php
-                                            $count = (int) ($policyDataSourceCounts[$label] ?? 0);
-                                            $pct = $policyDataSourceTotal > 0 ? round(($count / $policyDataSourceTotal) * 100, 1) : 0;
-                                        @endphp
-                                        <div class="rounded-xl bg-white/90 px-3 py-3">
-                                            <div class="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <div class="text-sm font-semibold text-slate-900">{{ $meta['short'] }}</div>
-                                                    <div class="mt-1 text-[11px] font-semibold" style="color: {{ $meta['color'] }}">{{ $meta['tag'] }}</div>
-                                                </div>
-                                                <div class="text-right">
-                                                    <div class="metric text-xl font-semibold text-slate-900">{{ number_format($count) }}</div>
-                                                    <div class="text-[11px] text-slate-500">โครงการ</div>
-                                                </div>
-                                            </div>
-                                            <div class="mt-3 h-2 rounded-full bg-slate-100">
-                                                <div class="h-2 rounded-full" style="width: {{ min(100, max(0, $pct)) }}%; background-color: {{ $meta['color'] }}"></div>
-                                            </div>
-                                        </div>
-                                    @endforeach
+                                @php
+                                    $dataLiteracyTrendRows = collect($policyDataSourceTrend['years'] ?? [])
+                                        ->values()
+                                        ->map(function ($year, $index) use ($policyDataSourceTrend) {
+                                            $realWorld = (int) (collect($policyDataSourceTrend['series']['Real-World data'] ?? [])->values()->get($index) ?? 0);
+                                            $primary = (int) (collect($policyDataSourceTrend['series']['Primary data collection'] ?? [])->values()->get($index) ?? 0);
 
+                                            return (object) [
+                                                'year' => (int) $year,
+                                                'real_world' => $realWorld,
+                                                'primary' => $primary,
+                                                'total' => $realWorld + $primary,
+                                            ];
+                                        })
+                                        ->filter(fn ($row) => (int) ($row->year ?? 0) < (int) $currentYearBe)
+                                        ->values();
+                                    if ($dataLiteracyTrendRows->isEmpty()) {
+                                        $dataLiteracyTrendRows = collect($policyDataSourceTrend['years'] ?? [])
+                                            ->values()
+                                            ->map(function ($year, $index) use ($policyDataSourceTrend) {
+                                                $realWorld = (int) (collect($policyDataSourceTrend['series']['Real-World data'] ?? [])->values()->get($index) ?? 0);
+                                                $primary = (int) (collect($policyDataSourceTrend['series']['Primary data collection'] ?? [])->values()->get($index) ?? 0);
+
+                                                return (object) [
+                                                    'year' => (int) $year,
+                                                    'real_world' => $realWorld,
+                                                    'primary' => $primary,
+                                                    'total' => $realWorld + $primary,
+                                                ];
+                                            })
+                                            ->values();
+                                    }
+                                    $dataLiteracyFirst = $dataLiteracyTrendRows->first();
+                                    $dataLiteracyLast = $dataLiteracyTrendRows->last();
+                                    $dataLiteracyPeak = $dataLiteracyTrendRows->sortByDesc(fn ($row) => (int) ($row->total ?? 0))->first();
+                                    $dataLiteracyTotalTrendShape = $trendShape($dataLiteracyTrendRows->pluck('total'));
+                                    $dataLiteracyRealWorldTrendShape = $trendShape($dataLiteracyTrendRows->pluck('real_world'));
+                                    $dataLiteracyPrimaryTrendShape = $trendShape($dataLiteracyTrendRows->pluck('primary'));
+                                    $dataLiteracySourceInterpretation = $policyDataSourcePeak === 'Real-World data'
+                                        ? 'น้ำหนักหลักอยู่ที่การใช้ข้อมูลจากระบบบริการหรือข้อมูลที่เกิดขึ้นจริง'
+                                        : ($policyDataSourcePeak === 'Primary data collection'
+                                            ? 'น้ำหนักหลักอยู่ที่การเก็บข้อมูลใหม่เพื่อให้ตอบโจทย์โครงการ'
+                                            : 'ยังไม่มีหมวด Data Source / Method ที่เด่นชัด');
+                                @endphp
+                                <div class="text-xl font-semibold text-cyan-950">สรุปจากแนวโน้ม</div>
+                                <div class="mt-3 grid gap-3">
                                     <div class="rounded-xl bg-white/90 px-3 py-3">
-                                        <div class="text-[11px] font-semibold text-cyan-700">จุดที่ควรอ่าน</div>
+                                        <div class="text-[13px] font-semibold text-cyan-700">เกิดอะไรขึ้น</div>
                                         <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                            @if ((int) $policyDataSourceCounts->sum() > 0)
-                                                หมวดที่พบมากที่สุดคือ {{ $policyDataSourcePeak ?: '-' }} จำนวน {{ number_format($policyDataSourcePeakCount) }} โครงการ จึงช่วยบอกว่างานของหน่วยกำลังใช้ฐานข้อมูลเดิมจากระบบบริการ หรือสร้างข้อมูลใหม่เพื่อตอบคำถามวิจัยมากกว่ากัน
-                                            @else
-                                                ยังไม่มีโครงการที่ระบุ Data source / Method ในช่วงที่เลือก จึงยังไม่ควรสรุปว่างานของหน่วยใช้ข้อมูลเดิมจากระบบบริการ หรือสร้างข้อมูลใหม่มากกว่ากัน
-                                            @endif
+                                            ปี {{ $dataLiteracyFirst?->year ?: '-' }} - {{ $dataLiteracyLast?->year ?: '-' }} โครงการที่ระบุ Data Source / Method {{ $dataLiteracyTotalTrendShape }} จาก {{ number_format((int) ($dataLiteracyFirst?->total ?? 0)) }} เป็น {{ number_format((int) ($dataLiteracyLast?->total ?? 0)) }} โครงการ โดยปี {{ $dataLiteracyPeak?->year ?: '-' }} เป็นจุดสูงสุดที่ {{ number_format((int) ($dataLiteracyPeak?->total ?? 0)) }} โครงการ
                                         </div>
                                     </div>
+                                    <div class="rounded-xl bg-white/90 px-3 py-3">
+                                        <div class="text-[13px] font-semibold text-cyan-700">แปลว่าอะไร</div>
+                                        <div class="mt-1 text-sm leading-relaxed text-slate-700">
+                                            Real-World data คือการใช้ข้อมูลที่มีอยู่จากระบบบริการหรือข้อมูลจริง ส่วน Primary data collection คือการเก็บข้อมูลใหม่ ดังนั้น trend นี้ควรอ่านเป็นแนวทางการใช้ข้อมูลของกลุ่มโครงการ ไม่ใช่จำนวน output
+                                        </div>
+                                    </div>
+                                    <div class="rounded-xl bg-white/90 px-3 py-3">
+                                        <div class="text-[13px] font-semibold text-cyan-700">สิ่งที่เกิดขึ้น</div>
+                                        <div class="mt-1 text-sm leading-relaxed text-slate-700">
+                                            หมวดที่พบมากที่สุดคือ {{ $policyDataSourcePeak ?: '-' }} จำนวน {{ number_format($policyDataSourcePeakCount) }} โครงการ แปลว่า{{ $dataLiteracySourceInterpretation }} โดย Real-World data {{ $dataLiteracyRealWorldTrendShape }} และ Primary data collection {{ $dataLiteracyPrimaryTrendShape }} ในช่วงเดียวกัน ขณะที่โครงการที่ยังไม่ระบุ Data Source / Method มี {{ number_format((int) ($policyImpact['data_source_missing_count'] ?? 0)) }} โครงการ
+                                        </div>
+                                    </div>
+                                    @if ((int) $currentYearBe === 2569)
+                                        <div class="rounded-xl bg-white/70 px-3 py-3 text-sm leading-relaxed text-slate-500">
+                                            ปี 2569 ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -1741,8 +2323,8 @@
                 <div class="policy-axis-card mt-4">
                     <div class="policy-section-title">
                         <div>
-                            <h3 class="text-base font-semibold text-slate-900">People Contribution</h3>
-                            <p class="mt-1 text-sm text-slate-600">สรุปบุคลากรในกลุ่มโครงการ: PI, Co-PI, Co-Research และด้านที่มีส่วนร่วมบ่อย</p>
+                            <h3 class="text-xl font-semibold text-slate-900">People Contribution</h3>
+                            <p class="mt-1 text-sm leading-relaxed text-slate-600">สรุปบุคลากรในกลุ่มโครงการ: PI, Co-PI, Co-Research และด้านที่มีส่วนร่วมบ่อย</p>
                         </div>
                         <span class="policy-pill">แสดง {{ number_format($policyPeopleHighlights->count()) }} คน</span>
                     </div>
@@ -1752,21 +2334,21 @@
                                 <div class="flex items-start gap-3">
                                     <img src="{{ $person->profile_photo_url }}" alt="{{ $person->name }}" onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'" class="h-12 w-12 rounded-2xl border border-slate-200 object-cover">
                                     <div class="min-w-0 flex-1">
-                                        <div class="text-sm font-semibold text-slate-900">{{ $person->name }}</div>
+                                        <div class="text-sm font-semibold leading-snug text-slate-950">{{ $person->name }}</div>
                                         @if ($person->position)
-                                            <div class="mt-1 text-xs text-slate-500">{{ $person->position }}</div>
+                                            <div class="mt-1 text-xs font-medium leading-snug text-slate-600">{{ $person->position }}</div>
                                         @endif
                                         <div class="mt-2 flex flex-wrap gap-1.5">
-                                            <span class="rounded-full bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700">PI {{ number_format((int) ($person->role_counts['pi'] ?? 0)) }}</span>
-                                            <span class="rounded-full bg-teal-50 px-2 py-1 text-[11px] font-semibold text-teal-700">Co-PI {{ number_format((int) ($person->role_counts['co_pi'] ?? 0)) }}</span>
-                                            <span class="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Co-Research {{ number_format((int) ($person->role_counts['co_research'] ?? 0)) }}</span>
+                                            <span class="policy-role-chip bg-indigo-50 text-indigo-700">PI {{ number_format((int) ($person->role_counts['pi'] ?? 0)) }}</span>
+                                            <span class="policy-role-chip bg-teal-50 text-teal-700">Co-PI {{ number_format((int) ($person->role_counts['co_pi'] ?? 0)) }}</span>
+                                            <span class="policy-role-chip bg-amber-50 text-amber-700">Co-Research {{ number_format((int) ($person->role_counts['co_research'] ?? 0)) }}</span>
                                         </div>
-                                        <div class="mt-2 text-xs leading-relaxed text-slate-600">เด่นด้าน: {{ $person->top_theme }}</div>
+                                        <div class="mt-3 text-xs font-semibold leading-relaxed text-slate-700">เด่นด้าน: <span class="font-medium text-slate-600">{{ $person->top_theme }}</span></div>
                                         <div class="mt-1 text-xs leading-relaxed text-slate-500">{{ $person->trend_text }}</div>
                                     </div>
-                                    <div class="shrink-0 text-right">
-                                        <div class="metric text-sm font-semibold text-slate-900">{{ number_format((int) $person->total_projects) }}</div>
-                                        <div class="text-[11px] text-slate-500">projects</div>
+                                    <div class="shrink-0 min-w-[48px] text-right">
+                                        <div class="metric text-base font-semibold leading-none text-slate-950">{{ number_format((int) $person->total_projects) }}</div>
+                                        <div class="mt-1 text-[11px] font-medium leading-none text-slate-500">projects</div>
                                     </div>
                                 </div>
                             </a>
@@ -1776,7 +2358,113 @@
                     </div>
                 </div>
 
+                <div class="policy-axis-card mt-4">
+                    <div class="policy-section-title">
+                        <div>
+                            <h3 class="text-xl font-semibold text-slate-900">การผลักด้นของเเพทย์ในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพในด้านต่างๆ</h3>
+                        </div>
+                    </div>
+                    @php
+                        $doctorTimelineNodes = $doctorContributionTimeline->values();
+                        $doctorTimelineNodeYears = $doctorTimelineNodes
+                            ->pluck('year')
+                            ->filter()
+                            ->map(fn ($year) => (int) $year)
+                            ->values();
+                        $doctorTimelineStartYear = filled($selectedYearFrom)
+                            ? (int) $selectedYearFrom
+                            : (int) ($doctorTimelineNodeYears->min() ?: 0);
+                        $doctorTimelineEndYear = filled($selectedYearTo)
+                            ? (int) $selectedYearTo
+                            : (int) ($doctorTimelineNodeYears->max() ?: 0);
+                        $doctorTimelineYears = ($doctorTimelineStartYear > 0 && $doctorTimelineEndYear >= $doctorTimelineStartYear)
+                            ? collect(range($doctorTimelineStartYear, $doctorTimelineEndYear))
+                            : $doctorTimelineNodeYears->unique()->sort()->values();
+                        $doctorTimelineThemes = $doctorTimelineNodes
+                            ->pluck('theme')
+                            ->filter()
+                            ->unique()
+                            ->sort()
+                            ->values();
+                        $doctorTimelineMap = $doctorTimelineNodes
+                            ->mapWithKeys(fn ($node) => [((int) ($node->year ?? 0)) . '|' . trim((string) ($node->theme ?? '')) => $node]);
+                    @endphp
+                    <div class="doctor-lane-board">
+                        <div class="doctor-lane-grid" style="--doctor-year-count: {{ max(1, $doctorTimelineYears->count()) }};">
+                            @if ($doctorTimelineYears->isNotEmpty() && $doctorTimelineThemes->isNotEmpty())
+                                <div class="doctor-lane-head">
+                                    <div class="doctor-lane-theme">
+                                        <div class="text-xs font-semibold text-slate-500">กลุ่มงาน</div>
+                                    </div>
+                                    @foreach ($doctorTimelineYears as $year)
+                                        <div class="doctor-lane-year">{{ $year }}</div>
+                                    @endforeach
+                                </div>
+                                @foreach ($doctorTimelineThemes as $theme)
+                                    <div class="doctor-lane-row" style="{{ $projectTypeToneStyle($theme) }}">
+                                        <div class="doctor-lane-theme">
+                                            <div class="text-sm font-semibold leading-snug text-slate-900">{{ $theme }}</div>
+                                        </div>
+                                        @foreach ($doctorTimelineYears as $year)
+                                            @php
+                                                $node = $doctorTimelineMap->get(((int) $year) . '|' . trim((string) $theme));
+                                                $doctors = collect($node->doctors ?? [])->values();
+                                            @endphp
+                                            <div class="doctor-lane-cell {{ $doctors->isEmpty() ? 'is-empty' : '' }}">
+                                                @if ($doctors->isNotEmpty())
+                                                    <div class="doctor-avatar-stack" title="{{ $doctors->pluck('name')->implode(', ') }}">
+                                                        @foreach ($doctors as $doctor)
+                                                            <img src="{{ $doctor->profile_photo_url }}" alt="{{ $doctor->name }}" title="{{ $doctor->name }}" onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'">
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    <span class="text-sm text-slate-300">-</span>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">ยังไม่มีข้อมูลแพทย์ในช่วงที่เลือก</div>
+                            @endif
+                        </div>
+                    </div>
+                    @if ($doctorTimelineYears->isNotEmpty() && $doctorTimelineThemes->isNotEmpty())
+                        <div class="doctor-mobile-timeline">
+                            @foreach ($doctorTimelineThemes as $theme)
+                                <div class="doctor-mobile-theme" style="{{ $projectTypeToneStyle($theme) }}">
+                                    <div class="doctor-mobile-theme__head">
+                                        <div class="text-sm font-semibold leading-snug text-slate-950">{{ $theme }}</div>
+                                    </div>
+                                    @foreach ($doctorTimelineYears as $year)
+                                        @php
+                                            $node = $doctorTimelineMap->get(((int) $year) . '|' . trim((string) $theme));
+                                            $doctors = collect($node->doctors ?? [])->values();
+                                        @endphp
+                                        <div class="doctor-mobile-year">
+                                            <div class="doctor-mobile-year__label">{{ $year }}</div>
+                                            @if ($doctors->isNotEmpty())
+                                                <div class="doctor-avatar-stack" title="{{ $doctors->pluck('name')->implode(', ') }}">
+                                                    @foreach ($doctors as $doctor)
+                                                        <img src="{{ $doctor->profile_photo_url }}" alt="{{ $doctor->name }}" title="{{ $doctor->name }}" onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'">
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <span class="doctor-mobile-empty">-</span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
             </section>
+
+            <div class="fade-up mt-8">
+                <h2 class="text-2xl font-semibold leading-tight text-slate-950">ผลงานที่เกิดขึ้นในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</h2>
+            </div>
 
             <section class="fade-up panel section-panel section-panel--teal p-5 md:p-6">
                 <div class="flex flex-wrap items-end justify-between gap-3">
@@ -2073,7 +2761,7 @@
                 <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
                     <article class="fade-up panel section-panel section-panel--emerald chart-sticky flex h-full flex-col p-4 md:p-5">
                         <div class="section-tag section-tag--emerald">Networking</div>
-                        <h2 class="text-base font-semibold text-slate-900">Networking: EA115 Capacity Building / Knowledge Sharing และ EA117 MOU <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($networkingCount) }} รายการ)</span></h2>
+                        <h2 class="text-base font-semibold text-slate-900">เครือข่ายและการเสริมศักยภาพ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($networkingCount) }} รายการ)</span></h2>
                         <div class="mt-4 flex flex-1 items-center">
                             <div class="h-[340px] w-full"><canvas id="chartNetworkingYear"></canvas></div>
                         </div>
@@ -2087,38 +2775,58 @@
                                 <div class="text-xs text-slate-500">รายการ</div>
                             </div>
                             <div class="focus-kpi px-4 py-3">
-                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">EA115</div>
+                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">EA115 - {{ $eaFullNameMap['EA115'] }}</div>
                                 <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format((int) ($networkingSummary['ea115_count'] ?? 0)) }}</div>
-                                <div class="text-xs text-slate-500">Capacity Building</div>
+                                <div class="text-xs text-slate-500">{{ $eaFullNameMap['EA115'] }}</div>
                             </div>
                             <div class="focus-kpi px-4 py-3">
-                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">EA117</div>
+                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">EA117 - {{ $eaFullNameMap['EA117'] }}</div>
                                 <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format((int) ($networkingSummary['ea117_count'] ?? 0)) }}</div>
-                                <div class="text-xs text-slate-500">MOU</div>
+                                <div class="text-xs text-slate-500">{{ $eaFullNameMap['EA117'] }}</div>
                             </div>
                         </div>
                         <p class="mt-3 text-sm text-slate-600">ครอบคลุมปี {{ $networkingCoverageStartYear ?: '-' }} ถึง {{ $networkingCoverageEndYear ?: '-' }} · ปีที่มีจำนวนสูงสุด {{ $networkingSummary['peak_year'] ?: '-' }} ({{ number_format((int) ($networkingSummary['peak_year_count'] ?? 0)) }} รายการ)</p>
                         <p class="mt-1 text-xs text-slate-500">รายการที่แสดงล่าสุด {{ number_format($networkingLatestCount) }} รายการ</p>
                         <div class="mt-4 flex-1 space-y-2">
                             @forelse (($networkingSummary['latest'] ?? collect()) as $row)
-                                <button
-                                    type="button"
-                                    class="js-output-item block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
-                                    style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}"
-                                    data-title="{{ $row->title }}"
-                                    data-link="{{ $row->modal_link ?? '' }}"
-                                    data-detail="{{ $row->modal_detail ?? '' }}"
-                                    data-type="{{ $row->type_code ?? 'EA117' }} - {{ $row->type_label ?? 'Networking' }}"
-                                >
-                                    <div class="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold" style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}">
-                                        {{ $row->type_code ?? '-' }} {{ $row->type_label ?? '' }}
-                                    </div>
-                                    <div class="font-medium line-clamp-2">{{ $row->title }}</div>
-                                    <div class="mt-2 grid gap-1 text-xs">
-                                        <div class="text-slate-500">ปี: <span class="font-medium text-slate-700">{{ $row->year_be ?: '-' }}</span></div>
-                                        <div class="text-slate-500">แหล่งข้อมูล: <span class="font-medium text-slate-700">{{ $sourceLabelMap[$row->source ?? ''] ?? ($row->source ?? '-') }}</span></div>
-                                    </div>
-                                </button>
+                                @php
+                                    $networkingOutputLink = trim((string) ($row->link ?? ''));
+                                @endphp
+                                @if ($networkingOutputLink !== '')
+                                    <a
+                                        href="{{ $networkingOutputLink }}"
+                                        class="block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
+                                        style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}"
+                                    >
+                                        <div class="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold" style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}">
+                                            {{ $row->type_code ?? '-' }} - {{ $eaFullNameMap[$row->type_code ?? 'EA117'] ?? 'Networking' }}
+                                        </div>
+                                        <div class="font-medium line-clamp-2">{{ $row->title }}</div>
+                                        <div class="mt-2 grid gap-1 text-xs">
+                                            <div class="text-slate-500">ปี: <span class="font-medium text-slate-700">{{ $row->year_be ?: '-' }}</span></div>
+                                            <div class="text-slate-500">จากโครงการ: <span class="font-medium text-slate-700">{{ $row->reference ?? '-' }}</span></div>
+                                        </div>
+                                    </a>
+                                @else
+                                    <button
+                                        type="button"
+                                        class="js-output-item block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
+                                        style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}"
+                                        data-title="{{ $row->title }}"
+                                        data-link=""
+                                        data-detail="{{ $row->modal_detail ?? '' }}"
+                                        data-type="{{ $row->type_code ?? 'EA117' }} - {{ $eaFullNameMap[$row->type_code ?? 'EA117'] ?? 'Networking' }}"
+                                    >
+                                        <div class="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold" style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}">
+                                            {{ $row->type_code ?? '-' }} - {{ $eaFullNameMap[$row->type_code ?? 'EA117'] ?? 'Networking' }}
+                                        </div>
+                                        <div class="font-medium line-clamp-2">{{ $row->title }}</div>
+                                        <div class="mt-2 grid gap-1 text-xs">
+                                            <div class="text-slate-500">ปี: <span class="font-medium text-slate-700">{{ $row->year_be ?: '-' }}</span></div>
+                                            <div class="text-slate-500">จากโครงการ: <span class="font-medium text-slate-700">{{ $row->reference ?? '-' }}</span></div>
+                                        </div>
+                                    </button>
+                                @endif
                             @empty
                                 <div class="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">ไม่มีข้อมูล</div>
                             @endforelse
@@ -2258,26 +2966,35 @@
             const typeColors = @json($typeChartColors);
             const typeBorderColors = @json($typeChartBorderColors);
             const sourceLabelMap = @json($sourceLabelMap);
+            const outputYearSourceItems = @json(collect($outputYearSourceItems ?? []));
             const paperRankingLabels = @json($paperRankingLabels);
             const paperRankingValues = @json($paperRankingValues);
+            const paperRankingItems = @json(collect($paperRankingItems ?? []));
             const presentationActivityLabels = @json($presentationActivityLabels);
             const presentationActivityValues = @json($presentationActivityValues);
+            const presentationActivityItems = @json(collect($presentationActivityItems ?? []));
             const textbookYearLabels = @json($textbookYearLabels);
             const textbookYearValues = @json($textbookYearValues);
+            const textbookYearItems = @json(collect($textbookYearItems ?? []));
             const networkingYearLabels = @json($networkingYearLabels);
             const networkingYearSeries = @json($networkingYearSeries);
+            const networkingYearItems = @json(collect($networkingYearItems ?? []));
+            const outputTypeChartItems = @json(collect($outputTypeChartItems ?? []));
             const policyFrameworkTrendYears = @json(collect($policyFrameworkTrend['years'] ?? [])->values());
             const policyFrameworkTrendSeries = @json(collect($policyFrameworkTrend['series'] ?? []));
             const policyFrameworkTrendItems = @json(collect($policyFrameworkTrend['items'] ?? []));
             const policyFrameworkAllItems = @json(collect($policyFrameworkTrend['all_items'] ?? []));
             const dataLiteracyTrendYears = @json(collect($policyDataSourceTrend['years'] ?? [])->values());
             const dataLiteracyTrendSeries = @json(collect($policyDataSourceTrend['series'] ?? []));
+            const dataLiteracyTrendItems = @json(collect($policyDataSourceTrend['items'] ?? []));
             const policyImpactTrendYears = @json(collect($policyImpactTrend['years'] ?? [])->values());
             const policyImpactTrendSeries = @json(collect($policyImpactTrend['series'] ?? []));
             const policyImpactTrendItems = @json(collect($policyImpactTrend['items'] ?? []));
             const policyImpactTrendItemsByYear = @json(collect($policyImpactTrend['items_by_year'] ?? []));
             const sirirajClinicalTrendRows = @json($expertTrendRows);
+            const sirirajClinicalTrendItems = @json(collect($expertTrend['items_by_year'] ?? []));
             const clinicalLedIntegrationTrend = @json($clinicalLedIntegrationTrend);
+            const clinicalLedIntegrationRoleTrend = @json(collect($clinicalLedIntegration['role_trend'] ?? []));
             const clinicalLedIntegrationItemsByThemeYear = @json(collect($clinicalLedIntegration['items_by_theme_year'] ?? []));
             const presentationChartColors = ['#ea580c', '#fb7185', '#16a34a', '#0891b2', '#7c3aed', '#ca8a04', '#0f766e', '#2563eb', '#475569'];
             const presentationChartBorderColors = ['#c2410c', '#e11d48', '#15803d', '#0e7490', '#6d28d9', '#a16207', '#115e59', '#1d4ed8', '#334155'];
@@ -2298,17 +3015,51 @@
             const safeLabels = (labels) => (labels && labels.length ? labels : ['ไม่มีข้อมูล']);
             const safeValues = (values, fallback = 0) => (values && values.length ? values : [fallback]);
             const safeColors = (colors) => (colors && colors.length ? colors : ['#64748b']);
+            const renderedCharts = new Map();
             const renderChart = (canvasId, config) => {
                 const canvas = document.getElementById(canvasId);
                 if (!canvas || typeof Chart === 'undefined') return null;
 
                 try {
                     Chart.getChart?.(canvas)?.destroy();
-                    return new Chart(canvas, config);
+                    const chart = new Chart(canvas, config);
+                    renderedCharts.set(canvasId, chart);
+                    return chart;
                 } catch (error) {
                     console.error(`Unable to render ${canvasId}`, error);
                     return null;
                 }
+            };
+            let chartResizeTimer = null;
+            const resizeRenderedCharts = () => {
+                window.clearTimeout(chartResizeTimer);
+                chartResizeTimer = window.setTimeout(() => {
+                    renderedCharts.forEach((chart, canvasId) => {
+                        try {
+                            const canvas = document.getElementById(canvasId);
+                            if (!canvas || !chart) return;
+                            if (canvasId === 'chartClinicalLedIntegrationTrend') {
+                                chart.options.layout = chart.options.layout || {};
+                                chart.options.layout.padding = {
+                                    ...(chart.options.layout.padding || {}),
+                                    top: isCompactViewport() ? 14 : 46
+                                };
+                                chart.options.plugins = chart.options.plugins || {};
+                                chart.options.plugins.legend = chart.options.plugins.legend || {};
+                                chart.options.plugins.legend.labels = {
+                                    ...(chart.options.plugins.legend.labels || {}),
+                                    boxWidth: isCompactViewport() ? 10 : 14,
+                                    padding: isCompactViewport() ? 4 : 6,
+                                    font: { size: isCompactViewport() ? 10 : 12 }
+                                };
+                            }
+                            chart.resize();
+                            chart.update('none');
+                        } catch (error) {
+                            console.error(`Unable to resize ${canvasId}`, error);
+                        }
+                    });
+                }, 80);
             };
             const suggestedAxisMax = (values, min = 5) => {
                 const maxVal = Math.max(...(values || [0]), 0);
@@ -2327,6 +3078,7 @@
                     labels: labelsForYearChart,
                     datasets: [
                         {
+                            key: 'project',
                             label: 'ผลงานในโครงการวิจัย',
                             data: projectSeries,
                             backgroundColor: outputInProjectColor,
@@ -2336,7 +3088,8 @@
                             borderRadius: 8
                         },
                         {
-                            label: 'Mission',
+                            key: 'back_office',
+                            label: 'พันธกิจ',
                             data: missionSeries,
                             backgroundColor: missionColor,
                             borderColor: missionBorder,
@@ -2345,6 +3098,7 @@
                             borderRadius: 8
                         },
                         {
+                            key: 'external',
                             label: 'Extra',
                             data: extraSeries,
                             backgroundColor: extraColor,
@@ -2359,6 +3113,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: chartAnim,
+                    interaction: { mode: 'nearest', intersect: true },
                     scales: {
                         x: { stacked: true, ticks: { color: textColor }, grid: { color: gridColor } },
                         y: {
@@ -2394,6 +3149,21 @@
                                 return total > 0 ? total : '';
                             }
                         },
+                    },
+                    onHover: (event, elements, chart) => {
+                        const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartOutputsByYear');
+                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+                        if (target) target.style.cursor = nearest.length ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements, chart) => {
+                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+                        if (!nearest.length) return;
+                        const point = nearest[0];
+                        const dataset = chart.data.datasets?.[point.datasetIndex] || {};
+                        const year = chart.data.labels?.[point.index];
+                        const yearKey = year === 'ไม่ระบุปี' ? '__unknown__' : String(year);
+                        const items = normalizeFrameworkItems(outputYearSourceItems?.[dataset.key]?.[yearKey]);
+                        openOutputItemsModal(items, dataset.label || 'รายการผลงาน', 'รายการ', { year: yearKey === '__unknown__' ? '' : yearKey });
                     }
                 }
             });
@@ -2403,7 +3173,7 @@
                 trust: 'Contribute to Siriraj',
                 truth: 'Integrate Clinical Skill',
                 policy_impact: 'Contribution',
-                clinical_led: 'กลุ่มเนื้อหา Ageing / RWE'
+                clinical_led: 'กลุ่มเนื้อหา Ageing / HTA / RWE'
             };
             const frameworkOutputTypeStyles = @json($typeStyleMap);
             const frameworkTrendUnits = {
@@ -2416,7 +3186,10 @@
                 trust: { bg: '#eef2ff', border: '#c7d2fe', accent: '#4f46e5', header: '#eef2ff' },
                 truth: { bg: '#ecfdf5', border: '#99f6e4', accent: '#0f766e', header: '#ecfdf5' },
                 policy_impact: { bg: '#fff7ed', border: '#fed7aa', accent: '#c2410c', header: '#fff7ed' },
-                clinical_led: { bg: '#f0f9ff', border: '#bae6fd', accent: '#0369a1', header: '#f0f9ff' }
+                clinical_led: { bg: '#f0f9ff', border: '#bae6fd', accent: '#0369a1', header: '#f0f9ff' },
+                clinical_ageing: { bg: '#eef2ff', border: '#c7d2fe', accent: '#4f46e5', header: '#eef2ff' },
+                clinical_hta: { bg: '#fff7ed', border: '#fed7aa', accent: '#d97706', header: '#fff7ed' },
+                clinical_rwe: { bg: '#ecfdf5', border: '#99f6e4', accent: '#0f766e', header: '#ecfdf5' }
             };
             let frameworkModalTone = frameworkToneStyles.trust;
             const frameworkTrendDatasets = [
@@ -2794,6 +3567,15 @@
                 setFrameworkModalItems(items, unit || frameworkTrendUnits[datasetKey] || 'รายการ');
                 showFrameworkModal();
             };
+            const openOutputItemsModal = (items, title, unit = 'รายการ', initialFilters = {}, tone = null) => {
+                const normalizedItems = normalizeFrameworkItems(items);
+                if (!frameworkModal || !frameworkModalBody) return;
+                frameworkModalTone = tone || { bg: '#f8fafc', border: '#cbd5e1', accent: '#334155', header: '#f8fafc' };
+                frameworkModalTitle.textContent = title || 'รายการ';
+                frameworkModalSubtitle.innerHTML = `<span class="text-base font-semibold text-slate-700">รวม ${normalizedItems.length.toLocaleString()} ${escapeFrameworkHtml(unit || 'รายการ')}</span>`;
+                setFrameworkModalItems(normalizedItems, unit || 'รายการ', initialFilters || {});
+                showFrameworkModal();
+            };
             const closeFrameworkModal = () => {
                 if (frameworkModal) {
                     frameworkModal.style.display = 'none';
@@ -2896,9 +3678,12 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: chartAnim,
+                    layout: {
+                        padding: { top: 24, right: 96, bottom: 0, left: 72 }
+                    },
                     interaction: { mode: 'index', intersect: false },
                     scales: {
-                        x: { ticks: { color: textColor }, grid: { display: false } },
+                        x: { offset: false, ticks: { color: textColor }, grid: { display: false } },
                         y: {
                             beginAtZero: true,
                             suggestedMax: suggestedAxisMax([...sirirajClinicalPeople, ...sirirajClinicalProjects], 5),
@@ -2919,18 +3704,42 @@
                             font: { weight: '700', size: 10 },
                             formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
                         }
+                    },
+                    onHover: (event, elements) => {
+                        const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartSirirajClinicalTrend');
+                        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements, chart) => {
+                        if (!elements.length) return;
+                        const point = elements[0];
+                        const year = chart.data.labels?.[point.index];
+                        const items = normalizeFrameworkItems(sirirajClinicalTrendItems?.[String(year)]);
+                        openOutputItemsModal(items, 'แพทย์ศิริราชที่ร่วมในกลุ่มโครงการ', 'โครงการ', { year: String(year || '') }, frameworkToneStyles.truth);
                     }
                 }
             });
 
             const clinicalLedYears = safeLabels(clinicalLedIntegrationTrend?.years || []);
             const clinicalLedAgeingPeople = clinicalLedYears.map((_, index) => Number(clinicalLedIntegrationTrend?.ageing_people?.[index] || 0));
+            const clinicalLedHtaPeople = clinicalLedYears.map((_, index) => Number(clinicalLedIntegrationTrend?.hta_people?.[index] || 0));
             const clinicalLedRwePeople = clinicalLedYears.map((_, index) => Number(clinicalLedIntegrationTrend?.rwe_people?.[index] || 0));
+            const clinicalLedPiPeople = clinicalLedYears.map((_, index) => Number(clinicalLedIntegrationRoleTrend?.pi?.[index] || 0));
+            const clinicalLedCoPiPeople = clinicalLedYears.map((_, index) => Number(clinicalLedIntegrationRoleTrend?.co_pi?.[index] || 0));
+            const clinicalLedCoResearchPeople = clinicalLedYears.map((_, index) => Number(clinicalLedIntegrationRoleTrend?.co_research?.[index] || 0));
+            const clinicalLedYearNumbers = clinicalLedYears.map((year) => Number(year)).filter((year) => Number.isFinite(year));
+            const clinicalLedYearMin = clinicalLedYearNumbers.length ? Math.min(...clinicalLedYearNumbers) - 0.25 : undefined;
+            const clinicalLedYearMax = clinicalLedYearNumbers.length ? Math.max(...clinicalLedYearNumbers) + 0.25 : undefined;
+            const clinicalLedYearPoint = (value, index) => ({ x: Number(clinicalLedYears[index]), y: Number(value || 0) });
+            const isCompactViewport = () => window.matchMedia('(max-width: 640px)').matches;
             const openClinicalLedIntegrationModal = (themeKey, year) => {
                 const items = normalizeFrameworkItems(clinicalLedIntegrationItemsByThemeYear?.[themeKey]?.[String(year)]);
                 if (!frameworkModal || !frameworkModalBody) return;
-                const themeLabel = themeKey === 'rwe' ? 'Real-World Evidence (RWE)' : 'Ageing and Frailty';
-                frameworkModalTone = frameworkToneStyles.clinical_led;
+                const themeLabel = themeKey === 'rwe'
+                    ? 'Real-World Evidence (RWE)'
+                    : (themeKey === 'hta' ? 'Health Systems and HTA' : 'Ageing and Frailty');
+                frameworkModalTone = themeKey === 'rwe'
+                    ? frameworkToneStyles.clinical_rwe
+                    : (themeKey === 'hta' ? frameworkToneStyles.clinical_hta : frameworkToneStyles.clinical_ageing);
                 frameworkModalTitle.textContent = themeLabel;
                 frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} โครงการ</span></span>`;
                 setFrameworkModalItems(items, 'โครงการ', { year: String(year || ''), theme: themeLabel });
@@ -2944,7 +3753,7 @@
                         {
                             key: 'ageing',
                             label: 'Ageing',
-                            data: clinicalLedAgeingPeople,
+                            data: clinicalLedAgeingPeople.map(clinicalLedYearPoint),
                             borderColor: '#4f46e5',
                             backgroundColor: 'rgba(79, 70, 229, .12)',
                             pointBackgroundColor: '#4f46e5',
@@ -2952,9 +3761,19 @@
                             fill: true
                         },
                         {
+                            key: 'hta',
+                            label: 'Health Systems and HTA',
+                            data: clinicalLedHtaPeople.map(clinicalLedYearPoint),
+                            borderColor: '#d97706',
+                            backgroundColor: 'rgba(217, 119, 6, .12)',
+                            pointBackgroundColor: '#d97706',
+                            tension: .35,
+                            fill: true
+                        },
+                        {
                             key: 'rwe',
                             label: 'Real-World Evidence (RWE)',
-                            data: clinicalLedRwePeople,
+                            data: clinicalLedRwePeople.map(clinicalLedYearPoint),
                             borderColor: '#0f766e',
                             backgroundColor: 'rgba(15, 118, 110, .10)',
                             pointBackgroundColor: '#0f766e',
@@ -2967,38 +3786,112 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: chartAnim,
+                    layout: {
+                        padding: { top: isCompactViewport() ? 14 : 46, right: 12, bottom: 8, left: 12 }
+                    },
                     interaction: { mode: 'index', intersect: false },
+                    elements: {
+                        point: {
+                            radius: () => isCompactViewport() ? 3 : 4,
+                            hoverRadius: () => isCompactViewport() ? 5 : 6
+                        },
+                        line: {
+                            borderWidth: () => isCompactViewport() ? 2 : 3
+                        }
+                    },
                     scales: {
-                        x: { ticks: { color: textColor }, grid: { display: false } },
+                        x: {
+                            type: 'linear',
+                            min: clinicalLedYearMin,
+                            max: clinicalLedYearMax,
+                            afterBuildTicks: (scale) => {
+                                scale.ticks = clinicalLedYearNumbers.map((year) => ({ value: year }));
+                            },
+                            ticks: {
+                                color: textColor,
+                                maxRotation: 0,
+                                minRotation: 0,
+                                font: {
+                                    size: () => isCompactViewport() ? 10 : 12,
+                                    weight: '700'
+                                },
+                                callback: (value) => String(Math.trunc(Number(value)))
+                            },
+                            grid: { display: false }
+                        },
                         y: {
                             beginAtZero: true,
-                            suggestedMax: suggestedAxisMax([...clinicalLedAgeingPeople, ...clinicalLedRwePeople], 5),
-                            ticks: { color: textColor, precision: 0 },
+                            suggestedMax: suggestedAxisMax([...clinicalLedAgeingPeople, ...clinicalLedHtaPeople, ...clinicalLedRwePeople], 5),
+                            ticks: {
+                                color: textColor,
+                                precision: 0,
+                                font: { size: () => isCompactViewport() ? 10 : 12 }
+                            },
                             grid: { color: gridColor }
                         }
                     },
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: textColor, boxWidth: 14, boxHeight: 8, padding: 10 }
+                            labels: {
+                                color: textColor,
+                                boxWidth: isCompactViewport() ? 10 : 14,
+                                boxHeight: 8,
+                                padding: isCompactViewport() ? 4 : 6,
+                                font: { size: isCompactViewport() ? 10 : 12 }
+                            }
                         },
                         datalabels: {
-                            color: '#334155',
-                            anchor: 'end',
-                            align: 'top',
-                            font: { weight: '700', size: 10 },
-                            formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
+                            labels: {
+                                value: {
+                                    display: () => !isCompactViewport(),
+                                    color: '#334155',
+                                    anchor: 'end',
+                                    align: (context) => context.datasetIndex === 1 ? 'bottom' : 'end',
+                                    offset: (context) => context.datasetIndex === 1 ? 8 : 6,
+                                    clamp: true,
+                                    clip: false,
+                                    font: { weight: '700', size: 10 },
+                                    formatter: (value) => Number(value?.y || 0) > 0 ? Number(value.y) : ''
+                                },
+                                roles: {
+                                    display: (context) => context.datasetIndex === 0 && !isCompactViewport(),
+                                    color: '#334155',
+                                    anchor: 'end',
+                                    align: 'top',
+                                    offset: 30,
+                                    clamp: true,
+                                    clip: false,
+                                    backgroundColor: 'rgba(255, 255, 255, .92)',
+                                    borderColor: 'rgba(148, 163, 184, .45)',
+                                    borderWidth: 1,
+                                    borderRadius: 6,
+                                    padding: { top: 4, right: 8, bottom: 4, left: 8 },
+                                    textAlign: 'center',
+                                    font: { weight: '700', size: 9 },
+                                    formatter: (_value, context) => {
+                                        const index = context.dataIndex;
+                                        return [
+                                            `PI ${clinicalLedPiPeople[index] || 0}`,
+                                            `Co-PI ${clinicalLedCoPiPeople[index] || 0}`,
+                                            `Co-Research ${clinicalLedCoResearchPeople[index] || 0}`
+                                        ];
+                                    }
+                                }
+                            }
                         }
                     },
                     onHover: (event, elements) => {
                         const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartClinicalLedIntegrationTrend');
-                        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                        const nearest = event?.chart?.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true) || [];
+                        if (target) target.style.cursor = nearest.length ? 'pointer' : 'default';
                     },
                     onClick: (event, elements, chart) => {
-                        if (!elements.length) return;
-                        const point = elements[0];
+                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true);
+                        const point = nearest[0] || elements[0];
+                        if (!point) return;
                         const dataset = chart.data.datasets?.[point.datasetIndex] || {};
-                        const year = chart.data.labels?.[point.index];
+                        const year = dataset.data?.[point.index]?.x;
                         openClinicalLedIntegrationModal(dataset.key || 'ageing', year);
                     }
                 }
@@ -3007,12 +3900,28 @@
             const dataLiteracyYears = safeLabels(dataLiteracyTrendYears || []);
             const dataLiteracyRealWorld = dataLiteracyYears.map((_, index) => Number(dataLiteracyTrendSeries?.['Real-World data']?.[index] || 0));
             const dataLiteracyPrimary = dataLiteracyYears.map((_, index) => Number(dataLiteracyTrendSeries?.['Primary data collection']?.[index] || 0));
+            const dataLiteracyTrendMeta = {
+                'Real-World data': 'Real-World data',
+                'Primary data collection': 'Primary data collection'
+            };
+            const openDataLiteracyTrendModal = (datasetKey, year) => {
+                const items = normalizeFrameworkItems(dataLiteracyTrendItems?.[datasetKey]?.[String(year)]);
+                if (!frameworkModal || !frameworkModalBody) return;
+                frameworkModalTone = datasetKey === 'Primary data collection'
+                    ? { bg: '#ecfdf5', border: '#99f6e4', accent: '#0f766e', header: '#ecfdf5' }
+                    : { bg: '#eff6ff', border: '#bfdbfe', accent: '#2563eb', header: '#eff6ff' };
+                frameworkModalTitle.textContent = dataLiteracyTrendMeta[datasetKey] || 'Data Source / Method';
+                frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} โครงการ</span></span>`;
+                setFrameworkModalItems(items, 'โครงการ', { year: String(year || '') });
+                showFrameworkModal();
+            };
             renderChart('chartDataLiteracyTrend', {
                 type: 'line',
                 data: {
                     labels: dataLiteracyYears,
                     datasets: [
                         {
+                            key: 'Real-World data',
                             label: 'Real-World data',
                             data: dataLiteracyRealWorld,
                             borderColor: '#2563eb',
@@ -3022,6 +3931,7 @@
                             fill: true
                         },
                         {
+                            key: 'Primary data collection',
                             label: 'Primary data collection',
                             data: dataLiteracyPrimary,
                             borderColor: '#0f766e',
@@ -3036,7 +3946,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: chartAnim,
-                    interaction: { mode: 'index', intersect: false },
+                    interaction: { mode: 'nearest', intersect: true },
                     scales: {
                         x: { ticks: { color: textColor }, grid: { display: false } },
                         y: {
@@ -3058,6 +3968,19 @@
                             font: { weight: '700', size: 10 },
                             formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
                         }
+                    },
+                    onHover: (event, elements, chart) => {
+                        const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartDataLiteracyTrend');
+                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+                        if (target) target.style.cursor = nearest.length ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements, chart) => {
+                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+                        if (!nearest.length) return;
+                        const point = nearest[0];
+                        const dataset = chart.data.datasets?.[point.datasetIndex] || {};
+                        const year = chart.data.labels?.[point.index];
+                        openDataLiteracyTrendModal(dataset.key || dataset.label, year);
                     }
                 }
             });
@@ -3221,6 +4144,18 @@
                             lineColor: '#94a3b8',
                             textColor: '#0f172a'
                         },
+                    },
+                    onHover: (event, elements) => {
+                        const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartOutputTypes');
+                        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements, chart) => {
+                        if (!elements.length) return;
+                        const point = elements[0];
+                        const typeLabel = String(chart.data.labels?.[point.index] || '');
+                        const typeKey = (typeLabel.match(/EA\d{3}|OTHER/i)?.[0] || typeLabel).toUpperCase();
+                        const items = normalizeFrameworkItems(outputTypeChartItems?.[typeKey]);
+                        openOutputItemsModal(items, typeLabel || 'ประเภทผลงาน', 'รายการ', { theme: '' });
                     }
                 }
             });
@@ -3269,6 +4204,17 @@
                             font: { weight: '700', size: 11 },
                             formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
                         }
+                    },
+                    onHover: (event, elements) => {
+                        const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartPaperRanking');
+                        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements, chart) => {
+                        if (!elements.length) return;
+                        const point = elements[0];
+                        const label = chart.data.labels?.[point.index];
+                        const items = normalizeFrameworkItems(paperRankingItems?.[String(label)]);
+                        openOutputItemsModal(items, `Paper Ranking: ${label || '-'}`, 'รายการ');
                     }
                 }
             });
@@ -3338,6 +4284,17 @@
                             lineColor: '#94a3b8',
                             textColor: '#0f172a'
                         },
+                    },
+                    onHover: (event, elements) => {
+                        const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartPresentationActivity');
+                        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements, chart) => {
+                        if (!elements.length) return;
+                        const point = elements[0];
+                        const label = chart.data.labels?.[point.index];
+                        const items = normalizeFrameworkItems(presentationActivityItems?.[String(label)]);
+                        openOutputItemsModal(items, `Presentation: ${label || '-'}`, 'รายการ');
                     }
                 }
             });
@@ -3384,6 +4341,17 @@
                             font: { weight: '700', size: 11 },
                             formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
                         }
+                    },
+                    onHover: (event, elements) => {
+                        const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartTextbookYear');
+                        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements, chart) => {
+                        if (!elements.length) return;
+                        const point = elements[0];
+                        const year = chart.data.labels?.[point.index];
+                        const items = normalizeFrameworkItems(textbookYearItems?.[String(year)]);
+                        openOutputItemsModal(items, `Textbook ปี ${year || '-'}`, 'รายการ', { year: String(year || '') });
                     }
                 }
             });
@@ -3394,7 +4362,8 @@
                     labels: safeLabels(networkingYearLabels),
                     datasets: [
                         {
-                            label: 'EA115 Capacity Building / Knowledge Sharing',
+                            key: 'EA115',
+                            label: 'EA115 - Capacity Building / Knowledge Sharing',
                             data: safeValues(networkingEa115),
                             backgroundColor: '#d97706',
                             borderColor: '#b45309',
@@ -3403,7 +4372,8 @@
                             maxBarThickness: 68
                         },
                         {
-                            label: 'EA117 MOU',
+                            key: 'EA117',
+                            label: 'EA117 - Memorandum of Understanding (MOU)',
                             data: safeValues(networkingEa117),
                             backgroundColor: '#059669',
                             borderColor: '#047857',
@@ -3443,6 +4413,19 @@
                             font: { weight: '700', size: 11 },
                             formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
                         }
+                    },
+                    onHover: (event, elements) => {
+                        const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartNetworkingYear');
+                        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements, chart) => {
+                        if (!elements.length) return;
+                        const point = elements[0];
+                        const dataset = chart.data.datasets?.[point.datasetIndex] || {};
+                        const year = chart.data.labels?.[point.index];
+                        const typeCode = dataset.key || (String(dataset.label || '').match(/EA\d{3}/)?.[0]) || '';
+                        const items = normalizeFrameworkItems(networkingYearItems?.[typeCode]?.[String(year)]);
+                        openOutputItemsModal(items, `${typeCode || 'Networking'} ปี ${year || '-'}`, 'รายการ', { year: String(year || '') });
                     }
                 }
             });
@@ -3648,6 +4631,17 @@
                     );
                 });
             });
+            window.addEventListener('resize', resizeRenderedCharts, { passive: true });
+            window.addEventListener('orientationchange', resizeRenderedCharts, { passive: true });
+            window.visualViewport?.addEventListener('resize', resizeRenderedCharts, { passive: true });
+            if (typeof ResizeObserver !== 'undefined') {
+                const pageShell = document.querySelector('.viz-page');
+                if (pageShell) {
+                    window.__visualizationResizeObserver = new ResizeObserver(resizeRenderedCharts);
+                    window.__visualizationResizeObserver.observe(pageShell);
+                }
+            }
+            resizeRenderedCharts();
         })();
     </script>
 @endsection

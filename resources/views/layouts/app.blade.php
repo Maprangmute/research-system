@@ -291,6 +291,113 @@
                 text-decoration: none;
             }
 
+            .app-brand {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                min-width: 0;
+                color: #0f172a;
+                text-decoration: none;
+            }
+
+            .app-brand__logo {
+                width: 34px;
+                height: 34px;
+                flex: none;
+                border-radius: 10px;
+                object-fit: contain;
+                background: #ffffff;
+                box-shadow: 0 0 0 1px #e2e8f0, 0 4px 10px rgba(15, 23, 42, 0.08);
+            }
+
+            .app-brand__text {
+                display: grid;
+                gap: 1px;
+                min-width: 0;
+                line-height: 1.08;
+            }
+
+            .app-brand__primary {
+                font-size: 15px;
+                font-weight: 800;
+                letter-spacing: 0;
+                white-space: nowrap;
+            }
+
+            .app-brand__secondary {
+                font-size: 11px;
+                font-weight: 700;
+                color: #475569;
+                letter-spacing: 0;
+                white-space: nowrap;
+            }
+
+            .app-nav-shell {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .app-nav-menu {
+                min-width: 0;
+            }
+
+            .app-nav-actions {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-left: auto;
+            }
+
+            @media (min-width: 1024px) {
+                .app-nav-shell {
+                    display: grid;
+                    grid-template-columns: minmax(250px, 1fr) auto minmax(250px, 1fr);
+                    gap: 16px;
+                }
+
+                .app-nav-menu {
+                    justify-self: center;
+                }
+
+                .app-nav-actions {
+                    justify-self: end;
+                    margin-left: 0;
+                }
+
+                .app-brand__logo {
+                    width: 38px;
+                    height: 38px;
+                }
+
+                .app-brand__primary {
+                    font-size: 16px;
+                }
+
+                .app-brand__secondary {
+                    font-size: 12px;
+                }
+            }
+
+            @media (max-width: 420px) {
+                .app-brand {
+                    gap: 8px;
+                }
+
+                .app-brand__logo {
+                    width: 32px;
+                    height: 32px;
+                }
+
+                .app-brand__primary {
+                    font-size: 14px;
+                }
+
+                .app-brand__secondary {
+                    font-size: 10px;
+                }
+            }
+
             .mobile-nav-toggle {
                 border-radius: 12px;
                 border: 1px solid #e2e8f0;
@@ -497,33 +604,34 @@
             x-data="{ openNav: false }"
             x-effect="window.dispatchEvent(new CustomEvent('app-mobile-nav', { detail: { open: openNav } }))">
             <div class="container mx-auto px-4 py-3">
-                <div class="flex items-center gap-3 lg:gap-4 mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
-                    <a href="/dashboard" class="font-bold brand text-slate-900 tracking-tight text-base lg:text-lg whitespace-nowrap">Research
-                        Dashboard</a>
+                <div class="app-nav-shell mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
+                    <a href="/rm" class="app-brand brand" aria-label="SiHP Research Database management system">
+                        <img src="{{ asset('images/sihp-logo.png') }}" alt="" class="app-brand__logo">
+                        <span class="app-brand__text">
+                            <span class="app-brand__primary">SiHP Research</span>
+                            <span class="app-brand__secondary">Database management system</span>
+                        </span>
+                    </a>
 
-                    <div class="hidden md:flex items-center gap-0.5 lg:gap-1 flex-1 justify-start lg:justify-center min-w-0">
+                    <div class="app-nav-menu hidden md:flex items-center gap-0.5 lg:gap-1 justify-center">
                         <a href="/dashboard"
-                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📊
-                            Dashboard</a>
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">Dashboard</a>
                         <a href="/rm"
-                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">📋
-                            Research Project</a>
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">Research Project</a>
                         <a href="/rm/create"
                             class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50">➕
                             เพิ่มโครงการ</a>
 
                         <a href="{{ route('back_office.index') }}"
-                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧾
-                            Missions</a>
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">Missions</a>
 
                         <a href="{{ route('outputs.external-academic') }}"
-                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">🧩
-                            Extra</a>
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">Extra</a>
 
                         <div class="relative" x-data="{ openOutputs: false }">
                             <button type="button" @click="openOutputs = !openOutputs" @click.away="openOutputs = false"
                                 class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold inline-flex items-center gap-1 text-amber-700 hover:text-amber-800 hover:bg-amber-50 whitespace-nowrap">
-                                📑 Outputs
+                                Outputs
                                 <svg :class="{ 'rotate-180': openOutputs }" class="w-4 h-4 text-amber-600 transition-transform"
                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" />
@@ -567,7 +675,7 @@
                         <div class="relative" x-data="{ openFte: false }">
                             <button type="button" @click="openFte = !openFte" @click.away="openFte = false"
                                 class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold inline-flex items-center gap-1 text-slate-700 hover:text-blue-700 hover:bg-slate-100 whitespace-nowrap">
-                                🔥 FTE
+                                FTE
                                 <svg :class="{ 'rotate-180': openFte }" class="w-4 h-4 text-gray-500 transition-transform"
                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" />
@@ -587,7 +695,7 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2 ml-auto">
+                    <div class="app-nav-actions">
                         <!-- Profile Dropdown (desktop only) -->
                         <div class="relative hidden md:block" x-data="{ open: false }">
                             <button @click="open = !open"
@@ -608,40 +716,40 @@
                                     </div>
                                 </div>
                                 <a href="{{ route('user_guide') }}"
-                                    class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">📘 คู่มือ</a>
+                                    class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">คู่มือ</a>
 
                                 @if ($authUser?->isAdminEquivalent())
                                     <a href="/user" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                        👥 จัดการผู้ใช้
+                                        จัดการผู้ใช้
                                     </a>
                                 @endif
 
                                 @if ($authUser?->isAdminEquivalent())
                                     <a href="/project-logs"
                                         class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                        📝 Project log
+                                        Project log
                                     </a>
                                     @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
                                         <a href="{{ route('back_office_action_logs.index') }}"
                                             class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                            📚 Back Office Log
+                                            Back Office Log
                                         </a>
                                     @endif
                                     <a href="{{ route('user_activity_logs.index') }}"
                                         class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                        🛡️ User Activity Log
+                                        User Activity Log
                                     </a>
                                 @endif
                                 <a href="{{ route('profile.show') }}"
                                     class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                    👤 แก้ไขข้อมูลส่วนตัว
+                                    แก้ไขข้อมูลส่วนตัว
                                 </a>
 
                                 <form method="POST" action="{{ route('logout') }}" data-logout-form>
                                     @csrf
                                     <button type="submit"
                                         class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        🚪 ออกจากระบบ
+                                        ออกจากระบบ
                                     </button>
                                 </form>
                             </div>
@@ -693,12 +801,12 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="/dashboard">📊 Dashboard</a>
-                        <a href="/rm">📋 Research Project</a>
-                        <a href="{{ route('back_office.index') }}">🧾 Missions</a>
-                        <a href="{{ route('outputs.external-academic') }}">🧩 Extra</a>
+                        <a href="/dashboard">Dashboard</a>
+                        <a href="/rm">Research Project</a>
+                        <a href="{{ route('back_office.index') }}">Missions</a>
+                        <a href="{{ route('outputs.external-academic') }}">Extra</a>
                         <a href="/rm/create">➕ เพิ่มโครงการ</a>
-                        <div class="text-gray-700 font-medium">📑 Outputs</div>
+                        <div class="text-gray-700 font-medium">Outputs</div>
                         <a href="{{ route('outputs.index') }}">Outputs Overview</a>
                         @if ($personalOutputsRoute)
                             <a href="{{ $personalOutputsRoute }}">Outputs รายบุคคล</a>
@@ -708,25 +816,25 @@
                         <a href="{{ route('outputs.textbooks') }}">Textbook / Book chapter</a>
                         <a href="{{ route('outputs.visualization') }}">ข้อมูลผลงาน สำหรับสัมมมนา</a>
                         <a href="{{ route('outputs.project-data-quality') }}">รายงานข้อมูลผิดพลาดของโปรเจค</a>
-                        <div class="text-gray-700 font-medium">🔥 FTE</div>
+                        <div class="text-gray-700 font-medium">FTE</div>
                         <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
                         <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
-                        <a href="{{ route('user_guide') }}">📘 คู่มือ</a>
+                        <a href="{{ route('user_guide') }}">คู่มือ</a>
                         @if ($authUser?->isAdminEquivalent())
-                            <a href="/user">👥 จัดการผู้ใช้</a>
+                            <a href="/user">จัดการผู้ใช้</a>
                         @endif
                         @if ($authUser?->isAdminEquivalent())
-                            <a href="/project-logs">📝 Project log</a>
+                            <a href="/project-logs">Project log</a>
                             @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
-                                <a href="{{ route('back_office_action_logs.index') }}">📚 Back Office Log</a>
+                                <a href="{{ route('back_office_action_logs.index') }}">Back Office Log</a>
                             @endif
-                            <a href="{{ route('user_activity_logs.index') }}">🛡️ User Activity Log</a>
+                            <a href="{{ route('user_activity_logs.index') }}">User Activity Log</a>
                         @endif
-                        <a href="{{ route('profile.show') }}">👤 แก้ไขข้อมูลส่วนตัว</a>
+                        <a href="{{ route('profile.show') }}">แก้ไขข้อมูลส่วนตัว</a>
                         <form method="POST" action="{{ route('logout') }}" data-logout-form>
                             @csrf
                             <button type="submit" class="mobile-logout-btn">
-                                🚪 ออกจากระบบ
+                                ออกจากระบบ
                             </button>
                         </form>
                         </div>

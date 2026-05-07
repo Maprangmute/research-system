@@ -385,12 +385,8 @@
                 <h2 class="text-2xl font-bold text-gray-900">📊 Research Project</h2>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{{ route('outputs.index') }}"
-                    class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 text-sm rounded-lg hover:bg-slate-50">
-                    📑 รายการ Output
-                </a>
                 <a href="{{ route('projects.create') }}"
-                    class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 shadow-sm hover:shadow transition">
+                    class="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-200 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm transition hover:border-amber-400 hover:bg-amber-300 hover:shadow">
                     ➕ เพิ่มโครงการ
                 </a>
             </div>
