@@ -223,6 +223,8 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/outputs/people/{person}', [OutputController::class, 'personShow'])->name('outputs.people.show');
     Route::get('/outputs/people/{person}/pdf', [OutputController::class, 'personPdf'])->name('outputs.people.pdf');
     Route::get('/outputs/visualization', [OutputController::class, 'visualization'])->name('outputs.visualization');
+    Route::get('/outputs/visualization/pdf', [OutputController::class, 'visualizationPdf'])->name('outputs.visualization.pdf');
+    Route::post('/outputs/visualization/theme-gap-ai', [OutputController::class, 'rewriteVisualizationThemeGap'])->name('outputs.visualization.theme-gap-ai');
     Route::get('/outputs/project-data-quality', [ProjectController::class, 'dataQualityReport'])->name('outputs.project-data-quality');
     Route::patch('/outputs/project-data-quality/{project}/quick-fix', [ProjectController::class, 'dataQualityQuickFix'])->name('outputs.project-data-quality.quick-fix');
     Route::get('/outputs/project-data-quality/pdf', [ProjectController::class, 'dataQualityReportPdf'])->name('outputs.project-data-quality.pdf');

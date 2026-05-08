@@ -38,6 +38,7 @@ return [
         'key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'insight_timeout' => env('GEMINI_INSIGHT_TIMEOUT', 8),
     ],
 
     'slack' => [

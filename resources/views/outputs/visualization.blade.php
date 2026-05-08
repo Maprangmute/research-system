@@ -299,6 +299,7 @@
                 $baseColor
             );
         };
+        $analysisInsightRemark = 'หมายเหตุ: การวิเคราะห์นี้เป็นการใช้ AI เพื่อการวิเคราะห์เบื้องต้น โดยอาศัยข้อมูลที่หน่วยงานนำเข้า ทั้งนี้ ยังจำเป็นต้องอาศัยการพิจารณาร่วมกันของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน และผลการวิเคราะห์อาจเปลี่ยนแปลงได้เมื่อมีข้อมูลเพิ่มเติม';
         $policyImpact = $policyImpact ?? [];
         $policyDataSourceCounts = collect($policyImpact['data_source_counts'] ?? []);
         $policyDataSourceTotal = max(1, (int) $policyDataSourceCounts->sum());
@@ -308,6 +309,27 @@
         $policyClinicalLed = $policyImpact['clinical_led'] ?? [];
         $policyWeakness = $policyImpact['weakness'] ?? [];
         $policyImpactOutputItems = collect($policyImpact['impact_output_items'] ?? []);
+        $policyImpactThemeAnalysis = collect($policyImpact['impact_theme_analysis'] ?? []);
+        $policyImpactThemeNarrative = (object) ($policyImpact['impact_theme_narrative'] ?? [
+            'overview' => 'ยังไม่มีข้อมูล output ในระดับธีมสำหรับช่วงที่เลือก.',
+            'gap' => 'ยังไม่มีข้อมูลเพียงพอสำหรับอ่านช่องว่างของ output ตามธีม.',
+            'effect' => 'ควรติดตามข้อมูลเพิ่มเติมก่อนสรุปผลต่อ policy impact.',
+        ]);
+        $policyImpactThemeNarrativeParagraph = trim((string) ($policyImpact['impact_theme_narrative_paragraph'] ?? 'ยังไม่มีข้อมูล output ในระดับธีมสำหรับช่วงที่เลือก.'));
+        $policyImpactThemeAiFacts = $policyImpactThemeAnalysis
+            ->map(fn ($theme) => [
+                'theme' => (string) ($theme->theme ?? ''),
+                'project_count' => (int) ($theme->project_count ?? 0),
+                'output_count' => (int) ($theme->output_count ?? 0),
+                'dominant_code' => (string) ($theme->dominant_code ?? ''),
+                'dominant_label' => (string) ($theme->dominant_label ?? ''),
+                'dominant_count' => (int) ($theme->dominant_count ?? 0),
+                'main_weakness_code' => (string) ($theme->main_weakness_code ?? ''),
+                'main_weakness_label' => (string) ($theme->main_weakness_label ?? ''),
+                'main_weakness_with' => (int) ($theme->main_weakness_with ?? 0),
+                'main_weakness_missing' => (int) ($theme->main_weakness_missing ?? 0),
+            ])
+            ->values();
         $policyImpactTrend = $policyImpact['impact_trend'] ?? ['years' => collect(), 'series' => collect()];
         $policyFrameworkTrend = $policyImpact['framework_trend'] ?? ['years' => collect(), 'series' => collect(), 'interpretation' => collect()];
         $policyFrameworkInterpretation = collect($policyFrameworkTrend['interpretation'] ?? []);
@@ -317,6 +339,8 @@
         $doctorContributionTimeline = collect($policyImpact['doctor_contribution_timeline'] ?? []);
         $contributionNetwork = $policyImpact['contribution_network'] ?? [];
         $peopleTypeMix = collect($contributionNetwork['people_type_mix'] ?? []);
+        $doctorContributionRoleTables = collect($policyImpact['doctor_contribution_role_tables'] ?? []);
+        $unitContributionRoleThemeTables = collect($policyImpact['unit_contribution_role_theme_tables'] ?? []);
         $expertTrend = $contributionNetwork['expert_trend'] ?? ['years' => collect(), 'people' => collect(), 'new_people' => collect(), 'projects' => collect()];
         $newExpertsByYear = collect($contributionNetwork['new_experts_by_year'] ?? []);
         $clinicalLedIntegration = $contributionNetwork['clinical_led_integration'] ?? [];
@@ -346,12 +370,14 @@
         $expertTrendTotalPeople = (int) ($expertTrend['total_people'] ?? 0);
         $expertTrendTotalProjects = (int) ($expertTrend['total_projects'] ?? 0);
         $policyDataLabels = [
-            'Real-World data' => ['short' => 'Real-World data', 'tag' => 'Existing / routine data', 'color' => '#2563eb'],
-            'Primary data collection' => ['short' => 'Primary data collection', 'tag' => 'New data collection', 'color' => '#0f766e'],
+            'Real-World Data' => ['short' => 'Real-World Data', 'tag' => 'Existing data', 'color' => '#2563eb'],
+            'Primary Data' => ['short' => 'Primary Data', 'tag' => 'Newly collected data', 'color' => '#0f766e'],
+            'Real-World Data + Primary Data' => ['short' => 'RWD + Primary', 'tag' => 'Mixed data source', 'color' => '#7c3aed'],
         ];
         $policyDataSourcePeak = $policyDataSourceCounts->sortDesc()->keys()->first();
         $policyDataSourcePeakCount = (int) ($policyDataSourceCounts[$policyDataSourcePeak] ?? 0);
         $policyImpactCodeLabels = [
+            'EA101' => 'Research Paper and Journal Article',
             'EA109' => 'Change in Practices / Procedures / Policy',
             'EA102' => 'Reports and White Papers',
             'EA106' => 'Policy Recommendations',
@@ -427,8 +453,8 @@
             return 'ทรงตัวเมื่อเทียบปีแรกกับปีล่าสุด แต่มีความผันผวนระหว่างทาง';
         };
         $policyImpactLineSummaries = collect($policyImpactCodeLabels)
-            ->map(function ($label, $code) use ($policyImpactTrendRows, $trendShape) {
-                $rows = $policyImpactTrendRows->map(fn ($row) => (object) [
+            ->map(function ($label, $code) use ($policyImpactTrendSummaryRows, $trendShape) {
+                $rows = $policyImpactTrendSummaryRows->map(fn ($row) => (object) [
                     'year' => (int) ($row->year ?? 0),
                     'value' => (int) (collect($row->by_code ?? [])->get($code) ?? 0),
                 ])->values();
@@ -469,27 +495,100 @@
         $policyImpactRecommendationLine = $policyImpactLineSummaries->firstWhere('code', 'EA106');
         $policyImpactPracticeLine = $policyImpactLineSummaries->firstWhere('code', 'EA109');
         $policyImpactReportLine = $policyImpactLineSummaries->firstWhere('code', 'EA102');
-        $policyImpactGraphFirst = $policyImpactTrendRows->first();
-        $policyImpactGraphLast = $policyImpactTrendRows->last();
+        $policyImpactPaperLine = $policyImpactLineSummaries->firstWhere('code', 'EA101');
+        $policyImpactGraphFirst = $policyImpactTrendSummaryRows->first();
+        $policyImpactGraphLast = $policyImpactTrendSummaryRows->last();
         $policyRecommendationIncrease = $policyImpactRecommendationLine?->largest_increase ?? null;
+        $formatPolicyYearRange = static function ($firstYear, $lastYear): string {
+            $firstYear = (int) $firstYear;
+            $lastYear = (int) $lastYear;
+
+            if ($firstYear <= 0 && $lastYear <= 0) {
+                return 'ช่วงข้อมูลที่เลือก';
+            }
+            if ($firstYear === $lastYear) {
+                return 'ปี ' . $firstYear;
+            }
+
+            return 'ช่วงปี ' . $firstYear . '-' . $lastYear;
+        };
+        $policyInsightYearRange = $formatPolicyYearRange($policyImpactGraphFirst?->year, $policyImpactGraphLast?->year);
+        $hasCurrentYearInInsightData = collect()
+            ->merge(collect($policyImpactTrend['years'] ?? []))
+            ->merge(collect($clinicalLedIntegrationTrend['years'] ?? []))
+            ->merge(collect($policyDataSourceTrend['years'] ?? []))
+            ->merge($expertTrendRows->pluck('year'))
+            ->contains(fn ($year) => (int) $year === (int) $currentYearBe);
+        $incompleteCurrentYearNote = $hasCurrentYearInInsightData
+            ? 'ปี ' . $currentYearBe . ' ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร'
+            : null;
+        $formatPolicyList = static function ($items): string {
+            $items = collect($items)->filter()->values();
+
+            if ($items->isEmpty()) {
+                return 'ยังไม่มีข้อมูล';
+            }
+            if ($items->count() === 1) {
+                return (string) $items->first();
+            }
+
+            return $items->slice(0, -1)->implode(', ') . ' และ ' . $items->last();
+        };
+        $lineHasEveryYear = static fn ($line): bool => collect($line?->rows ?? [])->isNotEmpty()
+            && collect($line?->rows ?? [])->every(fn ($row) => (int) ($row->value ?? 0) > 0);
+        $continuousMainLines = $policyImpactLineSummaries
+            ->filter(fn ($line) => (int) ($line->total ?? 0) > 0 && $lineHasEveryYear($line))
+            ->sortByDesc(fn ($line) => (int) ($line->total ?? 0))
+            ->take(2)
+            ->values();
+        $fallbackMainLines = $policyImpactLineSummaries
+            ->filter(fn ($line) => (int) ($line->total ?? 0) > 0)
+            ->sortByDesc(fn ($line) => (int) ($line->total ?? 0))
+            ->take(2)
+            ->values();
+        $mainLines = $continuousMainLines->isNotEmpty() ? $continuousMainLines : $fallbackMainLines;
+        $mainLineNames = $formatPolicyList($mainLines->pluck('label'));
+        $mainLineContinuityText = $continuousMainLines->isNotEmpty()
+            ? 'ซึ่งมีจำนวนต่อเนื่องในทุกปี'
+            : 'ซึ่งเป็นกลุ่มที่มีจำนวนสะสมสูงสุดในช่วงข้อมูลนี้';
         $policyRecommendationIncreaseText = ((int) ($policyRecommendationIncrease['change'] ?? 0) > 0)
-            ? 'เพิ่มขึ้นชัดเจนในช่วงปี ' . ($policyRecommendationIncrease['from_year'] ?? '-') . '-' . ($policyRecommendationIncrease['to_year'] ?? '-')
-            : 'ยังไม่เห็นช่วงที่เพิ่มขึ้นชัดเจน';
-        $policyReportContinuityText = collect($policyImpactReportLine?->rows ?? [])->every(fn ($row) => (int) ($row->value ?? 0) > 0)
-            ? 'ยังคงเป็น output หลักและมีจำนวนต่อเนื่องตลอดช่วงข้อมูล'
-            : 'ยังคงเป็น output หลักของช่วงข้อมูล แม้บางปีมีจำนวนลดลงหรือไม่มีรายการ';
-        $policyPracticePatternText = (int) ($policyImpactPracticeLine?->peak ?? 0) <= 2
-            ? 'มีจำนวนไม่สูงและเปลี่ยนแปลงค่อนข้างผันผวนในแต่ละปี'
-            : 'มีจำนวนเพิ่มขึ้นในบางปี แต่ยังเปลี่ยนแปลงผันผวนเมื่อเทียบกับ output อีกสองกลุ่ม';
+            ? 'เริ่มเพิ่มขึ้นอย่างชัดเจนในช่วงปี ' . ($policyRecommendationIncrease['from_year'] ?? '-') . '-' . ($policyRecommendationIncrease['to_year'] ?? '-')
+            : ((int) ($policyImpactRecommendationLine?->total ?? 0) > 0
+                ? 'มีรายการเกิดขึ้นแล้ว แต่ยังไม่เห็นช่วงที่เพิ่มขึ้นชัดเจน'
+                : 'ยังไม่มีรายการในช่วงข้อมูลนี้');
+        $practiceRows = collect($policyImpactPracticeLine?->rows ?? []);
+        $practiceActiveYears = $practiceRows->filter(fn ($row) => (int) ($row->value ?? 0) > 0)->count();
+        $practiceYearCount = max(1, $practiceRows->count());
+        $policyPracticePatternText = (int) ($policyImpactPracticeLine?->total ?? 0) <= 0
+            ? 'ยังไม่มีรายการในช่วงข้อมูลนี้'
+            : (((int) ($policyImpactPracticeLine?->peak ?? 0) <= 2 || $practiceActiveYears < $practiceYearCount)
+                ? 'ยังมีจำนวนจำกัดและเกิดขึ้นไม่ต่อเนื่อง'
+                : 'มีจำนวนต่อเนื่องมากขึ้นในหลายปี');
         $policyRecommendationIsGrowing = str_contains((string) ($policyImpactRecommendationLine?->shape ?? ''), 'เพิ่ม');
         $policyPracticeIsGrowing = str_contains((string) ($policyImpactPracticeLine?->shape ?? ''), 'เพิ่ม');
-        $policyImpactTrendReading = 'ช่วงปี ' . ($policyImpactGraphFirst?->year ?: '-') . '-' . ($policyImpactGraphLast?->year ?: '-') . ' Reports and White Papers ' . $policyReportContinuityText . ' ขณะที่ Policy Recommendations ' . $policyRecommendationIncreaseText . ' และขึ้นสูงสุดในปี ' . ($policyImpactRecommendationLine?->peak_year ?: '-') . ' ส่วน Change in Practices / Procedures / Policy ' . $policyPracticePatternText;
+        $paperLineTotal = (int) ($policyImpactPaperLine?->total ?? 0);
+        $publicationSupportMeaning = $paperLineTotal > 0
+            ? ' โดย Research Paper and Journal Article ช่วยทำให้ evidence base มีความน่าเชื่อถือและอ้างอิงได้มากขึ้น เพราะผ่านการเผยแพร่และตรวจสอบในระบบวารสาร'
+            : '';
+        $publicationSupportAction = $paperLineTotal > 0
+            ? ' ในภาพรวม publication จึงเป็นฐานต้นทางที่ช่วยให้รายงาน, policy brief, recommendation หรือ guideline มีหลักฐานรองรับ และเพิ่มโอกาสต่อยอดไปสู่ practice หรือ policy implementation ในระยะถัดไป'
+            : '';
+        $policyImpactTrendReading = $policyInsightYearRange . ' output หลักยังคงอยู่ในรูปแบบ ' . $mainLineNames . ' ' . $mainLineContinuityText . ' ขณะที่ Policy Recommendations ' . $policyRecommendationIncreaseText . ' ส่วน Change in Practices / Procedures / Policy ' . $policyPracticePatternText;
         $policyImpactMeaning = $policyRecommendationIsGrowing
-            ? 'แนวโน้มของ output ในช่วงหลังเริ่มขยับจากรายงาน/white paper ไปสู่ข้อเสนอเชิงนโยบายมากขึ้น โดย Policy Recommendations เพิ่มขึ้นเด่นในปี ' . ($policyImpactRecommendationLine?->peak_year ?: '-') . ' ขณะที่ Reports and White Papers ยังคงเป็น output หลักของระบบ' . ($policyPracticeIsGrowing ? ' และเริ่มเห็นสัญญาณของการเชื่อมไปสู่การเปลี่ยนแปลงเชิงปฏิบัติและนโยบายมากขึ้น' : ' แต่ Change in Practices / Procedures / Policy ยังไม่เพิ่มชัดเจน')
-            : 'แนวโน้มของ output ยังมี Reports and White Papers เป็นฐานหลัก ขณะที่ Policy Recommendations ยังไม่เพิ่มชัดเจนในช่วงข้อมูลนี้ จึงควรอ่านว่า output ส่วนใหญ่ยังอยู่ในระดับรายงาน/white paper มากกว่าข้อเสนอเชิงนโยบาย';
+            ? 'แนวโน้มดังกล่าวสะท้อนการพัฒนาจากการสร้างองค์ความรู้เชิงวิชาการ ไปสู่การสังเคราะห์และสื่อสารเชิงระบบมากขึ้น และเริ่มมีการต่อยอดสู่ข้อเสนอเชิงนโยบาย โดยเฉพาะในช่วงปี ' . ($policyRecommendationIncrease['from_year'] ?? ($policyImpactRecommendationLine?->peak_year ?: '-')) . '-' . ($policyRecommendationIncrease['to_year'] ?? ($policyImpactRecommendationLine?->peak_year ?: '-')) . ' อย่างไรก็ตาม การเปลี่ยนแปลงเชิงปฏิบัติหรือเชิงนโยบายยังปรากฏในระดับจำกัด' . $publicationSupportMeaning
+            : 'แนวโน้มดังกล่าวสะท้อนว่าระบบยังอยู่ในช่วงสร้างและสะสมองค์ความรู้ผ่าน ' . $mainLineNames . ' เป็นหลัก ขณะที่การต่อยอดสู่ข้อเสนอเชิงนโยบายหรือการเปลี่ยนแปลงเชิงปฏิบัติยังไม่เพิ่มขึ้นอย่างชัดเจน' . $publicationSupportMeaning;
         $policyImpactWhatHappened = $policyRecommendationIsGrowing
-            ? 'ภาพรวมสะท้อนว่า output ส่วนใหญ่ยังอยู่ในรูปแบบ Reports and White Papers แต่ในช่วงหลังเริ่มมีการต่อยอดไปสู่ Policy Recommendations มากขึ้น โดยเฉพาะในปี ' . ($policyImpactRecommendationLine?->peak_year ?: '-') . ' ซึ่งแสดงให้เห็นการขยับจากการผลิตองค์ความรู้ ไปสู่การใช้ประโยชน์เชิงนโยบายและการตัดสินใจในระบบสุขภาพมากขึ้น ขณะที่ Change in Practices / Procedures / Policy ยังเกิดขึ้นในวงจำกัดและไม่ต่อเนื่องเมื่อเทียบกับ output อีกสองกลุ่ม'
-            : 'ภาพรวมสะท้อนว่า output ส่วนใหญ่ยังอยู่ในรูปแบบ Reports and White Papers และยังไม่เห็นการต่อยอดไปสู่ Policy Recommendations อย่างเด่นชัดในช่วงข้อมูลนี้ ขณะที่ Change in Practices / Procedures / Policy ยังเกิดขึ้นในวงจำกัดและไม่ต่อเนื่องเมื่อเทียบกับ output อีกสองกลุ่ม';
+            ? 'ภาพรวมสะท้อนให้เห็นว่า output ของระบบเริ่มมีเส้นทางการใช้ประโยชน์ (knowledge translation pathway) ที่ชัดขึ้น จากงานวิชาการและรายงาน ไปสู่ข้อเสนอเชิงนโยบายมากขึ้น อย่างไรก็ตาม การผลักดันให้เกิดการเปลี่ยนแปลงในระดับ practice หรือ policy implementation ยังอาจต้องอาศัยกลไกสนับสนุนเพิ่มเติมและระยะเวลาในการต่อยอด' . $publicationSupportAction
+            : 'ภาพรวมสะท้อนให้เห็นว่า output ของระบบยังอยู่ในช่วงต้นของ knowledge translation pathway โดยมีงานวิชาการและรายงานเป็นฐานสำคัญ จึงควรติดตามต่อว่าหลักฐานเหล่านี้ถูกนำไปสังเคราะห์เป็นข้อเสนอเชิงนโยบาย หรือผลักดันสู่ practice และ policy implementation ได้มากขึ้นหรือไม่' . $publicationSupportAction;
+        $policyImpactInsightAiSeries = collect($policyImpactTrendSummaryRows)
+            ->map(fn ($row) => [
+                'year' => (int) ($row->year ?? 0),
+                'research_paper' => (int) (collect($row->by_code ?? [])->get('EA101') ?? 0),
+                'change_in_practices' => (int) (collect($row->by_code ?? [])->get('EA109') ?? 0),
+                'reports_white_papers' => (int) (collect($row->by_code ?? [])->get('EA102') ?? 0),
+                'policy_recommendations' => (int) (collect($row->by_code ?? [])->get('EA106') ?? 0),
+            ])
+            ->values();
     @endphp
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -567,10 +666,20 @@
             position: sticky;
             top: 92px;
         }
+        @keyframes viz-rise-in {
+            from {
+                opacity: .01;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
         .fade-up {
-            opacity: 0;
-            transform: translateY(18px);
-            transition: opacity .55s ease, transform .55s ease;
+            opacity: 1;
+            transform: translateY(0);
+            animation: viz-rise-in .42s ease both;
         }
         .fade-up.in {
             opacity: 1;
@@ -722,6 +831,59 @@
         .viz-modal-body {
             padding: 12px 14px 14px;
             overflow: auto;
+        }
+        .viz-pdf-popover {
+            position: fixed;
+            left: 14px;
+            bottom: 18px;
+            z-index: 75;
+        }
+        .viz-pdf-popover summary {
+            list-style: none;
+            cursor: pointer;
+            width: 46px;
+            height: 46px;
+            border-radius: 999px;
+            border: 1px solid #fecaca;
+            background: #dc2626;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 900;
+            box-shadow: 0 16px 34px rgba(127, 29, 29, .22);
+        }
+        .viz-pdf-popover summary::-webkit-details-marker {
+            display: none;
+        }
+        .viz-pdf-popover[open] summary {
+            background: #991b1b;
+        }
+        .viz-pdf-popover__panel {
+            position: absolute;
+            left: 54px;
+            top: 0;
+            width: 220px;
+            border: 1px solid #fecaca;
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 10px;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, .18);
+        }
+        .viz-pdf-popover__link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 10px;
+            background: #fef2f2;
+            padding: 9px 10px;
+            color: #991b1b;
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .viz-pdf-popover__link:hover {
+            background: #fee2e2;
         }
         .viz-detail-box {
             border: 1px solid #e2e8f0;
@@ -1160,12 +1322,64 @@
         .doctor-lane-row + .doctor-lane-row {
             border-top: 1px solid var(--doctor-row-border, #e2e8f0);
         }
+        .unit-contribution-matrix .doctor-lane-cell {
+            min-height: 96px;
+            max-height: 120px;
+            align-items: flex-start;
+            padding: 6px;
+            overflow: hidden;
+        }
+        .unit-contribution-matrix .doctor-lane-row .doctor-lane-theme {
+            min-height: 96px;
+        }
+        .unit-contribution-matrix .doctor-lane-head .doctor-lane-theme,
+        .unit-contribution-matrix .doctor-lane-head .doctor-lane-year {
+            min-height: 0;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        .unit-cell-content {
+            width: 100%;
+            display: grid;
+            gap: 4px;
+        }
+        .unit-cell-count {
+            justify-self: center;
+            border-radius: 999px;
+            background: #ecfdf5;
+            padding: 1px 7px;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
         .doctor-avatar-stack {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 10px;
             isolation: isolate;
+        }
+        .unit-avatar-stack {
+            width: 100%;
+            max-height: 88px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(30px, 30px));
+            justify-content: center;
+            align-content: start;
+            gap: 5px;
+            padding: 1px 2px 4px;
+            scrollbar-width: thin;
+            scrollbar-color: #a7f3d0 transparent;
+        }
+        .unit-avatar-stack::-webkit-scrollbar {
+            width: 5px;
+        }
+        .unit-avatar-stack::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: #a7f3d0;
         }
         .doctor-avatar-stack a,
         .doctor-avatar-stack img {
@@ -1184,6 +1398,12 @@
             object-fit: cover;
             box-shadow: 0 0 0 1px #cbd5e1, 0 8px 16px rgba(15, 23, 42, .10);
         }
+        .unit-avatar-stack img {
+            width: 30px;
+            height: 30px;
+            border-width: 2px;
+            box-shadow: 0 0 0 1px #cbd5e1, 0 5px 10px rgba(15, 23, 42, .08);
+        }
         @media (hover: hover) and (pointer: fine) {
             .doctor-avatar-stack a:hover,
             .doctor-avatar-stack a:focus-visible,
@@ -1198,6 +1418,12 @@
             }
         }
         .doctor-mobile-timeline {
+            display: none;
+        }
+        .unit-mobile-role-timeline {
+            display: none;
+        }
+        .doctor-role-floating {
             display: none;
         }
         .doctor-mobile-theme {
@@ -1227,6 +1453,32 @@
         .doctor-mobile-empty {
             color: #cbd5e1;
             font-size: 13px;
+        }
+        .unit-mobile-role-timeline .doctor-mobile-theme {
+            border-color: #a7f3d0;
+        }
+        .unit-mobile-role-timeline .doctor-mobile-theme__head {
+            border-color: #d1fae5;
+        }
+        .unit-mobile-year-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .unit-mobile-avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(34px, 34px));
+            gap: 6px;
+            align-items: start;
+        }
+        .unit-mobile-avatar-grid img {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            border: 2px solid #ffffff;
+            object-fit: cover;
+            box-shadow: 0 0 0 1px #a7f3d0, 0 5px 10px rgba(15, 23, 42, .08);
         }
         .clinical-led-chart-scroll {
             margin-top: 12px;
@@ -1415,6 +1667,7 @@
             .fade-up {
                 opacity: 1;
                 transform: none;
+                animation: none;
             }
             .panel,
             .hero-panel,
@@ -1467,7 +1720,7 @@
             .viz-page [class*="h-[340px]"],
             .viz-page [class*="h-[360px]"],
             .viz-page [class*="h-[380px]"] {
-                height: 300px !important;
+                height: 320px !important;
             }
             .type-chart-wrap {
                 height: 300px;
@@ -1493,6 +1746,22 @@
             }
             .viz-modal-body {
                 padding: 12px;
+            }
+            .viz-pdf-popover {
+                left: 10px;
+                top: auto;
+                bottom: 14px;
+            }
+            .viz-pdf-popover summary {
+                width: 42px;
+                height: 42px;
+                font-size: 10px;
+            }
+            .viz-pdf-popover__panel {
+                left: 48px;
+                top: auto;
+                bottom: 0;
+                width: min(218px, calc(100vw - 68px));
             }
             #frameworkTrendModal {
                 align-items: stretch !important;
@@ -1532,6 +1801,10 @@
                 display: grid;
                 gap: 12px;
             }
+            .unit-mobile-role-timeline {
+                display: grid;
+                gap: 12px;
+            }
             .doctor-mobile-theme__head {
                 padding: 12px;
             }
@@ -1548,6 +1821,70 @@
                 width: 56px;
                 height: 56px;
                 border-width: 3px;
+            }
+            .doctor-role-tabs {
+                display: grid !important;
+                width: 100%;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .doctor-role-tab {
+                min-width: 0;
+                padding-left: 6px !important;
+                padding-right: 6px !important;
+                text-align: center;
+                line-height: 1.2;
+            }
+            .doctor-role-tab span {
+                display: block;
+                margin-left: 0;
+                margin-top: 2px;
+            }
+            .doctor-role-floating {
+                position: fixed;
+                left: 50%;
+                bottom: 14px;
+                z-index: 70;
+                display: flex;
+                max-width: calc(100vw - 24px);
+                transform: translate(-50%, 14px);
+                align-items: center;
+                gap: 4px;
+                border: 1px solid rgba(16, 185, 129, .32);
+                border-radius: 999px;
+                background: rgba(255, 255, 255, .94);
+                padding: 5px;
+                box-shadow: 0 18px 40px rgba(15, 23, 42, .18);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity .18s ease, transform .18s ease;
+                backdrop-filter: blur(10px);
+            }
+            .doctor-role-floating.is-visible {
+                transform: translate(-50%, 0);
+                opacity: 1;
+                pointer-events: auto;
+            }
+            .doctor-role-floating button {
+                min-width: 56px;
+                border-radius: 999px;
+                padding: 7px 9px;
+                font-size: 11px;
+                font-weight: 800;
+                line-height: 1;
+                color: #047857;
+                white-space: nowrap;
+            }
+            .doctor-role-floating button.is-active {
+                background: #047857;
+                color: #ffffff;
+                box-shadow: 0 8px 18px rgba(4, 120, 87, .22);
+            }
+            .unit-mobile-avatar-grid img {
+                width: 32px;
+                height: 32px;
+            }
+            #frameworkTrendModalBody .rounded-xl {
+                overflow-wrap: anywhere;
             }
             .doctor-avatar-stack a:hover,
             .doctor-avatar-stack a:focus-visible,
@@ -1593,6 +1930,7 @@
     </style>
 
     <div class="viz-page min-h-screen pb-10">
+        {{-- PDF export is hidden for now. Keep the route/export code available for later use. --}}
         <div class="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 md:px-8 md:py-8 2xl:px-10">
             <section class="fade-up hero-panel section-panel section-panel--slate p-7 md:p-10">
                 <div class="hero-kicker">Research Outputs Overview</div>
@@ -1738,6 +2076,9 @@
                                     @if (!empty($policyFrameworkSummary->note))
                                         <div class="mt-3 rounded-xl bg-white/65 px-3 py-2 text-xs leading-relaxed text-slate-500">{{ $policyFrameworkSummary->note }}</div>
                                     @endif
+                                    <div class="mt-3 rounded-xl bg-white/65 px-3 py-2 text-xs leading-relaxed text-slate-500">
+                                        {{ $analysisInsightRemark }}
+                                    </div>
                                 </div>
                             @endif
                         </div>
@@ -1916,6 +2257,9 @@
                                                     {{ $expertClinicalInterpretation }}
                                                 </div>
                                             </div>
+                                            <div class="rounded-xl bg-white/70 px-3 py-3 text-xs leading-relaxed text-slate-500">
+                                                {{ $analysisInsightRemark }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2016,7 +2360,7 @@
                                     <div class="text-xs font-semibold uppercase tracking-wide text-orange-700">IMPACT</div>
                                     <h3 class="mt-1 text-xl font-semibold text-slate-900">Outputs contributing to Policy-Impact or Practice Change (No)</h3>
                                     <p class="mt-2 max-w-4xl text-sm leading-relaxed text-slate-700">
-                                        จำนวนผลงานและรายละเอียดของผลงานที่มีส่วนในการผลักดันการเปลี่ยนแปลงในเชิงนโยบายหรือการปฏิบัติในระบบสุขภาพ โดยแบ่งตามประเภทผลงาน Change in Practices, Procedure, Policy / Reports and White Paper / Policy Recommendation
+                                        จำนวนผลงานและรายละเอียดของผลงานที่มีส่วนในการผลักดันการเปลี่ยนแปลงในเชิงนโยบายหรือการปฏิบัติในระบบสุขภาพ โดยแบ่งตามประเภทผลงาน Research Paper and Journal Article / Change in Practices, Procedure, Policy / Reports and White Paper / Policy Recommendation
                                     </p>
                                 </div>
                             </div>
@@ -2025,7 +2369,7 @@
                                     <div class="flex flex-wrap items-center justify-between gap-2">
                                         <div>
                                             <div class="text-sm font-semibold text-slate-900">Trend ตามปี</div>
-                                            <div class="text-xs text-slate-500">จำนวน output ของ Change in Practices, Procedure, Policy / Reports and White Paper / Policy Recommendation</div>
+                                            <div class="text-xs text-slate-500">จำนวน output ของ Research Paper and Journal Article / Change in Practices, Procedure, Policy / Reports and White Paper / Policy Recommendation</div>
                                         </div>
                                         <span class="policy-pill">{{ number_format((int) $policyImpactOutputs->sum()) }} รายการ</span>
                                     </div>
@@ -2054,11 +2398,14 @@
                                                         {{ $policyImpactWhatHappened }}
                                                     </div>
                                                 </div>
-                                                @if ((int) $currentYearBe === 2569)
+                                                @if ($incompleteCurrentYearNote)
                                                     <div class="rounded-xl bg-white/70 px-3 py-3 text-sm leading-relaxed text-slate-500">
-                                                        ปี 2569 ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร
+                                                        {{ $incompleteCurrentYearNote }}
                                                     </div>
                                                 @endif
+                                                <div class="rounded-xl bg-white/70 px-3 py-3 text-xs leading-relaxed text-slate-500">
+                                                    {{ $analysisInsightRemark }}
+                                                </div>
                                             </div>
                                         </div>
                                     @endif
@@ -2069,7 +2416,6 @@
                                             <div class="flex flex-wrap items-start justify-between gap-3">
                                                 <div>
                                                     <div class="text-sm font-semibold text-slate-900">{{ $label }}</div>
-                                                    <div class="mt-1 text-xs text-slate-500">รายการ output ที่บันทึกไว้ในระบบ</div>
                                                 </div>
                                                 <div class="metric rounded-full border px-3 py-1 text-sm font-semibold" style="{{ $outputTypeStyle($code) }}">{{ number_format((int) ($policyImpactOutputs[$code] ?? 0)) }} รายการ</div>
                                             </div>
@@ -2087,6 +2433,26 @@
                                     @endforeach
                                 </div>
                             </div>
+                            <div class="mt-4 rounded-2xl border border-indigo-200 bg-white px-4 py-4">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-900">Theme output gap analysis</div>
+                                        <div class="mt-1 text-xs text-slate-500">บรรยายตามหมวดว่าเด่นอะไร ขาดอะไร และส่งผลต่อ policy impact อย่างไร</div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex items-center rounded-full border border-slate-200 bg-white px-2 py-1" title="สีเขียว = Gemini rewrite สำเร็จ, สีแดง = ใช้ข้อความจากระบบ">
+                                            <span class="h-2 w-2 rounded-full bg-red-500" data-theme-gap-ai-field="status-dot"></span>
+                                        </div>
+                                        <div class="policy-pill">{{ number_format($policyImpactThemeAnalysis->count()) }} ธีม</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 rounded-xl bg-slate-50 px-4 py-4">
+                                    <div class="whitespace-pre-line text-sm leading-relaxed text-slate-700" data-theme-gap-ai-field="paragraph">{{ $policyImpactThemeNarrativeParagraph }}</div>
+                                </div>
+                                <div class="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500">
+                                    {{ $analysisInsightRemark }}
+                                </div>
+                            </div>
                     </div>
                 </div>
 
@@ -2096,7 +2462,7 @@
                                     <div class="flex w-full flex-wrap items-start justify-between gap-4">
                                         <div class="min-w-0 flex-1">
                                             <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Validation</div>
-                                            <div class="mt-1 text-xl font-semibold text-slate-900">Trend in Interest in policy work Among Siriraj Health Professionals</div>
+                                            <div class="mt-1 text-xl font-semibold text-slate-900">Trends in Siriraj health professionals’ interest in research-to-policy work</div>
                                             <div class="mt-2 w-full whitespace-pre-line text-sm leading-relaxed text-slate-700">แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health Sytem)
 
 จำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย ที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์)  เข้ามาเป็นส่วนร่วม โดยแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย
@@ -2106,7 +2472,13 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     </div>
                                 </div>
                                 @php
-                                    $clinicalLedTrendRowsForSummary = $clinicalLedPeopleByYear->values();
+                                    $clinicalLedSubjectName = 'กลุ่ม Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE)';
+                                    $clinicalLedTrendRowsForSummary = $clinicalLedPeopleByYear
+                                        ->filter(fn ($row) => (int) ($row->year ?? 0) < (int) $currentYearBe)
+                                        ->values();
+                                    if ($clinicalLedTrendRowsForSummary->isEmpty()) {
+                                        $clinicalLedTrendRowsForSummary = $clinicalLedPeopleByYear->values();
+                                    }
                                     $clinicalLedFirstYearRow = $clinicalLedTrendRowsForSummary->first();
                                     $clinicalLedLastYearRow = $clinicalLedTrendRowsForSummary->last();
                                     $clinicalLedPeakYearRow = $clinicalLedTrendRowsForSummary->sortByDesc(fn ($row) => (int) ($row->people_count ?? 0))->first();
@@ -2180,9 +2552,21 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
 
                                         $first = $rows->first();
                                         $last = $rows->last();
-                                        return $label . ' จาก ' . number_format((int) ($first?->value ?? 0)) . ' เป็น ' . number_format((int) ($last?->value ?? 0)) . ' คน' . $topThemeText;
+                                        return (object) [
+                                            'label' => $label,
+                                            'summary' => $label . ' จาก ' . number_format((int) ($first?->value ?? 0)) . ' เป็น ' . number_format((int) ($last?->value ?? 0)) . ' คน' . $topThemeText,
+                                            'delta' => (int) ($last?->value ?? 0) - (int) ($first?->value ?? 0),
+                                        ];
                                     })->values();
-                                    $clinicalLedRoleExpansionSignal = 'ภาพรวมแสดงว่าการเติบโตของสามกลุ่มนี้ไม่ได้เพิ่มเฉพาะหัวหน้าโครงการ แต่ขยายไปถึง Co-PI และ Co-Research ด้วย';
+                                    $clinicalLedGrowingRoles = $clinicalLedRoleTrendSummaries
+                                        ->filter(fn ($row) => (int) ($row->delta ?? 0) > 0)
+                                        ->pluck('label')
+                                        ->values();
+                                    $clinicalLedRoleExpansionSignal = $clinicalLedGrowingRoles->count() >= 2
+                                        ? 'ภาพรวมแสดงว่าการมีส่วนร่วมขยายในหลายบทบาท ได้แก่ ' . $formatPolicyList($clinicalLedGrowingRoles)
+                                        : ($clinicalLedGrowingRoles->count() === 1
+                                            ? 'การเปลี่ยนแปลงเด่นอยู่ที่บทบาท ' . $clinicalLedGrowingRoles->first()
+                                            : 'ยังไม่เห็นการขยายตัวของบทบาทผู้ร่วมโครงการอย่างชัดเจนในช่วงข้อมูลนี้');
                                 @endphp
 
                                 <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_430px]">
@@ -2207,26 +2591,29 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
                                         <div class="text-[13px] font-semibold text-indigo-700">ทิศทางหลัก</div>
                                         <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    ช่วงปี {{ $clinicalLedFirstYearRow?->year ?: '-' }} - {{ $clinicalLedLastYearRow?->year ?: '-' }} กลุ่ม Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE) {{ $clinicalLedTotalTrendShape }} จาก {{ number_format($clinicalLedFirstCount) }} เป็น {{ number_format($clinicalLedLastCount) }} คน จุดสูงสุดปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} ที่ {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คน โดยกลุ่มสะสมสูงสุดคือ {{ $clinicalLedTopTheme?->label ?? '-' }} {{ number_format((int) ($clinicalLedTopTheme?->people ?? 0)) }} คน
+                                                    {{ $formatPolicyYearRange($clinicalLedFirstYearRow?->year, $clinicalLedLastYearRow?->year) }} {{ $clinicalLedSubjectName }} {{ $clinicalLedTotalTrendShape }} จาก {{ number_format($clinicalLedFirstCount) }} เป็น {{ number_format($clinicalLedLastCount) }} คน จุดสูงสุดปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} ที่ {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คน โดยกลุ่มสะสมสูงสุดคือ {{ $clinicalLedTopTheme?->label ?? '-' }} {{ number_format((int) ($clinicalLedTopTheme?->people ?? 0)) }} คน
                                         </div>
                                     </div>
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
                                                 <div class="text-[13px] font-semibold text-indigo-700">บทบาทที่เข้ามาร่วม</div>
                                                 <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    {{ $clinicalLedRoleTrendSummaries->implode(', ') }}. {{ $clinicalLedRoleExpansionSignal }}
+                                                    {{ $clinicalLedRoleTrendSummaries->pluck('summary')->implode(', ') }}. {{ $clinicalLedRoleExpansionSignal }}
                                                 </div>
                                             </div>
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
                                         <div class="text-[13px] font-semibold text-indigo-700">สิ่งที่เกิดขึ้น</div>
                                         <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    ปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} เป็นจุดสูงสุดของช่วงข้อมูล โดยมีคนในหน่วยวิจัยฯ และคนภายในคณะแพทยศาสตร์ศิริราชรวม {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คนในสามกลุ่มนี้ {{ $clinicalLedRweInterpretation }}
+                                                    ปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} เป็นจุดสูงสุดของช่วงข้อมูล โดยมีคนในหน่วยวิจัยฯ และคนภายในคณะแพทยศาสตร์ศิริราชรวม {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คนใน{{ $clinicalLedSubjectName }} {{ $clinicalLedRweInterpretation }}
                                         </div>
                                     </div>
-                                            @if ((int) $currentYearBe === 2569)
+                                            @if ($incompleteCurrentYearNote)
                                                 <div class="rounded-xl bg-white/70 px-3 py-3 text-sm leading-relaxed text-slate-500">
-                                                    ปี 2569 ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร
+                                                    {{ $incompleteCurrentYearNote }}
                                                 </div>
                                             @endif
+                                            <div class="rounded-xl bg-white/70 px-3 py-3 text-xs leading-relaxed text-slate-500">
+                                                {{ $analysisInsightRemark }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2241,7 +2628,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 <div class="min-w-0 flex-1">
                                     <div class="text-xs font-semibold uppercase tracking-wide text-cyan-700">Data Literacy Skill</div>
                                     <div class="mt-1 text-xl font-semibold text-slate-900">ทักษะและประสบการณ์การใช้ข้อมูลประเภท Real-World Data</div>
-                                    <div class="mt-2 w-full text-sm leading-relaxed text-slate-700">จำนวนโครงการวิจัยทั้งหมดที่มีการใช้ข้อมูล Real-World Data, Big Data เช่น NHSO, National health exam survey, Si-Data plus</div>
+                                    <div class="mt-2 w-full text-sm leading-relaxed text-slate-700">จำนวนโครงการวิจัยที่มีประสบการณ์ใช้ Real-World Data, Primary Data หรือใช้ทั้งสองรูปแบบร่วมกัน เช่น NHSO, National Health Examination Survey, Si-Data plus, survey, interview, cohort และ intervention study</div>
                                 </div>
                             </div>
                         </div>
@@ -2253,7 +2640,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                         <div class="text-sm font-semibold text-slate-900">Trend Data Source / Method ตามปี</div>
                                         <div class="mt-1 text-xs text-slate-500">นับจำนวนโครงการในแต่ละปีตามแหล่งที่มาและวิธีใช้ข้อมูล กดที่จุดบนกราฟเพื่อดูรายการโปรเจค</div>
                                     </div>
-                                    <span class="policy-pill">Real-world / Primary</span>
+                                    <span class="policy-pill">RWD / Primary / Mixed</span>
                                 </div>
                                 <div class="mt-3 h-[360px]">
                                     <canvas id="chartDataLiteracyTrend" class="block h-full w-full"></canvas>
@@ -2265,14 +2652,16 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     $dataLiteracyTrendRows = collect($policyDataSourceTrend['years'] ?? [])
                                         ->values()
                                         ->map(function ($year, $index) use ($policyDataSourceTrend) {
-                                            $realWorld = (int) (collect($policyDataSourceTrend['series']['Real-World data'] ?? [])->values()->get($index) ?? 0);
-                                            $primary = (int) (collect($policyDataSourceTrend['series']['Primary data collection'] ?? [])->values()->get($index) ?? 0);
+                                            $realWorld = (int) (collect($policyDataSourceTrend['series']['Real-World Data'] ?? [])->values()->get($index) ?? 0);
+                                            $primary = (int) (collect($policyDataSourceTrend['series']['Primary Data'] ?? [])->values()->get($index) ?? 0);
+                                            $combined = (int) (collect($policyDataSourceTrend['series']['Real-World Data + Primary Data'] ?? [])->values()->get($index) ?? 0);
 
                                             return (object) [
                                                 'year' => (int) $year,
                                                 'real_world' => $realWorld,
                                                 'primary' => $primary,
-                                                'total' => $realWorld + $primary,
+                                                'combined' => $combined,
+                                                'total' => $realWorld + $primary + $combined,
                                             ];
                                         })
                                         ->filter(fn ($row) => (int) ($row->year ?? 0) < (int) $currentYearBe)
@@ -2281,14 +2670,16 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                         $dataLiteracyTrendRows = collect($policyDataSourceTrend['years'] ?? [])
                                             ->values()
                                             ->map(function ($year, $index) use ($policyDataSourceTrend) {
-                                                $realWorld = (int) (collect($policyDataSourceTrend['series']['Real-World data'] ?? [])->values()->get($index) ?? 0);
-                                                $primary = (int) (collect($policyDataSourceTrend['series']['Primary data collection'] ?? [])->values()->get($index) ?? 0);
+                                                $realWorld = (int) (collect($policyDataSourceTrend['series']['Real-World Data'] ?? [])->values()->get($index) ?? 0);
+                                                $primary = (int) (collect($policyDataSourceTrend['series']['Primary Data'] ?? [])->values()->get($index) ?? 0);
+                                                $combined = (int) (collect($policyDataSourceTrend['series']['Real-World Data + Primary Data'] ?? [])->values()->get($index) ?? 0);
 
                                                 return (object) [
                                                     'year' => (int) $year,
                                                     'real_world' => $realWorld,
                                                     'primary' => $primary,
-                                                    'total' => $realWorld + $primary,
+                                                    'combined' => $combined,
+                                                    'total' => $realWorld + $primary + $combined,
                                                 ];
                                             })
                                             ->values();
@@ -2299,11 +2690,14 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     $dataLiteracyTotalTrendShape = $trendShape($dataLiteracyTrendRows->pluck('total'));
                                     $dataLiteracyRealWorldTrendShape = $trendShape($dataLiteracyTrendRows->pluck('real_world'));
                                     $dataLiteracyPrimaryTrendShape = $trendShape($dataLiteracyTrendRows->pluck('primary'));
-                                    $dataLiteracySourceInterpretation = $policyDataSourcePeak === 'Real-World data'
+                                    $dataLiteracyCombinedTrendShape = $trendShape($dataLiteracyTrendRows->pluck('combined'));
+                                    $dataLiteracySourceInterpretation = $policyDataSourcePeak === 'Real-World Data'
                                         ? 'น้ำหนักหลักอยู่ที่การใช้ข้อมูลจากระบบบริการหรือข้อมูลที่เกิดขึ้นจริง'
-                                        : ($policyDataSourcePeak === 'Primary data collection'
+                                        : ($policyDataSourcePeak === 'Primary Data'
                                             ? 'น้ำหนักหลักอยู่ที่การเก็บข้อมูลใหม่เพื่อให้ตอบโจทย์โครงการ'
-                                            : 'ยังไม่มีหมวด Data Source / Method ที่เด่นชัด');
+                                            : ($policyDataSourcePeak === 'Real-World Data + Primary Data'
+                                                ? 'น้ำหนักหลักอยู่ที่โครงการแบบผสมที่ใช้ทั้ง existing data และ newly collected data'
+                                                : 'ยังไม่มีหมวด Data Source / Method ที่เด่นชัด'));
                                 @endphp
                                 <div class="text-xl font-semibold text-cyan-950">Analysis Insight</div>
                                 <div class="mt-3 grid gap-3">
@@ -2316,20 +2710,23 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     <div class="rounded-xl bg-white/90 px-3 py-3">
                                         <div class="text-[13px] font-semibold text-cyan-700">แปลว่าอะไร</div>
                                         <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                            Real-World data คือการใช้ข้อมูลที่มีอยู่จากระบบบริการหรือข้อมูลจริง ส่วน Primary data collection คือการเก็บข้อมูลใหม่ ดังนั้น trend นี้ควรอ่านเป็นแนวทางการใช้ข้อมูลของกลุ่มโครงการ ไม่ใช่จำนวน output
+                                            Real-World Data คือข้อมูลผู้ป่วยที่มีอยู่แล้วจากระบบบริการสุขภาพ ส่วน Primary Data คือข้อมูลที่เก็บใหม่เพื่อการวิจัยโดยเฉพาะ และ Real-World Data + Primary Data คือโครงการที่ใช้ข้อมูลทั้งสองรูปแบบร่วมกัน ดังนั้น trend นี้ควรอ่านเป็นแนวทางการใช้ข้อมูลของกลุ่มโครงการ ไม่ใช่จำนวน output
                                         </div>
                                     </div>
                                     <div class="rounded-xl bg-white/90 px-3 py-3">
                                         <div class="text-[13px] font-semibold text-cyan-700">สิ่งที่เกิดขึ้น</div>
                                         <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                            หมวดที่พบมากที่สุดคือ {{ $policyDataSourcePeak ?: '-' }} จำนวน {{ number_format($policyDataSourcePeakCount) }} โครงการ แปลว่า{{ $dataLiteracySourceInterpretation }} โดย Real-World data {{ $dataLiteracyRealWorldTrendShape }} และ Primary data collection {{ $dataLiteracyPrimaryTrendShape }} ในช่วงเดียวกัน ขณะที่โครงการที่ยังไม่ระบุ Data Source / Method มี {{ number_format((int) ($policyImpact['data_source_missing_count'] ?? 0)) }} โครงการ
+                                            หมวดที่พบมากที่สุดคือ {{ $policyDataSourcePeak ?: '-' }} จำนวน {{ number_format($policyDataSourcePeakCount) }} โครงการ แปลว่า{{ $dataLiteracySourceInterpretation }} โดย Real-World Data {{ $dataLiteracyRealWorldTrendShape }}, Primary Data {{ $dataLiteracyPrimaryTrendShape }} และ Real-World Data + Primary Data {{ $dataLiteracyCombinedTrendShape }} ในช่วงเดียวกัน ขณะที่โครงการที่ยังไม่ระบุ Data Source / Method มี {{ number_format((int) ($policyImpact['data_source_missing_count'] ?? 0)) }} โครงการ
                                         </div>
                                     </div>
-                                    @if ((int) $currentYearBe === 2569)
+                                    @if ($incompleteCurrentYearNote)
                                         <div class="rounded-xl bg-white/70 px-3 py-3 text-sm leading-relaxed text-slate-500">
-                                            ปี 2569 ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร
+                                            {{ $incompleteCurrentYearNote }}
                                         </div>
                                     @endif
+                                    <div class="rounded-xl bg-white/70 px-3 py-3 text-xs leading-relaxed text-slate-500">
+                                        {{ $analysisInsightRemark }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2474,6 +2871,122 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             @endforeach
                         </div>
                     @endif
+
+                    <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4" data-doctor-role-panel>
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div class="text-sm font-semibold text-emerald-950">บทบาทของคนในหน่วยวิจัยฯ ตามกลุ่มเนื้อหา</div>
+                                <div class="mt-1 text-xs text-emerald-700/80">สรุป PI, Co-PI และ Co-Research ของคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ แยกตามหมวด 01-06</div>
+                            </div>
+                            <div class="doctor-role-tabs inline-flex rounded-xl border border-emerald-200 bg-white/70 p-1">
+                                @foreach (['pi' => 'PI', 'co_pi' => 'Co-PI', 'co_research' => 'Co-Research'] as $roleKey => $roleLabel)
+                                    @php
+                                        $roleTable = $unitContributionRoleThemeTables->get($roleKey);
+                                    @endphp
+                                    <button type="button" class="doctor-role-tab rounded-lg px-3 py-1.5 text-xs font-semibold {{ $loop->first ? 'is-active bg-white text-emerald-950 shadow-sm' : 'text-emerald-700 hover:text-emerald-950' }}" data-doctor-role-tab="{{ $roleKey }}">
+                                        {{ $roleLabel }}
+                                        <span class="ml-1 text-[11px] text-emerald-500">{{ number_format((int) ($roleTable?->people_count ?? 0)) }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="doctor-role-floating" data-doctor-role-floating aria-label="เลือกบทบาทของคนในหน่วยวิจัย">
+                            @foreach (['pi' => 'PI', 'co_pi' => 'Co-PI', 'co_research' => 'Co-Research'] as $roleKey => $roleLabel)
+                                <button type="button" class="{{ $loop->first ? 'is-active' : '' }}" data-doctor-role-floating-tab="{{ $roleKey }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">
+                                    {{ $roleLabel }}
+                                </button>
+                            @endforeach
+                        </div>
+
+                        @foreach (['pi' => 'PI', 'co_pi' => 'Co-PI', 'co_research' => 'Co-Research'] as $roleKey => $roleLabel)
+                            @php
+                                $roleTable = $unitContributionRoleThemeTables->get($roleKey);
+                                $roleRows = collect($roleTable?->rows ?? []);
+                                $roleYears = collect($roleTable?->years ?? []);
+                            @endphp
+                            <div class="doctor-role-table mt-3 {{ $loop->first ? '' : 'hidden' }}" data-doctor-role-table="{{ $roleKey }}">
+                                <div class="doctor-lane-board unit-contribution-matrix rounded-xl border border-emerald-200 bg-white">
+                                    <div class="doctor-lane-grid border-0" style="--doctor-year-count: {{ max(1, $roleYears->count()) }};">
+                                        @if ($roleYears->isNotEmpty() && $roleRows->isNotEmpty())
+                                            <div class="doctor-lane-head">
+                                                <div class="doctor-lane-theme">
+                                                    <div class="text-xs font-semibold text-emerald-700">กลุ่มงาน</div>
+                                                </div>
+                                                @foreach ($roleYears as $year)
+                                                    <div class="doctor-lane-year text-emerald-700">{{ $year }}</div>
+                                                @endforeach
+                                            </div>
+                                            @foreach ($roleRows as $row)
+                                                <div class="doctor-lane-row" style="{{ $projectTypeToneStyle($row->theme) }}">
+                                                    <div class="doctor-lane-theme">
+                                                        <div class="text-sm font-semibold leading-snug text-slate-900">{{ $row->theme }}</div>
+                                                        <div class="mt-1 text-[11px] font-medium text-slate-500">{{ number_format((int) $row->people_count) }} คน · {{ number_format((int) $row->project_count) }} โครงการ</div>
+                                                    </div>
+                                                    @foreach ($roleYears as $year)
+                                                        @php
+                                                            $cell = collect($row->by_year ?? [])->get((string) ((int) $year));
+                                                            $people = collect($cell->people ?? [])->values();
+                                                        @endphp
+                                                        <div class="doctor-lane-cell {{ $people->isEmpty() ? 'is-empty' : '' }}">
+                                                            @if ($people->isNotEmpty())
+                                                                <div class="unit-cell-content">
+                                                                    <div class="unit-cell-count">{{ number_format($people->count()) }} คน</div>
+                                                                    <div class="doctor-avatar-stack unit-avatar-stack" title="{{ $people->pluck('name')->implode(', ') }}">
+                                                                        @foreach ($people as $person)
+                                                                            <img src="{{ $person->profile_photo_url ?: asset('images/default-avatar.png') }}" alt="{{ $person->name }}" title="{{ $person->name }}{{ (int) ($person->project_count ?? 0) > 0 ? ' · ' . number_format((int) $person->project_count) . ' โครงการ' : '' }}" onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'">
+                                                                        @endforeach
+                                                                    </div>
+                                                                </div>
+                                                            @else
+                                                                <span class="text-sm text-slate-300">-</span>
+                                                            @endif
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endforeach
+                                        @else
+                                            <div class="rounded-xl border border-dashed border-emerald-200 px-4 py-5 text-sm text-slate-500">ยังไม่มีข้อมูลในบทบาท {{ $roleLabel }} สำหรับช่วงที่เลือก</div>
+                                        @endif
+                                    </div>
+                                </div>
+                                @if ($roleYears->isNotEmpty() && $roleRows->isNotEmpty())
+                                    <div class="unit-mobile-role-timeline">
+                                        @foreach ($roleRows as $row)
+                                            <div class="doctor-mobile-theme" style="{{ $projectTypeToneStyle($row->theme) }}">
+                                                <div class="doctor-mobile-theme__head">
+                                                    <div class="text-sm font-semibold leading-snug text-slate-950">{{ $row->theme }}</div>
+                                                    <div class="mt-1 text-[11px] font-medium text-slate-500">{{ number_format((int) $row->people_count) }} คน · {{ number_format((int) $row->project_count) }} โครงการ</div>
+                                                </div>
+                                                @foreach ($roleYears as $year)
+                                                    @php
+                                                        $cell = collect($row->by_year ?? [])->get((string) ((int) $year));
+                                                        $people = collect($cell->people ?? [])->values();
+                                                    @endphp
+                                                    <div class="doctor-mobile-year">
+                                                        <div class="unit-mobile-year-meta">
+                                                            <div class="doctor-mobile-year__label text-emerald-700">{{ $year }}</div>
+                                                            @if ($people->isNotEmpty())
+                                                                <div class="unit-cell-count">{{ number_format($people->count()) }} คน</div>
+                                                            @endif
+                                                        </div>
+                                                        @if ($people->isNotEmpty())
+                                                            <div class="unit-mobile-avatar-grid" title="{{ $people->pluck('name')->implode(', ') }}">
+                                                                @foreach ($people as $person)
+                                                                    <img src="{{ $person->profile_photo_url ?: asset('images/default-avatar.png') }}" alt="{{ $person->name }}" title="{{ $person->name }}{{ (int) ($person->project_count ?? 0) > 0 ? ' · ' . number_format((int) $person->project_count) . ' โครงการ' : '' }}" onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'">
+                                                                @endforeach
+                                                            </div>
+                                                        @else
+                                                            <span class="doctor-mobile-empty">-</span>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
 
             </section>
@@ -2652,7 +3165,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 <article class="fade-up panel section-panel section-panel--rose chart-sticky flex h-full flex-col p-4 md:p-5">
                     <div class="section-tag section-tag--rose">Publications</div>
                     <h2 class="text-base font-semibold text-slate-900">ผลงานการตีพิมพ์ต่างๆ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($paperCount) }} รายการ)</span></h2>
-                    <div class="mt-4 flex flex-1 items-center justify-center">
+                    <div class="mt-4 flex flex-1 items-start justify-center">
                         <div class="h-[360px] w-full max-w-[880px]"><canvas id="chartPaperRanking"></canvas></div>
                     </div>
                 </article>
@@ -2692,7 +3205,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 <article class="fade-up panel section-panel section-panel--emerald chart-sticky flex h-full flex-col p-4 md:p-5">
                     <div class="section-tag section-tag--emerald">Presentations</div>
                     <h2 class="text-base font-semibold text-slate-900">ผลงานการนำเสนอต่างๆ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($presentationCount) }} รายการ)</span></h2>
-                    <div class="mt-4 flex flex-1 items-center justify-center">
+                    <div class="mt-4 flex flex-1 items-start justify-center">
                         <div class="h-[360px] w-full max-w-[760px]"><canvas id="chartPresentationActivity"></canvas></div>
                     </div>
                 </article>
@@ -2976,7 +3489,81 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 }
             };
 
-            Chart.register(ChartDataLabels, OutlabelsWithLinesPlugin);
+            const StackedTotalLabelsPlugin = {
+                id: 'stackedTotalLabels',
+                afterDatasetsDraw(chart, args, pluginOptions) {
+                    const opts = pluginOptions || {};
+                    if (!opts.enabled || chart.config.type !== 'bar') return;
+
+                    const labels = chart.data.labels || [];
+                    if (!labels.length) return;
+
+                    const ctx = chart.ctx;
+                    const chartTop = chart.chartArea?.top ?? 0;
+                    const color = opts.color || '#0f172a';
+                    const backgroundColor = opts.backgroundColor || '#ffffff';
+                    const borderColor = opts.borderColor || '#cbd5e1';
+
+                    ctx.save();
+                    ctx.font = opts.font || '700 12px Sarabun, Noto Sans Thai, Segoe UI, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    labels.forEach((_, dataIndex) => {
+                        let total = 0;
+                        let x = null;
+                        let topY = null;
+
+                        chart.data.datasets.forEach((dataset, datasetIndex) => {
+                            if (!chart.isDatasetVisible(datasetIndex)) return;
+                            const value = Number(dataset?.data?.[dataIndex] || 0);
+                            if (value <= 0) return;
+
+                            const element = chart.getDatasetMeta(datasetIndex)?.data?.[dataIndex];
+                            if (!element) return;
+
+                            total += value;
+                            x = element.x;
+                            topY = topY === null ? element.y : Math.min(topY, element.y);
+                        });
+
+                        if (total <= 0 || x === null || topY === null) return;
+
+                        const text = String(total);
+                        const metrics = ctx.measureText(text);
+                        const paddingX = 6;
+                        const boxW = metrics.width + paddingX * 2;
+                        const boxH = 20;
+                        const boxX = x - boxW / 2;
+                        const boxY = Math.max(chartTop + 2, topY - boxH - 6);
+                        const radius = 10;
+
+                        ctx.beginPath();
+                        ctx.moveTo(boxX + radius, boxY);
+                        ctx.lineTo(boxX + boxW - radius, boxY);
+                        ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + radius);
+                        ctx.lineTo(boxX + boxW, boxY + boxH - radius);
+                        ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - radius, boxY + boxH);
+                        ctx.lineTo(boxX + radius, boxY + boxH);
+                        ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - radius);
+                        ctx.lineTo(boxX, boxY + radius);
+                        ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+                        ctx.closePath();
+                        ctx.fillStyle = backgroundColor;
+                        ctx.fill();
+                        ctx.strokeStyle = borderColor;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+
+                        ctx.fillStyle = color;
+                        ctx.fillText(text, x, boxY + boxH / 2);
+                    });
+
+                    ctx.restore();
+                }
+            };
+
+            Chart.register(ChartDataLabels, OutlabelsWithLinesPlugin, StackedTotalLabelsPlugin);
 
             const yearLabels = @json($yearLabels);
             const sourceSeries = @json($sourceSeries);
@@ -2992,6 +3579,12 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             const presentationActivityLabels = @json($presentationActivityLabels);
             const presentationActivityValues = @json($presentationActivityValues);
             const presentationActivityItems = @json(collect($presentationActivityItems ?? []));
+            const paperYearLabels = @json($paperYearLabels);
+            const paperRankingYearSeries = @json(collect($paperRankingYearSeries ?? []));
+            const paperRankingYearItems = @json(collect($paperRankingYearItems ?? []));
+            const presentationYearLabels = @json($presentationYearLabels);
+            const presentationActivityYearSeries = @json(collect($presentationActivityYearSeries ?? []));
+            const presentationActivityYearItems = @json(collect($presentationActivityYearItems ?? []));
             const textbookYearLabels = @json($textbookYearLabels);
             const textbookYearValues = @json($textbookYearValues);
             const textbookYearItems = @json(collect($textbookYearItems ?? []));
@@ -3010,6 +3603,15 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             const policyImpactTrendSeries = @json(collect($policyImpactTrend['series'] ?? []));
             const policyImpactTrendItems = @json(collect($policyImpactTrend['items'] ?? []));
             const policyImpactTrendItemsByYear = @json(collect($policyImpactTrend['items_by_year'] ?? []));
+            const themeGapAi = {
+                enabled: @json($policyImpactThemeAiFacts->isNotEmpty()),
+                endpoint: @json(route('outputs.visualization.theme-gap-ai', [], false)),
+                csrf: @json(csrf_token()),
+                facts: {
+                    themes: @json($policyImpactThemeAiFacts),
+                },
+                fallback: @json($policyImpactThemeNarrativeParagraph)
+            };
             const sirirajClinicalTrendRows = @json($expertTrendRows);
             const sirirajClinicalTrendItems = @json(collect($expertTrend['items_by_year'] ?? []));
             const clinicalLedIntegrationTrend = @json($clinicalLedIntegrationTrend);
@@ -3034,6 +3636,132 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             const safeLabels = (labels) => (labels && labels.length ? labels : ['ไม่มีข้อมูล']);
             const safeValues = (values, fallback = 0) => (values && values.length ? values : [fallback]);
             const safeColors = (colors) => (colors && colors.length ? colors : ['#64748b']);
+            const enhanceThemeGapWithAi = async () => {
+                const target = document.querySelector('[data-theme-gap-ai-field="paragraph"]');
+                const statusDot = document.querySelector('[data-theme-gap-ai-field="status-dot"]');
+                if (!target) return;
+
+                const markFallback = () => {
+                    statusDot?.classList.remove('bg-emerald-500');
+                    statusDot?.classList.add('bg-red-500');
+                };
+                const markAi = () => {
+                    statusDot?.classList.remove('bg-red-500');
+                    statusDot?.classList.add('bg-emerald-500');
+                };
+
+                markFallback();
+                if (!themeGapAi?.enabled || !themeGapAi?.endpoint) return;
+
+                try {
+                    const response = await fetch(themeGapAi.endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': themeGapAi.csrf || '',
+                        },
+                        body: JSON.stringify({
+                            facts: themeGapAi.facts || {},
+                            fallback: themeGapAi.fallback || '',
+                        }),
+                    });
+
+                    if (!response.ok) return;
+                    const payload = await response.json();
+                    if (!payload?.ok || !payload.paragraph) {
+                        markFallback();
+                        return;
+                    }
+
+                    target.textContent = payload.paragraph;
+                    markAi();
+                } catch (error) {
+                    markFallback();
+                    // Keep the rule-based paragraph when Gemini is unavailable, rate-limited, or out of tokens.
+                }
+            };
+            const setupDoctorRoleTables = () => {
+                document.querySelectorAll('[data-doctor-role-panel]').forEach((panel) => {
+                    const tabs = Array.from(panel.querySelectorAll('[data-doctor-role-tab]'));
+                    const floating = panel.querySelector('[data-doctor-role-floating]');
+                    const floatingTabs = Array.from(panel.querySelectorAll('[data-doctor-role-floating-tab]'));
+                    const triggers = [...tabs, ...floatingTabs];
+                    const tables = Array.from(panel.querySelectorAll('[data-doctor-role-table]'));
+                    const mobileQuery = window.matchMedia('(max-width: 640px)');
+                    let panelInView = false;
+                    if (floating && floating.parentElement !== document.body) {
+                        document.body.appendChild(floating);
+                    }
+                    const syncFloatingVisibility = () => {
+                        if (!floating) return;
+                        floating.classList.toggle('is-visible', mobileQuery.matches && panelInView);
+                    };
+                    const activateRole = (key, options = {}) => {
+                        tabs.forEach((item) => {
+                            const active = item.dataset.doctorRoleTab === key;
+                            item.classList.toggle('is-active', active);
+                            item.classList.toggle('bg-white', active);
+                            item.classList.toggle('text-emerald-950', active);
+                            item.classList.toggle('shadow-sm', active);
+                            item.classList.toggle('text-emerald-700', !active);
+                        });
+                        floatingTabs.forEach((item) => {
+                            const active = item.dataset.doctorRoleFloatingTab === key;
+                            item.classList.toggle('is-active', active);
+                            item.setAttribute('aria-pressed', active ? 'true' : 'false');
+                        });
+                        tables.forEach((table) => {
+                            table.classList.toggle('hidden', table.dataset.doctorRoleTable !== key);
+                        });
+                        if (options.scroll && mobileQuery.matches) {
+                            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    };
+
+                    triggers.forEach((tab) => {
+                        tab.addEventListener('click', () => {
+                            const key = tab.dataset.doctorRoleTab || tab.dataset.doctorRoleFloatingTab || '';
+                            activateRole(key, { scroll: Boolean(tab.dataset.doctorRoleFloatingTab) });
+                        });
+                    });
+
+                    if (floating) {
+                        if ('IntersectionObserver' in window) {
+                            const observer = new IntersectionObserver((entries) => {
+                                panelInView = entries.some((entry) => entry.isIntersecting);
+                                syncFloatingVisibility();
+                            }, {
+                                threshold: 0,
+                                rootMargin: '-18% 0px -22% 0px',
+                            });
+                            observer.observe(panel);
+                        } else {
+                            const updateFloating = () => {
+                                const rect = panel.getBoundingClientRect();
+                                panelInView = rect.top < window.innerHeight * .82 && rect.bottom > window.innerHeight * .18;
+                                syncFloatingVisibility();
+                            };
+                            window.addEventListener('scroll', updateFloating, { passive: true });
+                            window.addEventListener('resize', updateFloating);
+                            updateFloating();
+                        }
+                        if (typeof mobileQuery.addEventListener === 'function') {
+                            mobileQuery.addEventListener('change', syncFloatingVisibility);
+                        } else if (typeof mobileQuery.addListener === 'function') {
+                            mobileQuery.addListener(syncFloatingVisibility);
+                        }
+                    }
+
+                    const initialKey = tabs.find((item) => item.classList.contains('is-active'))?.dataset.doctorRoleTab
+                        || tabs[0]?.dataset.doctorRoleTab
+                        || floatingTabs[0]?.dataset.doctorRoleFloatingTab
+                        || '';
+                    if (initialKey) {
+                        activateRole(initialKey);
+                    }
+                });
+            };
             const renderedCharts = new Map();
             const renderChart = (canvasId, config) => {
                 const canvas = document.getElementById(canvasId);
@@ -3445,7 +4173,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     <div class="metric text-2xl font-semibold text-slate-900">${year}</div>
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">โปรเจค / รายการ</div>
+                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ผลงาน</div>
                                     <div class="mt-1 text-base font-semibold leading-snug text-slate-900">${title}</div>
                                     <div class="mt-1 text-sm font-medium text-slate-500">${meta}</div>
                                     ${typeBadge ? `<div class="mt-2">${typeBadge}</div>` : ''}
@@ -3917,18 +4645,22 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             });
 
             const dataLiteracyYears = safeLabels(dataLiteracyTrendYears || []);
-            const dataLiteracyRealWorld = dataLiteracyYears.map((_, index) => Number(dataLiteracyTrendSeries?.['Real-World data']?.[index] || 0));
-            const dataLiteracyPrimary = dataLiteracyYears.map((_, index) => Number(dataLiteracyTrendSeries?.['Primary data collection']?.[index] || 0));
+            const dataLiteracyRealWorld = dataLiteracyYears.map((_, index) => Number(dataLiteracyTrendSeries?.['Real-World Data']?.[index] || 0));
+            const dataLiteracyPrimary = dataLiteracyYears.map((_, index) => Number(dataLiteracyTrendSeries?.['Primary Data']?.[index] || 0));
+            const dataLiteracyCombined = dataLiteracyYears.map((_, index) => Number(dataLiteracyTrendSeries?.['Real-World Data + Primary Data']?.[index] || 0));
             const dataLiteracyTrendMeta = {
-                'Real-World data': 'Real-World data',
-                'Primary data collection': 'Primary data collection'
+                'Real-World Data': 'Real-World Data',
+                'Primary Data': 'Primary Data',
+                'Real-World Data + Primary Data': 'Real-World Data + Primary Data'
             };
             const openDataLiteracyTrendModal = (datasetKey, year) => {
                 const items = normalizeFrameworkItems(dataLiteracyTrendItems?.[datasetKey]?.[String(year)]);
                 if (!frameworkModal || !frameworkModalBody) return;
-                frameworkModalTone = datasetKey === 'Primary data collection'
+                frameworkModalTone = datasetKey === 'Primary Data'
                     ? { bg: '#ecfdf5', border: '#99f6e4', accent: '#0f766e', header: '#ecfdf5' }
-                    : { bg: '#eff6ff', border: '#bfdbfe', accent: '#2563eb', header: '#eff6ff' };
+                    : (datasetKey === 'Real-World Data + Primary Data'
+                        ? { bg: '#f5f3ff', border: '#ddd6fe', accent: '#7c3aed', header: '#f5f3ff' }
+                        : { bg: '#eff6ff', border: '#bfdbfe', accent: '#2563eb', header: '#eff6ff' });
                 frameworkModalTitle.textContent = dataLiteracyTrendMeta[datasetKey] || 'Data Source / Method';
                 frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} โครงการ</span></span>`;
                 setFrameworkModalItems(items, 'โครงการ', { year: String(year || '') });
@@ -3940,8 +4672,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     labels: dataLiteracyYears,
                     datasets: [
                         {
-                            key: 'Real-World data',
-                            label: 'Real-World data',
+                            key: 'Real-World Data',
+                            label: 'Real-World Data',
                             data: dataLiteracyRealWorld,
                             borderColor: '#2563eb',
                             backgroundColor: 'rgba(37, 99, 235, .12)',
@@ -3950,12 +4682,22 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             fill: true
                         },
                         {
-                            key: 'Primary data collection',
-                            label: 'Primary data collection',
+                            key: 'Primary Data',
+                            label: 'Primary Data',
                             data: dataLiteracyPrimary,
                             borderColor: '#0f766e',
                             backgroundColor: 'rgba(15, 118, 110, .10)',
                             pointBackgroundColor: '#0f766e',
+                            tension: .35,
+                            fill: true
+                        },
+                        {
+                            key: 'Real-World Data + Primary Data',
+                            label: 'Real-World Data + Primary Data',
+                            data: dataLiteracyCombined,
+                            borderColor: '#7c3aed',
+                            backgroundColor: 'rgba(124, 58, 237, .10)',
+                            pointBackgroundColor: '#7c3aed',
                             tension: .35,
                             fill: true
                         }
@@ -3970,7 +4712,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         x: { ticks: { color: textColor }, grid: { display: false } },
                         y: {
                             beginAtZero: true,
-                            suggestedMax: suggestedAxisMax([...dataLiteracyRealWorld, ...dataLiteracyPrimary], 5),
+                            suggestedMax: suggestedAxisMax([...dataLiteracyRealWorld, ...dataLiteracyPrimary, ...dataLiteracyCombined], 5),
                             ticks: { color: textColor, precision: 0 },
                             grid: { color: gridColor }
                         }
@@ -4006,6 +4748,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
 
             const policyTrendLabels = safeLabels(policyImpactTrendYears);
             const policyTrendDatasetMeta = {
+                EA101: { label: 'Research Paper and Journal Article', unit: 'รายการ' },
                 EA109: { label: 'Change in Practices / Procedures / Policy', unit: 'รายการ' },
                 EA102: { label: 'Reports and White Papers', unit: 'รายการ' },
                 EA106: { label: 'Policy Recommendations', unit: 'รายการ' }
@@ -4020,6 +4763,16 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 showFrameworkModal();
             };
             const policyTrendDatasets = [
+                {
+                    key: 'EA101',
+                    label: 'Research Paper and Journal Article',
+                    data: policyTrendLabels.map((_, index) => Number(policyImpactTrendSeries?.EA101?.[index] || 0)),
+                    borderColor: '#7aa2f7',
+                    backgroundColor: 'rgba(122, 162, 247, .14)',
+                    pointBackgroundColor: '#7aa2f7',
+                    tension: .35,
+                    fill: true
+                },
                 {
                     key: 'EA109',
                     label: 'Change in Practices / Procedures / Policy',
@@ -4182,39 +4935,48 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             renderChart('chartPaperRanking', {
                 type: 'bar',
                 data: {
-                    labels: safeLabels(paperRankingLabels),
-                    datasets: [{
-                        label: 'จำนวน Paper',
-                        data: safeValues(paperRankingValues),
-                        backgroundColor: '#4f46e5',
-                        borderColor: '#3730a3',
-                        borderWidth: 1,
-                        hoverBackgroundColor: '#3730a3',
-                        borderRadius: 10,
-                        barPercentage: 0.78,
-                        categoryPercentage: 0.72,
-                        maxBarThickness: 72
-                    }]
+                    labels: safeLabels(paperYearLabels),
+                    datasets: safeLabels(paperRankingLabels).map((label, index) => {
+                        const colors = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#0f766e', '#ca8a04', '#64748b'];
+                        return {
+                            label,
+                            data: safeLabels(paperYearLabels).map((_, yearIndex) => Number(paperRankingYearSeries?.[label]?.[yearIndex] || 0)),
+                            backgroundColor: colors[index % colors.length],
+                            borderColor: colors[index % colors.length],
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            maxBarThickness: 64
+                        };
+                    })
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: chartAnim,
                     layout: {
-                        padding: { left: 8, right: 8, top: 10, bottom: 0 }
+                        padding: { left: 8, right: 8, top: 28, bottom: 0 }
                     },
+                    interaction: { mode: 'index', intersect: false },
                     scales: {
+                        x: { stacked: true, ticks: { color: textColor }, grid: { display: false } },
                         y: {
+                            stacked: true,
                             beginAtZero: true,
-                            suggestedMax: suggestedAxisMax(safeValues(paperRankingValues), 5),
+                            suggestedMax: suggestedAxisMax(safeValues(paperYearLabels.map((_, index) => safeLabels(paperRankingLabels).reduce((sum, label) => sum + Number(paperRankingYearSeries?.[label]?.[index] || 0), 0))), 5),
                             ticks: { precision: 0, color: textColor },
                             grid: { color: gridColor }
-                        },
-                        x: { ticks: { color: textColor } }
+                        }
                     },
                     plugins: {
-                        legend: { display: false },
+                        legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12, padding: 10 } },
+                        stackedTotalLabels: {
+                            enabled: true,
+                            color: '#1e1b4b',
+                            backgroundColor: '#eef2ff',
+                            borderColor: '#c7d2fe'
+                        },
                         datalabels: {
+                            display: false,
                             color: '#0f172a',
                             anchor: 'end',
                             align: 'end',
@@ -4231,78 +4993,64 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     onClick: (event, elements, chart) => {
                         if (!elements.length) return;
                         const point = elements[0];
-                        const label = chart.data.labels?.[point.index];
-                        const items = normalizeFrameworkItems(paperRankingItems?.[String(label)]);
-                        openOutputItemsModal(items, `Paper Ranking: ${label || '-'}`, 'รายการ');
+                        const year = chart.data.labels?.[point.index];
+                        const ranking = chart.data.datasets?.[point.datasetIndex]?.label;
+                        const items = normalizeFrameworkItems(paperRankingYearItems?.[String(ranking)]?.[String(year)]);
+                        openOutputItemsModal(items, `Publication: ${year || '-'} / ${ranking || '-'}`, 'รายการ');
                     }
                 }
             });
 
             renderChart('chartPresentationActivity', {
-                type: 'doughnut',
+                type: 'bar',
                 data: {
-                    labels: safeLabels(presentationActivityLabels),
-                    datasets: [{
-                        data: safeValues(presentationActivityValues, 1),
-                        backgroundColor: safeColors(presentationChartColors),
-                        hoverBackgroundColor: safeColors(presentationChartColors),
-                        borderColor: safeColors(presentationChartBorderColors),
-                        hoverBorderColor: safeColors(presentationChartBorderColors),
-                        borderWidth: 1.25
-                    }]
+                    labels: safeLabels(presentationYearLabels),
+                    datasets: safeLabels(presentationActivityLabels).map((label, index) => ({
+                        label,
+                        data: safeLabels(presentationYearLabels).map((_, yearIndex) => Number(presentationActivityYearSeries?.[label]?.[yearIndex] || 0)),
+                        backgroundColor: safeColors(presentationChartColors)[index % safeColors(presentationChartColors).length],
+                        borderColor: safeColors(presentationChartBorderColors)[index % safeColors(presentationChartBorderColors).length],
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        maxBarThickness: 64
+                    }))
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: chartAnim,
                     layout: {
-                        padding: { top: 38, right: 20, left: 20, bottom: 8 }
+                        padding: { left: 8, right: 8, top: 28, bottom: 0 }
                     },
-                    radius: '86%',
-                    cutout: '50%',
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: { stacked: true, ticks: { color: textColor }, grid: { display: false } },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            suggestedMax: suggestedAxisMax(safeValues(presentationYearLabels.map((_, index) => safeLabels(presentationActivityLabels).reduce((sum, label) => sum + Number(presentationActivityYearSeries?.[label]?.[index] || 0), 0))), 5),
+                            ticks: { precision: 0, color: textColor },
+                            grid: { color: gridColor }
+                        }
+                    },
                     plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                color: textColor,
-                                padding: 10,
-                                boxWidth: 12,
-                                generateLabels: (chart) => {
-                                    const labels = chart.data.labels || [];
-                                    const data = chart.data.datasets?.[0]?.data || [];
-                                    const total = data.reduce((sum, v) => sum + Number(v || 0), 0);
-                                    return labels.map((label, i) => {
-                                        const value = Number(data[i] || 0);
-                                        const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-                                        const color = chart.data.datasets[0].backgroundColor[i];
-                                        const stroke = chart.data.datasets[0].borderColor[i] || color;
-                                        return {
-                                            text: `${label} (${value}, ${pct}%)`,
-                                            fillStyle: color,
-                                            strokeStyle: stroke,
-                                            lineWidth: 1,
-                                            hidden: !chart.getDataVisibility(i),
-                                            index: i,
-                                        };
-                                    });
-                                }
-                            }
+                        legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12, padding: 10 } },
+                        stackedTotalLabels: {
+                            enabled: true,
+                            color: '#134e4a',
+                            backgroundColor: '#ecfdf5',
+                            borderColor: '#99f6e4'
                         },
                         datalabels: {
-                            color: '#ffffff',
+                            display: false,
+                            color: '#0f172a',
+                            anchor: 'end',
+                            align: 'end',
+                            offset: 2,
+                            clamp: true,
                             font: { weight: '700', size: 11 },
                             formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
-                        },
-                        outlabelsWithLines: {
-                            enabled: true,
-                            minAngleDeg: 16,
-                            minPct: 1.4,
-                            maxLabels: 10,
-                            minGap: 16,
-                            lineColor: '#94a3b8',
-                            textColor: '#0f172a'
-                        },
+                        }
                     },
                     onHover: (event, elements) => {
                         const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartPresentationActivity');
@@ -4311,9 +5059,10 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     onClick: (event, elements, chart) => {
                         if (!elements.length) return;
                         const point = elements[0];
-                        const label = chart.data.labels?.[point.index];
-                        const items = normalizeFrameworkItems(presentationActivityItems?.[String(label)]);
-                        openOutputItemsModal(items, `Presentation: ${label || '-'}`, 'รายการ');
+                        const year = chart.data.labels?.[point.index];
+                        const activity = chart.data.datasets?.[point.datasetIndex]?.label;
+                        const items = normalizeFrameworkItems(presentationActivityYearItems?.[String(activity)]?.[String(year)]);
+                        openOutputItemsModal(items, `Presentation: ${year || '-'} / ${activity || '-'}`, 'รายการ');
                     }
                 }
             });
@@ -4535,6 +5284,9 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             }
 
             const fades = document.querySelectorAll('.fade-up');
+            requestAnimationFrame(() => {
+                fades.forEach((el) => el.classList.add('in'));
+            });
             if ('IntersectionObserver' in window) {
                 const io = new IntersectionObserver((entries) => {
                     entries.forEach((entry) => {
@@ -4661,6 +5413,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 }
             }
             resizeRenderedCharts();
+            enhanceThemeGapWithAi();
+            setupDoctorRoleTables();
         })();
     </script>
 @endsection

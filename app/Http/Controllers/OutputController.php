@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -34,6 +35,8 @@ use PDF;
 
 class OutputController extends Controller
 {
+    private const GEMINI_REMOTE_GATEWAY_URL = 'https://back.sihealthpolicy.com/api/ask-gemini';
+
     private const EXTERNAL_JOB_CATEGORIES = [
         '01 Aging and Frailty',
         '02 Health Systems and HTA',
@@ -1958,12 +1961,70 @@ class OutputController extends Controller
 
                 return [(string) $label => $buildChartOutputItems($rowsForLabel)];
             });
+        $paperYears = $paperRows
+            ->map(fn ($row) => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null)
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+        $paperRankingYearSeries = $paperQuartileLabels
+            ->mapWithKeys(function ($label) use ($paperRows, $paperYears) {
+                return [(string) $label => $paperYears
+                    ->map(function ($year) use ($paperRows, $label) {
+                        $yearRows = $paperRows->where('year_be', (int) $year)->values();
+                        return $label === 'ไม่ระบุ'
+                            ? (int) $yearRows->filter(fn ($row) => trim((string) ($row->quartile ?? '')) === '')->count()
+                            : (int) $yearRows->where('quartile', $label)->count();
+                    })
+                    ->values()];
+            });
+        $paperRankingYearItems = $paperQuartileLabels
+            ->mapWithKeys(function ($label) use ($paperRows, $paperYears, $buildChartOutputItems) {
+                return [(string) $label => $paperYears
+                    ->mapWithKeys(function ($year) use ($paperRows, $label, $buildChartOutputItems) {
+                        $yearRows = $paperRows->where('year_be', (int) $year)->values();
+                        $rowsForLabel = $label === 'ไม่ระบุ'
+                            ? $yearRows->filter(fn ($row) => trim((string) ($row->quartile ?? '')) === '')->values()
+                            : $yearRows->where('quartile', $label)->values();
+
+                        return [(string) $year => $buildChartOutputItems($rowsForLabel)];
+                    })
+                    ->all()];
+            });
         $presentationActivityItems = $presentationActivity
             ->keys()
             ->mapWithKeys(fn ($label) => [
                 (string) $label => $buildChartOutputItems($presentationRows
                     ->filter(fn ($row) => (trim((string) ($row->presentation_type ?? '')) ?: 'ไม่ระบุ') === (string) $label)
                     ->values()),
+            ]);
+        $presentationYears = $presentationRows
+            ->map(fn ($row) => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null)
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+        $presentationActivityYearSeries = $presentationActivity
+            ->keys()
+            ->mapWithKeys(fn ($label) => [
+                (string) $label => $presentationYears
+                    ->map(fn ($year) => (int) $presentationRows
+                        ->where('year_be', (int) $year)
+                        ->filter(fn ($row) => (trim((string) ($row->presentation_type ?? '')) ?: 'ไม่ระบุ') === (string) $label)
+                        ->count())
+                    ->values(),
+            ]);
+        $presentationActivityYearItems = $presentationActivity
+            ->keys()
+            ->mapWithKeys(fn ($label) => [
+                (string) $label => $presentationYears
+                    ->mapWithKeys(fn ($year) => [
+                        (string) $year => $buildChartOutputItems($presentationRows
+                            ->where('year_be', (int) $year)
+                            ->filter(fn ($row) => (trim((string) ($row->presentation_type ?? '')) ?: 'ไม่ระบุ') === (string) $label)
+                            ->values()),
+                    ])
+                    ->all(),
             ]);
         $textbookYearItems = $textbookYears
             ->keys()
@@ -2071,8 +2132,9 @@ class OutputController extends Controller
         })->sortByDesc('count')->values();
 
         $dataSourceOptions = collect([
-            'Real-World data',
-            'Primary data collection',
+            'Real-World Data',
+            'Primary Data',
+            'Real-World Data + Primary Data',
         ]);
         $normalizeDataSourceCategory = static function (mixed $value): ?string {
             $text = mb_strtolower(trim((string) $value), 'UTF-8');
@@ -2080,13 +2142,37 @@ class OutputController extends Controller
                 return null;
             }
 
+            $hasRealWorld = Str::contains($text, [
+                'real-world data',
+                'real world data',
+                'secondary / existing',
+                'existing data',
+                'raw data analysis',
+                'contextualised / integrated',
+                'contextualized / integrated',
+                'integrated data',
+                'improvised data',
+            ]);
+            $hasPrimary = Str::contains($text, [
+                'primary data',
+                'primary data collection',
+                'primary / generated',
+                'generated data',
+                'generate data',
+            ]);
+
+            if ($hasRealWorld && $hasPrimary) {
+                return 'Real-World Data + Primary Data';
+            }
+
             if (Str::contains($text, [
+                'primary data',
                 'primary data collection',
                 'primary / generated',
                 'generated data',
                 'generate data',
             ])) {
-                return 'Primary data collection';
+                return 'Primary Data';
             }
 
             if (Str::contains($text, [
@@ -2100,7 +2186,7 @@ class OutputController extends Controller
                 'integrated data',
                 'improvised data',
             ])) {
-                return 'Real-World data';
+                return 'Real-World Data';
             }
 
             return null;
@@ -2362,13 +2448,21 @@ class OutputController extends Controller
             ->map(fn ($value, $year) => (object) ['year' => $year, 'budget' => (float) $value])
             ->values();
         $maxHtaBudget = (float) max(1, $htaBudgetByYear->max('budget') ?: 1);
-        $impactCodes = collect(['EA109', 'EA102', 'EA106']);
+        $impactCodes = collect(['EA101', 'EA109', 'EA102', 'EA106']);
+        $includePolicyImpactProjectRow = static fn ($row): bool => ($row->source ?? '') === 'project'
+            && $normalizeProjectType($row->project_type ?? null) !== $projectTypeLabelByCode['06'];
+        $impactRows = $filtered
+            ->filter($includePolicyImpactProjectRow)
+            ->values();
+        $impactAllRows = $rows
+            ->filter($includePolicyImpactProjectRow)
+            ->values();
         $impactOutputRows = $impactCodes->mapWithKeys(fn ($code) => [
-            $code => (int) $filtered->where('type_code', $code)->count(),
+            $code => (int) $impactRows->where('type_code', $code)->count(),
         ]);
-        $impactOutputItems = $impactCodes->mapWithKeys(function ($code) use ($filtered, $sortRowsNewestFirst, $eaFullNameMap) {
+        $impactOutputItems = $impactCodes->mapWithKeys(function ($code) use ($impactRows, $sortRowsNewestFirst, $eaFullNameMap) {
             return [
-                $code => $sortRowsNewestFirst($filtered->where('type_code', $code)->values())
+                $code => $sortRowsNewestFirst($impactRows->where('type_code', $code)->values())
                     ->take(8)
                     ->map(fn ($row) => (object) [
                         'title' => trim((string) ($row->title ?? '')) ?: '-',
@@ -2382,7 +2476,7 @@ class OutputController extends Controller
                     ->values(),
             ];
         });
-        $impactTrendYears = $filtered
+        $impactTrendYears = $impactRows
             ->whereIn('type_code', $impactCodes->all())
             ->pluck('year_be')
             ->filter(fn ($year) => is_numeric($year))
@@ -2390,21 +2484,21 @@ class OutputController extends Controller
             ->unique()
             ->sort()
             ->values();
-        $impactTrendSeries = $impactCodes->mapWithKeys(function ($code) use ($filtered, $impactTrendYears) {
+        $impactTrendSeries = $impactCodes->mapWithKeys(function ($code) use ($impactRows, $impactTrendYears) {
             return [
                 $code => $impactTrendYears
-                    ->map(fn ($year) => (int) $filtered
+                    ->map(fn ($year) => (int) $impactRows
                         ->where('type_code', $code)
                         ->where('year_be', (int) $year)
                         ->count())
                     ->values(),
             ];
         });
-        $impactTrendItems = $impactCodes->mapWithKeys(function ($code) use ($filtered, $impactTrendYears, $sortRowsNewestFirst, $eaFullNameMap) {
+        $impactTrendItems = $impactCodes->mapWithKeys(function ($code) use ($impactRows, $impactTrendYears, $sortRowsNewestFirst, $eaFullNameMap) {
             return [
                 $code => $impactTrendYears
-                    ->mapWithKeys(function ($year) use ($filtered, $sortRowsNewestFirst, $code, $eaFullNameMap) {
-                        return [(string) $year => $sortRowsNewestFirst($filtered
+                    ->mapWithKeys(function ($year) use ($impactRows, $sortRowsNewestFirst, $code, $eaFullNameMap) {
+                        return [(string) $year => $sortRowsNewestFirst($impactRows
                             ->where('type_code', $code)
                             ->where('year_be', (int) $year)
                             ->values())
@@ -2420,8 +2514,8 @@ class OutputController extends Controller
                     }),
             ];
         });
-        $impactTrendItemsByYear = $impactTrendYears->mapWithKeys(function ($year) use ($filtered, $impactCodes, $sortRowsNewestFirst, $eaFullNameMap) {
-            return [(string) $year => $sortRowsNewestFirst($filtered
+        $impactTrendItemsByYear = $impactTrendYears->mapWithKeys(function ($year) use ($impactRows, $impactCodes, $sortRowsNewestFirst, $eaFullNameMap) {
+            return [(string) $year => $sortRowsNewestFirst($impactRows
                 ->whereIn('type_code', $impactCodes->all())
                 ->where('year_be', (int) $year)
                 ->values())
@@ -2439,6 +2533,283 @@ class OutputController extends Controller
                 })
                 ->values()];
         });
+        $impactCompleteProjectRows = $impactRows
+            ->where('source', 'project')
+            ->filter(fn ($row) => is_numeric($row->project_id ?? null))
+            ->whereIn('type_code', $impactCodes->all())
+            ->groupBy(fn ($row) => (int) $row->project_id)
+            ->map(function (Collection $projectRows) use ($impactCodes, $eaFullNameMap) {
+                $codes = $projectRows
+                    ->pluck('type_code')
+                    ->map(fn ($code) => strtoupper((string) $code))
+                    ->unique()
+                    ->values();
+
+                if ($impactCodes->diff($codes)->isNotEmpty()) {
+                    return null;
+                }
+
+                $first = $projectRows->first();
+                $years = $projectRows
+                    ->pluck('year_be')
+                    ->filter(fn ($year) => is_numeric($year))
+                    ->map(fn ($year) => (int) $year)
+                    ->unique()
+                    ->sort()
+                    ->values();
+                $link = trim((string) ($first->link ?? ''));
+                $projectLink = $link !== '' ? preg_replace('/#.*$/', '', $link) : null;
+
+                return (object) [
+                    'project_id' => (int) ($first->project_id ?? 0),
+                    'project_name' => trim((string) ($first->project_name ?? '')) ?: trim((string) ($first->reference ?? '')) ?: '-',
+                    'project_type' => trim((string) ($first->project_type ?? '')),
+                    'link' => $projectLink,
+                    'year_from' => $years->first(),
+                    'year_to' => $years->last(),
+                    'output_count' => (int) $projectRows->count(),
+                    'counts' => $impactCodes
+                        ->mapWithKeys(fn ($code) => [
+                            $code => (int) $projectRows->where('type_code', $code)->count(),
+                        ])
+                        ->all(),
+                    'type_labels' => $impactCodes
+                        ->mapWithKeys(fn ($code) => [
+                            $code => $eaFullNameMap[$code] ?? $code,
+                        ])
+                        ->all(),
+                ];
+            })
+            ->filter()
+            ->sortByDesc(fn ($row) => (int) ($row->output_count ?? 0))
+            ->values();
+        $impactThemeAnalysisRows = $impactRows
+            ->where('source', 'project')
+            ->filter(fn ($row) => is_numeric($row->project_id ?? null))
+            ->whereIn('type_code', $impactCodes->all())
+            ->groupBy(fn ($row) => $normalizeProjectType($row->project_type))
+            ->map(function (Collection $themeRows, string $themeLabel) use ($impactCodes, $eaFullNameMap, $normalizeProjectType) {
+                $projectCount = (int) $themeRows->pluck('project_id')->filter()->unique()->count();
+                $counts = $impactCodes
+                    ->mapWithKeys(fn ($code) => [
+                        $code => (int) $themeRows->where('type_code', $code)->count(),
+                    ]);
+                $presentCodes = $counts
+                    ->filter(fn ($count) => (int) $count > 0)
+                    ->keys()
+                    ->values();
+                $missingCodes = $impactCodes
+                    ->diff($presentCodes)
+                    ->values();
+                $dominantCode = $counts->sortDesc()->keys()->first();
+                $completeProjectCount = $themeRows
+                    ->groupBy(fn ($row) => (int) $row->project_id)
+                    ->filter(function (Collection $projectRows) use ($impactCodes) {
+                        $codes = $projectRows
+                            ->pluck('type_code')
+                            ->map(fn ($code) => strtoupper((string) $code))
+                            ->unique();
+
+                        return $impactCodes->diff($codes)->isEmpty();
+                    })
+                    ->count();
+                $labelFor = fn ($code) => $eaFullNameMap[$code] ?? $code;
+                $projectPresence = $impactCodes
+                    ->mapWithKeys(function ($code) use ($themeRows, $projectCount) {
+                        $projectsWithCode = (int) $themeRows
+                            ->where('type_code', $code)
+                            ->pluck('project_id')
+                            ->filter()
+                            ->unique()
+                            ->count();
+
+                        return [
+                            $code => [
+                                'with' => $projectsWithCode,
+                                'missing' => max(0, $projectCount - $projectsWithCode),
+                            ],
+                        ];
+                    });
+                $weaknessRows = $projectPresence
+                    ->map(fn ($stats, $code) => (object) [
+                        'code' => $code,
+                        'label' => $labelFor($code),
+                        'with' => (int) ($stats['with'] ?? 0),
+                        'missing' => (int) ($stats['missing'] ?? 0),
+                    ])
+                    ->sortByDesc(fn ($row) => (int) $row->missing)
+                    ->values();
+                $mainWeakness = $weaknessRows->first();
+                $missingText = $missingCodes->isNotEmpty()
+                    ? $missingCodes->map($labelFor)->implode(', ')
+                    : ($mainWeakness && (int) $mainWeakness->missing > 0
+                        ? ($mainWeakness->label . ' ใน ' . number_format((int) $mainWeakness->missing) . ' จาก ' . number_format($projectCount) . ' โครงการ')
+                        : 'ยังไม่เห็น output ที่ขาดชัดเจนในธีมนี้');
+                $presentText = $presentCodes->isNotEmpty()
+                    ? $presentCodes->map($labelFor)->implode(', ')
+                    : 'ยังไม่มี output ใน 4 กลุ่มนี้';
+                $effectByCode = [
+                    'EA101' => 'ผลคือฐาน publication สำหรับการอ้างอิงภายนอกและการสร้าง credibility ของ evidence ยังอาจไม่แข็งแรงพอ',
+                    'EA102' => 'ผลคือการสังเคราะห์และสื่อสาร evidence เป็นรายงานหรือ white paper ยังอาจไม่เพียงพอสำหรับส่งต่อเชิงระบบ',
+                    'EA106' => 'ผลคือ evidence ยังอาจไม่ถูกแปลงเป็นข้อเสนอเชิงนโยบายที่ใช้ประกอบการตัดสินใจได้ชัดเจน',
+                    'EA109' => 'ผลคือการเปลี่ยนจากข้อเสนอหรือหลักฐานไปสู่ practice/policy implementation ยังอาจเกิดขึ้นจำกัด',
+                ];
+                $effectText = $mainWeakness
+                    ? ($effectByCode[$mainWeakness->code] ?? 'ผลคือ pathway ของธีมนี้ยังมีบางช่วงที่ต้องเสริมเพื่อให้เกิด policy impact ชัดขึ้น')
+                    : 'ผลคือธีมนี้ยังไม่มีจุดอ่อนเด่นจากข้อมูลชุดนี้';
+                $overviewText = 'ธีมนี้มี ' . number_format($projectCount) . ' โครงการ และมี output ในกลุ่ม policy impact รวม ' . number_format((int) $themeRows->count()) . ' รายการ โดย output ที่เด่นที่สุดคือ ' . $labelFor($dominantCode) . ' (' . number_format((int) ($counts[$dominantCode] ?? 0)) . ' รายการ)';
+                $gapText = $mainWeakness && (int) $mainWeakness->missing > 0
+                    ? 'เมื่อดูรายโครงการ ส่วนที่ขาดมากที่สุดคือ ' . $mainWeakness->label . ' โดยมีเพียง ' . number_format((int) $mainWeakness->with) . ' จาก ' . number_format($projectCount) . ' โครงการที่มี output แบบนี้'
+                    : 'เมื่อดูรายโครงการ ยังไม่พบจุดที่ขาดเด่นชัดจาก output ทั้ง 4 กลุ่ม';
+                $interpretationText = $effectText . ' Output ที่พบแล้วในธีมนี้ ได้แก่ ' . $presentText . ' จึงควรเสริมจุดที่ขาดเป็นรายโครงการ ไม่ใช่อ่านเพียงว่าระดับธีมมีครบหรือไม่';
+                $strengthText = 'จุดเด่นของหมวดนี้คือ ' . $labelFor($dominantCode) . ' ซึ่งมีจำนวนมากที่สุดในชุด output ของหมวดนี้ สะท้อนว่าหมวดนี้มีฐาน output ในขั้นนี้ค่อนข้างชัด.';
+                $weaknessText = $mainWeakness && (int) $mainWeakness->missing > 0
+                    ? 'จุดด้อยคือ ' . $mainWeakness->label . ' ยังพบในสัดส่วนจำกัด โดยขาดใน ' . number_format((int) $mainWeakness->missing) . ' จาก ' . number_format($projectCount) . ' โครงการ.'
+                    : 'จุดด้อยยังไม่ชัดจากข้อมูลชุดนี้ เพราะ output ทั้ง 4 กลุ่มกระจายตัวค่อนข้างครบในระดับรายโครงการ.';
+                $overviewText = Str::finish($overviewText, '.');
+                $gapText = Str::finish($gapText, '.');
+                $interpretationText = Str::finish($interpretationText, '.');
+
+                return (object) [
+                    'theme' => $themeLabel ?: $normalizeProjectType(null),
+                    'project_count' => $projectCount,
+                    'output_count' => (int) $themeRows->count(),
+                    'complete_project_count' => (int) $completeProjectCount,
+                    'dominant_code' => $dominantCode,
+                    'dominant_label' => $labelFor($dominantCode),
+                    'dominant_count' => (int) ($counts[$dominantCode] ?? 0),
+                    'counts' => $counts->all(),
+                    'missing_codes' => $missingCodes->all(),
+                    'missing_text' => $missingText,
+                    'effect_text' => $effectText,
+                    'main_weakness_code' => $mainWeakness?->code,
+                    'main_weakness_label' => $mainWeakness?->label,
+                    'main_weakness_with' => (int) ($mainWeakness?->with ?? 0),
+                    'main_weakness_missing' => (int) ($mainWeakness?->missing ?? 0),
+                    'project_presence' => $projectPresence->all(),
+                    'overview_text' => $overviewText,
+                    'strength_text' => $strengthText,
+                    'weakness_text' => $weaknessText,
+                    'gap_text' => $gapText,
+                    'interpretation_text' => $interpretationText,
+                ];
+            })
+            ->sortByDesc(fn ($row) => (int) ($row->output_count ?? 0))
+            ->values();
+        $impactThemeSummaryTopTheme = $impactThemeAnalysisRows->first();
+        $impactThemeProjectTotal = (int) $impactRows
+            ->whereIn('type_code', $impactCodes->all())
+            ->pluck('project_id')
+            ->filter()
+            ->unique()
+            ->count();
+        $impactThemeWeaknessSummary = $impactCodes
+            ->map(function ($code) use ($impactRows, $impactThemeProjectTotal, $eaFullNameMap) {
+                $projectsWithCode = (int) $impactRows
+                    ->where('type_code', $code)
+                    ->pluck('project_id')
+                    ->filter()
+                    ->unique()
+                    ->count();
+
+                return (object) [
+                    'code' => $code,
+                    'label' => $eaFullNameMap[$code] ?? $code,
+                    'with' => $projectsWithCode,
+                    'missing' => max(0, $impactThemeProjectTotal - $projectsWithCode),
+                ];
+            })
+            ->sortByDesc(fn ($row) => (int) ($row->missing ?? 0))
+            ->values();
+        $impactThemeMainWeakness = $impactThemeWeaknessSummary->first();
+        $impactThemeEffectByCode = [
+            'EA101' => 'ส่งผลให้ฐาน publication และ credibility สำหรับการอ้างอิงภายนอกยังไม่แข็งแรงเท่าที่ควร.',
+            'EA102' => 'ส่งผลให้การสังเคราะห์และสื่อสาร evidence เป็นรายงานหรือ white paper ยังไม่พอสำหรับส่งต่อเชิงระบบ.',
+            'EA106' => 'ส่งผลให้ evidence ยังไม่ถูกแปลงเป็นข้อเสนอเชิงนโยบายที่ใช้ประกอบการตัดสินใจได้ชัดเจน.',
+            'EA109' => 'ส่งผลให้การขยับจากหลักฐานหรือข้อเสนอไปสู่ practice/policy implementation ยังเกิดขึ้นจำกัด.',
+        ];
+        $impactThemeNarrative = (object) [
+            'overview' => $impactThemeAnalysisRows->isNotEmpty()
+                ? 'ภาพรวมตามธีมพบว่า ' . ($impactThemeSummaryTopTheme?->theme ?? '-') . ' เป็นธีมที่มี output ในกลุ่ม policy impact มากที่สุด โดยมี ' . number_format((int) ($impactThemeSummaryTopTheme?->output_count ?? 0)) . ' รายการ จาก ' . number_format((int) ($impactThemeSummaryTopTheme?->project_count ?? 0)) . ' โครงการ และ output ที่เด่นคือ ' . ($impactThemeSummaryTopTheme?->dominant_label ?? '-') . '.'
+                : 'ยังไม่มีข้อมูล output ในระดับธีมสำหรับช่วงที่เลือก.',
+            'gap' => $impactThemeMainWeakness && (int) ($impactThemeMainWeakness->missing ?? 0) > 0
+                ? 'เมื่อดูรายโครงการในภาพรวม ส่วนที่ขาดมากที่สุดคือ ' . ($impactThemeMainWeakness->label ?? '-') . ' โดยมีเพียง ' . number_format((int) ($impactThemeMainWeakness->with ?? 0)) . ' จาก ' . number_format($impactThemeProjectTotal) . ' โครงการที่มี output แบบนี้.'
+                : 'เมื่อดูรายโครงการในภาพรวม ยังไม่พบ output ที่ขาดเด่นชัดจาก 4 กลุ่มหลัก.',
+            'effect' => $impactThemeMainWeakness && (int) ($impactThemeMainWeakness->missing ?? 0) > 0
+                ? (($impactThemeEffectByCode[$impactThemeMainWeakness->code] ?? 'ส่งผลให้ pathway ของ policy impact ยังมีบางช่วงที่ต้องเสริมให้ชัดขึ้น.') . ' ดังนั้นการอ่านกราฟนี้ควรมองว่า output ที่มีอยู่ยังบอกได้ว่าธีมไหนผลิตหลักฐานหรือรายงานได้ดี แต่จุดที่ต้องเสริมคือการต่อยอดใน output ที่ยังขาดเป็นรายโครงการ.')
+                : 'โดยรวมสะท้อนว่า output ทั้ง 4 กลุ่มเริ่มกระจายครบขึ้นในระดับโครงการ จึงควรติดตามคุณภาพและการนำไปใช้จริงในรอบถัดไป.',
+        ];
+        $themeNarrativePhrase = static function (string $theme): string {
+            return match ($theme) {
+                '01 Aging and Frailty' => 'หมวด Aging and Frailty',
+                '02 Health Systems and HTA' => 'หมวด Health Systems and HTA',
+                '04 Real-World Evidence (RWE) and Clinical-Technical Cohorts' => 'หมวด Real-World Evidence (RWE) and Clinical-Technical Cohorts',
+                default => 'หมวด ' . preg_replace('/^\d+\s*/', '', $theme),
+            };
+        };
+        $themeDominantSentence = static function (string $code, string $label, string $theme): string {
+            if ($code === 'EA101' && Str::contains($theme, 'Real-World Evidence')) {
+                return 'มีความโดดเด่นด้านการสร้างองค์ความรู้จากข้อมูลและ cohort เชิงคลินิก โดยเฉพาะในรูปแบบ ' . $label;
+            }
+
+            return match ($code) {
+                'EA101' => 'มีจุดเด่นด้านการสร้างองค์ความรู้เชิงวิชาการ โดยพบ ' . $label . ' เป็น output หลักของหมวด สะท้อนความเข้มแข็งด้านฐานความรู้และงานวิจัย',
+                'EA102' => 'มีความโดดเด่นด้าน ' . $label . ' ซึ่งสะท้อนบทบาทของหมวดในการสังเคราะห์และสื่อสารข้อมูลเชิงระบบได้ค่อนข้างชัด',
+                'EA106' => 'มีจุดเด่นด้าน ' . $label . ' สะท้อนการต่อยอด evidence ไปสู่ข้อเสนอเชิงนโยบาย',
+                'EA109' => 'มีจุดเด่นด้าน ' . $label . ' สะท้อนการขยับจากหลักฐานไปสู่การเปลี่ยนแปลงเชิงปฏิบัติหรือเชิงนโยบาย',
+                default => 'มี output หลักคือ ' . $label . ' สะท้อนทิศทางการสร้างผลงานในหมวดนี้',
+            };
+        };
+        $themeWeaknessEffect = static function (string $code, string $theme): string {
+            if ($code === 'EA109' && Str::contains($theme, 'Aging and Frailty')) {
+                return 'การเชื่อมโยงจากงานวิจัยไปสู่การเปลี่ยนแปลงเชิงระบบหรือเชิงปฏิบัติยังอยู่ในระยะเริ่มต้น';
+            }
+            if ($code === 'EA109' && Str::contains($theme, 'Real-World Evidence')) {
+                return 'การนำข้อมูลเชิงประจักษ์ไปใช้ประโยชน์เชิงนโยบายหรือการขับเคลื่อน implementation ในระดับระบบยังต้องอาศัยกระบวนการต่อยอดเพิ่มเติม';
+            }
+
+            return match ($code) {
+                'EA101' => 'ฐาน publication และ credibility สำหรับการอ้างอิงภายนอกยังอาจไม่แข็งแรงพอ',
+                'EA102' => 'การสังเคราะห์และสื่อสาร evidence เป็นรายงานหรือ white paper ยังอาจไม่เพียงพอสำหรับส่งต่อเชิงระบบ',
+                'EA106' => 'evidence ยังอาจไม่ถูกแปลงเป็นข้อเสนอเชิงนโยบายที่ใช้ประกอบการตัดสินใจได้ชัดเจน',
+                'EA109' => 'การต่อยอดจากข้อเสนอหรือหลักฐานเชิงระบบไปสู่ implementation ในระดับปฏิบัติหรือเชิงนโยบายยังมีข้อจำกัดบางประการ',
+                default => 'policy impact pathway ของหมวดนี้ยังมีบางช่วงที่ต้องเสริมให้ชัดขึ้น',
+            };
+        };
+        $impactThemeNarrativeParagraph = $impactThemeAnalysisRows->isNotEmpty()
+            ? $impactThemeAnalysisRows
+                ->map(function ($themeRow, $index) use ($themeNarrativePhrase, $themeDominantSentence, $themeWeaknessEffect) {
+                    $prefix = match ($index) {
+                        0 => '',
+                        1 => 'ขณะที่',
+                        2 => 'ส่วน',
+                        default => 'นอกจากนี้',
+                    };
+                    $themeName = $themeNarrativePhrase((string) ($themeRow->theme ?? '-'));
+                    $themeLabel = (string) ($themeRow->theme ?? '');
+                    $dominantLabel = (string) ($themeRow->dominant_label ?? '-');
+                    $dominantCode = (string) ($themeRow->dominant_code ?? '');
+                    $dominantText = $themeDominantSentence($dominantCode, $dominantLabel, $themeLabel);
+                    $weaknessCode = (string) ($themeRow->main_weakness_code ?? '');
+                    $weaknessLabel = (string) ($themeRow->main_weakness_label ?? '-');
+                    $weaknessWith = (int) ($themeRow->main_weakness_with ?? 0);
+                    $weaknessMissing = (int) ($themeRow->main_weakness_missing ?? 0);
+                    $projectCount = max(1, (int) ($themeRow->project_count ?? 0));
+                    $weaknessText = $weaknessMissing >= $projectCount
+                        ? 'อย่างไรก็ตาม ยังไม่พบ output ด้าน ' . $weaknessLabel . ' ในทั้ง ' . number_format($projectCount) . ' โครงการ ซึ่งอาจบ่งชี้ว่า ' . $themeWeaknessEffect($weaknessCode, $themeLabel)
+                        : ($weaknessMissing > 0
+                            ? 'อย่างไรก็ตาม output ด้าน ' . $weaknessLabel . ' ยังพบในเพียง ' . number_format($weaknessWith) . ' จาก ' . number_format($projectCount) . ' โครงการ ซึ่งอาจสะท้อนว่า ' . $themeWeaknessEffect($weaknessCode, $themeLabel)
+                            : 'ขณะเดียวกันยังไม่พบ output ที่ขาดเด่นชัดในระดับรายโครงการ จึงควรติดตามคุณภาพและการนำไปใช้จริงต่อเนื่อง');
+
+                    return Str::finish(trim(($prefix ? $prefix . ' ' : '') . $themeName . ' ' . $dominantText . ' ' . $weaknessText), '.');
+                })
+                ->implode("\n\n")
+            : 'ยังไม่มีข้อมูล output ในระดับธีมสำหรับช่วงที่เลือก.';
+        if ($impactThemeAnalysisRows->isNotEmpty()) {
+            $impactThemeNarrativeParagraph .= $impactThemeMainWeakness && (int) ($impactThemeMainWeakness->missing ?? 0) > 0
+                ? "\n\nในภาพรวม ข้อมูลสะท้อนให้เห็นว่า output ส่วนใหญ่ยังอยู่ในระดับการสร้างองค์ความรู้และการสื่อสารเชิงระบบ ขณะที่ output ที่สะท้อนการเปลี่ยนแปลงเชิงปฏิบัติหรือเชิงนโยบายยังพบในสัดส่วนจำกัด โดยช่องว่างที่ควรติดตามมากที่สุดคือ " . ($impactThemeMainWeakness->label ?? '-') . ' ซึ่งอาจบ่งชี้ว่าการพัฒนา knowledge translation pathway จากงานวิจัยไปสู่ implementation และ policy adoption ยังอยู่ในระยะพัฒนา และอาจต้องอาศัยกลไกสนับสนุนเพิ่มเติมในอนาคต.'
+                : "\n\nโดยรวม output ทั้ง 4 กลุ่มเริ่มกระจายตัวครบขึ้นในระดับธีม จึงควรติดตามต่อว่าหลักฐานและข้อเสนอเหล่านี้ถูกนำไปใช้จริงในระดับระบบมากขึ้นเพียงใด.";
+        }
         $communicationOutputCount = (int) $filtered
             ->whereIn('type_code', ['EA108', 'EA112', 'EA114', 'EA115'])
             ->count();
@@ -2523,7 +2894,6 @@ class OutputController extends Controller
         $projectAnalysisTotal = (int) $projectAnalysisRows->count();
         $analysisUsers = User::query()
             ->select(['id', 'prefix', 'name', 'prefix_en', 'name_en', 'email', 'role', 'position', 'profile_photo_path', 'updated_at'])
-            ->where('role', '!=', User::ROLE_RESIGNED)
             ->orderBy('name')
             ->get()
             ->values();
@@ -2605,6 +2975,30 @@ class OutputController extends Controller
             ->take(8)
             ->values();
         $userById = $analysisUsers->keyBy('id');
+        $userByNormalizedName = $analysisUsers
+            ->flatMap(function (User $user) {
+                return collect([
+                    $this->normalizePersonNameForMatch($user->full_name),
+                    $this->normalizePersonNameForMatch((string) $user->name),
+                    $this->normalizePersonNameForMatch($user->research_display_name),
+                    $this->normalizePersonNameForMatch((string) ($user->name_en ?? '')),
+                ])
+                    ->filter()
+                    ->unique()
+                    ->map(fn ($alias) => ['alias' => $alias, 'user' => $user]);
+            })
+            ->groupBy('alias')
+            ->map(fn (Collection $matches) => $matches->pluck('user.id')->unique()->count() === 1 ? $matches->first()['user'] : null)
+            ->filter();
+        $resolveParticipantUser = function ($row) use ($userById, $userByNormalizedName): ?User {
+            $userId = (int) ($row->user_id ?? 0);
+            if ($userId > 0 && $userById->has($userId)) {
+                return $userById->get($userId);
+            }
+
+            $nameKey = $this->normalizePersonNameForMatch($row->name ?? null);
+            return $nameKey !== '' ? $userByNormalizedName->get($nameKey) : null;
+        };
         $positionForParticipant = function ($row) use ($userById): string {
             $user = ((int) ($row->user_id ?? 0) > 0) ? $userById->get((int) $row->user_id) : null;
 
@@ -2760,6 +3154,24 @@ class OutputController extends Controller
                         $yearThemeRows = $yearThemeRows
                             ->sortBy(fn ($row) => trim((string) ($row->project?->project_name_th ?? '')))
                             ->values();
+                        $roleCounts = collect(['PI', 'Co-PI', 'Co-Research'])
+                            ->mapWithKeys(fn ($role) => [
+                                $role => (int) $matchedProjects
+                                    ->filter(fn ($row) => collect($row->roles ?? [])->contains($role))
+                                    ->count(),
+                            ]);
+                        $projectsByRole = collect(['PI', 'Co-PI', 'Co-Research'])
+                            ->mapWithKeys(fn ($role) => [
+                                $role => $matchedProjects
+                                    ->filter(fn ($row) => collect($row->roles ?? [])->contains($role))
+                                    ->map(fn ($row) => (object) [
+                                        'name' => trim((string) ($row->project?->project_name_th ?? '')) ?: '-',
+                                        'year' => (int) ($row->year ?? 0),
+                                        'theme' => trim((string) ($row->theme ?? '')) ?: 'ไม่ระบุกลุ่มงาน',
+                                        'link' => $row->project ? route('projects.show', $row->project) : null,
+                                    ])
+                                    ->values(),
+                            ]);
 
                         return (object) [
                             'name' => $user->full_name ?: $user->name,
@@ -2777,6 +3189,8 @@ class OutputController extends Controller
                                 ->take(2)
                                 ->values(),
                             'total_projects' => (int) $matchedProjects->count(),
+                            'role_counts' => $roleCounts->all(),
+                            'projects_by_role' => $projectsByRole->all(),
                             'link' => route('outputs.people.show', $this->personalOutputRouteKey($user)),
                         ];
                     })
@@ -2816,6 +3230,154 @@ class OutputController extends Controller
                 fn ($row) => (string) ($row->theme ?? ''),
             ])
             ->values();
+        $doctorContributionRoleTables = collect([
+            'pi' => ['label' => 'PI', 'role' => 'PI'],
+            'co_pi' => ['label' => 'Co-PI', 'role' => 'Co-PI'],
+            'co_research' => ['label' => 'Co-Research', 'role' => 'Co-Research'],
+        ])->mapWithKeys(function (array $roleMeta, string $key) use ($doctorContributionStarts) {
+            $rows = $doctorContributionStarts
+                ->map(function ($doctor) use ($roleMeta) {
+                    $role = $roleMeta['role'];
+                    $projects = collect($doctor->projects_by_role[$role] ?? [])
+                        ->sortByDesc(fn ($project) => (int) ($project->year ?? 0))
+                        ->values();
+
+                    if ($projects->isEmpty()) {
+                        return null;
+                    }
+
+                    $themes = $projects
+                        ->pluck('theme')
+                        ->filter()
+                        ->unique()
+                        ->values();
+
+                    return (object) [
+                        'name' => (string) ($doctor->name ?? '-'),
+                        'position' => (string) ($doctor->position ?? ''),
+                        'profile_photo_url' => (string) ($doctor->profile_photo_url ?? ''),
+                        'theme_text' => $themes->implode(', '),
+                        'project_count' => (int) $projects->count(),
+                        'year_text' => $projects->pluck('year')->filter()->unique()->sort()->implode(', '),
+                        'project_names' => $projects->pluck('name')->filter()->take(3)->values(),
+                        'link' => (string) ($doctor->link ?? ''),
+                    ];
+                })
+                ->filter()
+                ->sortByDesc(fn ($row) => (int) ($row->project_count ?? 0))
+                ->values();
+
+            return [$key => (object) [
+                'key' => $key,
+                'label' => $roleMeta['label'],
+                'rows' => $rows,
+                'people_count' => (int) $rows->count(),
+                'project_count' => (int) $rows->sum(fn ($row) => (int) ($row->project_count ?? 0)),
+            ]];
+        });
+        $unitContributionBaseYears = $projectParticipantRows
+            ->where('people_type', 'unit')
+            ->pluck('year')
+            ->filter()
+            ->map(fn ($year) => (int) $year)
+            ->unique()
+            ->sort()
+            ->values();
+        $unitContributionStartYear = filled($yearFrom)
+            ? (int) $yearFrom
+            : (int) ($unitContributionBaseYears->min() ?: 0);
+        $unitContributionEndYear = filled($yearTo)
+            ? (int) $yearTo
+            : (int) ($unitContributionBaseYears->max() ?: 0);
+        $unitContributionYears = ($unitContributionStartYear > 0 && $unitContributionEndYear >= $unitContributionStartYear)
+            ? collect(range($unitContributionStartYear, $unitContributionEndYear))
+            : $unitContributionBaseYears;
+        $unitContributionRoleThemeTables = collect([
+            'pi' => ['label' => 'PI', 'role' => 'PI'],
+            'co_pi' => ['label' => 'Co-PI', 'role' => 'Co-PI'],
+            'co_research' => ['label' => 'Co-Research', 'role' => 'Co-Research'],
+        ])->mapWithKeys(function (array $roleMeta, string $key) use ($projectParticipantRows, $projectTypeLabelByCode, $unitContributionYears, $resolveParticipantUser) {
+            $roleRows = $projectParticipantRows
+                ->where('people_type', 'unit')
+                ->where('role', $roleMeta['role'])
+                ->values();
+            $rows = collect($projectTypeLabelByCode)
+                ->map(function ($themeLabel, $themeCode) use ($roleRows, $unitContributionYears, $resolveParticipantUser) {
+                    $themeRows = $roleRows
+                        ->where('theme', $themeLabel)
+                        ->values();
+                    $people = $themeRows
+                        ->groupBy('researcher_key')
+                        ->map(fn (Collection $personRows) => trim((string) ($personRows->first()->name ?? '')) ?: '-')
+                        ->filter()
+                        ->sort()
+                        ->values();
+                    $projects = $themeRows
+                        ->groupBy('project_id')
+                        ->map(function (Collection $projectRows) {
+                            $first = $projectRows->first();
+
+                            return (object) [
+                                'name' => trim((string) ($first->project_name ?? '')) ?: '-',
+                                'year' => (int) ($first->year ?? 0),
+                                'link' => trim((string) ($first->project_link ?? '')) ?: null,
+                            ];
+                        })
+                        ->sortByDesc(fn ($project) => (int) ($project->year ?? 0))
+                        ->values();
+                    $byYear = $unitContributionYears
+                        ->mapWithKeys(function ($year) use ($themeRows, $resolveParticipantUser) {
+                            $yearRows = $themeRows
+                                ->where('year', (int) $year)
+                                ->values();
+                            $people = $yearRows
+                                ->groupBy('researcher_key')
+                                ->map(function (Collection $personRows) use ($resolveParticipantUser) {
+                                    $first = $personRows->first();
+                                    $user = $resolveParticipantUser($first);
+                                    $name = trim((string) ($user?->full_name ?: $first->name)) ?: '-';
+
+                                    return (object) [
+                                        'name' => $name,
+                                        'position' => trim((string) ($user?->position ?? '')),
+                                        'profile_photo_url' => $user
+                                            ? $this->resolveUserProfilePhotoUrl($user)
+                                            : asset('images/default-avatar.png'),
+                                        'project_count' => (int) $personRows->pluck('project_id')->unique()->count(),
+                                    ];
+                                })
+                                ->sortBy(fn ($person) => (string) ($person->name ?? ''))
+                                ->values();
+
+                            return [(string) ((int) $year) => (object) [
+                                'year' => (int) $year,
+                                'people' => $people,
+                                'people_count' => (int) $people->count(),
+                            ]];
+                        });
+
+                    return (object) [
+                        'theme_code' => (string) $themeCode,
+                        'theme' => (string) $themeLabel,
+                        'people_count' => (int) $people->count(),
+                        'project_count' => (int) $projects->count(),
+                        'people_names' => $people->take(4)->values(),
+                        'project_names' => $projects->pluck('name')->filter()->take(3)->values(),
+                        'year_text' => $projects->pluck('year')->filter()->unique()->sort()->implode(', '),
+                        'by_year' => $byYear->all(),
+                    ];
+                })
+                ->values();
+
+            return [$key => (object) [
+                'key' => $key,
+                'label' => $roleMeta['label'],
+                'years' => $unitContributionYears->values(),
+                'rows' => $rows,
+                'people_count' => (int) $rows->sum(fn ($row) => (int) ($row->people_count ?? 0)),
+                'project_count' => (int) $rows->sum(fn ($row) => (int) ($row->project_count ?? 0)),
+            ]];
+        });
         $peopleTypeLabels = [
             'unit' => 'คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ',
             'siriraj' => 'คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล',
@@ -2889,7 +3451,7 @@ class OutputController extends Controller
                                         'affiliation' => trim((string) ($row->affiliation ?? '')),
                                         'profile_photo_url' => $user
                                             ? $this->resolveUserProfilePhotoUrl($user)
-                                            : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=0F172A&color=fff&size=128',
+                                            : asset('images/default-avatar.png'),
                                     ];
                                 })
                                 ->values();
@@ -2924,7 +3486,7 @@ class OutputController extends Controller
                         return (object) [
                             'name' => $user?->full_name ?: $row->name,
                             'position' => trim((string) ($user?->position ?? '')),
-                            'profile_photo_url' => $user ? $this->resolveUserProfilePhotoUrl($user) : 'https://ui-avatars.com/api/?name=' . urlencode((string) $row->name) . '&background=0F172A&color=fff&size=128',
+                            'profile_photo_url' => $user ? $this->resolveUserProfilePhotoUrl($user) : asset('images/default-avatar.png'),
                             'role' => $row->role,
                             'theme' => $row->theme,
                         ];
@@ -3112,7 +3674,7 @@ class OutputController extends Controller
                                             'affiliation' => trim((string) ($personFirst->affiliation ?? '')),
                                             'profile_photo_url' => $user
                                                 ? $this->resolveUserProfilePhotoUrl($user)
-                                                : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=0F172A&color=fff&size=128',
+                                                : asset('images/default-avatar.png'),
                                         ];
                                     })
                                     ->sortBy(fn ($person) => (string) ($person->role ?? ''))
@@ -3157,7 +3719,7 @@ class OutputController extends Controller
                             'affiliation' => trim((string) ($first->affiliation ?? '')),
                             'profile_photo_url' => $user
                                 ? $this->resolveUserProfilePhotoUrl($user)
-                                : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=0F172A&color=fff&size=128',
+                                : asset('images/default-avatar.png'),
                             'roles' => $personRows->pluck('role')->filter()->unique()->sort()->values(),
                             'theme_labels' => $themeKeys
                                 ->map(fn ($key) => $clinicalLedThemeMeta[$key]['label'] ?? $key)
@@ -3231,7 +3793,7 @@ class OutputController extends Controller
                             'affiliation' => trim((string) ($first->affiliation ?? '')),
                             'profile_photo_url' => $user
                                 ? $this->resolveUserProfilePhotoUrl($user)
-                                : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=0F172A&color=fff&size=128',
+                                : asset('images/default-avatar.png'),
                             'roles' => $personRows->pluck('role')->filter()->unique()->sort()->values(),
                             'projects' => (int) $personRows->pluck('project_id')->unique()->count(),
                             'years' => $personRows->pluck('year')->filter()->unique()->sort()->values(),
@@ -3289,8 +3851,8 @@ class OutputController extends Controller
                     ->count())
                 ->values(),
             'policy_impact' => $frameworkTrendYears
-                ->map(fn ($year) => (int) $filtered
-                    ->whereIn('type_code', ['EA109', 'EA102', 'EA106'])
+                ->map(fn ($year) => (int) $impactRows
+                    ->whereIn('type_code', $impactCodes->all())
                     ->where('year_be', (int) $year)
                     ->count())
                 ->values(),
@@ -3308,8 +3870,8 @@ class OutputController extends Controller
                 'value' => $latestYear ? (int) $countForYear((int) $latestYear) : 0,
             ];
         };
-        $latestImpactOutputYear = $rows
-            ->whereIn('type_code', ['EA109', 'EA102', 'EA106'])
+        $latestImpactOutputYear = $impactAllRows
+            ->whereIn('type_code', $impactCodes->all())
             ->pluck('year_be')
             ->filter(fn ($year) => is_numeric($year))
             ->map(fn ($year) => (int) $year)
@@ -3336,8 +3898,8 @@ class OutputController extends Controller
             'policy_impact' => [
                 'year' => $latestImpactOutputYear ? (int) $latestImpactOutputYear : null,
                 'value' => $latestImpactOutputYear
-                    ? (int) $rows
-                        ->whereIn('type_code', ['EA109', 'EA102', 'EA106'])
+                    ? (int) $impactAllRows
+                        ->whereIn('type_code', $impactCodes->all())
                         ->where('year_be', (int) $latestImpactOutputYear)
                         ->count()
                     : 0,
@@ -3357,7 +3919,7 @@ class OutputController extends Controller
                         'affiliation' => trim((string) ($row->affiliation ?? '')),
                         'profile_photo_url' => $user
                             ? $this->resolveUserProfilePhotoUrl($user)
-                            : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=0F172A&color=fff&size=128',
+                            : asset('images/default-avatar.png'),
                     ];
                 })
                 ->values();
@@ -3403,9 +3965,9 @@ class OutputController extends Controller
                         ->values()];
                 }),
             'policy_impact' => $frameworkTrendYears
-                ->mapWithKeys(function ($year) use ($filtered, $normalizeProjectType, $sortRowsNewestFirst) {
-                    return [(string) $year => $sortRowsNewestFirst($filtered
-                        ->whereIn('type_code', ['EA109', 'EA102', 'EA106'])
+                ->mapWithKeys(function ($year) use ($impactRows, $normalizeProjectType, $sortRowsNewestFirst, $impactCodes) {
+                    return [(string) $year => $sortRowsNewestFirst($impactRows
+                        ->whereIn('type_code', $impactCodes->all())
                         ->where('year_be', (int) $year)
                         ->values())
                         ->map(fn ($row) => [
@@ -3457,7 +4019,7 @@ class OutputController extends Controller
             [
                 'key' => 'truth',
                 'label' => 'Validation',
-                'title' => 'Trend in Interest in policy work Among Siriraj Health Professionals',
+                'title' => 'Trends in Siriraj health professionals’ interest in research-to-policy work',
                 'unit' => 'โครงการ',
                 'detail' => "แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health System)\n\nจำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย ที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) เข้ามาเป็นส่วนร่วม โดยแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย\nAgeing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Technical Cohorts\n\n*Theme/เนื้อหา Rational Drug Use (RDU) และ Global Health อาจยังถูกมองเป็น Operational project ภายในคณะแพทยศาสตร์ศิริราชพยาบาล มากกว่า Research model จึงยังไม่ถูกรวมในการวิเคราะห์",
                 'role_stats' => $clinicalLedIntegrationRoleStats,
@@ -3467,7 +4029,7 @@ class OutputController extends Controller
                 'label' => 'Impact',
                 'title' => 'Trend in outputs contributing to Policy-Impact or Practice Change',
                 'unit' => 'รายการ',
-                'detail' => 'แนวโน้มผลงานที่มีส่วนในการผลักดันการเปลี่ยนแปลงในเชิงนโยบายหรือการปฏิบัติในระบบสุขภาพ (Change in Practices, Procedure, Reports and White Paper, Policy Recommendation)',
+                'detail' => 'แนวโน้มผลงานที่มีส่วนในการผลักดันการเปลี่ยนแปลงในเชิงนโยบายหรือการปฏิบัติในระบบสุขภาพ (Research Paper and Journal Article, Change in Practices, Procedure, Reports and White Paper, Policy Recommendation)',
             ],
         ])->map(function ($row) use ($frameworkTrendYears, $frameworkTrendSeries, $frameworkLatestMetrics) {
             $values = collect($frameworkTrendSeries[$row['key']] ?? [])->map(fn ($value) => (int) $value)->values();
@@ -3597,11 +4159,13 @@ class OutputController extends Controller
         $frameworkFocus = (str_contains($frameworkTruthShape, 'เพิ่ม') && str_contains($frameworkPolicyShape, 'เพิ่ม'))
             ? 'ภาพรวมแสดงให้เห็นว่า การเติบโตของโครงการไม่ได้เพิ่มเฉพาะจำนวนงานวิจัย แต่รวมถึงการมีส่วนร่วมของ clinical expert และการต่อยอดไปสู่ผลลัพธ์ที่เชื่อมกับระบบสุขภาพมากขึ้น โดยปี ' . ($frameworkPeak?->year ?: '-') . ' เป็นจุดสูงสุดทั้งในด้านการบูรณาการ clinical skill และ Impact ต่อระบบสุขภาพ'
             : 'ภาพรวมยังควรอ่านแบบแยกเส้น เพราะ Validation และ Impact ไม่ได้เพิ่มพร้อมกันอย่างชัดเจนในทุกปี';
+        $frameworkHasCurrentYearData = $frameworkTrendYears
+            ->contains(fn ($year) => (int) $year === (int) $currentYearBe);
         $frameworkTrendSummary = (object) [
             'headline' => 'ช่วงปี ' . ($frameworkFirst?->year ?: '-') . ' - ' . ($frameworkLast?->year ?: '-') . ' ' . $frameworkHeadlineLead . ' โดย Validation ' . $frameworkTruthShape . ' จาก ' . number_format((int) ($frameworkFirst?->truth ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->truth ?? 0)) . ' โครงการ ขณะที่ Impact ' . $frameworkPolicyShape . ' จาก ' . number_format((int) ($frameworkFirst?->policy_impact ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->policy_impact ?? 0)) . ' รายการ และสูงสุดในปี ' . ($frameworkPolicyPeak?->year ?: '-'),
             'body' => $frameworkBody,
             'focus' => $frameworkFocus,
-            'note' => 'ปี 2569 ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร',
+            'note' => $frameworkHasCurrentYearData ? 'ปี ' . $currentYearBe . ' ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร' : null,
         ];
         $professionMix = $projectParticipantRows
             ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
@@ -3692,6 +4256,10 @@ class OutputController extends Controller
             })->values(),
             'impact_outputs' => $impactOutputRows,
             'impact_output_items' => $impactOutputItems,
+            'impact_complete_projects' => $impactCompleteProjectRows,
+            'impact_theme_analysis' => $impactThemeAnalysisRows,
+            'impact_theme_narrative' => $impactThemeNarrative,
+            'impact_theme_narrative_paragraph' => $impactThemeNarrativeParagraph,
             'impact_trend' => [
                 'years' => $impactTrendYears,
                 'series' => $impactTrendSeries,
@@ -3709,6 +4277,8 @@ class OutputController extends Controller
             'people_highlights' => $personHighlights,
             'doctor_contribution_starts' => $doctorContributionStarts,
             'doctor_contribution_timeline' => $doctorContributionTimeline,
+            'doctor_contribution_role_tables' => $doctorContributionRoleTables,
+            'unit_contribution_role_theme_tables' => $unitContributionRoleThemeTables,
             'contribution_network' => $contributionNetwork,
             'data_source_counts' => $dataSourceCounts,
             'data_source_trend' => $dataSourceTrend,
@@ -3805,6 +4375,12 @@ class OutputController extends Controller
             'presentationActivityLabels' => $presentationActivity->keys()->values(),
             'presentationActivityValues' => $presentationActivity->values()->values(),
             'presentationActivityItems' => $presentationActivityItems,
+            'paperYearLabels' => $paperYears,
+            'paperRankingYearSeries' => $paperRankingYearSeries,
+            'paperRankingYearItems' => $paperRankingYearItems,
+            'presentationYearLabels' => $presentationYears,
+            'presentationActivityYearSeries' => $presentationActivityYearSeries,
+            'presentationActivityYearItems' => $presentationActivityYearItems,
             'textbookYearLabels' => $textbookYears->keys()->values(),
             'textbookYearValues' => $textbookYears->values()->values(),
             'textbookYearItems' => $textbookYearItems,
@@ -3813,6 +4389,119 @@ class OutputController extends Controller
             'networkingYearSeries' => $networkingYearSeries,
             'networkingYearItems' => $networkingYearItems,
             'policyImpact' => $policyImpact,
+        ]);
+    }
+
+    public function visualizationPdf(Request $request)
+    {
+        ini_set('pcre.backtrack_limit', '5000000');
+
+        $view = $this->visualization($request);
+        $data = method_exists($view, 'getData') ? $view->getData() : [];
+        $user = $request->user();
+        $reporter = trim((string) (($user?->full_name ?? '') ?: ($user?->name ?? ''))) ?: 'ผู้ใช้ระบบ';
+        $generatedAt = now()->setTimezone('Asia/Bangkok');
+        $filters = collect([
+            $request->filled('source') ? 'แหล่งข้อมูล: ' . trim((string) $request->input('source')) : null,
+            $request->filled('type') ? 'ประเภทผลงาน: ' . trim((string) $request->input('type')) : null,
+            $request->filled('year_from') ? 'ปีเริ่ม: ' . trim((string) $request->input('year_from')) : null,
+            $request->filled('year_to') ? 'ปีสิ้นสุด: ' . trim((string) $request->input('year_to')) : null,
+        ])->filter()->values();
+
+        $pdf = PDF::loadView('outputs.visualization-pdf', array_merge($data, [
+            'generatedAt' => $generatedAt,
+            'reporter' => $reporter,
+            'filters' => $filters,
+        ]), [], [
+            'format' => 'A4-L',
+        ]);
+
+        $filename = $this->buildOutputPdfFilename('OUTPUT_VISUALIZATION');
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'output_visualization_pdf',
+            'subject_label' => 'Outputs Visualization',
+        ], $request);
+
+        return $pdf->stream($filename);
+    }
+
+    public function rewriteVisualizationThemeGap(Request $request)
+    {
+        $validated = $request->validate([
+            'facts' => ['nullable', 'array'],
+            'facts.themes' => ['nullable', 'array'],
+            'facts.overall_gap' => ['nullable', 'array'],
+            'fallback' => ['required', 'string', 'max:6000'],
+        ]);
+
+        $fallback = trim((string) $validated['fallback']);
+        $facts = $validated['facts'] ?? [];
+        $prompt = $this->buildThemeGapRewritePrompt($facts, $fallback);
+        $model = trim((string) config('services.gemini.model', 'gemini-2.5-flash')) ?: 'gemini-2.5-flash';
+        $apiKey = trim((string) config('services.gemini.key', ''));
+        $timeout = max(3, (int) config('services.gemini.insight_timeout', 8));
+        $text = '';
+
+        if ($apiKey !== '') {
+            $url = rtrim((string) config('services.gemini.base_url', 'https://generativelanguage.googleapis.com/v1beta'), '/')
+                . '/models/' . $model . ':generateContent';
+
+            try {
+                $response = Http::withHeaders(['x-goog-api-key' => $apiKey])
+                    ->acceptJson()
+                    ->timeout($timeout)
+                    ->post($url, [
+                        'contents' => [
+                            [
+                                'role' => 'user',
+                                'parts' => [
+                                    ['text' => $prompt],
+                                ],
+                            ],
+                        ],
+                        'generationConfig' => [
+                            'temperature' => 0.2,
+                            'maxOutputTokens' => 1200,
+                            'responseMimeType' => 'application/json',
+                        ],
+                    ]);
+            } catch (\Throwable $e) {
+                return response()->json(['ok' => false, 'reason' => 'request_exception']);
+            }
+
+            if ($response->failed()) {
+                return response()->json([
+                    'ok' => false,
+                    'reason' => 'gemini_http_' . $response->status(),
+                ]);
+            }
+
+            $text = collect($response->json('candidates.0.content.parts', []))
+                ->map(fn ($part) => $part['text'] ?? '')
+                ->filter()
+                ->implode("\n");
+        } else {
+            $gateway = $this->callGeminiInsightGateway($model, $prompt, $timeout);
+            if (! ($gateway['ok'] ?? false)) {
+                return response()->json([
+                    'ok' => false,
+                    'reason' => $gateway['reason'] ?? 'gateway_unavailable',
+                ]);
+            }
+
+            $text = (string) ($gateway['text'] ?? '');
+        }
+
+        $decoded = $this->decodeGeminiInsightJson($text);
+        $paragraph = trim((string) ($decoded['paragraph'] ?? ''));
+
+        if (! $this->isValidThemeGapParagraph($paragraph)) {
+            return response()->json(['ok' => false, 'reason' => 'invalid_ai_output']);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'paragraph' => $paragraph,
         ]);
     }
 
@@ -7087,7 +7776,137 @@ class OutputController extends Controller
             return asset('storage/' . ltrim($relativePath, '/')) . '?v=' . optional($user->updated_at)->timestamp;
         }
 
-        return 'https://ui-avatars.com/api/?name=' . urlencode($user->full_name) . '&background=0F172A&color=fff&size=128';
+        return asset('images/default-avatar.png');
+    }
+
+    private function buildThemeGapRewritePrompt(array $facts, string $fallback): string
+    {
+        $factsJson = json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $fallbackJson = json_encode(['paragraph' => $fallback], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return <<<PROMPT
+คุณคือผู้ช่วยเรียบเรียงข้อความ Theme output gap analysis สำหรับ dashboard policy impact
+
+งานของคุณ:
+- เรียบเรียงภาษาไทยให้ลื่นและเป็นธรรมชาติขึ้น โดยยึด facts และ fallback เท่านั้น
+- ห้ามแต่งตัวเลข จำนวนโครงการ ชื่อหมวด หรือชื่อ output ใหม่
+- ห้ามใช้ bullet list หรือหัวข้อย่อย
+- เขียนเป็น paragraph ต่อเนื่อง แต่แยกแต่ละหมวดด้วยบรรทัดว่างหนึ่งบรรทัด
+- แต่ละหมวดต้องบอก 3 เรื่องใน paragraph เดียว: จุดเด่นคือ output ใด, ขาด/อ่อน output ใด, ส่งผลอย่างไร
+- คงคำสำคัญ Research Paper and Journal Article, Reports and White Papers, Policy Recommendations, Change in Practices / Procedures / Policy ตาม facts
+- ใช้น้ำเสียงเชิงวิเคราะห์แบบระมัดระวัง เช่น "อาจสะท้อนว่า", "อาจบ่งชี้ว่า", "ยังมีข้อจำกัดบางประการ", "ยังอยู่ในระยะพัฒนา"
+- ถ้า main_weakness_missing เท่ากับ project_count ให้เขียนว่า "ยังไม่พบ output ด้าน ... ในทั้ง ... โครงการ"
+- ถ้า main_weakness_with มากกว่า 0 แต่น้อยกว่า project_count ให้เขียนว่า "ยังพบในเพียง ... จาก ... โครงการ"
+- ภาพรวมควรเชื่อมกับ knowledge translation pathway, implementation และ policy adoption
+- ปิดท้ายด้วย paragraph ภาพรวม 1 ย่อหน้า ถ้า fallback มีภาพรวม
+- ทุก paragraph ควรจบด้วยจุด "."
+- ถ้าข้อมูลไม่พอ ให้เขียนอย่างระมัดระวัง ไม่สรุปเกินข้อมูล
+
+ตอบเป็น JSON object เท่านั้น ตาม schema นี้:
+{
+  "paragraph": "ข้อความทั้งหมด พร้อม \\n\\n เพื่อเว้นบรรทัดระหว่างย่อหน้า"
+}
+
+facts:
+{$factsJson}
+
+fallback:
+{$fallbackJson}
+PROMPT;
+    }
+
+    private function decodeGeminiInsightJson(string $text): array
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return [];
+        }
+
+        $text = preg_replace('/^```(?:json)?\s*/u', '', $text) ?? $text;
+        $text = preg_replace('/\s*```$/u', '', $text) ?? $text;
+        $decoded = json_decode($text, true);
+
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        if (preg_match('/\{.*\}/su', $text, $matches)) {
+            $decoded = json_decode($matches[0], true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return [];
+    }
+
+    private function callGeminiInsightGateway(string $model, string $prompt, int $timeout): array
+    {
+        $models = collect([$model, 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-pro'])
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->unique()
+            ->values();
+        $payloadModes = ['minimal', 'inline'];
+        $errors = [];
+
+        foreach ($models as $candidateModel) {
+            foreach ($payloadModes as $payloadMode) {
+                try {
+                    $response = Http::timeout(max(25, $timeout))
+                        ->withHeaders(['Content-Type' => 'application/json'])
+                        ->acceptJson()
+                        ->post(self::GEMINI_REMOTE_GATEWAY_URL, [
+                            'model' => $candidateModel,
+                            'prompt' => trim($prompt),
+                            'payload' => $payloadMode,
+                        ]);
+                } catch (\Throwable $e) {
+                    $errors[] = $candidateModel . ':' . $payloadMode . ':gateway_exception';
+                    continue;
+                }
+
+                if (! $response->ok()) {
+                    $errors[] = $candidateModel . ':' . $payloadMode . ':gateway_http_' . $response->status();
+                    continue;
+                }
+
+                $json = $response->json();
+                if (($json['ok'] ?? false) && trim((string) ($json['text'] ?? '')) !== '') {
+                    return ['ok' => true, 'text' => trim((string) $json['text']), 'model' => $candidateModel];
+                }
+                if (trim((string) ($json['reply'] ?? '')) !== '') {
+                    return ['ok' => true, 'text' => trim((string) $json['reply']), 'model' => $candidateModel];
+                }
+                if (is_array($json['candidates'][0]['content']['parts'] ?? null)) {
+                    $text = collect($json['candidates'][0]['content']['parts'])
+                        ->map(fn ($part) => $part['text'] ?? '')
+                        ->filter()
+                        ->implode("\n");
+
+                    if (trim($text) !== '') {
+                        return ['ok' => true, 'text' => trim($text), 'model' => $candidateModel];
+                    }
+                }
+
+                $guess = trim((string) (($json['message'] ?? '') ?: ($json['data'] ?? '')));
+                if ($guess !== '') {
+                    return ['ok' => true, 'text' => $guess, 'model' => $candidateModel];
+                }
+
+                $errors[] = $candidateModel . ':' . $payloadMode . ':gateway_empty_response';
+            }
+        }
+
+        return ['ok' => false, 'reason' => implode(' | ', $errors) ?: 'gateway_unavailable'];
+    }
+
+    private function isValidThemeGapParagraph(string $paragraph): bool
+    {
+        $length = mb_strlen(trim($paragraph), 'UTF-8');
+        if ($length < 40 || $length > 6000) {
+            return false;
+        }
+
+        return ! Str::contains($paragraph, ['<script', '</script']);
     }
 
     private function buildOutputUserDirectory(): Collection
