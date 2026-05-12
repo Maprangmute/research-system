@@ -41,6 +41,13 @@ return [
         'insight_timeout' => env('GEMINI_INSIGHT_TIMEOUT', 8),
     ],
 
+    'ollama' => [
+        'base_url' => env('OLLAMA_BASE_URL', 'http://127.0.0.1:11434'),
+        'model' => env('OLLAMA_MODEL', 'qwen2.5:7b'),
+        'timeout' => env('OLLAMA_TIMEOUT', 900),
+        'max_projects' => env('OLLAMA_MAX_PROJECTS', 220),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

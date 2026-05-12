@@ -2430,6 +2430,10 @@ public function store(Request $request)
         }
 
         if (! $piUserId) {
+            $piUserId = $this->resolveInternalUnitUserByName($request->input('pi_name'))?->id;
+        }
+
+        if (! $piUserId) {
             throw ValidationException::withMessages([
                 'pi_user_id' => 'กรุณาเลือก PI จากรายชื่อบุคลากร',
             ]);
@@ -2454,6 +2458,39 @@ public function store(Request $request)
         $normalized = trim((string) $value);
 
         return self::LEGACY_PERSON_TYPE_MAP[$normalized] ?? $normalized;
+    }
+
+    private function normalizePersonNameForMatch(?string $name): string
+    {
+        return preg_replace('/\s+/u', ' ', trim((string) $name)) ?? '';
+    }
+
+    private function resolveInternalUnitUserByName(?string $name): ?User
+    {
+        $normalizedName = $this->normalizePersonNameForMatch($name);
+        if ($normalizedName === '') {
+            return null;
+        }
+
+        return User::query()
+            ->select(['id', 'prefix', 'name', 'prefix_en', 'name_en'])
+            ->get()
+            ->first(function (User $user) use ($normalizedName) {
+                $candidateNames = [
+                    $user->full_name,
+                    $user->research_display_name,
+                    $user->name,
+                    trim(((string) ($user->prefix_en ?? '')) . ' ' . ((string) ($user->name_en ?? ''))),
+                ];
+
+                foreach ($candidateNames as $candidateName) {
+                    if ($this->normalizePersonNameForMatch($candidateName) === $normalizedName) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
     }
 
     private function normalizeValidatedProjectDates(array $validated, Request $request): array
@@ -3613,6 +3650,10 @@ public function store(Request $request)
 
         if ($personType === self::PERSON_TYPE_INTERNAL_UNIT) {
             if (! $userId) {
+                $userId = $this->resolveInternalUnitUserByName($name)?->id;
+            }
+
+            if (! $userId) {
                 $rowErrors["copis.$idx.user_id"] = 'กรุณาเลือก COPI จากรายชื่อบุคลากร';
                 $errors = array_merge($errors, $rowErrors);
                 return null;
@@ -3816,15 +3857,7 @@ public function store(Request $request)
             }
         }
 
-        $name = trim($name);
-        if ($name === '') {
-            return null;
-        }
-
-        return User::query()
-            ->whereRaw("TRIM(CONCAT(COALESCE(prefix, ''), ' ', COALESCE(name, ''))) = ?", [$name])
-            ->orWhereRaw('TRIM(name) = ?', [$name])
-            ->first();
+        return $this->resolveInternalUnitUserByName($name);
     }
 
     private function deleteModelsWithEvents($query): void

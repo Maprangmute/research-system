@@ -88,18 +88,24 @@
 
         .project-table {
             table-layout: fixed;
-            min-width: 1240px;
+            min-width: 1040px;
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
         .project-table th {
             white-space: nowrap;
             font-size: 12px;
-            letter-spacing: 0.01em;
+            font-weight: 800;
+            letter-spacing: 0.02em;
             color: #475569;
+            background: #f8fafc;
+            border-bottom: 1px solid #dbe4ef;
         }
 
         .project-table td {
             vertical-align: top;
+            border-bottom: 1px solid #e8eef6;
         }
 
         .project-table tbody tr:nth-child(even) {
@@ -108,6 +114,35 @@
 
         .project-table tbody tr:hover {
             background: #eef2ff;
+        }
+
+        .project-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .project-id-cell {
+            position: relative;
+            padding-bottom: 3.45rem;
+        }
+
+        .project-id-meta {
+            position: absolute;
+            right: 1rem;
+            bottom: 0.75rem;
+            left: 1rem;
+            color: #64748b;
+            font-size: 0.72rem;
+            line-height: 1.25;
+        }
+
+        .project-id-year {
+            color: #334155;
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+
+        .project-type-subline {
+            margin-top: 0.25rem;
         }
 
         .cell-clamp-2,
@@ -140,13 +175,124 @@
             display: block;
             width: 100%;
             padding: 6px 8px;
-            border-radius: 0;
+            border-radius: 6px;
             line-height: 1.3;
             border: 1px solid rgba(15, 23, 42, 0.08);
         }
 
         .project-filter-anchor {
             scroll-margin-top: 96px;
+        }
+
+        #project-filter-form {
+            position: relative;
+            overflow: visible;
+            border: 1px solid #dbe4ef;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+        }
+
+        #project-filter-form span.text-xs.font-semibold {
+            color: #475569;
+            font-weight: 800;
+        }
+
+        #project-filter-form input[type='text'],
+        #project-filter-form select,
+        #project-filter-form button[data-project-dropdown-toggle] {
+            min-height: 38px;
+            border-color: #dbe4ef;
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+            transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+        }
+
+        #project-filter-form input[type='text']:focus,
+        #project-filter-form select:focus,
+        #project-filter-form button[data-project-dropdown-toggle]:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
+            outline: none;
+        }
+
+        #project-filter-form input[type='checkbox'] {
+            width: 0.9rem;
+            height: 0.9rem;
+            border-radius: 4px;
+            accent-color: #4f46e5;
+        }
+
+        .project-filter-issue-group {
+            min-height: 38px;
+            align-content: center;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            background: rgba(248, 250, 252, 0.72);
+            padding: 0.5rem;
+        }
+
+        .project-filter-actions {
+            align-items: stretch;
+            justify-content: flex-end;
+        }
+
+        .project-filter-actions > span {
+            justify-content: center;
+            border-color: #dbe4ef;
+            background: #f8fafc;
+        }
+
+        #project-filter-form button[type='submit'] {
+            min-height: 38px;
+            border-radius: 10px;
+            background: #4f46e5;
+            font-weight: 800;
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.18);
+        }
+
+        #project-filter-form button[type='submit']:hover {
+            background: #4338ca;
+        }
+
+        #project-filter-reset {
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+
+        #project-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+        }
+
+        #project-table-shell > .border-b {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        .project-table a {
+            text-decoration-thickness: 1px;
+            text-underline-offset: 3px;
+        }
+
+        .project-filter-anchor grammarly-extension,
+        .project-filter-anchor grammarly-desktop-integration,
+        .project-filter-anchor [data-grammarly-part],
+        .project-filter-anchor .grammarly-desktop-integration,
+        .project-filter-anchor .lt-toolbar,
+        .project-filter-anchor .lt-toolbar__wrapper,
+        .project-filter-anchor .languagetool-tooltip,
+        .project-filter-anchor .languagetool-popup,
+        .project-filter-anchor [data-lt-active],
+        .project-filter-anchor [data-lt-installed] {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
         }
 
         .project-filter-drawer-overlay {
@@ -518,27 +664,6 @@
                         @endforeach
                     </select>
                 </label>
-                {{-- <label class="block md:col-span-2">
-                    <span class="text-xs font-semibold text-slate-600">ช่วงงบประมาณ (เลื่อน)</span>
-                    <div class="budget-range relative px-1 pt-6 pb-6">
-                        <div id="budgetRangeTrack"
-                            class="absolute left-0 right-0 top-3 h-2 rounded-full bg-slate-200"></div>
-                        <div id="budgetRangeFill"
-                            class="absolute top-3 h-2 rounded-full bg-emerald-400"></div>
-                        <div id="budgetMinLabel" class="budget-range-label">0</div>
-                        <div id="budgetMaxLabel" class="budget-range-label">0</div>
-                        <input id="budgetMinRange" type="range" min="{{ $budgetMin }}" max="{{ $budgetMax }}"
-                            value="{{ request('budget_min', $budgetMin) }}" step="10000"
-                            class="absolute left-0 right-0 w-full appearance-none bg-transparent">
-                        <input id="budgetMaxRange" type="range" min="{{ $budgetMin }}" max="{{ $budgetMax }}"
-                            value="{{ request('budget_max', $budgetMax) }}" step="10000"
-                            class="absolute left-0 right-0 w-full appearance-none bg-transparent">
-                    </div>
-                    <input type="hidden" name="budget_min" id="budgetMinInput"
-                        value="{{ request('budget_min', $budgetMin) }}">
-                    <input type="hidden" name="budget_max" id="budgetMaxInput"
-                        value="{{ request('budget_max', $budgetMax) }}">
-                </label> --}}
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">สถานะ FTE</span>
                     <select name="fte_status" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
@@ -785,13 +910,11 @@
             <div class="overflow-auto">
                 <table class="project-table min-w-full">
                     <colgroup>
-                        <col style="width: 8%;"> {{-- Project ID --}}
-                        <col style="width: 56%;"> {{-- ชื่อโครงการ + Theme + ประเภท --}}
-                        <col style="width: 9%;"> {{-- ทุน --}}
-                        <col style="width: 8%;"> {{-- Status --}}
-                        <col style="width: 4%;"> {{-- Outputs --}}
-                        <col style="width: 6%;"> {{-- ปี --}}
-                        <col style="width: 6%;"> {{-- อัปเดทล่าสุด --}}
+                        <col style="width: 13%;"> {{-- Project ID + ปี + อัปเดท --}}
+                        <col style="width: 58%;"> {{-- ชื่อโครงการ + Theme + ประเภท --}}
+                        <col style="width: 11%;"> {{-- ทุน --}}
+                        <col style="width: 12%;"> {{-- Status --}}
+                        <col style="width: 6%;"> {{-- Outputs --}}
                     </colgroup>
                     <thead class="bg-slate-50 border-b border-slate-200">
                         <tr class="text-left text-xs font-semibold text-slate-600">
@@ -813,14 +936,6 @@
                             </th>
                             <th class="px-4 py-3 text-right">
                                 Outputs
-                            </th>
-                            <th class="px-4 py-3">
-                                <a href="{{ $sortUrl('start_year') }}" class="hover:text-indigo-700">ปี <span
-                                        class="ml-1">{{ $sortIcon('start_year') }}</span></a>
-                            </th>
-                            <th class="px-4 py-3">
-                                <a href="{{ $sortUrl('updated_at') }}" class="hover:text-indigo-700">อัปเดทล่าสุด <span
-                                        class="ml-1">{{ $sortIcon('updated_at') }}</span></a>
                             </th>
                         </tr>
                     </thead>
@@ -882,8 +997,15 @@
                                 data-project-search-text="{{ trim(implode(' ', array_filter([$project->project_code, $project->project_name_th, $project->theme, $project->project_type, $project->funding_type, $project->planning_status, $project->start_year, $relatedPersonNames]))) }}"
                                 oncontextmenu="return openRowMenu(event, this)" ondblclick="goToDetail(this)"
                                 ontouchstart="rowLongPressStart(event, this)" ontouchend="rowLongPressEnd(event)">
-                                <td class="px-4 py-3 text-sm font-mono text-slate-700 whitespace-nowrap">
+                                <td class="project-id-cell px-4 py-3 text-sm font-mono text-slate-700">
+                                    @php
+                                        $updated = $project->updated_at ? \Carbon\Carbon::parse($project->updated_at) : null;
+                                    @endphp
                                     <a href="{{ $showUrl }}" class="hover:underline">{{ $project->project_code }}</a>
+                                    <div class="project-id-meta">
+                                        <div class="project-id-year">ปีโปรเจค : {{ $project->start_year ?: '-' }}</div>
+                                        <div>อัพเดท : {{ $updated ? $updated->locale('th')->translatedFormat('j M') . ' ' . ($updated->year + 543) : '-' }}</div>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <a href="{{ $showUrl }}"
@@ -900,7 +1022,7 @@
                                         Theme: {{ $project->theme ?: 'ไม่ระบุ' }}
                                     </div>
                                     <span
-                                        class="mt-1 inline-flex items-center px-2 py-0.5 rounded-none text-xs font-medium {{ type_badge_classes($project->project_type) }}">
+                                        class="project-type-subline inline-flex items-center px-2 py-0.5 rounded-none text-xs font-medium {{ type_badge_classes($project->project_type) }}">
                                         <span class="cell-clamp-2" title="{{ $project->project_type ?: '-' }}">
                                             {{ $project->project_type ?: '-' }}
                                         </span>
@@ -930,13 +1052,6 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-slate-700 text-center">{{ $project->start_year ?: '-' }}</td>
-                                <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
-                                    @php
-                                        $updated = $project->updated_at ? \Carbon\Carbon::parse($project->updated_at) : null;
-                                    @endphp
-                                    {{ $updated ? $updated->locale('th')->translatedFormat('j F') . ' ' . ($updated->year + 543) : '-' }}
-                                </td>
 
                                 {{-- hidden form for delete --}}
                                 <td class="hidden">
@@ -948,11 +1063,11 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-10 text-slate-500">ไม่มีข้อมูล</td>
+                                <td colspan="5" class="text-center py-10 text-slate-500">ไม่มีข้อมูล</td>
                             </tr>
                         @endforelse
                         <tr id="project-table-empty-search" class="hidden">
-                            <td colspan="7" class="text-center py-10 text-slate-500">ไม่มีข้อมูลตรงกับคำค้นหาในหน้านี้</td>
+                            <td colspan="5" class="text-center py-10 text-slate-500">ไม่มีข้อมูลตรงกับคำค้นหาในหน้านี้</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1877,11 +1992,12 @@
                                 const sourceForm = getPrimaryForm() || targetForm;
                                 const searchField = sourceForm.querySelector('input[name="search"]');
                                 applyLocalSearchPreview(searchField ? searchField.value : '');
-                                fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
+                                submitDebounced(280);
                             });
                             field.addEventListener('keydown', (event) => {
                                 if (event.key === 'Enter') {
                                     event.preventDefault();
+                                    if (timer) clearTimeout(timer);
                                     syncFormsFromSource(targetForm);
                                     const sourceForm = getPrimaryForm() || targetForm;
                                     const searchField = sourceForm.querySelector('input[name="search"]');
@@ -1899,7 +2015,7 @@
                                 const sourceForm = getPrimaryForm() || targetForm;
                                 const searchField = sourceForm.querySelector('input[name="search"]');
                                 applyLocalSearchPreview(searchField ? searchField.value : '');
-                                fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
+                                submitDebounced(180);
                             });
                             field.addEventListener('change', () => {
                                 syncFormsFromSource(targetForm);
@@ -1907,7 +2023,7 @@
                                 const sourceForm = getPrimaryForm() || targetForm;
                                 const searchField = sourceForm.querySelector('input[name="search"]');
                                 applyLocalSearchPreview(searchField ? searchField.value : '');
-                                fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
+                                submitDebounced(180);
                             });
                             return;
                         }
@@ -1952,7 +2068,11 @@
                 const isSamePage = url.pathname === currentPath;
                 const isListInteraction = url.searchParams.has('page') || url.searchParams.has('sort') || url.searchParams.has('dir');
 
-                if (!isSamePage || !isListInteraction) return;
+                if (!isSamePage || !isListInteraction) {
+                    if (timer) clearTimeout(timer);
+                    if (controller) controller.abort();
+                    return;
+                }
 
                 event.preventDefault();
                 syncFormWithUrl(url);

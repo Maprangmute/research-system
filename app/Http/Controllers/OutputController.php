@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BackOfficeTask;
 use App\Models\BackOfficeEntry;
 use App\Models\BackOfficeTaskOutput;
+use App\Models\AiVisualizationInsight;
 use App\Models\CoResearch;
 use App\Models\ExternalOutput;
 use App\Models\ExternalOutputAwardRecipient;
@@ -26,6 +27,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -1479,6 +1481,16 @@ class OutputController extends Controller
 
     public function visualization(Request $request)
     {
+        $useRenderedVisualizationCache = $request->isMethod('GET') && $request->routeIs('outputs.visualization');
+        $renderedVisualizationCacheKey = null;
+        if ($useRenderedVisualizationCache) {
+            $renderedVisualizationCacheKey = $this->visualizationRenderedCacheKey($request);
+            $cachedHtml = Cache::get($renderedVisualizationCacheKey);
+            if (is_string($cachedHtml) && $cachedHtml !== '') {
+                return response($cachedHtml);
+            }
+        }
+
         $extractTypeCode = function ($rawType): ?string {
             $type = trim((string) ($rawType ?? ''));
             if ($type === '') {
@@ -2435,6 +2447,255 @@ class OutputController extends Controller
         };
         $projectParticipantRows = $resolvePeopleTypesByResearcher($projectParticipantRows);
         $projectParticipantAllRows = $resolvePeopleTypesByResearcher($projectParticipantAllRows);
+
+        $projectNatureProjects = $projectAnalysisAllRows
+            ->filter(fn (Project $project) => trim((string) ($project->project_name_th ?? '')) !== '')
+            ->values();
+        $projectNatureTotal = max(1, $projectNatureProjects->count());
+        $projectNatureThemeDefinitions = collect([
+            [
+                'key' => 'aging',
+                'label' => 'Aging, Frailty และ care continuum',
+                'short_label' => 'Aging / Frailty',
+                'keywords' => ['ผู้สูงอายุ', 'สูงอายุ', 'frailty', 'เปราะบาง', 'aging', 'geriatric', 'สะโพก', 'hip', 'delirium', 'ฟื้นฟู', 'transitional', 'intermediate'],
+                'reading' => 'โจทย์ไม่ได้หยุดที่โรคหรือหัตถการ แต่ขยับไปสู่ระบบดูแลผู้สูงอายุหลังเจ็บป่วย การฟื้นฟู และการดูแลต่อเนื่องจากโรงพยาบาลสู่ชุมชน',
+                'work_done' => 'งานที่เห็นชัดคือภาวะเปราะบางในผู้สูงอายุ, hip fracture pathway, delirium หลังผ่าตัด, การฟื้นฟู, transitional/intermediate care และการใช้ทีมสหสาขาวิชาชีพเพื่อออกแบบระบบดูแลต่อเนื่อง',
+                'next_step' => 'ผลลัพธ์ในหมวดนี้สามารถต่อยอดเป็น care pathway, service model หรือ policy brief ได้มากขึ้น โดยเฉพาะ output ที่วัด outcome ซ้ำได้ เช่น function, readmission, caregiver burden และ cost of care',
+            ],
+            [
+                'key' => 'hta',
+                'label' => 'HTA, economics และ reimbursement decision',
+                'short_label' => 'HTA / Economics',
+                'keywords' => ['คุ้มค่า', 'ต้นทุน', 'เศรษฐศาสตร์', 'cost', 'economic', 'budget', 'สิทธิประโยชน์', 'reimbursement', 'ความพร้อม'],
+                'reading' => 'งานจำนวนมากตอบคำถามเชิงระบบว่าเทคโนโลยีหรือบริการใดควรเข้า benefit package ควร scale อย่างไร และงบประมาณรับได้หรือไม่',
+                'work_done' => 'งานที่พบครอบคลุม cost-utility, economic evaluation, budget impact, ความพร้อมของระบบบริการ, การออกแบบสิทธิประโยชน์ และการประเมินเทคโนโลยีที่มีผลต่อการตัดสินใจระดับระบบ',
+                'next_step' => 'ผลลัพธ์จากงาน HTA มีโอกาสต่อยอดเป็น policy recommendation, reimbursement brief หรือ implementation report พร้อมการติดตาม uptake, budget impact, equity impact และผลต่อ service delivery',
+            ],
+            [
+                'key' => 'access_population',
+                'label' => 'Access, equity และ population health',
+                'short_label' => 'Access / Population',
+                'keywords' => ['เข้าถึง', 'หลักประกัน', 'ข้ามเพศ', 'pmac', 'pm 2.5', 'พระสงฆ์', 'uhc', 'global', 'urban', 'สร้างเสริมสุขภาพ', 'ป้องกันโรค'],
+                'reading' => 'มีสัญญาณของงานที่มองเกิน clinical outcome ไปสู่สิทธิประโยชน์ ความเป็นธรรม กลุ่มประชากรเฉพาะ และวาระสุขภาพระดับประเทศ/นานาชาติ',
+                'work_done' => 'งานที่เห็นคือการเข้าถึงบริการภายใต้หลักประกันสุขภาพ, กลุ่มประชากรเฉพาะ เช่น transgender และพระสงฆ์, PM2.5, healthy aging ในเมือง, UHC conference และ PMAC ซึ่งเป็นงานเชิง agenda setting',
+                'next_step' => 'ผลลัพธ์เชิง agenda setting ถูกต่อยอดเป็น policy brief, consensus statement, public communication หรือรายงานที่ติดตาม access gap, equity gap และ policy uptake แล้วหรือยัง',
+            ],
+            [
+                'key' => 'device_innovation',
+                'label' => 'Medical device และ innovation adoption',
+                'short_label' => 'Device / Innovation',
+                'keywords' => ['รากฟัน', 'กระดูกเทียม', 'เท้าเทียม', 'insulin pump', 'อุปกรณ์', 'implant', '3 มิติ', '3d', 'นวัตกรรม'],
+                'reading' => 'นวัตกรรมถูกอ่านผ่านมุม implementation และระบบบริการจริง ไม่ใช่แค่การมีเทคโนโลยีใหม่ แต่ถามว่าจะนำเข้า ใช้ ติดตาม และจ่ายอย่างไร',
+                'work_done' => 'งานที่พบมีทั้งกระดูกเทียมเฉพาะบุคคลจาก 3D printing, รากฟันเทียม, เท้าเทียมไดนามิก, insulin pump และ horizon scanning เพื่อเตรียมระบบรองรับนวัตกรรม',
+                'next_step' => 'ผลลัพธ์ในระยะถัดไปควรสะท้อนช่วงหลังนำเทคโนโลยีไปใช้จริงมากขึ้น เช่น implementation report, monitoring dashboard, service readiness report และข้อเสนอเรื่องการกระจายเทคโนโลยี',
+            ],
+            [
+                'key' => 'data_rwe',
+                'label' => 'Data platform, RWE และ clinical cohort',
+                'short_label' => 'Data / RWE',
+                'keywords' => ['real-world', 'real world', 'rwe', 'cohort', 'registry', 'ฐานข้อมูล', 'คลังเก็บข้อมูล', 'อิเล็กทรอนิกส์', 'เวชระเบียน', 'longitudinal', 'ติดตามผล'],
+                'reading' => 'ฐานข้อมูลและ cohort ทำหน้าที่เป็น evidence infrastructure เพื่ออ่าน outcome จริง ติดตามโรคเรื้อรัง และเชื่อมข้อมูลบริการกับการตัดสินใจ',
+                'work_done' => 'งานที่เห็นคือฐานข้อมูลเบาหวานและความดัน, registry/ฐานข้อมูลอิเล็กทรอนิกส์, การเชื่อมเวชระเบียนกับฐานข้อมูลเบิกจ่าย, cohort โรคเรื้อรัง และการติดตามผลลัพธ์ระยะยาว',
+                'next_step' => 'ผลลัพธ์จากฐานข้อมูลสามารถต่อยอดเป็น real-world evidence report, dashboard, data quality report หรือ policy-facing analysis เพื่อให้ฐานข้อมูลกลับไปช่วยปรับบริการจริง',
+            ],
+            [
+                'key' => 'ai_digital',
+                'label' => 'AI, digital health และ deployable technology',
+                'short_label' => 'AI / Digital',
+                'keywords' => ['ปัญญาประดิษฐ์', ' ai', '(ai)', 'telemedicine', 'แพทย์ทางไกล', 'digital', 'ระบบรายงาน', 'แสดงข้อมูล'],
+                'reading' => 'AI และ digital health ถูกใช้เป็นเครื่องมือฝังใน workflow เช่น อ่านภาพรังสี รายงานข้อมูล และเชื่อมการดูแล ไม่ใช่งาน algorithm novelty เป็นหลัก',
+                'work_done' => 'งานที่พบคือ AI อ่านภาพถ่ายรังสีทรวงอก, ระบบรายงานและแสดงข้อมูล, telemedicine ในช่วงโควิด และการถ่ายทอดความรู้เพื่อให้เทคโนโลยีใช้ได้จริงในโรงพยาบาลภาครัฐ',
+                'next_step' => 'ผลลัพธ์หลัง deployment ของ AI/digital health ควรเห็นการประเมิน workflow fit, clinician adoption, safety monitoring, maintenance และความพร้อมของโรงพยาบาลปลายทาง',
+            ],
+            [
+                'key' => 'drug_rdu',
+                'label' => 'Drug governance และ medication safety',
+                'short_label' => 'Drug / RDU',
+                'keywords' => ['ใช้ยาอย่างสมเหตุผล', 'metformin', 'สั่งใช้ยา', 'ยาที่มีโอกาส', 'ยา metformin', 'medication', 'prescribing', 'rdu'],
+                'reading' => 'กลุ่มนี้เล็กกว่าแต่คมชัด เน้น prescribing quality, medication safety และการทำให้การใช้ยาในโรงพยาบาลมี governance มากขึ้น',
+                'work_done' => 'งานที่พบคือโครงการใช้ยาอย่างสมเหตุผลรายปี, ความเหมาะสมของการใช้ metformin ในผู้ป่วยไตเรื้อรัง และการติดตามยาที่อาจใช้อย่างไม่เหมาะสมในผู้สูงอายุ',
+                'next_step' => 'ผลลัพธ์ของ RDU สามารถต่อเนื่องจากโครงการรายปีไปสู่ prescribing quality dashboard, medication safety report, clinical decision support brief หรือ feedback loop ให้ทีมรักษา',
+            ],
+        ]);
+        $projectNatureMatches = static function (Project $project, array $keywords): bool {
+            $title = mb_strtolower(trim((string) ($project->project_name_th ?? '')), 'UTF-8');
+
+            return $title !== '' && Str::contains($title, $keywords);
+        };
+        $outputLabelForNature = static function (string $code): string {
+            return match ($code) {
+                'EA101' => 'บทความวิจัยและบทความวารสาร',
+                'EA102' => 'รายงานหรือเอกสารวิชาการ',
+                'EA103' => 'การนำเสนอผลงานทางวิชาการ',
+                'EA104' => 'ชุดข้อมูลและฐานข้อมูล',
+                'EA105' => 'เครื่องมือหรือระบบสนับสนุนการทำงาน',
+                'EA106' => 'ข้อเสนอเชิงนโยบาย',
+                'EA107' => 'สื่อหรือวัสดุเพื่อการเรียนรู้',
+                'EA108' => 'ผลงานวิชาการที่เชื่อมกับการตัดสินใจเชิงระบบ',
+                'EA109' => 'การเปลี่ยนแปลงแนวปฏิบัติ กระบวนการ หรือนโยบาย',
+                'EA110' => 'จำนวนผู้เข้าร่วมกิจกรรม',
+                'EA111' => 'ผลประเมินความพึงพอใจ',
+                'EA112' => 'การสื่อสารหรือเผยแพร่สู่ผู้เกี่ยวข้อง',
+                'EA113' => 'คำสั่งแต่งตั้งหรือบทบาทในคณะทำงาน',
+                'EA114' => 'ผลงานสนับสนุนการใช้ประโยชน์เชิงนโยบาย',
+                'EA115', 'EA117' => 'เครือข่ายหรือเวทีความร่วมมือ',
+                'EA116' => 'โครงการวิจัยต่อเนื่อง',
+                'EA118' => 'รางวัลหรือการยอมรับ',
+                'EA119' => 'ตำรา คู่มือ หรือสื่อความรู้',
+                'EA120' => 'คู่มือ แนวทาง หรือ instruction',
+                'EA999' => 'ผลงานประเภทอื่น',
+                default => 'ผลงานประเภทอื่น',
+            };
+        };
+        $buildNatureOutputDirection = static function (array $theme, Collection $outputTypeMix) {
+            if ($outputTypeMix->isEmpty()) {
+                return 'ยังไม่พบ output ที่ผูกกับโครงการในหมวดนี้ การอ่านหมวดนี้จึงยังอิงจากสัญญาณในชื่อโครงการเป็นหลัก';
+            }
+
+            $codes = $outputTypeMix->pluck('code')->map(fn ($code) => strtoupper((string) $code))->values();
+            $labels = $outputTypeMix->pluck('label')->filter()->unique()->values();
+            $hasAny = static fn (array $targets): bool => $codes->intersect($targets)->isNotEmpty();
+            $formatLabels = static function (Collection $items): string {
+                $items = $items->values();
+                if ($items->count() <= 1) {
+                    return (string) ($items->first() ?? '');
+                }
+                if ($items->count() === 2) {
+                    return $items->implode(' และ ');
+                }
+
+                return $items->slice(0, -1)->implode(', ') . ' และ ' . $items->last();
+            };
+            $has = static fn (string $code): bool => $codes->contains($code);
+
+            $outputList = $formatLabels($labels);
+            $themeKey = (string) ($theme['key'] ?? '');
+
+            return match ($themeKey) {
+                'aging' => 'ทิศทางของ output ในกลุ่มผู้สูงอายุควรอ่านเป็นเส้นทางจาก “ความเสี่ยงของคนไข้” ไปสู่ “การจัดระบบดูแล” มากกว่าการนับผลงานวิชาการอย่างเดียว ชุดผลงานที่พบ ได้แก่ ' . $outputList . ' ทำให้เห็นว่าหมวดนี้มีฐานสำหรับเล่าเรื่อง care continuum ตั้งแต่การคัดกรองภาวะเปราะบาง การฟื้นฟู ไปจนถึงการออกแบบบริการหลังออกจากโรงพยาบาล' . ($has('EA109') ? ' จุดที่มีน้ำหนักเชิงนโยบายคือเริ่มเห็น output ที่แตะการเปลี่ยนแนวปฏิบัติหรือกระบวนการ ซึ่งควรถูกใช้เป็นหลักฐานของ service redesign ได้' : ' จุดที่ควรเติมคือ output ที่แปลงผลวิจัยไปเป็น care pathway, service model หรือข้อเสนอเชิงระบบที่ผู้บริหารบริการสุขภาพนำไปใช้ได้') . '.',
+                'hta' => 'สำหรับ HTA / Economics แกนของ output คือการทำให้ evidence อยู่ในรูปที่ผู้ตัดสินใจใช้ต่อได้ โดย output ที่พบสรุปเป็นกลุ่มหลัก ได้แก่ ' . $outputList . ' ซึ่งสะท้อนทั้งการสร้างหลักฐาน การสังเคราะห์ผล และการสื่อสารเข้าสู่ decision space เรื่องความคุ้มค่า งบประมาณ ความพร้อมของระบบบริการ และสิทธิประโยชน์' . ($has('EA106') ? ' การมีข้อเสนอเชิงนโยบายยิ่งทำให้เห็นเส้นทางจากการประเมินไปสู่ทางเลือกเชิงนโยบายชัดขึ้น' : ' หากยังไม่มีข้อเสนอเชิงนโยบายที่เด่นชัด ควรอ่านเป็น evidence base สำหรับการตัดสินใจ มากกว่าสรุปว่ามี policy uptake แล้ว') . '.',
+                'access_population' => 'output ของกลุ่ม Access / Population มีบทบาทแบบ policy agenda มากกว่า clinical evidence โดยตรง ผลงานที่พบ เช่น ' . $outputList . ' ช่วยเปิดพื้นที่ให้ประเด็นการเข้าถึง ความเป็นธรรม และกลุ่มประชากรเฉพาะถูกมองเห็นในระดับระบบ' . ($hasAny(['EA112', 'EA114', 'EA115', 'EA117']) ? ' น้ำหนักสำคัญอยู่ที่เวที การประชุม และการสื่อสารกับผู้เกี่ยวข้อง ซึ่งเหมาะกับงานผลักดันวาระนโยบาย' : ' ถ้าจะให้แรงขึ้น ควรมี output ที่เชื่อมประเด็นเหล่านี้ไปถึงผู้กำหนดนโยบายหรือเวทีสาธารณะอย่างเป็นรูปธรรม') . '.',
+                'device_innovation' => 'หมวด Device / Innovation ไม่ควรถูกอ่านเป็นแค่งานประดิษฐ์หรือเทคโนโลยีใหม่ แต่เป็นงานถามว่า “ระบบสุขภาพพร้อมรับนวัตกรรมหรือยัง” output ที่พบ ได้แก่ ' . $outputList . ' จึงควรถูกใช้เพื่อประเมิน readiness, adoption, financing และการกระจายเทคโนโลยี' . ($hasAny(['EA102', 'EA106']) ? ' หากมีรายงานหรือข้อเสนอเชิงนโยบายประกอบ จะทำให้การคุยเรื่องนำเทคโนโลยีเข้า benefit package มีฐานรองรับมากขึ้น' : ' สิ่งที่ยังควรผลักต่อคือรายงาน implementation หรือ service readiness ที่บอกได้ว่านวัตกรรมพร้อมใช้จริงในหน่วยบริการระดับใด') . '.',
+                'data_rwe' => 'ทิศทางของ output ในกลุ่ม Data / RWE คือการสร้าง “โครงสร้างพื้นฐานของหลักฐาน” ผลงานอย่าง ' . $outputList . ' มีความหมายมากกว่าผลงานปลายทาง เพราะเป็นฐานสำหรับติดตาม outcome จริง ตรวจสอบ variation ของบริการ และทำให้ policy discussion อิงข้อมูล routine data ได้' . ($hasAny(['EA104', 'EA105']) ? ' จุดแข็งคือมี output ประเภทข้อมูลหรือระบบ ซึ่งเป็นต้นทุนของ learning health system' : ' จุดที่ควรเติมคือ output ประเภทฐานข้อมูล dashboard หรือ data quality report เพื่อให้เห็นว่าข้อมูลถูกนำกลับไปใช้ปรับระบบบริการจริง') . '.',
+                'ai_digital' => 'สำหรับ AI / Digital Health น้ำหนักของ output ควรถูกอ่านที่ “การนำไปใช้ใน workflow” ไม่ใช่ความใหม่ของ algorithm เท่านั้น ผลงานที่พบ ได้แก่ ' . $outputList . ' จึงควรถามต่อว่าเทคโนโลยีนั้นช่วยลดภาระงาน เพิ่มคุณภาพการตัดสินใจ หรือเชื่อมการดูแลได้จริงเพียงใด' . ($hasAny(['EA105', 'EA112', 'EA115']) ? ' การมีเครื่องมือ การสื่อสาร หรือกิจกรรมถ่ายทอดความรู้ช่วยบอกว่าเริ่มขยับจาก prototype ไปสู่การใช้งานจริง' : ' สิ่งที่ยังควรเสริมคือ output ด้าน implementation evaluation, user adoption และ safety monitoring') . '.',
+                'drug_rdu' => 'หมวด Drug / RDU มีลักษณะเป็นงาน policy-in-practice คือไม่ได้จบที่รู้ว่ายาใดเหมาะสม แต่ต้องทำให้การสั่งใช้ยาเปลี่ยนจริงในระบบบริการ output ที่พบ เช่น ' . $outputList . ' ควรถูกอ่านในฐานะเครื่องมือสร้าง feedback loop ให้ทีมรักษาและผู้บริหารคุณภาพ' . ($hasAny(['EA102', 'EA109']) ? ' ถ้ามีรายงานหรือการเปลี่ยนแนวปฏิบัติร่วมด้วย จะเป็นหลักฐานสำคัญว่างาน RDU เริ่มขยับจาก monitoring ไปสู่ governance' : ' จุดที่ควรเติมคือ prescribing quality dashboard, medication safety report หรือ decision support brief ที่ทำให้ทีมรักษาใช้ข้อมูลกลับไปปรับพฤติกรรมได้') . '.',
+                default => 'output ที่พบในหมวดนี้ ได้แก่ ' . $outputList . ' ควรอ่านร่วมกับโจทย์ของโครงการและผู้ใช้ประโยชน์ปลายทาง เพื่อแยกให้ออกว่าสิ่งที่เกิดขึ้นเป็นองค์ความรู้ เครื่องมือสื่อสาร หลักฐานประกอบนโยบาย หรือกลไกเปลี่ยนการปฏิบัติ.',
+            };
+        };
+        $projectNatureThemeRows = $projectNatureThemeDefinitions
+            ->map(function (array $theme) use ($projectNatureProjects, $projectNatureTotal, $projectNatureMatches, $normalizeProjectType, $projectRows, $outputLabelForNature, $buildNatureOutputDirection) {
+                $matches = $projectNatureProjects
+                    ->filter(fn (Project $project) => $projectNatureMatches($project, $theme['keywords']))
+                    ->values();
+                $projectIds = $matches->pluck('id')->map(fn ($id) => (int) $id)->filter()->unique()->values();
+                $themeOutputs = $projectRows
+                    ->filter(fn ($row) => $projectIds->contains((int) ($row->project_id ?? 0)))
+                    ->values();
+                $outputTypeMix = $themeOutputs
+                    ->groupBy(fn ($row) => strtoupper((string) ($row->type_code ?? 'OTHER')))
+                    ->map(fn (Collection $group, string $code) => [
+                        'code' => $code,
+                        'label' => $outputLabelForNature($code),
+                        'count' => $group->count(),
+                    ])
+                    ->sortByDesc('count')
+                    ->values();
+                $outputDirection = $buildNatureOutputDirection($theme, $outputTypeMix);
+                $typeMix = $matches
+                    ->groupBy(fn (Project $project) => $normalizeProjectType($project->project_type))
+                    ->map(fn (Collection $group, string $type) => [
+                        'type' => $type ?: 'ไม่ระบุกลุ่ม',
+                        'count' => $group->count(),
+                    ])
+                    ->sortByDesc('count')
+                    ->values();
+
+                return array_merge($theme, [
+                    'count' => $matches->count(),
+                    'share' => round(($matches->count() / $projectNatureTotal) * 100, 1),
+                    'output_count' => $themeOutputs->count(),
+                    'output_type_mix' => $outputTypeMix->values()->all(),
+                    'output_direction' => $outputDirection,
+                    'output_examples' => $themeOutputs
+                        ->sortByDesc(fn ($row) => (int) ($row->year_be ?? 0))
+                        ->take(2)
+                        ->map(fn ($row) => [
+                            'title' => trim((string) ($row->title ?? '')) ?: '-',
+                            'year' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null,
+                            'type' => $outputLabelForNature(strtoupper((string) ($row->type_code ?? 'OTHER'))),
+                        ])
+                        ->values()
+                        ->all(),
+                    'type_mix' => $typeMix->take(3)->values()->all(),
+                    'examples' => $matches
+                        ->sortByDesc(fn (Project $project) => (int) ($this->normalizeYearFilter($project->start_year) ?? 0))
+                        ->take(3)
+                        ->map(fn (Project $project) => [
+                            'code' => trim((string) ($project->project_code ?? '')),
+                            'year' => $this->normalizeYearFilter($project->start_year),
+                            'title' => trim((string) ($project->project_name_th ?? '')),
+                            'type' => $normalizeProjectType($project->project_type),
+                        ])
+                        ->values()
+                        ->all(),
+                ]);
+            })
+            ->sortByDesc('count')
+            ->values();
+        $projectNatureTypeReadings = [
+            '01 Aging and Frailty' => 'ฐานหลักของกลุ่มนี้คือ aging system: frailty, hip fracture, rehabilitation, transitional care และ outcome ของผู้สูงอายุ',
+            '02 Health Systems and HTA' => 'ทำหน้าที่เป็น policy/economics engine: ประเมินความคุ้มค่า ความพร้อม การเข้าถึง และการนำเทคโนโลยีเข้าสู่ระบบ',
+            '03 Rational Drug Use (RDU)' => 'เป็นกลุ่ม focused operational policy: prescribing quality, inappropriate medication และการใช้ยาอย่างสมเหตุผล',
+            '04 Real-World Evidence (RWE) and Clinical–Technical Cohorts' => 'เป็น data infrastructure layer: ฐานข้อมูล, cohort, EMR linkage, AI report และ chronic disease tracking',
+            '05 Global Health' => 'ทำหน้าที่ agenda setting และ policy dialogue: UHC, financing, PMAC, PM2.5 และ prevention',
+            '06 Other Areas' => 'เป็นพื้นที่ทดลองโจทย์ข้ามกลุ่ม เช่น AI translation, community health, oncology support และ evaluation framework',
+        ];
+        $projectNatureByTypeRows = $projectNatureProjects
+            ->groupBy(fn (Project $project) => $normalizeProjectType($project->project_type))
+            ->map(function (Collection $group, string $type) use ($projectNatureThemeDefinitions, $projectNatureMatches, $projectNatureTypeReadings) {
+                $themeSignals = $projectNatureThemeDefinitions
+                    ->map(function (array $theme) use ($group, $projectNatureMatches) {
+                        return [
+                            'label' => $theme['short_label'],
+                            'count' => $group->filter(fn (Project $project) => $projectNatureMatches($project, $theme['keywords']))->count(),
+                        ];
+                    })
+                    ->filter(fn (array $theme) => (int) $theme['count'] > 0)
+                    ->sortByDesc('count')
+                    ->take(3)
+                    ->values();
+
+                return [
+                    'type' => $type ?: 'ไม่ระบุกลุ่ม',
+                    'count' => $group->count(),
+                    'year_from' => $group->min(fn (Project $project) => $this->normalizeYearFilter($project->start_year) ?: null),
+                    'year_to' => $group->max(fn (Project $project) => $this->normalizeYearFilter($project->start_year) ?: null),
+                    'signals' => $themeSignals->all(),
+                    'reading' => $projectNatureTypeReadings[$type] ?? 'เป็นกลุ่มที่ควรอ่านร่วมกับชื่อโครงการและ output ที่เกิดขึ้นจริง',
+                    'examples' => $group
+                        ->sortByDesc(fn (Project $project) => (int) ($this->normalizeYearFilter($project->start_year) ?? 0))
+                        ->take(3)
+                        ->map(fn (Project $project) => [
+                            'code' => trim((string) ($project->project_code ?? '')),
+                            'year' => $this->normalizeYearFilter($project->start_year),
+                            'title' => trim((string) ($project->project_name_th ?? '')),
+                        ])
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->sortBy('type')
+            ->values();
+        $topProjectNatureThemes = $projectNatureThemeRows->take(3);
+        $projectNatureAnalysis = [
+            'project_total' => $projectNatureProjects->count(),
+            'theme_rows' => $projectNatureThemeRows,
+            'type_rows' => $projectNatureByTypeRows,
+            'headline' => $topProjectNatureThemes->isNotEmpty()
+                ? 'ภาพรวมความสนใจของหน่วย'
+                : 'ยังไม่มีข้อมูลชื่อโครงการเพียงพอสำหรับอ่านความสนใจเชิงเนื้อหา',
+        ];
+
         $htaProjects = $projectAnalysisRows
             ->filter(fn (Project $project) => $matchesProjectTypeKeyword($project, ['hta', 'health systems', 'health technology assessment', '02']))
             ->values();
@@ -4322,7 +4583,20 @@ class OutputController extends Controller
             ],
         ];
 
-        return view('outputs.visualization', [
+        $themeGapFacts = $this->visualizationThemeGapFacts($impactThemeAnalysisRows, $impactThemeWeaknessSummary);
+        $themeGapHash = $this->aiVisualizationInputHash([
+            'facts' => $themeGapFacts,
+            'fallback' => $impactThemeNarrativeParagraph,
+        ]);
+        $cachedThemeGapInsight = $this->findAiVisualizationInsight('theme_output_gap', 'global', $themeGapHash);
+        if ($cachedThemeGapInsight && trim((string) $cachedThemeGapInsight->summary) !== '') {
+            $policyImpact['impact_theme_narrative_paragraph'] = trim((string) $cachedThemeGapInsight->summary);
+            $impactThemeNarrativeParagraph = $policyImpact['impact_theme_narrative_paragraph'];
+        }
+
+        $aiProjectNatureInsight = $this->latestAiVisualizationInsight('project_nature', 'global');
+
+        $view = view('outputs.visualization', [
             'rows' => $filtered,
             'sourceLabelMap' => $sourceLabelMap,
             'sourceCounts' => $sourceCounts,
@@ -4389,7 +4663,83 @@ class OutputController extends Controller
             'networkingYearSeries' => $networkingYearSeries,
             'networkingYearItems' => $networkingYearItems,
             'policyImpact' => $policyImpact,
+            'projectNatureAnalysis' => $projectNatureAnalysis,
+            'aiProjectNatureInsight' => $aiProjectNatureInsight,
+            'aiThemeGapInsight' => $cachedThemeGapInsight,
         ]);
+
+        if ($useRenderedVisualizationCache && $renderedVisualizationCacheKey) {
+            $html = $view->render();
+            Cache::put($renderedVisualizationCacheKey, $html, now()->addMinutes(10));
+            return response($html);
+        }
+
+        return $view;
+    }
+
+    private function latestAiVisualizationInsight(string $type, string $scopeKey = 'global'): ?AiVisualizationInsight
+    {
+        if (! Schema::hasTable('ai_visualization_insights')) {
+            return null;
+        }
+
+        return AiVisualizationInsight::query()
+            ->where('insight_type', $type)
+            ->where('scope_key', $scopeKey)
+            ->latest('generated_at')
+            ->latest('id')
+            ->first();
+    }
+
+    private function findAiVisualizationInsight(string $type, string $scopeKey, string $inputHash): ?AiVisualizationInsight
+    {
+        if (! Schema::hasTable('ai_visualization_insights')) {
+            return null;
+        }
+
+        return AiVisualizationInsight::query()
+            ->where('insight_type', $type)
+            ->where('scope_key', $scopeKey)
+            ->where('input_hash', $inputHash)
+            ->latest('generated_at')
+            ->latest('id')
+            ->first();
+    }
+
+    private function aiVisualizationInputHash(array $payload): string
+    {
+        return hash('sha256', json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function visualizationThemeGapFacts(Collection $themeAnalysisRows, Collection $weaknessRows): array
+    {
+        return [
+            'themes' => $themeAnalysisRows
+                ->map(fn ($theme) => [
+                    'theme' => (string) ($theme->theme ?? ''),
+                    'project_count' => (int) ($theme->project_count ?? 0),
+                    'output_count' => (int) ($theme->output_count ?? 0),
+                    'dominant_code' => (string) ($theme->dominant_code ?? ''),
+                    'dominant_label' => (string) ($theme->dominant_label ?? ''),
+                    'dominant_count' => (int) ($theme->dominant_count ?? 0),
+                    'main_weakness_code' => (string) ($theme->main_weakness_code ?? ''),
+                    'main_weakness_label' => (string) ($theme->main_weakness_label ?? ''),
+                    'main_weakness_with' => (int) ($theme->main_weakness_with ?? 0),
+                    'main_weakness_missing' => (int) ($theme->main_weakness_missing ?? 0),
+                ])
+                ->values()
+                ->all(),
+            'overall_gap' => $weaknessRows
+                ->map(fn ($row) => [
+                    'code' => (string) ($row->code ?? ''),
+                    'label' => (string) ($row->label ?? ''),
+                    'with' => (int) ($row->with ?? 0),
+                    'missing' => (int) ($row->missing ?? 0),
+                    'project_total' => (int) ($row->project_total ?? 0),
+                ])
+                ->values()
+                ->all(),
+        ];
     }
 
     public function visualizationPdf(Request $request)
@@ -4425,6 +4775,81 @@ class OutputController extends Controller
         return $pdf->stream($filename);
     }
 
+    private function visualizationRenderedCacheKey(Request $request): string
+    {
+        $user = $request->user();
+        $query = collect($request->query())
+            ->sortKeys()
+            ->map(fn ($value) => is_array($value) ? array_values($value) : $value)
+            ->all();
+
+        return 'outputs_visualization:rendered:' . md5(json_encode([
+            'user_id' => (int) ($user?->id ?? 0),
+            'is_admin_like' => (bool) ($user?->isAdminLike() ?? false),
+            'query' => $query,
+            'version' => $this->visualizationDataVersion(),
+            'view_version' => $this->visualizationViewVersion(),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function visualizationViewVersion(): string
+    {
+        $paths = [
+            resource_path('views/outputs/visualization.blade.php'),
+            __FILE__,
+        ];
+
+        return md5(collect($paths)
+            ->filter(fn ($path) => is_file($path))
+            ->map(fn ($path) => $path . ':' . filemtime($path))
+            ->implode('|'));
+    }
+
+    private function visualizationDataVersion(): string
+    {
+        return Cache::remember('outputs_visualization:data_version', now()->addSeconds(30), function () {
+            $tables = [
+                'outputs',
+                'output_authors',
+                'output_award_recipients',
+                'output_book_authors',
+                'output_conferences',
+                'output_conference_presenters',
+                'back_office_tasks',
+                'back_office_task_outputs',
+                'back_office_entries',
+                'external_outputs',
+                'external_output_authors',
+                'external_output_award_recipients',
+                'external_output_book_authors',
+                'external_output_conferences',
+                'external_output_conference_presenters',
+                'projects',
+                'copis',
+                'co_research',
+                'users',
+            ];
+            if (Schema::hasTable('ai_visualization_insights')) {
+                $tables[] = 'ai_visualization_insights';
+            }
+
+            $parts = [];
+            foreach ($tables as $table) {
+                if (!Schema::hasTable($table)) {
+                    continue;
+                }
+
+                $count = DB::table($table)->count();
+                $updatedAt = Schema::hasColumn($table, 'updated_at')
+                    ? (string) DB::table($table)->max('updated_at')
+                    : '';
+                $parts[] = $table . ':' . $count . ':' . $updatedAt;
+            }
+
+            return md5(implode('|', $parts));
+        });
+    }
+
     public function rewriteVisualizationThemeGap(Request $request)
     {
         $validated = $request->validate([
@@ -4436,13 +4861,40 @@ class OutputController extends Controller
 
         $fallback = trim((string) $validated['fallback']);
         $facts = $validated['facts'] ?? [];
+        $inputHash = $this->aiVisualizationInputHash([
+            'facts' => $facts,
+            'fallback' => $fallback,
+        ]);
+        $cachedInsight = $this->findAiVisualizationInsight('theme_output_gap', 'global', $inputHash);
+        if ($cachedInsight && trim((string) $cachedInsight->summary) !== '') {
+            return response()->json([
+                'ok' => true,
+                'cached' => true,
+                'paragraph' => trim((string) $cachedInsight->summary),
+            ]);
+        }
+
         $prompt = $this->buildThemeGapRewritePrompt($facts, $fallback);
+        $preferredProvider = mb_strtolower(trim((string) env('AI_PROVIDER', 'ollama')), 'UTF-8');
         $model = trim((string) config('services.gemini.model', 'gemini-2.5-flash')) ?: 'gemini-2.5-flash';
         $apiKey = trim((string) config('services.gemini.key', ''));
         $timeout = max(3, (int) config('services.gemini.insight_timeout', 8));
         $text = '';
+        $provider = 'gemini';
 
-        if ($apiKey !== '') {
+        if ($preferredProvider === 'ollama') {
+            $ollama = $this->callOllamaInsight($prompt);
+            if (! ($ollama['ok'] ?? false)) {
+                return response()->json([
+                    'ok' => false,
+                    'reason' => $ollama['reason'] ?? 'ollama_unavailable',
+                ]);
+            }
+
+            $text = (string) ($ollama['text'] ?? '');
+            $provider = 'ollama';
+            $model = trim((string) ($ollama['model'] ?? '')) ?: trim((string) config('services.ollama.model', 'qwen2.5:7b'));
+        } elseif ($apiKey !== '') {
             $url = rtrim((string) config('services.gemini.base_url', 'https://generativelanguage.googleapis.com/v1beta'), '/')
                 . '/models/' . $model . ':generateContent';
 
@@ -4490,6 +4942,8 @@ class OutputController extends Controller
             }
 
             $text = (string) ($gateway['text'] ?? '');
+            $provider = 'gemini_gateway';
+            $model = trim((string) ($gateway['model'] ?? $model)) ?: $model;
         }
 
         $decoded = $this->decodeGeminiInsightJson($text);
@@ -4499,8 +4953,30 @@ class OutputController extends Controller
             return response()->json(['ok' => false, 'reason' => 'invalid_ai_output']);
         }
 
+        if (Schema::hasTable('ai_visualization_insights')) {
+            AiVisualizationInsight::query()->updateOrCreate(
+                [
+                    'insight_type' => 'theme_output_gap',
+                    'scope_key' => 'global',
+                    'input_hash' => $inputHash,
+                ],
+                [
+                    'provider' => $provider,
+                    'model' => $model,
+                    'summary' => $paragraph,
+                    'payload' => ['paragraph' => $paragraph],
+                    'input_snapshot' => [
+                        'facts' => $facts,
+                        'fallback' => $fallback,
+                    ],
+                    'generated_at' => now(),
+                ]
+            );
+        }
+
         return response()->json([
             'ok' => true,
+            'cached' => false,
             'paragraph' => $paragraph,
         ]);
     }
@@ -7836,6 +8312,40 @@ PROMPT;
         }
 
         return [];
+    }
+
+    private function callOllamaInsight(string $prompt): array
+    {
+        $model = trim((string) config('services.ollama.model', 'qwen2.5:7b')) ?: 'qwen2.5:7b';
+        $baseUrl = rtrim((string) config('services.ollama.base_url', 'http://127.0.0.1:11434'), '/');
+        $timeout = max(30, (int) config('services.ollama.timeout', 180));
+
+        try {
+            $response = Http::acceptJson()
+                ->timeout($timeout)
+                ->post($baseUrl . '/api/generate', [
+                    'model' => $model,
+                    'prompt' => $prompt,
+                    'stream' => false,
+                    'format' => 'json',
+                    'options' => [
+                        'temperature' => 0.1,
+                    ],
+                ]);
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'reason' => 'ollama_exception'];
+        }
+
+        if (! $response->ok()) {
+            return ['ok' => false, 'reason' => 'ollama_http_' . $response->status()];
+        }
+
+        $text = trim((string) ($response->json('response') ?? ''));
+        if ($text === '') {
+            return ['ok' => false, 'reason' => 'ollama_empty_response'];
+        }
+
+        return ['ok' => true, 'text' => $text, 'model' => $model];
     }
 
     private function callGeminiInsightGateway(string $model, string $prompt, int $timeout): array

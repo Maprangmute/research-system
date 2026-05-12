@@ -61,7 +61,7 @@
         <section class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
             <div class="flex flex-col gap-4 px-5 py-5 md:px-6 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
-                    <h1 class="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">Academic Paper / Presentation / Textbook / Manual นอกเนื่องโครงการวิจัยในหน่วย</h1>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">Academic Paper / Presentation / Textbook / Manual นอกเหนือโครงการวิจัยในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</h1>
                     <p class="mt-1.5 text-sm leading-6 text-slate-600">
                         รายการผลงานเพิ่มเติมแบบไม่ผูกกับโครงการ พร้อมค้นหา เปิดดูรายละเอียด และย้อนกลับมาเพิ่มข้อมูลต่อได้ใน flow เดียว
                     </p>

@@ -4713,11 +4713,34 @@
                     }
                 }
 
+                const displayedUserName = String(tom?.wrapper?.querySelector('[data-project-search-select-label]')?.textContent || '').trim();
+                const placeholderName = String(userSelect.options[0]?.textContent || '').trim();
+                const userNameForMatch = [nameHidden.value, manualInput.value, displayedUserName]
+                    .map((value) => String(value || '').trim())
+                    .find((value) => value && value !== placeholderName) || '';
+                const matchedUser = Array.isArray(window.projectUserDirectory)
+                    ? window.projectUserDirectory.find((user) => {
+                        const targetName = String(userNameForMatch || '').trim();
+                        return targetName && [
+                            user.full_name,
+                            user.research_display_name,
+                        ].some((candidate) => String(candidate || '').trim() === targetName);
+                    })
+                    : null;
+
+                if (!String(userSelect.value || '').trim() && matchedUser) {
+                    userSelect.value = String(matchedUser.id);
+                    if (tom) tom.setValue(String(matchedUser.id), true);
+                }
+
                 const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
                 userIdInput.value = String(userSelect.value || '').trim();
                 nameHidden.value = selectedOption && userIdInput.value
                     ? String(selectedOption.textContent || '').trim()
                     : '';
+                if (userIdInput.value) {
+                    userSelect.setCustomValidity('');
+                }
 
                 setPiWrapVisible(manualWrap, false);
                 setPiWrapVisible(userWrap, true);
@@ -4884,18 +4907,10 @@
             const previousMode = row.dataset.copiMode || '';
             const tom = userSelect.tomselect || null;
             const modeChanged = previousMode !== '' && previousMode !== mode;
-            const matchedUser = Array.isArray(window.projectUserDirectory)
-                ? window.projectUserDirectory.find((user) => String(user.full_name || '').trim() === String(nameHidden.value || manualInput.value || '').trim())
-                : null;
 
             if (mode === ROLE_PERSON_TYPE_INTERNAL_UNIT && userIdInput.value && String(userSelect.value || '').trim() !== String(userIdInput.value).trim()) {
                 userSelect.value = String(userIdInput.value).trim();
                 if (tom) tom.setValue(String(userIdInput.value).trim(), true);
-            }
-
-            if (mode === ROLE_PERSON_TYPE_INTERNAL_UNIT && !userSelect.value && matchedUser) {
-                userSelect.value = String(matchedUser.id);
-                if (tom) tom.setValue(String(matchedUser.id), true);
             }
 
             if (mode === ROLE_PERSON_TYPE_INTERNAL_UNIT) {
@@ -4910,11 +4925,34 @@
                     }
                 }
 
+                const displayedUserName = String(tom?.wrapper?.querySelector('[data-project-search-select-label]')?.textContent || '').trim();
+                const placeholderName = String(userSelect.options[0]?.textContent || '').trim();
+                const userNameForMatch = [nameHidden.value, manualInput.value, displayedUserName]
+                    .map((value) => String(value || '').trim())
+                    .find((value) => value && value !== placeholderName) || '';
+                const matchedUser = Array.isArray(window.projectUserDirectory)
+                    ? window.projectUserDirectory.find((user) => {
+                        const targetName = String(userNameForMatch || '').trim();
+                        return targetName && [
+                            user.full_name,
+                            user.research_display_name,
+                        ].some((candidate) => String(candidate || '').trim() === targetName);
+                    })
+                    : null;
+
+                if (!String(userSelect.value || '').trim() && matchedUser) {
+                    userSelect.value = String(matchedUser.id);
+                    if (tom) tom.setValue(String(matchedUser.id), true);
+                }
+
                 const selectedOption = userSelect.options[userSelect.selectedIndex] || null;
                 userIdInput.value = String(userSelect.value || '').trim();
                 nameHidden.value = selectedOption && userIdInput.value
                     ? String(selectedOption.textContent || '').trim()
                     : '';
+                if (userIdInput.value) {
+                    userSelect.setCustomValidity('');
+                }
 
                 setCopiWrapVisible(manualWrap, false);
                 setCopiWrapVisible(userWrap, true);
@@ -6358,6 +6396,9 @@
                         output: 'ผลงานวิจัย (Output)',
                     };
 
+                    syncPiPersonFields(document);
+                    projectForm.querySelectorAll('.copi-row').forEach((row) => syncCopiRow(row));
+                    projectForm.querySelectorAll('.coresearch-row').forEach((row) => syncCoresearchRow(row));
                     window.validateProjectFteDateRanges?.(projectForm);
 
                     const duplicateAuthorCheck = validateEA119DuplicateAuthors(projectForm);

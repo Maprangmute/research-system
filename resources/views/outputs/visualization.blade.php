@@ -316,6 +316,105 @@
             'effect' => 'ควรติดตามข้อมูลเพิ่มเติมก่อนสรุปผลต่อ policy impact.',
         ]);
         $policyImpactThemeNarrativeParagraph = trim((string) ($policyImpact['impact_theme_narrative_paragraph'] ?? 'ยังไม่มีข้อมูล output ในระดับธีมสำหรับช่วงที่เลือก.'));
+        $researchInterestCategories = collect([
+            ['category' => 'Aging / Frailty', 'interest' => 'ผู้สูงอายุ ภาวะเปราะบาง การฟื้นฟู การดูแลระยะยาว และ care pathway หลังเจ็บป่วย'],
+            ['category' => 'Health Economics / HTA', 'interest' => 'ความคุ้มค่า ต้นทุน ผลกระทบงบประมาณ การประเมินนโยบายและเทคโนโลยีสุขภาพ'],
+            ['category' => 'Medical Devices & Innovation', 'interest' => 'รากฟันเทียม กระดูกเทียม เท้าเทียม insulin pump และการประเมินนวัตกรรมก่อนใช้จริง'],
+            ['category' => 'AI / Digital Health / Data Platform', 'interest' => 'AI อ่านภาพรังสี telemedicine data warehouse EMR linkage และระบบข้อมูลเพื่อการตัดสินใจ'],
+            ['category' => 'Clinical Cohort / Real-world Data', 'interest' => 'registry, cohort, longitudinal data และฐานข้อมูลโรคเรื้อรังเพื่ออ่าน outcome ในโลกจริง'],
+            ['category' => 'Precision / Early Diagnosis', 'interest' => 'BRCA screening, early detection, genetic access และการคัดกรองเชิงประชากร'],
+            ['category' => 'Rational Drug Use', 'interest' => 'ความเหมาะสมในการใช้ยา prescribing quality, adverse drug events และ medication governance'],
+            ['category' => 'Health System & Access', 'interest' => 'การเข้าถึงบริการ สิทธิประโยชน์ universal coverage reimbursement และ equity'],
+            ['category' => 'Population / Public Health', 'interest' => 'PM2.5, urban health, global health, prevention และ health promotion'],
+        ]);
+        $researchInterestByType = collect([
+            [
+                'type' => '01 Aging and Frailty',
+                'main' => 'สนใจระบบดูแลผู้สูงอายุแบบองค์รวม มากกว่าการรักษาโรคเฉพาะราย',
+                'themes' => [
+                    ['name' => 'Frailty & Healthy Aging', 'signals' => ['ภาวะเปราะบาง', 'functional decline', 'คุณภาพชีวิต', 'long-term care'], 'meaning' => 'เป็น core identity ของกลุ่ม และเชื่อมกับการเตรียมระบบสุขภาพสำหรับสังคมสูงวัย'],
+                    ['name' => 'Hip Fracture / Orthogeriatrics', 'signals' => ['กระดูกสะโพกหัก', 'delirium', 'mortality', 'rehabilitation'], 'meaning' => 'สะท้อนความสนใจต่อ geriatric trauma pathway และ continuum of care'],
+                    ['name' => 'Care Model Innovation', 'signals' => ['ทีมสหสาขา', 'integrated care', 'transitional care', 'intermediate care'], 'meaning' => 'เน้น redesign รูปแบบบริการ ไม่ใช่แค่ intervention รายโรค'],
+                    ['name' => 'Data-driven Geriatrics', 'signals' => ['prediction model', 'risk stratification', 'outcome prediction'], 'meaning' => 'เริ่มใช้ข้อมูลเพื่อคาดการณ์ความเสี่ยงและ optimize outcome'],
+                ],
+                'reading' => 'หน่วยนี้กำลังสร้าง expertise ด้าน aging society, frailty system, geriatric service redesign และ outcome optimization',
+            ],
+            [
+                'type' => '02 Health Systems and HTA',
+                'main' => 'เน้น policy-facing research ที่เชื่อม health economics, innovation adoption และ reimbursement decision',
+                'themes' => [
+                    ['name' => 'Economic Evaluation', 'signals' => ['cost utility', 'economic evaluation', 'budget impact', 'value assessment'], 'meaning' => 'ตอบคำถามว่าเทคโนโลยีหรือบริการใดควรเข้าสู่ระบบสุขภาพไทย'],
+                    ['name' => 'Medical Device Assessment', 'signals' => ['รากฟันเทียม', 'กระดูกเทียม', 'เท้าเทียม', 'insulin pump'], 'meaning' => 'โดดเด่นด้าน device evaluation มากกว่างานยาอย่างเดียว'],
+                    ['name' => 'Innovation & Horizon Scanning', 'signals' => ['horizon scanning', 'innovation monitoring', 'preparedness'], 'meaning' => 'มีบทบาท policy foresight มองเทคโนโลยีที่กำลังจะเข้าระบบ'],
+                    ['name' => 'Access & Equity', 'signals' => ['service access', 'reimbursement', 'transgender health'], 'meaning' => 'แสดงมิติ social policy และความเป็นธรรมในการเข้าถึงบริการ'],
+                ],
+                'reading' => 'นี่ไม่ใช่ HTA แบบ cost-effectiveness เท่านั้น แต่เป็น technology governance และ national program evaluation',
+            ],
+            [
+                'type' => '03 Rational Drug Use (RDU)',
+                'main' => 'สนใจคุณภาพการใช้ยา ความปลอดภัย และ governance ของ prescribing ในระบบบริการ',
+                'themes' => [
+                    ['name' => 'Appropriate Prescribing', 'signals' => ['metformin use', 'guideline adherence', 'prescribing appropriateness'], 'meaning' => 'เน้นลด variation และยกระดับคุณภาพการสั่งใช้ยา'],
+                    ['name' => 'Medication Safety', 'signals' => ['adverse drug events', 'drug-related harm', 'hospitalization'], 'meaning' => 'เชื่อมการใช้ยากับผลลัพธ์และความปลอดภัยของผู้ป่วย'],
+                    ['name' => 'Drug Governance', 'signals' => ['ใช้ยาอย่างสมเหตุผล', 'quality improvement', 'hospital policy'], 'meaning' => 'เป็นหน่วย practical ที่เน้น operational policy มากกว่า innovation frontier'],
+                ],
+                'reading' => 'เหมาะกับบทบาท medication policy, quality improvement และ hospital prescribing governance',
+            ],
+            [
+                'type' => '04 Real-World Evidence (RWE) and Clinical-Technical Cohorts',
+                'main' => 'เป็นกลุ่ม data-heavy ที่เน้น registry, cohort, real-world evidence และ health informatics',
+                'themes' => [
+                    ['name' => 'Clinical Data Infrastructure', 'signals' => ['electronic database', 'data warehouse', 'linkage', 'EMR integration'], 'meaning' => 'สร้าง infrastructure สำหรับ evidence generation จาก routine data'],
+                    ['name' => 'Chronic Disease Cohorts', 'signals' => ['เบาหวาน', 'ความดัน', 'fatty liver', 'cirrhosis'], 'meaning' => 'ติดตาม disease progression และ complication ในระยะยาว'],
+                    ['name' => 'AI-enabled Healthcare', 'signals' => ['AI chest X-ray', 'telemedicine', 'digital literacy'], 'meaning' => 'ใช้ digital transformation เป็นเครื่องมือเชื่อมข้อมูลและบริการจริง'],
+                    ['name' => 'Precision / Genomic Access', 'signals' => ['BRCA1/2', 'genetic screening', 'early detection'], 'meaning' => 'เริ่มเชื่อม precision medicine กับการเข้าถึงและระบบบริการ'],
+                ],
+                'reading' => 'ใกล้เคียง clinical informatics, data science for healthcare และ observational epidemiology มากที่สุด',
+            ],
+            [
+                'type' => '05 Global Health',
+                'main' => 'ไม่ได้เน้น disease-specific research แต่เน้น policy dialogue, global collaboration และ agenda setting',
+                'themes' => [
+                    ['name' => 'Universal Health Coverage', 'signals' => ['financing', 'coverage', 'sustainability'], 'meaning' => 'เชื่อมหลักประกันสุขภาพกับ governance และความยั่งยืน'],
+                    ['name' => 'Environmental / Urban Health', 'signals' => ['PM2.5', 'urban health', 'public health'], 'meaning' => 'เปิดพื้นที่ต่อโจทย์สุขภาพประชากรและปัจจัยแวดล้อม'],
+                    ['name' => 'International Academic Platform', 'signals' => ['PMAC', 'global conference', 'knowledge diplomacy'], 'meaning' => 'ทำหน้าที่เชื่อมเครือข่ายและกำหนดวาระเชิงนโยบายระหว่างประเทศ'],
+                ],
+                'reading' => 'เป็นกลุ่ม public policy, international health และ strategic health agenda มากกว่างาน clinical research',
+            ],
+            [
+                'type' => '06 Other Areas',
+                'main' => 'เป็น innovation sandbox สำหรับโจทย์ที่ยังไม่ fit กับ cluster หลัก แต่มีสัญญาณเชิงระบบที่น่าสนใจ',
+                'themes' => [
+                    ['name' => 'AI Translation to Public Hospitals', 'signals' => ['AI chest X-ray', 'knowledge transfer', 'deployment'], 'meaning' => 'เน้นการนำเทคโนโลยีไปใช้จริง ไม่ใช่แค่ proof of concept'],
+                    ['name' => 'Community / Religious Health', 'signals' => ['พระสงฆ์', 'community participation', 'health promotion'], 'meaning' => 'สะท้อนการออกแบบสุขภาพเชิงบริบทและกลุ่มประชากรเฉพาะ'],
+                    ['name' => 'Supportive Oncology / Nutrition', 'signals' => ['body composition', 'chemotherapy outcomes'], 'meaning' => 'เชื่อมผลลัพธ์ทางคลินิกกับคุณภาพชีวิตและการดูแลสนับสนุน'],
+                ],
+                'reading' => 'เป็นพื้นที่ทดลอง cross-cutting innovation และ evaluation framework',
+            ],
+        ]);
+        $researchInterestMetaPatterns = collect([
+            ['title' => 'System-centric problems', 'text' => 'ภาพรวมไม่ได้ขับเคลื่อนด้วยโรคเป็นหลัก แต่ถามว่าระบบดูแลทำงานดีไหม เข้าถึงได้ไหม คุ้มค่าไหม และ outcome ดีขึ้นหรือไม่'],
+            ['title' => 'Health system engineering', 'text' => 'หลายโครงการมุ่ง redesign workflow, care pathway, service model และการ scale มากกว่างานวิชาการเพื่อ publication อย่างเดียว'],
+            ['title' => 'Technology as infrastructure', 'text' => 'AI, telemedicine, registry และ database ถูกมองเป็น infrastructure สำหรับระบบจริง ไม่ใช่ gadget หรือ showcase'],
+            ['title' => 'Real-world evidence mindset', 'text' => 'ให้คุณค่ากับ routine data, cohort, EMR, implementation outcome และหลักฐานจากบริบทบริการจริง'],
+            ['title' => 'Technology governance', 'text' => 'HTA ถูกใช้เพื่อตอบว่าประเทศพร้อมไหม scale ได้ไหม equity เป็นอย่างไร และควรออกแบบ reimbursement อย่างไร'],
+            ['title' => 'Evidence-to-policy organization', 'text' => 'ปลายทางของงานจำนวนมากคือ policy, reimbursement, implementation, service redesign และ national adoption'],
+        ]);
+        $researchInterestCapabilities = collect([
+            ['capability' => 'Aging & Integrated Care', 'types' => '01'],
+            ['capability' => 'Health Economics & HTA', 'types' => '02'],
+            ['capability' => 'Drug Governance & Medication Safety', 'types' => '03'],
+            ['capability' => 'Data Platform / AI / RWE', 'types' => '04'],
+            ['capability' => 'Public Policy & Global Health', 'types' => '05'],
+            ['capability' => 'Emerging / Cross-cutting Innovation', 'types' => '06'],
+        ]);
+        $researchInterestTakeaways = collect([
+            'ระบบดูแลผู้สูงอายุและ frailty เป็นแกนที่เด่นมากของ portfolio',
+            'HTA ของหน่วยมีบทบาทกว้างถึง technology governance และ reimbursement design',
+            'AI / digital health / data platform ถูกใช้เพื่อฝังในระบบบริการจริง',
+            'RWE และ cohort เป็นฐานสำคัญของ learning health system',
+            'ภาพรวมสะท้อนองค์กรแบบ evidence-to-policy และ healthcare transformation platform',
+        ]);
         $policyImpactThemeAiFacts = $policyImpactThemeAnalysis
             ->map(fn ($theme) => [
                 'theme' => (string) ($theme->theme ?? ''),
@@ -378,9 +477,9 @@
         $policyDataSourcePeakCount = (int) ($policyDataSourceCounts[$policyDataSourcePeak] ?? 0);
         $policyImpactCodeLabels = [
             'EA101' => 'Research Paper and Journal Article',
-            'EA109' => 'Change in Practices / Procedures / Policy',
             'EA102' => 'Reports and White Papers',
             'EA106' => 'Policy Recommendations',
+            'EA109' => 'Change in Practices / Procedures / Policy',
         ];
         $policyImpactTrendRows = collect($policyImpactTrend['years'] ?? [])
             ->values()
@@ -601,7 +700,7 @@
             width: 100vw;
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
-            overflow-x: hidden;
+            overflow-x: clip;
         }
         .viz-page *,
         .viz-page *::before,
@@ -990,6 +1089,59 @@
         .section-panel {
             position: relative;
             overflow: hidden;
+        }
+        .section-panel.nature-section {
+            overflow: visible;
+            transform: none;
+            animation: none;
+        }
+        .nature-shell,
+        .nature-layout,
+        .nature-rail {
+            overflow: visible;
+        }
+        @media (min-width: 1280px) {
+            .nature-sticky {
+                position: sticky;
+                top: 96px;
+                align-self: flex-start;
+            }
+        }
+        .nature-map {
+            --nature-active-x: 50;
+            --nature-active-y: 50;
+        }
+        .nature-bubble {
+            filter: grayscale(1) saturate(.08) brightness(1.08);
+            opacity: .5;
+        }
+        .nature-bubble.is-complete {
+            filter: none;
+            opacity: .78;
+        }
+        .nature-bubble.is-active {
+            filter: none;
+            opacity: 1;
+            z-index: 35 !important;
+            box-shadow: 0 24px 52px rgba(15, 23, 42, .28) !important;
+            outline: 3px solid rgba(255, 255, 255, .8);
+        }
+        .nature-bubble.is-active::after {
+            content: "";
+            position: absolute;
+            inset: -8px;
+            border-radius: 999px;
+            border: 2px solid rgba(15, 23, 42, .55);
+            box-shadow: 0 0 0 7px rgba(255, 255, 255, .62);
+            pointer-events: none;
+        }
+        .nature-card {
+            transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+        .nature-card.is-active {
+            border-color: #14b8a6;
+            box-shadow: 0 18px 38px rgba(15, 118, 110, .12);
+            background: linear-gradient(180deg, #ffffff, #f8fffd);
         }
         .section-panel::before {
             content: "";
@@ -1426,6 +1578,48 @@
         .doctor-role-floating {
             display: none;
         }
+        .doctor-role-tabs {
+            border-color: #99f6e4;
+            background: linear-gradient(180deg, #ccfbf1 0%, #ecfeff 100%);
+            box-shadow: inset 0 0 0 1px rgba(20, 184, 166, .16);
+        }
+        .doctor-role-tab {
+            position: relative;
+            min-height: 38px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: #0f766e;
+            transition: background-color .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease;
+        }
+        .doctor-role-tab:hover {
+            background: rgba(255, 255, 255, .58);
+            color: #115e59;
+        }
+        .doctor-role-tab.is-active {
+            border-color: #14b8a6;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            box-shadow: 0 10px 24px rgba(15, 118, 110, .18);
+        }
+        .doctor-role-tab.is-active span {
+            background: #0f766e;
+            color: #ffffff !important;
+        }
+        .doctor-role-tab span {
+            display: inline-flex;
+            min-width: 1.35rem;
+            height: 1.35rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: rgba(15, 118, 110, .1);
+            color: #0f766e;
+            padding: 0 0.35rem;
+        }
+        .doctor-role-tab:focus-visible {
+            outline: 3px solid rgba(20, 184, 166, .32);
+            outline-offset: 2px;
+        }
         .doctor-mobile-theme {
             border: 1px solid #e2e8f0;
             border-radius: 14px;
@@ -1657,7 +1851,7 @@
                 width: 100%;
                 margin-left: 0;
                 margin-right: 0;
-                overflow-x: hidden;
+                overflow-x: clip;
                 overflow-wrap: anywhere;
             }
             .viz-page > div {
@@ -1829,15 +2023,17 @@
             }
             .doctor-role-tab {
                 min-width: 0;
-                padding-left: 6px !important;
-                padding-right: 6px !important;
+                min-height: 48px;
+                padding: 8px 6px !important;
                 text-align: center;
-                line-height: 1.2;
+                line-height: 1.15;
+                white-space: normal;
             }
             .doctor-role-tab span {
                 display: block;
                 margin-left: 0;
-                margin-top: 2px;
+                margin-top: 4px;
+                font-size: 12px;
             }
             .doctor-role-floating {
                 position: fixed;
@@ -1849,7 +2045,7 @@
                 transform: translate(-50%, 14px);
                 align-items: center;
                 gap: 4px;
-                border: 1px solid rgba(16, 185, 129, .32);
+                border: 1px solid rgba(15, 23, 42, .18);
                 border-radius: 999px;
                 background: rgba(255, 255, 255, .94);
                 padding: 5px;
@@ -1866,18 +2062,21 @@
             }
             .doctor-role-floating button {
                 min-width: 56px;
+                border: 1px solid transparent;
+                background: transparent;
                 border-radius: 999px;
                 padding: 7px 9px;
                 font-size: 11px;
                 font-weight: 800;
                 line-height: 1;
-                color: #047857;
+                color: #0f766e;
                 white-space: nowrap;
             }
             .doctor-role-floating button.is-active {
-                background: #047857;
-                color: #ffffff;
-                box-shadow: 0 8px 18px rgba(4, 120, 87, .22);
+                border-color: #14b8a6;
+                background: #ffffff;
+                color: #0f172a;
+                box-shadow: 0 8px 18px rgba(15, 118, 110, .2);
             }
             .unit-mobile-avatar-grid img {
                 width: 32px;
@@ -1901,7 +2100,7 @@
                 margin-left: 0;
                 margin-right: 0;
                 padding-bottom: 8px;
-                overflow-x: hidden;
+                overflow-x: clip;
             }
             .clinical-led-chart-inner {
                 min-width: 0;
@@ -1935,9 +2134,9 @@
             <section class="fade-up hero-panel section-panel section-panel--slate p-7 md:p-10">
                 <div class="hero-kicker">Research Outputs Overview</div>
                 <h1 class="hero-title mt-3 font-semibold text-slate-900">{{ $pageTitle }}</h1>
-                <p class="mt-3 max-w-5xl text-sm font-normal leading-relaxed text-slate-500 md:text-base">
+                {{-- <p class="mt-3 max-w-5xl text-sm font-normal leading-relaxed text-slate-500 md:text-base">
                     เป็นการใช้ AI ช่วยวิเคราะห์เบื้องต้น อันเกิดจาก data ของหน่วย และยังต้องอาศัยการร่วมกันคิดของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน
-                </p>
+                </p> --}}
 
             </section>
 
@@ -2016,11 +2215,36 @@
                 </form>
             </section>
 
+            @php
+                $policyProjectNature = $projectNatureAnalysis ?? [];
+                $policyProjectTypeRows = collect(data_get($policyProjectNature, 'type_rows', []));
+                $policyProjectTotal = (int) data_get($policyProjectNature, 'project_total', 0);
+            @endphp
+            <section class="fade-up panel section-panel section-panel--slate p-5 md:p-6">
+                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                    <div>
+                        <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Project Scope</div>
+                        <div class="mt-1 text-lg font-semibold text-slate-950">{{ number_format($policyProjectTotal) }} โครงการในระบบ</div>
+                    </div>
+                    <div class="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                        @forelse ($policyProjectTypeRows as $typeRow)
+                            <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
+                                <div class="text-sm font-semibold leading-snug text-slate-900">{{ data_get($typeRow, 'type') }}</div>
+                                <div class="mt-1 text-xs text-slate-500">{{ number_format((int) data_get($typeRow, 'count', 0)) }} โครงการ</div>
+                            </div>
+                        @empty
+                            <div class="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-500">ยังไม่มีข้อมูลประเภทโครงการ</div>
+                        @endforelse
+                    </div>
+                </div>
+            </section>
+
+
             <section class="fade-up panel section-panel section-panel--indigo policy-shell p-5 md:p-6">
                 <div class="policy-brief">
                     <div class="section-tag section-tag--indigo">การเชื่อมโยงงานวิจัยสู่การตัดสินใจเชิงนโยบาย</div>
                     <div class="w-full">
-                        <h2 class="mt-4 max-w-[1500px] font-semibold text-slate-900" style="font-size: clamp(24px, 1.9vw, 32px); line-height: 1.42; letter-spacing: 0;">
+                        <h2 class="max-w-[1500px] font-semibold text-slate-900" style="font-size: clamp(24px, 1.9vw, 32px); line-height: 1.42; letter-spacing: 0;">
                             โครงการและผลงาน Siriraj Health Policy สามารถสร้างและใช้ประโยชน์จากบริบทศิริราช เพื่อขับเคลื่อนการตัดสินใจเชิงนโยบายได้มากเพียงใด
                         </h2>
                         <p class="mt-4 max-w-none text-base leading-relaxed text-slate-600 md:text-lg">
@@ -2621,6 +2845,214 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             </div>
                 </div>
 
+
+            </section>
+
+            <section class="fade-up panel section-panel section-panel--slate nature-section p-5 md:p-6">
+                @php
+                    $nature = $projectNatureAnalysis ?? [];
+                    $natureThemes = collect(data_get($nature, 'theme_rows', []));
+                    $natureTypes = collect(data_get($nature, 'type_rows', []));
+                    $natureTotal = (int) data_get($nature, 'project_total', 0);
+                    $topNatureThemes = $natureThemes->take(3);
+                    $maxNatureCount = max(1, (int) $natureThemes->max('count'));
+                    $aiNaturePayload = is_array($aiProjectNatureInsight?->payload ?? null) ? $aiProjectNatureInsight->payload : [];
+                    $aiInterestClusters = collect(data_get($aiNaturePayload, 'interest_clusters', []))
+                        ->filter(fn ($cluster) => trim((string) data_get($cluster, 'name')) !== '')
+                        ->values();
+                    $aiOutputAlignment = collect(data_get($aiNaturePayload, 'output_alignment', []))
+                        ->filter(fn ($row) => trim((string) data_get($row, 'theme')) !== '')
+                        ->values();
+                    $aiSectionCards = collect(data_get($aiNaturePayload, 'section_cards', []))
+                        ->filter(fn ($card) => trim((string) data_get($card, 'theme_key')) !== '' || trim((string) data_get($card, 'label')) !== '')
+                        ->values();
+                    $hasAiProjectOutputInsight = $aiSectionCards->isNotEmpty() || $aiInterestClusters->isNotEmpty() || $aiOutputAlignment->isNotEmpty();
+                    $aiNatureSummary = trim((string) data_get($aiNaturePayload, 'summary', ''));
+                    $hasCjkText = static fn ($text): bool => preg_match('/[\x{3040}-\x{30ff}\x{3400}-\x{9fff}\x{f900}-\x{faff}]/u', (string) $text) === 1;
+                    if ($hasCjkText($aiNatureSummary)) {
+                        $aiNatureSummary = '';
+                    }
+                    $aiNatureGeneratedAt = $aiProjectNatureInsight?->generated_at?->timezone('Asia/Bangkok')->format('d/m/Y H:i');
+                    $normalizeNatureText = static fn ($text): string => Str::of((string) $text)->lower()->replace(['-', '/', '&', '–', '—'], ' ')->squish()->toString();
+                    $natureAiKeyFor = static function ($name) use ($normalizeNatureText): ?string {
+                        $text = $normalizeNatureText($name);
+                        return match (true) {
+                            Str::contains($text, ['aging', 'frailty', 'ผู้สูงอายุ', 'เปราะบาง', 'geriatric']) => 'aging',
+                            Str::contains($text, ['hta', 'economics', 'economic', 'คุ้มค่า', 'ต้นทุน', 'reimbursement', 'สิทธิประโยชน์']) => 'hta',
+                            Str::contains($text, ['access', 'population', 'equity', 'uhc', 'pmac', 'เข้าถึง', 'ประชากร', 'ความเป็นธรรม']) => 'access_population',
+                            Str::contains($text, ['device', 'innovation', 'implant', 'รากฟัน', 'กระดูกเทียม', 'เท้าเทียม', 'นวัตกรรม']) => 'device_innovation',
+                            Str::contains($text, ['data', 'rwe', 'real world', 'cohort', 'registry', 'ฐานข้อมูล']) => 'data_rwe',
+                            Str::contains($text, ['ai', 'digital', 'telemedicine', 'ปัญญาประดิษฐ์', 'ดิจิทัล']) => 'ai_digital',
+                            Str::contains($text, ['drug', 'rdu', 'medication', 'prescribing', 'ใช้ยา']) => 'drug_rdu',
+                            default => null,
+                        };
+                    };
+                    $aiNatureClusterByKey = $aiInterestClusters
+                        ->mapWithKeys(function ($cluster) use ($natureAiKeyFor) {
+                            $key = $natureAiKeyFor(trim((string) data_get($cluster, 'name', '')));
+                            if (!$key) {
+                                $key = collect(data_get($cluster, 'keywords', []))
+                                    ->map(fn ($keyword) => $natureAiKeyFor($keyword))
+                                    ->filter()
+                                    ->first();
+                            }
+
+                            return $key ? [$key => $cluster] : [];
+                        });
+                    $aiNatureAlignmentByKey = $aiOutputAlignment
+                        ->mapWithKeys(function ($row) use ($natureAiKeyFor) {
+                            $key = $natureAiKeyFor(trim((string) data_get($row, 'theme', '')));
+                            if (!$key) {
+                                $key = $natureAiKeyFor(trim((string) data_get($row, 'project_signal', '')));
+                            }
+
+                            return $key ? [$key => $row] : [];
+                        });
+                    $aiNatureSectionCardByKey = $aiSectionCards
+                        ->mapWithKeys(function ($card) use ($natureAiKeyFor) {
+                            $key = trim((string) data_get($card, 'theme_key', ''));
+                            if ($key === '') {
+                                $key = $natureAiKeyFor(trim((string) data_get($card, 'label', ''))) ?? '';
+                            }
+
+                            return $key !== '' ? [$key => $card] : [];
+                        });
+                    $aiNatureText = static function ($value) use ($hasCjkText): string {
+                        $text = trim((string) $value);
+                        return $text !== '' && !$hasCjkText($text) ? $text : '';
+                    };
+                    $aiNatureList = static function ($value) use ($aiNatureText): array {
+                        return collect(is_array($value) ? $value : [])
+                            ->map(fn ($item) => $aiNatureText($item))
+                            ->filter()
+                            ->take(7)
+                            ->values()
+                            ->all();
+                    };
+                    $natureBubbleLayout = [
+                        'aging' => ['x' => 31, 'y' => 50, 'r' => 25, 'bg' => '#bae6fd', 'border' => '#38bdf8', 'text' => '#0c4a6e'],
+                        'hta' => ['x' => 67, 'y' => 50, 'r' => 25, 'bg' => '#fed7aa', 'border' => '#fb923c', 'text' => '#7c2d12'],
+                        'access_population' => ['x' => 49, 'y' => 73, 'r' => 17, 'bg' => '#bbf7d0', 'border' => '#4ade80', 'text' => '#14532d'],
+                        'device_innovation' => ['x' => 49, 'y' => 28, 'r' => 11, 'bg' => '#fef08a', 'border' => '#eab308', 'text' => '#713f12'],
+                        'data_rwe' => ['x' => 35, 'y' => 30, 'r' => 8.6, 'bg' => '#cbd5e1', 'border' => '#94a3b8', 'text' => '#334155'],
+                        'ai_digital' => ['x' => 63, 'y' => 30, 'r' => 8, 'bg' => '#ddd6fe', 'border' => '#a78bfa', 'text' => '#4c1d95'],
+                        'drug_rdu' => ['x' => 30, 'y' => 73, 'r' => 7.2, 'bg' => '#fecdd3', 'border' => '#fb7185', 'text' => '#881337'],
+                    ];
+                @endphp
+
+                <div class="nature-shell rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,.05)] md:p-6">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                            <div class="section-tag section-tag--teal">Research Nature Analysis</div>
+                            <h2 class="mt-2 text-2xl font-semibold leading-tight text-slate-950 md:text-3xl">ความสนใจเชิงเนื้อหาของหน่วย</h2>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid gap-3 md:grid-cols-4">
+                        <div class="rounded-2xl bg-slate-50 p-4">
+                            <div class="text-3xl font-semibold leading-none text-slate-950">{{ number_format($natureTotal) }}</div>
+                            <div class="mt-1 text-xs font-semibold text-slate-500">โครงการทั้งหมด</div>
+                        </div>
+                        <div class="rounded-2xl bg-slate-50 p-4">
+                            <div class="text-3xl font-semibold leading-none text-slate-950">{{ number_format($natureThemes->count()) }}</div>
+                            <div class="mt-1 text-xs font-semibold text-slate-500">กลุ่มความสนใจ</div>
+                        </div>
+                        @foreach ($topNatureThemes->take(2) as $theme)
+                            <div class="rounded-2xl bg-slate-50 p-4">
+                                <div class="text-3xl font-semibold leading-none text-slate-950">{{ number_format((int) data_get($theme, 'count', 0)) }}</div>
+                                <div class="mt-1 text-xs font-semibold text-slate-500">{{ data_get($theme, 'short_label') }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="nature-layout mt-5 grid gap-6 xl:grid-cols-[minmax(520px,620px)_minmax(0,1fr)] xl:items-stretch">
+                        <div class="nature-rail relative xl:self-stretch">
+                            <div class="nature-sticky rounded-[26px] border border-slate-200 bg-slate-50 p-4 shadow-sm md:p-5">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <div class="text-base font-semibold text-slate-950">ภาพรวม</div>
+                                        <div class="mt-1 text-xs text-slate-500">ภาพรวมความสนใจจากชื่อโครงการทั้งหมด</div>
+                                    </div>
+                                    <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">{{ number_format($natureTotal) }} projects</div>
+                                </div>
+                                <div class="nature-map relative mx-auto mt-5 aspect-square min-h-[340px] max-w-[620px] overflow-hidden rounded-[40px] bg-gradient-to-br from-white via-slate-50 to-slate-100 p-4 sm:min-h-[460px] xl:min-h-[520px]" data-nature-map>
+                                    <div class="absolute inset-6 rounded-full border border-slate-200/80 bg-white/60 shadow-inner"></div>
+                                    @foreach ($natureThemes as $theme)
+                                        @php
+                                            $count = (int) data_get($theme, 'count', 0);
+                                            $layout = $natureBubbleLayout[data_get($theme, 'key')] ?? ['x' => 50, 'y' => 50, 'r' => 10, 'bg' => '#cbd5e1', 'border' => '#64748b', 'text' => '#0f172a'];
+                                            $fontSize = $layout['r'] >= 20 ? 'text-[15px]' : ($layout['r'] >= 11 ? 'text-[12px]' : 'text-[10px]');
+                                        @endphp
+                                        <a href="#nature-card-{{ data_get($theme, 'key') }}" class="nature-bubble group absolute grid place-items-center rounded-full text-center shadow-[0_14px_30px_rgba(15,23,42,.10)] transition duration-300 hover:z-20 hover:scale-[1.035] hover:shadow-[0_18px_42px_rgba(15,23,42,.18)]" data-nature-bubble="{{ data_get($theme, 'key') }}" data-nature-x="{{ $layout['x'] }}" data-nature-y="{{ $layout['y'] }}" style="left: {{ $layout['x'] }}%; top: {{ $layout['y'] }}%; width: {{ $layout['r'] * 2 }}%; aspect-ratio: 1; transform: translate(-50%, -50%); background: {{ $layout['bg'] }}; border: 1px solid {{ $layout['border'] }}; color: {{ $layout['text'] }};" title="{{ data_get($theme, 'label') }} · {{ number_format($count) }} โครงการ">
+                                            <div class="px-2">
+                                                <div class="{{ $fontSize }} font-bold leading-tight">{{ data_get($theme, 'short_label') }}</div>
+                                                <div class="mt-1 text-[11px] font-bold opacity-85">{{ number_format($count) }} projects</div>
+                                            </div>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4">
+                            <div class="rounded-[24px] bg-slate-50 p-5">
+                                <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{{ $hasAiProjectOutputInsight ? 'AI policy translation reading' : 'Portfolio reading' }}</div>
+                                <div class="mt-2 text-xl font-semibold leading-snug text-slate-950">{{ $aiNatureSummary !== '' ? $aiNatureSummary : data_get($nature, 'headline') }}</div>
+                            </div>
+
+                            @foreach ($natureThemes as $theme)
+                                @php
+                                    $themeKey = (string) data_get($theme, 'key');
+                                    $aiCard = $aiNatureSectionCardByKey->get($themeKey, []);
+                                    $displayLabel = $aiNatureText(data_get($aiCard, 'label')) ?: data_get($theme, 'label');
+                                    $displayKeywords = $aiNatureList(data_get($aiCard, 'keywords'));
+                                    if (empty($displayKeywords)) {
+                                        $displayKeywords = collect(data_get($theme, 'keywords', []))->take(5)->values()->all();
+                                    }
+                                    $displayWorkDone = $aiNatureText(data_get($aiCard, 'work_done')) ?: data_get($theme, 'work_done');
+                                    $displayReading = $aiNatureText(data_get($aiCard, 'reading')) ?: data_get($theme, 'reading');
+                                    $displayOutputDirection = $aiNatureText(data_get($aiCard, 'output_direction')) ?: data_get($theme, 'output_direction');
+                                    $displayNextStep = $aiNatureText(data_get($aiCard, 'next_step')) ?: data_get($theme, 'next_step');
+                                    $displayEvidenceNote = $aiNatureText(data_get($aiCard, 'evidence_note'));
+                                @endphp
+                                <div id="nature-card-{{ data_get($theme, 'key') }}" class="nature-card scroll-mt-24 rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm" data-nature-card="{{ data_get($theme, 'key') }}">
+                                    <div>
+                                        <div class="min-w-0">
+                                            <div class="text-lg font-semibold leading-snug text-slate-950">{{ $displayLabel }}</div>
+                                            <div class="mt-2 flex flex-wrap gap-1.5">
+                                                @foreach ($displayKeywords as $keyword)
+                                                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{{ $keyword }}</span>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-5 grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+                                        <div class="border-t border-slate-200 pt-4">
+                                            <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">สิ่งที่เกิดขึ้น</div>
+                                            <div class="mt-2 text-sm leading-relaxed text-slate-700">{{ $displayWorkDone }}</div>
+                                            <div class="mt-3 text-sm leading-relaxed text-slate-500">{{ $displayReading }}</div>
+                                            @if ($displayEvidenceNote !== '')
+                                                <div class="mt-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">{{ $displayEvidenceNote }}</div>
+                                            @endif
+                                        </div>
+                                        <div class="border-t border-teal-200 pt-4">
+                                            <div class="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">ทิศทางของ output</div>
+                                            <div class="mt-2 text-sm leading-relaxed text-slate-700">{{ $displayOutputDirection }}</div>
+                                        </div>
+                                        <div class="border-t border-amber-200 bg-amber-50/50 px-4 py-3 xl:col-span-2">
+                                            <div class="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">การต่อยอด</div>
+                                            <div class="mt-2 text-sm leading-relaxed text-slate-700">{{ $displayNextStep }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="fade-up panel section-panel section-panel--indigo policy-shell p-5 md:p-6">
                 <div class="policy-axis-card mt-4">
                     <div class="contribution-card">
                         <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-4">
@@ -2732,7 +3164,9 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         </div>
                     </div>
                 </div>
+            </section>
 
+            <section class="fade-up panel section-panel section-panel--indigo policy-shell p-5 md:p-6">
                 <div class="policy-axis-card mt-4">
                     <div class="policy-section-title">
                         <div>
@@ -2878,14 +3312,14 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 <div class="text-sm font-semibold text-emerald-950">บทบาทของคนในหน่วยวิจัยฯ ตามกลุ่มเนื้อหา</div>
                                 <div class="mt-1 text-xs text-emerald-700/80">สรุป PI, Co-PI และ Co-Research ของคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ แยกตามหมวด 01-06</div>
                             </div>
-                            <div class="doctor-role-tabs inline-flex rounded-xl border border-emerald-200 bg-white/70 p-1">
+                            <div class="doctor-role-tabs inline-flex rounded-xl border p-1" role="tablist" aria-label="เลือกบทบาท">
                                 @foreach (['pi' => 'PI', 'co_pi' => 'Co-PI', 'co_research' => 'Co-Research'] as $roleKey => $roleLabel)
                                     @php
                                         $roleTable = $unitContributionRoleThemeTables->get($roleKey);
                                     @endphp
-                                    <button type="button" class="doctor-role-tab rounded-lg px-3 py-1.5 text-xs font-semibold {{ $loop->first ? 'is-active bg-white text-emerald-950 shadow-sm' : 'text-emerald-700 hover:text-emerald-950' }}" data-doctor-role-tab="{{ $roleKey }}">
+                                    <button type="button" class="doctor-role-tab rounded-lg px-3 py-1.5 text-xs font-semibold {{ $loop->first ? 'is-active' : '' }}" data-doctor-role-tab="{{ $roleKey }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">
                                         {{ $roleLabel }}
-                                        <span class="ml-1 text-[11px] text-emerald-500">{{ number_format((int) ($roleTable?->people_count ?? 0)) }}</span>
+                                        <span class="ml-1 text-[11px] font-black">{{ number_format((int) ($roleTable?->people_count ?? 0)) }}</span>
                                     </button>
                                 @endforeach
                             </div>
@@ -3701,10 +4135,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         tabs.forEach((item) => {
                             const active = item.dataset.doctorRoleTab === key;
                             item.classList.toggle('is-active', active);
-                            item.classList.toggle('bg-white', active);
-                            item.classList.toggle('text-emerald-950', active);
-                            item.classList.toggle('shadow-sm', active);
-                            item.classList.toggle('text-emerald-700', !active);
+                            item.setAttribute('aria-pressed', active ? 'true' : 'false');
                         });
                         floatingTabs.forEach((item) => {
                             const active = item.dataset.doctorRoleFloatingTab === key;
@@ -3763,7 +4194,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 });
             };
             const renderedCharts = new Map();
-            const renderChart = (canvasId, config) => {
+            const pendingChartConfigs = new Map();
+            const createChart = (canvasId, config) => {
                 const canvas = document.getElementById(canvasId);
                 if (!canvas || typeof Chart === 'undefined') return null;
 
@@ -3776,6 +4208,34 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     console.error(`Unable to render ${canvasId}`, error);
                     return null;
                 }
+            };
+            const chartObserver = 'IntersectionObserver' in window
+                ? new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (!entry.isIntersecting) return;
+                        const canvas = entry.target;
+                        const canvasId = canvas.id;
+                        const config = pendingChartConfigs.get(canvasId);
+                        if (!config) return;
+                        pendingChartConfigs.delete(canvasId);
+                        chartObserver.unobserve(canvas);
+                        createChart(canvasId, config);
+                    });
+                }, { rootMargin: '520px 0px', threshold: 0.01 })
+                : null;
+            const renderChart = (canvasId, config) => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas || typeof Chart === 'undefined') return null;
+
+                const rect = canvas.getBoundingClientRect();
+                const shouldDefer = chartObserver && rect.top > window.innerHeight * 1.15;
+                if (shouldDefer) {
+                    pendingChartConfigs.set(canvasId, config);
+                    chartObserver.observe(canvas);
+                    return null;
+                }
+
+                return createChart(canvasId, config);
             };
             let chartResizeTimer = null;
             const resizeRenderedCharts = () => {
@@ -5300,6 +5760,71 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             } else {
                 fades.forEach((el) => el.classList.add('in'));
             }
+
+            window.__natureScrollSpyCleanup?.();
+            const setupNatureScrollSpy = () => {
+                const map = document.querySelector('[data-nature-map]');
+                const bubbles = Array.from(document.querySelectorAll('[data-nature-bubble]'));
+                const cards = Array.from(document.querySelectorAll('[data-nature-card]'));
+                if (!map || bubbles.length === 0 || cards.length === 0) return;
+
+                const bubbleByKey = new Map(bubbles.map((bubble) => [bubble.dataset.natureBubble, bubble]));
+                let ticking = false;
+
+                const setActive = (activeIndex) => {
+                    cards.forEach((card, index) => {
+                        const key = card.dataset.natureCard;
+                        const bubble = bubbleByKey.get(key);
+                        const isActive = index === activeIndex;
+                        const isComplete = index <= activeIndex;
+
+                        card.classList.toggle('is-active', isActive);
+                        if (!bubble) return;
+                        bubble.classList.toggle('is-active', isActive);
+                        bubble.classList.toggle('is-complete', isComplete);
+
+                        if (isActive) {
+                            map.classList.add('has-active');
+                        }
+                    });
+                };
+
+                const update = () => {
+                    ticking = false;
+                    const readLine = Math.round(window.innerHeight * 0.52);
+                    let activeIndex = 0;
+
+                    cards.forEach((card, index) => {
+                        const rect = card.getBoundingClientRect();
+                        if (rect.top <= readLine) {
+                            activeIndex = index;
+                        }
+                    });
+
+                    const firstRect = cards[0].getBoundingClientRect();
+                    if (firstRect.top > readLine) {
+                        activeIndex = 0;
+                    }
+
+                    setActive(activeIndex);
+                };
+
+                const requestUpdate = () => {
+                    if (ticking) return;
+                    ticking = true;
+                    window.requestAnimationFrame(update);
+                };
+
+                window.addEventListener('scroll', requestUpdate, { passive: true });
+                window.addEventListener('resize', requestUpdate);
+                update();
+
+                window.__natureScrollSpyCleanup = () => {
+                    window.removeEventListener('scroll', requestUpdate);
+                    window.removeEventListener('resize', requestUpdate);
+                };
+            };
+            setupNatureScrollSpy();
 
             const modal = document.getElementById('outputItemModal');
             const modalTitle = document.getElementById('outputItemModalTitle');

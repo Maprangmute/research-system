@@ -1717,11 +1717,15 @@
                 optionButton.addEventListener('click', () => {
                     const previousValue = String(select.value || '');
                     select.value = item.value;
+                    if (String(select.value || '').trim()) {
+                        select.setCustomValidity('');
+                    }
                     syncLabel();
                     renderOptions();
                     menu.classList.add('hidden');
                     emit('item_add', item.value, previousValue);
                     emit('dropdown_close');
+                    select.dispatchEvent(new Event('input', { bubbles: true }));
                     select.dispatchEvent(new Event('change', { bubbles: true }));
                 });
                 optionsWrap.appendChild(optionButton);
@@ -1792,9 +1796,13 @@
             },
             setValue(value, silent = false) {
                 select.value = value == null ? '' : String(value);
+                if (String(select.value || '').trim()) {
+                    select.setCustomValidity('');
+                }
                 syncState();
                 renderOptions();
                 if (!silent) {
+                    select.dispatchEvent(new Event('input', { bubbles: true }));
                     select.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             },
