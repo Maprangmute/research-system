@@ -323,6 +323,8 @@ class GenerateVisualizationAiInsights extends Command
             'section_cards.output_direction: 3-5 Thai sentences explaining the direction of recorded outputs in this theme. Use full Thai output type names from output_types_seen; do not display EA codes. Explain whether outputs look like academic evidence, policy-facing evidence, data infrastructure, implementation tool, communication platform, or practice/policy change support.',
             'section_cards.next_step: 2-4 Thai sentences about what output would help translate this interest area further. Phrase politely and strategically, e.g. "ระยะถัดไปอาจต่อยอดเป็น...", "หลักฐานชุดนี้จะมีน้ำหนักมากขึ้นหาก...". Avoid repetitive "ควรตรวจสอบว่า" in every card.',
             'section_cards.evidence_note: 1-2 cautious Thai sentences describing what the current project+output evidence can and cannot conclude. Do not claim real-world policy impact unless recorded outputs clearly support it.',
+            'Bad answer patterns that are NOT acceptable: repeating "หน่วยงานได้ดำเนินการศึกษาและพัฒนา..." across cards, repeating "งานวิจัยนี้เน้นที่การสร้างหลักฐาน..." across cards, repeating the same output_direction for many cards, or saying every theme simply lacks policy recommendations.',
+            'If a theme has weak evidence, explain the specific missing link for that theme instead of using a generic gap sentence.',
             'category_overview: array of 6-10 items, each has category, interest.',
             'interest_clusters: array of 5-8 clusters, each has name, keywords, project_count, output_count, output_types_seen, evidence_titles, output_evidence, interpretation, output_gap, suggested_output_followup.',
             'by_project_type: array of project type sections. Each has project_type, main_interest, dominant_themes, strategic_reading. dominant_themes is an array; each theme has title, signals, meaning.',
@@ -703,10 +705,47 @@ class GenerateVisualizationAiInsights extends Command
         $sectionCards = $result['section_cards'] ?? null;
 
         return $summary !== ''
+            && ! $this->hasLowQualitySectionCards(is_array($sectionCards) ? $sectionCards : [])
             && (
                 (is_array($sectionCards) && count($sectionCards) > 0)
                 || (is_array($clusters) && count($clusters) > 0)
             );
+    }
+
+    private function hasLowQualitySectionCards(array $sectionCards): bool
+    {
+        if (count($sectionCards) === 0) {
+            return false;
+        }
+
+        $badPhrases = [
+            'หน่วยงานได้ดำเนินการศึกษาและพัฒนา',
+            'งานวิจัยนี้เน้นที่การสร้างหลักฐานทางวิชาการ',
+            'ผลงานวิชาการเชิงระบบและการนำเสนอผลงานทางวิชาการเป็นหลัก พร้อมกับรายงานวิชาการที่มีความหลากหลาย',
+            'ควรพัฒนา output ประเภทข้อเสนอเชิงนโยบายเพื่อสนับสนุนการเปลี่ยนแปลงจริง',
+            'แต่ยังขาดข้อเสนอเชิงนโยบายเพื่อสนับสนุนการเปลี่ยนแปลงจริง',
+        ];
+
+        $combinedByCard = collect($sectionCards)
+            ->map(fn ($card) => collect(['work_done', 'reading', 'output_direction', 'next_step', 'evidence_note'])
+                ->map(fn ($field) => trim((string) data_get($card, $field, '')))
+                ->filter()
+                ->implode(' '))
+            ->filter()
+            ->values();
+
+        foreach ($badPhrases as $phrase) {
+            if ($combinedByCard->filter(fn ($text) => Str::contains($text, $phrase))->count() >= 3) {
+                return true;
+            }
+        }
+
+        $directions = collect($sectionCards)
+            ->map(fn ($card) => Str::of((string) data_get($card, 'output_direction', ''))->lower()->squish()->toString())
+            ->filter()
+            ->values();
+
+        return $directions->duplicates()->count() >= 2;
     }
 
     private function extractOutputText(array $json): string

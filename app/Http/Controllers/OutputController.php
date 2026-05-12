@@ -4594,6 +4594,7 @@ class OutputController extends Controller
             $impactThemeNarrativeParagraph = $policyImpact['impact_theme_narrative_paragraph'];
         }
 
+        $fteSkillAnalysis = $this->buildFteSkillAnalysis($yearFrom, $yearTo);
         $aiProjectNatureInsight = $this->latestAiVisualizationInsight('project_nature', 'global');
 
         $view = view('outputs.visualization', [
@@ -4664,6 +4665,7 @@ class OutputController extends Controller
             'networkingYearItems' => $networkingYearItems,
             'policyImpact' => $policyImpact,
             'projectNatureAnalysis' => $projectNatureAnalysis,
+            'fteSkillAnalysis' => $fteSkillAnalysis,
             'aiProjectNatureInsight' => $aiProjectNatureInsight,
             'aiThemeGapInsight' => $cachedThemeGapInsight,
         ]);
@@ -4675,6 +4677,220 @@ class OutputController extends Controller
         }
 
         return $view;
+    }
+
+    private function buildFteSkillAnalysis(?int $yearFrom, ?int $yearTo): array
+    {
+        $normalizeText = static fn ($value): string => Str::of((string) $value)->lower()->replace(["\r", "\n", "\t"], ' ')->replaceMatches('/\s+/u', ' ')->trim()->toString();
+        $displayText = static fn ($value): string => Str::of((string) $value)->replace(["\r", "\n", "\t"], ' ')->replaceMatches('/\s+/u', ' ')->trim()->toString();
+        $fteYearFor = function (FteRole $role): ?int {
+            foreach ([$role->start_date, $role->end_date] as $value) {
+                $date = $this->parseBackOfficeDate($value);
+                if ($date) {
+                    return $date->year + 543;
+                }
+                $year = $this->normalizeYearFilter($value);
+                if ($year !== null) {
+                    return $year;
+                }
+            }
+
+            return $this->extractProjectYearBe($role->project);
+        };
+        $inRange = static function (?int $year) use ($yearFrom, $yearTo): bool {
+            if ($yearFrom !== null && ($year === null || $year < $yearFrom)) {
+                return false;
+            }
+            if ($yearTo !== null && ($year === null || $year > $yearTo)) {
+                return false;
+            }
+
+            return true;
+        };
+        $skillFor = static function (string $task, string $job, string $sourceCategory = '') use ($normalizeText): array {
+            $taskText = $normalizeText($task);
+            $text = $normalizeText($task . ' ' . $job . ' ' . $sourceCategory);
+            $rules = [
+                'data_collection' => ['label' => 'Data Collection & Fieldwork', 'thai' => 'การเก็บข้อมูลและภาคสนาม', 'keywords' => ['เก็บข้อมูล', 'ขอข้อมูล', 'เครื่องมือ', 'แบบสอบถาม', 'field', 'survey', 'interview', 'feasibility'], 'tone' => 'teal'],
+                'data_analysis' => ['label' => 'Data Analysis & Evidence Synthesis', 'thai' => 'การวิเคราะห์ข้อมูลและสังเคราะห์หลักฐาน', 'keywords' => ['วิเคราะห์ข้อมูล', 'analysis', 'systematic', 'review literature', 'meta', 'model', 'decision tree', 'markov', 'ต้นทุน', 'อรรถประโยชน์'], 'tone' => 'sky'],
+                'protocol_irb_funding' => ['label' => 'Protocol / IRB / Funding', 'thai' => 'การพัฒนาโครงการและเอกสารกำกับ', 'keywords' => ['proposal', 'irb', 'ทุน', 'submit', 'scientific concept', 'ขยายระยะเวลา'], 'tone' => 'indigo'],
+                'coordination' => ['label' => 'Coordination & Project Operations', 'thai' => 'การประสานงานและขับเคลื่อนโครงการ', 'keywords' => ['ติดต่อประสานงาน', 'ประสานงาน', 'ประชุม', 'stakeholder', 'นัดหมาย', 'ติดตามสถานะ', 'coordinator'], 'tone' => 'emerald'],
+                'writing_publication' => ['label' => 'Scientific Writing & Publication', 'thai' => 'การเขียนรายงาน ต้นฉบับ และเผยแพร่', 'keywords' => ['manuscript', 'journal', 'เขียนเล่ม', 'รายงาน', 'ส่งเล่ม', 'ตีพิมพ์', 'publication'], 'tone' => 'violet'],
+                'communication' => ['label' => 'Communication & Stakeholder Engagement', 'thai' => 'การสื่อสารและการมีส่วนร่วมของผู้เกี่ยวข้อง', 'keywords' => ['สื่อ', 'communication', 'ประชาสัมพันธ์', 'branding', 'presentation', 'oral', 'poster', 'เผยแพร่'], 'tone' => 'amber'],
+                'finance_admin' => ['label' => 'Finance / Admin / Procurement', 'thai' => 'งานบริหาร การเงิน เอกสาร และพัสดุ', 'keywords' => ['งบประมาณ', 'เบิก', 'พัสดุ', 'เอกสาร', 'หนังสือ', 'บริหารงานทั่วไป', 'hr', 'ทรัพยากรบุคคล', 'sap', 'pxp'], 'tone' => 'rose'],
+                'digital_technical' => ['label' => 'Digital / Database / Technical', 'thai' => 'ดิจิทัล ฐานข้อมูล และเทคนิค', 'keywords' => ['it', 'technical', 'โปรแกรม', 'ฐานข้อมูล', 'database', 'website', 'ux/ui', 'ระบบ', 'สารสนเทศ', 'full stack'], 'tone' => 'cyan'],
+                'teaching_consultation' => ['label' => 'Teaching / Mentorship / Consultation', 'thai' => 'การสอน ให้คำปรึกษา และพัฒนาศักยภาพ', 'keywords' => ['สอน', 'หลักสูตร', 'นักศึกษา', 'mentorship', 'ให้คำปรึกษา', 'อบรม', 'พัฒนาศักยภาพ', 'lecture', 'workshop'], 'tone' => 'lime'],
+            ];
+
+            foreach ($rules as $key => $rule) {
+                if ($taskText !== '' && Str::contains($taskText, $rule['keywords'])) {
+                    return array_merge(['key' => $key], $rule);
+                }
+            }
+
+            foreach ($rules as $key => $rule) {
+                if (Str::contains($text, $rule['keywords'])) {
+                    return array_merge(['key' => $key], $rule);
+                }
+            }
+
+            return ['key' => 'other', 'label' => 'Other Research Operations', 'thai' => 'ทักษะสนับสนุนอื่น ๆ', 'keywords' => [], 'tone' => 'slate'];
+        };
+
+        $researchRows = FteRole::query()
+            ->with(['project:id,project_code,project_name_th,start_year,start_date'])
+            ->get()
+            ->map(function (FteRole $role) use ($displayText, $normalizeText, $skillFor, $fteYearFor) {
+                $task = $displayText($role->task_detail);
+                $job = $displayText($role->job_detail);
+                $person = $displayText($role->name) ?: '-';
+                $skill = $skillFor($task, $job, 'research project');
+
+                return (object) [
+                    'source' => 'research',
+                    'source_label' => 'Project FTE',
+                    'year' => $fteYearFor($role),
+                    'person' => $person,
+                    'person_key' => $normalizeText($person),
+                    'container_id' => 'project:' . (int) ($role->project_id ?? 0),
+                    'container_name' => $displayText($role->project?->project_name_th) ?: ($role->project?->project_code ?: 'ไม่ระบุโครงการ'),
+                    'task' => $task !== '' ? $task : ($job ?: 'ไม่ระบุภาระงาน'),
+                    'job' => $job,
+                    'skill' => $skill,
+                    'hours' => (float) ($role->hours ?? 0),
+                    'fte' => (float) ($role->fte_value ?? 0),
+                ];
+            })
+            ->filter(fn ($row) => $row->person_key !== '' && trim((string) $row->task) !== '');
+
+        $backOfficeRows = BackOfficeEntry::query()
+            ->with(['task:id,backoffice_id,title,start_date,end_date', 'user:id,name'])
+            ->get()
+            ->map(function (BackOfficeEntry $entry) use ($displayText, $normalizeText, $skillFor) {
+                $task = $displayText($entry->job_detail) ?: $displayText($entry->job_name);
+                $job = $displayText($entry->job_name) ?: $displayText($entry->category);
+                $person = $displayText($entry->person_name) ?: $displayText($entry->user?->name) ?: '-';
+                $skill = $skillFor($task, $job, $displayText($entry->category));
+
+                return (object) [
+                    'source' => 'backoffice',
+                    'source_label' => 'Back Office FTE',
+                    'year' => $this->extractBackOfficeEntryFiscalYearBe($entry),
+                    'person' => $person,
+                    'person_key' => $normalizeText($person),
+                    'container_id' => 'backoffice:' . (int) ($entry->task_id ?? 0),
+                    'container_name' => $displayText($entry->task?->title) ?: ($entry->task?->backoffice_id ?: 'Back Office'),
+                    'task' => $task !== '' ? $task : ($job ?: 'ไม่ระบุภาระงาน'),
+                    'job' => $job,
+                    'skill' => $skill,
+                    'hours' => (float) ($entry->hours ?? 0),
+                    'fte' => (float) ($entry->fte_value ?? 0),
+                ];
+            })
+            ->filter(fn ($row) => $row->person_key !== '' && trim((string) $row->task) !== '');
+
+        $rows = $researchRows->merge($backOfficeRows)->filter(fn ($row) => $inRange($row->year))->values();
+        $uniqueRows = $rows
+            ->groupBy(fn ($row) => implode('|', [$row->source, $row->container_id, $row->person_key, (string) data_get($row->skill, 'key'), $normalizeText($row->task)]))
+            ->map(function (Collection $group) {
+                $first = $group->first();
+                $first->hours = (float) $group->max(fn ($row) => (float) ($row->hours ?? 0));
+                $first->fte = (float) $group->max(fn ($row) => (float) ($row->fte ?? 0));
+
+                return $first;
+            })
+            ->values();
+
+        $skillRows = $uniqueRows
+            ->groupBy(fn ($row) => (string) data_get($row->skill, 'key'))
+            ->map(function (Collection $group) {
+                $first = $group->first();
+
+                return (object) [
+                    'key' => (string) data_get($first->skill, 'key'),
+                    'label' => (string) data_get($first->skill, 'label'),
+                    'thai' => (string) data_get($first->skill, 'thai'),
+                    'tone' => (string) data_get($first->skill, 'tone'),
+                    'unique_tasks' => (int) $group->count(),
+                    'people_count' => (int) $group->pluck('person_key')->unique()->count(),
+                    'project_count' => (int) $group->where('source', 'research')->pluck('container_id')->unique()->count(),
+                    'backoffice_count' => (int) $group->where('source', 'backoffice')->pluck('container_id')->unique()->count(),
+                    'hours' => round((float) $group->sum(fn ($row) => (float) ($row->hours ?? 0)), 1),
+                    'fte' => round((float) $group->sum(fn ($row) => (float) ($row->fte ?? 0)), 3),
+                    'top_tasks' => $group
+                        ->groupBy(fn ($row) => (string) ($row->task ?? '-'))
+                        ->map(fn (Collection $taskRows, string $task) => (object) ['label' => $task, 'count' => $taskRows->count()])
+                        ->sortByDesc('count')
+                        ->take(4)
+                        ->values(),
+                    'people' => $group->pluck('person')->filter()->unique()->sort()->take(8)->values(),
+                ];
+            })
+            ->sortByDesc('unique_tasks')
+            ->values();
+        $maxSkillTasks = max(1, (int) $skillRows->max('unique_tasks'));
+        $taskRows = $uniqueRows
+            ->groupBy(fn ($row) => Str::of((string) ($row->task ?? '-'))->lower()->squish()->toString())
+            ->map(function (Collection $group) {
+                $first = $group->first();
+                $skillGroups = $group
+                    ->groupBy(fn ($row) => (string) data_get($row->skill, 'thai'))
+                    ->map(fn (Collection $skillGroup, string $label) => (object) [
+                        'label' => $label,
+                        'count' => $skillGroup->count(),
+                    ])
+                    ->sortByDesc('count')
+                    ->values();
+                $containers = $group
+                    ->pluck('container_name')
+                    ->filter()
+                    ->unique()
+                    ->take(4)
+                    ->values();
+
+                return (object) [
+                    'key' => Str::slug(Str::limit((string) ($first->task ?? 'task'), 80, '')),
+                    'task_label' => (string) ($first->task ?? '-'),
+                    'skill_label' => (string) data_get($first->skill, 'thai'),
+                    'skill_en' => (string) data_get($first->skill, 'label'),
+                    'tone' => (string) data_get($first->skill, 'tone'),
+                    'unique_tasks' => (int) $group->count(),
+                    'people_count' => (int) $group->pluck('person_key')->unique()->count(),
+                    'project_count' => (int) $group->where('source', 'research')->pluck('container_id')->unique()->count(),
+                    'backoffice_count' => (int) $group->where('source', 'backoffice')->pluck('container_id')->unique()->count(),
+                    'hours' => round((float) $group->sum(fn ($row) => (float) ($row->hours ?? 0)), 1),
+                    'fte' => round((float) $group->sum(fn ($row) => (float) ($row->fte ?? 0)), 3),
+                    'skill_groups' => $skillGroups->take(3),
+                    'containers' => $containers,
+                    'people' => $group->pluck('person')->filter()->unique()->sort()->take(8)->values(),
+                ];
+            })
+            ->sortByDesc('unique_tasks')
+            ->values();
+        $maxTaskRows = max(1, (int) $taskRows->max('unique_tasks'));
+
+        return [
+            'total_unique_tasks' => (int) $uniqueRows->count(),
+            'raw_rows' => (int) $rows->count(),
+            'deduped_rows' => max(0, (int) $rows->count() - (int) $uniqueRows->count()),
+            'people_count' => (int) $uniqueRows->pluck('person_key')->unique()->count(),
+            'skill_count' => (int) $skillRows->count(),
+            'total_hours' => round((float) $uniqueRows->sum(fn ($row) => (float) ($row->hours ?? 0)), 1),
+            'total_fte' => round((float) $uniqueRows->sum(fn ($row) => (float) ($row->fte ?? 0)), 3),
+            'max_skill_tasks' => $maxSkillTasks,
+            'skill_rows' => $skillRows,
+            'max_task_rows' => $maxTaskRows,
+            'task_rows' => $taskRows,
+            'source_mix' => collect(['research' => 'Project FTE', 'backoffice' => 'Back Office FTE'])
+                ->map(fn ($label, $key) => (object) [
+                    'key' => $key,
+                    'label' => $label,
+                    'unique_tasks' => (int) $uniqueRows->where('source', $key)->count(),
+                    'people_count' => (int) $uniqueRows->where('source', $key)->pluck('person_key')->unique()->count(),
+                    'hours' => round((float) $uniqueRows->where('source', $key)->sum(fn ($row) => (float) ($row->hours ?? 0)), 1),
+                ])
+                ->values(),
+        ];
     }
 
     private function latestAiVisualizationInsight(string $type, string $scopeKey = 'global'): ?AiVisualizationInsight

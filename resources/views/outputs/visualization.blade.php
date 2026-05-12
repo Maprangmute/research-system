@@ -1466,6 +1466,12 @@
             justify-content: center;
             background: var(--doctor-row-cell-bg, #ffffff);
             border-color: var(--doctor-row-border, #e2e8f0);
+            position: relative;
+            overflow: visible;
+            z-index: 1;
+        }
+        .doctor-lane-cell:hover {
+            z-index: 80;
         }
         .doctor-lane-cell.is-empty {
             background: var(--doctor-row-cell-bg, #ffffff);
@@ -1479,7 +1485,15 @@
             max-height: 120px;
             align-items: flex-start;
             padding: 6px;
-            overflow: hidden;
+            overflow: visible;
+            position: relative;
+            z-index: 1;
+        }
+        .unit-contribution-matrix .doctor-lane-cell:hover {
+            z-index: 80;
+        }
+        .unit-contribution-matrix .doctor-lane-row:hover {
+            z-index: 70;
         }
         .unit-contribution-matrix .doctor-lane-row .doctor-lane-theme {
             min-height: 96px;
@@ -1512,19 +1526,33 @@
             justify-content: center;
             gap: 10px;
             isolation: isolate;
+            position: relative;
+            z-index: 1;
+            overflow: visible;
+        }
+        .doctor-avatar-stack:hover {
+            z-index: 90;
         }
         .unit-avatar-stack {
             width: 100%;
-            max-height: 88px;
+            max-height: 142px;
             overflow-y: auto;
+            overflow-x: visible;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(30px, 30px));
+            grid-template-columns: repeat(auto-fit, minmax(46px, 46px));
             justify-content: center;
             align-content: start;
-            gap: 5px;
-            padding: 1px 2px 4px;
+            gap: 8px;
+            padding: 3px 4px 6px;
             scrollbar-width: thin;
             scrollbar-color: #a7f3d0 transparent;
+        }
+        .unit-avatar-stack.doctor-avatar-stack {
+            isolation: auto;
+        }
+        .unit-avatar-stack:hover {
+            overflow: visible;
+            z-index: 90;
         }
         .unit-avatar-stack::-webkit-scrollbar {
             width: 5px;
@@ -1551,22 +1579,27 @@
             box-shadow: 0 0 0 1px #cbd5e1, 0 8px 16px rgba(15, 23, 42, .10);
         }
         .unit-avatar-stack img {
-            width: 30px;
-            height: 30px;
-            border-width: 2px;
-            box-shadow: 0 0 0 1px #cbd5e1, 0 5px 10px rgba(15, 23, 42, .08);
+            width: 46px;
+            height: 46px;
+            border-width: 3px;
+            box-shadow: 0 0 0 1px #a7f3d0, 0 8px 16px rgba(15, 23, 42, .12);
         }
         @media (hover: hover) and (pointer: fine) {
             .doctor-avatar-stack a:hover,
             .doctor-avatar-stack a:focus-visible,
             .doctor-avatar-stack img:hover {
-                z-index: 5;
-                transform: scale(1.12);
+                z-index: 120;
+                transform: scale(2.55);
             }
             .doctor-avatar-stack a:hover img,
             .doctor-avatar-stack a:focus-visible img,
             .doctor-avatar-stack img:hover {
-                box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px #94a3b8, 0 14px 26px rgba(15, 23, 42, .18);
+                box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px #6366f1, 0 28px 58px rgba(15, 23, 42, .36);
+            }
+            .unit-avatar-stack img:hover {
+                z-index: 120;
+                transform: scale(3.15);
+                box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px #10b981, 0 28px 58px rgba(15, 23, 42, .38);
             }
         }
         .doctor-mobile-timeline {
@@ -1662,17 +1695,17 @@
         }
         .unit-mobile-avatar-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(34px, 34px));
-            gap: 6px;
+            grid-template-columns: repeat(auto-fill, minmax(48px, 48px));
+            gap: 8px;
             align-items: start;
         }
         .unit-mobile-avatar-grid img {
-            width: 34px;
-            height: 34px;
+            width: 48px;
+            height: 48px;
             border-radius: 999px;
-            border: 2px solid #ffffff;
+            border: 3px solid #ffffff;
             object-fit: cover;
-            box-shadow: 0 0 0 1px #a7f3d0, 0 5px 10px rgba(15, 23, 42, .08);
+            box-shadow: 0 0 0 1px #a7f3d0, 0 8px 16px rgba(15, 23, 42, .12);
         }
         .clinical-led-chart-scroll {
             margin-top: 12px;
@@ -2079,8 +2112,8 @@
                 box-shadow: 0 8px 18px rgba(15, 118, 110, .2);
             }
             .unit-mobile-avatar-grid img {
-                width: 32px;
-                height: 32px;
+                width: 44px;
+                height: 44px;
             }
             #frameworkTrendModalBody .rounded-xl {
                 overflow-wrap: anywhere;
@@ -2866,6 +2899,25 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     $aiSectionCards = collect(data_get($aiNaturePayload, 'section_cards', []))
                         ->filter(fn ($card) => trim((string) data_get($card, 'theme_key')) !== '' || trim((string) data_get($card, 'label')) !== '')
                         ->values();
+                    $aiLowQualityPhrases = [
+                        'หน่วยงานได้ดำเนินการศึกษาและพัฒนา',
+                        'งานวิจัยนี้เน้นที่การสร้างหลักฐานทางวิชาการ',
+                        'ผลงานวิชาการเชิงระบบและการนำเสนอผลงานทางวิชาการเป็นหลัก พร้อมกับรายงานวิชาการที่มีความหลากหลาย',
+                        'ควรพัฒนา output ประเภทข้อเสนอเชิงนโยบายเพื่อสนับสนุนการเปลี่ยนแปลงจริง',
+                        'แต่ยังขาดข้อเสนอเชิงนโยบายเพื่อสนับสนุนการเปลี่ยนแปลงจริง',
+                    ];
+                    $aiSectionCardTexts = $aiSectionCards
+                        ->map(fn ($card) => collect(['work_done', 'reading', 'output_direction', 'next_step', 'evidence_note'])
+                            ->map(fn ($field) => trim((string) data_get($card, $field, '')))
+                            ->filter()
+                            ->implode(' '))
+                        ->filter()
+                        ->values();
+                    $aiSectionCardsAreLowQuality = collect($aiLowQualityPhrases)
+                        ->contains(fn ($phrase) => $aiSectionCardTexts->filter(fn ($text) => Str::contains($text, $phrase))->count() >= 3);
+                    if ($aiSectionCardsAreLowQuality) {
+                        $aiSectionCards = collect();
+                    }
                     $hasAiProjectOutputInsight = $aiSectionCards->isNotEmpty() || $aiInterestClusters->isNotEmpty() || $aiOutputAlignment->isNotEmpty();
                     $aiNatureSummary = trim((string) data_get($aiNaturePayload, 'summary', ''));
                     $hasCjkText = static fn ($text): bool => preg_match('/[\x{3040}-\x{30ff}\x{3400}-\x{9fff}\x{f900}-\x{faff}]/u', (string) $text) === 1;
@@ -3048,6 +3100,73 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 </div>
                             @endforeach
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="fade-up panel section-panel section-panel--slate p-5 md:p-6">
+                @php
+                    $fteSkills = $fteSkillAnalysis ?? [];
+                    $fteSkillRows = collect(data_get($fteSkills, 'task_rows', []));
+                    $fteSkillMax = max(1, (int) data_get($fteSkills, 'max_task_rows', 1));
+                    $skillToneStyle = static function ($tone): string {
+                        return match ((string) $tone) {
+                            'teal' => 'border-color:#99f6e4;background:#f0fdfa;color:#115e59;',
+                            'sky' => 'border-color:#bae6fd;background:#f0f9ff;color:#075985;',
+                            'indigo' => 'border-color:#c7d2fe;background:#eef2ff;color:#3730a3;',
+                            'emerald' => 'border-color:#bbf7d0;background:#f0fdf4;color:#166534;',
+                            'violet' => 'border-color:#ddd6fe;background:#f5f3ff;color:#5b21b6;',
+                            'amber' => 'border-color:#fde68a;background:#fffbeb;color:#92400e;',
+                            'rose' => 'border-color:#fecdd3;background:#fff1f2;color:#9f1239;',
+                            'cyan' => 'border-color:#a5f3fc;background:#ecfeff;color:#155e75;',
+                            'lime' => 'border-color:#d9f99d;background:#f7fee7;color:#3f6212;',
+                            default => 'border-color:#e2e8f0;background:#f8fafc;color:#334155;',
+                        };
+                    };
+                @endphp
+                <div class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,.04)] md:p-5">
+                    <div>
+                        <div>
+                            <div class="section-tag section-tag--slate">FTE Skill Map</div>
+                            <h2 class="mt-2 text-xl font-semibold leading-tight text-slate-950 md:text-2xl">Skill ที่เกิดขึ้นในหน่วยงานจากภาระงาน FTE</h2>
+                            <p class="mt-2 max-w-5xl text-xs leading-relaxed text-slate-500">
+                                นับจากภาระงานใน Project FTE และ Back Office FTE โดยรวมงานซ้ำในคนเดิมและงานเดียวกันออก เช่น คนเดียวกันทำ “เก็บข้อมูล” ซ้ำในโปรเจคเดียวกันจะนับเป็น 1 งานไม่ซ้ำ
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
+                        @forelse ($fteSkillRows as $skill)
+                            @php
+                                $width = max(4, min(100, round(((int) $skill->unique_tasks / $fteSkillMax) * 100)));
+                            @endphp
+                            <article class="bg-white px-4 py-3">
+                                <div class="grid gap-3 xl:grid-cols-[minmax(240px,.8fr)_minmax(260px,1fr)] xl:items-center">
+                                    <div class="min-w-0">
+                                        <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{{ $skill->skill_en }}</div>
+                                        <h3 class="mt-0.5 text-base font-semibold leading-snug text-slate-950">{{ $skill->task_label }}</h3>
+                                        <div class="mt-1 text-xs font-medium leading-relaxed text-slate-500">{{ $skill->skill_label }}</div>
+                                        <div class="mt-2 h-1.5 rounded-full bg-slate-100">
+                                            <div class="h-full rounded-full bg-slate-700" style="width: {{ $width }}%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap gap-1.5">
+                                            @foreach (collect($skill->containers ?? [])->take(3) as $container)
+                                                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ Str::limit($container, 42) }}</span>
+                                            @endforeach
+                                        </div>
+                                        <div class="mt-2 text-xs leading-relaxed text-slate-500">
+                                            {{ collect($skill->people ?? [])->take(5)->implode(', ') ?: '-' }}
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </article>
+                        @empty
+                            <div class="rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">ยังไม่มีข้อมูล FTE ในช่วงที่เลือก</div>
+                        @endforelse
                     </div>
                 </div>
             </section>
