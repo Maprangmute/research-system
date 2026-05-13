@@ -34,6 +34,22 @@ return [
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
     ],
 
+    'facebook_oembed' => [
+        'graph_version' => env('FACEBOOK_OEMBED_GRAPH_VERSION', 'v24.0'),
+        'access_token' => env('FACEBOOK_OEMBED_ACCESS_TOKEN'),
+        'app_id' => env('FACEBOOK_OEMBED_APP_ID'),
+        'client_token' => env('FACEBOOK_OEMBED_CLIENT_TOKEN'),
+        'timeout' => env('FACEBOOK_OEMBED_TIMEOUT', 15),
+    ],
+
+    'screenshotone' => [
+        'access_key' => env('SCREENSHOTONE_ACCESS_KEY'),
+        'signing_key' => env('SCREENSHOTONE_SIGNING_KEY'),
+        'base_url' => env('SCREENSHOTONE_BASE_URL', 'https://api.screenshotone.com/take'),
+        'viewport_width' => env('SCREENSHOTONE_VIEWPORT_WIDTH', 1200),
+        'viewport_height' => env('SCREENSHOTONE_VIEWPORT_HEIGHT', 800),
+    ],
+
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),

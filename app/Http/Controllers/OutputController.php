@@ -7,6 +7,7 @@ use App\Models\BackOfficeEntry;
 use App\Models\BackOfficeTaskOutput;
 use App\Models\AiVisualizationInsight;
 use App\Models\CoResearch;
+use App\Models\Copi;
 use App\Models\ExternalOutput;
 use App\Models\ExternalOutputAwardRecipient;
 use App\Models\ExternalOutputBookAuthor;
@@ -19,6 +20,7 @@ use App\Models\OutputAuthor;
 use App\Models\OutputBookAuthor;
 use App\Models\OutputConference;
 use App\Models\OutputConferencePresenter;
+use App\Models\OutputLinkPreview;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\AuditLogger;
@@ -1898,7 +1900,18 @@ class OutputController extends Controller
         $paperRows = $filtered->where('type_code', 'EA101')->values();
         $presentationRows = $filtered->where('type_code', 'EA103')->values();
         $textbookRows = $filtered->where('type_code', 'EA119')->values();
-        $networkingRows = $filtered->whereIn('type_code', ['EA115', 'EA117'])->values();
+        $communicationFeatureRows = $filtered
+            ->where('type_code', 'EA108')
+            ->filter(function ($row) {
+                $title = Str::of((string) ($row->title ?? ''))->trim()->lower()->toString();
+                return Str::startsWith($title, ['news:', 'article:']);
+            })
+            ->values();
+        $networkingRows = $filtered
+            ->whereIn('type_code', ['EA115', 'EA117'])
+            ->values()
+            ->merge($communicationFeatureRows)
+            ->values();
         $categorizedTotal = (int) ($paperRows->count() + $presentationRows->count() + $textbookRows->count());
 
         $paperQuartileLabels = collect(['Q1', 'Q2', 'Q3', 'Q4', 'TCI 1', 'TCI 2', 'ไม่ระบุ']);
@@ -1925,7 +1938,103 @@ class OutputController extends Controller
             ->filter()
             ->countBy()
             ->sortKeys();
-        $networkingYearSeries = collect(['EA115', 'EA117'])->mapWithKeys(function ($typeCode) use ($networkingRows, $networkingYears) {
+        $isExternalFacultyParticipant = static function (?string $value): bool {
+            $normalized = Str::lower(trim((string) $value));
+
+            return $normalized !== ''
+                && (Str::contains($normalized, 'ภายนอกคณะ')
+                    || Str::contains($normalized, 'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล')
+                    || Str::contains($normalized, 'external'));
+        };
+        $isProjectInSelectedYears = function ($project) use ($yearFrom, $yearTo): bool {
+            $year = $this->normalizeYearFilter($project?->start_year);
+
+            if ($yearFrom !== null && ($year === null || $year < $yearFrom)) {
+                return false;
+            }
+            if ($yearTo !== null && ($year === null || $year > $yearTo)) {
+                return false;
+            }
+
+            return true;
+        };
+        $externalNetworkParticipantRows = collect();
+        $externalPiSelect = ['id', 'start_year', 'pi_name', 'pi_affiliation'];
+        if (Schema::hasColumn('projects', 'pi_person_type')) {
+            $externalPiSelect[] = 'pi_person_type';
+        }
+        $externalNetworkParticipantRows = $externalNetworkParticipantRows
+            ->merge(Project::query()
+                ->select($externalPiSelect)
+                ->get()
+                ->filter(fn (Project $project) => $isProjectInSelectedYears($project))
+                ->filter(fn (Project $project) => trim((string) ($project->pi_name ?? '')) !== '')
+                ->filter(fn (Project $project) => $isExternalFacultyParticipant($project->pi_person_type ?? null)
+                    || $isExternalFacultyParticipant($project->pi_affiliation ?? null))
+                ->map(fn (Project $project) => (object) [
+                    'project_id' => (int) $project->id,
+                    'name' => $project->pi_name,
+                    'role' => 'PI',
+                ]));
+        $externalCopiSelect = ['id', 'project_id', 'name', 'affiliation'];
+        if (Schema::hasColumn('copis', 'person_type')) {
+            $externalCopiSelect[] = 'person_type';
+        }
+        $externalNetworkParticipantRows = $externalNetworkParticipantRows
+            ->merge(Copi::query()
+                ->with('project:id,start_year')
+                ->select($externalCopiSelect)
+                ->when(Schema::hasColumn('copis', 'deleted_at'), fn ($query) => $query->whereNull('deleted_at'))
+                ->get()
+                ->filter(fn (Copi $copi) => $isProjectInSelectedYears($copi->project))
+                ->filter(fn (Copi $copi) => trim((string) ($copi->name ?? '')) !== '')
+                ->filter(fn (Copi $copi) => $isExternalFacultyParticipant($copi->person_type ?? null)
+                    || $isExternalFacultyParticipant($copi->affiliation ?? null))
+                ->map(fn (Copi $copi) => (object) [
+                    'project_id' => (int) $copi->project_id,
+                    'name' => $copi->name,
+                    'role' => 'Co-PI',
+                ]));
+        $externalNetworkParticipantRows = $externalNetworkParticipantRows
+            ->merge(CoResearch::query()
+                ->with('project:id,start_year')
+                ->select(['id', 'project_id', 'name', 'unit_status'])
+                ->when(Schema::hasColumn('co_research', 'deleted_at'), fn ($query) => $query->whereNull('deleted_at'))
+                ->where(function ($query) {
+                    $query->where('unit_status', 'ภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล')
+                        ->orWhere('unit_status', 'like', '%ภายนอกคณะ%')
+                        ->orWhere('unit_status', 'like', '%external%');
+                })
+                ->get()
+                ->filter(fn (CoResearch $coResearch) => $isProjectInSelectedYears($coResearch->project))
+                ->map(fn (CoResearch $coResearch) => (object) [
+                    'project_id' => (int) $coResearch->project_id,
+                    'name' => $coResearch->name,
+                    'role' => 'Co-Research',
+                ]))
+            ->values();
+        $externalSirirajNetworkPeopleCount = (int) $externalNetworkParticipantRows
+            ->map(fn ($participant) => $this->normalizePersonNameForMatch($participant->name ?? null))
+            ->filter()
+            ->unique()
+            ->count();
+        $externalSirirajNetworkProjectCount = (int) $externalNetworkParticipantRows
+            ->pluck('project_id')
+            ->filter()
+            ->unique()
+            ->count();
+        $externalSirirajNetworkRoleCounts = collect(['PI', 'Co-PI', 'Co-Research'])
+            ->mapWithKeys(function (string $role) use ($externalNetworkParticipantRows) {
+                return [
+                    $role => (int) $externalNetworkParticipantRows
+                        ->where('role', $role)
+                        ->map(fn ($participant) => $this->normalizePersonNameForMatch($participant->name ?? null))
+                        ->filter()
+                        ->unique()
+                        ->count(),
+                ];
+            });
+        $networkingYearSeries = collect(['EA108', 'EA115', 'EA117'])->mapWithKeys(function ($typeCode) use ($networkingRows, $networkingYears) {
             return [
                 $typeCode => $networkingYears->keys()
                     ->map(fn ($year) => (int) $networkingRows
@@ -2043,7 +2152,7 @@ class OutputController extends Controller
             ->mapWithKeys(fn ($year) => [
                 (string) $year => $buildChartOutputItems($textbookRows->where('year_be', (int) $year)->values()),
             ]);
-        $networkingYearItems = collect(['EA115', 'EA117'])->mapWithKeys(fn ($typeCode) => [
+        $networkingYearItems = collect(['EA108', 'EA115', 'EA117'])->mapWithKeys(fn ($typeCode) => [
             $typeCode => $networkingYears
                 ->keys()
                 ->mapWithKeys(fn ($year) => [
@@ -2085,9 +2194,50 @@ class OutputController extends Controller
             'latest_year' => $networkingYears->keys()->last(),
             'peak_year' => $networkingYears->sortDesc()->keys()->first(),
             'peak_year_count' => (int) ($networkingYears->max() ?? 0),
+            'external_people_count' => $externalSirirajNetworkPeopleCount,
+            'external_project_count' => $externalSirirajNetworkProjectCount,
+            'external_role_counts' => $externalSirirajNetworkRoleCounts,
+            'ea108_count' => (int) $communicationFeatureRows->count(),
             'ea115_count' => (int) $networkingRows->where('type_code', 'EA115')->count(),
             'ea117_count' => (int) $networkingRows->where('type_code', 'EA117')->count(),
             'latest' => $sortRowsNewestFirst($networkingRows)->take(5)->map($buildSummaryListItem)->values(),
+            'communication_features' => $sortRowsNewestFirst($networkingRows)
+                ->map(function ($row) use ($buildSummaryListItem) {
+                    $item = $buildSummaryListItem($row);
+                    $title = trim((string) ($item->title ?? ''));
+                    $typeCode = strtoupper(trim((string) ($row->type_code ?? '')));
+                    $kind = match ($typeCode) {
+                        'EA115' => 'EA115',
+                        'EA117' => 'EA117',
+                        default => Str::startsWith(Str::lower($title), 'article:') ? 'Article' : 'News',
+                    };
+                    $cleanTitle = trim((string) preg_replace('/^(news|article)\s*:\s*/iu', '', $title));
+                    $item->content_kind = $kind;
+                    $item->feature_type_code = $typeCode ?: 'EA108';
+                    $item->clean_title = $cleanTitle !== '' ? $cleanTitle : $title;
+                    $item->external_link = trim((string) ($item->modal_link ?? '')) ?: trim((string) ($item->link ?? '')) ?: null;
+                    $preview = $item->external_link
+                        ? OutputLinkPreview::query()
+                            ->whereIn('url_hash', OutputLinkPreview::hashCandidates((string) $item->external_link))
+                            ->where('fetch_status', 'ok')
+                            ->orderByRaw("CASE WHEN preview_image_url IS NOT NULL AND preview_image_url <> '' THEN 0 WHEN provider <> 'screenshotone' THEN 1 ELSE 2 END")
+                            ->latest('fetched_at')
+                            ->first()
+                        : null;
+                    $item->link_preview = $preview ? [
+                        'id' => $preview->id,
+                        'title' => $preview->title,
+                        'description' => $preview->description,
+                        'preview_image_url' => $preview->preview_image_url,
+                        'thumbnail_url' => $preview->thumbnail_url,
+                        'author_name' => $preview->author_name,
+                        'provider_name' => $preview->provider_name,
+                        'fetched_at' => $preview->fetched_at?->timezone('Asia/Bangkok')->format('d/m/Y H:i'),
+                    ] : null;
+
+                    return $item;
+                })
+                ->values(),
         ];
 
         $yearTotals = $filtered
@@ -3665,12 +3815,38 @@ class OutputController extends Controller
             ->filter()
             ->unique()
             ->count();
+        $sirirajContextProjectIds = $projectParticipantRows
+            ->whereIn('people_type', ['unit', 'siriraj'])
+            ->groupBy('project_id')
+            ->filter(fn (Collection $projectRows) => $projectRows->contains(fn ($row) => ($row->people_type ?? '') === 'unit')
+                && $projectRows->contains(fn ($row) => ($row->people_type ?? '') === 'siriraj'))
+            ->keys()
+            ->map(fn ($projectId) => (int) $projectId)
+            ->values();
+        $sirirajContextAllProjectIds = $projectParticipantAllRows
+            ->whereIn('people_type', ['unit', 'siriraj'])
+            ->groupBy('project_id')
+            ->filter(fn (Collection $projectRows) => $projectRows->contains(fn ($row) => ($row->people_type ?? '') === 'unit')
+                && $projectRows->contains(fn ($row) => ($row->people_type ?? '') === 'siriraj'))
+            ->keys()
+            ->map(fn ($projectId) => (int) $projectId)
+            ->values();
+        $sirirajContextParticipantRows = $projectParticipantRows
+            ->whereIn('project_id', $sirirajContextProjectIds->all())
+            ->whereIn('people_type', ['unit', 'siriraj'])
+            ->values();
+        $sirirajContextParticipantAllRows = $projectParticipantAllRows
+            ->whereIn('project_id', $sirirajContextAllProjectIds->all())
+            ->whereIn('people_type', ['unit', 'siriraj'])
+            ->values();
         $sirirajExpertRows = $projectParticipantRows
+            ->whereIn('project_id', $sirirajContextProjectIds->all())
             ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
             ->filter(fn ($row) => $professionGroup($row) === 'แพทย์ / Clinical expert')
             ->filter(fn ($row) => Str::startsWith(trim((string) ($row->theme ?? '')), ['01', '02', '04']))
             ->values();
         $sirirajExpertAllRows = $projectParticipantAllRows
+            ->whereIn('project_id', $sirirajContextAllProjectIds->all())
             ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
             ->filter(fn ($row) => $professionGroup($row) === 'แพทย์ / Clinical expert')
             ->filter(fn ($row) => Str::startsWith(trim((string) ($row->theme ?? '')), ['01', '02', '04']))
@@ -3788,8 +3964,7 @@ class OutputController extends Controller
 
             return null;
         };
-        $clinicalLedIntegrationRows = $projectParticipantRows
-            ->filter(fn ($row) => in_array($row->people_type ?? '', ['unit', 'siriraj'], true))
+        $clinicalLedIntegrationRows = $sirirajContextParticipantRows
             ->filter(fn ($row) => $clinicalLedThemeKey($row->theme ?? null) !== null)
             ->values();
         $clinicalLedIntegrationYears = $clinicalLedIntegrationRows
@@ -4097,8 +4272,7 @@ class OutputController extends Controller
             ->values();
         $frameworkTrendSeries = [
             'trust' => $frameworkTrendYears
-                ->map(fn ($year) => (int) $projectParticipantRows
-                    ->whereIn('people_type', ['unit', 'siriraj'])
+                ->map(fn ($year) => (int) $sirirajContextParticipantRows
                     ->where('year', (int) $year)
                     ->pluck('project_id')
                     ->unique()
@@ -4140,9 +4314,8 @@ class OutputController extends Controller
             ->max();
         $frameworkLatestMetrics = [
             'trust' => $latestFrameworkMetric(
-                $projectParticipantAllRows->whereIn('people_type', ['unit', 'siriraj'])->values(),
-                fn (int $year) => $projectParticipantAllRows
-                    ->whereIn('people_type', ['unit', 'siriraj'])
+                $sirirajContextParticipantAllRows,
+                fn (int $year) => $sirirajContextParticipantAllRows
                     ->where('year', $year)
                     ->pluck('project_id')
                     ->unique()
@@ -4187,9 +4360,8 @@ class OutputController extends Controller
         };
         $frameworkTrendItems = [
             'trust' => $frameworkTrendYears
-                ->mapWithKeys(function ($year) use ($projectParticipantRows, $frameworkPeopleForRows) {
-                    return [(string) $year => $projectParticipantRows
-                        ->whereIn('people_type', ['unit', 'siriraj'])
+                ->mapWithKeys(function ($year) use ($sirirajContextParticipantRows, $frameworkPeopleForRows) {
+                    return [(string) $year => $sirirajContextParticipantRows
                         ->where('year', (int) $year)
                         ->groupBy('project_id')
                         ->map(function ($rows) use ($frameworkPeopleForRows) {
@@ -4255,9 +4427,8 @@ class OutputController extends Controller
             ['key' => 'pi', 'label' => 'PI', 'role' => 'PI'],
             ['key' => 'co_pi', 'label' => 'Co-PI', 'role' => 'Co-PI'],
             ['key' => 'co_research', 'label' => 'Co-Researcher', 'role' => 'Co-Research'],
-        ])->map(function ($roleMeta) use ($projectParticipantRows) {
-            $rows = $projectParticipantRows
-                ->whereIn('people_type', ['unit', 'siriraj'])
+        ])->map(function ($roleMeta) use ($sirirajContextParticipantRows) {
+            $rows = $sirirajContextParticipantRows
                 ->where('role', $roleMeta['role'])
                 ->values();
 
@@ -4272,17 +4443,17 @@ class OutputController extends Controller
             [
                 'key' => 'trust',
                 'label' => 'Credibility',
-                'title' => 'Trend in collaboration interest with Siriraj Health Policy among Siriraj professionals',
+                'title' => 'Trend in same-project collaboration between SHP unit and Siriraj faculty',
                 'unit' => 'โครงการ',
-                'detail' => "แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานร่วมกับ Siriraj Health Policy\n\nจำนวนโครงการวิจัยที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาลเข้ามามีส่วนร่วม และเข้ามาอยู่ในบทบาทใดบ้าง (PI, Co-PI และ Co-Researcher)",
+                'detail' => "แนวโน้มโครงการที่มีทั้งคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ทำงานร่วมกัน\n\nจำนวนโครงการวิจัยที่เกิดการทำงานร่วมกันระหว่างสองกลุ่มนี้ และเข้ามาอยู่ในบทบาทใดบ้าง (PI, Co-PI และ Co-Researcher)",
                 'role_stats' => $facultySirirajRoleStats,
             ],
             [
                 'key' => 'truth',
                 'label' => 'Validation',
-                'title' => 'Trends in Siriraj health professionals’ interest in research-to-policy work',
+                'title' => 'Trends in same-project collaboration for research-to-policy work',
                 'unit' => 'โครงการ',
-                'detail' => "แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health System)\n\nจำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย ที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) เข้ามาเป็นส่วนร่วม โดยแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย\nAgeing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Technical Cohorts\n\n*Theme/เนื้อหา Rational Drug Use (RDU) และ Global Health อาจยังถูกมองเป็น Operational project ภายในคณะแพทยศาสตร์ศิริราชพยาบาล มากกว่า Research model จึงยังไม่ถูกรวมในการวิเคราะห์",
+                'detail' => "แนวโน้มโครงการที่มีทั้งคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ทำงานร่วมกันในประเด็นการขับเคลื่อนนโยบายและระบบสุขภาพ (Health Policy, Health System)\n\nจำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย โดยต้องมีทั้งสองกลุ่มเป็นส่วนร่วมในโครงการเดียวกัน และแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย\nAgeing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Technical Cohorts\n\n*Theme/เนื้อหา Rational Drug Use (RDU) และ Global Health อาจยังถูกมองเป็น Operational project ภายในคณะแพทยศาสตร์ศิริราชพยาบาล มากกว่า Research model จึงยังไม่ถูกรวมในการวิเคราะห์",
                 'role_stats' => $clinicalLedIntegrationRoleStats,
             ],
             [
@@ -4409,21 +4580,21 @@ class OutputController extends Controller
         $frameworkTruthShape = $frameworkShape($frameworkTrendSummaryRows, 'truth');
         $frameworkPolicyShape = $frameworkShape($frameworkTrendSummaryRows, 'policy_impact');
         $frameworkHeadlineLead = (str_contains($frameworkTruthShape, 'เพิ่ม') || str_contains($frameworkPolicyShape, 'เพิ่ม'))
-            ? 'จำนวนโครงการและการมีส่วนร่วมเพิ่มขึ้นในภาพรวม'
-            : 'จำนวนโครงการและการมีส่วนร่วมยังไม่เพิ่มขึ้นชัดเจนในภาพรวม';
+            ? 'จำนวนโครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ร่วมกันเพิ่มขึ้นในภาพรวม'
+            : 'จำนวนโครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ร่วมกันยังไม่เพิ่มขึ้นชัดเจนในภาพรวม';
         $frameworkBody = str_contains($frameworkTruthShape, 'เพิ่ม')
-            ? 'แนวโน้มสะท้อนการเพิ่มขึ้นของการมีส่วนร่วมของบุคลากรศิริราชในงานวิจัยเชิงระบบและงานที่เชื่อมกับบริการจริงมากขึ้น โดยเฉพาะการดึง clinical skill เข้ามาผสานกับงานวิจัย'
-            : 'แนวโน้มยังไม่สะท้อนการเพิ่มขึ้นของ Validation อย่างชัดเจน จึงควรอ่านร่วมกับจำนวนโครงการและ output ในแต่ละปี';
+            ? 'แนวโน้มสะท้อนการเพิ่มขึ้นของโครงการที่เชื่อมคนในหน่วยวิจัยฯ กับคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลในงานวิจัยเชิงระบบและงานที่เชื่อมกับบริการจริงมากขึ้น'
+            : 'แนวโน้มยังไม่สะท้อนการเพิ่มขึ้นของ Validation แบบโครงการร่วมสองกลุ่มอย่างชัดเจน จึงควรอ่านร่วมกับจำนวนโครงการและ output ในแต่ละปี';
         $frameworkBody .= str_contains($frameworkPolicyShape, 'เพิ่ม')
             ? ' รวมถึงเริ่มเห็น output ที่ต่อยอดไปสู่ Impact ต่อระบบสุขภาพและการตัดสินใจเชิงนโยบายมากขึ้นในช่วงหลัง'
             : ' ส่วน Impact ยังไม่เพิ่มชัดเจนในช่วงข้อมูลนี้';
         $frameworkFocus = (str_contains($frameworkTruthShape, 'เพิ่ม') && str_contains($frameworkPolicyShape, 'เพิ่ม'))
-            ? 'ภาพรวมแสดงให้เห็นว่า การเติบโตของโครงการไม่ได้เพิ่มเฉพาะจำนวนงานวิจัย แต่รวมถึงการมีส่วนร่วมของ clinical expert และการต่อยอดไปสู่ผลลัพธ์ที่เชื่อมกับระบบสุขภาพมากขึ้น โดยปี ' . ($frameworkPeak?->year ?: '-') . ' เป็นจุดสูงสุดทั้งในด้านการบูรณาการ clinical skill และ Impact ต่อระบบสุขภาพ'
+            ? 'ภาพรวมแสดงให้เห็นว่า การเติบโตของโครงการไม่ได้เพิ่มเฉพาะจำนวนงานวิจัย แต่รวมถึงการทำงานร่วมกันระหว่างคนในหน่วยวิจัยฯ และคนภายในคณะฯ พร้อมการต่อยอดไปสู่ผลลัพธ์ที่เชื่อมกับระบบสุขภาพมากขึ้น โดยปี ' . ($frameworkPeak?->year ?: '-') . ' เป็นจุดสูงสุดทั้งในด้านโครงการร่วมสองกลุ่มและ Impact ต่อระบบสุขภาพ'
             : 'ภาพรวมยังควรอ่านแบบแยกเส้น เพราะ Validation และ Impact ไม่ได้เพิ่มพร้อมกันอย่างชัดเจนในทุกปี';
         $frameworkHasCurrentYearData = $frameworkTrendYears
             ->contains(fn ($year) => (int) $year === (int) $currentYearBe);
         $frameworkTrendSummary = (object) [
-            'headline' => 'ช่วงปี ' . ($frameworkFirst?->year ?: '-') . ' - ' . ($frameworkLast?->year ?: '-') . ' ' . $frameworkHeadlineLead . ' โดย Validation ' . $frameworkTruthShape . ' จาก ' . number_format((int) ($frameworkFirst?->truth ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->truth ?? 0)) . ' โครงการ ขณะที่ Impact ' . $frameworkPolicyShape . ' จาก ' . number_format((int) ($frameworkFirst?->policy_impact ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->policy_impact ?? 0)) . ' รายการ และสูงสุดในปี ' . ($frameworkPolicyPeak?->year ?: '-'),
+            'headline' => 'ช่วงปี ' . ($frameworkFirst?->year ?: '-') . ' - ' . ($frameworkLast?->year ?: '-') . ' ' . $frameworkHeadlineLead . ' โดย Validation ของโครงการร่วมสองกลุ่ม ' . $frameworkTruthShape . ' จาก ' . number_format((int) ($frameworkFirst?->truth ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->truth ?? 0)) . ' โครงการ ขณะที่ Impact ' . $frameworkPolicyShape . ' จาก ' . number_format((int) ($frameworkFirst?->policy_impact ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->policy_impact ?? 0)) . ' รายการ และสูงสุดในปี ' . ($frameworkPolicyPeak?->year ?: '-'),
             'body' => $frameworkBody,
             'focus' => $frameworkFocus,
             'note' => $frameworkHasCurrentYearData ? 'ปี ' . $currentYearBe . ' ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร' : null,
@@ -4679,6 +4850,125 @@ class OutputController extends Controller
         return $view;
     }
 
+    public function linkPreviewImage(OutputLinkPreview $preview)
+    {
+        $imageUrl = trim((string) ($preview->preview_image_url ?: $preview->thumbnail_url));
+        if ($imageUrl === '' || ! filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+            abort(404);
+        }
+
+        $host = strtolower((string) (parse_url($imageUrl, PHP_URL_HOST) ?? ''));
+        $path = strtolower((string) (parse_url($imageUrl, PHP_URL_PATH) ?? ''));
+        $isGoogleSitesImage = str_contains($host, 'googleusercontent.com');
+        $isSirirajNewsImage = str_contains($host, 'si.mahidol.ac.th') && str_contains($path, 'admin/news_images/');
+
+        if (! $isGoogleSitesImage && ! $isSirirajNewsImage) {
+            abort(404);
+        }
+
+        $referer = (string) ($preview->url ?: 'https://www.google.com/');
+        $response = $this->fetchPreviewImageResponse($imageUrl, $referer);
+
+        if (! $response && str_contains($host, 'googleusercontent.com')) {
+            foreach ($this->googleSitesImageCandidates($referer) as $candidateUrl) {
+                $response = $this->fetchPreviewImageResponse($candidateUrl, $referer);
+                if (! $response) {
+                    continue;
+                }
+
+                if ($candidateUrl !== $imageUrl) {
+                    $preview->forceFill([
+                        'preview_image_url' => $candidateUrl,
+                        'thumbnail_url' => $candidateUrl,
+                        'provider_name' => 'google_sites_image',
+                        'fetch_status' => 'ok',
+                        'fetched_at' => now(),
+                    ])->save();
+                }
+
+                break;
+            }
+        }
+
+        if (! $response) {
+            abort(404);
+        }
+
+        $contentType = $response->header('Content-Type') ?: 'image/jpeg';
+
+        return response($response->body(), 200, [
+            'Content-Type' => $contentType,
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
+    }
+
+    private function fetchPreviewImageResponse(string $imageUrl, string $referer): ?\Illuminate\Http\Client\Response
+    {
+        try {
+            $response = Http::timeout(20)
+                ->connectTimeout(10)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+                    'Accept' => 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                    'Referer' => $referer ?: 'https://www.google.com/',
+                ])
+                ->get($imageUrl);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $contentType = strtolower((string) $response->header('Content-Type'));
+        if (! $response->successful() || ! str_starts_with($contentType, 'image/')) {
+            return null;
+        }
+
+        if (str_contains($contentType, 'gif') || strlen((string) $response->body()) < 12000) {
+            return null;
+        }
+
+        return $response;
+    }
+
+    private function googleSitesImageCandidates(string $pageUrl): array
+    {
+        if ($pageUrl === '' || ! filter_var($pageUrl, FILTER_VALIDATE_URL)) {
+            return [];
+        }
+
+        try {
+            $response = Http::timeout(20)
+                ->connectTimeout(10)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Accept-Language' => 'th-TH,th;q=0.9,en-US;q=0.8,en;q=0.7',
+                ])
+                ->withOptions(['allow_redirects' => true])
+                ->get($pageUrl);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        $html = html_entity_decode((string) $response->body(), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($html === '') {
+            return [];
+        }
+
+        preg_match_all('/https:\/\/lh3\.googleusercontent\.com\/sitesv\/[^"\'<>\s\\\\)]+/iu', $html, $matches);
+
+        return collect($matches[0] ?? [])
+            ->map(fn ($url) => rtrim((string) $url, " \t\n\r\0\x0B);,"))
+            ->filter(fn ($url) => filter_var($url, FILTER_VALIDATE_URL))
+            ->reject(fn ($url) => str_contains(strtolower((string) parse_url($url, PHP_URL_PATH)), 'favicon'))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     private function buildFteSkillAnalysis(?int $yearFrom, ?int $yearTo): array
     {
         $normalizeText = static fn ($value): string => Str::of((string) $value)->lower()->replace(["\r", "\n", "\t"], ' ')->replaceMatches('/\s+/u', ' ')->trim()->toString();
@@ -4707,34 +4997,114 @@ class OutputController extends Controller
 
             return true;
         };
-        $skillFor = static function (string $task, string $job, string $sourceCategory = '') use ($normalizeText): array {
+        $fteSkillTaxonomy = [
+            'scientific' => [
+                'label' => 'งานวิชาการและหลักฐาน',
+                'tone' => 'scientific',
+                'items' => [
+                    ['key' => 'review_literature', 'label' => 'review literature', 'keywords' => ['review literature', 'literature review', 'ทบทวนวรรณกรรม', 'systematic', 'meta']],
+                    ['key' => 'proposal', 'label' => 'เขียนproposal', 'keywords' => ['proposal', 'โครงร่าง', 'ข้อเสนอโครงการ']],
+                    ['key' => 'data_tool', 'label' => 'พัฒนาเครื่องมือและแนวทางในการเก็บข้อมูล', 'keywords' => ['พัฒนาเครื่องมือ', 'เครื่องมือ', 'แบบสอบถาม', 'แนวทางในการเก็บข้อมูล', 'เครื่องมือเก็บข้อมูล']],
+                    ['key' => 'capacity_building', 'label' => 'อบรมพัฒนาศักยภาพ', 'keywords' => ['อบรม', 'พัฒนาศักยภาพ', 'training', 'workshop']],
+                    ['key' => 'data_collection', 'label' => 'เก็บข้อมูล', 'keywords' => ['เก็บข้อมูล', 'ขอข้อมูล', 'field', 'survey', 'interview']],
+                    ['key' => 'data_analysis', 'label' => 'วิเคราะห์ข้อมูล', 'keywords' => ['วิเคราะห์ข้อมูล', 'analysis', 'model', 'decision tree', 'markov', 'ต้นทุน', 'อรรถประโยชน์']],
+                    ['key' => 'report_writing', 'label' => 'เขียนเล่มรายงาน', 'keywords' => ['เขียนเล่ม', 'รายงาน', 'เขียนรายงาน']],
+                    ['key' => 'manuscript', 'label' => 'เขียนmanuscript', 'keywords' => ['manuscript', 'ต้นฉบับ', 'บทความ']],
+                    ['key' => 'submit_journal', 'label' => 'submit journal', 'keywords' => ['submit journal', 'submission', 'journal', 'ตีพิมพ์']],
+                    ['key' => 'presentation', 'label' => 'นำเสนอผลงานวิจัย Oral/Poster presentation', 'keywords' => ['presentation', 'oral', 'poster', 'นำเสนอ']],
+                    ['key' => 'consultant', 'label' => 'ที่ปรึกษาโครงการ', 'keywords' => ['ที่ปรึกษาโครงการ', 'consultant', 'consultation']],
+                    ['key' => 'concept_note', 'label' => 'พัฒนา Scientific concept note / training program', 'keywords' => ['scientific concept', 'concept note', 'training program']],
+                    ['key' => 'research_consult_service', 'label' => 'งานบริการวิชาการให้คำปรึกษางานวิจัย', 'keywords' => ['บริการวิชาการ', 'ให้คำปรึกษางานวิจัย']],
+                    ['key' => 'curriculum_design', 'label' => 'งานออกแบบหลักสูตรและการเรียนการสอน', 'keywords' => ['ออกแบบหลักสูตร', 'หลักสูตร']],
+                    ['key' => 'teaching', 'label' => 'งานจัดการเรียนการสอน', 'keywords' => ['จัดการเรียนการสอน', 'การเรียนการสอน', 'lecture', 'สอน']],
+                    ['key' => 'mentorship', 'label' => 'งานพัฒนาศักยภาพและให้คำปรึกษานักศึกษา (Mentorship)', 'keywords' => ['mentorship', 'นักศึกษา', 'ให้คำปรึกษานักศึกษา']],
+                    ['key' => 'child_development', 'label' => 'งานด้านการพัฒนาเด็ก', 'keywords' => ['พัฒนาเด็ก']],
+                ],
+            ],
+            'management' => [
+                'label' => 'งานบริหารโครงการและกำกับเอกสาร',
+                'tone' => 'management',
+                'items' => [
+                    ['key' => 'coordination', 'label' => 'ติดต่อประสานงาน', 'keywords' => ['ติดต่อประสานงาน', 'ประสานงาน', 'coordinator']],
+                    ['key' => 'stakeholder_meeting', 'label' => 'ประชุมผู้มีส่วนได้ส่วนเสีย (Stakeholder meeting)', 'keywords' => ['stakeholder', 'ผู้มีส่วนได้ส่วนเสีย']],
+                    ['key' => 'funding_submit', 'label' => 'ดำเนินการเอกสารขอทุน/submit,ทุน', 'keywords' => ['ขอทุน', 'submit ทุน', 'submit,ทุน', 'ทุน']],
+                    ['key' => 'irb_submit', 'label' => 'ดำเนินการเอกสารขอirb/submit irb', 'keywords' => ['irb', 'จริยธรรม']],
+                    ['key' => 'progress_report', 'label' => 'จัดทำรายงานความก้าวหน้า', 'keywords' => ['รายงานความก้าวหน้า', 'progress report']],
+                    ['key' => 'extension', 'label' => 'ยื่นขอขยายระยะเวลาโครงการ', 'keywords' => ['ขยายระยะเวลา']],
+                    ['key' => 'revise_funder_report', 'label' => 'ส่งเล่มรายงาน และ แก้ไขตามข้อเสนอแนะจากผู้ให้ทุน', 'keywords' => ['แก้ไขตามข้อเสนอแนะ', 'ผู้ให้ทุน', 'ส่งเล่มรายงาน']],
+                    ['key' => 'final_report', 'label' => 'ส่งส่งรายงานฉบับสมบูรณ์', 'keywords' => ['รายงานฉบับสมบูรณ์', 'final report']],
+                    ['key' => 'budget_close', 'label' => 'สรุปงบประมาณที่ใช้จริง และปิดโครงการ', 'keywords' => ['สรุปงบประมาณ', 'ปิดโครงการ']],
+                    ['key' => 'material_publication_payment', 'label' => 'เบิกใบตรวจวัสดีพิมพ์/ค่าตอบแทนตีพิมพ์', 'keywords' => ['วัสดุพิมพ์', 'ค่าตอบแทนตีพิมพ์']],
+                    ['key' => 'grant_disbursement', 'label' => 'เบิกงบประมาณทุน', 'keywords' => ['เบิกงบประมาณทุน', 'เบิกทุน']],
+                    ['key' => 'internal_support', 'label' => 'งานบริการ สนับสนุน และประสานงานภายในหน่วย', 'keywords' => ['สนับสนุน', 'ภายในหน่วย']],
+                    ['key' => 'admin_coordination', 'label' => 'งานติดต่อประสานงาน', 'keywords' => ['งานติดต่อประสานงาน']],
+                    ['key' => 'meeting_minutes', 'label' => 'งานด้านการลงวาระและรายงานการประชุม', 'keywords' => ['วาระ', 'รายงานการประชุม', 'minutes']],
+                ],
+            ],
+            'it_communication' => [
+                'label' => 'งานสื่อสาร ระบบข้อมูล และเทคนิค',
+                'tone' => 'it',
+                'items' => [
+                    ['key' => 'public_relations', 'label' => 'ประชาสัมพันธ์', 'keywords' => ['ประชาสัมพันธ์', 'pr']],
+                    ['key' => 'communication_assets', 'label' => 'จัดทำสื่อ / Communication Assets', 'keywords' => ['communication assets', 'จัดทำสื่อ', 'สื่อ']],
+                    ['key' => 'research_system', 'label' => 'สร้างโปรแกรม ฐานข้อมูล และ โปรแกรมที่เกี่ยวข้องกับงานวิจัย', 'keywords' => ['โปรแกรม', 'ฐานข้อมูล', 'database', 'website', 'ระบบ']],
+                    ['key' => 'technical_support', 'label' => 'IT and Technical support', 'keywords' => ['it', 'technical', 'full stack', 'ux/ui', 'support']],
+                    ['key' => 'communication_work', 'label' => 'งานด้านการสื่อสาร และประชาสัมพันธ์', 'keywords' => ['การสื่อสาร', 'สื่อสาร']],
+                    ['key' => 'media_design', 'label' => 'งานด้านออกแบบ และผลิตสื่อ', 'keywords' => ['ออกแบบ', 'ผลิตสื่อ', 'branding']],
+                    ['key' => 'technology_information', 'label' => 'งานด้านการพัฒนาเทคโนโลยีและสารสนเทศ', 'keywords' => ['เทคโนโลยี', 'สารสนเทศ']],
+                ],
+            ],
+            'logistics_admin' => [
+                'label' => 'งานสนับสนุนปฏิบัติการ',
+                'tone' => 'logistics',
+                'items' => [
+                    ['key' => 'knowledge_sharing', 'label' => 'จัดกิจกรรมการแลกเปลี่ยนเรียนรู้ (Knowledge Sharing)', 'keywords' => ['knowledge sharing', 'แลกเปลี่ยนเรียนรู้']],
+                    ['key' => 'non_research_meeting', 'label' => 'งานจัดประชุมที่ไม่เกี่ยวข้องกับงานวิจัย', 'keywords' => ['จัดประชุม']],
+                    ['key' => 'support_documents', 'label' => 'งานบริการสิ่งสนับสนุนและเอกสาร', 'keywords' => ['สิ่งสนับสนุน', 'เอกสาร']],
+                    ['key' => 'document_service', 'label' => 'งานบริการด้านเอกสาร', 'keywords' => ['บริการด้านเอกสาร', 'หนังสือ']],
+                    ['key' => 'human_resources', 'label' => 'งานบริการด้านทรัพยากรบุคคล', 'keywords' => ['ทรัพยากรบุคคล', 'hr']],
+                    ['key' => 'event_exhibition', 'label' => 'งานจัดงานหรือเข้าร่วมงานนิทรรศการ', 'keywords' => ['นิทรรศการ', 'จัดงาน', 'event']],
+                ],
+            ],
+        ];
+        $skillFor = static function (string $task, string $job, string $sourceCategory = '') use ($normalizeText, $fteSkillTaxonomy): array {
             $taskText = $normalizeText($task);
             $text = $normalizeText($task . ' ' . $job . ' ' . $sourceCategory);
-            $rules = [
-                'data_collection' => ['label' => 'Data Collection & Fieldwork', 'thai' => 'การเก็บข้อมูลและภาคสนาม', 'keywords' => ['เก็บข้อมูล', 'ขอข้อมูล', 'เครื่องมือ', 'แบบสอบถาม', 'field', 'survey', 'interview', 'feasibility'], 'tone' => 'teal'],
-                'data_analysis' => ['label' => 'Data Analysis & Evidence Synthesis', 'thai' => 'การวิเคราะห์ข้อมูลและสังเคราะห์หลักฐาน', 'keywords' => ['วิเคราะห์ข้อมูล', 'analysis', 'systematic', 'review literature', 'meta', 'model', 'decision tree', 'markov', 'ต้นทุน', 'อรรถประโยชน์'], 'tone' => 'sky'],
-                'protocol_irb_funding' => ['label' => 'Protocol / IRB / Funding', 'thai' => 'การพัฒนาโครงการและเอกสารกำกับ', 'keywords' => ['proposal', 'irb', 'ทุน', 'submit', 'scientific concept', 'ขยายระยะเวลา'], 'tone' => 'indigo'],
-                'coordination' => ['label' => 'Coordination & Project Operations', 'thai' => 'การประสานงานและขับเคลื่อนโครงการ', 'keywords' => ['ติดต่อประสานงาน', 'ประสานงาน', 'ประชุม', 'stakeholder', 'นัดหมาย', 'ติดตามสถานะ', 'coordinator'], 'tone' => 'emerald'],
-                'writing_publication' => ['label' => 'Scientific Writing & Publication', 'thai' => 'การเขียนรายงาน ต้นฉบับ และเผยแพร่', 'keywords' => ['manuscript', 'journal', 'เขียนเล่ม', 'รายงาน', 'ส่งเล่ม', 'ตีพิมพ์', 'publication'], 'tone' => 'violet'],
-                'communication' => ['label' => 'Communication & Stakeholder Engagement', 'thai' => 'การสื่อสารและการมีส่วนร่วมของผู้เกี่ยวข้อง', 'keywords' => ['สื่อ', 'communication', 'ประชาสัมพันธ์', 'branding', 'presentation', 'oral', 'poster', 'เผยแพร่'], 'tone' => 'amber'],
-                'finance_admin' => ['label' => 'Finance / Admin / Procurement', 'thai' => 'งานบริหาร การเงิน เอกสาร และพัสดุ', 'keywords' => ['งบประมาณ', 'เบิก', 'พัสดุ', 'เอกสาร', 'หนังสือ', 'บริหารงานทั่วไป', 'hr', 'ทรัพยากรบุคคล', 'sap', 'pxp'], 'tone' => 'rose'],
-                'digital_technical' => ['label' => 'Digital / Database / Technical', 'thai' => 'ดิจิทัล ฐานข้อมูล และเทคนิค', 'keywords' => ['it', 'technical', 'โปรแกรม', 'ฐานข้อมูล', 'database', 'website', 'ux/ui', 'ระบบ', 'สารสนเทศ', 'full stack'], 'tone' => 'cyan'],
-                'teaching_consultation' => ['label' => 'Teaching / Mentorship / Consultation', 'thai' => 'การสอน ให้คำปรึกษา และพัฒนาศักยภาพ', 'keywords' => ['สอน', 'หลักสูตร', 'นักศึกษา', 'mentorship', 'ให้คำปรึกษา', 'อบรม', 'พัฒนาศักยภาพ', 'lecture', 'workshop'], 'tone' => 'lime'],
-            ];
+            $fallback = ['key' => 'logistics_admin', 'label' => 'งานสนับสนุนปฏิบัติการ', 'thai' => 'งานสนับสนุนปฏิบัติการ', 'item_key' => 'logistics_admin_support_documents', 'item_label' => 'งานบริการสิ่งสนับสนุนและเอกสาร', 'tone' => 'logistics'];
 
-            foreach ($rules as $key => $rule) {
-                if ($taskText !== '' && Str::contains($taskText, $rule['keywords'])) {
-                    return array_merge(['key' => $key], $rule);
+            foreach ($fteSkillTaxonomy as $groupKey => $group) {
+                foreach ($group['items'] as $index => $item) {
+                    if ($taskText !== '' && Str::contains($taskText, $item['keywords'])) {
+                        return [
+                            'key' => $groupKey,
+                            'label' => $group['label'],
+                            'thai' => $group['label'],
+                            'item_key' => $groupKey . '_' . $item['key'],
+                            'item_label' => $item['label'],
+                            'item_order' => $index,
+                            'tone' => $group['tone'],
+                        ];
+                    }
                 }
             }
 
-            foreach ($rules as $key => $rule) {
-                if (Str::contains($text, $rule['keywords'])) {
-                    return array_merge(['key' => $key], $rule);
+            foreach ($fteSkillTaxonomy as $groupKey => $group) {
+                foreach ($group['items'] as $index => $item) {
+                    if (Str::contains($text, $item['keywords'])) {
+                        return [
+                            'key' => $groupKey,
+                            'label' => $group['label'],
+                            'thai' => $group['label'],
+                            'item_key' => $groupKey . '_' . $item['key'],
+                            'item_label' => $item['label'],
+                            'item_order' => $index,
+                            'tone' => $group['tone'],
+                        ];
+                    }
                 }
             }
 
-            return ['key' => 'other', 'label' => 'Other Research Operations', 'thai' => 'ทักษะสนับสนุนอื่น ๆ', 'keywords' => [], 'tone' => 'slate'];
+            return $fallback + ['item_order' => 999];
         };
 
         $researchRows = FteRole::query()
@@ -4829,8 +5199,9 @@ class OutputController extends Controller
             ->sortByDesc('unique_tasks')
             ->values();
         $maxSkillTasks = max(1, (int) $skillRows->max('unique_tasks'));
+        $fteSkillGroupOrder = collect($fteSkillTaxonomy)->keys()->values()->flip();
         $taskRows = $uniqueRows
-            ->groupBy(fn ($row) => Str::of((string) ($row->task ?? '-'))->lower()->squish()->toString())
+            ->groupBy(fn ($row) => (string) data_get($row->skill, 'item_key', Str::of((string) ($row->task ?? '-'))->lower()->squish()->toString()))
             ->map(function (Collection $group) {
                 $first = $group->first();
                 $skillGroups = $group
@@ -4849,8 +5220,17 @@ class OutputController extends Controller
                     ->values();
 
                 return (object) [
-                    'key' => Str::slug(Str::limit((string) ($first->task ?? 'task'), 80, '')),
-                    'task_label' => (string) ($first->task ?? '-'),
+                    'key' => (string) data_get($first->skill, 'item_key', Str::slug(Str::limit((string) ($first->task ?? 'task'), 80, ''))),
+                    'task_label' => (string) data_get($first->skill, 'item_label', (string) ($first->task ?? '-')),
+                    'raw_task_labels' => $group
+                        ->pluck('task')
+                        ->filter()
+                        ->unique()
+                        ->sort()
+                        ->take(6)
+                        ->values(),
+                    'group_key' => (string) data_get($first->skill, 'key'),
+                    'group_order' => (int) data_get($first->skill, 'item_order', 999),
                     'skill_label' => (string) data_get($first->skill, 'thai'),
                     'skill_en' => (string) data_get($first->skill, 'label'),
                     'tone' => (string) data_get($first->skill, 'tone'),
@@ -4865,9 +5245,25 @@ class OutputController extends Controller
                     'people' => $group->pluck('person')->filter()->unique()->sort()->take(8)->values(),
                 ];
             })
-            ->sortByDesc('unique_tasks')
+            ->sortBy(fn ($row) => sprintf(
+                '%02d-%03d-%s',
+                (int) ($fteSkillGroupOrder[(string) ($row->group_key ?? '')] ?? 99),
+                (int) ($row->group_order ?? 999),
+                (string) ($row->task_label ?? '')
+            ))
             ->values();
         $maxTaskRows = max(1, (int) $taskRows->max('unique_tasks'));
+        $groupedTaskRows = collect($fteSkillTaxonomy)
+            ->map(function (array $group, string $groupKey) use ($taskRows) {
+                return (object) [
+                    'key' => $groupKey,
+                    'label' => $group['label'],
+                    'tone' => $group['tone'],
+                    'rows' => $taskRows->where('group_key', $groupKey)->values(),
+                ];
+            })
+            ->filter(fn ($group) => $group->rows->isNotEmpty())
+            ->values();
 
         return [
             'total_unique_tasks' => (int) $uniqueRows->count(),
@@ -4881,6 +5277,7 @@ class OutputController extends Controller
             'skill_rows' => $skillRows,
             'max_task_rows' => $maxTaskRows,
             'task_rows' => $taskRows,
+            'grouped_task_rows' => $groupedTaskRows,
             'source_mix' => collect(['research' => 'Project FTE', 'backoffice' => 'Back Office FTE'])
                 ->map(fn ($label, $key) => (object) [
                     'key' => $key,

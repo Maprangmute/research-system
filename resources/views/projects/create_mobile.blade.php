@@ -65,7 +65,7 @@
         'IT and Technical support',
         'ที่ปรึกษาโครงการ',
         'เบิกงบประมาณทุน',
-        'พัฒนา Scientific Concept note',
+        'พัฒนา Scientific concept note / training program',
     ];
 @endphp
 

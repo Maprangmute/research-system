@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="facebook-domain-verification" content="tqgjbs7tegolvhlsr90o4exb5aq6hg">
     <title>Research Management</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('images/favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16x16.png') }}">

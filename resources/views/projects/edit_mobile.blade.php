@@ -70,7 +70,7 @@
         'IT and Technical support',
         'ที่ปรึกษาโครงการ',
         'เบิกงบประมาณทุน',
-        'พัฒนา Scientific Concept note',
+        'พัฒนา Scientific concept note / training program',
     ];
     $piAffiliationList = \App\Models\Project::whereNotNull('pi_affiliation')
         ->whereRaw("TRIM(pi_affiliation) <> ''")

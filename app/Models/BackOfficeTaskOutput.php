@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\OutputLinkPreviewCacheService;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,13 @@ class BackOfficeTaskOutput extends Model
         'chapter_pages',
         'isbn',
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (BackOfficeTaskOutput $output) {
+            app(OutputLinkPreviewCacheService::class)->scheduleForSavedModel($output);
+        });
+    }
 
     public function task(): BelongsTo
     {

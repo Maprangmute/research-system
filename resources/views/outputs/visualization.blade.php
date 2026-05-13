@@ -1764,6 +1764,456 @@
             gap: 12px;
             grid-template-columns: repeat(1, minmax(0, 1fr));
         }
+        .fte-taxonomy {
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+        .fte-taxonomy__head,
+        .fte-taxonomy__row {
+            display: grid;
+            grid-template-columns: minmax(150px, .34fr) minmax(0, 1fr);
+            align-items: stretch;
+        }
+        .fte-taxonomy__head {
+            background: #1f4e79;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .fte-taxonomy__head > div {
+            padding: 8px 10px;
+        }
+        .fte-taxonomy__group {
+            display: flex;
+            align-items: flex-start;
+            border-top: 1px solid #d6dee8;
+            background: #f8fafc;
+            padding: 8px 10px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .fte-taxonomy__group--scientific {
+            border-left: 4px solid #2563eb;
+        }
+        .fte-taxonomy__group--management {
+            border-left: 4px solid #0f766e;
+        }
+        .fte-taxonomy__group--it {
+            border-left: 4px solid #7c3aed;
+        }
+        .fte-taxonomy__group--logistics {
+            border-left: 4px solid #d97706;
+        }
+        .fte-taxonomy__cell {
+            border-top: 1px solid #d6dee8;
+            border-left: 1px solid #e2e8f0;
+            padding: 8px 10px;
+            font-size: 13px;
+            line-height: 1.45;
+            color: #0f172a;
+        }
+        .fte-taxonomy__item {
+            font-weight: 650;
+        }
+        .fte-taxonomy__count {
+            display: inline-flex;
+            margin-left: 8px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            padding: 1px 7px;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .fte-taxonomy__evidence {
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 400;
+        }
+        .fte-taxonomy__empty {
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 16px;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .fte-capability-board {
+            display: grid;
+            gap: 14px;
+        }
+        .fte-capability-group {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #ffffff;
+            overflow: hidden;
+        }
+        .fte-capability-group__head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            padding: 14px 16px;
+        }
+        .fte-capability-group__title {
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #0f172a;
+        }
+        .fte-capability-group__title-note {
+            margin-left: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #64748b;
+        }
+        .fte-capability-group__summary {
+            margin-top: 4px;
+            max-width: 720px;
+            font-size: 13px;
+            line-height: 1.55;
+            color: #64748b;
+        }
+        .fte-capability-group__metric {
+            display: inline-flex;
+            flex-shrink: 0;
+            align-items: center;
+            border-radius: 999px;
+            background: #ffffff;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 800;
+            color: #334155;
+            box-shadow: inset 0 0 0 1px #e2e8f0;
+            white-space: nowrap;
+        }
+        .fte-capability-group__body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: stretch;
+            background: #fbfdff;
+            padding: 14px;
+        }
+        .fte-capability-item {
+            display: grid;
+            flex: 1 1 250px;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 10px 12px;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, .035);
+        }
+        .fte-capability-item__name {
+            min-width: 0;
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1.35;
+            color: #0f172a;
+        }
+        .fte-capability-item__stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: flex-end;
+        }
+        .fte-capability-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 58px;
+            border-radius: 999px;
+            background: #f8fafc;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #1f2937;
+        }
+        .fte-capability-chip--primary {
+            background: #0f172a;
+            color: #ffffff;
+        }
+        .fte-capability-chip--secondary {
+            box-shadow: inset 0 0 0 1px #e2e8f0;
+            color: #475569;
+        }
+        .fte-capability-group--scientific .fte-capability-chip--primary {
+            background: #2563eb;
+        }
+        .fte-capability-group--management .fte-capability-chip--primary {
+            background: #0f766e;
+        }
+        .fte-capability-group--it .fte-capability-chip--primary {
+            background: #7c3aed;
+        }
+        .fte-capability-group--logistics .fte-capability-chip--primary {
+            background: #d97706;
+        }
+        .fte-capability-group--scientific .fte-capability-group__head {
+            border-left: 5px solid #2563eb;
+        }
+        .fte-capability-group--management .fte-capability-group__head {
+            border-left: 5px solid #0f766e;
+        }
+        .fte-capability-group--it .fte-capability-group__head {
+            border-left: 5px solid #7c3aed;
+        }
+        .fte-capability-group--logistics .fte-capability-group__head {
+            border-left: 5px solid #d97706;
+        }
+        .network-feature-grid {
+            display: grid;
+            gap: 18px;
+        }
+        .network-year-block + .network-year-block {
+            margin-top: 58px;
+        }
+        .network-year-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            border-top: 1px solid #cbd5e1;
+            padding: 22px 0 4px;
+        }
+        .network-kpi-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+        .network-kpi-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #d6e0ec;
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 16px 18px;
+            min-height: 128px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .035);
+        }
+        .network-kpi-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 4px;
+            background: #10b981;
+            opacity: .85;
+        }
+        .network-kpi-card__label {
+            max-width: 420px;
+            font-size: 12px;
+            font-weight: 850;
+            line-height: 1.35;
+            color: #64748b;
+            letter-spacing: .02em;
+        }
+        .network-kpi-card__value {
+            margin-top: 10px;
+            font-size: 34px;
+            font-weight: 950;
+            line-height: .95;
+            color: #0f172a;
+        }
+        .network-kpi-card__sub {
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 750;
+            line-height: 1.35;
+            color: #64748b;
+        }
+        @media (min-width: 1280px) {
+            .network-kpi-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+        .network-year-head__year {
+            position: relative;
+            padding-left: 18px;
+            font-size: clamp(28px, 3vw, 40px);
+            font-weight: 950;
+            color: #0f172a;
+            line-height: .95;
+            letter-spacing: 0;
+        }
+        .network-year-head__year::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 3px;
+            bottom: 1px;
+            width: 6px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, #047857, #34d399);
+            box-shadow: 0 10px 20px rgba(4, 120, 87, .24);
+        }
+        .network-year-head__count {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            background: #0f172a;
+            padding: 9px 13px;
+            font-size: 13px;
+            font-weight: 850;
+            color: #ffffff;
+            white-space: nowrap;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, .16);
+        }
+        .network-feature-card {
+            position: relative;
+            min-height: 620px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: #0f172a;
+            box-shadow: 0 16px 38px rgba(15, 23, 42, .10);
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .network-feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 24px 52px rgba(15, 23, 42, .18);
+        }
+        .network-feature-card__media,
+        .network-feature-card__fallback,
+        .network-feature-card__shade {
+            position: absolute;
+            inset: 0;
+        }
+        .network-feature-card__media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .network-feature-card__fallback {
+            display: grid;
+            place-items: center;
+            background:
+                linear-gradient(135deg, rgba(15, 23, 42, .92), rgba(37, 99, 235, .72)),
+                radial-gradient(circle at 20% 15%, rgba(125, 211, 252, .45), transparent 34%),
+                radial-gradient(circle at 80% 20%, rgba(167, 139, 250, .36), transparent 32%);
+            color: #ffffff;
+            text-align: center;
+        }
+        .network-feature-card--no-link .network-feature-card__fallback {
+            background:
+                linear-gradient(135deg, rgba(15, 23, 42, .94), rgba(15, 118, 110, .76)),
+                radial-gradient(circle at 18% 18%, rgba(110, 231, 183, .38), transparent 34%),
+                radial-gradient(circle at 82% 12%, rgba(251, 191, 36, .24), transparent 32%);
+        }
+        .network-feature-card__fallback-kind {
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, .76);
+        }
+        .network-feature-card__fallback-code {
+            margin-top: 10px;
+            font-size: clamp(30px, 7vw, 42px);
+            font-weight: 950;
+            line-height: 1;
+        }
+        .network-feature-card__shade {
+            background:
+                linear-gradient(180deg, rgba(15, 23, 42, .02) 0%, rgba(15, 23, 42, .10) 48%, rgba(15, 23, 42, .82) 100%),
+                linear-gradient(90deg, rgba(15, 23, 42, .36) 0%, rgba(15, 23, 42, .08) 52%, rgba(15, 23, 42, .22) 100%);
+        }
+        .network-feature-card__body {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            min-height: 620px;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 22px;
+            color: #ffffff;
+        }
+        .network-feature-card__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .network-feature-card__pill {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .92);
+            padding: 5px 9px;
+            font-size: 11px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+        .network-feature-card__host {
+            max-width: 170px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 11px;
+            font-weight: 800;
+            color: rgba(255, 255, 255, .78);
+        }
+        .network-feature-card__title {
+            display: -webkit-box;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            font-size: 23px;
+            font-weight: 850;
+            line-height: 1.22;
+            text-shadow: 0 1px 2px rgba(15, 23, 42, .32);
+        }
+        .network-feature-card__desc {
+            display: -webkit-box;
+            overflow: hidden;
+            margin-top: 8px;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            font-size: 13px;
+            line-height: 1.45;
+            color: rgba(255, 255, 255, .82);
+        }
+        @media (min-width: 1280px) {
+            .fte-capability-board {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                align-items: start;
+            }
+            .network-feature-grid {
+                grid-template-columns: repeat(12, minmax(0, 1fr));
+                grid-auto-rows: 430px;
+            }
+            .network-feature-card {
+                grid-column: span 4;
+                min-height: auto;
+            }
+            .network-feature-card__body {
+                min-height: 100%;
+            }
+            .network-feature-card:nth-child(1) {
+                grid-column: span 7;
+                grid-row: span 2;
+            }
+            .network-feature-card:nth-child(2),
+            .network-feature-card:nth-child(3) {
+                grid-column: span 5;
+            }
+            .network-feature-card:first-child .network-feature-card__title {
+                max-width: 760px;
+                font-size: 34px;
+            }
+            .network-feature-card:nth-child(n+4) .network-feature-card__title {
+                font-size: 21px;
+            }
+        }
         @media (max-width: 1023px) {
             .scene {
                 min-height: auto;
@@ -1943,6 +2393,103 @@
             }
             .framework-card {
                 min-height: auto;
+            }
+            .nature-section {
+                padding: 12px !important;
+            }
+            .nature-shell {
+                border-radius: 14px !important;
+                padding: 12px !important;
+            }
+            .nature-shell h2 {
+                font-size: 21px !important;
+                line-height: 1.25 !important;
+            }
+            .nature-shell .mt-5.grid.gap-3 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .nature-shell .mt-5.grid.gap-3 > div {
+                border-radius: 12px;
+                padding: 12px;
+            }
+            .nature-shell .mt-5.grid.gap-3 .text-3xl {
+                font-size: 24px !important;
+            }
+            .nature-layout {
+                gap: 14px;
+            }
+            .nature-sticky {
+                border-radius: 14px !important;
+                padding: 12px !important;
+            }
+            .nature-sticky > .flex {
+                align-items: flex-start;
+            }
+            .nature-sticky > .flex .rounded-full {
+                border-radius: 12px;
+                white-space: nowrap;
+            }
+            .nature-map {
+                width: 100%;
+                min-height: 0 !important;
+                max-width: min(100%, calc(100vw - 72px));
+                border-radius: 20px !important;
+                padding: 8px !important;
+            }
+            .nature-map .absolute.inset-6 {
+                inset: 14px !important;
+            }
+            .nature-bubble {
+                min-width: 42px;
+                min-height: 42px;
+                max-width: 46%;
+                overflow: hidden;
+                filter: none;
+                opacity: .9;
+            }
+            .nature-bubble > div {
+                padding-left: 5px !important;
+                padding-right: 5px !important;
+            }
+            .nature-bubble [class*="text-[15px]"],
+            .nature-bubble [class*="text-[12px]"],
+            .nature-bubble [class*="text-[10px]"] {
+                font-size: clamp(8px, 2.35vw, 11px) !important;
+                line-height: 1.08 !important;
+            }
+            .nature-bubble .mt-1 {
+                margin-top: 1px !important;
+                font-size: clamp(7px, 2vw, 9px) !important;
+                line-height: 1 !important;
+            }
+            .nature-bubble.is-active {
+                box-shadow: 0 14px 28px rgba(15, 23, 42, .22) !important;
+                outline-width: 2px;
+            }
+            .nature-bubble.is-active::after {
+                inset: -4px;
+                border-width: 1px;
+                box-shadow: 0 0 0 4px rgba(255, 255, 255, .62);
+            }
+            .nature-card {
+                border-radius: 14px !important;
+                padding: 14px !important;
+                scroll-margin-top: 12px;
+            }
+            .nature-card .text-lg {
+                font-size: 16px !important;
+                line-height: 1.35 !important;
+            }
+            .nature-card .mt-5.grid {
+                gap: 12px;
+            }
+            .nature-card .border-t {
+                padding-top: 12px;
+            }
+            .nature-card .bg-amber-50\/50 {
+                border-radius: 12px;
+                padding: 12px !important;
             }
             .viz-page [class*="h-[340px]"],
             .viz-page [class*="h-[360px]"],
@@ -2139,6 +2686,54 @@
                 min-width: 0;
                 width: 100%;
             }
+            .fte-taxonomy {
+                border-radius: 8px;
+            }
+            .fte-taxonomy__head {
+                display: none;
+            }
+            .fte-taxonomy__row {
+                display: block;
+                border-top: 1px solid #d6dee8;
+                padding: 10px 0;
+            }
+            .fte-taxonomy__row:first-of-type {
+                border-top: 0;
+            }
+            .fte-taxonomy__group {
+                border-top: 0;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 8px 10px;
+            }
+            .fte-taxonomy__cell {
+                border-top: 0;
+                border-left: 0;
+                padding: 4px 10px;
+            }
+            .fte-taxonomy__count {
+                margin-left: 0;
+                margin-top: 4px;
+            }
+            .fte-capability-group__head {
+                flex-direction: column;
+                gap: 8px;
+                padding: 12px;
+            }
+            .fte-capability-group__title {
+                font-size: 16px;
+            }
+            .fte-capability-group__metric {
+                white-space: normal;
+            }
+            .fte-capability-item {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 12px;
+                flex-basis: 100%;
+            }
+            .fte-capability-item__stats {
+                justify-content: flex-start;
+            }
         }
         @media (min-width: 768px) {
             .filter-grid {
@@ -2281,20 +2876,20 @@
                             โครงการและผลงาน Siriraj Health Policy สามารถสร้างและใช้ประโยชน์จากบริบทศิริราช เพื่อขับเคลื่อนการตัดสินใจเชิงนโยบายได้มากเพียงใด
                         </h2>
                         <p class="mt-4 max-w-none text-base leading-relaxed text-slate-600 md:text-lg">
-                            Policy-Relevant Decision-Making = (Clinical Insight + Epidemiological Evidence + Economic Value) × Communication = Policy Impact
+                            Policy-Relevant Decision-Making = การทำงานร่วมกันของคนในหน่วยวิจัยฯ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลในโครงการเดียวกัน + หลักฐานเชิงระบบ + ผลงานที่ต่อยอดสู่ policy/practice impact
                         </p>
                         <div class="mt-4 grid gap-3 md:grid-cols-3">
                             <div class="rounded-2xl border border-indigo-100 bg-white/80 px-4 py-3">
                                 <div class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Trust (Credibility)</div>
-                                <div class="mt-1 text-sm leading-relaxed text-slate-700">Clinical Relevance (Siriraj, Real-world)</div>
+                                <div class="mt-1 text-sm leading-relaxed text-slate-700">โครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ร่วมกัน</div>
                             </div>
                             <div class="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3">
                                 <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Truth (Validation)</div>
-                                <div class="mt-1 text-sm leading-relaxed text-slate-700">System Analysis / Epidemiology + Health Economics (HTA)</div>
+                                <div class="mt-1 text-sm leading-relaxed text-slate-700">โครงการร่วมสองกลุ่มที่อยู่ในประเด็น Health Policy / Health System</div>
                             </div>
                             <div class="rounded-2xl border border-orange-100 bg-white/80 px-4 py-3">
                                 <div class="text-xs font-semibold uppercase tracking-wide text-orange-700">Translation (Impact)</div>
-                                <div class="mt-1 text-sm leading-relaxed text-slate-700">Strategic Communication (to policy & practice)</div>
+                                <div class="mt-1 text-sm leading-relaxed text-slate-700">ผลงานที่ต่อยอดไปสู่ policy, practice หรือระบบสุขภาพ</div>
                             </div>
                         </div>
                     </div>
@@ -2303,8 +2898,8 @@
                 <div class="policy-axis-card mt-4">
                         <div class="policy-section-title">
                             <div>
-                            <h3 class="text-base font-semibold text-slate-900">Trend of our work toward Policy-Relevant Decision-Making</h3>
-                            <p class="mt-1 text-sm text-slate-600">แนวโน้มของโครงการต่างๆ ว่าสามารถเชื่อม Clinical Insight ผ่านกระบวนการสร้าง Evidence และไปถึง communication และ policy impact แค่ไหน</p>
+                            <h3 class="text-base font-semibold text-slate-900">Trend of Policy-Relevant Decision-Making</h3>
+                            <p class="mt-1 text-sm text-slate-600">Credibility และ Validation นับเฉพาะโครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ อยู่ในโครงการเดียวกัน ส่วน Impact นับจากผลงานที่เชื่อมกับ policy หรือ practice change</p>
                         </div>
                         <span class="policy-pill">แสดงเป็นจำนวนต่อปี</span>
                     </div>
@@ -2405,7 +3000,7 @@
                     <div class="policy-section-title rounded-xl border border-indigo-100 px-3 py-3" style="background-color: #eef2ff;">
                         <div>
                             <h3 class="text-xl font-semibold text-slate-900">Credibility</h3>
-                            <p class="mt-1 max-w-4xl text-sm leading-relaxed text-indigo-950/80">สรุปว่าโครงการที่มีคนศิริราชร่วมเชื่อมกับคนกลุ่มใดบ้าง ทั้งคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล และคนนอกคณะฯ เพื่อเห็นฐาน evidence ที่เกิดจากบริบทจริงของศิริราชชัดขึ้น</p>
+                            <p class="mt-1 max-w-4xl text-sm leading-relaxed text-indigo-950/80">สรุปเฉพาะโครงการที่มีทั้งคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลอยู่ในโครงการเดียวกัน เพื่ออ่านฐาน evidence ที่เกิดจากบริบทจริงของศิริราชให้ชัดขึ้น</p>
                         </div>
                         <span class="policy-pill">People / Projects</span>
                     </div>
@@ -2445,7 +3040,7 @@
                         <div class="hidden contribution-card">
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <div class="text-sm font-semibold text-slate-900">แพทย์ศิริราชที่ร่วมในกลุ่มโครงการ</div>
+                                    <div class="text-sm font-semibold text-slate-900">โครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม</div>
                                     <div class="mt-1 max-w-3xl text-xs leading-relaxed text-slate-500">ตัวเลขการ์ดเป็นยอดรวมแบบไม่ซ้ำทั้งช่วงที่เลือก ส่วนกราฟด้านล่างแสดงแนวโน้มรายปีโดยนับไม่ซ้ำแยกปีต่อปี</div>
                                 </div>
                                 <span class="policy-pill">{{ $expertTrendRows->first()?->year ?: '-' }} - {{ $expertTrendRows->last()?->year ?: '-' }}</span>
@@ -2457,7 +3052,7 @@
                                     <div class="mt-1 text-[11px] text-slate-500">รวมทั้งช่วงที่เลือกแบบไม่ซ้ำ</div>
                                 </div>
                                 <div class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-3">
-                                    <div class="text-xs font-semibold text-amber-700">โครงการที่มีแพทย์ศิริราชร่วม</div>
+                                    <div class="text-xs font-semibold text-amber-700">โครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม</div>
                                     <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format($expertTrendTotalProjects) }} โครงการ</div>
                                     <div class="mt-1 text-[11px] text-slate-500">รวมทั้งช่วงที่เลือกแบบไม่ซ้ำ</div>
                                 </div>
@@ -2474,10 +3069,10 @@
                                 $expertPeopleTrendShape = $trendShape($expertTrendSummaryRows->pluck('people'));
                                 $expertProjectTrendShape = $trendShape($expertTrendSummaryRows->pluck('projects'));
                                 $expertClinicalInterpretation = str_contains($expertPeopleTrendShape, 'เพิ่ม')
-                                    ? 'ข้อมูลสะท้อนว่ากลุ่มโครงการมีฐานผู้ร่วมจากฝั่ง clinical มากขึ้น ทำให้การอ่าน evidence เชื่อมกับโจทย์บริการจริงได้ชัดขึ้น'
+                                    ? 'ข้อมูลสะท้อนว่าโครงการร่วมสองกลุ่มมีฐานผู้ร่วมจากฝั่ง clinical มากขึ้น ทำให้การอ่าน evidence เชื่อมกับโจทย์บริการจริงได้ชัดขึ้น'
                                     : (str_contains($expertPeopleTrendShape, 'ลด')
-                                        ? 'ข้อมูลสะท้อนว่าฐานผู้ร่วมจากฝั่ง clinical ลดลงเมื่อเทียบกับช่วงต้นข้อมูล จึงควรดูต่อว่าการลดลงมาจากข้อมูลยังไม่ครบหรือจากจำนวนโครงการที่ลดลงจริง'
-                                        : 'ข้อมูลยังไม่ชี้การเปลี่ยนแปลงของฐานผู้ร่วมจากฝั่ง clinical อย่างชัดเจน จึงควรอ่านประกอบกับจำนวนโครงการและประเภท output');
+                                        ? 'ข้อมูลสะท้อนว่าฐานผู้ร่วมจากฝั่ง clinical ในโครงการร่วมสองกลุ่มลดลงเมื่อเทียบกับช่วงต้นข้อมูล จึงควรดูต่อว่าการลดลงมาจากข้อมูลยังไม่ครบหรือจากจำนวนโครงการที่ลดลงจริง'
+                                        : 'ข้อมูลยังไม่ชี้การเปลี่ยนแปลงของฐานผู้ร่วมจากฝั่ง clinical ในโครงการร่วมสองกลุ่มอย่างชัดเจน จึงควรอ่านประกอบกับจำนวนโครงการและประเภท output');
                             @endphp
                             @if ($expertTrendRows->isNotEmpty())
                                 <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
@@ -2485,7 +3080,7 @@
                                         <div class="flex flex-wrap items-center justify-between gap-3">
                                             <div>
                                                 <div class="text-sm font-semibold text-slate-900">Trend ตามปี</div>
-                                                <div class="mt-1 text-xs text-slate-500">แพทย์ศิริราชและโครงการที่มีแพทย์ศิริราชร่วม นับไม่ซ้ำแยกปีต่อปี</div>
+                                                <div class="mt-1 text-xs text-slate-500">แพทย์ศิริราชและโครงการร่วมสองกลุ่ม นับไม่ซ้ำแยกปีต่อปี</div>
                                             </div>
                                             <span class="policy-pill">{{ $expertTrendRows->first()?->year }} - {{ $expertTrendRows->last()?->year }}</span>
                                         </div>
@@ -2499,13 +3094,13 @@
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
                                                 <div class="text-[11px] font-semibold text-indigo-700">เกิดอะไรขึ้น</div>
                                                 <div class="mt-1 text-sm font-semibold leading-relaxed text-slate-900">
-                                                    ปี {{ $expertTrendFirst?->year }} - {{ $expertTrendLast?->year }} แพทย์ศิริราชที่ร่วมในกลุ่มโครงการ {{ $expertPeopleTrendShape }} จาก {{ number_format((int) ($expertTrendFirst?->people ?? 0)) }} เป็น {{ number_format((int) ($expertTrendLast?->people ?? 0)) }} คน
+                                                    ปี {{ $expertTrendFirst?->year }} - {{ $expertTrendLast?->year }} แพทย์ศิริราชที่อยู่ในโครงการร่วมสองกลุ่ม {{ $expertPeopleTrendShape }} จาก {{ number_format((int) ($expertTrendFirst?->people ?? 0)) }} เป็น {{ number_format((int) ($expertTrendLast?->people ?? 0)) }} คน
                                                 </div>
                                             </div>
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
                                                 <div class="text-[11px] font-semibold text-indigo-700">แปลว่าอะไร</div>
                                                 <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    จำนวนโครงการที่มีแพทย์ศิริราชร่วม {{ $expertProjectTrendShape }} ในช่วงเดียวกัน จึงควรอ่านจำนวนคนและจำนวนโครงการควบคู่กัน ไม่ใช่อ่านจากจำนวนคนเพียงอย่างเดียว
+                                                    จำนวนโครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม {{ $expertProjectTrendShape }} ในช่วงเดียวกัน จึงควรอ่านจำนวนคนและจำนวนโครงการควบคู่กัน ไม่ใช่อ่านจากจำนวนคนเพียงอย่างเดียว
                                                 </div>
                                             </div>
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
@@ -2719,10 +3314,10 @@
                                     <div class="flex w-full flex-wrap items-start justify-between gap-4">
                                         <div class="min-w-0 flex-1">
                                             <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Validation</div>
-                                            <div class="mt-1 text-xl font-semibold text-slate-900">Trends in Siriraj health professionals’ interest in research-to-policy work</div>
-                                            <div class="mt-2 w-full whitespace-pre-line text-sm leading-relaxed text-slate-700">แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health Sytem)
+                                            <div class="mt-1 text-xl font-semibold text-slate-900">Trends in same-project collaboration for research-to-policy work</div>
+                                            <div class="mt-2 w-full whitespace-pre-line text-sm leading-relaxed text-slate-700">แนวโน้มโครงการที่มีทั้งคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ทำงานร่วมกันด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health System)
 
-จำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย ที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์)  เข้ามาเป็นส่วนร่วม โดยแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย
+จำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย โดยต้องมีทั้งสองกลุ่มเป็นส่วนร่วมในโครงการเดียวกัน และแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย
 Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Technical Cohorts</div>
                                             <div class="mt-4 w-full text-sm italic leading-relaxed text-slate-500">*Theme/เนื้อหา Rational Drug Use (RDU) และ Global Health อาจยังถูกมองเป็น Operational project ภายในคณะแพทยศาสตร์ศิริราชพยาบาล  มากกว่า Research model จึงยังไม่ถูกรวมในการวิเคราะห์</div>
                                         </div>
@@ -2830,8 +3425,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
                                             <div>
-                                                <div class="text-sm font-semibold text-slate-900">Trend กลุ่มเนื้อหา Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE) ตามปี</div>
-                                                <div class="mt-1 text-xs text-slate-500">แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health Sytem)</div>
+                                                <div class="text-sm font-semibold text-slate-900">Trend โครงการร่วมสองกลุ่มในกลุ่มเนื้อหา Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE) ตามปี</div>
+                                                <div class="mt-1 text-xs text-slate-500">แนวโน้มโครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลร่วมกันในประเด็น Health Policy / Health System</div>
                                             </div>
                                             <span class="policy-pill">Ageing and Frailty / Health Systems and HTA / Real-World Evidence (RWE)</span>
                                         </div>
@@ -2848,7 +3443,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
                                         <div class="text-[13px] font-semibold text-indigo-700">ทิศทางหลัก</div>
                                         <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    {{ $formatPolicyYearRange($clinicalLedFirstYearRow?->year, $clinicalLedLastYearRow?->year) }} {{ $clinicalLedSubjectName }} {{ $clinicalLedTotalTrendShape }} จาก {{ number_format($clinicalLedFirstCount) }} เป็น {{ number_format($clinicalLedLastCount) }} คน จุดสูงสุดปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} ที่ {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คน โดยกลุ่มสะสมสูงสุดคือ {{ $clinicalLedTopTheme?->label ?? '-' }} {{ number_format((int) ($clinicalLedTopTheme?->people ?? 0)) }} คน
+                                                    {{ $formatPolicyYearRange($clinicalLedFirstYearRow?->year, $clinicalLedLastYearRow?->year) }} โครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ร่วมกันใน{{ $clinicalLedSubjectName }} {{ $clinicalLedTotalTrendShape }} จาก {{ number_format($clinicalLedFirstCount) }} เป็น {{ number_format($clinicalLedLastCount) }} คน จุดสูงสุดปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} ที่ {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คน โดยกลุ่มสะสมสูงสุดคือ {{ $clinicalLedTopTheme?->label ?? '-' }} {{ number_format((int) ($clinicalLedTopTheme?->people ?? 0)) }} คน
                                         </div>
                                     </div>
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
@@ -2860,7 +3455,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             <div class="rounded-xl bg-white/90 px-3 py-3">
                                         <div class="text-[13px] font-semibold text-indigo-700">สิ่งที่เกิดขึ้น</div>
                                         <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    ปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} เป็นจุดสูงสุดของช่วงข้อมูล โดยมีคนในหน่วยวิจัยฯ และคนภายในคณะแพทยศาสตร์ศิริราชรวม {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คนใน{{ $clinicalLedSubjectName }} {{ $clinicalLedRweInterpretation }}
+                                                    ปี {{ $clinicalLedPeakYearRow?->year ?: '-' }} เป็นจุดสูงสุดของช่วงข้อมูล เฉพาะโครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลร่วมกัน โดยมีผู้เกี่ยวข้อง {{ number_format((int) ($clinicalLedPeakYearRow?->people_count ?? 0)) }} คนใน{{ $clinicalLedSubjectName }} {{ $clinicalLedRweInterpretation }}
                                         </div>
                                     </div>
                                             @if ($incompleteCurrentYearNote)
@@ -3107,24 +3702,36 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             <section class="fade-up panel section-panel section-panel--slate p-5 md:p-6">
                 @php
                     $fteSkills = $fteSkillAnalysis ?? [];
-                    $fteSkillRows = collect(data_get($fteSkills, 'task_rows', []));
-                    $fteSkillMax = max(1, (int) data_get($fteSkills, 'max_task_rows', 1));
-                    $skillToneStyle = static function ($tone): string {
+                    $fteSkillGroups = collect(data_get($fteSkills, 'grouped_task_rows', []));
+                    $fteGroupClass = static function ($tone): string {
                         return match ((string) $tone) {
-                            'teal' => 'border-color:#99f6e4;background:#f0fdfa;color:#115e59;',
-                            'sky' => 'border-color:#bae6fd;background:#f0f9ff;color:#075985;',
-                            'indigo' => 'border-color:#c7d2fe;background:#eef2ff;color:#3730a3;',
-                            'emerald' => 'border-color:#bbf7d0;background:#f0fdf4;color:#166534;',
-                            'violet' => 'border-color:#ddd6fe;background:#f5f3ff;color:#5b21b6;',
-                            'amber' => 'border-color:#fde68a;background:#fffbeb;color:#92400e;',
-                            'rose' => 'border-color:#fecdd3;background:#fff1f2;color:#9f1239;',
-                            'cyan' => 'border-color:#a5f3fc;background:#ecfeff;color:#155e75;',
-                            'lime' => 'border-color:#d9f99d;background:#f7fee7;color:#3f6212;',
-                            default => 'border-color:#e2e8f0;background:#f8fafc;color:#334155;',
+                            'scientific' => 'fte-capability-group--scientific',
+                            'management' => 'fte-capability-group--management',
+                            'it' => 'fte-capability-group--it',
+                            'logistics' => 'fte-capability-group--logistics',
+                            default => '',
+                        };
+                    };
+                    $fteGroupSummary = static function ($key): string {
+                        return match ((string) $key) {
+                            'scientific' => 'ทักษะแกนวิชาการตั้งแต่ตั้งโจทย์ ทบทวนหลักฐาน เก็บและวิเคราะห์ข้อมูล ไปจนถึงเขียนและเผยแพร่ผลงาน',
+                            'management' => 'ทักษะจัดการโครงการ เอกสารกำกับ ทุน IRB การประสาน stakeholder และการปิดงานให้เดินต่อได้',
+                            'it_communication' => 'ทักษะสื่อสาร สร้างสื่อ ระบบข้อมูล โปรแกรม และ technical support ที่ช่วยให้งานวิจัยใช้งานได้จริง',
+                            'logistics_admin' => 'งานสนับสนุนด้านระบบ เอกสาร บุคลากร การจัดประชุม และงานปฏิบัติการที่ทำให้ระบบทำงานต่อเนื่อง',
+                            default => 'กลุ่มทักษะจากภาระงาน FTE',
+                        };
+                    };
+                    $fteGroupNote = static function ($key): string {
+                        return match ((string) $key) {
+                            'scientific' => 'Scientific',
+                            'management' => 'Management',
+                            'it_communication' => 'IT + Communication',
+                            'logistics_admin' => 'IT and Admin',
+                            default => '',
                         };
                     };
                 @endphp
-                <div class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,.04)] md:p-5">
+                <div>
                     <div>
                         <div>
                             <div class="section-tag section-tag--slate">FTE Skill Map</div>
@@ -3135,39 +3742,53 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         </div>
                     </div>
 
-                    <div class="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
-                        @forelse ($fteSkillRows as $skill)
-                            @php
-                                $width = max(4, min(100, round(((int) $skill->unique_tasks / $fteSkillMax) * 100)));
-                            @endphp
-                            <article class="bg-white px-4 py-3">
-                                <div class="grid gap-3 xl:grid-cols-[minmax(240px,.8fr)_minmax(260px,1fr)] xl:items-center">
-                                    <div class="min-w-0">
-                                        <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{{ $skill->skill_en }}</div>
-                                        <h3 class="mt-0.5 text-base font-semibold leading-snug text-slate-950">{{ $skill->task_label }}</h3>
-                                        <div class="mt-1 text-xs font-medium leading-relaxed text-slate-500">{{ $skill->skill_label }}</div>
-                                        <div class="mt-2 h-1.5 rounded-full bg-slate-100">
-                                            <div class="h-full rounded-full bg-slate-700" style="width: {{ $width }}%;"></div>
+                    @if ($fteSkillGroups->isNotEmpty())
+                        <div class="fte-capability-board mt-4">
+                            @foreach ($fteSkillGroups as $group)
+                                @php
+                                    $groupRows = collect($group->rows ?? []);
+                                    $groupTaskCount = $groupRows->sum(fn ($row) => (int) ($row->unique_tasks ?? 0));
+                                    $groupPeopleCount = $groupRows
+                                        ->flatMap(fn ($row) => collect($row->people ?? []))
+                                        ->filter()
+                                        ->unique()
+                                        ->count();
+                                @endphp
+                                <section class="fte-capability-group {{ $fteGroupClass($group->tone ?? '') }}">
+                                    <div class="fte-capability-group__head">
+                                        <div>
+                                            <div class="fte-capability-group__title">
+                                                {{ $group->label }}
+                                                @php
+                                                    $groupNote = $fteGroupNote($group->key ?? '');
+                                                @endphp
+                                                @if ($groupNote !== '')
+                                                    <span class="fte-capability-group__title-note">({{ $groupNote }})</span>
+                                                @endif
+                                            </div>
+                                            <div class="fte-capability-group__summary">{{ $fteGroupSummary($group->key ?? '') }}</div>
                                         </div>
+                                        <div class="fte-capability-group__metric">{{ number_format($groupTaskCount) }} งาน · {{ number_format($groupPeopleCount) }} คน</div>
                                     </div>
-
-                                    <div class="min-w-0">
-                                        <div class="flex flex-wrap gap-1.5">
-                                            @foreach (collect($skill->containers ?? [])->take(3) as $container)
-                                                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ Str::limit($container, 42) }}</span>
-                                            @endforeach
-                                        </div>
-                                        <div class="mt-2 text-xs leading-relaxed text-slate-500">
-                                            {{ collect($skill->people ?? [])->take(5)->implode(', ') ?: '-' }}
-                                        </div>
+                                    <div class="fte-capability-group__body">
+                                        @foreach ($groupRows as $skill)
+                                            <article class="fte-capability-item">
+                                                <div class="min-w-0">
+                                                    <div class="fte-capability-item__name">{{ $skill->task_label }}</div>
+                                                </div>
+                                                <div class="fte-capability-item__stats">
+                                                    <span class="fte-capability-chip fte-capability-chip--primary">{{ number_format((int) $skill->unique_tasks) }} งาน</span>
+                                                    <span class="fte-capability-chip fte-capability-chip--secondary">{{ number_format((int) $skill->people_count) }} คน</span>
+                                                </div>
+                                            </article>
+                                        @endforeach
                                     </div>
-
-                                </div>
-                            </article>
-                        @empty
-                            <div class="rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">ยังไม่มีข้อมูล FTE ในช่วงที่เลือก</div>
-                        @endforelse
-                    </div>
+                                </section>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="fte-taxonomy__empty mt-4">ยังไม่มีข้อมูล FTE ในช่วงที่เลือก</div>
+                    @endif
                 </div>
             </section>
 
@@ -3843,79 +4464,143 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             @endif
 
             @if ($networkingCount > 0)
-                <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-                    <article class="fade-up panel section-panel section-panel--emerald chart-sticky flex h-full flex-col p-4 md:p-5">
-                        <div class="section-tag section-tag--emerald">Networking</div>
-                        <h2 class="text-base font-semibold text-slate-900">เครือข่ายและการเสริมศักยภาพ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($networkingCount) }} รายการ)</span></h2>
-                        <div class="mt-4 flex flex-1 items-center">
-                            <div class="h-[340px] w-full"><canvas id="chartNetworkingYear"></canvas></div>
+                @php
+                    $networkingCommunicationFeatures = collect($networkingSummary['communication_features'] ?? []);
+                    $networkingFeaturesByYear = $networkingCommunicationFeatures
+                        ->groupBy(fn ($feature) => (string) ($feature->year_be ?: 'ไม่ระบุปี'))
+                        ->sortKeysDesc();
+                @endphp
+                <section class="scene">
+                    <article class="fade-up panel section-panel section-panel--emerald p-5 md:p-7">
+                        <div>
+                            <div class="section-tag section-tag--emerald">Networking</div>
+                            <h2 class="max-w-6xl text-2xl font-semibold leading-tight text-slate-900 md:text-3xl">เครือข่ายและการเสริมศักยภาพ <span class="ml-1 text-lg font-medium text-slate-500">({{ number_format($networkingCount) }} รายการ)</span></h2>
                         </div>
-                    </article>
-                    <article class="fade-up panel section-panel section-panel--emerald flex h-full flex-col p-5 md:p-6">
-                        <h3 class="text-xl font-semibold text-slate-900">เครือข่ายและการเสริมศักยภาพ</h3>
-                        <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                            <div class="focus-kpi px-4 py-3">
-                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">รวม</div>
-                                <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format($networkingCount) }}</div>
-                                <div class="text-xs text-slate-500">รายการ</div>
+                        <div class="network-kpi-grid mt-5">
+                            <div class="network-kpi-card">
+                                <div class="network-kpi-card__label">จำนวนคนภายนอกคณะแพทยศาสตร์ศิริราชพยาบาลที่เข้ามาเป็นส่วนร่วมในโครงการวิจัย</div>
+                                <div class="network-kpi-card__value">{{ number_format((int) ($networkingSummary['external_people_count'] ?? 0)) }} คน</div>
+                                <div class="network-kpi-card__sub">จาก {{ number_format((int) ($networkingSummary['external_project_count'] ?? 0)) }} โครงการ</div>
+                                <div class="mt-2 text-xs font-semibold leading-relaxed text-slate-500">
+                                    PI {{ number_format((int) (collect($networkingSummary['external_role_counts'] ?? [])->get('PI') ?? 0)) }}
+                                    · Co-PI {{ number_format((int) (collect($networkingSummary['external_role_counts'] ?? [])->get('Co-PI') ?? 0)) }}
+                                    · Co-Research {{ number_format((int) (collect($networkingSummary['external_role_counts'] ?? [])->get('Co-Research') ?? 0)) }}
+                                </div>
                             </div>
-                            <div class="focus-kpi px-4 py-3">
-                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">EA115 - {{ $eaFullNameMap['EA115'] }}</div>
-                                <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format((int) ($networkingSummary['ea115_count'] ?? 0)) }}</div>
-                                <div class="text-xs text-slate-500">{{ $eaFullNameMap['EA115'] }}</div>
+                            <div class="network-kpi-card">
+                                <div class="network-kpi-card__label">News / Article</div>
+                                <div class="network-kpi-card__value">{{ number_format((int) ($networkingSummary['ea108_count'] ?? 0)) }}</div>
+                                <div class="network-kpi-card__sub">Communication Materials</div>
                             </div>
-                            <div class="focus-kpi px-4 py-3">
-                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">EA117 - {{ $eaFullNameMap['EA117'] }}</div>
-                                <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format((int) ($networkingSummary['ea117_count'] ?? 0)) }}</div>
-                                <div class="text-xs text-slate-500">{{ $eaFullNameMap['EA117'] }}</div>
+                            <div class="network-kpi-card">
+                                <div class="network-kpi-card__label">{{ $eaFullNameMap['EA115'] }}</div>
+                                <div class="network-kpi-card__value">{{ number_format((int) ($networkingSummary['ea115_count'] ?? 0)) }}</div>
+                                <div class="network-kpi-card__sub">{{ $eaFullNameMap['EA115'] }}</div>
+                            </div>
+                            <div class="network-kpi-card">
+                                <div class="network-kpi-card__label">{{ $eaFullNameMap['EA117'] }}</div>
+                                <div class="network-kpi-card__value">{{ number_format((int) ($networkingSummary['ea117_count'] ?? 0)) }}</div>
+                                <div class="network-kpi-card__sub">{{ $eaFullNameMap['EA117'] }}</div>
                             </div>
                         </div>
-                        <p class="mt-3 text-sm text-slate-600">ครอบคลุมปี {{ $networkingCoverageStartYear ?: '-' }} ถึง {{ $networkingCoverageEndYear ?: '-' }} · ปีที่มีจำนวนสูงสุด {{ $networkingSummary['peak_year'] ?: '-' }} ({{ number_format((int) ($networkingSummary['peak_year_count'] ?? 0)) }} รายการ)</p>
-                        <p class="mt-1 text-xs text-slate-500">รายการที่แสดงล่าสุด {{ number_format($networkingLatestCount) }} รายการ</p>
-                        <div class="mt-4 flex-1 space-y-2">
-                            @forelse (($networkingSummary['latest'] ?? collect()) as $row)
-                                @php
-                                    $networkingOutputLink = trim((string) ($row->link ?? ''));
-                                @endphp
-                                @if ($networkingOutputLink !== '')
-                                    <a
-                                        href="{{ $networkingOutputLink }}"
-                                        class="block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
-                                        style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}"
-                                    >
-                                        <div class="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold" style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}">
-                                            {{ $row->type_code ?? '-' }} - {{ $eaFullNameMap[$row->type_code ?? 'EA117'] ?? 'Networking' }}
-                                        </div>
-                                        <div class="font-medium line-clamp-2">{{ $row->title }}</div>
-                                        <div class="mt-2 grid gap-1 text-xs">
-                                            <div class="text-slate-500">ปี: <span class="font-medium text-slate-700">{{ $row->year_be ?: '-' }}</span></div>
-                                            <div class="text-slate-500">จากโครงการ: <span class="font-medium text-slate-700">{{ $row->reference ?? '-' }}</span></div>
-                                        </div>
-                                    </a>
-                                @else
-                                    <button
-                                        type="button"
-                                        class="js-output-item block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
-                                        style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}"
-                                        data-title="{{ $row->title }}"
-                                        data-link=""
-                                        data-detail="{{ $row->modal_detail ?? '' }}"
-                                        data-type="{{ $row->type_code ?? 'EA117' }} - {{ $eaFullNameMap[$row->type_code ?? 'EA117'] ?? 'Networking' }}"
-                                    >
-                                        <div class="mb-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold" style="{{ $outputTypeCardStyle($row->type_code ?? 'EA117') }}">
-                                            {{ $row->type_code ?? '-' }} - {{ $eaFullNameMap[$row->type_code ?? 'EA117'] ?? 'Networking' }}
-                                        </div>
-                                        <div class="font-medium line-clamp-2">{{ $row->title }}</div>
-                                        <div class="mt-2 grid gap-1 text-xs">
-                                            <div class="text-slate-500">ปี: <span class="font-medium text-slate-700">{{ $row->year_be ?: '-' }}</span></div>
-                                            <div class="text-slate-500">จากโครงการ: <span class="font-medium text-slate-700">{{ $row->reference ?? '-' }}</span></div>
-                                        </div>
-                                    </button>
-                                @endif
-                            @empty
-                                <div class="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">ไม่มีข้อมูล</div>
-                            @endforelse
+                        <div class="mt-4 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+                            <span class="rounded-full bg-slate-100 px-3 py-1.5">ปี {{ $networkingCoverageStartYear ?: '-' }}-{{ $networkingCoverageEndYear ?: '-' }}</span>
+                            <span class="rounded-full bg-slate-100 px-3 py-1.5">ปีสูงสุด {{ $networkingSummary['peak_year'] ?: '-' }} · {{ number_format((int) ($networkingSummary['peak_year_count'] ?? 0)) }} รายการ</span>
+                            <span class="rounded-full bg-slate-100 px-3 py-1.5">แสดง {{ number_format($networkingCommunicationFeatures->count()) }} ภาพ</span>
                         </div>
+                        @if ($networkingFeaturesByYear->isNotEmpty())
+                            <div class="mt-6">
+                                @foreach ($networkingFeaturesByYear as $networkingYear => $yearFeatures)
+                                    <div class="network-year-block">
+                                        <div class="network-year-head">
+                                            <div class="network-year-head__year">{{ $networkingYear }}</div>
+                                            <div class="network-year-head__count">{{ number_format($yearFeatures->count()) }} รายการ</div>
+                                        </div>
+                                        <div class="network-feature-grid mt-4">
+                                            @foreach ($yearFeatures as $feature)
+                                                @php
+                                                    $featureLink = trim((string) ($feature->external_link ?? ''));
+                                                    $featureHost = $featureLink !== '' ? parse_url($featureLink, PHP_URL_HOST) : null;
+                                                    $featureKind = trim((string) ($feature->content_kind ?? 'News'));
+                                                    $featureTypeCode = trim((string) ($feature->feature_type_code ?? 'EA108')) ?: 'EA108';
+                                                    $featureKindLabel = match ($featureTypeCode) {
+                                                        'EA115' => $eaFullNameMap['EA115'] ?? 'Capacity Building / Knowledge Sharing',
+                                                        'EA117' => $eaFullNameMap['EA117'] ?? 'Memorandum of Understanding (MOU)',
+                                                        default => $featureKind,
+                                                    };
+                                                    $featurePreview = (array) ($feature->link_preview ?? []);
+                                                    $featurePreviewId = (int) ($featurePreview['id'] ?? 0);
+                                                    $featureProvider = trim((string) ($featurePreview['provider_name'] ?? ''));
+                                                    $featurePreviewImage = trim((string) ($featurePreview['preview_image_url'] ?? ''));
+                                                    $featureThumbnailRaw = trim((string) ($featurePreview['thumbnail_url'] ?? ''));
+                                                    $featureThumbnailCandidate = $featurePreviewImage ?: $featureThumbnailRaw;
+                                                    $featureThumbnailLower = Str::lower($featureThumbnailCandidate);
+                                                    $shouldProxyPreviewImage = $featurePreviewId > 0 && (
+                                                        Str::contains($featureThumbnailLower, 'googleusercontent.com/sitesv/')
+                                                        || (Str::contains($featureThumbnailLower, 'si.mahidol.ac.th') && Str::contains($featureThumbnailLower, 'admin/news_images/'))
+                                                    );
+                                                    $featureThumbnail = $shouldProxyPreviewImage ? route('outputs.link-previews.image', $featurePreviewId, false) : $featureThumbnailCandidate;
+                                                    $featureTitle = trim((string) ($feature->clean_title ?? '')) ?: trim((string) ($feature->title ?? '')) ?: trim((string) ($featurePreview['title'] ?? ''));
+                                                    $featureDescription = trim((string) ($featurePreview['description'] ?? ''));
+                                                    if ($featureDescription === '') {
+                                                        $featureDescription = trim((string) ($feature->modal_detail ?? ''));
+                                                        $featureDescription = trim((string) preg_replace('/https?:\/\/[^\s<>"\'\]\)]+/iu', '', $featureDescription));
+                                                        $featureDescription = trim((string) preg_replace('/\s+/u', ' ', $featureDescription));
+                                                        $featureDescription = trim((string) preg_replace('/^(news|article)\s*:\s*/iu', '', $featureDescription));
+                                                        if ($featureTitle !== '' && Str::startsWith(Str::lower($featureDescription), Str::lower($featureTitle))) {
+                                                            $featureDescription = trim(Str::substr($featureDescription, Str::length($featureTitle)));
+                                                        }
+                                                        $featureDescription = Str::limit($featureDescription, 180);
+                                                    }
+                                                    $isYoutubeFeature = Str::contains(Str::lower((string) $featureHost), ['youtube.com', 'youtu.be']);
+                                                    if ($isYoutubeFeature) {
+                                                        $featureDescription = '';
+                                                    }
+                                                    $featureHasLink = $featureLink !== '';
+                                                    $featureFallbackCode = $featureTypeCode;
+                                                @endphp
+                                                <a
+                                                    href="{{ $featureHasLink ? $featureLink : '#' }}"
+                                                    target="{{ $featureHasLink ? '_blank' : '_self' }}"
+                                                    rel="{{ $featureHasLink ? 'noopener' : '' }}"
+                                                    class="network-feature-card group {{ $featureHasLink ? '' : 'network-feature-card--no-link' }}"
+                                                    @if (! $featureHasLink) aria-disabled="true" onclick="return false" @endif
+                                                >
+                                                    @if ($featureThumbnail !== '')
+                                                        <div class="network-feature-card__media">
+                                                            <img src="{{ $featureThumbnail }}" alt="" loading="lazy" decoding="async">
+                                                        </div>
+                                                    @else
+                                                        <div class="network-feature-card__fallback">
+                                                            <div>
+                                                                <div class="network-feature-card__fallback-kind">{{ $featureKind }}</div>
+                                                                <div class="network-feature-card__fallback-code">{{ $featureFallbackCode }}</div>
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                    <div class="network-feature-card__shade"></div>
+                                                    <div class="network-feature-card__body">
+                                                        <div class="network-feature-card__meta">
+                                                            <span class="network-feature-card__pill">{{ $featureKindLabel }}</span>
+                                                            <span class="network-feature-card__pill">{{ $feature->year_be ?: '-' }}</span>
+                                                            @if (! $featureHasLink)
+                                                                <span class="network-feature-card__pill">ไม่มีลิงก์</span>
+                                                            @endif
+                                                        </div>
+                                                        <div class="network-feature-card__title">{{ $featureTitle }}</div>
+                                                        @if ($featureDescription !== '')
+                                                            <div class="network-feature-card__desc">{{ $featureDescription }}</div>
+                                                        @endif
+                                                    </div>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="mt-6 rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">ยังไม่มีรูปสำหรับแสดงผล</div>
+                        @endif
                     </article>
                 </section>
             @endif
@@ -4173,6 +4858,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             const presentationChartColors = ['#ea580c', '#fb7185', '#16a34a', '#0891b2', '#7c3aed', '#ca8a04', '#0f766e', '#2563eb', '#475569'];
             const presentationChartBorderColors = ['#c2410c', '#e11d48', '#15803d', '#0e7490', '#6d28d9', '#a16207', '#115e59', '#1d4ed8', '#334155'];
             const textbookYearColors = @json(collect($textbookYearLabels ?? collect())->map(fn ($year) => $textbookYearColorMap[(string) $year] ?? '#0f766e')->values());
+            const networkingEa108 = (networkingYearSeries?.EA108 || []);
             const networkingEa115 = (networkingYearSeries?.EA115 || []);
             const networkingEa117 = (networkingYearSeries?.EA117 || []);
 
@@ -4496,8 +5182,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
 
             const frameworkTrendLabels = safeLabels(policyFrameworkTrendYears);
             const frameworkTrendMeta = {
-                trust: 'Credibility',
-                truth: 'Validation',
+                trust: 'Credibility (ร่วมสองกลุ่ม)',
+                truth: 'Validation (ร่วมสองกลุ่ม)',
                 policy_impact: 'Impact',
                 clinical_led: 'กลุ่มเนื้อหา Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE)'
             };
@@ -4880,7 +5566,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 if (!frameworkModal || !frameworkModalBody) return;
                 frameworkModalTone = frameworkToneStyles[datasetKey] || frameworkToneStyles.trust;
                 frameworkModalTitle.textContent = frameworkTrendMeta[datasetKey] || 'รายการ';
-                frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} ${escapeFrameworkHtml(frameworkTrendUnits[datasetKey] || 'รายการ')}</span></span>`;
+                const datasetNote = ['trust', 'truth'].includes(datasetKey) ? 'โครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ในโครงการเดียวกัน' : 'ผลงานที่เชื่อม policy หรือ practice change';
+                frameworkModalSubtitle.innerHTML = `<span class="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} ${escapeFrameworkHtml(frameworkTrendUnits[datasetKey] || 'รายการ')}</span><span class="text-sm font-medium text-slate-500">${escapeFrameworkHtml(datasetNote)}</span></span>`;
                 setFrameworkModalItems(items, frameworkTrendUnits[datasetKey] || 'รายการ', { year: String(year || '') });
                 showFrameworkModal();
             };
@@ -4990,7 +5677,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             fill: true
                         },
                         {
-                            label: 'โครงการที่มีแพทย์ศิริราชร่วม',
+                            label: 'โครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม',
                             data: sirirajClinicalProjects,
                             borderColor: '#d97706',
                             backgroundColor: 'rgba(217, 119, 6, .10)',
@@ -5040,7 +5727,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         const point = elements[0];
                         const year = chart.data.labels?.[point.index];
                         const items = normalizeFrameworkItems(sirirajClinicalTrendItems?.[String(year)]);
-                        openOutputItemsModal(items, 'แพทย์ศิริราชที่ร่วมในกลุ่มโครงการ', 'โครงการ', { year: String(year || '') }, frameworkToneStyles.truth);
+                        openOutputItemsModal(items, 'โครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม', 'โครงการ', { year: String(year || '') }, frameworkToneStyles.truth);
                     }
                 }
             });
@@ -5067,7 +5754,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     ? frameworkToneStyles.clinical_rwe
                     : (themeKey === 'hta' ? frameworkToneStyles.clinical_hta : frameworkToneStyles.clinical_ageing);
                 frameworkModalTitle.textContent = themeLabel;
-                frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} โครงการ</span></span>`;
+                frameworkModalSubtitle.innerHTML = `<span class="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} โครงการร่วมสองกลุ่ม</span><span class="text-sm font-medium text-slate-500">มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ในโครงการเดียวกัน</span></span>`;
                 setFrameworkModalItems(items, 'โครงการ', { year: String(year || ''), theme: themeLabel });
                 showFrameworkModal();
             };
@@ -5709,6 +6396,16 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     labels: safeLabels(networkingYearLabels),
                     datasets: [
                         {
+                            key: 'EA108',
+                            label: 'EA108 - News / Article',
+                            data: safeValues(networkingEa108),
+                            backgroundColor: '#6366f1',
+                            borderColor: '#4f46e5',
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            maxBarThickness: 68
+                        },
+                        {
                             key: 'EA115',
                             label: 'EA115 - Capacity Building / Knowledge Sharing',
                             data: safeValues(networkingEa115),
@@ -5737,7 +6434,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     scales: {
                         y: {
                             beginAtZero: true,
-                            suggestedMax: suggestedAxisMax([...safeValues(networkingEa115), ...safeValues(networkingEa117)], 5),
+                            suggestedMax: suggestedAxisMax([...safeValues(networkingEa108), ...safeValues(networkingEa115), ...safeValues(networkingEa117)], 5),
                             ticks: { precision: 0, color: textColor },
                             grid: { color: gridColor }
                         },

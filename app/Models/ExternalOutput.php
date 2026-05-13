@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\OutputLinkPreviewCacheService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,6 +30,13 @@ class ExternalOutput extends Model
         'publish_date' => 'date',
         'impact_factor' => 'decimal:3',
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (ExternalOutput $output) {
+            app(OutputLinkPreviewCacheService::class)->scheduleForSavedModel($output);
+        });
+    }
 
     public function authors()
     {

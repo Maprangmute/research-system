@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ProjectLog;
+use App\Services\OutputLinkPreviewCacheService;
 
 
 class Output extends Model
@@ -218,6 +219,10 @@ public function bookAuthors()
                     $output->id
                 ),
             ]);
+        });
+
+        static::saved(function (Output $output) {
+            app(OutputLinkPreviewCacheService::class)->scheduleForSavedModel($output);
         });
     }
 }
