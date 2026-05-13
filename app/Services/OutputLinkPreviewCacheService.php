@@ -110,7 +110,7 @@ class OutputLinkPreviewCacheService
         $type = strtoupper(trim((string) ($output->type ?? '')));
         $title = Str::of((string) ($output->title ?? ''))->trim()->lower()->toString();
 
-        if (Str::startsWith($type, ['EA115', 'EA117'])) {
+        if (Str::startsWith($type, ['EA114', 'EA115', 'EA117'])) {
             return true;
         }
 

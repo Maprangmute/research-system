@@ -28,7 +28,7 @@ class FetchOutputOembedPreviews extends Command
         {--host= : Process only candidate links whose host contains this value}
         {--url= : Fetch a single URL instead of scanning networking outputs}';
 
-    protected $description = 'Fetch link previews for EA108 News/Article, EA115, and EA117 links and cache them in output_link_previews';
+    protected $description = 'Fetch link previews for EA108 News/Article, EA114, EA115, and EA117 links and cache them in output_link_previews';
 
     public function handle(FacebookOembedService $oembed, MicrolinkPreviewService $microlink, OpenGraphPreviewService $openGraph, ScreenshotPreviewService $screenshots): int
     {
@@ -55,7 +55,7 @@ class FetchOutputOembedPreviews extends Command
             ->values();
 
         if ($candidates->isEmpty()) {
-            $this->info('No EA108/EA115/EA117 links found.');
+            $this->info('No EA108/EA114/EA115/EA117 links found.');
 
             return self::SUCCESS;
         }
@@ -403,7 +403,7 @@ class FetchOutputOembedPreviews extends Command
         $type = strtoupper(trim((string) ($output->type ?? '')));
         $title = Str::of((string) ($output->title ?? ''))->trim()->lower()->toString();
 
-        if (Str::startsWith($type, ['EA115', 'EA117'])) {
+        if (Str::startsWith($type, ['EA114', 'EA115', 'EA117'])) {
             return true;
         }
 

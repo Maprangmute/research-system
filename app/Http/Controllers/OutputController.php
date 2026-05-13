@@ -1908,7 +1908,7 @@ class OutputController extends Controller
             })
             ->values();
         $networkingRows = $filtered
-            ->whereIn('type_code', ['EA115', 'EA117'])
+            ->whereIn('type_code', ['EA114', 'EA115', 'EA117'])
             ->values()
             ->merge($communicationFeatureRows)
             ->values();
@@ -2034,7 +2034,7 @@ class OutputController extends Controller
                         ->count(),
                 ];
             });
-        $networkingYearSeries = collect(['EA108', 'EA115', 'EA117'])->mapWithKeys(function ($typeCode) use ($networkingRows, $networkingYears) {
+        $networkingYearSeries = collect(['EA108', 'EA114', 'EA115', 'EA117'])->mapWithKeys(function ($typeCode) use ($networkingRows, $networkingYears) {
             return [
                 $typeCode => $networkingYears->keys()
                     ->map(fn ($year) => (int) $networkingRows
@@ -2152,7 +2152,7 @@ class OutputController extends Controller
             ->mapWithKeys(fn ($year) => [
                 (string) $year => $buildChartOutputItems($textbookRows->where('year_be', (int) $year)->values()),
             ]);
-        $networkingYearItems = collect(['EA108', 'EA115', 'EA117'])->mapWithKeys(fn ($typeCode) => [
+        $networkingYearItems = collect(['EA108', 'EA114', 'EA115', 'EA117'])->mapWithKeys(fn ($typeCode) => [
             $typeCode => $networkingYears
                 ->keys()
                 ->mapWithKeys(fn ($year) => [
@@ -2198,6 +2198,7 @@ class OutputController extends Controller
             'external_project_count' => $externalSirirajNetworkProjectCount,
             'external_role_counts' => $externalSirirajNetworkRoleCounts,
             'ea108_count' => (int) $communicationFeatureRows->count(),
+            'ea114_count' => (int) $networkingRows->where('type_code', 'EA114')->count(),
             'ea115_count' => (int) $networkingRows->where('type_code', 'EA115')->count(),
             'ea117_count' => (int) $networkingRows->where('type_code', 'EA117')->count(),
             'latest' => $sortRowsNewestFirst($networkingRows)->take(5)->map($buildSummaryListItem)->values(),
@@ -2207,6 +2208,7 @@ class OutputController extends Controller
                     $title = trim((string) ($item->title ?? ''));
                     $typeCode = strtoupper(trim((string) ($row->type_code ?? '')));
                     $kind = match ($typeCode) {
+                        'EA114' => 'EA114',
                         'EA115' => 'EA115',
                         'EA117' => 'EA117',
                         default => Str::startsWith(Str::lower($title), 'article:') ? 'Article' : 'News',

@@ -4493,6 +4493,11 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 <div class="network-kpi-card__sub">Communication Materials</div>
                             </div>
                             <div class="network-kpi-card">
+                                <div class="network-kpi-card__label">{{ $eaFullNameMap['EA114'] }}</div>
+                                <div class="network-kpi-card__value">{{ number_format((int) ($networkingSummary['ea114_count'] ?? 0)) }}</div>
+                                <div class="network-kpi-card__sub">{{ $eaFullNameMap['EA114'] }}</div>
+                            </div>
+                            <div class="network-kpi-card">
                                 <div class="network-kpi-card__label">{{ $eaFullNameMap['EA115'] }}</div>
                                 <div class="network-kpi-card__value">{{ number_format((int) ($networkingSummary['ea115_count'] ?? 0)) }}</div>
                                 <div class="network-kpi-card__sub">{{ $eaFullNameMap['EA115'] }}</div>
@@ -4524,6 +4529,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                     $featureKind = trim((string) ($feature->content_kind ?? 'News'));
                                                     $featureTypeCode = trim((string) ($feature->feature_type_code ?? 'EA108')) ?: 'EA108';
                                                     $featureKindLabel = match ($featureTypeCode) {
+                                                        'EA114' => $eaFullNameMap['EA114'] ?? 'Events / Forum',
                                                         'EA115' => $eaFullNameMap['EA115'] ?? 'Capacity Building / Knowledge Sharing',
                                                         'EA117' => $eaFullNameMap['EA117'] ?? 'Memorandum of Understanding (MOU)',
                                                         default => $featureKind,
@@ -4557,7 +4563,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                         $featureDescription = '';
                                                     }
                                                     $featureHasLink = $featureLink !== '';
-                                                    $featureFallbackCode = $featureTypeCode;
+                                                    $featureFallbackCode = $eaFullNameMap[$featureTypeCode] ?? $featureKindLabel;
                                                 @endphp
                                                 <a
                                                     href="{{ $featureHasLink ? $featureLink : '#' }}"
@@ -4859,6 +4865,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             const presentationChartBorderColors = ['#c2410c', '#e11d48', '#15803d', '#0e7490', '#6d28d9', '#a16207', '#115e59', '#1d4ed8', '#334155'];
             const textbookYearColors = @json(collect($textbookYearLabels ?? collect())->map(fn ($year) => $textbookYearColorMap[(string) $year] ?? '#0f766e')->values());
             const networkingEa108 = (networkingYearSeries?.EA108 || []);
+            const networkingEa114 = (networkingYearSeries?.EA114 || []);
             const networkingEa115 = (networkingYearSeries?.EA115 || []);
             const networkingEa117 = (networkingYearSeries?.EA117 || []);
 
@@ -6397,7 +6404,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     datasets: [
                         {
                             key: 'EA108',
-                            label: 'EA108 - News / Article',
+                            label: 'News / Article',
                             data: safeValues(networkingEa108),
                             backgroundColor: '#6366f1',
                             borderColor: '#4f46e5',
@@ -6406,8 +6413,18 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             maxBarThickness: 68
                         },
                         {
+                            key: 'EA114',
+                            label: 'Events / Forum',
+                            data: safeValues(networkingEa114),
+                            backgroundColor: '#7c3aed',
+                            borderColor: '#6d28d9',
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            maxBarThickness: 68
+                        },
+                        {
                             key: 'EA115',
-                            label: 'EA115 - Capacity Building / Knowledge Sharing',
+                            label: 'Capacity Building / Knowledge Sharing',
                             data: safeValues(networkingEa115),
                             backgroundColor: '#d97706',
                             borderColor: '#b45309',
@@ -6417,7 +6434,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         },
                         {
                             key: 'EA117',
-                            label: 'EA117 - Memorandum of Understanding (MOU)',
+                            label: 'Memorandum of Understanding (MOU)',
                             data: safeValues(networkingEa117),
                             backgroundColor: '#059669',
                             borderColor: '#047857',
