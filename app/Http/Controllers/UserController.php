@@ -280,6 +280,8 @@ class UserController extends Controller
             'email'    => 'required|email|unique:users',
             'position' => 'nullable|string|max:255',
             'skill_role' => 'nullable|in:' . implode(',', $this->allowedSkillRoles()),
+            'is_borrowed' => 'nullable|boolean',
+            'borrowed_department' => 'nullable|required_if:is_borrowed,1|string|max:255',
             'role'     => 'required|in:' . implode(',', $this->allowedRoles()),
             'password' => 'required|string|min:4|confirmed',
             'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
@@ -291,6 +293,10 @@ class UserController extends Controller
 
         if (empty($validated['skill_role'])) {
             $validated['skill_role'] = User::inferSkillRoleFromPosition($validated['position'] ?? null, $validated['name'] ?? null);
+        }
+        $validated['is_borrowed'] = $request->boolean('is_borrowed');
+        if (! $validated['is_borrowed']) {
+            $validated['borrowed_department'] = null;
         }
 
         $validated['password'] = Hash::make($validated['password']);
@@ -325,6 +331,8 @@ class UserController extends Controller
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'position' => 'nullable|string|max:255',
             'skill_role' => 'nullable|in:' . implode(',', $this->allowedSkillRoles()),
+            'is_borrowed' => 'nullable|boolean',
+            'borrowed_department' => 'nullable|required_if:is_borrowed,1|string|max:255',
             'role'     => 'required|in:' . implode(',', $this->allowedRoles()),
             'avatar'   => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'password' => 'nullable|string|min:6|confirmed',
@@ -336,6 +344,10 @@ class UserController extends Controller
 
         if (empty($validated['skill_role'])) {
             $validated['skill_role'] = User::inferSkillRoleFromPosition($validated['position'] ?? null, $validated['name'] ?? null);
+        }
+        $validated['is_borrowed'] = $request->boolean('is_borrowed');
+        if (! $validated['is_borrowed']) {
+            $validated['borrowed_department'] = null;
         }
 
         if (!empty($validated['password'])) {

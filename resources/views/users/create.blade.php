@@ -96,6 +96,10 @@
                 </select>
             </div>
 
+            <div>
+                @include('users.partials.borrowed-fields')
+            </div>
+
 
             <div>
                 <label class="block text-sm text-gray-700 font-medium">อีเมล</label>

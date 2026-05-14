@@ -57,6 +57,14 @@
                 </select>
             </div>
             <div>
+                @include('users.partials.borrowed-fields', [
+                    'user' => $user,
+                    'labelClass' => 'block text-xs text-gray-700 font-medium',
+                    'inputClass' => 'w-full border p-2 rounded',
+                    'textClass' => 'text-sm',
+                ])
+            </div>
+            <div>
                 <label class="block text-xs text-gray-700 font-medium">ชื่อ - นามสกุล</label>
                 <input type="text" name="name" value="{{ old('name', $user->name) }}"
                     class="w-full border p-2 rounded text-sm" required>

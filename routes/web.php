@@ -38,6 +38,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [OtpPasswordResetController::class, 'reset'])->name('password.update');
 });
 
+Route::get('/seminar', [OutputController::class, 'seminar'])->name('seminar');
+
 Route::middleware(['auth'])->group(function () {
     Route::view('/user-guide', 'user_guide')->name('user_guide');
 

@@ -1483,6 +1483,8 @@ class OutputController extends Controller
 
     public function visualization(Request $request)
     {
+        $isPublicSeminar = (bool) $request->attributes->get('is_public_seminar', false);
+
         if ($request->query('__realtime_version') === '1') {
             return response()
                 ->json([
@@ -4852,6 +4854,8 @@ class OutputController extends Controller
             'aiProjectNatureInsight' => $aiProjectNatureInsight,
             'aiThemeGapInsight' => $cachedThemeGapInsight,
             'visualizationRealtimeVersion' => $this->visualizationRealtimeVersion(),
+            'isPublicSeminar' => $isPublicSeminar,
+            'visualizationRouteName' => $isPublicSeminar ? 'seminar' : 'outputs.visualization',
         ]);
 
         if ($useRenderedVisualizationCache && $renderedVisualizationCacheKey) {
@@ -4861,6 +4865,13 @@ class OutputController extends Controller
         }
 
         return $view;
+    }
+
+    public function seminar(Request $request)
+    {
+        $request->attributes->set('is_public_seminar', true);
+
+        return $this->visualization($request);
     }
 
     public function linkPreviewImage(OutputLinkPreview $preview)
@@ -5017,7 +5028,7 @@ class OutputController extends Controller
             return trim($text);
         };
         $activeUnitUsers = User::query()
-            ->select(['id', 'prefix', 'name', 'role', 'position', 'skill_role'])
+            ->select(['id', 'prefix', 'name', 'role', 'position', 'skill_role', 'is_borrowed', 'borrowed_department'])
             ->get()
             ->reject(function (User $user) use ($normalizeText) {
                 return in_array($normalizeText($user->name), [
@@ -5096,6 +5107,58 @@ class OutputController extends Controller
         $positionGroupTotals = $activeUnitUsers
             ->groupBy(fn (User $user) => $userPositionGroup($user))
             ->map(fn (Collection $users) => (int) $users->pluck('id')->unique()->count());
+        $skillRoleOrder = collect(User::SKILL_ROLES)->values()->flip();
+        $fteCapacityPositionRows = $activeUnitUsers
+            ->map(function (User $user) use ($userSkillRole, $userPositionGroup) {
+                return (object) [
+                    'skill_role' => $userSkillRole($user),
+                    'position_group' => $userPositionGroup($user),
+                    'is_borrowed' => (bool) ($user->is_borrowed ?? false),
+                ];
+            })
+            ->filter(fn ($row) => ! in_array((string) $row->skill_role, [User::SKILL_ROLE_UNSPECIFIED, User::SKILL_ROLE_GENERAL], true))
+            ->groupBy(fn ($row) => (string) $row->skill_role . '|' . (string) $row->position_group)
+            ->map(function (Collection $users, string $key) {
+                [$skillRole, $positionGroup] = explode('|', $key, 2);
+
+                return (object) [
+                    'skill_role' => $skillRole,
+                    'position_group' => $positionGroup,
+                    'people' => (int) $users->reject(fn ($row) => (bool) $row->is_borrowed)->count(),
+                    'borrowed_people' => (int) $users->filter(fn ($row) => (bool) $row->is_borrowed)->count(),
+                ];
+            })
+            ->sortBy(fn ($row) => sprintf(
+                '%03d-%03d-%s',
+                (int) ($positionGroupOrder[(string) ($row->position_group ?? '')] ?? 999),
+                (int) ($skillRoleOrder[(string) ($row->skill_role ?? '')] ?? 999),
+                (string) ($row->position_group ?? '')
+            ))
+            ->values();
+        $fteCapacitySkillRows = $activeUnitUsers
+            ->map(fn (User $user) => (object) [
+                'skill_role' => $userSkillRole($user),
+                'is_borrowed' => (bool) ($user->is_borrowed ?? false),
+            ])
+            ->filter(fn ($row) => ! in_array((string) $row->skill_role, [User::SKILL_ROLE_UNSPECIFIED, User::SKILL_ROLE_GENERAL], true))
+            ->groupBy('skill_role')
+            ->map(function (Collection $users, string $skillRole) {
+                return (object) [
+                    'skill_role' => $skillRole,
+                    'people' => (int) $users->count(),
+                    'regular_people' => (int) $users->reject(fn ($row) => (bool) $row->is_borrowed)->count(),
+                    'borrowed_people' => (int) $users->filter(fn ($row) => (bool) $row->is_borrowed)->count(),
+                ];
+            })
+            ->sortBy(fn ($row) => (int) ($skillRoleOrder[(string) ($row->skill_role ?? '')] ?? 999))
+            ->values();
+        $fteCapacityTotal = max(1, (int) $fteCapacitySkillRows->sum('people'));
+        $fteCapacitySkillRows = $fteCapacitySkillRows
+            ->map(function ($row) use ($fteCapacityTotal) {
+                $row->pct = round(((int) ($row->people ?? 0) / $fteCapacityTotal) * 100, 1);
+                return $row;
+            })
+            ->values();
         $unitUserByName = collect();
         foreach ($activeUnitUsers as $user) {
             foreach ([$user->name, $user->full_name, trim(((string) $user->prefix) . ' ' . ((string) $user->name))] as $nameVariant) {
@@ -5672,6 +5735,11 @@ class OutputController extends Controller
             'radar_rows' => $radarRows,
             'radar_chart_insight' => $fteRadarChartInsight,
             'radar_insights' => $fteSkillInsights->take(4)->values(),
+            'capacity_position_rows' => $fteCapacityPositionRows,
+            'capacity_skill_rows' => $fteCapacitySkillRows,
+            'capacity_total' => (int) $fteCapacitySkillRows->sum('people'),
+            'capacity_regular_total' => (int) $fteCapacitySkillRows->sum('regular_people'),
+            'capacity_borrowed_total' => (int) $fteCapacitySkillRows->sum('borrowed_people'),
             'source_mix' => collect(['research' => 'Project FTE', 'backoffice' => 'Back Office FTE'])
                 ->map(fn ($label, $key) => (object) [
                     'key' => $key,

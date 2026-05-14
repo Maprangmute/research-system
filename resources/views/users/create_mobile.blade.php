@@ -65,6 +65,13 @@
                 </select>
             </div>
             <div>
+                @include('users.partials.borrowed-fields', [
+                    'labelClass' => 'block text-xs text-gray-700 font-medium',
+                    'inputClass' => 'w-full border p-2 rounded',
+                    'textClass' => 'text-sm',
+                ])
+            </div>
+            <div>
                 <label class="block text-xs text-gray-700 font-medium">อีเมล</label>
                 <input type="email" name="email" value="{{ old('email') }}" class="w-full border p-2 rounded text-sm" required>
             </div>
