@@ -1970,6 +1970,230 @@
         .fte-capability-group--logistics .fte-capability-group__head {
             border-left: 5px solid #d97706;
         }
+        .fte-radar-shell {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: minmax(0, .9fr) minmax(260px, .42fr);
+        }
+        .fte-radar-card,
+        .fte-time-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 14px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .04);
+        }
+        .fte-radar-card__head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+        }
+        .fte-radar-card__title {
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.35;
+            color: #0f172a;
+        }
+        .fte-radar-card__note {
+            margin-top: 3px;
+            font-size: 12px;
+            line-height: 1.45;
+            color: #64748b;
+        }
+        .fte-radar-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        .fte-radar-tab {
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            background: #ffffff;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 800;
+            color: #475569;
+            transition: background .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease;
+        }
+        .fte-radar-tab.is-active,
+        .fte-radar-tab:hover,
+        .fte-radar-tab:focus-visible {
+            border-color: #0f172a;
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, .14);
+        }
+        .fte-radar-chart-wrap {
+            margin-top: 18px;
+            height: 430px;
+        }
+        .fte-radar-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px 16px;
+            max-width: 430px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .fte-radar-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+        }
+        .fte-radar-legend i {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .08);
+        }
+        .fte-insight-card {
+            background: #fbfdff;
+        }
+        .fte-chart-insight {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+        }
+        .fte-chart-insight__body {
+            border-left: 4px solid #2563eb;
+            border-radius: 10px;
+            background: #f8fbff;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.625;
+            color: #334155;
+        }
+        .fte-insight-item {
+            border-left: 4px solid #14b8a6;
+            border-radius: 10px;
+            background: #ffffff;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.625;
+            color: #334155;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, .035);
+        }
+        .fte-radar-breakdown {
+            display: grid;
+            gap: 8px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+        }
+        .fte-radar-breakdown__row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 9px 10px;
+        }
+        .fte-radar-breakdown__label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+        .fte-radar-breakdown__sub {
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+        }
+        .fte-radar-breakdown__metrics {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 5px;
+            max-width: 150px;
+        }
+        .fte-radar-breakdown__metrics span {
+            border-radius: 999px;
+            background: #f1f5f9;
+            padding: 3px 7px;
+            font-size: 10px;
+            font-weight: 900;
+            color: #475569;
+            white-space: nowrap;
+        }
+        .fte-time-card__title {
+            font-size: 13px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+        .fte-time-year {
+            margin-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 10px;
+        }
+        .fte-time-year:first-of-type {
+            border-top: 0;
+            padding-top: 0;
+        }
+        .fte-time-year__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+        .fte-time-year__total {
+            border-radius: 999px;
+            background: #f1f5f9;
+            padding: 3px 8px;
+            color: #475569;
+            white-space: nowrap;
+        }
+        .fte-time-strip {
+            display: grid;
+            gap: 5px;
+            margin-top: 8px;
+        }
+        .fte-time-strip__row {
+            display: grid;
+            grid-template-columns: 86px minmax(0, 1fr) 50px;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 750;
+            color: #475569;
+        }
+        .fte-time-strip__bar {
+            height: 8px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #e2e8f0;
+        }
+        .fte-time-strip__fill {
+            display: block;
+            height: 100%;
+            width: var(--w, 0%);
+            border-radius: inherit;
+            background: var(--bar, #2563eb);
+        }
+        .fte-time-strip__value {
+            text-align: right;
+            color: #0f172a;
+        }
+        .fte-tone-scientific { --bar: #2563eb; }
+        .fte-tone-management { --bar: #0f766e; }
+        .fte-tone-it { --bar: #7c3aed; }
+        .fte-tone-logistics { --bar: #d97706; }
         .network-feature-grid {
             display: grid;
             gap: 18px;
@@ -2218,6 +2442,17 @@
             .scene {
                 min-height: auto;
             }
+            .fte-radar-shell {
+                grid-template-columns: 1fr;
+            }
+            .fte-radar-card__head {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .fte-radar-legend {
+                justify-content: flex-start;
+                max-width: none;
+            }
             .chart-sticky {
                 position: relative;
                 top: auto;
@@ -2379,6 +2614,38 @@
                 max-width: 100%;
                 white-space: normal;
                 line-height: 1.3;
+            }
+            .fte-radar-chart-wrap {
+                height: 360px;
+            }
+            .fte-radar-card,
+            .fte-time-card {
+                padding: 12px;
+            }
+            .fte-radar-card__title {
+                font-size: 13px;
+            }
+            .fte-radar-legend {
+                gap: 8px 12px;
+                font-size: 11px;
+            }
+            .fte-radar-legend i {
+                width: 12px;
+                height: 12px;
+            }
+            .fte-chart-insight__body,
+            .fte-insight-item {
+                border-left-width: 3px;
+                padding: 9px 10px;
+                font-size: 13px;
+                line-height: 1.6;
+            }
+            .fte-radar-breakdown__row {
+                grid-template-columns: 1fr;
+            }
+            .fte-radar-breakdown__metrics {
+                justify-content: flex-start;
+                max-width: none;
             }
             .policy-pill {
                 min-height: 0;
@@ -2756,7 +3023,9 @@
         }
     </style>
 
-    <div class="viz-page min-h-screen pb-10">
+    <div class="viz-page min-h-screen pb-10"
+         data-realtime-version="{{ $visualizationRealtimeVersion ?? '' }}"
+         data-realtime-interval="10000">
         {{-- PDF export is hidden for now. Keep the route/export code available for later use. --}}
         <div class="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 md:px-8 md:py-8 2xl:px-10">
             <section class="fade-up hero-panel section-panel section-panel--slate p-7 md:p-10">
@@ -3703,6 +3972,9 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 @php
                     $fteSkills = $fteSkillAnalysis ?? [];
                     $fteSkillGroups = collect(data_get($fteSkills, 'grouped_task_rows', []));
+                    $fteRadarRows = collect(data_get($fteSkills, 'radar_rows', []));
+                    $fteRadarChartInsight = (string) data_get($fteSkills, 'radar_chart_insight', '');
+                    $fteRadarInsights = collect(data_get($fteSkills, 'radar_insights', []));
                     $fteGroupClass = static function ($tone): string {
                         return match ((string) $tone) {
                             'scientific' => 'fte-capability-group--scientific',
@@ -3736,55 +4008,44 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         <div>
                             <div class="section-tag section-tag--slate">FTE Skill Map</div>
                             <h2 class="mt-2 text-xl font-semibold leading-tight text-slate-950 md:text-2xl">Skill ที่เกิดขึ้นในหน่วยงานจากภาระงาน FTE</h2>
-                            <p class="mt-2 max-w-5xl text-xs leading-relaxed text-slate-500">
-                                นับจากภาระงานใน Project FTE และ Back Office FTE โดยรวมงานซ้ำในคนเดิมและงานเดียวกันออก เช่น คนเดียวกันทำ “เก็บข้อมูล” ซ้ำในโปรเจคเดียวกันจะนับเป็น 1 งานไม่ซ้ำ
-                            </p>
                         </div>
                     </div>
 
-                    @if ($fteSkillGroups->isNotEmpty())
-                        <div class="fte-capability-board mt-4">
-                            @foreach ($fteSkillGroups as $group)
-                                @php
-                                    $groupRows = collect($group->rows ?? []);
-                                    $groupTaskCount = $groupRows->sum(fn ($row) => (int) ($row->unique_tasks ?? 0));
-                                    $groupPeopleCount = $groupRows
-                                        ->flatMap(fn ($row) => collect($row->people ?? []))
-                                        ->filter()
-                                        ->unique()
-                                        ->count();
-                                @endphp
-                                <section class="fte-capability-group {{ $fteGroupClass($group->tone ?? '') }}">
-                                    <div class="fte-capability-group__head">
-                                        <div>
-                                            <div class="fte-capability-group__title">
-                                                {{ $group->label }}
-                                                @php
-                                                    $groupNote = $fteGroupNote($group->key ?? '');
-                                                @endphp
-                                                @if ($groupNote !== '')
-                                                    <span class="fte-capability-group__title-note">({{ $groupNote }})</span>
-                                                @endif
-                                            </div>
-                                            <div class="fte-capability-group__summary">{{ $fteGroupSummary($group->key ?? '') }}</div>
-                                        </div>
-                                        <div class="fte-capability-group__metric">{{ number_format($groupTaskCount) }} งาน · {{ number_format($groupPeopleCount) }} คน</div>
+                    @if ($fteRadarRows->isNotEmpty())
+                        <div class="fte-radar-shell mt-5">
+                            <div class="fte-radar-card">
+                                <div class="fte-radar-card__head">
+                                    <div>
+                                        <div class="fte-radar-card__title">Skill profile จากภาระงาน FTE</div>
                                     </div>
-                                    <div class="fte-capability-group__body">
-                                        @foreach ($groupRows as $skill)
-                                            <article class="fte-capability-item">
-                                                <div class="min-w-0">
-                                                    <div class="fte-capability-item__name">{{ $skill->task_label }}</div>
-                                                </div>
-                                                <div class="fte-capability-item__stats">
-                                                    <span class="fte-capability-chip fte-capability-chip--primary">{{ number_format((int) $skill->unique_tasks) }} งาน</span>
-                                                    <span class="fte-capability-chip fte-capability-chip--secondary">{{ number_format((int) $skill->people_count) }} คน</span>
-                                                </div>
-                                            </article>
-                                        @endforeach
+                                    <div class="fte-radar-legend" aria-label="FTE skill radar legend">
+                                        <span><i style="background:#2563eb;"></i>เวลาทำงาน (ชั่วโมง)</span>
+                                        <span><i style="background:#f97316;"></i>ภาระงาน</span>
+                                        <span><i style="background:#7c3aed;"></i>กำลังคน</span>
                                     </div>
-                                </section>
-                            @endforeach
+                                </div>
+                                <div class="fte-radar-chart-wrap">
+                                    <canvas id="chartFteSkillRadar" class="block h-full w-full"></canvas>
+                                </div>
+                                <div class="mt-2 text-xs leading-relaxed text-slate-500">
+                                    หมายเหตุ: กราฟนี้รวมจำนวนกำลังคนทั้งหมดที่เคยร่วมงานในช่วงเวลาที่แสดง รวมถึงบุคลากรที่ได้ลาออกแล้วด้วย
+                                </div>
+                                @if (filled($fteRadarChartInsight))
+                                    <div class="fte-chart-insight">
+                                        <div class="fte-radar-card__title">Analysis insight</div>
+                                        <div class="fte-chart-insight__body mt-3">{{ $fteRadarChartInsight }}</div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <aside class="fte-radar-card fte-insight-card">
+                                <div class="fte-radar-card__title">สิ่งที่เกิดขึ้น</div>
+                                <div class="mt-3 grid gap-3">
+                                    @foreach ($fteRadarInsights as $insight)
+                                        <div class="fte-insight-item">{{ $insight }}</div>
+                                    @endforeach
+                                </div>
+                            </aside>
                         </div>
                     @else
                         <div class="fte-taxonomy__empty mt-4">ยังไม่มีข้อมูล FTE ในช่วงที่เลือก</div>
@@ -4537,6 +4798,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                     $featurePreview = (array) ($feature->link_preview ?? []);
                                                     $featurePreviewId = (int) ($featurePreview['id'] ?? 0);
                                                     $featureProvider = trim((string) ($featurePreview['provider_name'] ?? ''));
+                                                    $featurePreviewPath = trim((string) ($featurePreview['preview_image_path'] ?? ''));
                                                     $featurePreviewImage = trim((string) ($featurePreview['preview_image_url'] ?? ''));
                                                     $featureThumbnailRaw = trim((string) ($featurePreview['thumbnail_url'] ?? ''));
                                                     $featureThumbnailCandidate = $featurePreviewImage ?: $featureThumbnailRaw;
@@ -4545,7 +4807,9 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                         Str::contains($featureThumbnailLower, 'googleusercontent.com/sitesv/')
                                                         || (Str::contains($featureThumbnailLower, 'si.mahidol.ac.th') && Str::contains($featureThumbnailLower, 'admin/news_images/'))
                                                     );
-                                                    $featureThumbnail = $shouldProxyPreviewImage ? route('outputs.link-previews.image', $featurePreviewId, false) : $featureThumbnailCandidate;
+                                                    $featureThumbnail = $featurePreviewPath !== ''
+                                                        ? '/storage/' . ltrim($featurePreviewPath, '/')
+                                                        : ($shouldProxyPreviewImage ? route('outputs.link-previews.image', $featurePreviewId, false) : $featureThumbnailCandidate);
                                                     $featureTitle = trim((string) ($feature->clean_title ?? '')) ?: trim((string) ($feature->title ?? '')) ?: trim((string) ($featurePreview['title'] ?? ''));
                                                     $featureDescription = trim((string) ($featurePreview['description'] ?? ''));
                                                     if ($featureDescription === '') {
@@ -4847,6 +5111,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             const policyImpactTrendSeries = @json(collect($policyImpactTrend['series'] ?? []));
             const policyImpactTrendItems = @json(collect($policyImpactTrend['items'] ?? []));
             const policyImpactTrendItemsByYear = @json(collect($policyImpactTrend['items_by_year'] ?? []));
+            const fteSkillRadarRows = @json(collect(data_get($fteSkillAnalysis ?? [], 'radar_rows', []))->values());
             const themeGapAi = {
                 enabled: @json($policyImpactThemeAiFacts->isNotEmpty()),
                 endpoint: @json(route('outputs.visualization.theme-gap-ai', [], false)),
@@ -4872,12 +5137,16 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             const gridColor = 'rgba(148, 163, 184, 0.2)';
             const textColor = '#334155';
             const chartAnim = { duration: 760, easing: 'easeOutCubic' };
+            const chartFontFamily = '"Sarabun", "Noto Sans Thai", "Segoe UI", sans-serif';
             const outputInProjectColor = '#4f46e5';
             const outputInProjectBorder = '#3730a3';
             const missionColor = '#0f766e';
             const missionBorder = '#115e59';
             const extraColor = '#ea580c';
             const extraBorder = '#c2410c';
+            function isCompactViewport() {
+                return window.matchMedia('(max-width: 640px)').matches;
+            }
 
             const safeLabels = (labels) => (labels && labels.length ? labels : ['ไม่มีข้อมูล']);
             const safeValues = (values, fallback = 0) => (values && values.length ? values : [fallback]);
@@ -5072,6 +5341,22 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     font: { size: isCompactViewport() ? 10 : 12 }
                                 };
                             }
+                            if (canvasId === 'chartFteSkillRadar') {
+                                chart.options.layout = chart.options.layout || {};
+                                chart.options.layout.padding = {
+                                    top: isCompactViewport() ? 18 : 34,
+                                    right: isCompactViewport() ? 10 : 24,
+                                    bottom: isCompactViewport() ? 8 : 12,
+                                    left: isCompactViewport() ? 10 : 24
+                                };
+                                chart.options.scales = chart.options.scales || {};
+                                chart.options.scales.r = chart.options.scales.r || {};
+                                chart.options.scales.r.pointLabels = {
+                                    ...(chart.options.scales.r.pointLabels || {}),
+                                    padding: isCompactViewport() ? 10 : 18,
+                                    font: { family: chartFontFamily, size: isCompactViewport() ? 10 : 13, weight: '600' }
+                                };
+                            }
                             chart.resize();
                             chart.update('none');
                         } catch (error) {
@@ -5085,6 +5370,169 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 if (maxVal <= 0) return min;
                 return Math.ceil(maxVal * 1.18);
             };
+            const fteRadarColors = {
+                hours: {
+                    fill: 'rgba(37, 99, 235, 0.24)',
+                    hoverFill: 'rgba(37, 99, 235, 0.24)',
+                    border: '#2563eb',
+                    point: '#2563eb',
+                },
+                tasks: {
+                    fill: 'rgba(249, 115, 22, 0.22)',
+                    hoverFill: 'rgba(249, 115, 22, 0.22)',
+                    border: '#f97316',
+                    point: '#f97316',
+                },
+                people: {
+                    fill: 'rgba(124, 58, 237, 0.22)',
+                    hoverFill: 'rgba(124, 58, 237, 0.22)',
+                    border: '#7c3aed',
+                    point: '#7c3aed',
+                },
+            };
+            const fteRadarLabels = (fteSkillRadarRows || []).map((row) => row.label);
+            if (fteRadarLabels.length) {
+                renderChart('chartFteSkillRadar', {
+                    type: 'radar',
+                    data: {
+                        labels: fteRadarLabels,
+                        datasets: [
+                            {
+                                label: 'เวลาทำงาน (ชั่วโมง)',
+                                data: fteSkillRadarRows.map((row) => Number(row.hours_pct || 0)),
+                                rawMetric: 'hours',
+                                rawLabel: 'ชั่วโมง',
+                                backgroundColor: fteRadarColors.hours.fill,
+                                hoverBackgroundColor: fteRadarColors.hours.hoverFill,
+                                borderColor: fteRadarColors.hours.border,
+                                pointBackgroundColor: fteRadarColors.hours.point,
+                                pointBorderColor: '#ffffff',
+                                pointRadius: 3,
+                                pointHoverRadius: 3,
+                                pointHoverBorderWidth: 1,
+                                pointHitRadius: 8,
+                                borderWidth: 2,
+                                hoverBorderWidth: 2
+                            },
+                            {
+                                label: 'ภาระงาน',
+                                data: fteSkillRadarRows.map((row) => Number(row.tasks_pct || 0)),
+                                rawMetric: 'tasks',
+                                rawLabel: 'งาน',
+                                backgroundColor: fteRadarColors.tasks.fill,
+                                hoverBackgroundColor: fteRadarColors.tasks.hoverFill,
+                                borderColor: fteRadarColors.tasks.border,
+                                pointBackgroundColor: fteRadarColors.tasks.point,
+                                pointBorderColor: '#ffffff',
+                                pointRadius: 3,
+                                pointHoverRadius: 3,
+                                pointHoverBorderWidth: 1,
+                                pointHitRadius: 8,
+                                borderWidth: 2,
+                                hoverBorderWidth: 2
+                            },
+                            {
+                                label: 'กำลังคน',
+                                data: fteSkillRadarRows.map((row) => Number(row.people_pct || 0)),
+                                rawMetric: 'people',
+                                rawLabel: 'คน',
+                                backgroundColor: fteRadarColors.people.fill,
+                                hoverBackgroundColor: fteRadarColors.people.hoverFill,
+                                borderColor: fteRadarColors.people.border,
+                                pointBackgroundColor: fteRadarColors.people.point,
+                                pointBorderColor: '#ffffff',
+                                pointRadius: 3,
+                                pointHoverRadius: 3,
+                                pointHoverBorderWidth: 1,
+                                pointHitRadius: 8,
+                                borderWidth: 2,
+                                hoverBorderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: chartAnim,
+                        layout: {
+                            padding: {
+                                top: isCompactViewport() ? 18 : 34,
+                                right: isCompactViewport() ? 10 : 24,
+                                bottom: isCompactViewport() ? 8 : 12,
+                                left: isCompactViewport() ? 10 : 24
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            intersect: true
+                        },
+                        hover: {
+                            mode: 'nearest',
+                            intersect: true
+                        },
+                        onHover: (event, activeElements) => {
+                            if (event?.native?.target) {
+                                event.native.target.style.cursor = activeElements?.length ? 'pointer' : 'default';
+                            }
+                        },
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                min: 0,
+                                max: 90,
+                                ticks: {
+                                    stepSize: 22.5,
+                                    color: '#0f172a',
+                                    backdropColor: 'rgba(255, 255, 255, 0.72)',
+                                    font: { family: chartFontFamily, weight: '400' },
+                                    callback: (value) => `${Number(value).toFixed(2)}%`
+                                },
+                                pointLabels: {
+                                    color: '#0f172a',
+                                    padding: isCompactViewport() ? 10 : 18,
+                                    font: { family: chartFontFamily, size: isCompactViewport() ? 10 : 13, weight: '600' }
+                                },
+                                angleLines: { color: 'rgba(148, 163, 184, 0.36)' },
+                                grid: { color: 'rgba(148, 163, 184, 0.42)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            datalabels: { display: false },
+                            tooltip: {
+                                enabled: true,
+                                displayColors: true,
+                                backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                                padding: 12,
+                                titleFont: { weight: '800' },
+                                bodyFont: { weight: '700' },
+                                callbacks: {
+                                    title: (items) => {
+                                        const row = fteSkillRadarRows?.[items?.[0]?.dataIndex || 0];
+                                        return row ? [row.label, row.thai] : '';
+                                    },
+                                    label: (context) => {
+                                        const row = fteSkillRadarRows?.[context.dataIndex] || {};
+                                        const metric = context.dataset.rawMetric;
+                                        const unit = context.dataset.rawLabel;
+                                        const raw = Number(row?.[metric] || 0);
+                                        const value = metric === 'hours' ? raw.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : raw.toLocaleString();
+                                        return `${context.dataset.label}: ${Number(context.parsed.r || 0).toFixed(1)}% (${value} ${unit})`;
+                                    },
+                                    afterBody: (items) => {
+                                        const row = fteSkillRadarRows?.[items?.[0]?.dataIndex || 0];
+                                        if (!row) return [];
+                                        return [
+                                            `โครงการวิจัย: ${Number(row.project_count || 0).toLocaleString()} งาน`,
+                                            `พันธกิจ: ${Number(row.backoffice_count || 0).toLocaleString()} งาน`,
+                                        ];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
             const labelsForYearChart = safeLabels(yearLabels);
             const projectSeries = labelsForYearChart.map((_, index) => Number(sourceSeries?.project?.[index] || 0));
             const missionSeries = labelsForYearChart.map((_, index) => Number(sourceSeries?.back_office?.[index] || 0));
@@ -5750,7 +6198,6 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             const clinicalLedYearMin = clinicalLedYearNumbers.length ? Math.min(...clinicalLedYearNumbers) - 0.25 : undefined;
             const clinicalLedYearMax = clinicalLedYearNumbers.length ? Math.max(...clinicalLedYearNumbers) + 0.25 : undefined;
             const clinicalLedYearPoint = (value, index) => ({ x: Number(clinicalLedYears[index]), y: Number(value || 0) });
-            const isCompactViewport = () => window.matchMedia('(max-width: 640px)').matches;
             const openClinicalLedIntegrationModal = (themeKey, year) => {
                 const items = normalizeFrameworkItems(clinicalLedIntegrationItemsByThemeYear?.[themeKey]?.[String(year)]);
                 if (!frameworkModal || !frameworkModalBody) return;
@@ -6773,6 +7220,57 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             resizeRenderedCharts();
             enhanceThemeGapWithAi();
             setupDoctorRoleTables();
+
+            const setupVisualizationRealtime = () => {
+                const page = document.querySelector('.viz-page');
+                const initialVersion = String(page?.dataset.realtimeVersion || '').trim();
+                if (!page || initialVersion === '') return;
+
+                const intervalMs = Math.max(5000, Number(page.dataset.realtimeInterval || 10000));
+                let currentVersion = initialVersion;
+                let inFlight = false;
+
+                const realtimeUrl = () => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('__realtime_version', '1');
+                    url.searchParams.set('_', String(Date.now()));
+                    return url;
+                };
+
+                const checkVersion = async () => {
+                    if (document.hidden || inFlight) return;
+                    inFlight = true;
+
+                    try {
+                        const response = await fetch(realtimeUrl(), {
+                            cache: 'no-store',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        });
+                        if (!response.ok) return;
+
+                        const payload = await response.json();
+                        const nextVersion = String(payload?.version || '').trim();
+                        if (nextVersion !== '' && nextVersion !== currentVersion) {
+                            currentVersion = nextVersion;
+                            window.location.reload();
+                        }
+                    } catch (error) {
+                        console.warn('Unable to check visualization updates', error);
+                    } finally {
+                        inFlight = false;
+                    }
+                };
+
+                window.setInterval(checkVersion, intervalMs);
+                window.addEventListener('focus', checkVersion, { passive: true });
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) checkVersion();
+                });
+            };
+            setupVisualizationRealtime();
         })();
     </script>
 @endsection

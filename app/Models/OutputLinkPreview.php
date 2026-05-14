@@ -19,6 +19,7 @@ class OutputLinkPreview extends Model
         'embed_html',
         'thumbnail_url',
         'preview_image_url',
+        'preview_image_path',
         'thumbnail_width',
         'thumbnail_height',
         'author_name',

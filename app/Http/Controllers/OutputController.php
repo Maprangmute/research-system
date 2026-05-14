@@ -1483,6 +1483,15 @@ class OutputController extends Controller
 
     public function visualization(Request $request)
     {
+        if ($request->query('__realtime_version') === '1') {
+            return response()
+                ->json([
+                    'version' => $this->visualizationRealtimeVersion(),
+                    'checked_at' => now()->setTimezone('Asia/Bangkok')->toIso8601String(),
+                ])
+                ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        }
+
         $useRenderedVisualizationCache = $request->isMethod('GET') && $request->routeIs('outputs.visualization');
         $renderedVisualizationCacheKey = null;
         if ($useRenderedVisualizationCache) {
@@ -2231,6 +2240,7 @@ class OutputController extends Controller
                         'title' => $preview->title,
                         'description' => $preview->description,
                         'preview_image_url' => $preview->preview_image_url,
+                        'preview_image_path' => $preview->preview_image_path,
                         'thumbnail_url' => $preview->thumbnail_url,
                         'author_name' => $preview->author_name,
                         'provider_name' => $preview->provider_name,
@@ -4841,6 +4851,7 @@ class OutputController extends Controller
             'fteSkillAnalysis' => $fteSkillAnalysis,
             'aiProjectNatureInsight' => $aiProjectNatureInsight,
             'aiThemeGapInsight' => $cachedThemeGapInsight,
+            'visualizationRealtimeVersion' => $this->visualizationRealtimeVersion(),
         ]);
 
         if ($useRenderedVisualizationCache && $renderedVisualizationCacheKey) {
@@ -4999,6 +5010,111 @@ class OutputController extends Controller
 
             return true;
         };
+        $stripNamePrefix = static function ($value) use ($normalizeText): string {
+            $text = $normalizeText($value);
+            $text = preg_replace('/^(นาย|นางสาว|นาง|คุณ|ดร\.?|ศ\.?|รศ\.?|ผศ\.?|อ\.?|นพ\.?|พญ\.?)\s+/u', '', $text) ?? $text;
+
+            return trim($text);
+        };
+        $activeUnitUsers = User::query()
+            ->select(['id', 'prefix', 'name', 'role', 'position', 'skill_role'])
+            ->get()
+            ->reject(function (User $user) use ($normalizeText) {
+                return in_array($normalizeText($user->name), [
+                    'ชริตา พูลเพิ่ม',
+                ], true);
+            })
+            ->values();
+        $activeUnitUserIds = $activeUnitUsers->pluck('id')->map(fn ($id) => (int) $id)->flip();
+        $activeUnitUserById = $activeUnitUsers->keyBy(fn ($user) => (int) $user->id);
+        $userSkillRole = static function (?User $user): string {
+            $storedRole = trim((string) ($user?->skill_role ?? ''));
+            if ($storedRole !== '' && in_array($storedRole, User::SKILL_ROLES, true)) {
+                return $storedRole;
+            }
+
+            $position = mb_strtolower(trim((string) ($user?->position ?? '')), 'UTF-8');
+            $text = mb_strtolower(trim(((string) ($user?->name ?? '')) . ' ' . $position), 'UTF-8');
+            if ($text === '') {
+                return 'ไม่ระบุสายงาน';
+            }
+            if (Str::contains($text, ['หัวหน้าหน่วย', 'รองหัวหน้าหน่วย', 'health policy', 'policy unit'])) {
+                return 'Scientific Research';
+            }
+            if (Str::contains($text, ['ประชาสัมพันธ์', 'communication', 'สื่อสาร', 'ผลิตสื่อ', 'ออกแบบ', 'branding'])) {
+                return 'Communication & Public Relations';
+            }
+            if (Str::contains($text, ['สารสนเทศ', 'นักวิเคราะห์ข้อมูล', 'data', 'สถิติ', 'วิเคราะห์ข้อมูล', 'developer', 'engineer', 'เทคโนโลยีสารสนเทศ'])) {
+                return 'IT & Data Management Systems';
+            }
+            if (Str::contains($text, ['นักบริหารงานวิจัย', 'บริหารงานวิจัย', 'project manager', 'research administrator', 'research management'])) {
+                return 'Project Management & Coordination';
+            }
+            if (Str::contains($text, ['พนักงานทั่วไป'])) {
+                return 'General';
+            }
+            if (Str::contains($text, ['บริหารงานทั่วไป', 'ธุรการ', 'administration', 'admin', 'เลขานุการ'])) {
+                return 'Operations & Administrative Support';
+            }
+            if (Str::contains($text, [
+                'นักวิจัย',
+                'ผู้ช่วยวิจัย',
+                'เจ้าหน้าที่วิจัย',
+                'แพทย์',
+                'อาจารย์แพทย์',
+                'พยาบาล',
+                'เภสัช',
+                'นักจิตวิทยา',
+                'นักโภชนาการ',
+                'นักสุขศึกษา',
+                'research consultant',
+                'consultant',
+                'ที่ปรึกษา',
+                'คณบดี',
+            ])) {
+                return 'Scientific Research';
+            }
+
+            return 'General';
+        };
+        $userPositionGroup = static fn (?User $user): string => User::inferFtePositionGroup($user?->position, $user?->name);
+        $positionGroupOrder = collect([
+            'แพทย์',
+            'แพทย์ Intern',
+            'นักวิจัย',
+            'ผู้ช่วยวิจัย',
+            'เจ้าหน้าที่วิจัย',
+            'สหสาขาวิชาชีพ',
+            'บริหารงานวิจัย',
+            'นักสถิติ/นักวิเคราะห์ข้อมูล',
+            'นักวิชาการสารสนเทศ',
+            'นักประชาสัมพันธ์',
+            'เจ้าหน้าที่บริหารงานทั่วไป',
+            'ที่ปรึกษา',
+            'ไม่ระบุตำแหน่ง',
+        ])->values()->flip();
+        $positionGroupTotals = $activeUnitUsers
+            ->groupBy(fn (User $user) => $userPositionGroup($user))
+            ->map(fn (Collection $users) => (int) $users->pluck('id')->unique()->count());
+        $unitUserByName = collect();
+        foreach ($activeUnitUsers as $user) {
+            foreach ([$user->name, $user->full_name, trim(((string) $user->prefix) . ' ' . ((string) $user->name))] as $nameVariant) {
+                $normalized = $normalizeText($nameVariant);
+                $stripped = $stripNamePrefix($nameVariant);
+                if ($normalized !== '') {
+                    $unitUserByName[$normalized] = $user;
+                }
+                if ($stripped !== '') {
+                    $unitUserByName[$stripped] = $user;
+                }
+            }
+        }
+        $resolveUnitUser = static function ($personName) use ($normalizeText, $stripNamePrefix, $unitUserByName): ?User {
+            $normalized = $normalizeText($personName);
+            $stripped = $stripNamePrefix($personName);
+
+            return $unitUserByName->get($normalized) ?: $unitUserByName->get($stripped);
+        };
         $fteSkillTaxonomy = [
             'scientific' => [
                 'label' => 'งานวิชาการและหลักฐาน',
@@ -5069,10 +5185,48 @@ class OutputController extends Controller
                 ],
             ],
         ];
-        $skillFor = static function (string $task, string $job, string $sourceCategory = '') use ($normalizeText, $fteSkillTaxonomy): array {
+        $skillFor = static function (string $task, string $job, string $sourceCategory = '', string $personSkillRole = '') use ($normalizeText, $fteSkillTaxonomy): array {
             $taskText = $normalizeText($task);
             $text = $normalizeText($task . ' ' . $job . ' ' . $sourceCategory);
             $fallback = ['key' => 'logistics_admin', 'label' => 'งานสนับสนุนปฏิบัติการ', 'thai' => 'งานสนับสนุนปฏิบัติการ', 'item_key' => 'logistics_admin_support_documents', 'item_label' => 'งานบริการสิ่งสนับสนุนและเอกสาร', 'tone' => 'logistics'];
+            $makeSkill = static function (string $groupKey, string $itemKey) use ($fteSkillTaxonomy): ?array {
+                $group = $fteSkillTaxonomy[$groupKey] ?? null;
+                if (! $group) {
+                    return null;
+                }
+
+                foreach ($group['items'] as $index => $item) {
+                    if ((string) ($item['key'] ?? '') !== $itemKey) {
+                        continue;
+                    }
+
+                    return [
+                        'key' => $groupKey,
+                        'label' => $group['label'],
+                        'thai' => $group['label'],
+                        'item_key' => $groupKey . '_' . $item['key'],
+                        'item_label' => $item['label'],
+                        'item_order' => $index,
+                        'tone' => $group['tone'],
+                    ];
+                }
+
+                return null;
+            };
+            $categoryText = $normalizeText($sourceCategory . ' ' . $job);
+            $isResearchProject = $normalizeText($sourceCategory) === 'research project';
+            if (! $isResearchProject) {
+                if (Str::contains($categoryText, ['เทคโนโลยีสารสนเทศ', 'สารสนเทศ', 'ฐานข้อมูล', 'it & information', 'information technology'])
+                    || ($personSkillRole === 'IT & Data Management Systems' && Str::contains($categoryText, ['it', 'information', 'เทคโนโลยี', 'ข้อมูล']))) {
+                    return $makeSkill('it_communication', 'technology_information') ?? $fallback;
+                }
+                if (Str::contains($categoryText, ['ประชาสัมพันธ์', 'corporate communication', 'communication'])) {
+                    return $makeSkill('it_communication', 'communication_work') ?? $fallback;
+                }
+                if (Str::contains($categoryText, ['ทรัพยากรบุคคล', 'human resources', 'administration', 'บริหารงานทั่วไป', 'เลขานุการ'])) {
+                    return $makeSkill('logistics_admin', 'human_resources') ?? $fallback;
+                }
+            }
 
             foreach ($fteSkillTaxonomy as $groupKey => $group) {
                 foreach ($group['items'] as $index => $item) {
@@ -5112,18 +5266,23 @@ class OutputController extends Controller
         $researchRows = FteRole::query()
             ->with(['project:id,project_code,project_name_th,start_year,start_date'])
             ->get()
-            ->map(function (FteRole $role) use ($displayText, $normalizeText, $skillFor, $fteYearFor) {
+            ->map(function (FteRole $role) use ($displayText, $normalizeText, $skillFor, $fteYearFor, $resolveUnitUser, $userSkillRole, $userPositionGroup) {
                 $task = $displayText($role->task_detail);
                 $job = $displayText($role->job_detail);
                 $person = $displayText($role->name) ?: '-';
-                $skill = $skillFor($task, $job, 'research project');
+                $unitUser = $resolveUnitUser($person);
+                $personSkillRole = $userSkillRole($unitUser);
+                $skill = $skillFor($task, $job, 'research project', $personSkillRole);
 
                 return (object) [
+                    'user_id' => $unitUser?->id,
+                    'user_skill_role' => $personSkillRole,
+                    'user_position_group' => $userPositionGroup($unitUser),
                     'source' => 'research',
                     'source_label' => 'Project FTE',
                     'year' => $fteYearFor($role),
                     'person' => $person,
-                    'person_key' => $normalizeText($person),
+                    'person_key' => 'user:' . (int) $unitUser?->id,
                     'container_id' => 'project:' . (int) ($role->project_id ?? 0),
                     'container_name' => $displayText($role->project?->project_name_th) ?: ($role->project?->project_code ?: 'ไม่ระบุโครงการ'),
                     'task' => $task !== '' ? $task : ($job ?: 'ไม่ระบุภาระงาน'),
@@ -5133,23 +5292,31 @@ class OutputController extends Controller
                     'fte' => (float) ($role->fte_value ?? 0),
                 ];
             })
-            ->filter(fn ($row) => $row->person_key !== '' && trim((string) $row->task) !== '');
+            ->filter(fn ($row) => $row->user_id !== null && $row->person_key !== '' && trim((string) $row->task) !== '');
 
         $backOfficeRows = BackOfficeEntry::query()
-            ->with(['task:id,backoffice_id,title,start_date,end_date', 'user:id,name'])
+            ->with(['task:id,backoffice_id,title,start_date,end_date', 'user:id,prefix,name,role,position,skill_role'])
             ->get()
-            ->map(function (BackOfficeEntry $entry) use ($displayText, $normalizeText, $skillFor) {
+            ->map(function (BackOfficeEntry $entry) use ($displayText, $normalizeText, $skillFor, $activeUnitUserIds, $activeUnitUserById, $resolveUnitUser, $userSkillRole, $userPositionGroup) {
                 $task = $displayText($entry->job_detail) ?: $displayText($entry->job_name);
                 $job = $displayText($entry->job_name) ?: $displayText($entry->category);
                 $person = $displayText($entry->person_name) ?: $displayText($entry->user?->name) ?: '-';
-                $skill = $skillFor($task, $job, $displayText($entry->category));
+                $entryUserId = (int) ($entry->user_id ?? 0);
+                $unitUser = $entryUserId > 0 && $activeUnitUserIds->has($entryUserId)
+                    ? $activeUnitUserById->get($entryUserId)
+                    : $resolveUnitUser($person);
+                $personSkillRole = $userSkillRole($unitUser);
+                $skill = $skillFor($task, $job, $displayText($entry->category), $personSkillRole);
 
                 return (object) [
+                    'user_id' => $unitUser?->id,
+                    'user_skill_role' => $personSkillRole,
+                    'user_position_group' => $userPositionGroup($unitUser),
                     'source' => 'backoffice',
                     'source_label' => 'Back Office FTE',
                     'year' => $this->extractBackOfficeEntryFiscalYearBe($entry),
                     'person' => $person,
-                    'person_key' => $normalizeText($person),
+                    'person_key' => 'user:' . (int) $unitUser?->id,
                     'container_id' => 'backoffice:' . (int) ($entry->task_id ?? 0),
                     'container_name' => $displayText($entry->task?->title) ?: ($entry->task?->backoffice_id ?: 'Back Office'),
                     'task' => $task !== '' ? $task : ($job ?: 'ไม่ระบุภาระงาน'),
@@ -5159,7 +5326,7 @@ class OutputController extends Controller
                     'fte' => (float) ($entry->fte_value ?? 0),
                 ];
             })
-            ->filter(fn ($row) => $row->person_key !== '' && trim((string) $row->task) !== '');
+            ->filter(fn ($row) => $row->user_id !== null && $row->person_key !== '' && trim((string) $row->task) !== '');
 
         $rows = $researchRows->merge($backOfficeRows)->filter(fn ($row) => $inRange($row->year))->values();
         $uniqueRows = $rows
@@ -5266,6 +5433,227 @@ class OutputController extends Controller
             })
             ->filter(fn ($group) => $group->rows->isNotEmpty())
             ->values();
+        $yearlyGroupRows = $uniqueRows
+            ->filter(fn ($row) => $row->year !== null)
+            ->groupBy(fn ($row) => (string) $row->year)
+            ->map(function (Collection $yearRows, string $year) use ($fteSkillTaxonomy) {
+                return [
+                    'year' => (int) $year,
+                    'groups' => collect($fteSkillTaxonomy)
+                        ->map(function (array $group, string $groupKey) use ($yearRows) {
+                            $rows = $yearRows->filter(fn ($row) => (string) data_get($row->skill, 'key') === $groupKey);
+
+                            return [
+                                'key' => $groupKey,
+                                'label' => $group['label'],
+                                'tone' => $group['tone'],
+                                'unique_tasks' => (int) $rows->count(),
+                                'people_count' => (int) $rows->pluck('person_key')->unique()->count(),
+                                'hours' => round((float) $rows->sum(fn ($row) => (float) ($row->hours ?? 0)), 1),
+                                'fte' => round((float) $rows->sum(fn ($row) => (float) ($row->fte ?? 0)), 3),
+                            ];
+                        })
+                        ->values(),
+                ];
+            })
+            ->sortKeys()
+            ->values();
+        $radarAxes = collect([
+            'scientific_research' => [
+                'label' => 'Scientific Research',
+                'thai' => 'งานวิจัยและวิชาการ',
+                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'scientific',
+            ],
+            'project_management' => [
+                'label' => 'Project Management & Coordination',
+                'thai' => 'บริหารโครงการและประสานงาน',
+                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'management',
+            ],
+            'operations_admin' => [
+                'label' => 'Operations & Administrative Support',
+                'thai' => 'ปฏิบัติการและธุรการสนับสนุน',
+                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'logistics_admin',
+            ],
+            'it_data_systems' => [
+                'label' => 'IT & Data Management Systems',
+                'thai' => 'ระบบข้อมูลและเทคโนโลยี',
+                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'it_communication'
+                    && ! in_array((string) data_get($row->skill, 'item_key'), [
+                        'it_communication_public_relations',
+                        'it_communication_communication_assets',
+                        'it_communication_communication_work',
+                        'it_communication_media_design',
+                    ], true),
+            ],
+            'communication_pr' => [
+                'label' => 'Communication & Public Relations',
+                'thai' => 'สื่อสารและประชาสัมพันธ์',
+                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'it_communication'
+                    && in_array((string) data_get($row->skill, 'item_key'), [
+                        'it_communication_public_relations',
+                        'it_communication_communication_assets',
+                        'it_communication_communication_work',
+                        'it_communication_media_design',
+                    ], true),
+            ],
+        ]);
+        $radarRawRows = $radarAxes
+            ->map(function (array $axis, string $key) use ($uniqueRows, $positionGroupOrder, $positionGroupTotals) {
+                $rows = $uniqueRows->filter($axis['match']);
+                $peopleByRole = $rows
+                    ->groupBy(fn ($row) => (string) ($row->user_position_group ?? 'ไม่ระบุตำแหน่ง'))
+                    ->map(fn (Collection $groupRows, string $positionGroup) => (object) [
+                        'position_group' => $positionGroup,
+                        'people' => (int) $groupRows->pluck('person_key')->unique()->count(),
+                        'total_people' => (int) ($positionGroupTotals[$positionGroup] ?? 0),
+                        'tasks' => (int) $groupRows->count(),
+                    ])
+                    ->sortBy(fn ($row) => sprintf(
+                        '%03d-%03d-%s',
+                        (int) ($positionGroupOrder[(string) ($row->position_group ?? '')] ?? 999),
+                        999 - min(999, (int) ($row->people ?? 0)),
+                        (string) ($row->position_group ?? '')
+                    ))
+                    ->values();
+
+                return (object) [
+                    'key' => $key,
+                    'label' => $axis['label'],
+                    'thai' => $axis['thai'],
+                    'hours' => round((float) $rows->sum(fn ($row) => (float) ($row->hours ?? 0)), 1),
+                    'tasks' => (int) $rows->count(),
+                    'people' => (int) $rows->pluck('person_key')->unique()->count(),
+                    'project_count' => (int) $rows->where('source', 'research')->pluck('container_id')->unique()->count(),
+                    'backoffice_count' => (int) $rows->where('source', 'backoffice')->pluck('container_id')->unique()->count(),
+                    'role_breakdown' => $peopleByRole,
+                ];
+            })
+            ->values();
+        $radarMaxHours = max(1.0, (float) $radarRawRows->max('hours'));
+        $radarMaxTasks = max(1, (int) $radarRawRows->max('tasks'));
+        $radarMaxPeople = max(1, (int) $radarRawRows->max('people'));
+        $radarScale = 90;
+        $radarRows = $radarRawRows
+            ->map(fn ($row) => (object) [
+                'key' => $row->key,
+                'label' => $row->label,
+                'thai' => $row->thai,
+                'hours' => $row->hours,
+                'tasks' => $row->tasks,
+                'people' => $row->people,
+                'project_count' => $row->project_count,
+                'backoffice_count' => $row->backoffice_count,
+                'role_breakdown' => $row->role_breakdown,
+                'hours_pct' => round(((float) $row->hours / $radarMaxHours) * $radarScale, 1),
+                'tasks_pct' => round(((int) $row->tasks / $radarMaxTasks) * $radarScale, 1),
+                'people_pct' => round(((int) $row->people / $radarMaxPeople) * $radarScale, 1),
+            ])
+            ->values();
+        $radarNonZeroRows = $radarRows
+            ->filter(fn ($row) => (int) ($row->tasks ?? 0) > 0)
+            ->values();
+        $topTaskAxis = $radarNonZeroRows->sortByDesc('tasks_pct')->first();
+        $topHourAxis = $radarNonZeroRows->sortByDesc('hours_pct')->first();
+        $topPeopleAxis = $radarNonZeroRows->sortByDesc('people_pct')->first();
+        $secondaryTaskAxis = $radarNonZeroRows->sortByDesc('tasks_pct')->skip(1)->first();
+        $radarLowRows = $radarNonZeroRows
+            ->sortBy('tasks_pct')
+            ->take(2)
+            ->values();
+        $fteRadarChartInsight = null;
+        if ($radarNonZeroRows->isNotEmpty()) {
+            $lowAxisText = $radarLowRows->pluck('thai')->implode(' และ ');
+            $fteRadarChartInsight = sprintf(
+                'รูปทรงกราฟสะท้อนว่า capacity ของหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพยังวางน้ำหนักไว้ที่การผลิตหลักฐานและงานวิชาการเป็นหลัก โดยภาระงานสูงสุดอยู่ที่ %s (%s%%), เวลาทำงานสูงสุดอยู่ที่ %s (%s%%) และกำลังคนสูงสุดอยู่ที่ %s (%s%%). แกนรองที่ตามมาคือ %s ซึ่งเป็นงานที่ช่วยประคองให้โครงการวิจัยเดินได้จริง ตั้งแต่ประสานผู้เกี่ยวข้อง จัดการเอกสาร กำกับเวลา ไปจนถึงส่งต่อผลลัพธ์ให้ใช้ประโยชน์เชิงนโยบาย. ขณะเดียวกัน แกนที่ยังมีสัดส่วนต่ำคือ %s หากสองแกนนี้เป็นทักษะยุทธศาสตร์ของหน่วย ควรหาแผนเพิ่มงานที่มองเห็นได้ชัดขึ้น หรือกระจายคน/บทบาทให้เกิด capacity ด้านระบบข้อมูล เทคโนโลยี งานปฏิบัติการ และธุรการสนับสนุน ไม่ให้เป็นเพียงงานแฝงในงานวิจัยหรือการประสานโครงการ.',
+                (string) ($topTaskAxis->label ?? '-'),
+                number_format((float) ($topTaskAxis->tasks_pct ?? 0), 1),
+                (string) ($topHourAxis->label ?? '-'),
+                number_format((float) ($topHourAxis->hours_pct ?? 0), 1),
+                (string) ($topPeopleAxis->label ?? '-'),
+                number_format((float) ($topPeopleAxis->people_pct ?? 0), 1),
+                (string) ($secondaryTaskAxis->label ?? 'แกนบริหารและประสานงาน'),
+                $lowAxisText !== '' ? $lowAxisText : 'ยังไม่พบแกนรอง'
+            );
+        }
+        $positionBreakdownText = static function ($roleBreakdown, ?int $limit = null): string {
+            $items = collect($roleBreakdown ?? [])
+                ->filter(fn ($row) => (int) ($row->people ?? 0) > 0)
+                ->values();
+            if ($items->isEmpty()) {
+                return 'ยังไม่พบข้อมูลตำแหน่ง';
+            }
+
+            $visibleItems = $limit === null ? $items : $items->take($limit);
+            $mainItems = $visibleItems
+                ->map(function ($row) {
+                    $people = (int) ($row->people ?? 0);
+                    $totalPeople = (int) ($row->total_people ?? 0);
+                    if ($totalPeople > 0 && $people >= $totalPeople) {
+                        return (string) ($row->position_group ?? 'ไม่ระบุตำแหน่ง') . ' ทั้งหมด ' . number_format($people) . ' คน';
+                    }
+
+                    $denominator = $totalPeople > 0
+                        ? ' จากทั้งหมด ' . number_format($totalPeople) . ' คน'
+                        : ' คน';
+
+                    return (string) ($row->position_group ?? 'ไม่ระบุตำแหน่ง') . ' ' . number_format($people) . $denominator;
+                })
+                ->values();
+            if ($limit !== null) {
+                $remaining = $items->slice($limit);
+                if ($remaining->isNotEmpty()) {
+                    $mainItems->push('กลุ่มอื่นอีก ' . number_format((int) $remaining->sum('people')) . ' คน');
+                }
+            }
+
+            return $mainItems->implode(', ');
+        };
+        $insightNarrative = static function ($row, string $breakdown): string {
+            $tasks = number_format((int) ($row->tasks ?? 0));
+            $people = number_format((int) ($row->people ?? 0));
+            $hours = number_format((float) ($row->hours ?? 0), 1);
+            $tasksPct = number_format((float) ($row->tasks_pct ?? 0), 1);
+            $peoplePct = number_format((float) ($row->people_pct ?? 0), 1);
+            $hoursPct = number_format((float) ($row->hours_pct ?? 0), 1);
+            $trendText = "รูปทรงกราฟอยู่ที่ภาระงาน {$tasksPct}%, เวลาทำงาน {$hoursPct}% และกำลังคน {$peoplePct}%";
+
+            return match ((string) ($row->key ?? '')) {
+                'scientific_research' => "Scientific Research เป็นแกนที่ดันกราฟออกมากที่สุด {$trendText} แปลว่างานหลักของหน่วยยังอยู่ที่งานวิจัยและวิชาการ โดยมีหลายตำแหน่งเข้ามาร่วมขับเคลื่อน เช่น {$breakdown}.",
+                'project_management' => "Project Management & Coordination เป็นแกนรองที่ตาม Scientific Research ชัดเจน {$trendText} แนวโน้มนี้สะท้อนว่างานบริหารโครงการและประสานงานเป็นฐานสำคัญที่ทำให้งานวิจัยเดินต่อได้ โดยมี {$breakdown}.",
+                'it_data_systems' => "IT & Data Management Systems ยังเป็นแกนขนาดเล็กกว่าแกนวิจัยและบริหารโครงการ {$trendText} จึงควรดูต่อว่าระบบข้อมูลเป็น capacity หลักแล้วหรือยัง หรือยังถูกบันทึกแฝงอยู่ในงานวิจัย/งานประสาน.",
+                'communication_pr' => "Communication & Public Relations อยู่ในกลุ่มแกนรองของกราฟ {$trendText} แนวโน้มนี้บอกว่างานสื่อสารมีบทบาทต่อการเผยแพร่และต่อยอดงานวิจัย แต่ยังไม่ได้ขยายเท่าแกนวิจัยและบริหารโครงการ โดยมี {$breakdown}.",
+                'operations_admin' => "Operations & Administrative Support เป็นแกนที่ยังต่ำในรูปทรงกราฟ {$trendText} ไม่ได้แปลว่าไม่สำคัญ แต่อาจสะท้อนว่างานสนับสนุนจำนวนหนึ่งถูกบันทึกอยู่ในหมวดประสานงานหรือวิชาการ.",
+                default => "{$row->label}: {$trendText}.",
+            };
+        };
+        $fteSkillInsights = collect();
+        $highlightedRadarRows = $radarRows
+            ->filter(fn ($row) => (int) ($row->tasks ?? 0) > 0)
+            ->sortByDesc('tasks')
+            ->take(3)
+            ->values();
+        $highlightedRadarRows
+            ->each(function ($row) use ($fteSkillInsights, $positionBreakdownText, $insightNarrative) {
+                $fteSkillInsights->push($insightNarrative($row, $positionBreakdownText($row->role_breakdown)));
+            });
+        $unmentionedRadarRows = $radarRows
+            ->filter(fn ($row) => (int) ($row->tasks ?? 0) > 0)
+            ->reject(fn ($row) => $highlightedRadarRows->pluck('key')->contains((string) ($row->key ?? '')))
+            ->sortBy('tasks_pct')
+            ->values();
+        if ($unmentionedRadarRows->isNotEmpty()) {
+            $fteSkillInsights->push(
+                'ส่วนแกนที่ยังไม่ได้ถูกหยิบมาเล่าข้างต้นคือ ' .
+                $unmentionedRadarRows->pluck('label')->implode(' และ ') .
+                ' ซึ่งยังมีสัดส่วนต่ำเมื่อเทียบกับแกนหลัก หากเป็นทักษะยุทธศาสตร์ควรหาแผนเพิ่มงานหรือกระจายคนเพื่อสร้าง capacity'
+            );
+        } elseif ($radarLowRows->isNotEmpty()) {
+            $fteSkillInsights->push(
+                'ส่วนแกนที่ยังมีสัดส่วนต่ำคือ ' .
+                $radarLowRows->pluck('label')->implode(' และ ') .
+                ' หากเป็นทักษะยุทธศาสตร์ควรหาแผนเพิ่มงานหรือกระจายคนเพื่อสร้าง capacity'
+            );
+        }
 
         return [
             'total_unique_tasks' => (int) $uniqueRows->count(),
@@ -5280,6 +5668,10 @@ class OutputController extends Controller
             'max_task_rows' => $maxTaskRows,
             'task_rows' => $taskRows,
             'grouped_task_rows' => $groupedTaskRows,
+            'yearly_group_rows' => $yearlyGroupRows,
+            'radar_rows' => $radarRows,
+            'radar_chart_insight' => $fteRadarChartInsight,
+            'radar_insights' => $fteSkillInsights->take(4)->values(),
             'source_mix' => collect(['research' => 'Project FTE', 'backoffice' => 'Back Office FTE'])
                 ->map(fn ($label, $key) => (object) [
                     'key' => $key,
@@ -5420,9 +5812,14 @@ class OutputController extends Controller
             ->implode('|'));
     }
 
+    private function visualizationRealtimeVersion(): string
+    {
+        return md5($this->visualizationDataVersion() . '|' . $this->visualizationViewVersion());
+    }
+
     private function visualizationDataVersion(): string
     {
-        return Cache::remember('outputs_visualization:data_version', now()->addSeconds(30), function () {
+        return Cache::remember('outputs_visualization:data_version', now()->addSeconds(5), function () {
             $tables = [
                 'outputs',
                 'output_authors',

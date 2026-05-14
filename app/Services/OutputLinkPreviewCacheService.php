@@ -7,6 +7,7 @@ use App\Models\ExternalOutput;
 use App\Models\Output;
 use App\Models\OutputLinkPreview;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -16,6 +17,7 @@ class OutputLinkPreviewCacheService
         private readonly MicrolinkPreviewService $microlink,
         private readonly OpenGraphPreviewService $openGraph,
         private readonly ScreenshotPreviewService $screenshots,
+        private readonly OutputPreviewImageStorageService $imageStorage,
     ) {
     }
 
@@ -44,6 +46,7 @@ class OutputLinkPreviewCacheService
 
         try {
             $attributes = $this->fetchAttributes($url, (string) ($output->title ?? ''));
+            $attributes = array_merge($attributes, $this->storedImageAttributes($attributes, $url, $hash));
 
             return OutputLinkPreview::query()->updateOrCreate(
                 ['url_hash' => $hash],
@@ -330,6 +333,18 @@ class OutputLinkPreviewCacheService
             'driver' => $driver,
             'source_url' => $sourceUrl,
         ], $extra), fn ($value) => $value !== null && $value !== '');
+    }
+
+    private function storedImageAttributes(array $attributes, string $sourceUrl, string $urlHash): array
+    {
+        if (! Schema::hasColumn('output_link_previews', 'preview_image_path')) {
+            return [];
+        }
+
+        $imageUrl = trim((string) (($attributes['preview_image_url'] ?? null) ?: ($attributes['thumbnail_url'] ?? null)));
+        $path = $this->imageStorage->storeFromUrl($imageUrl, $sourceUrl, $urlHash);
+
+        return $path ? ['preview_image_path' => $path] : [];
     }
 
     private function googleDriveThumbnailUrl(string $url): ?string

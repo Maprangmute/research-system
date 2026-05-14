@@ -33,6 +33,11 @@ class UserController extends Controller
         ];
     }
 
+    private function allowedSkillRoles(): array
+    {
+        return User::SKILL_ROLES;
+    }
+
     private function resolveView(Request $request, string $base): string
     {
         $view = $base;
@@ -156,6 +161,7 @@ class UserController extends Controller
             'name_en',
             'email',
             'position',
+            'skill_role',
             'role',
             'profile_photo_path',
             'created_at',
@@ -273,6 +279,7 @@ class UserController extends Controller
             'name_en'  => 'nullable|string|max:255',
             'email'    => 'required|email|unique:users',
             'position' => 'nullable|string|max:255',
+            'skill_role' => 'nullable|in:' . implode(',', $this->allowedSkillRoles()),
             'role'     => 'required|in:' . implode(',', $this->allowedRoles()),
             'password' => 'required|string|min:4|confirmed',
             'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
@@ -280,6 +287,10 @@ class UserController extends Controller
 
         if ($request->hasFile('profile_picture')) {
             $validated['profile_photo_path'] = $request->file('profile_picture')->store('profiles', 'public');
+        }
+
+        if (empty($validated['skill_role'])) {
+            $validated['skill_role'] = User::inferSkillRoleFromPosition($validated['position'] ?? null, $validated['name'] ?? null);
         }
 
         $validated['password'] = Hash::make($validated['password']);
@@ -313,6 +324,7 @@ class UserController extends Controller
             'name_en'  => 'nullable|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'position' => 'nullable|string|max:255',
+            'skill_role' => 'nullable|in:' . implode(',', $this->allowedSkillRoles()),
             'role'     => 'required|in:' . implode(',', $this->allowedRoles()),
             'avatar'   => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'password' => 'nullable|string|min:6|confirmed',
@@ -320,6 +332,10 @@ class UserController extends Controller
 
         if ($request->hasFile('avatar')) {
             $validated['profile_photo_path'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        if (empty($validated['skill_role'])) {
+            $validated['skill_role'] = User::inferSkillRoleFromPosition($validated['position'] ?? null, $validated['name'] ?? null);
         }
 
         if (!empty($validated['password'])) {

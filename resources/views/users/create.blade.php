@@ -86,6 +86,16 @@
                 <input type="text" name="position" value="{{ old('position') }}" class="w-full border p-2 rounded">
             </div>
 
+            <div>
+                <label class="block text-sm text-gray-700 font-medium">สายงาน</label>
+                <select name="skill_role" class="w-full border p-2 rounded">
+                    <option value="">ให้ระบบประเมินจากตำแหน่ง</option>
+                    @foreach (\App\Models\User::SKILL_ROLES as $skillRole)
+                        <option value="{{ $skillRole }}" @selected(old('skill_role') === $skillRole)>{{ $skillRole }}</option>
+                    @endforeach
+                </select>
+            </div>
+
 
             <div>
                 <label class="block text-sm text-gray-700 font-medium">อีเมล</label>

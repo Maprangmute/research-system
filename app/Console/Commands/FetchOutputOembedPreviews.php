@@ -9,6 +9,7 @@ use App\Models\OutputLinkPreview;
 use App\Services\FacebookOembedService;
 use App\Services\MicrolinkPreviewService;
 use App\Services\OpenGraphPreviewService;
+use App\Services\OutputPreviewImageStorageService;
 use App\Services\ScreenshotPreviewService;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -30,8 +31,13 @@ class FetchOutputOembedPreviews extends Command
 
     protected $description = 'Fetch link previews for EA108 News/Article, EA114, EA115, and EA117 links and cache them in output_link_previews';
 
-    public function handle(FacebookOembedService $oembed, MicrolinkPreviewService $microlink, OpenGraphPreviewService $openGraph, ScreenshotPreviewService $screenshots): int
-    {
+    public function handle(
+        FacebookOembedService $oembed,
+        MicrolinkPreviewService $microlink,
+        OpenGraphPreviewService $openGraph,
+        ScreenshotPreviewService $screenshots,
+        OutputPreviewImageStorageService $imageStorage,
+    ): int {
         if (! Schema::hasTable('output_link_previews')) {
             $this->error('Missing output_link_previews table. Run: php artisan migrate');
 
@@ -306,6 +312,8 @@ class FetchOutputOembedPreviews extends Command
                     ];
                 }
 
+                $attributes = array_merge($attributes, $this->storedImageAttributes($attributes, $url, $hash, $imageStorage));
+
                 $preview = OutputLinkPreview::query()->updateOrCreate(
                     ['url_hash' => $hash],
                     array_merge($this->subjectAttributes($candidate->subject), [
@@ -441,6 +449,18 @@ class FetchOutputOembedPreviews extends Command
             'driver' => $driver,
             'source_url' => $sourceUrl,
         ], $extra), fn ($value) => $value !== null && $value !== '');
+    }
+
+    private function storedImageAttributes(array $attributes, string $sourceUrl, string $urlHash, OutputPreviewImageStorageService $imageStorage): array
+    {
+        if (! Schema::hasColumn('output_link_previews', 'preview_image_path')) {
+            return [];
+        }
+
+        $imageUrl = trim((string) (($attributes['preview_image_url'] ?? null) ?: ($attributes['thumbnail_url'] ?? null)));
+        $path = $imageStorage->storeFromUrl($imageUrl, $sourceUrl, $urlHash);
+
+        return $path ? ['preview_image_path' => $path] : [];
     }
 
     private function googleDriveThumbnailUrl(string $url): ?string
