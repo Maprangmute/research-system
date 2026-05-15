@@ -2890,9 +2890,23 @@
             }
             .fte-capacity-card__head {
                 gap: 10px;
+                margin-bottom: 10px;
+            }
+            .fte-capacity-card__title {
+                font-size: 13px;
+                line-height: 1.45;
+            }
+            .fte-capacity-card__note {
+                font-size: 11px;
+                line-height: 1.55;
+            }
+            .fte-capacity-metrics {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
             }
             .fte-capacity-metric {
-                min-width: 84px;
+                min-width: 0;
                 padding: 6px 8px;
             }
             .fte-capacity-metric__value {
@@ -2930,12 +2944,13 @@
             }
             .fte-capacity-table tbody tr {
                 display: grid;
-                grid-template-columns: 34px minmax(0, 1fr);
+                grid-template-columns: 32px minmax(0, 1fr);
                 gap: 6px 10px;
                 border: 1px solid #e2e8f0;
                 border-radius: 12px;
                 background: #ffffff;
                 padding: 10px;
+                align-items: start;
             }
             .fte-capacity-table tbody tr:nth-child(even) {
                 background: #f8fafc;
@@ -2949,8 +2964,8 @@
                 padding: 0;
             }
             .fte-capacity-table tbody td:first-child {
-                grid-row: 1 / span 4;
-                width: 34px;
+                grid-row: 1 / span 8;
+                width: 32px;
             }
             .fte-capacity-table tbody td:nth-child(2) {
                 grid-column: 2;
@@ -2972,15 +2987,28 @@
                 font-size: 12px;
                 font-weight: 700;
                 text-align: left;
+                max-width: 60%;
+                padding-right: 8px;
             }
             .fte-capacity-rank {
-                width: 30px;
-                height: 30px;
+                width: 28px;
+                height: 28px;
                 border-radius: 10px;
+                font-size: 11px;
             }
             .fte-capacity-position__name,
             .fte-capacity-skill-name {
                 overflow-wrap: anywhere;
+                line-height: 1.35;
+            }
+            .fte-capacity-position__skill,
+            .fte-capacity-skill-name {
+                align-items: flex-start;
+            }
+            .fte-capacity-count,
+            .fte-borrowed-badge,
+            .fte-borrowed-empty {
+                flex: 0 0 auto;
             }
             .fte-capacity-table tfoot {
                 margin-top: 8px;
@@ -4347,6 +4375,11 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     $fteRadarInsights = collect(data_get($fteSkills, 'radar_insights', []));
                     $fteCapacityPositionRows = collect(data_get($fteSkills, 'capacity_position_rows', []));
                     $fteCapacitySkillRows = collect(data_get($fteSkills, 'capacity_skill_rows', []));
+                    $fteCapacityYear = data_get($fteSkills, 'capacity_year');
+                    $fteCapacityYearLabel = filled($fteCapacityYear) ? (string) $fteCapacityYear : 'ปีท้าย';
+                    $fteCapacityYearSkillRows = collect(data_get($fteSkills, 'capacity_year_skill_rows', []));
+                    $fteCapacityYearTotal = (int) data_get($fteSkills, 'capacity_year_total', 0);
+                    $fteCapacityYearBorrowedTotal = (int) data_get($fteSkills, 'capacity_year_borrowed_total', 0);
                     $fteCapacityTotal = (int) data_get($fteSkills, 'capacity_total', 0);
                     $fteCapacityRegularTotal = (int) data_get($fteSkills, 'capacity_regular_total', 0);
                     $fteCapacityBorrowedTotal = (int) data_get($fteSkills, 'capacity_borrowed_total', 0);
@@ -4430,7 +4463,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             <div>
                                                 <div class="fte-capacity-card__kicker">Position capacity</div>
                                                 <div class="fte-capacity-card__title">อัตรากำลังจริง แบ่งตามชื่อตำแหน่ง</div>
-                                                <div class="fte-capacity-card__note">เรียงลำดับตามโครงสร้างบทบาทหลัก: แพทย์, แพทย์ Intern, นักวิจัย, ผู้ช่วยวิจัย, เจ้าหน้าที่วิจัย, สหสาขาวิชาชีพ และกลุ่มอื่น</div>
+                                                <div class="fte-capacity-card__note">เรียงลำดับตามโครงสร้างบทบาทหลัก: แพทย์, แพทย์ Intern, นักวิจัย, ผู้ช่วยวิจัย, เจ้าหน้าที่วิจัย + บริหารงานวิจัย, สหสาขาวิชาชีพ และกลุ่มอื่น</div>
                                             </div>
                                             <div class="fte-capacity-metrics">
                                                 <div class="fte-capacity-metric">
@@ -4444,11 +4477,12 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             </div>
                                         </div>
                                         <div class="fte-capacity-table-wrap">
-                                            <table class="fte-capacity-table">
+                                            <table class="fte-capacity-table" style="min-width: 680px;">
                                             <thead>
                                                 <tr>
                                                     <th style="width:52px;"></th>
                                                     <th>ตำแหน่ง / สายงาน</th>
+                                                    <th class="fte-capacity-table__num" style="width:100px;">อัตรากำลัง {{ $fteCapacityYearLabel }}</th>
                                                     <th class="fte-capacity-table__num" style="width:84px;">ประจำ</th>
                                                     <th class="fte-capacity-table__num" style="width:84px;">ยืมตัวมา</th>
                                                     <th class="fte-capacity-table__num" style="width:84px;">รวม</th>
@@ -4472,6 +4506,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                                 </span>
                                                             </div>
                                                         </td>
+                                                        <td class="fte-capacity-table__num" data-label="อัตรากำลัง {{ $fteCapacityYearLabel }}"><span class="fte-capacity-count">{{ number_format((int) ($row->year_people ?? 0)) }}</span></td>
                                                         <td class="fte-capacity-table__num" data-label="ประจำ"><span class="fte-capacity-count">{{ number_format($regularPeople) }}</span></td>
                                                         <td class="fte-capacity-table__num" data-label="ยืมตัวมา">
                                                             @if ($borrowedPeople > 0)
@@ -4487,6 +4522,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             <tfoot>
                                                 <tr>
                                                     <td colspan="2">รวม</td>
+                                                    <td class="fte-capacity-table__num" data-label="อัตรากำลัง {{ $fteCapacityYearLabel }}">{{ number_format((int) $fteCapacityPositionRows->sum(fn ($row) => (int) ($row->year_people ?? 0))) }}</td>
                                                     <td class="fte-capacity-table__num" data-label="ประจำ">{{ number_format($fteCapacityRegularTotal) }}</td>
                                                     <td class="fte-capacity-table__num" data-label="ยืมตัวมา">{{ $fteCapacityBorrowedTotal > 0 ? number_format($fteCapacityBorrowedTotal) : '-' }}</td>
                                                     <td class="fte-capacity-table__num" data-label="รวม">{{ number_format($fteCapacityRegularTotal + $fteCapacityBorrowedTotal) }}</td>
@@ -4556,6 +4592,55 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             <div class="fte-capacity-table-note">
                                                 หมายเหตุ: ตารางนี้รวมจำนวนกำลังคนทั้งหมดที่เคยร่วมงานในช่วงเวลาที่แสดง รวมถึงบุคลากรที่ได้ลาออกแล้วด้วย
                                             </div>
+                                            @if ($fteCapacityYearSkillRows->isNotEmpty())
+                                                <div class="mt-4 border-t border-slate-200 pt-4">
+                                                    <div class="fte-capacity-card__title">อัตรากำลังจริง แบ่งตาม Skill set ในปี {{ $fteCapacityYearLabel }}</div>
+                                                    <div class="fte-capacity-card__note">นับเฉพาะกำลังคนที่มีภาระงาน FTE ในปีท้ายที่เลือกจากตัวกรอง โดยนับคนเดิมซ้ำในปีเดียวกันเป็น 1 คน</div>
+                                                    <div class="fte-capacity-table-wrap mt-3">
+                                                        <table class="fte-capacity-table" style="min-width: 520px;">
+                                                        <thead>
+                                                            <tr>
+                                                                <th style="width:52px;"></th>
+                                                                <th>สายงาน</th>
+                                                                <th class="fte-capacity-table__num" style="width:86px;">อัตรากำลัง</th>
+                                                                <th class="fte-capacity-table__num" style="width:74px;">%</th>
+                                                                <th class="fte-capacity-table__num" style="width:86px;">ยืมตัวมา</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach ($fteCapacityYearSkillRows as $row)
+                                                                <tr>
+                                                                    <td><span class="fte-capacity-rank">{{ $loop->iteration }}</span></td>
+                                                                    <td>
+                                                                        <div class="fte-capacity-skill-name">
+                                                                            <span class="fte-capacity-skill-dot"></span>
+                                                                            <span>{{ $row->skill_role }}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="fte-capacity-table__num" data-label="อัตรากำลัง"><span class="fte-capacity-count">{{ number_format((int) ($row->people ?? 0)) }}</span></td>
+                                                                    <td class="fte-capacity-table__num" data-label="%">{{ number_format((float) ($row->pct ?? 0), 1) }}</td>
+                                                                    <td class="fte-capacity-table__num" data-label="ยืมตัวมา">
+                                                                        @if ((int) ($row->borrowed_people ?? 0) > 0)
+                                                                            <span class="fte-borrowed-badge">{{ number_format((int) $row->borrowed_people) }}</span>
+                                                                        @else
+                                                                            <span class="fte-borrowed-empty">-</span>
+                                                                        @endif
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                        <tfoot>
+                                                            <tr>
+                                                                <td colspan="2">รวม</td>
+                                                                <td class="fte-capacity-table__num" data-label="อัตรากำลัง">{{ number_format($fteCapacityYearTotal) }}</td>
+                                                                <td class="fte-capacity-table__num" data-label="%">{{ number_format($fteCapacityYearTotal > 0 ? 100 : 0, 1) }}</td>
+                                                                <td class="fte-capacity-table__num" data-label="ยืมตัวมา">{{ $fteCapacityYearBorrowedTotal > 0 ? number_format($fteCapacityYearBorrowedTotal) : '-' }}</td>
+                                                            </tr>
+                                                        </tfoot>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                 @endif

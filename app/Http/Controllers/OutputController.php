@@ -5089,14 +5089,20 @@ class OutputController extends Controller
             return 'General';
         };
         $userPositionGroup = static fn (?User $user): string => User::inferFtePositionGroup($user?->position, $user?->name);
+        $capacityPositionGroup = static function (?User $user) use ($userPositionGroup): string {
+            $positionGroup = $userPositionGroup($user);
+
+            return in_array($positionGroup, ['เจ้าหน้าที่วิจัย', 'บริหารงานวิจัย'], true)
+                ? 'เจ้าหน้าที่วิจัย + บริหารงานวิจัย'
+                : $positionGroup;
+        };
         $positionGroupOrder = collect([
             'แพทย์',
             'แพทย์ Intern',
             'นักวิจัย',
             'ผู้ช่วยวิจัย',
-            'เจ้าหน้าที่วิจัย',
+            'เจ้าหน้าที่วิจัย + บริหารงานวิจัย',
             'สหสาขาวิชาชีพ',
-            'บริหารงานวิจัย',
             'นักสถิติ/นักวิเคราะห์ข้อมูล',
             'นักวิชาการสารสนเทศ',
             'นักประชาสัมพันธ์',
@@ -5109,29 +5115,38 @@ class OutputController extends Controller
             ->map(fn (Collection $users) => (int) $users->pluck('id')->unique()->count());
         $skillRoleOrder = collect(User::SKILL_ROLES)->values()->flip();
         $fteCapacityPositionRows = $activeUnitUsers
-            ->map(function (User $user) use ($userSkillRole, $userPositionGroup) {
+            ->map(function (User $user) use ($userSkillRole, $capacityPositionGroup) {
                 return (object) [
                     'skill_role' => $userSkillRole($user),
-                    'position_group' => $userPositionGroup($user),
+                    'position_group' => $capacityPositionGroup($user),
                     'is_borrowed' => (bool) ($user->is_borrowed ?? false),
                 ];
             })
             ->filter(fn ($row) => ! in_array((string) $row->skill_role, [User::SKILL_ROLE_UNSPECIFIED, User::SKILL_ROLE_GENERAL], true))
-            ->groupBy(fn ($row) => (string) $row->skill_role . '|' . (string) $row->position_group)
-            ->map(function (Collection $users, string $key) {
-                [$skillRole, $positionGroup] = explode('|', $key, 2);
+            ->groupBy(fn ($row) => (string) $row->position_group)
+            ->map(function (Collection $users, string $positionGroup) use ($skillRoleOrder) {
+                $skillRoles = $users
+                    ->groupBy('skill_role')
+                    ->map(fn (Collection $roleUsers, string $skillRole) => (object) [
+                        'name' => $skillRole,
+                        'people' => (int) $roleUsers->count(),
+                    ])
+                    ->sortBy(fn ($role) => (int) ($skillRoleOrder[(string) ($role->name ?? '')] ?? 999))
+                    ->values();
 
                 return (object) [
-                    'skill_role' => $skillRole,
                     'position_group' => $positionGroup,
+                    'skill_roles' => $skillRoles,
+                    'skill_role' => $skillRoles
+                        ->map(fn ($role) => ((string) $role->name) . ' ' . number_format((int) $role->people))
+                        ->implode(', '),
                     'people' => (int) $users->reject(fn ($row) => (bool) $row->is_borrowed)->count(),
                     'borrowed_people' => (int) $users->filter(fn ($row) => (bool) $row->is_borrowed)->count(),
                 ];
             })
             ->sortBy(fn ($row) => sprintf(
-                '%03d-%03d-%s',
+                '%03d-%s',
                 (int) ($positionGroupOrder[(string) ($row->position_group ?? '')] ?? 999),
-                (int) ($skillRoleOrder[(string) ($row->skill_role ?? '')] ?? 999),
                 (string) ($row->position_group ?? '')
             ))
             ->values();
@@ -5400,6 +5415,60 @@ class OutputController extends Controller
                 $first->fte = (float) $group->max(fn ($row) => (float) ($row->fte ?? 0));
 
                 return $first;
+            })
+            ->values();
+        $capacityYear = $yearTo ?? $uniqueRows->pluck('year')->filter(fn ($year) => is_numeric($year))->max();
+        $capacityYear = is_numeric($capacityYear) ? (int) $capacityYear : null;
+        $capacityYearPeople = $capacityYear !== null
+            ? $uniqueRows
+                ->filter(fn ($row) => (int) ($row->year ?? 0) === $capacityYear && (int) ($row->user_id ?? 0) > 0)
+                ->groupBy(fn ($row) => (int) $row->user_id)
+                ->map(function (Collection $userRows, int $userId) use ($activeUnitUserById, $capacityPositionGroup, $userSkillRole) {
+                    $user = $activeUnitUserById->get($userId);
+
+                    return (object) [
+                        'user_id' => $userId,
+                        'skill_role' => $userSkillRole($user),
+                        'position_group' => $capacityPositionGroup($user),
+                        'is_borrowed' => (bool) ($user?->is_borrowed ?? false),
+                    ];
+                })
+                ->filter(fn ($row) => ! in_array((string) $row->skill_role, [User::SKILL_ROLE_UNSPECIFIED, User::SKILL_ROLE_GENERAL], true))
+                ->values()
+            : collect();
+        $capacityYearPositionCounts = $capacityYearPeople
+            ->groupBy('position_group')
+            ->map(fn (Collection $people) => (int) $people->pluck('user_id')->unique()->count());
+        $capacityYearSkillRows = $capacityYearPeople
+            ->groupBy('skill_role')
+            ->map(function (Collection $people, string $skillRole) {
+                return (object) [
+                    'skill_role' => $skillRole,
+                    'people' => (int) $people->pluck('user_id')->unique()->count(),
+                    'borrowed_people' => (int) $people->filter(fn ($row) => (bool) $row->is_borrowed)->pluck('user_id')->unique()->count(),
+                ];
+            })
+            ->sortBy(fn ($row) => (int) ($skillRoleOrder[(string) ($row->skill_role ?? '')] ?? 999))
+            ->values();
+        $capacityYearTotal = max(1, (int) $capacityYearSkillRows->sum('people'));
+        $capacityYearSkillRows = $capacityYearSkillRows
+            ->map(function ($row) use ($capacityYearTotal) {
+                $row->pct = round(((int) ($row->people ?? 0) / $capacityYearTotal) * 100, 1);
+                return $row;
+            })
+            ->values();
+        $fteCapacityPositionRows = $fteCapacityPositionRows
+            ->map(function ($row) use ($capacityYearPositionCounts) {
+                $row->year_people = (int) ($capacityYearPositionCounts[(string) ($row->position_group ?? '')] ?? 0);
+                return $row;
+            })
+            ->values();
+        $capacityYearSkillCounts = $capacityYearSkillRows
+            ->mapWithKeys(fn ($row) => [(string) ($row->skill_role ?? '') => (int) ($row->people ?? 0)]);
+        $fteCapacitySkillRows = $fteCapacitySkillRows
+            ->map(function ($row) use ($capacityYearSkillCounts) {
+                $row->year_people = (int) ($capacityYearSkillCounts[(string) ($row->skill_role ?? '')] ?? 0);
+                return $row;
             })
             ->values();
 
@@ -5737,6 +5806,10 @@ class OutputController extends Controller
             'radar_insights' => $fteSkillInsights->take(4)->values(),
             'capacity_position_rows' => $fteCapacityPositionRows,
             'capacity_skill_rows' => $fteCapacitySkillRows,
+            'capacity_year' => $capacityYear,
+            'capacity_year_skill_rows' => $capacityYearSkillRows,
+            'capacity_year_total' => (int) $capacityYearSkillRows->sum('people'),
+            'capacity_year_borrowed_total' => (int) $capacityYearSkillRows->sum('borrowed_people'),
             'capacity_total' => (int) $fteCapacitySkillRows->sum('people'),
             'capacity_regular_total' => (int) $fteCapacitySkillRows->sum('regular_people'),
             'capacity_borrowed_total' => (int) $fteCapacitySkillRows->sum('borrowed_people'),
@@ -7041,6 +7114,10 @@ class OutputController extends Controller
     {
         $query = Output::query()->with('project:id,project_name_th,project_code,user_id');
         $user = auth()->user();
+        if (! $user) {
+            return $query;
+        }
+
         $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
         $canViewAll = $user->isAdminLike();
 
@@ -7067,6 +7144,10 @@ class OutputController extends Controller
             'conferenceLinks.presenters.user',
         ]);
         $user = auth()->user();
+        if (! $user) {
+            return $query;
+        }
+
         $fullName = trim(($user->prefix ?? '') . ' ' . $user->name);
         $canViewAll = $user->isAdminLike();
 
