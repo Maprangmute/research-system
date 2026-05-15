@@ -75,7 +75,7 @@
             </div>
         </section>
 
-        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <section id="external-output-stats" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div class="text-xs font-medium uppercase tracking-wide text-slate-500">ทั้งหมด</div>
                 <div class="mt-1.5 text-2xl font-bold text-slate-900">{{ number_format($allCount) }}</div>
@@ -102,18 +102,18 @@
             </article>
         </section>
 
-        <form method="GET" action="{{ route('outputs.external-academic') }}"
+        <form id="external-output-filter-form" method="GET" action="{{ route('outputs.external-academic') }}"
             class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
-                    <input type="text" name="search" value="{{ $search }}"
+                    <input type="text" name="search" value="{{ $search }}" data-external-live-search="true"
                         class="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
-                        placeholder="ชื่อผลงาน / journal / author / presenter / conference">
+                        placeholder="Extra ID / ชื่อผลงาน / journal / author / presenter / conference">
                 </label>
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ประเภท</span>
-                    <select name="type" class="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm">
+                    <select name="type" data-external-auto-search="true" class="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm">
                         <option value="">ทั้งหมด</option>
                         <option value="EA101" @selected($type === 'EA101')>Academic Paper</option>
                         <option value="EA103" @selected($type === 'EA103')>Presentation</option>
@@ -128,6 +128,7 @@
                         ค้นหา
                     </button>
                     <a href="{{ route('outputs.external-academic') }}"
+                        data-external-reset="true"
                         class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700">
                         ล้าง
                     </a>
@@ -135,9 +136,15 @@
             </div>
         </form>
 
-        <section class="space-y-4">
+        <div id="external-output-loading" class="hidden items-center gap-2 text-xs text-slate-500">
+            <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600"></span>
+            กำลังอัปเดตรายการ...
+        </div>
+
+        <section id="external-output-list" class="space-y-4">
             @forelse ($outputs as $output)
                 @php
+                    $extraCode = trim((string) ($output->output_code ?? '')) ?: \App\Models\ExternalOutput::formatOutputCode((int) $output->id);
                     $creatorName = trim(((optional($output->creator)->prefix ?? '') . ' ' . (optional($output->creator)->name ?? '')));
                     $summaryItems = collect([
                         ['label' => 'Theme', 'value' => $output->job_category],
@@ -206,15 +213,14 @@
                 <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div class="min-w-0 flex-1">
+                            <div class="mb-2 flex items-baseline gap-2 text-sm text-slate-900">
+                                <span class="font-semibold uppercase tracking-wide">Extra ID</span>
+                                <span class="font-mono text-base font-bold">{{ $extraCode }}</span>
+                            </div>
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold" style="{{ $typeBadge($output->type) }}">
                                     {{ $typeLabel($output->type) }}
                                 </span>
-                                @if ($output->output_code)
-                                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700">
-                                        {{ $output->output_code }}
-                                    </span>
-                                @endif
                                 @if ($output->publish_date)
                                     <span class="text-[11px] font-medium text-slate-500">เผยแพร่ {{ $thaiDate($output->publish_date) }}</span>
                                 @endif
@@ -275,11 +281,13 @@
             @endforelse
         </section>
 
-        @if ($outputs->hasPages())
+        <div id="external-output-pagination">
+            @if ($outputs->hasPages())
             <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 {{ $outputs->links() }}
             </section>
-        @endif
+            @endif
+        </div>
     </div>
 
     <form id="moveExternalOutputForm" method="POST" class="hidden">
@@ -305,6 +313,121 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const currentPath = "{{ route('outputs.external-academic', [], false) }}";
+            let externalSearchTimer = null;
+            let externalRequestController = null;
+            let externalRequestToken = 0;
+
+            const externalQuery = (selector, scope = document) => scope.querySelector(selector);
+            const externalQueryAll = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
+            const externalForm = externalQuery('#external-output-filter-form');
+            const externalLoading = externalQuery('#external-output-loading');
+            const buildExternalUrl = (resetPage = true) => {
+                const url = new URL(externalForm.action, window.location.origin);
+                const formData = new FormData(externalForm);
+
+                for (const [key, value] of formData.entries()) {
+                    if (value === null || value === '') continue;
+                    url.searchParams.set(key, value);
+                }
+
+                if (resetPage) {
+                    url.searchParams.set('page', '1');
+                }
+
+                return url;
+            };
+            const setExternalLoading = (loading) => {
+                externalLoading?.classList.toggle('hidden', !loading);
+                externalLoading?.classList.toggle('flex', loading);
+                externalQuery('#external-output-list')?.classList.toggle('opacity-60', loading);
+            };
+            const replaceExternalSection = (nextDoc, selector) => {
+                const current = externalQuery(selector);
+                const next = nextDoc.querySelector(selector);
+                if (!current || !next) return false;
+                current.innerHTML = next.innerHTML;
+                return true;
+            };
+            const fetchExternalResults = async (url, options = {}) => {
+                const { updateUrl = true } = options;
+                const token = ++externalRequestToken;
+                externalRequestController?.abort();
+                externalRequestController = new AbortController();
+                setExternalLoading(true);
+
+                try {
+                    const response = await fetch(url.toString(), {
+                        method: 'GET',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        signal: externalRequestController.signal,
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const html = await response.text();
+                    if (token !== externalRequestToken) return;
+
+                    const nextDoc = new DOMParser().parseFromString(html, 'text/html');
+                    const replaced = [
+                        replaceExternalSection(nextDoc, '#external-output-stats'),
+                        replaceExternalSection(nextDoc, '#external-output-list'),
+                        replaceExternalSection(nextDoc, '#external-output-pagination'),
+                    ].every(Boolean);
+
+                    if (!replaced) {
+                        throw new Error('Cannot replace external output sections');
+                    }
+
+                    if (updateUrl) {
+                        history.replaceState({ ajax: true }, '', `${url.pathname}${url.search}`);
+                    }
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error(error);
+                    }
+                } finally {
+                    if (token === externalRequestToken) {
+                        setExternalLoading(false);
+                    }
+                }
+            };
+            const scheduleExternalSearch = () => {
+                clearTimeout(externalSearchTimer);
+                externalSearchTimer = setTimeout(() => {
+                    fetchExternalResults(buildExternalUrl(true), { updateUrl: true });
+                }, 300);
+            };
+
+            if (externalForm) {
+                externalForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    fetchExternalResults(buildExternalUrl(true), { updateUrl: true });
+                });
+
+                externalQueryAll('[data-external-live-search="true"]', externalForm).forEach((field) => {
+                    let isComposing = false;
+                    field.addEventListener('compositionstart', () => {
+                        isComposing = true;
+                    });
+                    field.addEventListener('compositionend', () => {
+                        isComposing = false;
+                        scheduleExternalSearch();
+                    });
+                    field.addEventListener('input', () => {
+                        if (!isComposing) {
+                            scheduleExternalSearch();
+                        }
+                    });
+                });
+
+                externalQueryAll('[data-external-auto-search="true"]', externalForm).forEach((field) => {
+                    field.addEventListener('change', () => {
+                        clearTimeout(externalSearchTimer);
+                        fetchExternalResults(buildExternalUrl(true), { updateUrl: true });
+                    });
+                });
+            }
+
             const moveForm = document.getElementById('moveExternalOutputForm');
             const moveProjectIdInput = document.getElementById('moveExternalOutputProjectId');
             const projectOptionsData = document.getElementById('moveProjectOptionsData');
@@ -459,6 +582,28 @@
             };
 
             document.addEventListener('click', async (event) => {
+                const resetLink = event.target.closest('[data-external-reset="true"]');
+                if (resetLink) {
+                    event.preventDefault();
+                    if (externalForm) {
+                        externalQueryAll('input[name="search"], select[name="type"]', externalForm).forEach((field) => {
+                            field.value = '';
+                        });
+                    }
+                    fetchExternalResults(new URL(resetLink.href, window.location.origin), { updateUrl: true });
+                    return;
+                }
+
+                const paginationLink = event.target.closest('#external-output-pagination a[href]');
+                if (paginationLink) {
+                    const url = new URL(paginationLink.href, window.location.origin);
+                    if (url.pathname === new URL(currentPath, window.location.origin).pathname) {
+                        event.preventDefault();
+                        fetchExternalResults(url, { updateUrl: true });
+                        return;
+                    }
+                }
+
                 const openButton = event.target.closest('[data-open-move-modal="true"]');
                 if (openButton) {
                     const encoded = openButton.getAttribute('data-output-base64') || '';
@@ -477,6 +622,13 @@
                     }
                     await openProjectPicker(openButton.getAttribute('data-move-action') || '', output);
                     return;
+                }
+            });
+
+            window.addEventListener('popstate', () => {
+                const url = new URL(window.location.href);
+                if (url.pathname === new URL(currentPath, window.location.origin).pathname) {
+                    fetchExternalResults(url, { updateUrl: false });
                 }
             });
         });

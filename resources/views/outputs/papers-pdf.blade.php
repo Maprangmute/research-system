@@ -130,6 +130,19 @@
         .filters-wrap {
             margin-top: 6px;
         }
+        .id-legend {
+            margin: 4px 0 10px;
+            padding: 8px 12px;
+            border: 1px solid #dbe7f5;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #334155;
+            font-size: 11.8pt;
+            line-height: 1.45;
+        }
+        .id-legend strong {
+            color: #0f172a;
+        }
         .paper-list {
             margin-top: 10px;
         }
@@ -167,6 +180,13 @@
             font-weight: bold;
             line-height: 1.34;
             color: #0f172a;
+        }
+        .source-reference {
+            margin-bottom: 5px;
+            font-size: 12.2pt;
+            font-weight: bold;
+            color: #0f172a;
+            line-height: 1.3;
         }
         .paper-head-main {
             width: 80%;
@@ -460,6 +480,12 @@
 
     <div class="section-title">รายการบทความ</div>
     <div class="section-subtitle">รายละเอียดบทความ วารสาร ค่า IF, Ranking, ผู้แต่ง และแหล่งอ้างอิงของแต่ละรายการ</div>
+    <div class="id-legend">
+        <strong>คำอธิบาย ID:</strong>
+        SP = Project ID,
+        BO = Back Office ID,
+        px = Extra ID
+    </div>
     <div class="paper-list">
         @forelse ($papers as $index => $paper)
             @php
@@ -473,6 +499,15 @@
                 ])->filter()->values();
                 $qrLink = $firstUrlOrNull($paper->detail, $paper->project_link);
                 $qrCode = $qrLink ? $qrDataUri($qrLink) : null;
+                $sourceReferenceId = trim((string) ($paper->source_reference_id ?? ''));
+                if ($sourceReferenceId === '') {
+                    $sourceReferenceId = match (mb_strtolower(trim((string) ($paper->source_badge ?? '')), 'UTF-8')) {
+                        'mission' => trim((string) ($paper->backoffice_id ?? '')),
+                        'extra' => trim((string) ($paper->output_code ?? '')),
+                        default => trim((string) ($paper->project_code ?? '')),
+                    };
+                }
+                $sourceReference = $sourceReferenceId;
             @endphp
             <div class="paper-card">
                 <table class="paper-topline">
@@ -481,6 +516,7 @@
                             {{ $index + 1 }}.
                         </td>
                         <td class="paper-head-main">
+                            <div class="source-reference">{{ $sourceReference !== '' ? $sourceReference : '-' }}</div>
                             <div class="paper-title">{{ $paper->title ?: '-' }}@if($paper->year_be) ({{ $paper->year_be }})@endif</div>
                             <div class="paper-value" style="margin-top: 4px; color: #475569;">
                                 {{ $metaParts->implode(' · ') ?: '-' }}
@@ -522,13 +558,8 @@
                                 <div class="paper-value">{{ $paper->output_code ?: '-' }}</div>
                             </div>
                             <div class="paper-block">
-                                <div class="paper-label">โครงการ / งานอ้างอิง</div>
-                                <div class="paper-value">
-                                    {{ $paper->project_label ?: '-' }}
-                                    @if ($paper->project_code)
-                                        <span class="muted">({{ $paper->project_code }})</span>
-                                    @endif
-                                </div>
+                                <div class="paper-label">ID</div>
+                                <div class="paper-value">{{ $sourceReference !== '' ? $sourceReference : '-' }}</div>
                             </div>
                             @if (collect($paper->matched_author_roles ?? [])->isNotEmpty())
                                 <div class="paper-block">

@@ -222,6 +222,7 @@
                             </div>
                         </div>
                         <input type="hidden" name="impact_max" id="impactMaxInput" value="{{ $selectedImpactMax }}">
+                        <input type="hidden" name="impact_filter" id="impactFilterInput" value="{{ request()->boolean('impact_filter') ? '1' : '0' }}">
                     </section>
 
                     <section class="space-y-3 md:col-span-2 xl:col-span-2">
@@ -294,8 +295,10 @@
             const buildUrlFromForm = (form, resetPage = true) => {
                 const url = new URL(form.action, window.location.origin);
                 const formData = new FormData(form);
+                const hasImpactFilter = formData.get('impact_filter') === '1';
                 for (const [key, value] of formData.entries()) {
                     if (value === null || value === '') continue;
+                    if ((key === 'impact_max' || key === 'impact_filter') && !hasImpactFilter) continue;
                     url.searchParams.append(key, value);
                 }
                 if (resetPage) {
@@ -324,9 +327,10 @@
             const bindImpactRange = () => {
                 const maxRange = query('#impactMaxRange');
                 const maxInput = query('#impactMaxInput');
+                const filterInput = query('#impactFilterInput');
                 const maxLabel = query('#impactMaxLabel');
                 const form = getForm();
-                if (!maxRange || !maxInput || !maxLabel || !form) return;
+                if (!maxRange || !maxInput || !filterInput || !maxLabel || !form) return;
 
                 const updateRangeUi = () => {
                     const maxVal = Number(maxRange.value);
@@ -344,10 +348,12 @@
                 if (maxRange.dataset.paperRangeBound === 'true') return;
                 maxRange.dataset.paperRangeBound = 'true';
                 maxRange.addEventListener('input', () => {
+                    filterInput.value = '1';
                     updateRangeUi();
                     triggerFetch();
                 });
                 maxRange.addEventListener('change', () => {
+                    filterInput.value = '1';
                     updateRangeUi();
                     triggerFetch();
                 });
@@ -429,7 +435,7 @@
                         clearTimeout(liveSearchTimer);
                         liveSearchTimer = setTimeout(() => {
                             fetchAndRender(buildUrlFromForm(form, true), { updateUrl: true });
-                        }, 450);
+                        }, 300);
                     });
 
                     field.addEventListener('input', () => {
@@ -437,7 +443,7 @@
                         clearTimeout(liveSearchTimer);
                         liveSearchTimer = setTimeout(() => {
                             fetchAndRender(buildUrlFromForm(form, true), { updateUrl: true });
-                        }, 450);
+                        }, 300);
                     });
                 });
 
@@ -462,6 +468,28 @@
                 const resetLink = event.target.closest('[data-papers-reset="true"]');
                 if (resetLink) {
                     event.preventDefault();
+                    const form = getForm();
+                    if (form) {
+                        queryAll('input[name="search"], select[name="author"], select[name="role"], select[name="quartile"], select[name="year"]', form)
+                            .forEach((field) => {
+                                field.value = '';
+                            });
+                        const sortSelect = query('select[name="sort"]', form);
+                        if (sortSelect) sortSelect.value = 'created_at';
+                        queryAll('[name="dir"]', form).forEach((field) => {
+                            field.value = 'desc';
+                        });
+                    }
+                    const impactFilterInput = query('#impactFilterInput');
+                    const impactMaxRange = query('#impactMaxRange');
+                    const impactMaxInput = query('#impactMaxInput');
+                    const impactMaxLabel = query('#impactMaxLabel');
+                    if (impactFilterInput) impactFilterInput.value = '0';
+                    if (impactMaxRange && impactMaxInput && impactMaxLabel) {
+                        impactMaxRange.value = impactMaxRange.max;
+                        impactMaxInput.value = impactMaxRange.max;
+                        impactMaxLabel.textContent = Number(impactMaxRange.max).toFixed(2);
+                    }
                     const resetUrl = new URL(resetLink.href, window.location.origin);
                     fetchAndRender(resetUrl, { updateUrl: true });
                     return;
