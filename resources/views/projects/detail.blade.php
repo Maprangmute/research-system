@@ -332,7 +332,7 @@
             }
         }
 
-        @media (min-width: 768px) and (max-width: 1366px) {
+        @media (min-width: 641px) and (max-width: 1366px) {
             #pageTop.project-detail-safe {
                 max-width: 100%;
                 padding-left: 1.25rem;
@@ -436,7 +436,7 @@
             }
         }
 
-        @media (min-width: 768px) and (max-width: 1100px) and (orientation: portrait) {
+        @media (min-width: 641px) and (max-width: 1100px) and (orientation: portrait) {
             #pageTop.project-detail-safe {
                 padding-left: 1rem;
                 padding-right: 1rem;

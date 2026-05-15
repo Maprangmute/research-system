@@ -10,6 +10,40 @@
         $currentMonthKey = now()->format('Y-m');
         $currentMonthFte = ($monthlyFTE[$currentMonthKey] ?? collect())->sum('fte_value');
     @endphp
+    <style>
+        @media (min-width: 641px) and (max-width: 1366px) {
+            .md\:hidden {
+                display: none !important;
+            }
+
+            .hidden.md\:block,
+            #fte-months.hidden.md\:block {
+                display: block !important;
+            }
+
+            .overflow-x-auto {
+                overflow-x: visible !important;
+            }
+
+            #fte-months table {
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: fixed !important;
+            }
+
+            #fte-months th,
+            #fte-months td {
+                min-width: 0 !important;
+                padding-left: 0.45rem !important;
+                padding-right: 0.45rem !important;
+                font-size: 0.76rem;
+                line-height: 1.35;
+                white-space: normal !important;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+        }
+    </style>
 
     <div class="max-w-7xl mx-auto p-4 space-y-6">
         <div class="bg-white border shadow-sm rounded-2xl p-5">
@@ -483,7 +517,7 @@
                 }
             });
 
-            const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+            const isDesktop = window.matchMedia('(min-width: 641px)').matches;
             const searchEl = document.getElementById(isDesktop ? 'fteSearch' : 'fteSearchMobile') || document.getElementById('fteSearch') || document.getElementById('fteSearchMobile');
             const personEl = document.getElementById(isDesktop ? 'ftePersonFilter' : 'ftePersonFilterMobile') || document.getElementById('ftePersonFilter') || document.getElementById('ftePersonFilterMobile');
             const roleEl = document.getElementById(isDesktop ? 'fteRoleFilter' : 'fteRoleFilterMobile') || document.getElementById('fteRoleFilter') || document.getElementById('fteRoleFilterMobile');

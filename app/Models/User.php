@@ -542,6 +542,7 @@ class User extends Authenticatable
     public static function inferFtePositionGroup(?string $position, ?string $name = null): string
     {
         $text = mb_strtolower(trim(((string) $name) . ' ' . ((string) $position)), 'UTF-8');
+        $text = str_replace('เเพทย์', 'แพทย์', $text);
         if ($text === '') {
             return 'ไม่ระบุตำแหน่ง';
         }

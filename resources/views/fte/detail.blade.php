@@ -41,7 +41,7 @@
             letter-spacing: 0.02em;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 640px) {
             .fte-table thead {
                 display: none;
             }
@@ -75,6 +75,42 @@
                 font-size: 11px;
                 text-transform: uppercase;
                 color: #94a3b8;
+            }
+        }
+
+        @media (min-width: 641px) and (max-width: 1366px) {
+            .mt-4.space-y-4.md\:hidden {
+                display: none !important;
+            }
+
+            .mt-4.hidden.overflow-x-auto.rounded-xl.border.border-slate-200.md\:block {
+                display: block !important;
+                overflow-x: visible !important;
+            }
+
+            .overflow-x-auto {
+                overflow-x: visible !important;
+            }
+
+            .fte-table,
+            .overflow-x-auto > table {
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: fixed !important;
+            }
+
+            .fte-table th,
+            .fte-table td,
+            .overflow-x-auto > table th,
+            .overflow-x-auto > table td {
+                min-width: 0 !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+                font-size: 0.78rem;
+                line-height: 1.4;
+                white-space: normal !important;
+                overflow-wrap: anywhere;
+                word-break: break-word;
             }
         }
     </style>

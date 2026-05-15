@@ -269,7 +269,7 @@ class UserController extends Controller
             'name_en'  => 'nullable|string|max:255',
             'email'    => 'required|email|unique:users',
             'position' => 'nullable|string|max:255',
-            'skill_role' => 'nullable|in:' . implode(',', $this->allowedSkillRoles()),
+            'skill_role' => 'required|in:' . implode(',', $this->allowedSkillRoles()),
             'is_borrowed' => 'nullable|boolean',
             'borrowed_department' => 'nullable|required_if:is_borrowed,1|string|max:255',
             'role'     => 'required|in:' . implode(',', $this->allowedRoles()),
@@ -281,9 +281,6 @@ class UserController extends Controller
             $validated['profile_photo_path'] = $request->file('profile_picture')->store('profiles', 'public');
         }
 
-        if (empty($validated['skill_role'])) {
-            $validated['skill_role'] = User::inferSkillRoleFromPosition($validated['position'] ?? null, $validated['name'] ?? null);
-        }
         $validated['is_borrowed'] = $request->boolean('is_borrowed');
         if (! $validated['is_borrowed']) {
             $validated['borrowed_department'] = null;
@@ -319,7 +316,7 @@ class UserController extends Controller
             'name_en'  => 'nullable|string|max:255',
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'position' => 'nullable|string|max:255',
-            'skill_role' => 'nullable|in:' . implode(',', $this->allowedSkillRoles()),
+            'skill_role' => 'required|in:' . implode(',', $this->allowedSkillRoles()),
             'is_borrowed' => 'nullable|boolean',
             'borrowed_department' => 'nullable|required_if:is_borrowed,1|string|max:255',
             'role'     => 'required|in:' . implode(',', $this->allowedRoles()),
@@ -331,9 +328,6 @@ class UserController extends Controller
             $validated['profile_photo_path'] = $request->file('avatar')->store('avatars', 'public');
         }
 
-        if (empty($validated['skill_role'])) {
-            $validated['skill_role'] = User::inferSkillRoleFromPosition($validated['position'] ?? null, $validated['name'] ?? null);
-        }
         $validated['is_borrowed'] = $request->boolean('is_borrowed');
         if (! $validated['is_borrowed']) {
             $validated['borrowed_department'] = null;

@@ -3771,7 +3771,7 @@
                 font-size: 12px !important;
             }
         }
-        @media (min-width: 768px) and (max-width: 1366px) and (orientation: portrait) {
+        @media (min-width: 641px) and (max-width: 1366px) and (orientation: portrait) {
             .nature-layout {
                 grid-template-columns: minmax(0, 1fr) !important;
             }
@@ -4825,6 +4825,96 @@
                 justify-content: flex-start;
             }
         }
+        @media (min-width: 600px) and (max-width: 767px) and (orientation: portrait) {
+            .viz-page > div {
+                padding-left: 18px !important;
+                padding-right: 18px !important;
+            }
+            .viz-page .md\:hidden {
+                display: none !important;
+            }
+            .viz-page .hidden.md\:block,
+            .viz-page .md\:block {
+                display: block !important;
+            }
+            .viz-page .md\:flex {
+                display: flex !important;
+            }
+            .viz-page .md\:grid {
+                display: grid !important;
+            }
+            .viz-page .md\:grid-cols-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+            .viz-page .md\:grid-cols-3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+            .viz-page .md\:grid-cols-4 {
+                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            }
+            .viz-page .md\:grid-cols-5 {
+                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            }
+            .filter-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+            .policy-stat-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+            .policy-people-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+            .contribution-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+            .viz-page .scene.scene--compact.grid,
+            .viz-page .scene.scene--balanced.grid {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr) !important;
+                align-items: stretch !important;
+                gap: 14px !important;
+            }
+            .viz-page .scene.scene--compact > article,
+            .viz-page .scene.scene--balanced > article {
+                min-width: 0 !important;
+                height: 100% !important;
+            }
+            .viz-page .scene.scene--compact .chart-sticky,
+            .viz-page .scene.scene--balanced .chart-sticky {
+                position: relative !important;
+                top: auto !important;
+            }
+            .viz-page .scene.scene--compact h2,
+            .viz-page .scene.scene--balanced h2 {
+                font-size: 0.95rem !important;
+                line-height: 1.35 !important;
+            }
+            .viz-page .scene.scene--compact h3,
+            .viz-page .scene.scene--balanced h3 {
+                font-size: 1rem !important;
+                line-height: 1.35 !important;
+            }
+            .viz-page .scene.scene--compact .section-panel,
+            .viz-page .scene.scene--balanced .section-panel {
+                padding: 14px !important;
+            }
+            .viz-page .scene.scene--compact [class*="h-[360px]"],
+            .viz-page .scene.scene--balanced [class*="h-[360px]"],
+            .viz-page .scene.scene--balanced [class*="h-[340px]"] {
+                height: 300px !important;
+            }
+            .viz-page .scene.scene--balanced .type-chart-wrap {
+                height: 300px !important;
+            }
+            .viz-page .scene.scene--compact .scroll-card,
+            .viz-page .scene.scene--balanced .scroll-card,
+            .viz-page .scene.scene--balanced .paper-record-scroll {
+                max-height: 300px !important;
+            }
+            .viz-page .scene.scene--balanced .js-output-item {
+                padding: 9px 10px !important;
+            }
+        }
         @media (min-width: 768px) {
             .filter-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5040,13 +5130,6 @@
                     <div class="max-w-2xl">
                         <div class="section-tag section-tag--slate">Visualization Filters</div>
                         <h2 class="mt-2 text-xl font-semibold text-slate-900">เลือกช่วงข้อมูลที่อยากดู</h2>
-                        <p class="mt-1 text-sm leading-relaxed text-slate-600">ตัวกรองนี้จะเปลี่ยนทั้งกราฟ ตัวเลขสรุป และรายการด้านล่างพร้อมกัน โดยประเภท EA จะแสดงชื่อเต็มเพื่ออ่านได้ทันที</p>
-                    </div>
-                    <div class="filter-summary-card lg:w-[280px]">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Active Scope</div>
-                        <div class="filter-summary-metric mt-2">{{ number_format($totalCount) }}</div>
-                        <div class="mt-1 text-sm font-medium text-slate-700">ผลงานในชุดข้อมูลที่เลือก</div>
-                        <div class="mt-2 text-xs text-slate-500">แหล่งหลัก: {{ $topSource?->label ?? '-' }} · ประเภทหลัก: {{ $topType?->label ?? '-' }}</div>
                     </div>
                 </div>
 
@@ -5071,7 +5154,6 @@
                                 <option value="{{ $sourceKey }}" @selected($selectedSource === $sourceKey)>{{ $sourceLabel }}</option>
                             @endforeach
                         </select>
-                        <span class="filter-hint">เลือกว่าต้องการดูเฉพาะในพันธกิจหรือ Extra</span>
                     </label>
                     <label class="filter-field">
                         <span class="filter-label">ประเภทผลงาน (EA)</span>
@@ -5081,7 +5163,6 @@
                                 <option value="{{ $typeCode }}" @selected($selectedType === $typeCode)>{{ $typeCode }} - {{ $eaFullNameMap[$typeCode] ?? ('ประเภท ' . $typeCode) }}</option>
                             @endforeach
                         </select>
-                        <span class="filter-hint">แสดงชื่อเต็มของ EA เพื่อแยกประเภทได้เร็วขึ้นโดยไม่ต้องจำรหัส</span>
                     </label>
                     <label class="filter-field">
                         <span class="filter-label">ปีเริ่ม (พ.ศ.)</span>
@@ -5091,7 +5172,6 @@
                                 <option value="{{ $year }}" @selected((int) $selectedYearFrom === (int) $year)>{{ $year }}</option>
                             @endforeach
                         </select>
-                        <span class="filter-hint">ใช้กำหนดขอบซ้ายของช่วงเวลา</span>
                     </label>
                     <label class="filter-field">
                         <span class="filter-label">ปีสิ้นสุด (พ.ศ.)</span>
@@ -5101,7 +5181,6 @@
                                 <option value="{{ $year }}" @selected((int) $selectedYearTo === (int) $year)>{{ $year }}</option>
                             @endforeach
                         </select>
-                        <span class="filter-hint">ใช้กำหนดขอบขวาของช่วงเวลา</span>
                     </label>
                     <div class="flex flex-col justify-end gap-3">
                         <div id="filterLoading" class="hidden rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">กำลังอัปเดตข้อมูล...</div>
@@ -5540,10 +5619,17 @@
                                             </div>
                                             <div class="policy-mini-list mt-3 space-y-2">
                                                 @forelse (collect($policyImpactOutputItems[$code] ?? []) as $item)
-                                                    <a href="{{ $item->link ?: '#' }}" class="policy-mini-link">
-                                                        <div class="text-xs font-semibold leading-snug text-slate-900">{{ $item->title }}</div>
-                                                        <div class="mt-1 text-[11px] text-slate-500">{{ $item->reference }} · {{ $item->source_label ?: '-' }} · ปี {{ $item->year ?: '-' }}</div>
-                                                    </a>
+                                                    @if (($isPublicSeminar ?? false) || ! $item->link)
+                                                        <div class="policy-mini-link">
+                                                            <div class="text-xs font-semibold leading-snug text-slate-900">{{ $item->title }}</div>
+                                                            <div class="mt-1 text-[11px] text-slate-500">{{ $item->reference }} · {{ $item->source_label ?: '-' }} · ปี {{ $item->year ?: '-' }}</div>
+                                                        </div>
+                                                    @else
+                                                        <a href="{{ $item->link }}" class="policy-mini-link">
+                                                            <div class="text-xs font-semibold leading-snug text-slate-900">{{ $item->title }}</div>
+                                                            <div class="mt-1 text-[11px] text-slate-500">{{ $item->reference }} · {{ $item->source_label ?: '-' }} · ปี {{ $item->year ?: '-' }}</div>
+                                                        </a>
+                                                    @endif
                                                 @empty
                                                     <div class="rounded-lg border border-dashed border-slate-200 px-3 py-3 text-xs text-slate-500">ยังไม่มี output ในช่วงที่เลือก</div>
                                                 @endforelse
@@ -5996,6 +6082,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     $fteCapacityYearTotal = (int) data_get($fteSkills, 'capacity_year_total', 0);
                     $fteCapacityYearBorrowedTotal = (int) data_get($fteSkills, 'capacity_year_borrowed_total', 0);
                     $fteCapacityTotal = (int) data_get($fteSkills, 'capacity_total', 0);
+                    $fteCapacitySkillBorrowedTotal = (int) data_get($fteSkills, 'capacity_skill_borrowed_total', 0);
                     $fteCapacityRegularTotal = (int) data_get($fteSkills, 'capacity_regular_total', 0);
                     $fteCapacityBorrowedTotal = (int) data_get($fteSkills, 'capacity_borrowed_total', 0);
                     $fteGroupClass = static function ($tone): string {
@@ -6078,12 +6165,11 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             <div>
                                                 <div class="fte-capacity-card__kicker">Position capacity</div>
                                                 <div class="fte-capacity-card__title">อัตรากำลังจริง แบ่งตามชื่อตำแหน่ง</div>
-                                                <div class="fte-capacity-card__note">เรียงลำดับตามโครงสร้างบทบาทหลัก: แพทย์, แพทย์ Intern, นักวิจัย, ผู้ช่วยวิจัย, เจ้าหน้าที่วิจัย + บริหารงานวิจัย, สหสาขาวิชาชีพ และกลุ่มอื่น</div>
                                             </div>
                                             <div class="fte-capacity-metrics">
                                                 <div class="fte-capacity-metric">
-                                                    <div class="fte-capacity-metric__label">ประจำ</div>
-                                                    <div class="fte-capacity-metric__value">{{ number_format($fteCapacityRegularTotal) }}</div>
+                                                    <div class="fte-capacity-metric__label">ทั้งหมด</div>
+                                                    <div class="fte-capacity-metric__value">{{ number_format($fteCapacityRegularTotal + $fteCapacityBorrowedTotal) }}</div>
                                                 </div>
                                                 <div class="fte-capacity-metric">
                                                     <div class="fte-capacity-metric__label">ยืมตัว</div>
@@ -6092,15 +6178,13 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             </div>
                                         </div>
                                         <div class="fte-capacity-table-wrap">
-                                            <table class="fte-capacity-table" style="min-width: 680px;">
+                                            <table class="fte-capacity-table" style="min-width: 760px;">
                                             <thead>
                                                 <tr>
-                                                    <th style="width:52px;"></th>
+                                                    <th class="fte-capacity-table__num" style="width:52px;"></th>
                                                     <th>ตำแหน่ง / สายงาน</th>
-                                                    <th class="fte-capacity-table__num" style="width:100px;">อัตรากำลัง {{ $fteCapacityYearLabel }}</th>
-                                                    <th class="fte-capacity-table__num" style="width:84px;">ประจำ</th>
-                                                    <th class="fte-capacity-table__num" style="width:84px;">ยืมตัวมา</th>
-                                                    <th class="fte-capacity-table__num" style="width:84px;">รวม</th>
+                                                    <th class="fte-capacity-table__num" style="width:96px;">ทั้งหมด</th>
+                                                    <th class="fte-capacity-table__num" style="width:96px;">ยืมตัวมา</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -6108,21 +6192,12 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                     @php
                                                         $regularPeople = (int) ($row->people ?? 0);
                                                         $borrowedPeople = (int) ($row->borrowed_people ?? 0);
-                                                        $rowTotalPeople = $regularPeople + $borrowedPeople;
+                                                        $totalPeople = $regularPeople + $borrowedPeople;
                                                     @endphp
                                                     <tr>
-                                                        <td><span class="fte-capacity-rank">{{ $loop->iteration }}</span></td>
-                                                        <td>
-                                                            <div class="fte-capacity-position">
-                                                                <span class="fte-capacity-position__name">{{ $row->position_group }}</span>
-                                                                <span class="fte-capacity-position__skill">
-                                                                    <span class="fte-capacity-position__dot"></span>
-                                                                    <span>{{ $row->skill_role }}</span>
-                                                                </span>
-                                                            </div>
-                                                        </td>
-                                                        <td class="fte-capacity-table__num" data-label="อัตรากำลัง {{ $fteCapacityYearLabel }}"><span class="fte-capacity-count">{{ number_format((int) ($row->year_people ?? 0)) }}</span></td>
-                                                        <td class="fte-capacity-table__num" data-label="ประจำ"><span class="fte-capacity-count">{{ number_format($regularPeople) }}</span></td>
+                                                        <td class="fte-capacity-table__num"><span class="fte-capacity-rank">{{ number_format($loop->iteration) }}</span></td>
+                                                        <td data-label="ตำแหน่ง / สายงาน"><span class="fte-capacity-position__name">{{ $row->position_group }}</span></td>
+                                                        <td class="fte-capacity-table__num" data-label="ทั้งหมด"><span class="fte-capacity-count">{{ number_format($totalPeople) }}</span></td>
                                                         <td class="fte-capacity-table__num" data-label="ยืมตัวมา">
                                                             @if ($borrowedPeople > 0)
                                                                 <span class="fte-borrowed-badge">{{ number_format($borrowedPeople) }}</span>
@@ -6130,58 +6205,40 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                                 <span class="fte-borrowed-empty">-</span>
                                                             @endif
                                                         </td>
-                                                        <td class="fte-capacity-table__num" data-label="รวม"><span class="fte-capacity-count">{{ number_format($rowTotalPeople) }}</span></td>
                                                     </tr>
                                                 @endforeach
                                             </tbody>
                                             <tfoot>
                                                 <tr>
                                                     <td colspan="2">รวม</td>
-                                                    <td class="fte-capacity-table__num" data-label="อัตรากำลัง {{ $fteCapacityYearLabel }}">{{ number_format((int) $fteCapacityPositionRows->sum(fn ($row) => (int) ($row->year_people ?? 0))) }}</td>
-                                                    <td class="fte-capacity-table__num" data-label="ประจำ">{{ number_format($fteCapacityRegularTotal) }}</td>
+                                                    <td class="fte-capacity-table__num" data-label="ทั้งหมด">{{ number_format($fteCapacityRegularTotal + $fteCapacityBorrowedTotal) }}</td>
                                                     <td class="fte-capacity-table__num" data-label="ยืมตัวมา">{{ $fteCapacityBorrowedTotal > 0 ? number_format($fteCapacityBorrowedTotal) : '-' }}</td>
-                                                    <td class="fte-capacity-table__num" data-label="รวม">{{ number_format($fteCapacityRegularTotal + $fteCapacityBorrowedTotal) }}</td>
                                                 </tr>
                                             </tfoot>
                                             </table>
-                                        </div>
-                                        <div class="fte-capacity-table-note">
-                                            หมายเหตุ: ตารางนี้รวมจำนวนกำลังคนทั้งหมดที่เคยร่วมงานในช่วงเวลาที่แสดง รวมถึงบุคลากรที่ได้ลาออกแล้วด้วย
                                         </div>
                                         <div class="fte-capacity-position-cards">
                                             @foreach ($fteCapacityPositionRows as $row)
                                                 @php
                                                     $regularPeople = (int) ($row->people ?? 0);
                                                     $borrowedPeople = (int) ($row->borrowed_people ?? 0);
-                                                    $rowTotalPeople = $regularPeople + $borrowedPeople;
+                                                    $totalPeople = $regularPeople + $borrowedPeople;
                                                 @endphp
                                                 <article class="fte-capacity-position-card">
                                                     <div class="fte-capacity-position-card__head">
-                                                        <span class="fte-capacity-rank">{{ $loop->iteration }}</span>
+                                                        <span class="fte-capacity-rank">{{ number_format($loop->iteration) }}</span>
                                                         <div class="min-w-0">
                                                             <div class="fte-capacity-position__name">{{ $row->position_group }}</div>
-                                                            <div class="fte-capacity-position__skill mt-1">
-                                                                <span class="fte-capacity-position__dot"></span>
-                                                                <span>{{ $row->skill_role }}</span>
-                                                            </div>
                                                         </div>
                                                     </div>
                                                     <div class="fte-capacity-position-card__metrics">
                                                         <div class="fte-capacity-position-card__metric">
-                                                            <div class="fte-capacity-position-card__metric-label">{{ $fteCapacityYearLabel }}</div>
-                                                            <div class="fte-capacity-position-card__metric-value">{{ number_format((int) ($row->year_people ?? 0)) }}</div>
-                                                        </div>
-                                                        <div class="fte-capacity-position-card__metric">
-                                                            <div class="fte-capacity-position-card__metric-label">ประจำ</div>
-                                                            <div class="fte-capacity-position-card__metric-value">{{ number_format($regularPeople) }}</div>
+                                                            <div class="fte-capacity-position-card__metric-label">ทั้งหมด</div>
+                                                            <div class="fte-capacity-position-card__metric-value">{{ number_format($totalPeople) }}</div>
                                                         </div>
                                                         <div class="fte-capacity-position-card__metric">
                                                             <div class="fte-capacity-position-card__metric-label">ยืมตัว</div>
                                                             <div class="fte-capacity-position-card__metric-value">{{ $borrowedPeople > 0 ? number_format($borrowedPeople) : '-' }}</div>
-                                                        </div>
-                                                        <div class="fte-capacity-position-card__metric">
-                                                            <div class="fte-capacity-position-card__metric-label">รวม</div>
-                                                            <div class="fte-capacity-position-card__metric-value">{{ number_format($rowTotalPeople) }}</div>
                                                         </div>
                                                     </div>
                                                 </article>
@@ -6197,7 +6254,6 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                 <div>
                                                     <div class="fte-capacity-card__kicker">Skill set capacity</div>
                                                     <div class="fte-capacity-card__title">อัตรากำลังจริง แบ่งตาม Skill set</div>
-                                                    <div class="fte-capacity-card__note">สรุปสัดส่วนกำลังคนตามสายงานที่ใช้ใน FTE Skill Map</div>
                                                 </div>
                                             </div>
                                             <div class="fte-capacity-table-wrap">
@@ -6206,7 +6262,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                     <tr>
                                                         <th style="width:52px;"></th>
                                                         <th>สายงาน</th>
-                                                        <th class="fte-capacity-table__num" style="width:86px;">อัตรากำลัง</th>
+                                                        <th class="fte-capacity-table__num" style="width:86px;">ทั้งหมด</th>
                                                         <th class="fte-capacity-table__num" style="width:74px;">%</th>
                                                         <th class="fte-capacity-table__num" style="width:86px;">ยืมตัวมา</th>
                                                     </tr>
@@ -6217,11 +6273,10 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                             <td><span class="fte-capacity-rank">{{ $loop->iteration }}</span></td>
                                                             <td>
                                                                 <div class="fte-capacity-skill-name">
-                                                                    <span class="fte-capacity-skill-dot"></span>
                                                                     <span>{{ $row->skill_role }}</span>
                                                                 </div>
                                                             </td>
-                                                            <td class="fte-capacity-table__num" data-label="อัตรากำลัง"><span class="fte-capacity-count">{{ number_format((int) ($row->people ?? 0)) }}</span></td>
+                                                            <td class="fte-capacity-table__num" data-label="ทั้งหมด"><span class="fte-capacity-count">{{ number_format((int) ($row->people ?? 0)) }}</span></td>
                                                             <td class="fte-capacity-table__num" data-label="%">{{ number_format((float) ($row->pct ?? 0), 1) }}</td>
                                                             <td class="fte-capacity-table__num" data-label="ยืมตัวมา">
                                                                 @if ((int) ($row->borrowed_people ?? 0) > 0)
@@ -6236,65 +6291,16 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                 <tfoot>
                                                     <tr>
                                                         <td colspan="2">รวม</td>
-                                                        <td class="fte-capacity-table__num" data-label="อัตรากำลัง">{{ number_format($fteCapacityTotal) }}</td>
+                                                        <td class="fte-capacity-table__num" data-label="ทั้งหมด">{{ number_format($fteCapacityTotal) }}</td>
                                                         <td class="fte-capacity-table__num" data-label="%">{{ number_format($fteCapacityTotal > 0 ? 100 : 0, 1) }}</td>
-                                                        <td class="fte-capacity-table__num" data-label="ยืมตัวมา">{{ $fteCapacityBorrowedTotal > 0 ? number_format($fteCapacityBorrowedTotal) : '-' }}</td>
+                                                        <td class="fte-capacity-table__num" data-label="ยืมตัวมา">{{ $fteCapacitySkillBorrowedTotal > 0 ? number_format($fteCapacitySkillBorrowedTotal) : '-' }}</td>
                                                     </tr>
                                                 </tfoot>
                                                 </table>
                                             </div>
                                             <div class="fte-capacity-table-note">
-                                                หมายเหตุ: ตารางนี้รวมจำนวนกำลังคนทั้งหมดที่เคยร่วมงานในช่วงเวลาที่แสดง รวมถึงบุคลากรที่ได้ลาออกแล้วด้วย
+                                                หมายเหตุ: จำนวนทั้งหมดรวมคนยืมตัวไว้แล้ว และแสดงจำนวนยืมตัวแยกอีกคอลัมน์เพื่อให้เห็นสัดส่วนภายในแต่ละสายงาน
                                             </div>
-                                            @if ($fteCapacityYearSkillRows->isNotEmpty())
-                                                <div class="mt-4 border-t border-slate-200 pt-4">
-                                                    <div class="fte-capacity-card__title">อัตรากำลังจริง แบ่งตาม Skill set ในปี {{ $fteCapacityYearLabel }}</div>
-                                                    <div class="fte-capacity-card__note">นับเฉพาะกำลังคนที่มีภาระงาน FTE ในปีท้ายที่เลือกจากตัวกรอง โดยนับคนเดิมซ้ำในปีเดียวกันเป็น 1 คน</div>
-                                                    <div class="fte-capacity-table-wrap mt-3">
-                                                        <table class="fte-capacity-table" style="min-width: 520px;">
-                                                        <thead>
-                                                            <tr>
-                                                                <th style="width:52px;"></th>
-                                                                <th>สายงาน</th>
-                                                                <th class="fte-capacity-table__num" style="width:86px;">อัตรากำลัง</th>
-                                                                <th class="fte-capacity-table__num" style="width:74px;">%</th>
-                                                                <th class="fte-capacity-table__num" style="width:86px;">ยืมตัวมา</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            @foreach ($fteCapacityYearSkillRows as $row)
-                                                                <tr>
-                                                                    <td><span class="fte-capacity-rank">{{ $loop->iteration }}</span></td>
-                                                                    <td>
-                                                                        <div class="fte-capacity-skill-name">
-                                                                            <span class="fte-capacity-skill-dot"></span>
-                                                                            <span>{{ $row->skill_role }}</span>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td class="fte-capacity-table__num" data-label="อัตรากำลัง"><span class="fte-capacity-count">{{ number_format((int) ($row->people ?? 0)) }}</span></td>
-                                                                    <td class="fte-capacity-table__num" data-label="%">{{ number_format((float) ($row->pct ?? 0), 1) }}</td>
-                                                                    <td class="fte-capacity-table__num" data-label="ยืมตัวมา">
-                                                                        @if ((int) ($row->borrowed_people ?? 0) > 0)
-                                                                            <span class="fte-borrowed-badge">{{ number_format((int) $row->borrowed_people) }}</span>
-                                                                        @else
-                                                                            <span class="fte-borrowed-empty">-</span>
-                                                                        @endif
-                                                                    </td>
-                                                                </tr>
-                                                            @endforeach
-                                                        </tbody>
-                                                        <tfoot>
-                                                            <tr>
-                                                                <td colspan="2">รวม</td>
-                                                                <td class="fte-capacity-table__num" data-label="อัตรากำลัง">{{ number_format($fteCapacityYearTotal) }}</td>
-                                                                <td class="fte-capacity-table__num" data-label="%">{{ number_format($fteCapacityYearTotal > 0 ? 100 : 0, 1) }}</td>
-                                                                <td class="fte-capacity-table__num" data-label="ยืมตัวมา">{{ $fteCapacityYearBorrowedTotal > 0 ? number_format($fteCapacityYearBorrowedTotal) : '-' }}</td>
-                                                            </tr>
-                                                        </tfoot>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            @endif
                                         </div>
                                     </div>
                                 @endif
@@ -6691,7 +6697,6 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     <div>
                         <div class="section-tag section-tag--teal">Theme Output</div>
                         <h2 class="text-lg font-semibold text-slate-900">กลุ่มเนื้อหา  (6 กลุ่ม) จาก Output</h2>
-                        <p class="mt-1 text-sm text-slate-500">สรุปเฉพาะผลงานในโครงการวิจัยที่นำไปจัดกลุ่มเนื้อหา พร้อมรายการผลงานในแต่ละกลุ่ม</p>
                     </div>
                     <div class="focus-kpi px-4 py-2">
                         <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Project Outputs</div>
@@ -6739,13 +6744,13 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">รายการผลงานในกลุ่มนี้</div>
                                 <div class="mt-2">
                                     <div class="max-h-64 space-y-1 overflow-y-auto pr-1">
-                                        @forelse (($group->items ?? collect()) as $idx => $item)
+                                            @forelse (($group->items ?? collect()) as $idx => $item)
                                             <button
                                                 type="button"
                                                 class="output-item-button js-output-item"
                                                 style="{{ $outputTypeCardStyle($item->type_code) }}"
                                                 data-title="{{ $item->title }}"
-                                                data-link="{{ $item->link ?? '' }}"
+                                                data-link="{{ ($isPublicSeminar ?? false) ? '' : ($item->link ?? '') }}"
                                                 data-detail="{{ $item->detail ?? '' }}"
                                                 data-type="{{ $item->type_code }} - {{ $item->type_label }}"
                                             >
@@ -6870,7 +6875,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 type="button"
                                 class="js-output-item block w-full rounded-lg border border-slate-200 px-3 py-2.5 text-left text-slate-700 hover:bg-slate-50"
                                 data-title="{{ $row->title }}"
-                                data-link="{{ $row->modal_link ?? '' }}"
+                                data-link="{{ ($isPublicSeminar ?? false) ? '' : ($row->modal_link ?? '') }}"
                                 data-detail="{{ $row->modal_detail ?? '' }}"
                                 data-type="EA101 - Research Paper or Journal Article"
                             >
@@ -6911,7 +6916,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 class="js-output-item block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
                                 style="{{ $presentationCardStyle($row->presentation_type) }}"
                                 data-title="{{ $row->title }}"
-                                data-link="{{ $row->modal_link ?? '' }}"
+                                data-link="{{ ($isPublicSeminar ?? false) ? '' : ($row->modal_link ?? '') }}"
                                 data-detail="{{ $row->modal_detail ?? '' }}"
                                 data-type="EA103 - Presentations in Academic Conferences"
                             >
@@ -6958,7 +6963,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     class="js-output-item block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
                                     style="{{ isset($textbookYearStyleMap[(string) ($row->year_be ?? '')]) ? $textbookYearStyleMap[(string) ($row->year_be ?? '')] . ' background-image:linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.94));' : 'border-color:#e2e8f0; background:#ffffff;' }}"
                                     data-title="{{ $row->title }}"
-                                    data-link="{{ $row->modal_link ?? '' }}"
+                                    data-link="{{ ($isPublicSeminar ?? false) ? '' : ($row->modal_link ?? '') }}"
                                     data-detail="{{ $row->modal_detail ?? '' }}"
                                     data-type="EA119 - Textbook / Book Chapter"
                                 >
@@ -7365,6 +7370,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             const policyImpactTrendItems = @json(collect($policyImpactTrend['items'] ?? []));
             const policyImpactTrendItemsByYear = @json(collect($policyImpactTrend['items_by_year'] ?? []));
             const fteSkillRadarRows = @json(collect(data_get($fteSkillAnalysis ?? [], 'radar_rows', []))->values());
+            const isPublicSeminar = @json($isPublicSeminar ?? false);
             const themeGapAi = {
                 enabled: @json(!($isPublicSeminar ?? false) && $policyImpactThemeAiFacts->isNotEmpty()),
                 endpoint: @json(($isPublicSeminar ?? false) ? null : route('outputs.visualization.theme-gap-ai', [], false)),
@@ -8199,7 +8205,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 </div>
                             </div>
                         `;
-                        return link
+                        return link && !isPublicSeminar
                             ? `<a href="${escapeFrameworkHtml(link)}" class="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 hover:border-blue-200 hover:bg-blue-50">${inner}</a>`
                             : `<div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">${inner}</div>`;
                     }).join('')}</div>${pager}`

@@ -191,7 +191,6 @@
                                     <label>
                                         <span class="user-create-label">สายงาน</span>
                                         <select name="skill_role" class="user-create-input mt-1">
-                                            <option value="">ให้ระบบประเมินจากตำแหน่ง</option>
                                             @foreach (\App\Models\User::SKILL_ROLES as $skillRole)
                                                 <option value="{{ $skillRole }}" @selected(old('skill_role') === $skillRole)>{{ $skillRole }}</option>
                                             @endforeach

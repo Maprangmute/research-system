@@ -5089,22 +5089,123 @@ class OutputController extends Controller
 
             return 'General';
         };
-        $userPositionGroup = static fn (?User $user): string => User::inferFtePositionGroup($user?->position, $user?->name);
-        $capacityPositionGroup = static function (?User $user) use ($userPositionGroup): string {
-            $positionGroup = $userPositionGroup($user);
+        $capacitySkillRole = static function (?User $user): string {
+            return trim((string) ($user?->skill_role ?? '')) ?: User::SKILL_ROLE_UNSPECIFIED;
+        };
+        $capacityPositionGroup = static function (?User $user, ?string $skillRole = null): string {
+            $skillRole = trim((string) $skillRole);
+            $position = trim((string) ($user?->position ?? ''));
+            $text = mb_strtolower(trim(((string) ($user?->name ?? '')) . ' ' . $position), 'UTF-8');
+            $text = str_replace('เเพทย์', 'แพทย์', $text);
 
-            return in_array($positionGroup, ['เจ้าหน้าที่วิจัย', 'บริหารงานวิจัย'], true)
-                ? 'เจ้าหน้าที่วิจัย + บริหารงานวิจัย'
-                : $positionGroup;
+            if ($skillRole === 'Multidisciplinary Research') {
+                return 'สหสาขาวิชาชีพ';
+            }
+
+            if ($skillRole === 'แพทย์ใช้ทุน (Intern)') {
+                return 'แพทย์ Intern';
+            }
+
+            if ($skillRole === 'Project Management & Coordination') {
+                if (Str::contains($text, ['บริหารงานวิจัย'])) {
+                    return 'บริหารงานวิจัย';
+                }
+
+                if (Str::contains($text, ['เจ้าหน้าที่วิจัย', 'เจ้าหน้าทีวิจัย'])) {
+                    return 'เจ้าหน้าที่วิจัย';
+                }
+
+                return $skillRole;
+            }
+
+            if ($skillRole === 'IT & Data Management Systems') {
+                if (Str::contains($text, ['นักวิชาการสารสนเทศ', 'นักวิชาการคอมพิวเตอร์', 'สารสนเทศ', 'คอมพิวเตอร์'])) {
+                    return 'นักวิชาการสารสนเทศ';
+                }
+
+                return 'นักสถิติ + นักวิเคราะห์ข้อมูล';
+            }
+
+            if ($skillRole === 'Communication & Public Relations') {
+                return 'นักประชาสัมพันธ์';
+            }
+
+            if ($skillRole === 'Operations & Administrative Support') {
+                return 'เจ้าหน้าที่บริหารงานทั่วไป';
+            }
+
+            if ($skillRole === 'Scientific Research') {
+                if (Str::contains($text, ['แพทย์ intern', 'intern'])) {
+                    return 'แพทย์ Intern';
+                }
+
+                if (Str::contains($text, ['แพทย์', 'อาจารย์แพทย์'])) {
+                    return 'แพทย์';
+                }
+
+                if (Str::contains($text, ['ผู้ช่วยวิจัย'])) {
+                    return 'ผู้ช่วยวิจัย';
+                }
+
+                if (Str::contains($text, ['เจ้าหน้าที่วิจัย', 'เจ้าหน้าทีวิจัย'])) {
+                    return 'เจ้าหน้าที่วิจัย';
+                }
+
+                if (Str::contains($text, ['นักวิจัย', 'หัวหน้าหน่วย', 'รองหัวหน้าหน่วย', 'health policy', 'policy unit'])) {
+                    return 'นักวิจัย';
+                }
+            }
+
+            return $skillRole !== '' ? $skillRole : ($position !== '' ? $position : 'ไม่ระบุตำแหน่ง');
+        };
+        $capacityExtraPositionRole = static function (?User $user, ?string $skillRole = null, ?string $positionGroup = null): ?string {
+            if ($skillRole !== 'IT & Data Management Systems' || $positionGroup !== 'นักสถิติ + นักวิเคราะห์ข้อมูล') {
+                return null;
+            }
+
+            $position = trim((string) ($user?->position ?? ''));
+            $text = mb_strtolower(trim(((string) ($user?->name ?? '')) . ' ' . $position), 'UTF-8');
+            $text = str_replace('เเพทย์', 'แพทย์', $text);
+
+            if (Str::contains($text, ['นักวิชาการสถิติ', 'นักวิเคราะห์ข้อมูล', 'สถิติ', 'วิเคราะห์ข้อมูล'])) {
+                return null;
+            }
+
+            if (Str::contains($text, ['เภสัช'])) {
+                return 'เภสัช';
+            }
+
+            if (Str::contains($text, ['แพทย์', 'อาจารย์แพทย์'])) {
+                return 'แพทย์';
+            }
+
+            if (Str::contains($text, ['พยาบาล'])) {
+                return 'พยาบาล';
+            }
+
+            if (Str::contains($text, ['นักจิตวิทยา'])) {
+                return 'นักจิตวิทยา';
+            }
+
+            if (Str::contains($text, ['นักโภชนาการ'])) {
+                return 'นักโภชนาการ';
+            }
+
+            if (Str::contains($text, ['นักสุขศึกษา'])) {
+                return 'นักสุขศึกษา';
+            }
+
+            return $position !== '' ? $position : null;
         };
         $positionGroupOrder = collect([
             'แพทย์',
             'แพทย์ Intern',
             'นักวิจัย',
             'ผู้ช่วยวิจัย',
-            'เจ้าหน้าที่วิจัย + บริหารงานวิจัย',
             'สหสาขาวิชาชีพ',
-            'นักสถิติ/นักวิเคราะห์ข้อมูล',
+            'เจ้าหน้าที่วิจัย',
+            'บริหารงานวิจัย',
+            'นักสถิติ + นักวิเคราะห์ข้อมูล',
             'นักวิชาการสารสนเทศ',
             'นักประชาสัมพันธ์',
             'เจ้าหน้าที่บริหารงานทั่วไป',
@@ -5112,69 +5213,43 @@ class OutputController extends Controller
             'ไม่ระบุตำแหน่ง',
         ])->values()->flip();
         $positionGroupTotals = $activeUnitUsers
-            ->groupBy(fn (User $user) => $userPositionGroup($user))
+            ->groupBy(fn (User $user) => $capacityPositionGroup($user, $capacitySkillRole($user)))
             ->map(fn (Collection $users) => (int) $users->pluck('id')->unique()->count());
-        $skillRoleOrder = collect(User::SKILL_ROLES)->values()->flip();
-        $fteCapacityPositionRows = $activeUnitUsers
-            ->map(function (User $user) use ($userSkillRole, $capacityPositionGroup) {
-                return (object) [
-                    'skill_role' => $userSkillRole($user),
-                    'position_group' => $capacityPositionGroup($user),
-                    'is_borrowed' => (bool) ($user->is_borrowed ?? false),
-                ];
-            })
-            ->filter(fn ($row) => ! in_array((string) $row->skill_role, [User::SKILL_ROLE_UNSPECIFIED, User::SKILL_ROLE_GENERAL], true))
-            ->groupBy(fn ($row) => (string) $row->position_group)
-            ->map(function (Collection $users, string $positionGroup) use ($skillRoleOrder) {
-                $skillRoles = $users
-                    ->groupBy('skill_role')
-                    ->map(fn (Collection $roleUsers, string $skillRole) => (object) [
-                        'name' => $skillRole,
-                        'people' => (int) $roleUsers->count(),
-                    ])
-                    ->sortBy(fn ($role) => (int) ($skillRoleOrder[(string) ($role->name ?? '')] ?? 999))
-                    ->values();
+        $skillRoleOrder = collect([
+            'Scientific Research',
+            'Multidisciplinary Research',
+            'แพทย์ใช้ทุน (Intern)',
+            'Project Management & Coordination',
+            'IT & Data Management Systems',
+            'Communication & Public Relations',
+            'Operations & Administrative Support',
+        ])->values()->flip();
+        $capacitySkillSetGroup = static function (string $skillRole): string {
+            return in_array($skillRole, ['Multidisciplinary Research', 'แพทย์ใช้ทุน (Intern)'], true)
+                ? 'Scientific Research'
+                : $skillRole;
+        };
+        $capacitySkillSetOrder = collect([
+            'Scientific Research',
+            'Project Management & Coordination',
+            'IT & Data Management Systems',
+            'Communication & Public Relations',
+            'Operations & Administrative Support',
+        ])->values()->flip();
+        $isCapacityUnitUser = static function (?User $user): bool {
+            if (! $user || $user->role === User::ROLE_RESIGNED || $user->role === User::ROLE_USER) {
+                return false;
+            }
 
-                return (object) [
-                    'position_group' => $positionGroup,
-                    'skill_roles' => $skillRoles,
-                    'skill_role' => $skillRoles
-                        ->map(fn ($role) => ((string) $role->name) . ' ' . number_format((int) $role->people))
-                        ->implode(', '),
-                    'people' => (int) $users->reject(fn ($row) => (bool) $row->is_borrowed)->count(),
-                    'borrowed_people' => (int) $users->filter(fn ($row) => (bool) $row->is_borrowed)->count(),
-                ];
-            })
-            ->sortBy(fn ($row) => sprintf(
-                '%03d-%s',
-                (int) ($positionGroupOrder[(string) ($row->position_group ?? '')] ?? 999),
-                (string) ($row->position_group ?? '')
-            ))
-            ->values();
-        $fteCapacitySkillRows = $activeUnitUsers
-            ->map(fn (User $user) => (object) [
-                'skill_role' => $userSkillRole($user),
-                'is_borrowed' => (bool) ($user->is_borrowed ?? false),
-            ])
-            ->filter(fn ($row) => ! in_array((string) $row->skill_role, [User::SKILL_ROLE_UNSPECIFIED, User::SKILL_ROLE_GENERAL], true))
-            ->groupBy('skill_role')
-            ->map(function (Collection $users, string $skillRole) {
-                return (object) [
-                    'skill_role' => $skillRole,
-                    'people' => (int) $users->count(),
-                    'regular_people' => (int) $users->reject(fn ($row) => (bool) $row->is_borrowed)->count(),
-                    'borrowed_people' => (int) $users->filter(fn ($row) => (bool) $row->is_borrowed)->count(),
-                ];
-            })
-            ->sortBy(fn ($row) => (int) ($skillRoleOrder[(string) ($row->skill_role ?? '')] ?? 999))
-            ->values();
-        $fteCapacityTotal = max(1, (int) $fteCapacitySkillRows->sum('people'));
-        $fteCapacitySkillRows = $fteCapacitySkillRows
-            ->map(function ($row) use ($fteCapacityTotal) {
-                $row->pct = round(((int) ($row->people ?? 0) / $fteCapacityTotal) * 100, 1);
-                return $row;
-            })
-            ->values();
+            return true;
+        };
+        $isCountableCapacitySkillRole = static function (string $skillRole): bool {
+            $normalized = Str::lower(trim($skillRole));
+
+            return $normalized !== ''
+                && ! in_array($skillRole, [User::SKILL_ROLE_UNSPECIFIED, User::SKILL_ROLE_GENERAL], true)
+                && ! Str::contains($normalized, ['research consultant']);
+        };
         $unitUserByName = collect();
         foreach ($activeUnitUsers as $user) {
             foreach ([$user->name, $user->full_name, trim(((string) $user->prefix) . ' ' . ((string) $user->name))] as $nameVariant) {
@@ -5345,7 +5420,7 @@ class OutputController extends Controller
         $researchRows = FteRole::query()
             ->with(['project:id,project_code,project_name_th,start_year,start_date'])
             ->get()
-            ->map(function (FteRole $role) use ($displayText, $normalizeText, $skillFor, $fteYearFor, $resolveUnitUser, $userSkillRole, $userPositionGroup) {
+            ->map(function (FteRole $role) use ($displayText, $normalizeText, $skillFor, $fteYearFor, $resolveUnitUser, $userSkillRole, $capacityPositionGroup) {
                 $task = $displayText($role->task_detail);
                 $job = $displayText($role->job_detail);
                 $person = $displayText($role->name) ?: '-';
@@ -5356,7 +5431,8 @@ class OutputController extends Controller
                 return (object) [
                     'user_id' => $unitUser?->id,
                     'user_skill_role' => $personSkillRole,
-                    'user_position_group' => $userPositionGroup($unitUser),
+                    'user_position_group' => $capacityPositionGroup($unitUser, $personSkillRole),
+                    'is_borrowed' => (bool) ($unitUser?->is_borrowed ?? false),
                     'source' => 'research',
                     'source_label' => 'Project FTE',
                     'year' => $fteYearFor($role),
@@ -5376,7 +5452,7 @@ class OutputController extends Controller
         $backOfficeRows = BackOfficeEntry::query()
             ->with(['task:id,backoffice_id,title,start_date,end_date', 'user:id,prefix,name,role,position,skill_role'])
             ->get()
-            ->map(function (BackOfficeEntry $entry) use ($displayText, $normalizeText, $skillFor, $activeUnitUserIds, $activeUnitUserById, $resolveUnitUser, $userSkillRole, $userPositionGroup) {
+            ->map(function (BackOfficeEntry $entry) use ($displayText, $normalizeText, $skillFor, $activeUnitUserIds, $activeUnitUserById, $resolveUnitUser, $userSkillRole, $capacityPositionGroup) {
                 $task = $displayText($entry->job_detail) ?: $displayText($entry->job_name);
                 $job = $displayText($entry->job_name) ?: $displayText($entry->category);
                 $person = $displayText($entry->person_name) ?: $displayText($entry->user?->name) ?: '-';
@@ -5390,7 +5466,8 @@ class OutputController extends Controller
                 return (object) [
                     'user_id' => $unitUser?->id,
                     'user_skill_role' => $personSkillRole,
-                    'user_position_group' => $userPositionGroup($unitUser),
+                    'user_position_group' => $capacityPositionGroup($unitUser, $personSkillRole),
+                    'is_borrowed' => (bool) ($unitUser?->is_borrowed ?? false),
                     'source' => 'backoffice',
                     'source_label' => 'Back Office FTE',
                     'year' => $this->extractBackOfficeEntryFiscalYearBe($entry),
@@ -5418,38 +5495,148 @@ class OutputController extends Controller
                 return $first;
             })
             ->values();
-        $capacityYear = $yearTo ?? $uniqueRows->pluck('year')->filter(fn ($year) => is_numeric($year))->max();
-        $capacityYear = is_numeric($capacityYear) ? (int) $capacityYear : null;
-        $capacityYearPeople = $capacityYear !== null
-            ? $uniqueRows
-                ->filter(fn ($row) => (int) ($row->year ?? 0) === $capacityYear && (int) ($row->user_id ?? 0) > 0)
+        $fteCapacityPositionPeopleFor = static function (Collection $rows) use ($activeUnitUserById, $capacityPositionGroup, $capacityExtraPositionRole, $capacitySkillRole, $isCountableCapacitySkillRole, $isCapacityUnitUser): Collection {
+            return $rows
+                ->where('source', 'research')
+                ->filter(fn ($row) => (int) ($row->user_id ?? 0) > 0)
                 ->groupBy(fn ($row) => (int) $row->user_id)
-                ->map(function (Collection $userRows, int $userId) use ($activeUnitUserById, $capacityPositionGroup, $userSkillRole) {
+                ->map(function (Collection $userRows, int $userId) use ($activeUnitUserById, $capacityPositionGroup, $capacityExtraPositionRole, $capacitySkillRole, $isCapacityUnitUser) {
                     $user = $activeUnitUserById->get($userId);
+                    if (! $isCapacityUnitUser($user)) {
+                        return null;
+                    }
+                    $skillRole = $capacitySkillRole($user);
+                    $positionGroup = $capacityPositionGroup($user, $skillRole);
 
                     return (object) [
                         'user_id' => $userId,
-                        'skill_role' => $userSkillRole($user),
-                        'position_group' => $capacityPositionGroup($user),
+                        'skill_role' => $skillRole,
+                        'position_group' => $positionGroup,
+                        'extra_position_role' => $capacityExtraPositionRole($user, $skillRole, $positionGroup),
                         'is_borrowed' => (bool) ($user?->is_borrowed ?? false),
                     ];
                 })
-                ->filter(fn ($row) => ! in_array((string) $row->skill_role, [User::SKILL_ROLE_UNSPECIFIED, User::SKILL_ROLE_GENERAL], true))
-                ->values()
+                ->filter()
+                ->filter(fn ($row) => $isCountableCapacitySkillRole((string) ($row->skill_role ?? '')))
+                ->values();
+        };
+        $fteCapacityPositionPeople = $fteCapacityPositionPeopleFor($uniqueRows);
+        $fteCapacityPositionRows = $fteCapacityPositionPeople
+            ->groupBy(fn ($row) => implode('|', [(string) $row->skill_role, (string) $row->position_group]))
+            ->map(function (Collection $users, string $key) use ($skillRoleOrder) {
+                $primarySkillRole = (string) ($users->first()->skill_role ?? 'ไม่ระบุสายงาน');
+                $positionGroups = $users
+                    ->pluck('position_group')
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $positionGroup = (string) ($positionGroups->first() ?? 'ไม่ระบุตำแหน่ง');
+                $extraPositionRoles = $users
+                    ->pluck('extra_position_role')
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $displayPositionGroup = $extraPositionRoles->isNotEmpty()
+                    ? $positionGroup . ' + (' . $extraPositionRoles->implode(', ') . ')'
+                    : $positionGroup;
+                return (object) [
+                    'group_no' => ((int) ($skillRoleOrder[$primarySkillRole] ?? 999)) + 1,
+                    'position_group' => $displayPositionGroup,
+                    'position_group_key' => $positionGroup,
+                    'skill_roles' => collect([(object) ['name' => $primarySkillRole, 'people' => (int) $users->count()]]),
+                    'skill_role' => $primarySkillRole . ' ' . number_format((int) $users->count()),
+                    'primary_skill_role' => $primarySkillRole,
+                    'people' => (int) $users->reject(fn ($row) => (bool) $row->is_borrowed)->count(),
+                    'borrowed_people' => (int) $users->filter(fn ($row) => (bool) $row->is_borrowed)->count(),
+                ];
+            })
+            ->sortBy(fn ($row) => sprintf(
+                '%03d-%03d-%s',
+                (int) ($positionGroupOrder[(string) ($row->position_group_key ?? $row->position_group ?? '')] ?? 999),
+                (int) ($row->group_no ?? 999),
+                (string) ($row->position_group ?? '')
+            ))
+            ->values();
+        $primaryFteCapacitySkillPeople = static function (Collection $rows) use ($activeUnitUserById, $capacitySkillSetGroup, $capacitySkillSetOrder, $capacitySkillRole, $isCountableCapacitySkillRole, $isCapacityUnitUser): Collection {
+            return $rows
+                ->where('source', 'research')
+                ->filter(fn ($row) => (int) ($row->user_id ?? 0) > 0)
+                ->groupBy(fn ($row) => (int) $row->user_id)
+                ->map(function (Collection $userRows, int $userId) use ($activeUnitUserById, $capacitySkillSetGroup, $capacitySkillRole, $isCapacityUnitUser) {
+                    $user = $activeUnitUserById->get($userId);
+                    if (! $isCapacityUnitUser($user)) {
+                        return null;
+                    }
+                    $skillRole = $capacitySkillRole($user);
+                    if ($skillRole === '') {
+                        return null;
+                    }
+
+                    $first = $userRows->first();
+
+                    return (object) [
+                        'user_id' => $userId,
+                        'skill_role' => $capacitySkillSetGroup($skillRole),
+                        'is_borrowed' => (bool) ($first->is_borrowed ?? false),
+                    ];
+                })
+                ->filter(fn ($row) => $row !== null && $isCountableCapacitySkillRole((string) ($row->skill_role ?? '')))
+                ->sortBy(fn ($row) => sprintf(
+                    '%03d-%s',
+                    (int) ($capacitySkillSetOrder[(string) ($row->skill_role ?? '')] ?? 999),
+                    (string) ($row->skill_role ?? '')
+                ))
+                ->values();
+        };
+        $fteCapacitySkillPeople = $primaryFteCapacitySkillPeople($uniqueRows);
+        $fteCapacitySkillRows = $fteCapacitySkillPeople
+            ->groupBy('skill_role')
+            ->map(function (Collection $peopleRows, string $skillGroup) {
+                return (object) [
+                    'skill_role' => $skillGroup,
+                    'people' => (int) $peopleRows->count(),
+                    'regular_people' => (int) $peopleRows->reject(fn ($row) => (bool) ($row->is_borrowed ?? false))->count(),
+                    'borrowed_people' => (int) $peopleRows->filter(fn ($row) => (bool) ($row->is_borrowed ?? false))->count(),
+                ];
+            })
+            ->sortBy(fn ($row) => sprintf(
+                '%03d-%s',
+                (int) ($capacitySkillSetOrder[(string) ($row->skill_role ?? '')] ?? 999),
+                (string) ($row->skill_role ?? '')
+            ))
+            ->values();
+        $fteCapacityTotal = max(1, (int) $fteCapacitySkillRows->sum('people'));
+        $fteCapacitySkillRows = $fteCapacitySkillRows
+            ->map(function ($row) use ($fteCapacityTotal) {
+                $row->pct = round(((int) ($row->people ?? 0) / $fteCapacityTotal) * 100, 1);
+                return $row;
+            })
+            ->values();
+        $capacityYear = $yearTo ?? $uniqueRows->pluck('year')->filter(fn ($year) => is_numeric($year))->max();
+        $capacityYear = is_numeric($capacityYear) ? (int) $capacityYear : null;
+        $capacityYearPeople = $capacityYear !== null
+            ? $fteCapacityPositionPeopleFor($uniqueRows->filter(fn ($row) => (int) ($row->year ?? 0) === $capacityYear)->values())
+            : collect();
+        $capacityYearSkillPeople = $capacityYear !== null
+            ? $primaryFteCapacitySkillPeople($uniqueRows->filter(fn ($row) => (int) ($row->year ?? 0) === $capacityYear)->values())
             : collect();
         $capacityYearPositionCounts = $capacityYearPeople
             ->groupBy('position_group')
             ->map(fn (Collection $people) => (int) $people->pluck('user_id')->unique()->count());
-        $capacityYearSkillRows = $capacityYearPeople
+        $capacityYearSkillRows = $capacityYearSkillPeople
             ->groupBy('skill_role')
             ->map(function (Collection $people, string $skillRole) {
                 return (object) [
                     'skill_role' => $skillRole,
-                    'people' => (int) $people->pluck('user_id')->unique()->count(),
-                    'borrowed_people' => (int) $people->filter(fn ($row) => (bool) $row->is_borrowed)->pluck('user_id')->unique()->count(),
+                    'people' => (int) $people->count(),
+                    'borrowed_people' => (int) $people->filter(fn ($row) => (bool) ($row->is_borrowed ?? false))->count(),
                 ];
             })
-            ->sortBy(fn ($row) => (int) ($skillRoleOrder[(string) ($row->skill_role ?? '')] ?? 999))
+            ->sortBy(fn ($row) => sprintf(
+                '%03d-%s',
+                (int) ($capacitySkillSetOrder[(string) ($row->skill_role ?? '')] ?? 999),
+                (string) ($row->skill_role ?? '')
+            ))
             ->values();
         $capacityYearTotal = max(1, (int) $capacityYearSkillRows->sum('people'));
         $capacityYearSkillRows = $capacityYearSkillRows
@@ -5461,14 +5648,6 @@ class OutputController extends Controller
         $fteCapacityPositionRows = $fteCapacityPositionRows
             ->map(function ($row) use ($capacityYearPositionCounts) {
                 $row->year_people = (int) ($capacityYearPositionCounts[(string) ($row->position_group ?? '')] ?? 0);
-                return $row;
-            })
-            ->values();
-        $capacityYearSkillCounts = $capacityYearSkillRows
-            ->mapWithKeys(fn ($row) => [(string) ($row->skill_role ?? '') => (int) ($row->people ?? 0)]);
-        $fteCapacitySkillRows = $fteCapacitySkillRows
-            ->map(function ($row) use ($capacityYearSkillCounts) {
-                $row->year_people = (int) ($capacityYearSkillCounts[(string) ($row->skill_role ?? '')] ?? 0);
                 return $row;
             })
             ->values();
@@ -5812,8 +5991,9 @@ class OutputController extends Controller
             'capacity_year_total' => (int) $capacityYearSkillRows->sum('people'),
             'capacity_year_borrowed_total' => (int) $capacityYearSkillRows->sum('borrowed_people'),
             'capacity_total' => (int) $fteCapacitySkillRows->sum('people'),
-            'capacity_regular_total' => (int) $fteCapacitySkillRows->sum('regular_people'),
-            'capacity_borrowed_total' => (int) $fteCapacitySkillRows->sum('borrowed_people'),
+            'capacity_skill_borrowed_total' => (int) $fteCapacitySkillRows->sum('borrowed_people'),
+            'capacity_regular_total' => (int) $fteCapacityPositionRows->sum('people'),
+            'capacity_borrowed_total' => (int) $fteCapacityPositionRows->sum('borrowed_people'),
             'source_mix' => collect(['research' => 'Project FTE', 'backoffice' => 'Back Office FTE'])
                 ->map(fn ($label, $key) => (object) [
                     'key' => $key,

@@ -18,7 +18,7 @@
             width: 100%;
         }
 
-        @media (max-width: 767px) {
+        @media (max-width: 640px) {
             .fte-table-wrap,
             .fte-detail-table-wrap {
                 overflow-x: visible;
@@ -153,9 +153,43 @@
             display: table-row;
         }
 
-        @media (max-width: 767px) {
+        @media (max-width: 640px) {
             .fte-index-table tr.fte-detail-row.is-open {
                 display: block;
+            }
+        }
+
+        @media (min-width: 641px) and (max-width: 1366px) {
+            .fte-table-wrap,
+            .fte-detail-table-wrap {
+                overflow-x: visible !important;
+            }
+
+            .fte-index-table,
+            .fte-detail-table {
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: fixed;
+                font-size: 12px;
+            }
+
+            .fte-index-table th,
+            .fte-index-table td,
+            .fte-detail-table th,
+            .fte-detail-table td {
+                padding-left: 0.55rem !important;
+                padding-right: 0.55rem !important;
+            }
+
+            .fte-detail-table th,
+            .fte-detail-table td {
+                min-width: 0 !important;
+            }
+
+            .fte-index-table td,
+            .fte-detail-table td {
+                overflow-wrap: anywhere;
+                word-break: break-word;
             }
         }
 
@@ -309,7 +343,7 @@
             line-height: 1;
         }
 
-        @media (min-width: 768px) and (max-width: 1366px) {
+        @media (min-width: 641px) and (max-width: 1366px) {
             #fte-filter-card {
                 padding: 1rem !important;
                 border-radius: 18px !important;
@@ -417,7 +451,7 @@
             }
         }
 
-        @media (max-width: 767px) {
+        @media (max-width: 640px) {
             .fte-filter-fab {
                 width: 68px;
                 min-height: 76px;

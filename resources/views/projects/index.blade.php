@@ -477,7 +477,7 @@
             line-height: 1.25;
         }
 
-        @media (min-width: 768px) and (max-width: 1366px) {
+        @media (min-width: 641px) and (max-width: 1366px) {
             #project-filter-form {
                 padding: 0.85rem !important;
             }
@@ -646,7 +646,7 @@
             }
         }
 
-        @media (min-width: 768px) and (max-width: 1100px) and (orientation: portrait) {
+        @media (min-width: 641px) and (max-width: 1100px) and (orientation: portrait) {
             .container.mx-auto {
                 max-width: 100% !important;
             }
