@@ -80,7 +80,123 @@
         @endforeach
     </datalist>
 
-    <div class="container mx-auto mt-11 space-y-6 px-4 pb-8">
+    <style>
+        @media (min-width: 768px) and (max-width: 1366px) {
+            .external-academic-form-page {
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .external-academic-form-page h1 {
+                font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+                line-height: 1.2;
+            }
+
+            .external-academic-form-page .external-output-card,
+            .external-academic-form-page [data-ea101-section],
+            .external-academic-form-page [data-ea103-section],
+            .external-academic-form-page [data-ea118-section],
+            .external-academic-form-page [data-ea119-section] {
+                min-width: 0;
+            }
+
+            .external-academic-form-page label,
+            .external-academic-form-page input,
+            .external-academic-form-page select,
+            .external-academic-form-page textarea,
+            .external-academic-form-page .project-search-dropdown {
+                min-width: 0;
+            }
+
+            .external-academic-form-page input,
+            .external-academic-form-page select {
+                padding: 0.72rem 0.85rem;
+                font-size: 0.86rem;
+            }
+
+            .external-academic-form-page .author-row,
+            .external-academic-form-page .edit-author-row {
+                grid-template-columns: minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 1.35fr) minmax(96px, auto) !important;
+                gap: 0.65rem;
+            }
+
+            .external-academic-form-page .conference-presenter-row,
+            .external-academic-form-page .award-recipient-row,
+            .external-academic-form-page .book-author-row,
+            .external-academic-form-page .edit-conference-presenter-row,
+            .external-academic-form-page .edit-award-recipient-row,
+            .external-academic-form-page .edit-book-author-row {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(96px, auto) !important;
+                gap: 0.65rem;
+            }
+
+            .external-academic-form-page [data-remove-author],
+            .external-academic-form-page [data-remove-conference-presenter],
+            .external-academic-form-page [data-remove-award-recipient],
+            .external-academic-form-page [data-remove-book-author],
+            .external-academic-form-page [data-remove-edit-author],
+            .external-academic-form-page [data-remove-edit-conference-presenter],
+            .external-academic-form-page [data-remove-edit-award-recipient],
+            .external-academic-form-page [data-remove-edit-book-author] {
+                width: 100%;
+                white-space: nowrap;
+                padding: 0.72rem 0.8rem;
+                font-size: 0.82rem;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1100px) and (orientation: portrait) {
+            .external-academic-form-page {
+                padding-left: 1.25rem;
+                padding-right: 1.25rem;
+            }
+
+            .external-academic-form-page .external-output-card {
+                padding: 1rem;
+            }
+
+            .external-academic-form-page .author-row,
+            .external-academic-form-page .edit-author-row,
+            .external-academic-form-page .conference-presenter-row,
+            .external-academic-form-page .award-recipient-row,
+            .external-academic-form-page .book-author-row,
+            .external-academic-form-page .edit-conference-presenter-row,
+            .external-academic-form-page .edit-award-recipient-row,
+            .external-academic-form-page .edit-book-author-row {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .external-academic-form-page .author-row > label:nth-of-type(3),
+            .external-academic-form-page .edit-author-row > label:nth-of-type(3) {
+                grid-column: 1 / -1;
+            }
+
+            .external-academic-form-page .author-row > div:last-child,
+            .external-academic-form-page .edit-author-row > div:last-child,
+            .external-academic-form-page .conference-presenter-row > div:last-child,
+            .external-academic-form-page .award-recipient-row > div:last-child,
+            .external-academic-form-page .book-author-row > div:last-child,
+            .external-academic-form-page .edit-conference-presenter-row > div:last-child,
+            .external-academic-form-page .edit-award-recipient-row > div:last-child,
+            .external-academic-form-page .edit-book-author-row > div:last-child {
+                grid-column: 1 / -1;
+                justify-content: flex-end;
+            }
+
+            .external-academic-form-page [data-remove-author],
+            .external-academic-form-page [data-remove-conference-presenter],
+            .external-academic-form-page [data-remove-award-recipient],
+            .external-academic-form-page [data-remove-book-author],
+            .external-academic-form-page [data-remove-edit-author],
+            .external-academic-form-page [data-remove-edit-conference-presenter],
+            .external-academic-form-page [data-remove-edit-award-recipient],
+            .external-academic-form-page [data-remove-edit-book-author] {
+                width: auto;
+            }
+        }
+    </style>
+
+    <div class="external-academic-form-page container mx-auto mt-11 space-y-6 px-4 pb-8">
         <section class="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-sm">
             <div class="flex flex-col gap-5 px-5 py-6 md:px-7 lg:flex-row lg:items-start lg:justify-between">
                 <div class="max-w-3xl">
@@ -150,8 +266,8 @@
                         </div>
 
                         <div class="space-y-4" data-output-body>
-                            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                                <label class="block md:col-span-12">
+                            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                <label class="block md:col-span-2 lg:col-span-4">
                                     <span class="text-sm font-semibold text-slate-700">ชื่อผลงาน <span class="text-rose-500">*</span></span>
                                     <input type="text"
                                         name="outputs[{{ $outputIndex }}][title]"
@@ -592,8 +708,8 @@
             </div>
 
             <div class="space-y-4" data-output-body>
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <label class="block md:col-span-12">
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <label class="block md:col-span-2 lg:col-span-4">
                         <span class="text-sm font-semibold text-slate-700">ชื่อผลงาน <span class="text-rose-500">*</span></span>
                         <input type="text" name="outputs[__INDEX__][title]" required oninvalid="this.setCustomValidity('กรุณากรอกชื่อผลงาน')" oninput="this.setCustomValidity('')" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="ระบุชื่อผลงาน">
                     </label>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\ResponsiveView;
 use App\Support\UserDisplayNameSync;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,21 +41,7 @@ class UserController extends Controller
 
     private function resolveView(Request $request, string $base): string
     {
-        $view = $base;
-        $forceView = $request->query('view');
-        if ($forceView === 'mobile') {
-            $view = $base . '_mobile';
-        } elseif ($forceView !== 'desktop') {
-            $ua = (string) $request->header('User-Agent', '');
-            $isMobile = (bool) preg_match(
-                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
-                $ua
-            );
-            if ($isMobile) {
-                $view = $base . '_mobile';
-            }
-        }
-        return $view;
+        return ResponsiveView::resolve($request, $base);
     }
 
     private function nullUserReference(string $table, string $column, int $userId): void
@@ -162,6 +149,8 @@ class UserController extends Controller
             'email',
             'position',
             'skill_role',
+            'is_borrowed',
+            'borrowed_department',
             'role',
             'profile_photo_path',
             'created_at',
@@ -176,6 +165,8 @@ class UserController extends Controller
                     ->orWhere('prefix_en', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('position', 'like', "%{$search}%")
+                    ->orWhere('skill_role', 'like', "%{$search}%")
+                    ->orWhere('borrowed_department', 'like', "%{$search}%")
                     ->orWhere('prefix', 'like', "%{$search}%");
             });
         }
@@ -264,8 +255,7 @@ class UserController extends Controller
     {
         $this->authorizeUserManagement();
 
-        $view = $this->resolveView($request, 'users.create');
-        return view($view);
+        return view('users.create');
     }
 
     public function store(Request $request)
@@ -311,8 +301,7 @@ class UserController extends Controller
         $this->authorizeUserManagement();
 
         $user = User::findOrFail($id);
-        $view = $this->resolveView($request, 'users.edit');
-        return view($view, compact('user'));
+        return view('users.edit', compact('user'));
     }
 
     public function update(Request $request, $id)

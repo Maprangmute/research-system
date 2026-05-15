@@ -36,7 +36,7 @@
     </section>
 
     <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
-        <div class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50 px-4 py-4 md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-col gap-3 border-b border-slate-100 bg-slate-50 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <div class="text-sm font-semibold text-slate-800">รายการบทความ</div>
                 <div class="mt-1 text-sm text-slate-500">
@@ -46,7 +46,7 @@
         </div>
 
         @if ($outputs->count() > 0)
-            <div class="divide-y divide-slate-100 md:hidden">
+            <div class="divide-y divide-slate-100 lg:hidden">
                         @foreach ($outputs as $paper)
                             <article class="space-y-3 px-4 py-4">
                         <div>
@@ -130,7 +130,7 @@
                 @endforeach
             </div>
 
-            <div class="hidden overflow-auto md:block">
+            <div class="hidden overflow-auto lg:block">
                 <table class="min-w-full table-fixed">
                     <colgroup>
                         <col style="width: 23%;">

@@ -141,6 +141,10 @@
             font-weight: 800;
         }
 
+        .project-id-year-pill {
+            display: none;
+        }
+
         .project-type-subline {
             margin-top: 0.25rem;
         }
@@ -471,6 +475,249 @@
             font-size: 12px;
             font-weight: 700;
             line-height: 1.25;
+        }
+
+        @media (min-width: 768px) and (max-width: 1366px) {
+            #project-filter-form {
+                padding: 0.85rem !important;
+            }
+
+            #project-filter-form > .grid {
+                gap: 0.65rem !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(1) {
+                grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(2) {
+                grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(3) {
+                grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(1) > label:nth-child(1) {
+                grid-column: span 6 / span 6 !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(1) > label:nth-child(2),
+            #project-filter-form > .grid:nth-of-type(1) > label:nth-child(3) {
+                grid-column: span 3 / span 3 !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(1) > label:nth-child(4),
+            #project-filter-form > .grid:nth-of-type(1) > label:nth-child(5),
+            #project-filter-form > .grid:nth-of-type(1) > label:nth-child(6) {
+                grid-column: span 4 / span 4 !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(2) > label:nth-child(1) {
+                grid-column: span 6 / span 6 !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(2) > label:nth-child(2),
+            #project-filter-form > .grid:nth-of-type(2) > label:nth-child(3) {
+                grid-column: span 3 / span 3 !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(2) > label:nth-child(4) {
+                grid-column: span 3 / span 3 !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(2) > label:nth-child(5) {
+                grid-column: span 9 / span 9 !important;
+            }
+
+            #project-filter-form > .grid:nth-of-type(3) > label:nth-child(1),
+            #project-filter-form > .grid:nth-of-type(3) > label:nth-child(2),
+            #project-filter-form > .grid:nth-of-type(3) > div:nth-child(3) {
+                grid-column: span 4 / span 4 !important;
+            }
+
+            #project-filter-form span.text-xs.font-semibold {
+                font-size: 10px !important;
+                line-height: 1.25;
+            }
+
+            #project-filter-form input[type='text'],
+            #project-filter-form select,
+            #project-filter-form button[data-project-dropdown-toggle] {
+                min-height: 34px;
+                padding: 0.42rem 0.5rem !important;
+                font-size: 11px !important;
+            }
+
+            .project-filter-actions,
+            #project-filter-form .flex.gap-2.items-center {
+                gap: 0.45rem !important;
+            }
+
+            #project-filter-form button[type='submit'],
+            #project-filter-reset {
+                min-height: 34px;
+                padding: 0.42rem 0.65rem !important;
+                font-size: 11px !important;
+            }
+
+            #project-filter-form .project-filter-issue-group,
+            #project-filter-form label:has(input[name^='issue_']) > div {
+                min-height: 34px;
+                align-items: center;
+                gap: 0.7rem !important;
+            }
+
+            #project-table-shell > .border-b {
+                gap: 0.75rem;
+                align-items: flex-start;
+            }
+
+            #project-table-count {
+                font-size: 12px !important;
+                line-height: 1.35;
+            }
+
+            #project-table-count-meta {
+                display: block;
+                margin-left: 0 !important;
+                margin-top: 0.15rem;
+            }
+
+            #project-table-shell .overflow-auto {
+                overflow-x: visible !important;
+            }
+
+            .project-table {
+                width: 100%;
+                min-width: 0;
+                table-layout: fixed;
+                font-size: 11px;
+            }
+
+            .project-table col:nth-child(1) { width: 15% !important; }
+            .project-table col:nth-child(2) { width: 50% !important; }
+            .project-table col:nth-child(3) { width: 10% !important; }
+            .project-table col:nth-child(4) { width: 16% !important; }
+            .project-table col:nth-child(5) { width: 9% !important; }
+
+            .project-table th {
+                white-space: normal;
+                font-size: 10px;
+                line-height: 1.25;
+            }
+
+            .project-table th,
+            .project-table td {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+
+            .project-id-cell {
+                padding-bottom: 0.55rem !important;
+            }
+
+            .project-id-meta {
+                position: static;
+                margin-top: 0.45rem;
+                font-size: 0.62rem;
+                white-space: nowrap;
+            }
+
+            .project-id-year {
+                font-size: 0.7rem;
+            }
+
+            .project-table .cell-clamp-5 {
+                -webkit-line-clamp: 4;
+            }
+
+            .project-table .cell-clamp-2 {
+                -webkit-line-clamp: 2;
+            }
+
+            .project-type-subline,
+            .status-box,
+            .project-table td span.inline-flex {
+                font-size: 10px !important;
+                line-height: 1.2;
+                padding-left: 0.38rem !important;
+                padding-right: 0.38rem !important;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1100px) and (orientation: portrait) {
+            .container.mx-auto {
+                max-width: 100% !important;
+            }
+
+            #project-filter-form {
+                border-radius: 18px;
+            }
+
+            #project-filter-form > .grid:nth-of-type(2) > label:nth-child(5) > div {
+                display: grid !important;
+                grid-template-columns: repeat(4, minmax(0, max-content));
+            }
+
+            #project-table-shell > .border-b > div:last-child {
+                display: none;
+            }
+
+            .project-table {
+                font-size: 10.5px;
+            }
+
+            .project-table th,
+            .project-table td {
+                padding-left: 0.38rem !important;
+                padding-right: 0.38rem !important;
+            }
+
+            .project-table col:nth-child(1) { width: 12% !important; }
+            .project-table col:nth-child(2) { width: 54% !important; }
+            .project-table col:nth-child(3) { width: 10% !important; }
+            .project-table col:nth-child(4) { width: 16% !important; }
+            .project-table col:nth-child(5) { width: 8% !important; }
+
+            .project-id-cell {
+                padding-bottom: 0.75rem !important;
+                font-size: 0.95rem !important;
+                line-height: 1.2;
+            }
+
+            .project-id-meta {
+                display: none !important;
+            }
+
+            .project-id-year-pill {
+                display: inline-flex;
+                margin-top: 0.38rem;
+                align-items: center;
+                border-radius: 999px;
+                border: 1px solid #dbe4ef;
+                background: #f8fafc;
+                padding: 0.12rem 0.42rem;
+                font-family: ui-sans-serif, system-ui, sans-serif;
+                font-size: 0.66rem;
+                font-weight: 800;
+                line-height: 1.2;
+                color: #475569;
+                white-space: nowrap;
+            }
+
+            .project-table .cell-clamp-5 {
+                -webkit-line-clamp: 3;
+            }
+
+            .project-table td:nth-child(2) .text-xs.cell-clamp-2 {
+                -webkit-line-clamp: 1;
+            }
+
+            .project-table th:nth-child(5),
+            .project-table td:nth-child(5) {
+                text-align: center !important;
+            }
         }
 
         @media (max-width: 1024px) {
@@ -1002,9 +1249,10 @@
                                         $updated = $project->updated_at ? \Carbon\Carbon::parse($project->updated_at) : null;
                                     @endphp
                                     <a href="{{ $showUrl }}" class="hover:underline">{{ $project->project_code }}</a>
+                                    <div class="project-id-year-pill">ปี {{ $project->start_year ?: '-' }}</div>
                                     <div class="project-id-meta">
-                                        <div class="project-id-year">ปีโปรเจค : {{ $project->start_year ?: '-' }}</div>
-                                        <div>อัพเดท : {{ $updated ? $updated->locale('th')->translatedFormat('j M') . ' ' . ($updated->year + 543) : '-' }}</div>
+                                        <div class="project-id-year">ปี: {{ $project->start_year ?: '-' }}</div>
+                                        <div>อัปเดท: {{ $updated ? $updated->locale('th')->translatedFormat('j M') . ' ' . ($updated->year + 543) : '-' }}</div>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">

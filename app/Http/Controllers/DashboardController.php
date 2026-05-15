@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\ResponsiveView;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -321,20 +322,7 @@ class DashboardController extends Controller
             ->orderBy('funding_source')
             ->pluck('funding_source');
 
-        $view = 'dashboard';
-        $forceView = $request->query('view');
-        if ($forceView === 'mobile') {
-            $view = 'dashboard_mobile';
-        } elseif ($forceView !== 'desktop') {
-            $ua = (string) $request->header('User-Agent', '');
-            $isMobileOrTablet = (bool) preg_match(
-                '/Android|webOS|iPhone|iPod|iPad|Tablet|PlayBook|Silk|Kindle|BlackBerry|IEMobile|Opera Mini|Macintosh.*Mobile/i',
-                $ua
-            );
-            if ($isMobileOrTablet) {
-                $view = 'dashboard_mobile';
-            }
-        }
+        $view = ResponsiveView::resolve($request, 'dashboard');
 
         return view($view, compact(
             'projects',

@@ -1119,6 +1119,19 @@
             filter: grayscale(1) saturate(.08) brightness(1.08);
             opacity: .5;
         }
+        .nature-bubble[data-nature-bubble="aging"],
+        .nature-bubble[data-nature-bubble="hta"] {
+            z-index: 4;
+        }
+        .nature-bubble[data-nature-bubble="access_population"] {
+            z-index: 8;
+        }
+        .nature-bubble[data-nature-bubble="device_innovation"],
+        .nature-bubble[data-nature-bubble="data_rwe"],
+        .nature-bubble[data-nature-bubble="ai_digital"],
+        .nature-bubble[data-nature-bubble="drug_rdu"] {
+            z-index: 14;
+        }
         .nature-bubble.is-complete {
             filter: none;
             opacity: .78;
@@ -1138,6 +1151,17 @@
             border: 2px solid rgba(15, 23, 42, .55);
             box-shadow: 0 0 0 7px rgba(255, 255, 255, .62);
             pointer-events: none;
+        }
+        .nature-bubble__callout {
+            display: none;
+        }
+        .nature-bubble__callout-title,
+        .nature-bubble__callout-count {
+            display: block;
+        }
+        .nature-callout-layer,
+        .nature-map-callout {
+            display: none;
         }
         .nature-card {
             transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
@@ -2168,6 +2192,46 @@
             border: 1px solid #e2e8f0;
             background: #ffffff;
         }
+        .fte-capacity-position-cards {
+            display: none;
+        }
+        .fte-capacity-position-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #ffffff;
+            padding: 12px;
+        }
+        .fte-capacity-position-card__head {
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr);
+            gap: 10px;
+            align-items: start;
+        }
+        .fte-capacity-position-card__metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .fte-capacity-position-card__metric {
+            border-radius: 10px;
+            background: #f8fafc;
+            padding: 8px;
+            text-align: center;
+        }
+        .fte-capacity-position-card__metric-label {
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #64748b;
+        }
+        .fte-capacity-position-card__metric-value {
+            margin-top: 3px;
+            font-size: 14px;
+            font-weight: 900;
+            line-height: 1;
+            color: #0f172a;
+        }
         .fte-capacity-table {
             width: 100%;
             min-width: 560px;
@@ -2710,10 +2774,14 @@
                 gap: 6px;
             }
         }
-        @media (min-width: 641px) and (max-width: 1279px) {
+        @media (min-width: 641px) and (max-width: 1279px) and (orientation: portrait) {
             .viz-page > div {
                 padding-left: 20px !important;
                 padding-right: 20px !important;
+            }
+            .viz-page {
+                overflow-x: clip;
+                overflow-wrap: anywhere;
             }
             .hero-panel,
             .panel {
@@ -2748,6 +2816,155 @@
             }
             .policy-mini-list {
                 max-height: 280px;
+            }
+            .doctor-lane-board {
+                display: none;
+            }
+            .doctor-mobile-timeline,
+            .unit-mobile-role-timeline {
+                display: grid;
+                gap: 12px;
+            }
+            .doctor-mobile-theme__head,
+            .doctor-mobile-year {
+                padding: 12px;
+            }
+            .doctor-mobile-year .doctor-avatar-stack {
+                justify-content: flex-start;
+            }
+            .doctor-role-tabs {
+                display: grid !important;
+                width: 100%;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .doctor-role-tab {
+                min-width: 0;
+                min-height: 46px;
+                padding: 8px 6px !important;
+                text-align: center;
+                line-height: 1.15;
+                white-space: normal;
+            }
+            .doctor-role-tab span {
+                display: block;
+                margin-left: 0;
+                margin-top: 4px;
+                font-size: 12px;
+            }
+            .clinical-led-chart-scroll {
+                height: 340px;
+                margin-left: 0;
+                margin-right: 0;
+                padding-bottom: 0;
+                overflow-x: clip;
+            }
+            .clinical-led-chart-inner {
+                min-width: 0;
+                width: 100%;
+            }
+            .fte-capacity-table-wrap {
+                overflow-x: visible;
+                border: 0;
+                border-radius: 0;
+                background: transparent;
+            }
+            .fte-capacity-table,
+            .fte-capacity-table thead,
+            .fte-capacity-table tbody,
+            .fte-capacity-table tfoot,
+            .fte-capacity-table tr,
+            .fte-capacity-table th,
+            .fte-capacity-table td {
+                display: block;
+                min-width: 0 !important;
+                width: 100%;
+            }
+            .fte-capacity-table {
+                font-size: 13px;
+            }
+            .fte-capacity-table thead {
+                display: none;
+            }
+            .fte-capacity-table tbody {
+                display: grid;
+                gap: 8px;
+            }
+            .fte-capacity-table tbody tr {
+                display: grid;
+                grid-template-columns: 32px minmax(0, 1fr);
+                gap: 6px 10px;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                background: #ffffff;
+                padding: 10px;
+                align-items: start;
+            }
+            .fte-capacity-table tbody tr:nth-child(even) {
+                background: #f8fafc;
+            }
+            .fte-capacity-table tbody td,
+            .fte-capacity-table tbody tr:nth-child(odd) td,
+            .fte-capacity-table tbody tr:nth-child(even) td,
+            .fte-capacity-table tbody tr:hover td {
+                border-bottom: 0;
+                background: transparent;
+                padding: 0;
+            }
+            .fte-capacity-table tbody td:first-child {
+                grid-row: 1 / span 8;
+                width: 32px;
+            }
+            .fte-capacity-table tbody td:nth-child(2) {
+                grid-column: 2;
+            }
+            .fte-capacity-table tbody td.fte-capacity-table__num {
+                grid-column: 2;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                border-top: 1px dashed #e2e8f0;
+                padding-top: 6px;
+                text-align: right;
+            }
+            .fte-capacity-table tbody td.fte-capacity-table__num::before,
+            .fte-capacity-table tfoot td.fte-capacity-table__num::before {
+                content: attr(data-label);
+                max-width: 60%;
+                color: #64748b;
+                font-size: 12px;
+                font-weight: 700;
+                text-align: left;
+            }
+            .fte-capacity-table tfoot {
+                display: grid;
+                gap: 8px;
+                margin-top: 8px;
+            }
+            .fte-capacity-table tfoot tr {
+                display: grid;
+                gap: 6px;
+                border: 1px solid #cbd5e1;
+                border-radius: 12px;
+                background: #f8fafc;
+                padding: 10px;
+            }
+            .fte-capacity-table tfoot td {
+                border-bottom: 0;
+                background: transparent;
+                padding: 0;
+            }
+            .fte-capacity-table tfoot td:first-child {
+                font-size: 12px;
+                color: #475569;
+            }
+            .fte-capacity-table tfoot td.fte-capacity-table__num {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                border-top: 1px dashed #cbd5e1;
+                padding-top: 6px;
             }
             .type-table-head,
             .type-table-row {
@@ -2786,6 +3003,117 @@
             .policy-mini-list {
                 max-height: 320px;
             }
+            .nature-bubble,
+            .nature-bubble.is-complete {
+                filter: none;
+                opacity: 1;
+            }
+        }
+        @media (min-width: 1024px) and (max-width: 1279px) and (orientation: portrait) {
+            .viz-page [class*="lg:grid-cols"] {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+            .viz-page [class*="lg:flex-row"] {
+                flex-direction: column !important;
+            }
+            .viz-page [class*="lg:items-start"],
+            .viz-page [class*="lg:items-end"],
+            .viz-page [class*="lg:items-center"] {
+                align-items: stretch !important;
+            }
+            .viz-page [class*="lg:justify-between"] {
+                justify-content: flex-start !important;
+            }
+            .viz-page [class*="lg:col-span"] {
+                grid-column: auto !important;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1279px) and (orientation: portrait) {
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table-wrap {
+                display: none;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-position-cards {
+                display: grid;
+                gap: 10px;
+            }
+            .fte-capacity-position-card__metrics {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-metrics {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-metric {
+                min-width: 0;
+            }
+            .network-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+            .network-kpi-card {
+                min-height: 0;
+                padding: 12px 14px;
+                border-radius: 12px;
+            }
+            .network-kpi-card__label {
+                max-width: none;
+                font-size: 11px;
+                line-height: 1.35;
+            }
+            .network-kpi-card__value {
+                margin-top: 8px;
+                font-size: 24px;
+                line-height: 1;
+            }
+            .network-kpi-card__sub,
+            .network-kpi-card .mt-2 {
+                font-size: 11px;
+                line-height: 1.35;
+            }
+            .network-year-block + .network-year-block {
+                margin-top: 30px;
+            }
+            .network-year-head {
+                padding: 16px 0 2px;
+            }
+            .network-year-head__year {
+                font-size: 28px;
+            }
+            .network-year-head__count {
+                padding: 7px 10px;
+                font-size: 11px;
+            }
+            .network-feature-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 14px;
+            }
+            .network-feature-card {
+                min-height: 430px;
+                border-radius: 14px;
+            }
+            .network-feature-card__body {
+                min-height: 430px;
+                padding: 16px;
+            }
+            .network-feature-card__meta {
+                gap: 6px;
+                margin-bottom: 8px;
+            }
+            .network-feature-card__pill {
+                padding: 4px 7px;
+                font-size: 10px;
+            }
+            .network-feature-card__title {
+                font-size: 20px;
+                line-height: 1.22;
+                -webkit-line-clamp: 3;
+            }
+            .network-feature-card__desc {
+                font-size: 12px;
+                line-height: 1.35;
+                -webkit-line-clamp: 2;
+            }
         }
         @media (min-width: 1024px) and (max-width: 1279px) and (orientation: landscape) {
             .viz-page > div {
@@ -2804,8 +3132,1103 @@
             .policy-mini-list {
                 max-height: 300px;
             }
+            .doctor-mobile-timeline,
+            .unit-mobile-role-timeline,
+            .fte-capacity-table tbody {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .doctor-role-tabs {
+                max-width: 680px;
+            }
+            .doctor-lane-board {
+                display: block;
+            }
+            .doctor-mobile-timeline,
+            .unit-mobile-role-timeline {
+                display: none;
+            }
+            .doctor-lane-grid {
+                min-width: 900px;
+            }
+            .doctor-lane-row,
+            .doctor-lane-head {
+                grid-template-columns: minmax(170px, 1.1fr) repeat(var(--doctor-year-count, 1), minmax(92px, 1fr));
+            }
+            .doctor-lane-theme,
+            .doctor-lane-year,
+            .doctor-lane-cell {
+                padding: 8px;
+            }
+            .doctor-lane-theme .text-sm {
+                font-size: 12px;
+                line-height: 1.35;
+            }
+            .doctor-lane-cell {
+                min-height: 62px;
+            }
+            .unit-contribution-matrix .doctor-lane-cell,
+            .unit-contribution-matrix .doctor-lane-row .doctor-lane-theme {
+                min-height: 78px;
+                max-height: 96px;
+            }
+            .doctor-avatar-stack {
+                gap: 6px;
+            }
+            .doctor-avatar-stack img {
+                width: 42px;
+                height: 42px;
+                border-width: 2px;
+            }
+            .unit-avatar-stack {
+                grid-template-columns: repeat(auto-fit, minmax(34px, 34px));
+                gap: 5px;
+                max-height: 88px;
+            }
+            .unit-avatar-stack img {
+                width: 34px;
+                height: 34px;
+                border-width: 2px;
+            }
+            .clinical-led-chart-scroll {
+                height: 330px;
+                overflow-x: auto;
+                padding-bottom: 6px;
+            }
+            .clinical-led-chart-inner {
+                min-width: 760px;
+            }
+            .fte-capacity-table-wrap {
+                overflow-x: auto;
+                border: 1px solid #e2e8f0;
+                border-radius: 14px;
+                background: #ffffff;
+            }
+            .fte-capacity-table {
+                display: table;
+                width: 100%;
+                min-width: 560px !important;
+                border-collapse: separate;
+                border-spacing: 0;
+                font-size: 12px;
+            }
+            .fte-capacity-table thead {
+                display: table-header-group;
+            }
+            .fte-capacity-table tbody {
+                display: table-row-group;
+            }
+            .fte-capacity-table tfoot {
+                display: table-footer-group;
+            }
+            .fte-capacity-table tr {
+                display: table-row;
+            }
+            .fte-capacity-table th,
+            .fte-capacity-table td {
+                display: table-cell;
+                width: auto;
+                padding: 8px 9px;
+            }
+            .fte-capacity-table tbody td.fte-capacity-table__num,
+            .fte-capacity-table tfoot td.fte-capacity-table__num {
+                display: table-cell;
+                border-top: 0;
+                padding-top: 8px;
+            }
+            .fte-capacity-table tbody td.fte-capacity-table__num::before,
+            .fte-capacity-table tfoot td.fte-capacity-table__num::before {
+                content: none;
+            }
+        }
+        @media (min-width: 641px) and (max-width: 1279px) {
+            .fte-capacity-table-wrap {
+                overflow-x: auto;
+                border: 1px solid #e2e8f0;
+                border-radius: 14px;
+                background: #ffffff;
+                -webkit-overflow-scrolling: touch;
+            }
+            .fte-capacity-table {
+                display: table;
+                width: 100%;
+                min-width: 680px !important;
+                border-collapse: separate;
+                border-spacing: 0;
+                table-layout: auto;
+                font-size: 12px;
+            }
+            .fte-capacity-table thead {
+                display: table-header-group;
+            }
+            .fte-capacity-table tbody {
+                display: table-row-group;
+            }
+            .fte-capacity-table tfoot {
+                display: table-footer-group;
+                margin-top: 0;
+            }
+            .fte-capacity-table tr,
+            .fte-capacity-table tbody tr,
+            .fte-capacity-table tfoot tr {
+                display: table-row;
+                grid-template-columns: none;
+                gap: 0;
+                border: 0;
+                border-radius: 0;
+                background: transparent;
+                padding: 0;
+            }
+            .fte-capacity-table th,
+            .fte-capacity-table td {
+                display: table-cell;
+                width: auto;
+                min-width: 0 !important;
+                padding: 8px 9px;
+                vertical-align: middle;
+            }
+            .fte-capacity-table tbody td,
+            .fte-capacity-table tbody tr:nth-child(odd) td,
+            .fte-capacity-table tbody tr:nth-child(even) td,
+            .fte-capacity-table tbody tr:hover td,
+            .fte-capacity-table tfoot td {
+                display: table-cell;
+                width: auto;
+                min-width: 0 !important;
+                border-bottom: 1px solid #e2e8f0;
+                background: transparent;
+                padding: 8px 9px;
+                vertical-align: middle;
+            }
+            .fte-capacity-table tbody td:first-child {
+                width: 52px;
+                grid-row: auto;
+                grid-column: auto;
+            }
+            .fte-capacity-table tbody td:nth-child(2) {
+                min-width: 260px !important;
+                grid-row: auto;
+                grid-column: auto;
+            }
+            .fte-capacity-table tbody td.fte-capacity-table__num,
+            .fte-capacity-table tfoot td.fte-capacity-table__num {
+                display: table-cell;
+                width: auto;
+                grid-row: auto;
+                grid-column: auto;
+                align-items: initial;
+                justify-content: initial;
+                gap: 0;
+                border-top: 0;
+                padding-top: 8px;
+                text-align: right;
+            }
+            .fte-capacity-table tbody td.fte-capacity-table__num::before,
+            .fte-capacity-table tfoot td.fte-capacity-table__num::before {
+                content: none;
+            }
+            .fte-capacity-position__name,
+            .fte-capacity-skill-name {
+                overflow-wrap: normal;
+                word-break: normal;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table-wrap {
+                overflow-x: visible;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table {
+                min-width: 0 !important;
+                table-layout: fixed;
+                font-size: 11px;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th,
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td,
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table tbody td,
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table tbody tr:nth-child(odd) td,
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table tbody tr:nth-child(even) td,
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table tbody tr:hover td,
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table tfoot td {
+                padding: 8px 6px;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:first-child,
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:first-child {
+                width: 42px !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(2),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(2) {
+                width: auto;
+                min-width: 0 !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(3),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(3) {
+                width: 13%;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(4),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(4),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(5),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(5),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(6),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(6) {
+                width: 12%;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th {
+                font-size: 9px;
+                letter-spacing: 0;
+                line-height: 1.2;
+                white-space: normal;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-position__name {
+                font-size: 12px;
+                line-height: 1.25;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-position__skill {
+                font-size: 11px;
+                line-height: 1.25;
+                white-space: normal;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-rank {
+                width: 28px;
+                height: 28px;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-count,
+            .fte-capacity-card[data-fte-capacity-left] .fte-borrowed-badge,
+            .fte-capacity-card[data-fte-capacity-left] .fte-borrowed-empty {
+                font-size: 13px;
+            }
+        }
+        @media (min-width: 1024px) and (max-width: 1199px) and (orientation: landscape) {
+            .nature-section {
+                padding: 16px !important;
+            }
+            .nature-shell {
+                padding: 18px !important;
+                border-radius: 20px !important;
+            }
+            .nature-shell h2 {
+                font-size: 24px !important;
+                line-height: 1.25 !important;
+            }
+            .nature-shell .mt-5.grid.gap-3 {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 10px;
+            }
+            .nature-shell .mt-5.grid.gap-3 > div {
+                padding: 12px;
+                border-radius: 14px;
+            }
+            .nature-shell .mt-5.grid.gap-3 .text-3xl {
+                font-size: 26px !important;
+            }
+            .nature-layout {
+                grid-template-columns: minmax(0, 0.56fr) minmax(0, 0.44fr) !important;
+                gap: 18px !important;
+                align-items: start !important;
+            }
+            .nature-rail,
+            .nature-sticky {
+                min-width: 0;
+            }
+            .nature-sticky {
+                position: sticky;
+                top: 86px;
+                align-self: flex-start;
+                padding: 14px !important;
+                border-radius: 18px !important;
+            }
+            .nature-map {
+                width: min(100%, 380px);
+                min-height: 0 !important;
+                height: clamp(320px, 36vw, 380px) !important;
+                max-width: 380px !important;
+                margin-left: auto;
+                margin-right: auto;
+                border-radius: 24px !important;
+                padding: 10px !important;
+            }
+            .nature-map .absolute.inset-6 {
+                inset: 16px !important;
+            }
+            .nature-bubble {
+                min-width: 36px;
+                min-height: 36px;
+            }
+            .nature-bubble > div {
+                padding-left: 5px !important;
+                padding-right: 5px !important;
+            }
+            .nature-bubble [class*="text-[15px]"],
+            .nature-bubble [class*="text-[12px]"],
+            .nature-bubble [class*="text-[10px]"] {
+                font-size: clamp(8px, 1.05vw, 12px) !important;
+                line-height: 1.08 !important;
+            }
+            .nature-bubble .mt-1 {
+                margin-top: 1px !important;
+                font-size: clamp(7px, .9vw, 10px) !important;
+                line-height: 1 !important;
+            }
+            .nature-card {
+                padding: 14px !important;
+                border-radius: 16px !important;
+            }
+            .nature-card .text-lg {
+                font-size: 15px !important;
+                line-height: 1.35 !important;
+            }
+            .nature-card .mt-5.grid {
+                grid-template-columns: minmax(0, 1fr) !important;
+                gap: 12px;
+            }
+            .nature-card .lg\:col-span-2 {
+                grid-column: auto !important;
+            }
+            .clinical-led-layout {
+                grid-template-columns: minmax(0, .58fr) minmax(0, .42fr) !important;
+                gap: 14px !important;
+                align-items: start;
+            }
+            .clinical-led-layout > div {
+                min-width: 0;
+            }
+            .clinical-led-chart-scroll {
+                height: 300px !important;
+                overflow-x: visible !important;
+                overflow-y: visible;
+                padding-bottom: 0;
+            }
+            .clinical-led-chart-inner {
+                width: 100%;
+                min-width: 0 !important;
+                height: 100%;
+            }
+            .clinical-led-layout .policy-pill {
+                font-size: 10px;
+                line-height: 1.25;
+                padding: 5px 8px;
+            }
+            .clinical-led-layout .text-xl {
+                font-size: 17px !important;
+                line-height: 1.3 !important;
+            }
+            .fte-capacity-tables {
+                grid-template-columns: minmax(0, .58fr) minmax(0, .42fr);
+                align-items: start;
+                gap: 14px;
+            }
+            .fte-capacity-card {
+                padding: 12px;
+                border-radius: 14px;
+            }
+            .fte-capacity-card__head {
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+            .fte-capacity-card__title {
+                font-size: 13px;
+                line-height: 1.35;
+            }
+            .fte-capacity-card__note {
+                font-size: 11px;
+                line-height: 1.45;
+            }
+            .fte-capacity-metrics {
+                gap: 6px;
+            }
+            .fte-capacity-metric {
+                min-width: 74px;
+                padding: 6px 8px;
+            }
+            .fte-capacity-metric__value {
+                font-size: 16px;
+            }
+            .fte-capacity-sticky-col {
+                position: relative;
+                align-self: start;
+                min-width: 0;
+            }
+            .fte-capacity-card--sticky {
+                transform: translate3d(0, var(--fte-capacity-stick-y, 0px), 0);
+                will-change: transform;
+            }
+            .fte-capacity-table-wrap {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .fte-capacity-table {
+                font-size: 11px;
+                min-width: 520px !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table {
+                min-width: 600px !important;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table {
+                min-width: 420px !important;
+            }
+            .fte-capacity-table th,
+            .fte-capacity-table td,
+            .fte-capacity-table tbody td,
+            .fte-capacity-table tbody tr:nth-child(odd) td,
+            .fte-capacity-table tbody tr:nth-child(even) td,
+            .fte-capacity-table tbody tr:hover td,
+            .fte-capacity-table tfoot td {
+                padding: 7px 7px;
+            }
+            .fte-capacity-table th {
+                font-size: 9px;
+                letter-spacing: 0;
+            }
+            .fte-capacity-rank {
+                width: 24px;
+                height: 24px;
+                border-radius: 8px;
+                font-size: 10px;
+            }
+            .fte-capacity-count {
+                font-size: 13px;
+            }
+            .fte-capacity-position__name,
+            .fte-capacity-skill-name {
+                font-size: 11px;
+                line-height: 1.3;
+            }
+            .fte-capacity-position__skill {
+                font-size: 10px;
+                line-height: 1.25;
+            }
+            .fte-capacity-table-note {
+                font-size: 10px;
+                line-height: 1.45;
+            }
+            .network-kpi-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .network-kpi-card {
+                min-height: 104px;
+                padding: 12px 12px;
+                border-radius: 12px;
+            }
+            .network-kpi-card__label {
+                max-width: none;
+                font-size: 10px;
+                line-height: 1.25;
+            }
+            .network-kpi-card__value {
+                margin-top: 8px;
+                font-size: 24px;
+                line-height: 1;
+            }
+            .network-kpi-card__sub,
+            .network-kpi-card .mt-2 {
+                font-size: 10px;
+                line-height: 1.3;
+            }
+            .network-year-block + .network-year-block {
+                margin-top: 34px;
+            }
+            .network-year-head {
+                gap: 10px;
+                padding: 16px 0 2px;
+            }
+            .network-year-head__year {
+                font-size: 28px;
+            }
+            .network-year-head__count {
+                padding: 7px 10px;
+                font-size: 11px;
+            }
+            .network-feature-grid {
+                grid-template-columns: repeat(12, minmax(0, 1fr));
+                grid-auto-rows: 260px;
+                gap: 10px;
+            }
+            .network-feature-card {
+                grid-column: span 4;
+                min-height: auto;
+                border-radius: 14px;
+            }
+            .network-feature-card__body {
+                min-height: 100%;
+                padding: 14px;
+            }
+            .network-feature-card:nth-child(1) {
+                grid-column: span 7;
+                grid-row: span 2;
+            }
+            .network-feature-card:nth-child(2),
+            .network-feature-card:nth-child(3) {
+                grid-column: span 5;
+            }
+            .network-feature-card__meta {
+                gap: 5px;
+                margin-bottom: 7px;
+            }
+            .network-feature-card__pill {
+                padding: 4px 7px;
+                font-size: 9px;
+            }
+            .network-feature-card__title {
+                font-size: 17px;
+                line-height: 1.2;
+                -webkit-line-clamp: 3;
+            }
+            .network-feature-card:first-child .network-feature-card__title {
+                max-width: 620px;
+                font-size: 25px;
+            }
+            .network-feature-card:nth-child(n+4) .network-feature-card__title {
+                font-size: 15px;
+            }
+            .network-feature-card__desc {
+                font-size: 11px;
+                line-height: 1.35;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1366px) {
+            .fte-capacity-table-wrap {
+                overflow-x: visible !important;
+                max-width: 100%;
+            }
+            .fte-capacity-table,
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table,
+            .fte-capacity-sticky-col .fte-capacity-table {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                table-layout: fixed !important;
+                font-size: 10px;
+            }
+            .fte-capacity-table th,
+            .fte-capacity-table td,
+            .fte-capacity-table tbody td,
+            .fte-capacity-table tbody tr:nth-child(odd) td,
+            .fte-capacity-table tbody tr:nth-child(even) td,
+            .fte-capacity-table tbody tr:hover td,
+            .fte-capacity-table tfoot td {
+                padding: 6px 5px !important;
+            }
+            .fte-capacity-table th {
+                font-size: 8.5px !important;
+                letter-spacing: 0 !important;
+                line-height: 1.15;
+                white-space: normal;
+            }
+            .fte-capacity-table__num {
+                white-space: normal;
+                text-align: center !important;
+            }
+            .fte-capacity-table th:first-child,
+            .fte-capacity-table td:first-child {
+                width: 36px !important;
+            }
+            .fte-capacity-table th:nth-child(2),
+            .fte-capacity-table td:nth-child(2) {
+                width: auto !important;
+                min-width: 0 !important;
+            }
+            .fte-capacity-table th:nth-child(3),
+            .fte-capacity-table td:nth-child(3),
+            .fte-capacity-table th:nth-child(4),
+            .fte-capacity-table td:nth-child(4),
+            .fte-capacity-table th:nth-child(5),
+            .fte-capacity-table td:nth-child(5) {
+                width: 14% !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(6),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(6) {
+                width: 11% !important;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table th:nth-child(3),
+            .fte-capacity-sticky-col .fte-capacity-table td:nth-child(3),
+            .fte-capacity-sticky-col .fte-capacity-table th:nth-child(4),
+            .fte-capacity-sticky-col .fte-capacity-table td:nth-child(4),
+            .fte-capacity-sticky-col .fte-capacity-table th:nth-child(5),
+            .fte-capacity-sticky-col .fte-capacity-table td:nth-child(5) {
+                width: 16% !important;
+            }
+            .fte-capacity-rank {
+                width: 24px !important;
+                height: 24px !important;
+                border-radius: 8px;
+                font-size: 10px !important;
+            }
+            .fte-capacity-position__name,
+            .fte-capacity-skill-name {
+                overflow-wrap: anywhere !important;
+                word-break: normal;
+                font-size: 10.5px !important;
+                line-height: 1.25;
+            }
+            .fte-capacity-position__skill {
+                display: flex;
+                min-width: 0;
+                align-items: flex-start;
+                font-size: 9.5px !important;
+                line-height: 1.2;
+                white-space: normal;
+            }
+            .fte-capacity-count,
+            .fte-borrowed-badge,
+            .fte-borrowed-empty {
+                font-size: 12px !important;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1366px) and (orientation: portrait) {
+            .nature-layout {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+            .nature-sticky {
+                position: static !important;
+                top: auto !important;
+            }
+            .nature-map {
+                display: block !important;
+                width: 100% !important;
+                max-width: 620px !important;
+                min-height: 520px !important;
+                height: auto !important;
+                aspect-ratio: 1 !important;
+                overflow: visible !important;
+                border-radius: 32px !important;
+                background: linear-gradient(135deg, #ffffff, #f8fafc) !important;
+                padding: 16px !important;
+            }
+            .nature-callout-layer {
+                display: block;
+                position: absolute;
+                inset: 0;
+                z-index: 120;
+                pointer-events: none;
+            }
+            .nature-map-callout {
+                display: block;
+                position: absolute;
+                z-index: 121;
+                width: 124px;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, .96);
+                border: 1px solid #e2e8f0;
+                padding: 7px 9px;
+                color: #0f172a;
+                text-align: left;
+                box-shadow: 0 10px 22px rgba(15, 23, 42, .16);
+            }
+            .nature-map-callout::before {
+                content: "";
+                position: absolute;
+                height: 2px;
+                border-radius: 999px;
+                background: #64748b;
+                opacity: .28;
+            }
+            .nature-map-callout[data-nature-callout="aging"] {
+                left: 43%;
+                top: 49%;
+                background: #bae6fd;
+                border-color: #38bdf8;
+                color: #0c4a6e;
+            }
+            .nature-map-callout[data-nature-callout="aging"]::before {
+                right: 100%;
+                top: 50%;
+                width: 28px;
+                background: #38bdf8;
+            }
+            .nature-map-callout[data-nature-callout="hta"] {
+                right: 5%;
+                top: 48%;
+                background: #fed7aa;
+                border-color: #fb923c;
+                color: #7c2d12;
+            }
+            .nature-map-callout[data-nature-callout="hta"]::before {
+                right: 100%;
+                top: 50%;
+                width: 22px;
+                background: #fb923c;
+            }
+            .nature-map-callout[data-nature-callout="access_population"] {
+                left: 43%;
+                bottom: 7%;
+                background: #bbf7d0;
+                border-color: #4ade80;
+                color: #14532d;
+            }
+            .nature-map-callout[data-nature-callout="access_population"]::before {
+                left: 36%;
+                bottom: 100%;
+                width: 1px;
+                height: 18px;
+                background: #4ade80;
+            }
+            .nature-map-callout[data-nature-callout="device_innovation"] {
+                left: 25%;
+                top: 18%;
+                background: #fef08a;
+                border-color: #eab308;
+                color: #713f12;
+            }
+            .nature-map-callout[data-nature-callout="device_innovation"]::before {
+                left: 100%;
+                top: 50%;
+                width: 18px;
+                background: #eab308;
+            }
+            .nature-map-callout[data-nature-callout="data_rwe"] {
+                left: 3%;
+                top: 30%;
+                background: #cbd5e1;
+                border-color: #94a3b8;
+                color: #334155;
+            }
+            .nature-map-callout[data-nature-callout="data_rwe"]::before {
+                left: 100%;
+                top: 50%;
+                width: 18px;
+                background: #94a3b8;
+            }
+            .nature-map-callout[data-nature-callout="ai_digital"] {
+                right: 3%;
+                top: 29%;
+                background: #ddd6fe;
+                border-color: #a78bfa;
+                color: #4c1d95;
+            }
+            .nature-map-callout[data-nature-callout="ai_digital"]::before {
+                right: 100%;
+                top: 50%;
+                width: 18px;
+                background: #a78bfa;
+            }
+            .nature-map-callout[data-nature-callout="drug_rdu"] {
+                left: 15%;
+                bottom: 22%;
+                background: #fecdd3;
+                border-color: #fb7185;
+                color: #881337;
+            }
+            .nature-map-callout[data-nature-callout="drug_rdu"]::before {
+                left: 100%;
+                top: 50%;
+                width: 18px;
+                background: #fb7185;
+            }
+            .nature-bubble,
+            .nature-bubble.is-complete,
+            .nature-bubble.is-active {
+                position: absolute !important;
+                display: grid !important;
+                place-items: center !important;
+                min-width: 0 !important;
+                min-height: 0 !important;
+                border-radius: 999px !important;
+                filter: none !important;
+                opacity: 1 !important;
+                text-align: center;
+                box-shadow: 0 10px 24px rgba(15, 23, 42, .10) !important;
+            }
+            .nature-bubble__inner {
+                display: none !important;
+            }
+            .nature-map .nature-bubble[data-nature-bubble="aging"],
+            .nature-map .nature-bubble[data-nature-bubble="aging"].is-active,
+            .nature-map .nature-bubble[data-nature-bubble="hta"],
+            .nature-map .nature-bubble[data-nature-bubble="hta"].is-active {
+                z-index: 10 !important;
+            }
+            .nature-map .nature-bubble[data-nature-bubble="access_population"],
+            .nature-map .nature-bubble[data-nature-bubble="access_population"].is-active {
+                z-index: 55 !important;
+            }
+            .nature-map .nature-bubble[data-nature-bubble="device_innovation"],
+            .nature-map .nature-bubble[data-nature-bubble="device_innovation"].is-active,
+            .nature-map .nature-bubble[data-nature-bubble="data_rwe"],
+            .nature-map .nature-bubble[data-nature-bubble="data_rwe"].is-active,
+            .nature-map .nature-bubble[data-nature-bubble="ai_digital"],
+            .nature-map .nature-bubble[data-nature-bubble="ai_digital"].is-active,
+            .nature-map .nature-bubble[data-nature-bubble="drug_rdu"],
+            .nature-map .nature-bubble[data-nature-bubble="drug_rdu"].is-active {
+                z-index: 90 !important;
+            }
+            .nature-bubble.is-active::after {
+                display: none !important;
+            }
+            .nature-bubble__callout {
+                display: none !important;
+            }
+            .nature-bubble__callout-title {
+                font-size: 12px;
+                font-weight: 900;
+                line-height: 1.15;
+            }
+            .nature-bubble__callout-count {
+                margin-top: 2px;
+                font-size: 11px !important;
+                line-height: 1.15 !important;
+                font-weight: 800;
+                color: #64748b;
+            }
+            .nature-bubble[data-nature-bubble="aging"] {
+                --callout-line: 54px;
+                --callout-angle: 0deg;
+            }
+            .nature-bubble[data-nature-bubble="aging"] .nature-bubble__callout {
+                left: calc(100% + 44px);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .nature-bubble[data-nature-bubble="hta"] {
+                --callout-line: 64px;
+                --callout-angle: 180deg;
+            }
+            .nature-bubble[data-nature-bubble="hta"]::before {
+                right: 100%;
+                left: auto;
+                transform-origin: right center;
+            }
+            .nature-bubble[data-nature-bubble="hta"] .nature-bubble__callout {
+                right: calc(100% + 54px);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .nature-bubble[data-nature-bubble="access_population"] {
+                --callout-line: 42px;
+                --callout-angle: -92deg;
+            }
+            .nature-bubble[data-nature-bubble="access_population"] .nature-bubble__callout {
+                left: 50%;
+                bottom: calc(100% + 36px);
+                transform: translateX(-50%);
+            }
+            .nature-bubble[data-nature-bubble="device_innovation"],
+            .nature-bubble[data-nature-bubble="data_rwe"] {
+                --callout-line: 38px;
+                --callout-angle: 180deg;
+            }
+            .nature-bubble[data-nature-bubble="device_innovation"]::before,
+            .nature-bubble[data-nature-bubble="data_rwe"]::before {
+                right: 100%;
+                left: auto;
+                transform-origin: right center;
+            }
+            .nature-bubble[data-nature-bubble="device_innovation"] .nature-bubble__callout,
+            .nature-bubble[data-nature-bubble="data_rwe"] .nature-bubble__callout {
+                right: calc(100% + 32px);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .nature-bubble[data-nature-bubble="ai_digital"],
+            .nature-bubble[data-nature-bubble="drug_rdu"] {
+                --callout-line: 36px;
+                --callout-angle: 0deg;
+            }
+            .nature-bubble[data-nature-bubble="ai_digital"] .nature-bubble__callout,
+            .nature-bubble[data-nature-bubble="drug_rdu"] .nature-bubble__callout {
+                left: calc(100% + 30px);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table-wrap {
+                display: block !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-position-cards {
+                display: none !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table-note {
+                margin-bottom: 0;
+            }
         }
         @media (max-width: 640px) {
+            .nature-layout {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+            .nature-sticky {
+                position: static !important;
+                top: auto !important;
+            }
+            .nature-map {
+                display: block !important;
+                width: 100% !important;
+                max-width: min(100%, 390px) !important;
+                min-height: 390px !important;
+                height: auto !important;
+                aspect-ratio: 1 !important;
+                overflow: visible !important;
+                border-radius: 20px !important;
+                background: linear-gradient(135deg, #ffffff, #f8fafc) !important;
+                padding: 10px !important;
+            }
+            .nature-bubble,
+            .nature-bubble.is-complete,
+            .nature-bubble.is-active {
+                position: absolute !important;
+                display: grid !important;
+                place-items: center !important;
+                min-width: 0 !important;
+                min-height: 0 !important;
+                border-radius: 999px !important;
+                filter: none !important;
+                opacity: 1 !important;
+                text-align: center;
+                box-shadow: 0 8px 18px rgba(15, 23, 42, .10) !important;
+            }
+            .nature-bubble__inner {
+                display: none !important;
+            }
+            .nature-map .nature-bubble[data-nature-bubble="aging"],
+            .nature-map .nature-bubble[data-nature-bubble="aging"].is-active,
+            .nature-map .nature-bubble[data-nature-bubble="hta"],
+            .nature-map .nature-bubble[data-nature-bubble="hta"].is-active {
+                z-index: 10 !important;
+            }
+            .nature-map .nature-bubble[data-nature-bubble="access_population"],
+            .nature-map .nature-bubble[data-nature-bubble="access_population"].is-active {
+                z-index: 55 !important;
+            }
+            .nature-map .nature-bubble[data-nature-bubble="device_innovation"],
+            .nature-map .nature-bubble[data-nature-bubble="device_innovation"].is-active,
+            .nature-map .nature-bubble[data-nature-bubble="data_rwe"],
+            .nature-map .nature-bubble[data-nature-bubble="data_rwe"].is-active,
+            .nature-map .nature-bubble[data-nature-bubble="ai_digital"],
+            .nature-map .nature-bubble[data-nature-bubble="ai_digital"].is-active,
+            .nature-map .nature-bubble[data-nature-bubble="drug_rdu"],
+            .nature-map .nature-bubble[data-nature-bubble="drug_rdu"].is-active {
+                z-index: 90 !important;
+            }
+            .nature-bubble.is-active::after {
+                display: none !important;
+            }
+            .nature-bubble::before {
+                content: "";
+                position: absolute;
+                height: 2px;
+                border-radius: 999px;
+                width: var(--callout-line, 28px);
+                background: color-mix(in srgb, currentColor 54%, transparent);
+                opacity: .28;
+                transform-origin: left center;
+                transform: rotate(var(--callout-angle, 0deg));
+                pointer-events: none;
+            }
+            .nature-bubble__callout {
+                display: block;
+                position: absolute;
+                z-index: 50;
+                width: var(--callout-width, 96px);
+                border-radius: 10px;
+                background: rgba(255, 255, 255, .94);
+                border: 1px solid #e2e8f0;
+                padding: 5px 7px;
+                color: #0f172a;
+                text-align: left;
+                box-shadow: 0 8px 18px rgba(15, 23, 42, .14);
+                pointer-events: none;
+            }
+            .nature-bubble[data-nature-bubble="aging"] .nature-bubble__callout {
+                background: #bae6fd;
+                border-color: #38bdf8;
+                color: #0c4a6e;
+            }
+            .nature-bubble[data-nature-bubble="hta"] .nature-bubble__callout {
+                background: #fed7aa;
+                border-color: #fb923c;
+                color: #7c2d12;
+            }
+            .nature-bubble[data-nature-bubble="access_population"] .nature-bubble__callout {
+                background: #bbf7d0;
+                border-color: #4ade80;
+                color: #14532d;
+            }
+            .nature-bubble[data-nature-bubble="device_innovation"] .nature-bubble__callout {
+                background: #fef08a;
+                border-color: #eab308;
+                color: #713f12;
+            }
+            .nature-bubble[data-nature-bubble="data_rwe"] .nature-bubble__callout {
+                background: #cbd5e1;
+                border-color: #94a3b8;
+                color: #334155;
+            }
+            .nature-bubble[data-nature-bubble="ai_digital"] .nature-bubble__callout {
+                background: #ddd6fe;
+                border-color: #a78bfa;
+                color: #4c1d95;
+            }
+            .nature-bubble[data-nature-bubble="drug_rdu"] .nature-bubble__callout {
+                background: #fecdd3;
+                border-color: #fb7185;
+                color: #881337;
+            }
+            .nature-bubble__callout-title {
+                font-size: 10px;
+                font-weight: 900;
+                line-height: 1.1;
+            }
+            .nature-bubble__callout-count {
+                margin-top: 2px;
+                font-size: 9px !important;
+                line-height: 1.1 !important;
+                font-weight: 800;
+                color: #64748b;
+            }
+            .nature-bubble[data-nature-bubble="aging"] {
+                --callout-line: 28px;
+                --callout-angle: 0deg;
+            }
+            .nature-bubble[data-nature-bubble="aging"] .nature-bubble__callout {
+                left: calc(100% + 22px);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .nature-bubble[data-nature-bubble="hta"] {
+                --callout-line: 32px;
+                --callout-angle: 180deg;
+            }
+            .nature-bubble[data-nature-bubble="hta"]::before {
+                right: 100%;
+                left: auto;
+                transform-origin: right center;
+            }
+            .nature-bubble[data-nature-bubble="hta"] .nature-bubble__callout {
+                right: calc(100% + 28px);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .nature-bubble[data-nature-bubble="access_population"] {
+                --callout-line: 24px;
+                --callout-angle: -92deg;
+            }
+            .nature-bubble[data-nature-bubble="access_population"] .nature-bubble__callout {
+                left: 50%;
+                bottom: calc(100% + 20px);
+                transform: translateX(-50%);
+            }
+            .nature-bubble[data-nature-bubble="device_innovation"],
+            .nature-bubble[data-nature-bubble="data_rwe"] {
+                --callout-line: 22px;
+                --callout-angle: 180deg;
+            }
+            .nature-bubble[data-nature-bubble="device_innovation"]::before,
+            .nature-bubble[data-nature-bubble="data_rwe"]::before {
+                right: 100%;
+                left: auto;
+                transform-origin: right center;
+            }
+            .nature-bubble[data-nature-bubble="device_innovation"] .nature-bubble__callout,
+            .nature-bubble[data-nature-bubble="data_rwe"] .nature-bubble__callout {
+                right: calc(100% + 18px);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .nature-bubble[data-nature-bubble="ai_digital"],
+            .nature-bubble[data-nature-bubble="drug_rdu"] {
+                --callout-line: 20px;
+                --callout-angle: 0deg;
+            }
+            .nature-bubble[data-nature-bubble="ai_digital"] .nature-bubble__callout,
+            .nature-bubble[data-nature-bubble="drug_rdu"] .nature-bubble__callout {
+                left: calc(100% + 16px);
+                top: 50%;
+                transform: translateY(-50%);
+            }
             .viz-page {
                 width: 100%;
                 margin-left: 0;
@@ -3421,6 +4844,183 @@
                 grid-template-columns: 1.1fr 1.4fr 1fr 1fr auto;
             }
         }
+
+        @media (min-width: 768px) and (max-width: 1279px) and (orientation: portrait) {
+            .viz-page .scene.scene--compact.grid,
+            .viz-page .scene.scene--balanced.grid {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr) !important;
+                align-items: stretch !important;
+                gap: 14px !important;
+            }
+
+            .viz-page .scene.scene--compact > article,
+            .viz-page .scene.scene--balanced > article {
+                min-width: 0 !important;
+                height: 100% !important;
+            }
+
+            .viz-page .scene.scene--compact .chart-sticky,
+            .viz-page .scene.scene--balanced .chart-sticky {
+                position: relative !important;
+                top: auto !important;
+            }
+
+            .viz-page .scene.scene--compact h2,
+            .viz-page .scene.scene--balanced h2 {
+                font-size: 0.95rem !important;
+                line-height: 1.35 !important;
+            }
+
+            .viz-page .scene.scene--compact h3,
+            .viz-page .scene.scene--balanced h3 {
+                font-size: 1.05rem !important;
+                line-height: 1.35 !important;
+            }
+
+            .viz-page .scene.scene--compact .section-panel,
+            .viz-page .scene.scene--balanced .section-panel {
+                padding: 16px !important;
+            }
+
+            .viz-page .scene.scene--compact [class*="h-[360px]"],
+            .viz-page .scene.scene--balanced [class*="h-[360px]"],
+            .viz-page .scene.scene--balanced [class*="h-[340px]"] {
+                height: 300px !important;
+            }
+
+            .viz-page .scene.scene--balanced .type-chart-wrap {
+                height: 330px !important;
+            }
+
+            .viz-page .scene.scene--compact .metric,
+            .viz-page .scene.scene--balanced .metric {
+                font-size: 1.25rem !important;
+                line-height: 1.15 !important;
+            }
+
+            .viz-page .scene.scene--compact p,
+            .viz-page .scene.scene--balanced p,
+            .viz-page .scene.scene--compact .text-sm,
+            .viz-page .scene.scene--balanced .text-sm {
+                font-size: 0.78rem !important;
+                line-height: 1.45 !important;
+            }
+
+            .viz-page .scene.scene--compact .scroll-card,
+            .viz-page .scene.scene--balanced .scroll-card,
+            .viz-page .scene.scene--balanced .paper-record-scroll {
+                max-height: 330px !important;
+            }
+
+            .viz-page .scene.scene--balanced .js-output-item {
+                padding: 0.65rem 0.75rem !important;
+            }
+
+            .viz-page .type-table-head,
+            .viz-page .type-table-row {
+                grid-template-columns: minmax(0, 2fr) 86px 76px 86px !important;
+                gap: 8px !important;
+            }
+
+            .viz-page .doctor-lane-board {
+                display: block !important;
+                overflow-x: visible !important;
+                padding-bottom: 0 !important;
+            }
+
+            .viz-page .doctor-mobile-timeline,
+            .viz-page .unit-mobile-role-timeline {
+                display: none !important;
+            }
+
+            .viz-page .doctor-lane-grid {
+                min-width: 0 !important;
+                width: 100% !important;
+            }
+
+            .viz-page .doctor-lane-row,
+            .viz-page .doctor-lane-head {
+                grid-template-columns: minmax(150px, 0.95fr) repeat(var(--doctor-year-count, 1), minmax(46px, 1fr)) !important;
+            }
+
+            .viz-page .doctor-lane-theme,
+            .viz-page .doctor-lane-year,
+            .viz-page .doctor-lane-cell {
+                padding: 8px !important;
+            }
+
+            .viz-page .doctor-lane-theme .text-sm,
+            .viz-page .doctor-lane-cell,
+            .viz-page .doctor-lane-year {
+                font-size: 0.72rem !important;
+                line-height: 1.25 !important;
+            }
+
+            .viz-page .doctor-lane-cell {
+                min-height: 58px !important;
+            }
+
+            .viz-page .doctor-avatar-stack {
+                gap: 5px !important;
+            }
+
+            .viz-page .doctor-avatar-stack img {
+                width: 34px !important;
+                height: 34px !important;
+                border-width: 2px !important;
+            }
+
+            .viz-page .unit-contribution-matrix .doctor-lane-cell {
+                min-height: 72px !important;
+                max-height: none !important;
+                padding: 5px !important;
+            }
+
+            .viz-page .unit-contribution-matrix .doctor-lane-row .doctor-lane-theme {
+                min-height: 72px !important;
+            }
+
+            .viz-page .unit-avatar-stack {
+                grid-template-columns: repeat(auto-fit, minmax(30px, 30px)) !important;
+                gap: 4px !important;
+                max-height: 84px !important;
+                padding: 2px !important;
+            }
+
+            .viz-page .unit-avatar-stack img {
+                width: 30px !important;
+                height: 30px !important;
+            }
+
+            .viz-page .unit-cell-count {
+                font-size: 0.58rem !important;
+                padding: 1px 5px !important;
+            }
+
+            .viz-page .doctor-role-tabs {
+                display: inline-flex !important;
+                width: auto !important;
+                grid-template-columns: none !important;
+            }
+
+            .viz-page .doctor-role-tab {
+                min-height: 34px !important;
+                padding: 6px 9px !important;
+                white-space: nowrap !important;
+            }
+
+            .viz-page .doctor-role-tab span {
+                display: inline !important;
+                margin-left: 4px !important;
+                margin-top: 0 !important;
+                font-size: 0.68rem !important;
+            }
+
+            .viz-page .doctor-role-floating {
+                display: none !important;
+            }
+        }
     </style>
 
     <div class="viz-page min-h-screen pb-10">
@@ -3521,7 +5121,7 @@
                         <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Project Scope</div>
                         <div class="mt-1 text-lg font-semibold text-slate-950">{{ number_format($policyProjectTotal) }} โครงการในระบบ</div>
                     </div>
-                    <div class="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="mt-4 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
                         @forelse ($policyProjectTypeRows as $typeRow)
                             <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
                                 <div class="text-sm font-semibold leading-snug text-slate-900">{{ data_get($typeRow, 'type') }}</div>
@@ -3570,7 +5170,7 @@
                         </div>
                         <span class="policy-pill">แสดงเป็นจำนวนต่อปี</span>
                     </div>
-                    <div class="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+                    <div class="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
                         <div class="policy-trend-panel flex h-full flex-col">
                             <div class="h-[360px]">
                                 <canvas id="chartPolicyFrameworkTrend"></canvas>
@@ -3742,7 +5342,7 @@
                                         : 'ข้อมูลยังไม่ชี้การเปลี่ยนแปลงของฐานผู้ร่วมจากฝั่ง clinical ในโครงการร่วมสองกลุ่มอย่างชัดเจน จึงควรอ่านประกอบกับจำนวนโครงการและประเภท output');
                             @endphp
                             @if ($expertTrendRows->isNotEmpty())
-                                <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
+                                <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
                                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
                                             <div>
@@ -3826,7 +5426,7 @@
                                             </summary>
 
                                             <div class="border-t border-slate-200 bg-slate-50 px-3 py-4">
-                                                <div class="grid gap-3 xl:grid-cols-2">
+                                                <div class="grid gap-3 lg:grid-cols-2">
                                                     @foreach (['unit', 'siriraj'] as $cellKey)
                                                         @php
                                                             $cell = $row->cells[$cellKey] ?? null;
@@ -3883,7 +5483,7 @@
                                     </p>
                                 </div>
                             </div>
-                            <div class="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+                            <div class="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                                 <div class="policy-trend-panel">
                                     <div class="flex flex-wrap items-center justify-between gap-2">
                                         <div>
@@ -4088,7 +5688,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             : 'ยังไม่เห็นการขยายตัวของบทบาทผู้ร่วมโครงการอย่างชัดเจนในช่วงข้อมูลนี้');
                                 @endphp
 
-                                <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_430px]">
+                                <div class="clinical-led-layout mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_430px]">
                                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
                                             <div>
@@ -4279,8 +5879,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         @endforeach
                     </div>
 
-                    <div class="nature-layout mt-5 grid gap-6 xl:grid-cols-[minmax(520px,620px)_minmax(0,1fr)] xl:items-stretch">
-                        <div class="nature-rail relative xl:self-stretch">
+                    <div class="nature-layout mt-5 grid gap-6 lg:grid-cols-[minmax(520px,620px)_minmax(0,1fr)] lg:items-stretch">
+                        <div class="nature-rail relative lg:self-stretch">
                             <div class="nature-sticky rounded-[26px] border border-slate-200 bg-slate-50 p-4 shadow-sm md:p-5">
                                 <div class="flex items-center justify-between gap-3">
                                     <div>
@@ -4289,7 +5889,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     </div>
                                     <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">{{ number_format($natureTotal) }} projects</div>
                                 </div>
-                                <div class="nature-map relative mx-auto mt-5 aspect-square min-h-[340px] max-w-[620px] overflow-hidden rounded-[40px] bg-gradient-to-br from-white via-slate-50 to-slate-100 p-4 sm:min-h-[460px] xl:min-h-[520px]" data-nature-map>
+                                <div class="nature-map relative mx-auto mt-5 aspect-square min-h-[340px] max-w-[620px] overflow-hidden rounded-[40px] bg-gradient-to-br from-white via-slate-50 to-slate-100 p-4 sm:min-h-[460px] lg:min-h-[520px]" data-nature-map>
                                     <div class="absolute inset-6 rounded-full border border-slate-200/80 bg-white/60 shadow-inner"></div>
                                     @foreach ($natureThemes as $theme)
                                         @php
@@ -4298,12 +5898,27 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             $fontSize = $layout['r'] >= 20 ? 'text-[15px]' : ($layout['r'] >= 11 ? 'text-[12px]' : 'text-[10px]');
                                         @endphp
                                         <a href="#nature-card-{{ data_get($theme, 'key') }}" class="nature-bubble group absolute grid place-items-center rounded-full text-center shadow-[0_14px_30px_rgba(15,23,42,.10)] transition duration-300 hover:z-20 hover:scale-[1.035] hover:shadow-[0_18px_42px_rgba(15,23,42,.18)]" data-nature-bubble="{{ data_get($theme, 'key') }}" data-nature-x="{{ $layout['x'] }}" data-nature-y="{{ $layout['y'] }}" style="left: {{ $layout['x'] }}%; top: {{ $layout['y'] }}%; width: {{ $layout['r'] * 2 }}%; aspect-ratio: 1; transform: translate(-50%, -50%); background: {{ $layout['bg'] }}; border: 1px solid {{ $layout['border'] }}; color: {{ $layout['text'] }};" title="{{ data_get($theme, 'label') }} · {{ number_format($count) }} โครงการ">
-                                            <div class="px-2">
+                                            <div class="nature-bubble__inner px-2">
                                                 <div class="{{ $fontSize }} font-bold leading-tight">{{ data_get($theme, 'short_label') }}</div>
                                                 <div class="mt-1 text-[11px] font-bold opacity-85">{{ number_format($count) }} projects</div>
                                             </div>
+                                            <span class="nature-bubble__callout">
+                                                <span class="nature-bubble__callout-title">{{ data_get($theme, 'short_label') }}</span>
+                                                <span class="nature-bubble__callout-count">{{ number_format($count) }} projects</span>
+                                            </span>
                                         </a>
                                     @endforeach
+                                    <div class="nature-callout-layer" aria-hidden="true">
+                                        @foreach ($natureThemes as $theme)
+                                            @php
+                                                $count = (int) data_get($theme, 'count', 0);
+                                            @endphp
+                                            <div class="nature-map-callout" data-nature-callout="{{ data_get($theme, 'key') }}">
+                                                <div class="nature-bubble__callout-title">{{ data_get($theme, 'short_label') }}</div>
+                                                <div class="nature-bubble__callout-count">{{ number_format($count) }} projects</div>
+                                            </div>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -4341,7 +5956,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                         </div>
                                     </div>
 
-                                    <div class="mt-5 grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+                                    <div class="mt-5 grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
                                         <div class="border-t border-slate-200 pt-4">
                                             <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">สิ่งที่เกิดขึ้น</div>
                                             <div class="mt-2 text-sm leading-relaxed text-slate-700">{{ $displayWorkDone }}</div>
@@ -4354,7 +5969,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             <div class="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">ทิศทางของ output</div>
                                             <div class="mt-2 text-sm leading-relaxed text-slate-700">{{ $displayOutputDirection }}</div>
                                         </div>
-                                        <div class="border-t border-amber-200 bg-amber-50/50 px-4 py-3 xl:col-span-2">
+                                        <div class="border-t border-amber-200 bg-amber-50/50 px-4 py-3 lg:col-span-2">
                                             <div class="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">การต่อยอด</div>
                                             <div class="mt-2 text-sm leading-relaxed text-slate-700">{{ $displayNextStep }}</div>
                                         </div>
@@ -4533,6 +6148,45 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                         <div class="fte-capacity-table-note">
                                             หมายเหตุ: ตารางนี้รวมจำนวนกำลังคนทั้งหมดที่เคยร่วมงานในช่วงเวลาที่แสดง รวมถึงบุคลากรที่ได้ลาออกแล้วด้วย
                                         </div>
+                                        <div class="fte-capacity-position-cards">
+                                            @foreach ($fteCapacityPositionRows as $row)
+                                                @php
+                                                    $regularPeople = (int) ($row->people ?? 0);
+                                                    $borrowedPeople = (int) ($row->borrowed_people ?? 0);
+                                                    $rowTotalPeople = $regularPeople + $borrowedPeople;
+                                                @endphp
+                                                <article class="fte-capacity-position-card">
+                                                    <div class="fte-capacity-position-card__head">
+                                                        <span class="fte-capacity-rank">{{ $loop->iteration }}</span>
+                                                        <div class="min-w-0">
+                                                            <div class="fte-capacity-position__name">{{ $row->position_group }}</div>
+                                                            <div class="fte-capacity-position__skill mt-1">
+                                                                <span class="fte-capacity-position__dot"></span>
+                                                                <span>{{ $row->skill_role }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="fte-capacity-position-card__metrics">
+                                                        <div class="fte-capacity-position-card__metric">
+                                                            <div class="fte-capacity-position-card__metric-label">{{ $fteCapacityYearLabel }}</div>
+                                                            <div class="fte-capacity-position-card__metric-value">{{ number_format((int) ($row->year_people ?? 0)) }}</div>
+                                                        </div>
+                                                        <div class="fte-capacity-position-card__metric">
+                                                            <div class="fte-capacity-position-card__metric-label">ประจำ</div>
+                                                            <div class="fte-capacity-position-card__metric-value">{{ number_format($regularPeople) }}</div>
+                                                        </div>
+                                                        <div class="fte-capacity-position-card__metric">
+                                                            <div class="fte-capacity-position-card__metric-label">ยืมตัว</div>
+                                                            <div class="fte-capacity-position-card__metric-value">{{ $borrowedPeople > 0 ? number_format($borrowedPeople) : '-' }}</div>
+                                                        </div>
+                                                        <div class="fte-capacity-position-card__metric">
+                                                            <div class="fte-capacity-position-card__metric-label">รวม</div>
+                                                            <div class="fte-capacity-position-card__metric-value">{{ number_format($rowTotalPeople) }}</div>
+                                                        </div>
+                                                    </div>
+                                                </article>
+                                            @endforeach
+                                        </div>
                                     </div>
                                 @endif
 
@@ -4665,7 +6319,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             </div>
                         </div>
 
-                        <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_430px]">
+                        <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_430px]">
                             <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                                 <div class="flex flex-wrap items-center justify-between gap-3">
                                     <div>
@@ -5746,6 +7400,12 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             function isCompactViewport() {
                 return window.matchMedia('(max-width: 640px)').matches;
             }
+            function isTabletLandscapeCompact() {
+                return window.matchMedia('(min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)').matches;
+            }
+            function isClinicalLedCompactViewport() {
+                return isCompactViewport() || isTabletLandscapeCompact();
+            }
 
             const safeLabels = (labels) => (labels && labels.length ? labels : ['ไม่มีข้อมูล']);
             const safeValues = (values, fallback = 0) => (values && values.length ? values : [fallback]);
@@ -5874,7 +7534,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 });
             };
             const setupFteCapacityFollow = () => {
-                const mq = window.matchMedia('(min-width: 1280px)');
+                const mq = window.matchMedia('(min-width: 1280px), (min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)');
                 const tables = Array.from(document.querySelectorAll('[data-fte-capacity-tables]'));
                 if (!tables.length) return;
 
@@ -5966,15 +7626,17 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 chart.options.layout = chart.options.layout || {};
                                 chart.options.layout.padding = {
                                     ...(chart.options.layout.padding || {}),
-                                    top: isCompactViewport() ? 14 : 46
+                                    top: isClinicalLedCompactViewport() ? 14 : 46,
+                                    right: isClinicalLedCompactViewport() ? 8 : 12,
+                                    left: isClinicalLedCompactViewport() ? 8 : 12
                                 };
                                 chart.options.plugins = chart.options.plugins || {};
                                 chart.options.plugins.legend = chart.options.plugins.legend || {};
                                 chart.options.plugins.legend.labels = {
                                     ...(chart.options.plugins.legend.labels || {}),
-                                    boxWidth: isCompactViewport() ? 10 : 14,
-                                    padding: isCompactViewport() ? 4 : 6,
-                                    font: { size: isCompactViewport() ? 10 : 12 }
+                                    boxWidth: isClinicalLedCompactViewport() ? 9 : 14,
+                                    padding: isClinicalLedCompactViewport() ? 4 : 6,
+                                    font: { size: isClinicalLedCompactViewport() ? 10 : 12 }
                                 };
                             }
                             if (canvasId === 'chartFteSkillRadar') {
@@ -6890,16 +8552,21 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     maintainAspectRatio: false,
                     animation: chartAnim,
                     layout: {
-                        padding: { top: isCompactViewport() ? 14 : 46, right: 12, bottom: 8, left: 12 }
+                        padding: {
+                            top: isClinicalLedCompactViewport() ? 14 : 46,
+                            right: isClinicalLedCompactViewport() ? 8 : 12,
+                            bottom: 8,
+                            left: isClinicalLedCompactViewport() ? 8 : 12
+                        }
                     },
                     interaction: { mode: 'index', intersect: false },
                     elements: {
                         point: {
-                            radius: () => isCompactViewport() ? 3 : 4,
-                            hoverRadius: () => isCompactViewport() ? 5 : 6
+                            radius: () => isClinicalLedCompactViewport() ? 3 : 4,
+                            hoverRadius: () => isClinicalLedCompactViewport() ? 5 : 6
                         },
                         line: {
-                            borderWidth: () => isCompactViewport() ? 2 : 3
+                            borderWidth: () => isClinicalLedCompactViewport() ? 2 : 3
                         }
                     },
                     scales: {
@@ -6915,7 +8582,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 maxRotation: 0,
                                 minRotation: 0,
                                 font: {
-                                    size: () => isCompactViewport() ? 10 : 12,
+                                    size: () => isClinicalLedCompactViewport() ? 10 : 12,
                                     weight: '700'
                                 },
                                 callback: (value) => String(Math.trunc(Number(value)))
@@ -6928,7 +8595,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             ticks: {
                                 color: textColor,
                                 precision: 0,
-                                font: { size: () => isCompactViewport() ? 10 : 12 }
+                                font: { size: () => isClinicalLedCompactViewport() ? 10 : 12 }
                             },
                             grid: { color: gridColor }
                         }
@@ -6938,16 +8605,16 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             position: 'bottom',
                             labels: {
                                 color: textColor,
-                                boxWidth: isCompactViewport() ? 10 : 14,
+                                boxWidth: isClinicalLedCompactViewport() ? 9 : 14,
                                 boxHeight: 8,
-                                padding: isCompactViewport() ? 4 : 6,
-                                font: { size: isCompactViewport() ? 10 : 12 }
+                                padding: isClinicalLedCompactViewport() ? 4 : 6,
+                                font: { size: isClinicalLedCompactViewport() ? 10 : 12 }
                             }
                         },
                         datalabels: {
                             labels: {
                                 value: {
-                                    display: () => !isCompactViewport(),
+                                    display: () => !isClinicalLedCompactViewport(),
                                     color: '#334155',
                                     anchor: 'end',
                                     align: (context) => context.datasetIndex === 1 ? 'bottom' : 'end',
@@ -6958,7 +8625,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     formatter: (value) => Number(value?.y || 0) > 0 ? Number(value.y) : ''
                                 },
                                 roles: {
-                                    display: (context) => context.datasetIndex === 0 && !isCompactViewport(),
+                                    display: (context) => context.datasetIndex === 0 && !isClinicalLedCompactViewport(),
                                     color: '#334155',
                                     anchor: 'end',
                                     align: 'top',

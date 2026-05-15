@@ -52,7 +52,90 @@
                 flex: 0 0 auto;
             }
 
-            @media (max-width: 768px) {
+            @media (min-width: 768px) and (max-width: 1366px) {
+                .people-table {
+                    min-width: 0;
+                    width: 100%;
+                    table-layout: fixed;
+                    font-size: 11.5px;
+                }
+
+                .people-table-scroll {
+                    overflow-x: visible;
+                }
+
+                .people-table th {
+                    white-space: normal;
+                    font-size: 10px;
+                    line-height: 1.25;
+                    padding-left: 0.45rem !important;
+                    padding-right: 0.45rem !important;
+                }
+
+                .people-table td {
+                    padding-left: 0.45rem !important;
+                    padding-right: 0.45rem !important;
+                    overflow-wrap: anywhere;
+                }
+
+                .people-table th:nth-child(1),
+                .people-table td:nth-child(1) {
+                    width: 26% !important;
+                }
+
+                .people-table th:nth-child(2),
+                .people-table td:nth-child(2) {
+                    width: 14% !important;
+                }
+
+                .people-table th:nth-child(3),
+                .people-table td:nth-child(3),
+                .people-table th:nth-child(4),
+                .people-table td:nth-child(4),
+                .people-table th:nth-child(5),
+                .people-table td:nth-child(5),
+                .people-table th:nth-child(6),
+                .people-table td:nth-child(6) {
+                    width: 10% !important;
+                }
+
+                .people-table th:nth-child(7),
+                .people-table td:nth-child(7) {
+                    width: 7% !important;
+                }
+
+                .people-table th:nth-child(8),
+                .people-table td:nth-child(8) {
+                    width: 13% !important;
+                }
+
+                .people-person-cell {
+                    min-width: 0;
+                }
+
+                .people-person-cell img {
+                    width: 2.25rem !important;
+                    height: 2.25rem !important;
+                    border-radius: 0.8rem !important;
+                }
+
+                .people-table td p {
+                    line-height: 1.25;
+                }
+
+                .people-table td .text-lg {
+                    font-size: 1rem !important;
+                    line-height: 1.25 !important;
+                }
+
+                .people-table td a {
+                    padding-left: 0.55rem !important;
+                    padding-right: 0.55rem !important;
+                    font-size: 11px !important;
+                }
+            }
+
+            @media (max-width: 767px) {
                 .people-shell {
                     background: #fff;
                 }
@@ -128,7 +211,7 @@
         </style>
 
         <section class="rounded-2xl border border-slate-200 bg-white p-5 md:p-6">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div class="max-w-3xl">
                     <p class="text-sm font-semibold text-slate-500">Outputs รายบุคคล</p>
                     <h1 class="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">รายชื่อบุคลากรและผลงาน</h1>

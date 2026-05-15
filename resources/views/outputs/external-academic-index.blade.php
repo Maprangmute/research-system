@@ -75,7 +75,7 @@
             </div>
         </section>
 
-        <section id="external-output-stats" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <section id="external-output-stats" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
             <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div class="text-xs font-medium uppercase tracking-wide text-slate-500">ทั้งหมด</div>
                 <div class="mt-1.5 text-2xl font-bold text-slate-900">{{ number_format($allCount) }}</div>
@@ -104,7 +104,7 @@
 
         <form id="external-output-filter-form" method="GET" action="{{ route('outputs.external-academic') }}"
             class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
+            <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
                     <input type="text" name="search" value="{{ $search }}" data-external-live-search="true"

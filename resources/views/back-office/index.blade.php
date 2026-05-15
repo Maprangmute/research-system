@@ -679,7 +679,194 @@
             display: none;
         }
 
-        @media (max-width: 768px) {
+        @media (min-width: 768px) and (max-width: 1366px) {
+            .back-office-panel,
+            .back-office-task-card,
+            .back-office-stat {
+                border-radius: 18px;
+            }
+
+            .back-office-filter-panel {
+                padding: 1rem !important;
+            }
+
+            #backOfficeFilterForm .grid {
+                display: grid !important;
+                grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+                gap: 0.7rem !important;
+            }
+
+            #backOfficeFilterForm .grid > label:nth-child(1) {
+                grid-column: span 6 / span 6 !important;
+            }
+
+            #backOfficeFilterForm .grid > label:nth-child(2),
+            #backOfficeFilterForm .grid > label:nth-child(3),
+            #backOfficeFilterForm .grid > label:nth-child(4) {
+                grid-column: span 2 / span 2 !important;
+            }
+
+            #backOfficeFilterForm .grid > label:nth-child(5),
+            #backOfficeFilterForm .grid > label:nth-child(6) {
+                grid-column: span 3 / span 3 !important;
+            }
+
+            #backOfficeFilterForm .grid > div:nth-child(7) {
+                grid-column: span 6 / span 6 !important;
+            }
+
+            .back-office-input,
+            .back-office-select {
+                min-height: 38px;
+                border-radius: 12px;
+                padding: 0.5rem 0.65rem;
+                font-size: 12px;
+            }
+
+            .back-office-search-input {
+                padding-left: 2.55rem;
+            }
+
+            .back-office-table-wrap {
+                overflow-x: visible;
+            }
+
+            .back-office-table {
+                width: 100%;
+                min-width: 0;
+                table-layout: fixed;
+                font-size: 11.5px;
+            }
+
+            .back-office-table thead th,
+            .back-office-table tbody td {
+                padding-left: 0.55rem;
+                padding-right: 0.55rem;
+            }
+
+            .back-office-table thead th {
+                white-space: normal;
+                font-size: 10px;
+                line-height: 1.25;
+            }
+
+            .back-office-table th:nth-child(1),
+            .back-office-table td:nth-child(1) {
+                width: 6% !important;
+            }
+
+            .back-office-table th:nth-child(2),
+            .back-office-table td:nth-child(2) {
+                width: 42% !important;
+            }
+
+            .back-office-table th:nth-child(3),
+            .back-office-table td:nth-child(3),
+            .back-office-table th:nth-child(4),
+            .back-office-table td:nth-child(4) {
+                display: table-cell !important;
+                width: 8% !important;
+            }
+
+            .back-office-table th:nth-child(5),
+            .back-office-table td:nth-child(5),
+            .back-office-table th:nth-child(6),
+            .back-office-table td:nth-child(6) {
+                display: table-cell !important;
+                width: 9% !important;
+            }
+
+            .back-office-table th:nth-child(7),
+            .back-office-table td:nth-child(7) {
+                width: 18% !important;
+            }
+
+            .back-office-action-cluster {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto auto;
+                justify-content: center;
+                align-items: center;
+                gap: 0.3rem;
+                min-width: 0;
+            }
+
+            .back-office-action-primary,
+            .back-office-action-danger {
+                min-height: 30px;
+                padding: 0.3rem 0.42rem;
+                font-size: 10px;
+            }
+
+            .back-office-action-menu > summary {
+                width: 28px;
+                height: 30px;
+            }
+
+            .back-office-action-menu__panel {
+                right: 0;
+                left: auto;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1100px) and (orientation: portrait) {
+            .back-office-table th:nth-child(1),
+            .back-office-table td:nth-child(1) {
+                width: 7% !important;
+            }
+
+            .back-office-table th:nth-child(2),
+            .back-office-table td:nth-child(2) {
+                width: 49% !important;
+            }
+
+            .back-office-table th:nth-child(3),
+            .back-office-table td:nth-child(3),
+            .back-office-table th:nth-child(4),
+            .back-office-table td:nth-child(4) {
+                width: 8% !important;
+            }
+
+            .back-office-table th:nth-child(5),
+            .back-office-table td:nth-child(5),
+            .back-office-table th:nth-child(6),
+            .back-office-table td:nth-child(6) {
+                display: none !important;
+            }
+
+            .back-office-table th:nth-child(7),
+            .back-office-table td:nth-child(7) {
+                width: 20% !important;
+            }
+
+            .back-office-table {
+                font-size: 10.5px;
+            }
+
+            .back-office-table thead th,
+            .back-office-table tbody td {
+                padding-left: 0.42rem;
+                padding-right: 0.42rem;
+            }
+
+            .back-office-action-cluster {
+                grid-template-columns: minmax(0, 1fr) auto;
+            }
+
+            .back-office-action-menu {
+                grid-column: 2;
+                grid-row: 1 / span 2;
+            }
+
+            .back-office-action-primary,
+            .back-office-action-danger {
+                width: 100%;
+                min-width: 0;
+                white-space: normal;
+                line-height: 1.1;
+            }
+        }
+
+        @media (max-width: 767px) {
             .back-office-panel,
             .back-office-task-card,
             .back-office-stat {

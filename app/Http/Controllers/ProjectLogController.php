@@ -6,6 +6,7 @@ use App\Models\ProjectLog;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\ResponsiveView;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,21 +21,7 @@ class ProjectLogController extends Controller
 
     private function resolveView(Request $request, string $base): string
     {
-        $view = $base;
-        $forceView = $request->query('view');
-        if ($forceView === 'mobile') {
-            $view = $base . '_mobile';
-        } elseif ($forceView !== 'desktop') {
-            $ua = (string) $request->header('User-Agent', '');
-            $isMobile = (bool) preg_match(
-                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
-                $ua
-            );
-            if ($isMobile) {
-                $view = $base . '_mobile';
-            }
-        }
-        return $view;
+        return ResponsiveView::resolve($request, $base);
     }
 
     private function authorizeAdmin(): void

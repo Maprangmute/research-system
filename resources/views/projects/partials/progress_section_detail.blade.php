@@ -3,7 +3,7 @@
 @endphp
 <div id="projectProgressSection" class="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-5">
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
-        <div>
+        <div class="min-w-0 flex-1">
             <h3 id="section-i" class="edit-section-target font-semibold text-lg text-blue-700">H: ความก้าวหน้าของการดำเนินงาน</h3>
             @if ($latestProgressReport)
                 @php
@@ -21,7 +21,7 @@
                 <p id="progressDetailSummaryText" class="text-sm text-slate-500 mt-1">ยังไม่มีรายงานความก้าวหน้า</p>
             @endif
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap justify-end gap-2 md:ml-auto md:min-w-max md:shrink-0">
             <button type="button"
                 data-progress-modal-open
                 data-url="{{ route('projects.progress_reports.index', ['project' => $project, 'modal' => 1]) }}"

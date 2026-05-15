@@ -332,6 +332,163 @@
             }
         }
 
+        @media (min-width: 768px) and (max-width: 1366px) {
+            #pageTop.project-detail-safe {
+                max-width: 100%;
+                padding-left: 1.25rem;
+                padding-right: 1.25rem;
+            }
+
+            #pageTop.project-detail-safe .overflow-x-auto {
+                overflow-x: visible;
+            }
+
+            #pageTop.project-detail-safe table,
+            #pageTop.project-detail-safe .overflow-x-auto > table {
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: fixed !important;
+            }
+
+            #pageTop.project-detail-safe th,
+            #pageTop.project-detail-safe td {
+                padding: 0.52rem 0.56rem !important;
+                font-size: 0.82rem;
+                line-height: 1.45;
+                white-space: normal !important;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            #pageTop.project-detail-safe thead th {
+                font-size: 0.76rem;
+                line-height: 1.25;
+            }
+
+            #pageTop.project-detail-safe .detail-index-col {
+                width: 2.7rem !important;
+                min-width: 0 !important;
+            }
+
+            #pageTop.project-detail-safe .irb-code-col {
+                width: 26% !important;
+            }
+
+            #pageTop.project-detail-safe .irb-source-col {
+                width: 44% !important;
+            }
+
+            #pageTop.project-detail-safe .irb-exp-col {
+                width: 24% !important;
+                min-width: 0 !important;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(1),
+            #section-f + .overflow-x-auto table td:nth-child(1) {
+                width: 5% !important;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(2),
+            #section-f + .overflow-x-auto table td:nth-child(2) {
+                width: 31% !important;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(3),
+            #section-f + .overflow-x-auto table td:nth-child(3) {
+                width: 26% !important;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(4),
+            #section-f + .overflow-x-auto table td:nth-child(4) {
+                width: 9% !important;
+                text-align: center;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(5),
+            #section-f + .overflow-x-auto table td:nth-child(5) {
+                width: 11% !important;
+                text-align: center;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(6),
+            #section-f + .overflow-x-auto table td:nth-child(6) {
+                width: 18% !important;
+            }
+
+            #section-f + .overflow-x-auto table td:nth-child(5) {
+                font-size: 0.76rem;
+                letter-spacing: -0.01em;
+            }
+
+            #section-j + table th:nth-child(1),
+            #section-j + table td:nth-child(1) {
+                width: 24% !important;
+            }
+
+            #section-j + table th:nth-child(2),
+            #section-j + table td:nth-child(2) {
+                width: 66% !important;
+            }
+
+            #section-j + table th:nth-child(3),
+            #section-j + table td:nth-child(3) {
+                width: 10% !important;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1100px) and (orientation: portrait) {
+            #pageTop.project-detail-safe {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            #pageTop.project-detail-safe > .bg-white.border.rounded-2xl,
+            #pageTop.project-detail-safe .bg-white.rounded-2xl.shadow-sm.ring-1 {
+                padding: 1rem !important;
+            }
+
+            #pageTop.project-detail-safe th,
+            #pageTop.project-detail-safe td {
+                padding: 0.46rem 0.42rem !important;
+                font-size: 0.76rem;
+                line-height: 1.38;
+            }
+
+            #pageTop.project-detail-safe thead th {
+                font-size: 0.7rem;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(1),
+            #section-f + .overflow-x-auto table td:nth-child(1) {
+                width: 4% !important;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(2),
+            #section-f + .overflow-x-auto table td:nth-child(2) {
+                width: 34% !important;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(3),
+            #section-f + .overflow-x-auto table td:nth-child(3) {
+                width: 28% !important;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(4),
+            #section-f + .overflow-x-auto table td:nth-child(4) {
+                width: 8% !important;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(5),
+            #section-f + .overflow-x-auto table td:nth-child(5) {
+                width: 10% !important;
+            }
+
+            #section-f + .overflow-x-auto table th:nth-child(6),
+            #section-f + .overflow-x-auto table td:nth-child(6) {
+                width: 16% !important;
+            }
+        }
+
         @media (max-width: 1279px) {
             .edit-section-nav {
                 display: none;

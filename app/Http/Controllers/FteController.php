@@ -63,6 +63,14 @@ public function index(Request $request)
     $user = Auth::user();
     $fullName = $this->currentUserFullName();
 
+    if ($user && in_array($user->role, [
+        User::ROLE_USER,
+        User::ROLE_USER_ALL,
+        User::ROLE_RESEARCH_EXECUTIVE,
+    ], true)) {
+        return redirect()->route('fte.detail', ['person' => $fullName]);
+    }
+
     $modeInput = trim((string) $request->input('mode', ''));
     $yearInput = $request->input('year');
     $person = $request->input('person');

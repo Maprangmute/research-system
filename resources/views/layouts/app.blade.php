@@ -270,11 +270,19 @@
     $isModalView = request()->boolean('modal');
     $authUser = Auth::user();
     $personalOutputsRoute = null;
+    $personalFteRoute = null;
+    $shouldUsePersonalFteOnly = false;
 
     if ($authUser) {
         $personalOutputsRoute = $authUser->isAdminEquivalent()
             ? route('outputs.people')
             : route('outputs.people.show', ['person' => $authUser->full_name]);
+        $personalFteRoute = route('fte.detail', ['person' => $authUser->full_name]);
+        $shouldUsePersonalFteOnly = in_array($authUser->role, [
+            \App\Models\User::ROLE_USER,
+            \App\Models\User::ROLE_USER_ALL,
+            \App\Models\User::ROLE_RESEARCH_EXECUTIVE,
+        ], true);
     }
 @endphp
 
@@ -343,6 +351,10 @@
                 min-width: 0;
             }
 
+            .app-nav-desktop-profile {
+                display: none;
+            }
+
             .app-nav-actions {
                 display: flex;
                 align-items: center;
@@ -350,7 +362,7 @@
                 margin-left: auto;
             }
 
-            @media (min-width: 1024px) {
+            @media (min-width: 1280px) {
                 .app-nav-shell {
                     display: grid;
                     grid-template-columns: minmax(250px, 1fr) auto minmax(250px, 1fr);
@@ -358,7 +370,12 @@
                 }
 
                 .app-nav-menu {
+                    display: flex;
                     justify-self: center;
+                }
+
+                .app-nav-desktop-profile {
+                    display: block;
                 }
 
                 .app-nav-actions {
@@ -418,6 +435,13 @@
                 box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
             }
 
+            .mobile-nav-toggle__label {
+                display: none;
+                font-size: 0.82rem;
+                font-weight: 800;
+                color: #334155;
+            }
+
             .mobile-hamburger {
                 width: 18px;
                 height: 14px;
@@ -460,6 +484,27 @@
 
             .mobile-nav-links a:hover {
                 background: #f1f5f9;
+            }
+
+            .mobile-nav-section {
+                display: grid;
+                gap: 0.55rem;
+                padding: 0.75rem 0 0.85rem;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .mobile-nav-section:last-child {
+                border-bottom: 0;
+                padding-bottom: 0;
+            }
+
+            .mobile-nav-section__title {
+                padding: 0 2px;
+                font-size: 0.72rem;
+                font-weight: 900;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: #64748b;
             }
 
             .mobile-logout-btn {
@@ -513,6 +558,324 @@
                 padding: 14px 12px 16px;
                 z-index: 59;
                 overflow-y: auto;
+                overscroll-behavior: contain;
+                -webkit-overflow-scrolling: touch;
+                touch-action: pan-y;
+            }
+
+            html.app-nav-open,
+            body.app-nav-open {
+                overflow: hidden;
+                overscroll-behavior: none;
+            }
+
+            @media (min-width: 768px) and (max-width: 1279px) {
+                #main-nav .container {
+                    max-width: none;
+                    width: 100%;
+                }
+
+                .app-nav-shell {
+                    width: 100%;
+                    min-height: 54px;
+                    justify-content: space-between;
+                    border: 1px solid #e2e8f0;
+                    background: rgba(255, 255, 255, 0.96);
+                    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+                }
+
+                .app-nav-menu,
+                .app-nav-desktop-profile {
+                    display: none !important;
+                }
+
+                .app-brand {
+                    max-width: calc(100vw - 170px);
+                }
+
+                .app-brand__primary,
+                .app-brand__secondary {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .mobile-nav-toggle {
+                    width: auto;
+                    min-width: 94px;
+                    padding: 0 14px;
+                    gap: 10px;
+                }
+
+                .mobile-nav-toggle__label {
+                    display: inline;
+                }
+
+                .mobile-drawer-panel {
+                    width: min(58vw, 430px);
+                    padding: 18px 16px 20px;
+                }
+
+                .mobile-nav-links {
+                    gap: 0.6rem;
+                }
+
+                .mobile-nav-links a {
+                    padding: 10px 12px;
+                    font-size: 0.95rem;
+                }
+            }
+
+            @media (min-width: 1024px) and (max-width: 1279px) and (orientation: landscape) {
+                .app-nav-shell {
+                    display: grid;
+                    grid-template-columns: minmax(170px, 0.78fr) minmax(0, auto) auto;
+                    gap: 8px;
+                    min-height: 50px;
+                    border: 0;
+                    background: transparent;
+                    box-shadow: none;
+                    padding: 0;
+                }
+
+                .app-brand {
+                    max-width: 190px;
+                }
+
+                .app-brand__logo {
+                    width: 38px;
+                    height: 38px;
+                }
+
+                .app-brand__primary {
+                    font-size: 0.9rem;
+                }
+
+                .app-brand__secondary {
+                    font-size: 0.7rem;
+                }
+
+                .app-nav-menu {
+                    display: flex !important;
+                    justify-self: center;
+                    gap: 1px;
+                }
+
+                .app-nav-menu a,
+                .app-nav-menu button {
+                    padding-left: 7px !important;
+                    padding-right: 7px !important;
+                    font-size: 12px !important;
+                    line-height: 1.2;
+                }
+
+                .app-nav-actions {
+                    justify-self: end;
+                }
+
+                .app-nav-desktop-profile {
+                    display: block !important;
+                }
+
+            }
+
+            @media (min-width: 1024px) and (max-width: 1199px) and (orientation: landscape) {
+                .app-nav-shell {
+                    grid-template-columns: minmax(132px, 0.55fr) minmax(0, 1fr) auto;
+                    gap: 4px;
+                }
+
+                .app-brand {
+                    max-width: 150px;
+                    gap: 8px;
+                }
+
+                .app-brand__logo {
+                    width: 34px;
+                    height: 34px;
+                }
+
+                .app-brand__primary {
+                    font-size: 0.78rem;
+                    line-height: 1.1;
+                }
+
+                .app-brand__secondary {
+                    display: none;
+                }
+
+                .app-nav-menu {
+                    gap: 0;
+                }
+
+                .app-nav-menu a,
+                .app-nav-menu button {
+                    padding-left: 5px !important;
+                    padding-right: 5px !important;
+                    font-size: 11px !important;
+                    letter-spacing: 0;
+                }
+
+                .app-nav-desktop-profile button {
+                    width: 34px;
+                    height: 34px;
+                }
+            }
+
+            #main-nav .container {
+                max-width: none;
+                width: 100%;
+            }
+
+            #main-nav .app-nav-shell {
+                display: flex !important;
+                width: 100%;
+                min-height: 54px;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 16px !important;
+                background: rgba(255, 255, 255, 0.96) !important;
+                box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+                padding: 8px 12px !important;
+            }
+
+            #main-nav .app-nav-menu,
+            #main-nav .app-nav-desktop-profile {
+                display: none !important;
+            }
+
+            #main-nav .app-nav-actions {
+                margin-left: auto;
+                justify-self: auto;
+            }
+
+            #main-nav .app-brand {
+                max-width: calc(100vw - 150px);
+                gap: 10px;
+            }
+
+            #main-nav .app-brand__logo {
+                width: 34px;
+                height: 34px;
+            }
+
+            #main-nav .app-brand__primary {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 15px;
+                line-height: 1.1;
+            }
+
+            #main-nav .app-brand__secondary {
+                display: block !important;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 11px;
+                line-height: 1.1;
+            }
+
+            #main-nav .mobile-nav-toggle {
+                display: inline-flex !important;
+                width: auto;
+                min-width: 86px;
+                height: 42px;
+                gap: 10px;
+                padding: 0 14px;
+            }
+
+            #main-nav .mobile-nav-toggle__label {
+                display: inline !important;
+            }
+
+            #main-nav .mobile-drawer-panel {
+                width: min(88vw, 430px);
+                padding: 18px 16px 20px;
+            }
+
+            @media (min-width: 1280px) {
+                #main-nav .container {
+                    max-width: 100rem;
+                    width: 100%;
+                }
+
+                #main-nav .app-nav-shell {
+                    display: grid !important;
+                    grid-template-columns: minmax(250px, 1fr) auto minmax(250px, 1fr);
+                    min-height: 56px;
+                    align-items: center;
+                    gap: 16px;
+                    border: 0 !important;
+                    border-radius: 0 !important;
+                    background: transparent !important;
+                    box-shadow: none !important;
+                    padding: 0 !important;
+                }
+
+                #main-nav .app-nav-menu {
+                    display: flex !important;
+                    justify-self: center;
+                    align-items: center;
+                }
+
+                #main-nav .app-nav-desktop-profile {
+                    display: block !important;
+                }
+
+                #main-nav .app-nav-actions {
+                    justify-self: end;
+                    margin-left: 0;
+                }
+
+                #main-nav .mobile-nav-toggle {
+                    display: none !important;
+                }
+
+                #main-nav .app-brand {
+                    max-width: none;
+                    gap: 10px;
+                }
+
+                #main-nav .app-brand__logo {
+                    width: 38px;
+                    height: 38px;
+                }
+
+                #main-nav .app-brand__primary {
+                    font-size: 16px;
+                    line-height: 1.08;
+                }
+
+                #main-nav .app-brand__secondary {
+                    display: block !important;
+                    font-size: 12px;
+                    line-height: 1.08;
+                }
+            }
+
+            @media (max-width: 420px) {
+                #main-nav .app-brand {
+                    max-width: calc(100vw - 132px);
+                    gap: 8px;
+                }
+
+                #main-nav .app-brand__logo {
+                    width: 32px;
+                    height: 32px;
+                }
+
+                #main-nav .app-brand__primary {
+                    font-size: 14px;
+                }
+
+                #main-nav .app-brand__secondary {
+                    font-size: 10px;
+                }
+
+                #main-nav .mobile-nav-toggle {
+                    min-width: 74px;
+                    padding: 0 10px;
+                }
             }
 
             /* Nav auto hide/show */
@@ -605,16 +968,16 @@
             x-data="{ openNav: false }"
             x-effect="window.dispatchEvent(new CustomEvent('app-mobile-nav', { detail: { open: openNav } }))">
             <div class="container mx-auto px-4 py-3">
-                <div class="app-nav-shell mobile-nav md:rounded-none md:border-0 md:bg-transparent md:p-0">
+                <div class="app-nav-shell mobile-nav">
                     <a href="/rm" class="app-brand brand" aria-label="SiHP Research Database management system">
                         <img src="{{ asset('images/sihp-logo.png') }}" alt="" class="app-brand__logo">
                         <span class="app-brand__text">
                             <span class="app-brand__primary">SiHP Research</span>
-                            <span class="app-brand__secondary">Database management system</span>
+                            <span class="app-brand__secondary">Database Management System</span>
                         </span>
                     </a>
 
-                    <div class="app-nav-menu hidden md:flex items-center gap-0.5 lg:gap-1 justify-center">
+                    <div class="app-nav-menu hidden xl:flex items-center gap-0.5 lg:gap-1 justify-center">
                         <a href="/dashboard"
                             class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">Dashboard</a>
                         <a href="/rm"
@@ -684,10 +1047,18 @@
                             </button>
                             <div x-show="openFte" x-cloak
                                 class="absolute left-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                                <a href="{{ route('fte.index') }}"
-                                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
-                                    FTE รายบุคคล
-                                </a>
+                                @if (! $shouldUsePersonalFteOnly)
+                                    <a href="{{ route('fte.index') }}"
+                                        class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                        FTE รายบุคคล
+                                    </a>
+                                @endif
+                                @if ($personalFteRoute)
+                                    <a href="{{ $personalFteRoute }}"
+                                        class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
+                                        FTE ของฉัน
+                                    </a>
+                                @endif
                                 <a href="{{ route('fte.project.index') }}"
                                     class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-100">
                                     FTE รายโปรเจค
@@ -698,7 +1069,7 @@
 
                     <div class="app-nav-actions">
                         <!-- Profile Dropdown (desktop only) -->
-                        <div class="relative hidden md:block" x-data="{ open: false }">
+                        <div class="app-nav-desktop-profile relative hidden xl:block" x-data="{ open: false }">
                             <button @click="open = !open"
                                 class="w-10 h-10 bg-gray-200 rounded-full overflow-hidden focus:outline-none">
                                 <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}?v={{ time() }}"
@@ -756,9 +1127,10 @@
                             </div>
                         </div>
 
-                        <button type="button" class="md:hidden inline-flex mobile-nav-toggle text-gray-600"
+                        <button type="button" class="inline-flex mobile-nav-toggle text-gray-600"
                             :class="{ 'is-open': openNav }"
                             @click="openNav = !openNav" aria-label="Toggle navigation">
+                            <span class="mobile-nav-toggle__label">เมนู</span>
                             <span class="mobile-hamburger" aria-hidden="true">
                                 <span></span>
                                 <span></span>
@@ -768,7 +1140,7 @@
                     </div>
                 </div>
 
-                <div class="md:hidden" x-show="openNav" x-cloak>
+                <div x-show="openNav" x-cloak>
                     <div class="mobile-drawer-overlay" x-show="openNav" @click="openNav = false"
                         x-transition.opacity.duration.200ms></div>
 
@@ -788,56 +1160,82 @@
                                 </svg>
                             </button>
                         </div>
-                        <div class="pt-3 pb-2 flex flex-col gap-2 mobile-nav-links">
-                        <div class="flex items-center gap-3 px-1 pb-2 border-b border-slate-200">
-                            <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}?v={{ time() }}"
-                                onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'"
-                                alt="Profile" class="w-10 h-10 rounded-full object-cover">
-                            <div class="min-w-0">
-                                <div class="text-sm font-semibold text-slate-900 truncate">
-                                    {{ Auth::user()->prefix }} {{ Auth::user()->name }}
-                                </div>
-                                <div class="text-xs text-slate-500 truncate">
-                                    {{ Auth::user()->position }} ({{ Auth::user()->role }})
+                        <div class="pt-3 pb-2 mobile-nav-links">
+                            <div class="flex items-center gap-3 px-1 pb-3 border-b border-slate-200">
+                                <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}?v={{ time() }}"
+                                    onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'"
+                                    alt="Profile" class="w-10 h-10 rounded-full object-cover">
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold text-slate-900 truncate">
+                                        {{ Auth::user()->prefix }} {{ Auth::user()->name }}
+                                    </div>
+                                    <div class="text-xs text-slate-500 truncate">
+                                        {{ Auth::user()->position }} ({{ Auth::user()->role }})
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <a href="/dashboard">Dashboard</a>
-                        <a href="/rm">Research Project</a>
-                        <a href="{{ route('back_office.index') }}">Missions</a>
-                        <a href="{{ route('outputs.external-academic') }}">Extra</a>
-                        <a href="/rm/create">➕ เพิ่มโครงการ</a>
-                        <div class="text-gray-700 font-medium">Outputs</div>
-                        <a href="{{ route('outputs.index') }}">Outputs Overview</a>
-                        @if ($personalOutputsRoute)
-                            <a href="{{ $personalOutputsRoute }}">Outputs รายบุคคล</a>
-                        @endif
-                        <a href="{{ route('outputs.papers') }}">Research Papers</a>
-                        <a href="{{ route('outputs.presentations') }}">Presentations</a>
-                        <a href="{{ route('outputs.textbooks') }}">Textbook / Book chapter</a>
-                        <a href="{{ route('outputs.visualization') }}">ข้อมูลผลงาน สำหรับสัมมมนา</a>
-                        <a href="{{ route('outputs.project-data-quality') }}">รายงานข้อมูลผิดพลาดของโปรเจค</a>
-                        <div class="text-gray-700 font-medium">FTE</div>
-                        <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
-                        <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
-                        <a href="{{ route('user_guide') }}">คู่มือ</a>
-                        @if ($authUser?->isAdminEquivalent())
-                            <a href="/user">จัดการผู้ใช้</a>
-                        @endif
-                        @if ($authUser?->isAdminEquivalent())
-                            <a href="/project-logs">Project log</a>
-                            @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
-                                <a href="{{ route('back_office_action_logs.index') }}">Back Office Log</a>
+
+                            <section class="mobile-nav-section">
+                                <div class="mobile-nav-section__title">Main</div>
+                                <a href="/dashboard">Dashboard</a>
+                                <a href="/rm">Research Project</a>
+                                <a href="/rm/create">➕ เพิ่มโครงการ</a>
+                                <a href="{{ route('back_office.index') }}">Missions</a>
+                                <a href="{{ route('outputs.external-academic') }}">Extra</a>
+                            </section>
+
+                            <section class="mobile-nav-section">
+                                <div class="mobile-nav-section__title">Outputs</div>
+                                <a href="{{ route('outputs.index') }}">Outputs Overview</a>
+                                @if ($personalOutputsRoute)
+                                    <a href="{{ $personalOutputsRoute }}">Outputs รายบุคคล</a>
+                                @endif
+                                <a href="{{ route('outputs.papers') }}">Research Papers</a>
+                                <a href="{{ route('outputs.presentations') }}">Presentations</a>
+                                <a href="{{ route('outputs.textbooks') }}">Textbook / Book chapter</a>
+                                <a href="{{ route('outputs.visualization') }}">ข้อมูลผลงาน สำหรับสัมมมนา</a>
+                                <a href="{{ route('outputs.project-data-quality') }}">รายงานข้อมูลผิดพลาดของโปรเจค</a>
+                            </section>
+
+                            <section class="mobile-nav-section">
+                                <div class="mobile-nav-section__title">FTE</div>
+                                @if (! $shouldUsePersonalFteOnly)
+                                    <a href="{{ route('fte.index') }}">FTE รายบุคคล</a>
+                                @endif
+                                @if ($personalFteRoute)
+                                    <a href="{{ $personalFteRoute }}">FTE ของฉัน</a>
+                                @endif
+                                <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
+                            </section>
+
+                            <section class="mobile-nav-section">
+                                <div class="mobile-nav-section__title">Account</div>
+                                <a href="{{ route('user_guide') }}">คู่มือ</a>
+                                <a href="{{ route('profile.show') }}">แก้ไขข้อมูลส่วนตัว</a>
+                                @if ($authUser?->isAdminEquivalent())
+                                    <a href="/user">จัดการผู้ใช้</a>
+                                @endif
+                            </section>
+
+                            @if ($authUser?->isAdminEquivalent())
+                                <section class="mobile-nav-section">
+                                    <div class="mobile-nav-section__title">Logs</div>
+                                    <a href="/project-logs">Project log</a>
+                                    @if ($authUser?->hasRole(\App\Models\User::ROLE_ADMIN))
+                                        <a href="{{ route('back_office_action_logs.index') }}">Back Office Log</a>
+                                    @endif
+                                    <a href="{{ route('user_activity_logs.index') }}">User Activity Log</a>
+                                </section>
                             @endif
-                            <a href="{{ route('user_activity_logs.index') }}">User Activity Log</a>
-                        @endif
-                        <a href="{{ route('profile.show') }}">แก้ไขข้อมูลส่วนตัว</a>
-                        <form method="POST" action="{{ route('logout') }}" data-logout-form>
-                            @csrf
-                            <button type="submit" class="mobile-logout-btn">
-                                ออกจากระบบ
-                            </button>
-                        </form>
+
+                            <section class="mobile-nav-section">
+                                <form method="POST" action="{{ route('logout') }}" data-logout-form>
+                                    @csrf
+                                    <button type="submit" class="mobile-logout-btn">
+                                        ออกจากระบบ
+                                    </button>
+                                </form>
+                            </section>
                         </div>
                     </aside>
                     </div>
@@ -915,6 +1313,42 @@
                     window.location.replace(loginUrl);
                 }
             } catch (error) {}
+        });
+    })();
+</script>
+
+<script>
+    (function() {
+        let locked = false;
+        let scrollY = 0;
+
+        function setMobileNavLock(open) {
+            const shouldLock = Boolean(open);
+            if (shouldLock === locked) return;
+
+            locked = shouldLock;
+            document.documentElement.classList.toggle('app-nav-open', shouldLock);
+            document.body.classList.toggle('app-nav-open', shouldLock);
+
+            if (shouldLock) {
+                scrollY = window.scrollY || 0;
+                document.body.style.position = 'fixed';
+                document.body.style.top = `-${scrollY}px`;
+                document.body.style.left = '0';
+                document.body.style.right = '0';
+                document.body.style.width = '100%';
+            } else {
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.left = '';
+                document.body.style.right = '';
+                document.body.style.width = '';
+                window.scrollTo(0, scrollY);
+            }
+        }
+
+        window.addEventListener('app-mobile-nav', (event) => {
+            setMobileNavLock(event.detail?.open);
         });
     })();
 </script>

@@ -577,7 +577,7 @@
                 font-weight: 700;
             }
 
-            @media (max-width: 900px) {
+            @media (max-width: 1023px) {
                 .summary-grid,
                 .summary-mini-grid {
                     grid-template-columns: 1fr;
@@ -603,6 +603,12 @@
 
                 .section-table {
                     min-width: 0;
+                }
+
+                .person-panel .overflow-x-auto {
+                    overflow-x: visible;
+                    border: 0;
+                    border-radius: 0;
                 }
 
                 .section-table thead {
@@ -641,10 +647,23 @@
                     justify-content: flex-start;
                 }
             }
+
+            @media (min-width: 900px) and (max-width: 1023px) and (orientation: landscape) {
+                .section-table tbody {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 0.85rem;
+                    padding: 0.75rem;
+                }
+
+                .section-table tbody tr {
+                    margin: 0;
+                }
+            }
         </style>
 
         <section class="person-panel overflow-hidden">
-            <div class="grid gap-6 p-5 md:grid-cols-[420px_minmax(0,1fr)] md:p-7">
+            <div class="grid gap-6 p-5 lg:grid-cols-[420px_minmax(0,1fr)] md:p-7">
                 <div class="overview-card flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-7 text-center">
                     @if ($subject->profile_photo_path)
                         <img

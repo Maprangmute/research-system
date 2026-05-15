@@ -62,7 +62,7 @@
             @endif
 
             @if ($users->count())
-                <div class="md:hidden space-y-3">
+                <div class="space-y-3 lg:hidden">
                     @foreach ($users as $user)
                         @php
                             $meta = $roleMeta[$user->role] ?? ['label' => ucfirst($user->role), 'class' => 'bg-slate-100 text-slate-700 border-slate-200'];
@@ -70,6 +70,11 @@
                                 ? asset('storage/' . $user->profile_photo_path) . '?v=' . optional($user->updated_at)->timestamp
                                 : 'https://ui-avatars.com/api/?name=' . urlencode(trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''))) . '&background=0F172A&color=fff&size=128';
                             $updatedAt = optional($user->updated_at)?->format('d/m/Y H:i');
+                            $thaiName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
+                            $englishName = trim(($user->prefix_en ?? '') . ' ' . ($user->name_en ?? ''));
+                            $borrowedText = $user->is_borrowed
+                                ? 'ยืมตัว' . (filled($user->borrowed_department) ? ': ' . $user->borrowed_department : '')
+                                : 'ไม่ยืมตัว';
                         @endphp
                         <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                             <div class="flex items-start gap-3">
@@ -79,40 +84,63 @@
                                     class="h-14 w-14 rounded-2xl border border-slate-200 object-cover">
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <div class="truncate font-semibold text-slate-900">
-                                            {{ trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) }}
+                                        <div class="min-w-0 flex-1 font-semibold text-slate-900">
+                                            {{ $thaiName }}
                                         </div>
                                         <span class="user-role-badge {{ $meta['class'] }}">
                                             {{ $meta['label'] }}
                                         </span>
                                     </div>
-                                    <div class="mt-1 truncate text-xs text-slate-500">{{ $user->email }}</div>
-                                    <div class="mt-1 text-sm text-slate-700">{{ $user->position ?: '-' }}</div>
-                                    <div class="mt-1 text-xs text-slate-500">{{ $updatedAt ?: '-' }}</div>
+                                    @if ($englishName !== '')
+                                        <div class="mt-0.5 text-xs font-semibold text-slate-500">{{ $englishName }}</div>
+                                    @endif
+                                    <div class="mt-1 break-all text-xs text-slate-500">{{ $user->email }}</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <div class="rounded-xl bg-slate-50 p-3">
+                                    <div class="text-[11px] font-bold uppercase tracking-wide text-slate-400">ตำแหน่ง</div>
+                                    <div class="mt-1 text-sm font-semibold text-slate-800">{{ $user->position ?: '-' }}</div>
+                                </div>
+                                <div class="rounded-xl bg-slate-50 p-3">
+                                    <div class="text-[11px] font-bold uppercase tracking-wide text-slate-400">สายงาน</div>
+                                    <div class="mt-1 text-sm font-semibold text-slate-800">{{ $user->skill_role ?: '-' }}</div>
+                                </div>
+                                <div class="rounded-xl bg-slate-50 p-3 sm:col-span-2">
+                                    <div class="text-[11px] font-bold uppercase tracking-wide text-slate-400">สถานะสังกัด</div>
+                                    <div class="mt-1 text-sm font-semibold text-slate-800">{{ $borrowedText }}</div>
                                 </div>
                             </div>
                             <div class="mt-3 flex items-center justify-end gap-2">
-                                <div class="flex items-center gap-2">
-                                    <a href="{{ route('users.edit', $user) }}" class="user-action user-action--edit px-3 py-2">แก้ไข</a>
-                                    <button type="button"
-                                        onclick="confirmDelete({{ $user->id }}, @json(trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''))))"
-                                        class="user-action user-action--danger px-3 py-2">ลบ</button>
-                                    <form id="delete-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
-                                        @csrf
-                                        @method('DELETE')
-                                    </form>
-                                </div>
+                                <span class="mr-auto text-xs text-slate-500">อัปเดต {{ $updatedAt ?: '-' }}</span>
+                                <a href="{{ route('users.edit', $user) }}" class="user-action user-action--edit px-3 py-2">แก้ไข</a>
+                                <button type="button"
+                                    onclick="confirmDelete({{ $user->id }}, @json($thaiName))"
+                                    class="user-action user-action--danger px-3 py-2">ลบ</button>
+                                <form id="delete-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
+                                    @csrf
+                                    @method('DELETE')
+                                </form>
                             </div>
                         </article>
                     @endforeach
                 </div>
 
-                <div class="hidden overflow-x-auto rounded-2xl border border-slate-200 md:block">
-                    <table class="min-w-[980px] w-full border-separate border-spacing-0 text-sm">
+                <div class="hidden rounded-2xl border border-slate-200 lg:block">
+                    <table class="user-directory-table border-separate border-spacing-0 text-sm">
+                        <colgroup>
+                            <col style="width: 28%">
+                            <col style="width: 22%">
+                            <col style="width: 19%">
+                            <col style="width: 12%">
+                            <col style="width: 8%">
+                            <col style="width: 11%">
+                        </colgroup>
                         <thead class="sticky top-0 z-10 bg-slate-50">
                             <tr>
                                 <th class="border-b border-slate-200 px-4 py-3 text-left font-semibold text-slate-700">ผู้ใช้งาน</th>
                                 <th class="border-b border-slate-200 px-4 py-3 text-left font-semibold text-slate-700">ตำแหน่ง</th>
+                                <th class="border-b border-slate-200 px-4 py-3 text-left font-semibold text-slate-700">สายงาน / สังกัด</th>
                                 <th class="border-b border-slate-200 px-4 py-3 text-left font-semibold text-slate-700">สิทธิ์</th>
                                 <th class="border-b border-slate-200 px-4 py-3 text-left font-semibold text-slate-700">อัปเดตล่าสุด</th>
                                 <th class="border-b border-slate-200 px-4 py-3 text-right font-semibold text-slate-700">Actions</th>
@@ -126,6 +154,11 @@
                                         ? asset('storage/' . $user->profile_photo_path) . '?v=' . optional($user->updated_at)->timestamp
                                         : 'https://ui-avatars.com/api/?name=' . urlencode(trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''))) . '&background=0F172A&color=fff&size=128';
                                     $updatedAt = optional($user->updated_at)?->format('d/m/Y H:i');
+                                    $thaiName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
+                                    $englishName = trim(($user->prefix_en ?? '') . ' ' . ($user->name_en ?? ''));
+                                    $borrowedText = $user->is_borrowed
+                                        ? 'ยืมตัว' . (filled($user->borrowed_department) ? ': ' . $user->borrowed_department : '')
+                                        : 'ไม่ยืมตัว';
                                 @endphp
                                 <tr class="hover:bg-slate-50">
                                     <td class="border-b border-slate-100 px-4 py-4">
@@ -134,17 +167,26 @@
                                                 onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.png') }}'"
                                                 alt="{{ $user->name }}"
                                                 class="h-12 w-12 rounded-2xl border border-slate-200 object-cover">
-                                            <div class="min-w-0">
-                                                <div class="truncate font-semibold text-slate-900">
-                                                    {{ trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) }}
+                                            <div class="user-directory-table-cell min-w-0">
+                                                <div class="font-semibold leading-5 text-slate-900">
+                                                    {{ $thaiName }}
                                                 </div>
-                                                <div class="truncate text-xs text-slate-500">{{ $user->email }}</div>
+                                                @if ($englishName !== '')
+                                                    <div class="mt-0.5 text-xs font-semibold text-slate-500">{{ $englishName }}</div>
+                                                @endif
+                                                <div class="mt-1 break-all text-xs text-slate-500">{{ $user->email }}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="border-b border-slate-100 px-4 py-4 text-slate-700">
-                                        <div class="max-w-[260px] break-words">
+                                        <div class="user-directory-table-cell leading-5">
                                             {{ $user->position ?: '-' }}
+                                        </div>
+                                    </td>
+                                    <td class="border-b border-slate-100 px-4 py-4 text-slate-700">
+                                        <div class="user-directory-table-cell space-y-2">
+                                            <span class="user-info-pill">{{ $user->skill_role ?: '-' }}</span>
+                                            <div class="text-xs leading-5 text-slate-500">{{ $borrowedText }}</div>
                                         </div>
                                     </td>
                                     <td class="border-b border-slate-100 px-4 py-4">
@@ -156,10 +198,10 @@
                                         {{ $updatedAt ?: '-' }}
                                     </td>
                                     <td class="border-b border-slate-100 px-4 py-4">
-                                        <div class="flex items-center justify-end gap-2">
+                                        <div class="flex flex-wrap items-center justify-end gap-2">
                                             <a href="{{ route('users.edit', $user) }}" class="user-action user-action--edit px-3 py-2">แก้ไข</a>
                                             <button type="button"
-                                                onclick="confirmDelete({{ $user->id }}, @json(trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''))))"
+                                                onclick="confirmDelete({{ $user->id }}, @json($thaiName))"
                                                 class="user-action user-action--danger px-3 py-2">ลบ</button>
                                             <form id="delete-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
                                                 @csrf

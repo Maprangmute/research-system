@@ -180,6 +180,35 @@
         color: #b91c1c;
     }
 
+    .user-directory-table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .user-directory-table th,
+    .user-directory-table td {
+        vertical-align: top;
+    }
+
+    .user-directory-table-cell {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .user-info-pill {
+        display: inline-flex;
+        max-width: 100%;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid #dbe5f0;
+        background: #f8fafc;
+        padding: 0.28rem 0.55rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #475569;
+    }
+
     .user-empty-state {
         border: 1px dashed #cbd5e1;
         border-radius: 24px;
@@ -265,10 +294,31 @@
             transform: translateX(100%);
         }
     }
+
+    @media (min-width: 1024px) and (max-width: 1180px) {
+        .users-page-shell .user-action {
+            padding: 0.62rem 0.72rem;
+            font-size: 0.8rem;
+        }
+
+        .user-directory-table {
+            font-size: 0.78rem;
+        }
+
+        .user-directory-table th,
+        .user-directory-table td {
+            padding: 0.75rem 0.6rem;
+        }
+
+        .user-role-badge,
+        .user-info-pill {
+            white-space: normal;
+        }
+    }
 </style>
 
 <div class="users-page-shell min-h-screen">
-    <div class="mx-auto w-full max-w-6xl px-4 pb-10 pt-8 sm:px-6 lg:px-8">
+    <div class="mx-auto w-full max-w-[92rem] px-4 pb-10 pt-8 sm:px-6 lg:px-8">
         <section class="users-hero px-4 py-4 md:px-6 md:py-5">
             <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div class="w-full">
@@ -289,8 +339,8 @@
 
         <section class="users-search-card mt-5 px-4 py-4 md:px-5">
             <form id="usersSearchForm" action="{{ route('users.index') }}" method="GET" class="space-y-4">
-                <div class="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                    <label class="block xl:col-span-5">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+                    <label class="block md:col-span-2 xl:col-span-5">
                         <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
                         <div class="relative mt-1">
                             <input type="search" name="q" value="{{ $search ?? '' }}" placeholder="ชื่อ / อีเมล / ตำแหน่ง / คำนำหน้า"

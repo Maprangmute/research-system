@@ -18,7 +18,7 @@
             width: 100%;
         }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 767px) {
             .fte-table-wrap,
             .fte-detail-table-wrap {
                 overflow-x: visible;
@@ -153,7 +153,7 @@
             display: table-row;
         }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 767px) {
             .fte-index-table tr.fte-detail-row.is-open {
                 display: block;
             }
@@ -309,7 +309,115 @@
             line-height: 1;
         }
 
-        @media (max-width: 1024px) {
+        @media (min-width: 768px) and (max-width: 1366px) {
+            #fte-filter-card {
+                padding: 1rem !important;
+                border-radius: 18px !important;
+            }
+
+            #filter-form {
+                gap: 0.85rem;
+            }
+
+            #filter-form > .grid {
+                display: grid !important;
+                grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+                gap: 0.75rem !important;
+            }
+
+            #filter-form > .grid > div:nth-child(1) {
+                grid-column: span 6 / span 6 !important;
+            }
+
+            #filter-form > .grid > div:nth-child(2) {
+                grid-column: span 6 / span 6 !important;
+            }
+
+            #filter-form > .grid > div:nth-child(3) {
+                grid-column: span 9 / span 9 !important;
+            }
+
+            #filter-form > .grid > div:nth-child(4) {
+                grid-column: span 3 / span 3 !important;
+            }
+
+            #filter-form label,
+            #filter-form .text-slate-700 {
+                font-size: 12px !important;
+                line-height: 1.25;
+            }
+
+            #filter-form input,
+            #filter-form select,
+            #filter-form button {
+                min-height: 38px;
+                font-size: 12px !important;
+            }
+
+            .fte-table-wrap,
+            .fte-detail-table-wrap {
+                overflow-x: visible !important;
+            }
+
+            .fte-index-table,
+            .fte-detail-table {
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: fixed !important;
+                font-size: 11.5px !important;
+            }
+
+            .fte-index-table th,
+            .fte-index-table td,
+            .fte-detail-table th,
+            .fte-detail-table td {
+                padding-left: 0.55rem !important;
+                padding-right: 0.55rem !important;
+                vertical-align: top;
+            }
+
+            .fte-index-table th,
+            .fte-detail-table th {
+                white-space: normal;
+                font-size: 10.5px !important;
+                line-height: 1.25;
+            }
+
+            .fte-index-table td[data-label="ชื่อ"] {
+                min-width: 0;
+            }
+
+            .fte-index-table td[data-label="ชื่อ"] a,
+            .fte-detail-table td a {
+                overflow-wrap: anywhere;
+                word-break: normal;
+            }
+
+            .fte-index-table td[data-label="รายละเอียด"] button {
+                padding: 0.42rem 0.65rem !important;
+                font-size: 11px !important;
+                white-space: normal;
+            }
+
+            .fte-detail-table th:nth-child(1),
+            .fte-detail-table td:nth-child(1) { width: 28% !important; }
+            .fte-detail-table th:nth-child(2),
+            .fte-detail-table td:nth-child(2) { width: 13% !important; }
+            .fte-detail-table th:nth-child(3),
+            .fte-detail-table td:nth-child(3) { width: 25% !important; }
+            .fte-detail-table th:nth-child(4),
+            .fte-detail-table td:nth-child(4) { width: 12% !important; }
+            .fte-detail-table th:nth-child(5),
+            .fte-detail-table td:nth-child(5) { width: 12% !important; }
+            .fte-detail-table th:nth-child(6),
+            .fte-detail-table td:nth-child(6) { width: 10% !important; }
+
+            .fte-detail-row > td {
+                padding: 0.75rem !important;
+            }
+        }
+
+        @media (max-width: 767px) {
             .fte-filter-fab {
                 width: 68px;
                 min-height: 76px;

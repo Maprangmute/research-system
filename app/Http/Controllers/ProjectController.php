@@ -6,6 +6,7 @@ use App\Models\Output;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\ResponsiveView;
 // ⬅️ เพิ่ม
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -43,20 +44,7 @@ class ProjectController extends Controller
 
     public function index(Request $request)
     {
-        $view = 'projects.index';
-        $forceView = $request->query('view');
-        if ($forceView === 'mobile') {
-            $view = 'projects.index_mobile';
-        } elseif ($forceView !== 'desktop') {
-            $ua = (string) $request->header('User-Agent', '');
-            $isMobile = (bool) preg_match(
-                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
-                $ua
-            );
-            if ($isMobile) {
-                $view = 'projects.index_mobile';
-            }
-        }
+        $view = ResponsiveView::resolve($request, 'projects.index');
 
         $user = auth()->user();
         $applyPermission = function ($q) use ($user) {
@@ -1745,20 +1733,7 @@ class ProjectController extends Controller
 
     public function create(Request $request)
     {
-        $view = 'projects.create';
-        $forceView = $request->query('view');
-        if ($forceView === 'mobile') {
-            $view = 'projects.create_mobile';
-        } elseif ($forceView !== 'desktop') {
-            $ua = (string) $request->header('User-Agent', '');
-            $isMobile = (bool) preg_match(
-                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
-                $ua
-            );
-            if ($isMobile) {
-                $view = 'projects.create_mobile';
-            }
-        }
+        $view = ResponsiveView::resolve($request, 'projects.create');
 
         return view($view);
     }
@@ -1871,20 +1846,7 @@ public function store(Request $request)
             },
         ]);
 
-        $view = 'projects.edit';
-        $forceView = $request->query('view');
-        if ($forceView === 'mobile') {
-            $view = 'projects.edit_mobile';
-        } elseif ($forceView !== 'desktop') {
-            $ua = (string) $request->header('User-Agent', '');
-            $isMobile = (bool) preg_match(
-                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
-                $ua
-            );
-            if ($isMobile) {
-                $view = 'projects.edit_mobile';
-            }
-        }
+        $view = ResponsiveView::resolve($request, 'projects.edit');
 
         return view($view, compact('project'));
     }
@@ -2029,20 +1991,7 @@ public function store(Request $request)
         $routeProjectParam = trim((string) ($request->route()?->originalParameter('project') ?? ''));
         $canonicalProjectKey = (string) $project->getRouteKey();
 
-        $view = 'projects.detail';
-        $forceView = $request->query('view');
-        if ($forceView === 'mobile') {
-            $view = 'projects.detail_mobile';
-        } elseif ($forceView !== 'desktop') {
-            $ua = (string) $request->header('User-Agent', '');
-            $isMobile = (bool) preg_match(
-                '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i',
-                $ua
-            );
-            if ($isMobile) {
-                $view = 'projects.detail_mobile';
-            }
-        }
+        $view = ResponsiveView::resolve($request, 'projects.detail');
 
         $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
         $hasPermission = Auth::user()->isAdminLike()
