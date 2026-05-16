@@ -1241,7 +1241,7 @@
                                 data-progress-url="{{ $progressUrl }}" data-fte-project-url="{{ $fteProjectUrl }}"
                                 data-delete-form-id="{{ $deleteFormId }}"
                                 data-project-name="{{ $project->project_name_th }}"
-                                data-project-search-text="{{ trim(implode(' ', array_filter([$project->project_code, $project->project_name_th, $project->theme, $project->project_type, $project->funding_type, $project->planning_status, $project->start_year, $relatedPersonNames]))) }}"
+                                data-project-search-text="{{ trim(implode(' ', array_filter([$project->project_code, $project->project_name_th, $project->project_name_en, $project->theme, $project->project_type, $project->funding_type, $project->planning_status, $project->start_year, $relatedPersonNames]))) }}"
                                 oncontextmenu="return openRowMenu(event, this)" ondblclick="goToDetail(this)"
                                 ontouchstart="rowLongPressStart(event, this)" ontouchend="rowLongPressEnd(event)">
                                 <td class="project-id-cell px-4 py-3 text-sm font-mono text-slate-700">
@@ -1946,10 +1946,6 @@
             const getPrimaryForm = () => query(selectors.primaryForm);
             const getDrawerForm = () => query(selectors.drawerForm);
             const getForms = () => [getPrimaryForm(), getDrawerForm()].filter(Boolean);
-            const tableCountEl = query('#project-table-count');
-            const tableCountMetaEl = query('#project-table-count-meta');
-            const tablePaginationWrapEl = query('#project-table-pagination-wrap');
-            const emptySearchRowEl = query('#project-table-empty-search');
             const form = getPrimaryForm();
             if (!form) return;
 
@@ -1959,53 +1955,6 @@
             let isSearchComposing = false;
             let drawerOpen = false;
             let previousBodyOverflow = '';
-            const baseTableCountText = tableCountEl ? (tableCountEl.childNodes[0]?.textContent || '').trim() : '';
-
-            const normalizeSearchTerm = (value) => String(value || '')
-                .toLowerCase()
-                .normalize('NFKC')
-                .replace(/\s+/g, ' ')
-                .trim();
-
-            const applyLocalSearchPreview = (rawValue) => {
-                const shell = query(selectors.shell);
-                if (!shell) return;
-
-                const rows = queryAll('tbody tr[data-project-search-text]', shell);
-                if (!rows.length) return;
-
-                const term = normalizeSearchTerm(rawValue);
-                let visibleCount = 0;
-
-                rows.forEach((row) => {
-                    const haystack = normalizeSearchTerm(row.dataset.projectSearchText || row.textContent);
-                    const matched = term === '' || haystack.includes(term);
-                    row.classList.toggle('hidden', !matched);
-                    if (matched) visibleCount += 1;
-                });
-
-                if (emptySearchRowEl) {
-                    emptySearchRowEl.classList.toggle('hidden', !(term !== '' && visibleCount === 0));
-                }
-
-                if (tablePaginationWrapEl) {
-                    tablePaginationWrapEl.classList.toggle('hidden', term !== '');
-                }
-
-                if (tableCountEl) {
-                    const message = term === '' ? baseTableCountText : `พบ ${visibleCount} รายการในหน้านี้`;
-                    const textNode = tableCountEl.childNodes[0];
-                    if (textNode) {
-                        textNode.textContent = `${message} `;
-                    } else {
-                        tableCountEl.textContent = message;
-                    }
-                }
-
-                if (tableCountMetaEl) {
-                    tableCountMetaEl.textContent = term === '' ? 'เรียงลำดับจากข้อมูลที่แก้ไขล่าสุด' : 'กรองทันทีโดยไม่ reload';
-                }
-            };
 
             const countActiveFilters = (sourceForm) => {
                 if (!sourceForm) return 0;
@@ -2089,6 +2038,44 @@
                 syncFilterDropdownLabels();
             };
 
+            const syncSearchFieldsFromInput = (sourceField) => {
+                if (!sourceField || sourceField.name !== 'search') return;
+                getForms().forEach((targetForm) => {
+                    queryAll('input[name="search"]', targetForm).forEach((targetField) => {
+                        if (targetField !== sourceField) {
+                            targetField.value = sourceField.value || '';
+                        }
+                    });
+                });
+            };
+
+            const captureActiveSearchInput = () => {
+                const active = document.activeElement;
+                if (!(active instanceof HTMLInputElement) || active.name !== 'search') return null;
+                return {
+                    id: active.id,
+                    value: active.value,
+                    selectionStart: active.selectionStart,
+                    selectionEnd: active.selectionEnd,
+                };
+            };
+
+            const restoreActiveSearchInput = (snapshot) => {
+                if (!snapshot) return;
+                getForms().forEach((targetForm) => {
+                    queryAll('input[name="search"]', targetForm).forEach((targetField) => {
+                        targetField.value = snapshot.value || '';
+                    });
+                });
+                const active = snapshot.id ? document.getElementById(snapshot.id) : null;
+                if (active instanceof HTMLInputElement && active.name === 'search') {
+                    active.focus({ preventScroll: true });
+                    if (Number.isInteger(snapshot.selectionStart) && Number.isInteger(snapshot.selectionEnd)) {
+                        active.setSelectionRange(snapshot.selectionStart, snapshot.selectionEnd);
+                    }
+                }
+            };
+
             const syncFormWithUrl = (url) => {
                 getForms().forEach((targetForm) => {
                     queryAll('[name]', targetForm).forEach((field) => {
@@ -2164,12 +2151,16 @@
             };
 
             const fetchAndRender = async (url, options = {}) => {
-                const { updateUrl = true, scrollToTop = false } = options;
+                const { updateUrl = true, scrollToTop = false, silent = false } = options;
                 const token = ++requestToken;
 
                 if (controller) controller.abort();
                 controller = new AbortController();
-                setLoading(true);
+                if (!silent) {
+                    setLoading(true);
+                } else {
+                    setLoading(false);
+                }
 
                 try {
                     const res = await fetch(url.toString(), {
@@ -2191,7 +2182,9 @@
                         history.replaceState({ ajax: true }, '', `${url.pathname}${url.search}`);
                     }
 
+                    const activeSearchSnapshot = captureActiveSearchInput();
                     syncFormWithUrl(url);
+                    restoreActiveSearchInput(activeSearchSnapshot);
                     syncFabVisibility();
                     if (scrollToTop) {
                         scrollToTableTop();
@@ -2201,18 +2194,18 @@
                         console.error(error);
                     }
                 } finally {
-                    if (token === requestToken) {
+                    if (!silent && token === requestToken) {
                         setLoading(false);
                     }
                 }
             };
 
-            const submitDebounced = (delay = 220) => {
+            const submitDebounced = (delay = 220, options = {}) => {
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(() => {
                     const sourceForm = getPrimaryForm() || getDrawerForm();
                     if (!sourceForm) return;
-                    fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
+                    fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true, ...options });
                 }, delay);
             };
 
@@ -2235,12 +2228,10 @@
                         if (field.matches('input[type="text"], input[type="search"]')) {
                             field.addEventListener('input', () => {
                                 if (isSearchComposing) return;
-                                syncFormsFromSource(targetForm);
+                                if (controller) controller.abort();
+                                syncSearchFieldsFromInput(field);
                                 updateFilterBadges();
-                                const sourceForm = getPrimaryForm() || targetForm;
-                                const searchField = sourceForm.querySelector('input[name="search"]');
-                                applyLocalSearchPreview(searchField ? searchField.value : '');
-                                submitDebounced(280);
+                                submitDebounced(300);
                             });
                             field.addEventListener('keydown', (event) => {
                                 if (event.key === 'Enter') {
@@ -2248,8 +2239,6 @@
                                     if (timer) clearTimeout(timer);
                                     syncFormsFromSource(targetForm);
                                     const sourceForm = getPrimaryForm() || targetForm;
-                                    const searchField = sourceForm.querySelector('input[name="search"]');
-                                    applyLocalSearchPreview(searchField ? searchField.value : '');
                                     fetchAndRender(buildUrlFromForm(sourceForm), { updateUrl: true });
                                 }
                             });
@@ -2258,19 +2247,14 @@
                             });
                             field.addEventListener('compositionend', () => {
                                 isSearchComposing = false;
-                                syncFormsFromSource(targetForm);
+                                if (controller) controller.abort();
+                                syncSearchFieldsFromInput(field);
                                 updateFilterBadges();
-                                const sourceForm = getPrimaryForm() || targetForm;
-                                const searchField = sourceForm.querySelector('input[name="search"]');
-                                applyLocalSearchPreview(searchField ? searchField.value : '');
-                                submitDebounced(180);
+                                submitDebounced(300);
                             });
                             field.addEventListener('change', () => {
-                                syncFormsFromSource(targetForm);
+                                syncSearchFieldsFromInput(field);
                                 updateFilterBadges();
-                                const sourceForm = getPrimaryForm() || targetForm;
-                                const searchField = sourceForm.querySelector('input[name="search"]');
-                                applyLocalSearchPreview(searchField ? searchField.value : '');
                                 submitDebounced(180);
                             });
                             return;
@@ -2355,7 +2339,6 @@
             initFilterDropdowns();
             updateFilterBadges();
             syncFabVisibility();
-            applyLocalSearchPreview(query('#project-search-input')?.value || '');
         })();
     </script>
 @endsection

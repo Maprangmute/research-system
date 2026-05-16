@@ -3842,17 +3842,20 @@ public function store(Request $request)
         $fuzzyIds = $this->findFuzzyProjectIds($searchScope, $searchNormalized, $tokens);
 
         $nameExpr = "REGEXP_REPLACE(LOWER(TRIM(project_name_th)), '[[:space:][:punct:]]+', '')";
+        $nameEnExpr = "REGEXP_REPLACE(LOWER(TRIM(COALESCE(project_name_en, ''))), '[[:space:][:punct:]]+', '')";
         $codeExpr = "REGEXP_REPLACE(LOWER(TRIM(project_code)), '[[:space:][:punct:]]+', '')";
         $personNameExpr = "REGEXP_REPLACE(LOWER(TRIM(COALESCE(name, ''))), '[[:space:][:punct:]]+', '')";
         $normalizedLike = '%'.$normalizedNeedle.'%';
 
-        $query->where(function (Builder $inner) use ($search, $searchLower, $searchNormalized, $searchNumericId, $tokens, $fuzzyIds, $nameExpr, $codeExpr, $personNameExpr) {
+        $query->where(function (Builder $inner) use ($search, $searchLower, $searchNormalized, $searchNumericId, $tokens, $fuzzyIds, $nameExpr, $nameEnExpr, $codeExpr, $personNameExpr) {
             $inner->where('project_name_th', 'like', '%'.$search.'%')
                 ->orWhereRaw('LOWER(project_name_th) like ?', ['%'.$searchLower.'%'])
+                ->orWhereRaw("LOWER(COALESCE(project_name_en, '')) like ?", ['%'.$searchLower.'%'])
                 ->orWhereRaw('LOWER(project_code) like ?', ['%'.$searchLower.'%']);
 
             if ($searchNormalized !== '') {
                 $inner->orWhereRaw("$nameExpr like ?", ['%'.$searchNormalized.'%'])
+                    ->orWhereRaw("$nameEnExpr like ?", ['%'.$searchNormalized.'%'])
                     ->orWhereRaw("$codeExpr like ?", ['%'.$searchNormalized.'%']);
             }
 
@@ -3861,7 +3864,8 @@ public function store(Request $request)
             }
 
             foreach ($tokens as $token) {
-                $inner->orWhereRaw('LOWER(project_name_th) like ?', ['%'.$token.'%']);
+                $inner->orWhereRaw('LOWER(project_name_th) like ?', ['%'.$token.'%'])
+                    ->orWhereRaw("LOWER(COALESCE(project_name_en, '')) like ?", ['%'.$token.'%']);
             }
 
             // ค้นหาชื่อบุคคลที่เกี่ยวข้องในโปรเจกต์
@@ -3915,11 +3919,14 @@ public function store(Request $request)
                 WHEN $codeExpr = ? THEN 1
                 WHEN ? IS NOT NULL AND id = ? THEN 2
                 WHEN LOWER(TRIM(project_name_th)) = ? THEN 3
-                WHEN LOWER(project_code) LIKE ? THEN 4
-                WHEN LOWER(project_name_th) LIKE ? THEN 5
-                WHEN $nameExpr LIKE ? THEN 6
-                WHEN project_name_th LIKE ? THEN 7
-                ELSE 8
+                WHEN LOWER(TRIM(COALESCE(project_name_en, ''))) = ? THEN 4
+                WHEN LOWER(project_code) LIKE ? THEN 5
+                WHEN LOWER(project_name_th) LIKE ? THEN 6
+                WHEN LOWER(COALESCE(project_name_en, '')) LIKE ? THEN 7
+                WHEN $nameExpr LIKE ? THEN 8
+                WHEN $nameEnExpr LIKE ? THEN 9
+                WHEN project_name_th LIKE ? THEN 10
+                ELSE 11
             END",
             [
                 $searchLower,
@@ -3927,8 +3934,11 @@ public function store(Request $request)
                 $searchNumericId,
                 $searchNumericId,
                 $searchLower,
+                $searchLower,
                 '%'.$searchLower.'%',
                 '%'.$searchLower.'%',
+                '%'.$searchLower.'%',
+                $normalizedLike,
                 $normalizedLike,
                 '%'.$search.'%',
             ]
@@ -3948,15 +3958,20 @@ public function store(Request $request)
         $threshold = $searchNormalized !== '' && mb_strlen($searchNormalized, 'UTF-8') <= 4 ? 0.55 : 0.42;
 
         $candidates = (clone $scope)
-            ->select(['id', 'project_name_th'])
-            ->whereNotNull('project_name_th')
-            ->whereRaw("TRIM(project_name_th) <> ''")
+            ->select(['id', 'project_name_th', 'project_name_en'])
+            ->where(function (Builder $query) {
+                $query->whereRaw("TRIM(COALESCE(project_name_th, '')) <> ''")
+                    ->orWhereRaw("TRIM(COALESCE(project_name_en, '')) <> ''");
+            })
             ->limit(1200)
             ->get();
 
         $scored = [];
         foreach ($candidates as $candidate) {
-            $score = $this->calculateFuzzyScore($searchNormalized, $tokens, (string) $candidate->project_name_th);
+            $score = max(
+                $this->calculateFuzzyScore($searchNormalized, $tokens, (string) $candidate->project_name_th),
+                $this->calculateFuzzyScore($searchNormalized, $tokens, (string) $candidate->project_name_en)
+            );
             if ($score >= $threshold) {
                 $scored[] = [
                     'id' => (int) $candidate->id,

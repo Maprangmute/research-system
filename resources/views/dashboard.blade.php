@@ -26,6 +26,11 @@
             background: #f3f4f6;
         }
 
+        .lux-page,
+        .lux-page * {
+            box-sizing: border-box;
+        }
+
         .lux-page {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             color: var(--lux-ink);
@@ -80,6 +85,7 @@
             cursor: pointer;
             display: block;
             width: 100% !important;
+            min-width: var(--chart-min-width, 0);
             max-width: 100%;
             height: var(--chart-height, 240px) !important;
             min-height: var(--chart-height, 240px) !important;
@@ -422,28 +428,6 @@
         }
 
         @media (max-width: 640px) {
-            .lux-chart-scroll {
-                display: flex;
-                overflow-x: auto;
-                gap: 1rem;
-                scroll-snap-type: x mandatory;
-                padding-bottom: 0.75rem;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .lux-chart-card {
-                min-width: 88vw;
-            }
-
-            .lux-chart-scroll::-webkit-scrollbar {
-                height: 6px;
-            }
-
-            .lux-chart-scroll::-webkit-scrollbar-thumb {
-                background: rgba(148, 163, 184, 0.6);
-                border-radius: 999px;
-            }
-
             .lux-swipe-tip {
                 display: flex;
             }
@@ -632,40 +616,170 @@
 
         .lux-chart-scroll {
             display: grid;
-            grid-template-columns: repeat(1, minmax(0, 1fr));
+            grid-template-columns: minmax(0, 1fr);
             gap: 1.5rem;
             align-items: start;
+            min-width: 0;
         }
 
-        @media (min-width: 1536px) {
-            .lux-chart-scroll {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
+        .dashboard-shell {
+            width: 100%;
+            max-width: 1600px;
+        }
 
+        @media (min-width: 1800px) {
+            .dashboard-shell {
+                padding-left: max(8rem, 1rem) !important;
+                padding-right: clamp(1.25rem, 2vw, 2.5rem) !important;
+            }
+        }
+
+        .dashboard-chart-overview {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            align-items: start;
+            margin-bottom: 1.5rem;
+        }
+
+        .dashboard-chart-overview .lux-chart-card {
+            min-width: 0;
+            height: 100% !important;
+        }
+
+        .dashboard-redzone-card,
+        .dashboard-contract-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-redzone-card {
+            --chart-height: 340px;
+        }
+
+        .dashboard-contract-card {
+            --chart-height: 380px;
+        }
+
+        @media (min-width: 1800px) {
             .lux-summary-scroll {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
         }
 
-        @media (max-width: 1535px) {
-            .lux-chart-scroll {
-                grid-template-columns: repeat(1, minmax(0, 1fr));
-            }
-
+        @media (max-width: 1279px) {
             .lux-summary-scroll {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
-        @media (min-width: 900px) and (max-width: 1280px) {
+        @media (min-width: 1800px) {
             .lux-chart-scroll {
-                grid-template-columns: 1fr !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .lux-chart-scroll > .lux-chart-card.md\:col-span-2,
+            .lux-chart-scroll > .lux-chart-card.lux-drawer,
+            .lux-chart-scroll > .lux-chart-card.dashboard-wide-chart {
+                grid-column: 1 / -1;
+            }
+        }
+
+        .dashboard-wide-chart canvas[id^="chart"] {
+            --chart-min-width: 960px;
+        }
+
+        .dashboard-author-tools {
+            flex-wrap: wrap;
+        }
+
+        .dashboard-author-tools label {
+            min-width: 0;
+        }
+
+        .dashboard-author-tools input,
+        .dashboard-author-tools select {
+            max-width: 100%;
+        }
+
+        @media (min-width: 1800px) {
+            .dashboard-chart-overview {
+                grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+            }
+        }
+
+        @media (min-width: 1025px) and (max-width: 1799px) {
+            .dashboard-shell {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+
+            #dashboardFabStack {
+                left: 0.75rem;
+                top: auto;
+                bottom: calc(0.75rem + env(safe-area-inset-bottom));
+                transform: none;
+                gap: 0.5rem;
+            }
+
+            #dashboardFabStack.is-hidden-by-chat,
+            #dashboardFabStack.is-hidden-by-pagination {
+                transform: translateY(14px);
+            }
+
+            .dashboard-fab-btn {
+                width: 3.4rem;
+                height: 3.4rem;
+                padding: 0;
+                border-radius: 999px;
+                justify-content: center;
+                gap: 0;
+            }
+
+            .dashboard-fab-btn__icon {
+                width: 2.35rem;
+                height: 2.35rem;
+                border-radius: 0.95rem;
+            }
+
+            .dashboard-fab-btn__title,
+            .dashboard-fab-btn__meta {
+                display: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .dashboard-chart-overview {
+                display: grid;
+                grid-template-columns: 1fr;
+                overflow-x: visible;
+                gap: 1rem;
+                padding-bottom: 0;
+            }
+
+            .dashboard-chart-overview .lux-chart-card {
+                min-width: 0;
+                scroll-snap-align: none;
             }
         }
 
         .lux-chart-card {
             scroll-snap-align: start;
             height: auto;
+            min-width: 0;
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .lux-chart-card::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .lux-chart-card::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.5);
+            border-radius: 999px;
         }
 
         .lux-swipe-tip {
@@ -850,26 +964,125 @@
             }
         }
 
-        /* Final chart guardrail (must stay last in this style block) */
+        /* Dashboard responsive guardrail: cards keep the page width; dense charts scroll inside the card instead of shrinking unreadably. */
+        .lux-page .dashboard-shell,
+        .lux-page .dashboard-chart-overview,
+        .lux-page .lux-chart-scroll,
+        .lux-page .lux-chart-card {
+            min-width: 0 !important;
+            max-width: 100% !important;
+        }
+
         .lux-page .lux-chart-scroll {
             align-items: start !important;
+            overflow: visible !important;
         }
 
         .lux-page .lux-chart-card {
             height: auto !important;
-            min-height: 0 !important;
+            width: 100% !important;
         }
 
         .lux-page .lux-chart-card canvas[id^="chart"] {
             width: 100% !important;
+            max-width: none !important;
             height: var(--chart-height, 240px) !important;
             min-height: var(--chart-height, 240px) !important;
             max-height: var(--chart-height, 240px) !important;
         }
+
+        .lux-page .dashboard-redzone-card canvas[id^="chart"] {
+            height: var(--chart-height, 340px) !important;
+            min-height: var(--chart-height, 340px) !important;
+            max-height: var(--chart-height, 340px) !important;
+        }
+
+        .lux-page .dashboard-contract-card canvas[id^="chart"] {
+            height: var(--chart-height, 380px) !important;
+            min-height: var(--chart-height, 380px) !important;
+            max-height: var(--chart-height, 380px) !important;
+        }
+
+        /* Dashboard layout reset: keep charts readable by using a single report column at every viewport. */
+        .lux-page .dashboard-shell {
+            max-width: 1180px !important;
+            padding-left: clamp(0.75rem, 2vw, 1.5rem) !important;
+            padding-right: clamp(0.75rem, 2vw, 1.5rem) !important;
+        }
+
+        .lux-page .dashboard-chart-overview,
+        .lux-page .lux-chart-scroll {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: clamp(1rem, 2vw, 1.5rem) !important;
+            overflow: visible !important;
+        }
+
+        .lux-page .dashboard-chart-overview > .lux-chart-card,
+        .lux-page .lux-chart-scroll > .lux-chart-card {
+            grid-column: 1 / -1 !important;
+        }
+
+        .lux-page .lux-chart-card {
+            min-width: 0 !important;
+            max-width: 100% !important;
+            overflow-x: visible !important;
+            overflow-y: visible !important;
+        }
+
+        .lux-page .lux-chart-card canvas[id^="chart"] {
+            min-width: 0 !important;
+            max-width: 100% !important;
+        }
+
+        #dashboardFabStack {
+            left: 0.75rem !important;
+            top: auto !important;
+            bottom: calc(0.75rem + env(safe-area-inset-bottom)) !important;
+            transform: none !important;
+            gap: 0.5rem !important;
+        }
+
+        #dashboardFabStack.is-hidden-by-chat,
+        #dashboardFabStack.is-hidden-by-pagination {
+            transform: translateY(14px) !important;
+        }
+
+        .dashboard-fab-btn {
+            width: 3.4rem !important;
+            height: 3.4rem !important;
+            padding: 0 !important;
+            border-radius: 999px !important;
+            justify-content: center !important;
+            gap: 0 !important;
+        }
+
+        .dashboard-fab-btn__icon {
+            width: 2.35rem !important;
+            height: 2.35rem !important;
+            border-radius: 0.95rem !important;
+        }
+
+        .dashboard-fab-btn__title,
+        .dashboard-fab-btn__meta {
+            display: none !important;
+        }
+
+        @media (max-width: 640px) {
+            .lux-page .dashboard-shell {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+
+            .lux-page .lux-chart-card {
+                padding: 0.9rem !important;
+                border-radius: 14px !important;
+            }
+        }
     </style>
 
     <div class="lux-page">
-        <div class="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <div class="dashboard-shell mx-auto px-4 py-8 space-y-8">
         <div id="dashboardFabStack">
             <button id="filterDrawerOpen" type="button" aria-label="เปิดฟิลเตอร์" class="dashboard-fab-btn focus:outline-none focus:ring-4 focus:ring-cyan-100">
                 <span id="filterFabBadge" class="dashboard-fab-btn__badge" aria-hidden="true"></span>
@@ -1087,7 +1300,7 @@
                     <div id="dashboardFilterList" class="dashboard-filter-pill-list mt-3"></div>
                 </div>
 
-                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     <div class="rounded-lg border border-cyan-100 bg-white/90 p-3">
                         <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">งบประมาณรวม</div>
                         <div id="rtSummaryBudget" class="mt-1 text-lg lg:text-2xl font-extrabold text-slate-900">0 บ.</div>
@@ -1095,6 +1308,11 @@
                     <div class="rounded-lg border border-cyan-100 bg-white/90 p-3">
                         <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">งบเฉลี่ย/โครงการ</div>
                         <div id="rtSummaryAvgBudget" class="mt-1 text-lg lg:text-2xl font-extrabold text-slate-900">0 บ.</div>
+                    </div>
+                    <div class="rounded-lg border border-emerald-100 bg-emerald-50/80 p-3 sm:col-span-2 xl:col-span-1">
+                        <div class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">โครงการที่มีคนในหน่วยเราเป็น PI</div>
+                        <div id="rtSummaryPolicyPiBudget" class="mt-1 text-lg lg:text-2xl font-extrabold text-slate-900">0 บ.</div>
+                        <div id="rtSummaryPolicyPiCount" class="mt-1 text-xs font-medium text-emerald-800">0 โครงการที่มีงบ</div>
                     </div>
                 </div>
 
@@ -1133,18 +1351,20 @@
                 </div>
             </div>
             <div id="chartSwipeTip" class="lux-swipe-tip mb-3">
-                <span>เลื่อนซ้ายขวาเพื่อดูกราฟต่อไป • แตะกราฟเพื่อดูข้อมูลเพิ่ม</span>
+                <span>แตะกราฟเพื่อดูข้อมูลเพิ่ม</span>
                 <button type="button" data-close="chartSwipeTip">ปิด</button>
             </div>
+            <div class="dashboard-chart-overview">
+                <div class="lux-chart-card dashboard-redzone-card bg-white shadow-sm border rounded-xl p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🔴 RED ZONE: ย้อนหลัง 3 ปี</h3>
+                    <canvas id="chartRedZoneTimeline" height="380"></canvas>
+                </div>
+                <div class="lux-chart-card dashboard-contract-card bg-white shadow-sm border rounded-xl p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🔥 ภาพรวมสถานะโครงการตามสัญญา</h3>
+                    <canvas id="chartOverdueProjects" height="380"></canvas>
+                </div>
+            </div>
             <div class="lux-chart-scroll mb-6">
-                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔴 RED ZONE: ย้อนหลัง 3 ปี</h3>
-                <canvas id="chartRedZoneTimeline" height="380"></canvas>
-            </div>
-            <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3">🔥 ภาพรวมสถานะโครงการตามสัญญา</h3> <canvas
-                    id="chartOverdueProjects" height="380"></canvas>
-            </div>
 
             <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 md:col-span-2 lux-drawer"
                 data-lux-drawer="overdue">
@@ -1194,7 +1414,7 @@
                 <canvas id="chartCoResearchByUnitWindow" height="200"></canvas>
             </div>
 
-                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card dashboard-wide-chart bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">📈 จำนวนโครงการรายปี (รวม)</h3>
                     <canvas id="chartProjectsPerYear" height="420"></canvas>
                 </div>
@@ -1214,6 +1434,11 @@
                     <canvas id="chartBudgetPerYear" height="250"></canvas>
                 </div>
 
+                <div class="lux-chart-card dashboard-chart-full bg-white shadow-sm border rounded-xl p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">💰 งบประมาณที่ได้รับ (รวมรายปี) เฉพาะโครงการที่หน่วยวิจัยฯ เป็น PI หลัก</h3>
+                    <canvas id="chartBudgetByPi" height="360"></canvas>
+                </div>
+
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 สัดส่วนทุนภายนอกที่ได้รับตามแหล่งทุน</h3>
                     <canvas id="chartExternalBySource" height="250"></canvas>
@@ -1224,7 +1449,7 @@
                     <canvas id="chartInternalBySource" height="250"></canvas>
                 </div>
 
-                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card dashboard-wide-chart bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 ทุนภายนอกตามแหล่งทุน: แนวโน้มรายปี</h3>
                     <canvas id="chartExternalBySourceYear" height="380"></canvas>
                 </div>
@@ -1246,9 +1471,9 @@
                     <canvas id="chartPublicationPerYear" height="280"></canvas>
                 </div>
 
-                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4 mt-6">
+                <div class="lux-chart-card dashboard-wide-chart bg-white shadow-sm border rounded-xl p-4 mt-6">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">✍️ บทบาทผู้เขียน (First/Co/Corresponding) รายปี</h3>
-                    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-3">
+                    <div class="dashboard-author-tools flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-3">
                         <div class="flex items-center gap-2">
                             <label class="text-xs text-gray-500">ปี (พ.ศ.):
                                 <select id="yearFilter" class="ml-1 border rounded px-2 py-1 text-sm"></select>
@@ -1280,7 +1505,7 @@
                     <canvas id="chartStatusYear" height="380"></canvas>
                 </div>
 
-                <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
+                <div class="lux-chart-card dashboard-wide-chart bg-white shadow-sm border rounded-xl p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">🤝 สัดส่วนโครงการ (นอกคณะ ในคณะ เเละ ในหน่วย)</h3>
                     <canvas id="chartCollabBreakdown" height="380"></canvas>
                 </div>
@@ -2577,9 +2802,9 @@
             }
 
             function chartHeightScale(vw) {
-                if (vw <= 640) return 0.64;
-                if (vw <= 1024) return 0.72;
-                if (vw <= 1366) return 0.8;
+                if (vw <= 640) return 0.82;
+                if (vw <= 1024) return 0.88;
+                if (vw <= 1366) return 0.92;
                 if (vw <= 1536) return 0.9;
                 return 1;
             }
@@ -2599,6 +2824,10 @@
                 return denseIds.has(String(canvasId || ''));
             }
 
+            function chartMinimumWidth(canvasId, vw) {
+                return 0;
+            }
+
             // คุมความสูงแบบสัดส่วนตามค่าเดิมของแต่ละกราฟ (ไม่สูงเพี้ยน และยังคงสัดส่วนเดิม)
             function applyChartCanvasSizing(root = document) {
                 ensureChartBaseHeights(root);
@@ -2608,11 +2837,21 @@
                 root.querySelectorAll('canvas[id^="chart"]').forEach((canvas) => {
                     const base = Number.parseInt(canvas.dataset.baseHeight || '', 10) || 260;
                     const boost = isDenseChart(canvas.id) ? (vw <= 1366 ? 1.15 : 1.05) : 1;
-                    const target = Math.round(Math.min(460, Math.max(170, base * scale * boost)));
+                    const minHeight = canvas.id === 'chartRedZoneTimeline'
+                        ? 300
+                        : (canvas.id === 'chartOverdueProjects' ? 360 : 170);
+                    const maxHeight = canvas.id === 'chartOverdueProjects' ? 520 : 460;
+                    const target = Math.round(Math.min(maxHeight, Math.max(minHeight, base * scale * boost)));
                     const h = `${target}px`;
+                    const minWidth = chartMinimumWidth(canvas.id, vw);
                     canvas.style.setProperty('--chart-height', h);
+                    if (minWidth > 0) {
+                        canvas.style.setProperty('--chart-min-width', `${minWidth}px`);
+                    } else {
+                        canvas.style.removeProperty('--chart-min-width');
+                    }
                     canvas.style.width = '100%';
-                    canvas.style.maxWidth = '100%';
+                    canvas.style.maxWidth = 'none';
                 });
             }
 
@@ -3492,7 +3731,15 @@
                 if (id === 'chartBudgetPerYear') {
                     return {
                         title: `โครงการปี ${label}`,
-                        projects: projects.filter(p => matchYearLabel(p, label)),
+                        projects: projects.filter(p => matchYearLabel(p, label) && getBudget(p) > 0),
+                        includeFunding: true
+                    };
+                }
+
+                if (id === 'chartBudgetByPi') {
+                    return {
+                        title: `งบประมาณโครงการที่หน่วยวิจัยฯ เป็น PI หลัก ปี ${label}`,
+                        projects: projects.filter((p) => matchYearLabel(p, label) && isPiInPolicyUnit(p) && getBudget(p) > 0),
                         includeFunding: true
                     };
                 }
@@ -6968,6 +7215,7 @@
                     chartYearlyNewVsTotal: 'โครงการทั้งหมด/ใหม่/กำลังดำเนินการ/ปิดโปรเจค/ยกเลิกโปรเจค (รายปี)',
                     chartFundingSplit: 'สัดส่วนทุน ภายใน/ภายนอก (รายปี)',
                     chartBudgetPerYear: 'งบประมาณรวม (รายปี)',
+                    chartBudgetByPi: 'งบประมาณรวมรายปี เฉพาะโครงการที่หน่วยวิจัยฯ เป็น PI หลัก',
                     chartExternalBySource: 'สัดส่วนทุนภายนอกที่ได้รับตามแหล่งทุน',
                     chartInternalBySource: 'สัดส่วนทุนภายในที่ได้รับตามแหล่งทุน',
                     chartExternalBySourceYear: 'ทุนภายนอกตามแหล่งทุน: แนวโน้มรายปี',
@@ -6986,7 +7234,8 @@
                     'chartRedZoneTimeline', 'chartOverdueProjects',
                     'chartCoResearchByUnitWindow', 'chartProjectsPerYear',
                     'chartYearlyNewVsTotal', 'chartFundingSplit',
-                    'chartBudgetPerYear', 'chartExternalBySource',
+                    'chartBudgetPerYear', 'chartBudgetByPi',
+                    'chartExternalBySource',
                     'chartInternalBySource', 'chartExternalBySourceYear',
                     'chartInternalBySourceYear', 'chartOutputStacked',
                     'chartPublicationPerYear', 'chartAuthorRolePerYear',
@@ -7536,6 +7785,8 @@
                     caption: document.getElementById('rtSummaryCaption'),
                     totalBudget: document.getElementById('rtSummaryBudget'),
                     avgBudget: document.getElementById('rtSummaryAvgBudget'),
+                    policyPiBudget: document.getElementById('rtSummaryPolicyPiBudget'),
+                    policyPiCount: document.getElementById('rtSummaryPolicyPiCount'),
                     typeBody: document.getElementById('rtTypeSummaryBody'),
                     heroProjects: document.getElementById('heroSummaryProjects'),
                     heroPi: document.getElementById('heroSummaryPi'),
@@ -7556,6 +7807,20 @@
                 const getBudget = (p) => safeNum(p?.total_budget ?? p?.budget ?? 0);
                 const getType = (p) => safeText(p?.project_type, 'ไม่ระบุประเภท');
                 const getYearLabel = (p) => safeText(p?.start_year, 'ไม่ระบุปี');
+                const isPolicyUnitPiProject = (p) => {
+                    if (typeof isPiInPolicyUnit === 'function') {
+                        return isPiInPolicyUnit(p);
+                    }
+                    const text = [
+                        p?.project_list,
+                        p?.pi_affiliation,
+                        p?.unit_name,
+                        p?.department,
+                    ].map((value) => String(value || '').toLowerCase()).join(' ');
+                    return text.includes('หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ')
+                        || text.includes('siriraj health policy')
+                        || text.includes('policy-driven health');
+                };
                 const escapeHtml = (value) => String(value)
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
@@ -7620,8 +7885,11 @@
                 function updateSummary(rows) {
                     const total = rows.length;
                     const uniquePi = new Set(rows.map(p => safeText(p?.pi_name)).filter(Boolean)).size;
-                    const totalBudget = rows.reduce((sum, p) => sum + getBudget(p), 0);
-                    const avgBudget = total > 0 ? (totalBudget / total) : 0;
+                    const fundedRows = rows.filter((p) => getBudget(p) > 0);
+                    const totalBudget = fundedRows.reduce((sum, p) => sum + getBudget(p), 0);
+                    const avgBudget = fundedRows.length > 0 ? (totalBudget / fundedRows.length) : 0;
+                    const policyPiFundedRows = rows.filter((p) => isPolicyUnitPiProject(p) && getBudget(p) > 0);
+                    const policyPiBudget = policyPiFundedRows.reduce((sum, p) => sum + getBudget(p), 0);
                     const totalCopi = rows.reduce((sum, p) => sum + ((Array.isArray(p?.copis) ? p.copis.length : 0)), 0);
                     const totalCoResearch = rows.reduce((sum, p) => {
                         const list = Array.isArray(p?.co_researches) ? p.co_researches : (Array.isArray(p?.coResearches) ? p.coResearches : []);
@@ -7641,6 +7909,8 @@
                     if (el.caption) el.caption.textContent = `สรุปตามฟิลเตอร์ปัจจุบัน ${fmtNum.format(total)} / ${fmtNum.format(allProjects.length)} โครงการ`;
                     if (el.totalBudget) el.totalBudget.textContent = `${fmtMoney.format(totalBudget)} บ.`;
                     if (el.avgBudget) el.avgBudget.textContent = `${fmtMoney.format(avgBudget)} บ.`;
+                    if (el.policyPiBudget) el.policyPiBudget.textContent = `${fmtMoney.format(policyPiBudget)} บ.`;
+                    if (el.policyPiCount) el.policyPiCount.textContent = `${fmtNum.format(policyPiFundedRows.length)} โครงการที่มีงบ`;
                     if (el.heroProjects) el.heroProjects.textContent = fmtNum.format(total);
                     if (el.heroPi) el.heroPi.textContent = fmtNum.format(uniquePi);
                     if (el.heroCopi) el.heroCopi.textContent = fmtNum.format(totalCopi);
@@ -7969,10 +8239,16 @@
                 }
 
                 function renderBudgetPerYear(rows) {
-                    const labels = sortYearLabels(Array.from(new Set(rows.map(getYearLabel))));
-                    const budgets = labels.map((y) => rows
-                        .filter((p) => getYearLabel(p) === y)
-                        .reduce((sum, p) => sum + getBudget(p), 0));
+                    const yearBudgets = sortYearLabels(Array.from(new Set(rows.map(getYearLabel))))
+                        .map((year) => ({
+                            year,
+                            budget: rows
+                                .filter((p) => getYearLabel(p) === year)
+                                .reduce((sum, p) => sum + getBudget(p), 0),
+                        }))
+                        .filter((item) => item.budget > 0);
+                    const labels = yearBudgets.map((item) => item.year);
+                    const budgets = yearBudgets.map((item) => item.budget);
 
                     const canvas = document.getElementById('chartBudgetPerYear');
                     if (!canvas) return;
@@ -7982,8 +8258,6 @@
                         return;
                     }
                     clearEmptyChartState(canvas);
-                    const maxBudget = Math.max(0, ...budgets);
-                    const minLabelBudget = maxBudget > 0 ? Math.max(maxBudget * 0.03, 1_000_000) : 0;
 
                     new Chart(canvas, {
                         type: 'bar',
@@ -7992,8 +8266,8 @@
                             datasets: [{
                                 label: 'งบประมาณรวม',
                                 data: budgets.length ? budgets : [0],
-                                backgroundColor: gradient('chartBudgetPerYear', 'rgba(37,99,235,0.9)', 'rgba(37,99,235,0.35)'),
-                                borderColor: '#2563eb',
+                                backgroundColor: gradient('chartBudgetPerYear', 'rgba(5,150,105,0.9)', 'rgba(45,212,191,0.38)'),
+                                borderColor: '#059669',
                                 borderWidth: 1.5,
                                 borderRadius: 8,
                                 maxBarThickness: 42,
@@ -8046,7 +8320,95 @@
                                 }
                             }
                         },
-                        plugins: [createBarValueLabelPlugin((v) => formatThaiMoney(v), { minValue: minLabelBudget })]
+                        plugins: [createBarValueLabelPlugin((v) => formatThaiMoney(v), { minValue: 0 })]
+                    });
+                }
+
+                function renderBudgetByPi(rows) {
+                    const canvas = document.getElementById('chartBudgetByPi');
+                    if (!canvas) return;
+                    Chart.getChart(canvas)?.destroy();
+
+                    const yearBudgets = sortYearLabels(Array.from(new Set(rows.map(getYearLabel))))
+                        .map((year) => ({
+                            year,
+                            budget: rows
+                                .filter((project) => getYearLabel(project) === year && isPolicyUnitPiProject(project))
+                                .reduce((sum, project) => sum + getBudget(project), 0),
+                        }))
+                        .filter((item) => item.budget > 0);
+
+                    if (!yearBudgets.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    clearEmptyChartState(canvas);
+                    const labels = yearBudgets.map((item) => item.year);
+                    const values = yearBudgets.map((item) => item.budget);
+
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'งบประมาณรวมของโครงการที่หน่วยวิจัยฯ เป็น PI หลัก',
+                                data: values,
+                                backgroundColor: gradient('chartBudgetByPi', 'rgba(124,58,237,0.9)', 'rgba(99,102,241,0.38)'),
+                                borderColor: '#7c3aed',
+                                borderWidth: 1.5,
+                                borderRadius: 8,
+                                maxBarThickness: 42,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 350
+                            },
+                            layout: {
+                                padding: {
+                                    top: 24
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ` ${fmtMoney.format(ctx.raw || 0)} บาท`,
+                                        footer: (items) => {
+                                            const v = Number(items?.[0]?.parsed?.y ?? 0);
+                                            return `ประมาณ ${formatThaiMoney(v)}`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grace: '14%',
+                                    ticks: {
+                                        callback: (value) => `${(Number(value) / 1_000_000).toLocaleString('th-TH', { maximumFractionDigits: 0 })} ล.`
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'ล้านบาท'
+                                    },
+                                    grid: {
+                                        color: 'rgba(148,163,184,0.2)'
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [createBarValueLabelPlugin((v) => formatThaiMoney(v), { minValue: 0 })]
                     });
                 }
 
@@ -9709,6 +10071,7 @@
                     renderProjectsPerYear(rows);
                     renderFundingSplit(rows);
                     renderBudgetPerYear(rows);
+                    renderBudgetByPi(rows);
                     renderOutputStackedFiltered(rows);
                     renderFundingSourceYearChartsFiltered(rows);
                     renderPublicationPerYearFiltered(rows);

@@ -2889,7 +2889,6 @@ class OutputController extends Controller
         $impactOutputItems = $impactCodes->mapWithKeys(function ($code) use ($impactRows, $sortRowsNewestFirst, $eaFullNameMap) {
             return [
                 $code => $sortRowsNewestFirst($impactRows->where('type_code', $code)->values())
-                    ->take(8)
                     ->map(fn ($row) => (object) [
                         'title' => trim((string) ($row->title ?? '')) ?: '-',
                         'reference' => trim((string) ($row->reference ?? '')) ?: '-',

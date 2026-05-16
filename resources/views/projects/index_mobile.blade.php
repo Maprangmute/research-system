@@ -636,7 +636,7 @@
                         $updated = $project->updated_at ? \Carbon\Carbon::parse($project->updated_at) : null;
                     @endphp
                     <div class="lux-mobile-card space-y-2"
-                        data-mobile-search-text="{{ trim(implode(' ', array_filter([$project->project_code, $project->project_name_th, $project->theme, $project->project_type, $project->funding_type, $project->planning_status, $project->start_year, $relatedPersonNames]))) }}">
+                        data-mobile-search-text="{{ trim(implode(' ', array_filter([$project->project_code, $project->project_name_th, $project->project_name_en, $project->theme, $project->project_type, $project->funding_type, $project->planning_status, $project->start_year, $relatedPersonNames]))) }}">
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
                                 <div class="text-xs text-slate-500">{{ $project->project_code }}</div>
@@ -997,10 +997,6 @@
             let drawerOpen = false;
             let previousBodyOverflow = '';
             let isSearchComposing = false;
-            const countEl = document.querySelector(countSelector);
-            const paginationWrap = document.querySelector(paginationSelector);
-            const emptySearchEl = document.getElementById('project-mobile-empty-search');
-            const baseMobileCountText = countEl ? countEl.textContent.trim() : '';
 
             const currentUrl = new URL(window.location.href);
             const forcedView = currentUrl.searchParams.get('view');
@@ -1073,11 +1069,6 @@
 
                 syncFilterDropdownLabels(root);
             };
-            const normalizeSearchTerm = (value) => String(value || '')
-                .toLowerCase()
-                .replace(/\s+/g, ' ')
-                .trim();
-
             const setFieldValue = (field, value) => {
                 if (!field) return;
                 if (field.type === 'checkbox') {
@@ -1109,36 +1100,6 @@
                 const shell = document.querySelector(shellSelector);
                 if (shell) {
                     shell.classList.toggle('opacity-60', isLoading);
-                }
-            };
-
-            const applyLocalSearchPreview = (rawValue) => {
-                const shell = document.querySelector(shellSelector);
-                if (!shell) return;
-
-                const cards = queryAll('.lux-mobile-card', shell);
-                if (!cards.length) return;
-
-                const term = normalizeSearchTerm(rawValue);
-                let visibleCount = 0;
-                cards.forEach((card) => {
-                    const haystack = card.dataset.mobileSearchText || normalizeSearchTerm(card.textContent);
-                    card.dataset.mobileSearchText = haystack;
-                    const matched = term === '' || haystack.includes(term);
-                    card.classList.toggle('hidden', !matched);
-                    if (matched) visibleCount += 1;
-                });
-
-                if (emptySearchEl) {
-                    emptySearchEl.classList.toggle('hidden', !(term !== '' && visibleCount === 0));
-                }
-
-                if (paginationWrap) {
-                    paginationWrap.classList.toggle('hidden', term !== '');
-                }
-
-                if (countEl) {
-                    countEl.textContent = term === '' ? baseMobileCountText : `พบ ${visibleCount} รายการในหน้านี้`;
                 }
             };
 
@@ -1286,6 +1247,37 @@
                 syncFilterDropdownLabels();
             };
 
+            const captureActiveSearchInput = () => {
+                const active = document.activeElement;
+                if (!(active instanceof HTMLInputElement) || active.name !== 'search') return null;
+                return {
+                    id: active.id,
+                    value: active.value,
+                    selectionStart: active.selectionStart,
+                    selectionEnd: active.selectionEnd,
+                };
+            };
+
+            const restoreActiveSearchInput = (snapshot) => {
+                if (!snapshot) return;
+                [searchInput, drawerSearchInput].forEach((field) => {
+                    if (field) field.value = snapshot.value || '';
+                });
+                const primarySearchField = filterForm.querySelector('input[name="search"]');
+                if (primarySearchField) {
+                    primarySearchField.value = snapshot.value || '';
+                }
+                syncSearchFormState();
+
+                const active = snapshot.id ? document.getElementById(snapshot.id) : null;
+                if (active instanceof HTMLInputElement && active.name === 'search') {
+                    active.focus({ preventScroll: true });
+                    if (Number.isInteger(snapshot.selectionStart) && Number.isInteger(snapshot.selectionEnd)) {
+                        active.setSelectionRange(snapshot.selectionStart, snapshot.selectionEnd);
+                    }
+                }
+            };
+
             const buildUrlFromForms = (resetPage = true) => {
                 syncSearchFormState();
                 const url = new URL(filterForm.action, window.location.origin);
@@ -1376,6 +1368,8 @@
                 controller = new AbortController();
                 if (!silent) {
                     setLoading(true);
+                } else {
+                    setLoading(false);
                 }
 
                 try {
@@ -1405,14 +1399,14 @@
                         }, '', `${url.pathname}${url.search}`);
                     }
 
+                    const activeSearchSnapshot = captureActiveSearchInput();
                     applyUrlToForms(url);
+                    restoreActiveSearchInput(activeSearchSnapshot);
                     syncFabVisibility();
 
                     if (scrollToTop) {
                         scrollToResultsTop();
                     }
-
-                    applyLocalSearchPreview(searchInput?.value || '');
                 } catch (error) {
                     if (error.name !== 'AbortError') {
                         console.error(error);
@@ -1461,19 +1455,17 @@
 
             searchInput.addEventListener('input', () => {
                 if (isSearchComposing) return;
+                if (controller) controller.abort();
                 applySearchValue(searchInput.value || '', searchInput);
-                applyLocalSearchPreview(searchInput.value || '');
                 syncSearchFormState();
-                syncFilterFormsFromSource(filterForm);
-                fetchAndRender(buildUrlFromForms(true), {
-                    updateUrl: true
-                });
+                updateFilterBadges();
+                fetchDebounced(300, true);
             });
             searchInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
+                    if (timer) clearTimeout(timer);
                     applySearchValue(searchInput.value || '', searchInput);
-                    applyLocalSearchPreview(searchInput.value || '');
                     syncSearchFormState();
                     syncFilterFormsFromSource(filterForm);
                     fetchAndRender(buildUrlFromForms(true), {
@@ -1486,30 +1478,27 @@
             });
             searchInput.addEventListener('compositionend', () => {
                 isSearchComposing = false;
+                if (controller) controller.abort();
                 applySearchValue(searchInput.value || '', searchInput);
-                applyLocalSearchPreview(searchInput.value || '');
                 syncSearchFormState();
-                syncFilterFormsFromSource(filterForm);
-                fetchAndRender(buildUrlFromForms(true), {
-                    updateUrl: true
-                });
+                updateFilterBadges();
+                fetchDebounced(300, true);
             });
 
             if (drawerSearchInput) {
                 drawerSearchInput.addEventListener('input', () => {
                     if (isSearchComposing) return;
+                    if (controller) controller.abort();
                     applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
-                    applyLocalSearchPreview(drawerSearchInput.value || '');
-                    syncFilterFormsFromSource(drawerForm);
-                    fetchAndRender(buildUrlFromForms(true), {
-                        updateUrl: true
-                    });
+                    syncSearchFormState();
+                    updateFilterBadges();
+                    fetchDebounced(300, true);
                 });
                 drawerSearchInput.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter') {
                         event.preventDefault();
+                        if (timer) clearTimeout(timer);
                         applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
-                        applyLocalSearchPreview(drawerSearchInput.value || '');
                         syncFilterFormsFromSource(drawerForm);
                         fetchAndRender(buildUrlFromForms(true), {
                             updateUrl: true
@@ -1521,12 +1510,11 @@
                 });
                 drawerSearchInput.addEventListener('compositionend', () => {
                     isSearchComposing = false;
+                    if (controller) controller.abort();
                     applySearchValue(drawerSearchInput.value || '', drawerSearchInput);
-                    applyLocalSearchPreview(drawerSearchInput.value || '');
-                    syncFilterFormsFromSource(drawerForm);
-                    fetchAndRender(buildUrlFromForms(true), {
-                        updateUrl: true
-                    });
+                    syncSearchFormState();
+                    updateFilterBadges();
+                    fetchDebounced(300, true);
                 });
             }
 
@@ -1644,7 +1632,6 @@
 
             initFilterDropdowns();
             applyUrlToForms(currentUrl);
-            applyLocalSearchPreview(searchInput?.value || '');
             syncFabVisibility();
         })();
     </script>
