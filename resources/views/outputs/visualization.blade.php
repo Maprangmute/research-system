@@ -5222,20 +5222,20 @@
                             โครงการและผลงาน Siriraj Health Policy สามารถสร้างและใช้ประโยชน์จากบริบทศิริราช เพื่อขับเคลื่อนการตัดสินใจเชิงนโยบายได้มากเพียงใด
                         </h2>
                         <p class="mt-4 max-w-none text-base leading-relaxed text-slate-600 md:text-lg">
-                            Policy-Relevant Decision-Making = การทำงานร่วมกันของคนในหน่วยวิจัยฯ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลในโครงการเดียวกัน + หลักฐานเชิงระบบ + ผลงานที่ต่อยอดสู่ policy/practice impact
+                            Policy-Relevant Decision-Making = (Clinical Insight + Epidemiological Evidence + Economic Value) × Communication = Policy Impact
                         </p>
                         <div class="mt-4 grid gap-3 md:grid-cols-3">
                             <div class="rounded-2xl border border-indigo-100 bg-white/80 px-4 py-3">
                                 <div class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Trust (Credibility)</div>
-                                <div class="mt-1 text-sm leading-relaxed text-slate-700">โครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ร่วมกัน</div>
+                                <div class="mt-1 text-sm leading-relaxed text-slate-700">Clinical Relevance (Siriraj, Real-world)</div>
                             </div>
                             <div class="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3">
                                 <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Truth (Validation)</div>
-                                <div class="mt-1 text-sm leading-relaxed text-slate-700">โครงการร่วมสองกลุ่มที่อยู่ในประเด็น Health Policy / Health System</div>
+                                <div class="mt-1 text-sm leading-relaxed text-slate-700">System Analysis / Epidemiology + Health Economics (HTA)</div>
                             </div>
                             <div class="rounded-2xl border border-orange-100 bg-white/80 px-4 py-3">
                                 <div class="text-xs font-semibold uppercase tracking-wide text-orange-700">Translation (Impact)</div>
-                                <div class="mt-1 text-sm leading-relaxed text-slate-700">ผลงานที่ต่อยอดไปสู่ policy, practice หรือระบบสุขภาพ</div>
+                                <div class="mt-1 text-sm leading-relaxed text-slate-700">Strategic Communication (to policy & practice)</div>
                             </div>
                         </div>
                     </div>
@@ -5244,8 +5244,8 @@
                 <div class="policy-axis-card mt-4">
                         <div class="policy-section-title">
                             <div>
-                            <h3 class="text-base font-semibold text-slate-900">Trend of Policy-Relevant Decision-Making</h3>
-                            <p class="mt-1 text-sm text-slate-600">Credibility และ Validation นับเฉพาะโครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ อยู่ในโครงการเดียวกัน ส่วน Impact นับจากผลงานที่เชื่อมกับ policy หรือ practice change</p>
+                            <h3 class="text-base font-semibold text-slate-900">Trend of our work toward Policy-Relevant Decision-Making</h3>
+                            <p class="mt-1 text-sm text-slate-600">แนวโน้มของโครงการต่างๆ ว่าสามารถเชื่อม Clinical Insight ผ่านกระบวนการสร้าง Evidence และไปถึง communication และ policy impact แค่ไหน</p>
                         </div>
                         <span class="policy-pill">แสดงเป็นจำนวนต่อปี</span>
                     </div>
@@ -5386,7 +5386,7 @@
                         <div class="hidden contribution-card">
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <div class="text-sm font-semibold text-slate-900">โครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม</div>
+                                    <div class="text-sm font-semibold text-slate-900">แพทย์ศิริราชที่ร่วมในกลุ่มโครงการ</div>
                                     <div class="mt-1 max-w-3xl text-xs leading-relaxed text-slate-500">ตัวเลขการ์ดเป็นยอดรวมแบบไม่ซ้ำทั้งช่วงที่เลือก ส่วนกราฟด้านล่างแสดงแนวโน้มรายปีโดยนับไม่ซ้ำแยกปีต่อปี</div>
                                 </div>
                                 <span class="policy-pill">{{ $expertTrendRows->first()?->year ?: '-' }} - {{ $expertTrendRows->last()?->year ?: '-' }}</span>
@@ -5398,7 +5398,7 @@
                                     <div class="mt-1 text-[11px] text-slate-500">รวมทั้งช่วงที่เลือกแบบไม่ซ้ำ</div>
                                 </div>
                                 <div class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-3">
-                                    <div class="text-xs font-semibold text-amber-700">โครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม</div>
+                                    <div class="text-xs font-semibold text-amber-700">โครงการที่มีแพทย์ศิริราชร่วม</div>
                                     <div class="metric mt-1 text-2xl font-semibold text-slate-900">{{ number_format($expertTrendTotalProjects) }} โครงการ</div>
                                     <div class="mt-1 text-[11px] text-slate-500">รวมทั้งช่วงที่เลือกแบบไม่ซ้ำ</div>
                                 </div>
@@ -5415,10 +5415,10 @@
                                 $expertPeopleTrendShape = $trendShape($expertTrendSummaryRows->pluck('people'));
                                 $expertProjectTrendShape = $trendShape($expertTrendSummaryRows->pluck('projects'));
                                 $expertClinicalInterpretation = str_contains($expertPeopleTrendShape, 'เพิ่ม')
-                                    ? 'ข้อมูลสะท้อนว่าโครงการร่วมสองกลุ่มมีฐานผู้ร่วมจากฝั่ง clinical มากขึ้น ทำให้การอ่าน evidence เชื่อมกับโจทย์บริการจริงได้ชัดขึ้น'
+                                    ? 'ข้อมูลสะท้อนว่ากลุ่มโครงการมีฐานผู้ร่วมจากฝั่ง clinical มากขึ้น ทำให้การอ่าน evidence เชื่อมกับโจทย์บริการจริงได้ชัดขึ้น'
                                     : (str_contains($expertPeopleTrendShape, 'ลด')
-                                        ? 'ข้อมูลสะท้อนว่าฐานผู้ร่วมจากฝั่ง clinical ในโครงการร่วมสองกลุ่มลดลงเมื่อเทียบกับช่วงต้นข้อมูล จึงควรดูต่อว่าการลดลงมาจากข้อมูลยังไม่ครบหรือจากจำนวนโครงการที่ลดลงจริง'
-                                        : 'ข้อมูลยังไม่ชี้การเปลี่ยนแปลงของฐานผู้ร่วมจากฝั่ง clinical ในโครงการร่วมสองกลุ่มอย่างชัดเจน จึงควรอ่านประกอบกับจำนวนโครงการและประเภท output');
+                                        ? 'ข้อมูลสะท้อนว่าฐานผู้ร่วมจากฝั่ง clinical ลดลงเมื่อเทียบกับช่วงต้นข้อมูล จึงควรดูต่อว่าการลดลงมาจากข้อมูลยังไม่ครบหรือจากจำนวนโครงการที่ลดลงจริง'
+                                        : 'ข้อมูลยังไม่ชี้การเปลี่ยนแปลงของฐานผู้ร่วมจากฝั่ง clinical อย่างชัดเจน จึงควรอ่านประกอบกับจำนวนโครงการและประเภท output');
                             @endphp
                             @if ($expertTrendRows->isNotEmpty())
                                 <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
@@ -5426,7 +5426,7 @@
                                         <div class="flex flex-wrap items-center justify-between gap-3">
                                             <div>
                                                 <div class="text-sm font-semibold text-slate-900">Trend ตามปี</div>
-                                                <div class="mt-1 text-xs text-slate-500">แพทย์ศิริราชและโครงการร่วมสองกลุ่ม นับไม่ซ้ำแยกปีต่อปี</div>
+                                                <div class="mt-1 text-xs text-slate-500">แพทย์ศิริราชและโครงการที่มีแพทย์ศิริราชร่วม นับไม่ซ้ำแยกปีต่อปี</div>
                                             </div>
                                             <span class="policy-pill">{{ $expertTrendRows->first()?->year }} - {{ $expertTrendRows->last()?->year }}</span>
                                         </div>
@@ -5440,13 +5440,13 @@
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
                                                 <div class="text-[11px] font-semibold text-indigo-700">เกิดอะไรขึ้น</div>
                                                 <div class="mt-1 text-sm font-semibold leading-relaxed text-slate-900">
-                                                    ปี {{ $expertTrendFirst?->year }} - {{ $expertTrendLast?->year }} แพทย์ศิริราชที่อยู่ในโครงการร่วมสองกลุ่ม {{ $expertPeopleTrendShape }} จาก {{ number_format((int) ($expertTrendFirst?->people ?? 0)) }} เป็น {{ number_format((int) ($expertTrendLast?->people ?? 0)) }} คน
+                                                    ปี {{ $expertTrendFirst?->year }} - {{ $expertTrendLast?->year }} แพทย์ศิริราชที่ร่วมในกลุ่มโครงการ {{ $expertPeopleTrendShape }} จาก {{ number_format((int) ($expertTrendFirst?->people ?? 0)) }} เป็น {{ number_format((int) ($expertTrendLast?->people ?? 0)) }} คน
                                                 </div>
                                             </div>
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
                                                 <div class="text-[11px] font-semibold text-indigo-700">แปลว่าอะไร</div>
                                                 <div class="mt-1 text-sm leading-relaxed text-slate-700">
-                                                    จำนวนโครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม {{ $expertProjectTrendShape }} ในช่วงเดียวกัน จึงควรอ่านจำนวนคนและจำนวนโครงการควบคู่กัน ไม่ใช่อ่านจากจำนวนคนเพียงอย่างเดียว
+                                                    จำนวนโครงการที่มีแพทย์ศิริราชร่วม {{ $expertProjectTrendShape }} ในช่วงเดียวกัน จึงควรอ่านจำนวนคนและจำนวนโครงการควบคู่กัน ไม่ใช่อ่านจากจำนวนคนเพียงอย่างเดียว
                                                 </div>
                                             </div>
                                             <div class="rounded-xl bg-white/85 px-3 py-3">
@@ -5667,10 +5667,10 @@
                                     <div class="flex w-full flex-wrap items-start justify-between gap-4">
                                         <div class="min-w-0 flex-1">
                                             <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Validation</div>
-                                            <div class="mt-1 text-xl font-semibold text-slate-900">Trends in same-project collaboration for research-to-policy work</div>
-                                            <div class="mt-2 w-full whitespace-pre-line text-sm leading-relaxed text-slate-700">แนวโน้มโครงการที่มีทั้งคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ทำงานร่วมกันด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health System)
+                                            <div class="mt-1 text-xl font-semibold text-slate-900">Trends in Siriraj health professionals’ interest in research-to-policy work</div>
+                                            <div class="mt-2 w-full whitespace-pre-line text-sm leading-relaxed text-slate-700">แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health Sytem)
 
-จำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย โดยต้องมีทั้งสองกลุ่มเป็นส่วนร่วมในโครงการเดียวกัน และแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย
+จำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย ที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์)  เข้ามาเป็นส่วนร่วม โดยแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย
 Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Technical Cohorts</div>
                                             <div class="mt-4 w-full text-sm italic leading-relaxed text-slate-500">*Theme/เนื้อหา Rational Drug Use (RDU) และ Global Health อาจยังถูกมองเป็น Operational project ภายในคณะแพทยศาสตร์ศิริราชพยาบาล  มากกว่า Research model จึงยังไม่ถูกรวมในการวิเคราะห์</div>
                                         </div>
@@ -5778,8 +5778,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                                         <div class="flex flex-wrap items-center justify-between gap-3">
                                             <div>
-                                                <div class="text-sm font-semibold text-slate-900">Trend โครงการร่วมสองกลุ่มในกลุ่มเนื้อหา Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE) ตามปี</div>
-                                                <div class="mt-1 text-xs text-slate-500">แนวโน้มโครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลร่วมกันในประเด็น Health Policy / Health System</div>
+                                                <div class="text-sm font-semibold text-slate-900">Trend กลุ่มเนื้อหา Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE) ตามปี</div>
+                                                <div class="mt-1 text-xs text-slate-500">แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health Sytem)</div>
                                             </div>
                                             <span class="policy-pill">Ageing and Frailty / Health Systems and HTA / Real-World Evidence (RWE)</span>
                                         </div>
@@ -7941,8 +7941,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
 
             const frameworkTrendLabels = safeLabels(policyFrameworkTrendYears);
             const frameworkTrendMeta = {
-                trust: 'Credibility (ร่วมสองกลุ่ม)',
-                truth: 'Validation (ร่วมสองกลุ่ม)',
+                trust: 'Credibility',
+                truth: 'Validation',
                 policy_impact: 'Impact',
                 clinical_led: 'กลุ่มเนื้อหา Ageing and Frailty, Health Systems and HTA และ Real-World Evidence (RWE)'
             };
@@ -8325,8 +8325,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 if (!frameworkModal || !frameworkModalBody) return;
                 frameworkModalTone = frameworkToneStyles[datasetKey] || frameworkToneStyles.trust;
                 frameworkModalTitle.textContent = frameworkTrendMeta[datasetKey] || 'รายการ';
-                const datasetNote = ['trust', 'truth'].includes(datasetKey) ? 'โครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ในโครงการเดียวกัน' : 'ผลงานที่เชื่อม policy หรือ practice change';
-                frameworkModalSubtitle.innerHTML = `<span class="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} ${escapeFrameworkHtml(frameworkTrendUnits[datasetKey] || 'รายการ')}</span><span class="text-sm font-medium text-slate-500">${escapeFrameworkHtml(datasetNote)}</span></span>`;
+                frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} ${escapeFrameworkHtml(frameworkTrendUnits[datasetKey] || 'รายการ')}</span></span>`;
                 setFrameworkModalItems(items, frameworkTrendUnits[datasetKey] || 'รายการ', { year: String(year || '') });
                 showFrameworkModal();
             };
@@ -8436,7 +8435,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             fill: true
                         },
                         {
-                            label: 'โครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม',
+                            label: 'โครงการที่มีแพทย์ศิริราชร่วม',
                             data: sirirajClinicalProjects,
                             borderColor: '#d97706',
                             backgroundColor: 'rgba(217, 119, 6, .10)',
@@ -8486,7 +8485,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         const point = elements[0];
                         const year = chart.data.labels?.[point.index];
                         const items = normalizeFrameworkItems(sirirajClinicalTrendItems?.[String(year)]);
-                        openOutputItemsModal(items, 'โครงการร่วมสองกลุ่มที่มีแพทย์ศิริราชร่วม', 'โครงการ', { year: String(year || '') }, frameworkToneStyles.truth);
+                        openOutputItemsModal(items, 'แพทย์ศิริราชที่ร่วมในกลุ่มโครงการ', 'โครงการ', { year: String(year || '') }, frameworkToneStyles.truth);
                     }
                 }
             });
@@ -8512,7 +8511,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     ? frameworkToneStyles.clinical_rwe
                     : (themeKey === 'hta' ? frameworkToneStyles.clinical_hta : frameworkToneStyles.clinical_ageing);
                 frameworkModalTitle.textContent = themeLabel;
-                frameworkModalSubtitle.innerHTML = `<span class="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} โครงการร่วมสองกลุ่ม</span><span class="text-sm font-medium text-slate-500">มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ในโครงการเดียวกัน</span></span>`;
+                frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} โครงการ</span></span>`;
                 setFrameworkModalItems(items, 'โครงการ', { year: String(year || ''), theme: themeLabel });
                 showFrameworkModal();
             };

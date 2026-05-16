@@ -1246,7 +1246,7 @@
 
     <!-- ✅ main ก็ใช้ container เช่นกัน -->
     @php
-        $isFullWidthPage = request()->routeIs('users.index') || request()->routeIs('outputs.visualization');
+        $isFullWidthPage = request()->routeIs('users.index') || request()->routeIs('outputs.visualization') || request()->routeIs('dashboard');
     @endphp
     <main class="{{ $isModalView ? 'pt-4 pb-4' : 'pt-24 pb-6' }} {{ $isFullWidthPage ? 'w-full px-0' : 'container mx-auto px-4' }}">
         @if (isset($header))

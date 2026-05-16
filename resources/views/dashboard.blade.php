@@ -702,6 +702,178 @@
             max-width: 100%;
         }
 
+        .dashboard-author-card {
+            background:
+                linear-gradient(135deg, rgba(15, 118, 110, 0.06), rgba(255, 255, 255, 0) 34%),
+                linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        .dashboard-author-stage {
+            border: 1px solid rgba(203, 213, 225, 0.9);
+            border-radius: 20px;
+            background:
+                radial-gradient(circle at top right, rgba(20, 184, 166, 0.14), transparent 34%),
+                #ffffff;
+            padding: clamp(1rem, 2vw, 1.4rem);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .dashboard-author-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .dashboard-author-metric {
+            border: 1px solid rgba(203, 213, 225, 0.9);
+            border-radius: 16px;
+            background: rgba(248, 250, 252, 0.84);
+            padding: 0.8rem 0.95rem;
+        }
+
+        .dashboard-author-metric span {
+            display: block;
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .dashboard-author-metric strong {
+            display: block;
+            margin-top: 0.18rem;
+            color: #0f172a;
+            font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+            line-height: 1.1;
+        }
+
+        .dashboard-author-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            margin-bottom: 0.95rem;
+            color: #475569;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .dashboard-author-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .dashboard-author-legend i {
+            width: 0.9rem;
+            height: 0.9rem;
+            border-radius: 999px;
+            display: inline-block;
+        }
+
+        .dashboard-author-list {
+            display: grid;
+            gap: 0.72rem;
+        }
+
+        .dashboard-author-row {
+            display: grid;
+            grid-template-columns: minmax(12rem, 0.38fr) minmax(0, 1fr) 3.5rem;
+            gap: 0.9rem;
+            align-items: center;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.86);
+            padding: 0.72rem 0.8rem;
+        }
+
+        .dashboard-author-name {
+            min-width: 0;
+            color: #0f172a;
+            font-size: 0.9rem;
+            font-weight: 800;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dashboard-author-stack {
+            position: relative;
+            min-width: 0;
+            height: 2.1rem;
+            border-radius: 999px;
+            background: #e2e8f0;
+            overflow: hidden;
+            display: flex;
+            box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
+        }
+
+        .dashboard-author-segment {
+            min-width: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 0.76rem;
+            font-weight: 800;
+            text-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+        }
+
+        .dashboard-author-segment.is-first {
+            background: #e45050;
+        }
+
+        .dashboard-author-segment.is-co {
+            background: #d9bd45;
+            color: #1f2937;
+            text-shadow: none;
+        }
+
+        .dashboard-author-segment.is-corresponding {
+            background: #82d94a;
+            color: #16381f;
+            text-shadow: none;
+        }
+
+        .dashboard-author-total {
+            justify-self: end;
+            min-width: 2.7rem;
+            border-radius: 999px;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 0.35rem 0.65rem;
+            text-align: center;
+            font-weight: 900;
+        }
+
+        .dashboard-author-empty {
+            border: 1px dashed rgba(148, 163, 184, 0.75);
+            border-radius: 16px;
+            padding: 1.25rem;
+            color: #64748b;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        @media (max-width: 720px) {
+            .dashboard-author-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-author-row {
+                grid-template-columns: 1fr;
+                gap: 0.55rem;
+            }
+
+            .dashboard-author-name {
+                white-space: normal;
+            }
+
+            .dashboard-author-total {
+                justify-self: start;
+            }
+        }
+
         @media (min-width: 1800px) {
             .dashboard-chart-overview {
                 grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -1439,14 +1611,19 @@
                     <canvas id="chartBudgetByPi" height="360"></canvas>
                 </div>
 
+                <div class="lux-chart-card dashboard-chart-full bg-white shadow-sm border rounded-xl p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">💰 งบประมาณที่ได้รับแบ่งจากรายชื่อผู้วิจัยหลัก (PI / Co-PI)</h3>
+                    <canvas id="chartBudgetByInvestigator" height="460"></canvas>
+                </div>
+
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏦 สัดส่วนทุนภายนอกที่ได้รับตามแหล่งทุน</h3>
-                    <canvas id="chartExternalBySource" height="250"></canvas>
+                    <canvas id="chartExternalBySource" height="380"></canvas>
                 </div>
 
                 <div class="lux-chart-card bg-white shadow-sm border rounded-xl p-4">
                 <h3 class="text-sm font-semibold text-gray-700 mb-3">🏛️ สัดส่วนทุนภายในที่ได้รับตามแหล่งทุน</h3>
-                    <canvas id="chartInternalBySource" height="250"></canvas>
+                    <canvas id="chartInternalBySource" height="380"></canvas>
                 </div>
 
                 <div class="lux-chart-card dashboard-wide-chart bg-white shadow-sm border rounded-xl p-4">
@@ -1471,8 +1648,8 @@
                     <canvas id="chartPublicationPerYear" height="280"></canvas>
                 </div>
 
-                <div class="lux-chart-card dashboard-wide-chart bg-white shadow-sm border rounded-xl p-4 mt-6">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">✍️ บทบาทผู้เขียน (First/Co/Corresponding) รายปี</h3>
+                <div class="lux-chart-card dashboard-wide-chart dashboard-author-card bg-white shadow-sm border rounded-xl p-4 mt-6">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">✍️ บทบาทผู้เขียนผลงานวิชาการรายปี (First Author / Co-author / Corresponding Author)</h3>
                     <div class="dashboard-author-tools flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-3">
                         <div class="flex items-center gap-2">
                             <label class="text-xs text-gray-500">ปี (พ.ศ.):
@@ -1496,7 +1673,7 @@
                             </label>
                         </div>
                     </div>
-                    <canvas id="chartAuthorRolePerYear" height="320"></canvas>
+                    <div id="dashboardAuthorRoleBoard" class="dashboard-author-stage"></div>
                 </div>
 
 
@@ -3472,7 +3649,7 @@
                 if (yearRaw === labelStr) return true;
                 const ce = yearCE(yearRaw);
                 if (ce && (String(ce) === labelStr || yearLabelTH(ce) === labelStr)) return true;
-                return labelStr === 'ไม่ระบุ' && !yearRaw;
+                return (labelStr === 'ไม่ระบุ' || labelStr === 'ไม่ระบุปี') && !yearRaw;
             }
 
             function matchFundingYearLabel(p, label) {
@@ -3512,6 +3689,39 @@
                         normalized.includes('policy-driven health')
                     );
                 });
+            }
+
+            function isPolicyUnitText(value) {
+                const normalized = String(value || '')
+                    .replace(/\s+/g, ' ')
+                    .replace(/[()]/g, ' ')
+                    .trim()
+                    .toLowerCase();
+
+                return (normalized.includes('ภายในหน่วยวิจัย') && normalized.includes('สุขภา'))
+                    || normalized.includes('หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ')
+                    || normalized.includes('siriraj health policy')
+                    || normalized.includes('policy-driven health');
+            }
+
+            function isPolicyUnitPiProject(project) {
+                if (typeof isPiInPolicyUnit === 'function') {
+                    return isPiInPolicyUnit(project);
+                }
+                return [
+                    project?.project_list,
+                    project?.pi_affiliation,
+                    project?.unit_name,
+                    project?.department,
+                ].some(isPolicyUnitText);
+            }
+
+            function isPolicyUnitCopi(copi) {
+                return [
+                    copi?.affiliation,
+                    copi?.unit_status,
+                    copi?.person_type,
+                ].some(isPolicyUnitText);
             }
 
             function getFilteredProjects() {
@@ -3744,6 +3954,28 @@
                     };
                 }
 
+                if (id === 'chartBudgetByInvestigator') {
+                    const name = String(chart?.$investigatorLabels?.[point.index] ?? label ?? '').trim();
+                    const role = String(datasetLabel ?? '').trim();
+                    return {
+                        title: `งบประมาณของ ${name} (${role || 'PI / Co-PI'})`,
+                        projects: projects.filter((p) => {
+                            if (getBudget(p) <= 0) return false;
+                            if (role === 'PI') {
+                                return isPolicyUnitPiProject(p) && String(p?.pi_name ?? '').trim() === name;
+                            }
+                            if (role === 'Co-PI') {
+                                return (Array.isArray(p?.copis) ? p.copis : [])
+                                    .some((copi) => isPolicyUnitCopi(copi) && String(copi?.name ?? '').trim() === name);
+                            }
+                            return (isPolicyUnitPiProject(p) && String(p?.pi_name ?? '').trim() === name)
+                                || (Array.isArray(p?.copis) ? p.copis : [])
+                                    .some((copi) => isPolicyUnitCopi(copi) && String(copi?.name ?? '').trim() === name);
+                        }),
+                        includeFunding: true
+                    };
+                }
+
                 if (id === 'chartExternalBySource') {
                     const groups = window.fundingSourceGroups?.external;
                     if (label === 'อื่นๆ' && groups?.others?.length) {
@@ -3972,10 +4204,58 @@
 
             function handleChartClick(evt, chart) {
                 const isYearlyLifecycle = chart?.canvas?.id === 'chartYearlyNewVsTotal';
+                const isBudgetByInvestigator = chart?.canvas?.id === 'chartBudgetByInvestigator';
                 let points = chart.getElementsAtEventForMode(evt, 'nearest', {
                     intersect: true,
                     axis: 'xy'
                 }, true);
+                if ((!points || !points.length) && isBudgetByInvestigator) {
+                    points = chart.getElementsAtEventForMode(evt, 'index', {
+                        intersect: false,
+                        axis: 'y'
+                    }, true);
+                }
+                if ((!points || !points.length) && isBudgetByInvestigator) {
+                    const px = Number(evt?.offsetX ?? evt?.x);
+                    const py = Number(evt?.offsetY ?? evt?.y);
+                    let bestPoint = null;
+                    let bestScore = Number.POSITIVE_INFINITY;
+
+                    if (Number.isFinite(px) && Number.isFinite(py)) {
+                        chart.data.datasets.forEach((dataset, datasetIndex) => {
+                            if (!chart.isDatasetVisible(datasetIndex)) return;
+                            const meta = chart.getDatasetMeta(datasetIndex);
+                            meta?.data?.forEach((bar, index) => {
+                                const value = Number(dataset.data?.[index] || 0);
+                                if (!(value > 0) || !bar) return;
+
+                                const y = Number(bar.y);
+                                const height = Number(bar.height || 28);
+                                const base = Number(bar.base ?? 0);
+                                const end = Number(bar.x ?? 0);
+                                if (!Number.isFinite(y) || !Number.isFinite(base) || !Number.isFinite(end)) return;
+
+                                const distanceY = Math.abs(py - y);
+                                const maxDistanceY = Math.max(18, (height / 2) + 8);
+                                if (distanceY > maxDistanceY) return;
+
+                                const minX = Math.min(base, end) - 10;
+                                const maxX = Math.max(base, end) + 90;
+                                const inSegmentX = px >= minX && px <= maxX;
+                                const score = distanceY + (inSegmentX ? 0 : 24);
+
+                                if (score < bestScore) {
+                                    bestScore = score;
+                                    bestPoint = { datasetIndex, index };
+                                }
+                            });
+                        });
+                    }
+
+                    if (bestPoint) {
+                        points = [bestPoint];
+                    }
+                }
                 if ((!points || !points.length) && isYearlyLifecycle) {
                     points = chart.getElementsAtEventForMode(evt, 'index', {
                         intersect: false,
@@ -5193,15 +5473,7 @@
                             const meta = chart.getDatasetMeta(0);
                             if (!dataset || !meta?.data?.length) return;
 
-                            const {
-                                ctx,
-                                chartArea: {
-                                    left,
-                                    right,
-                                    top,
-                                    bottom
-                                }
-                            } = chart;
+                            const { ctx, chartArea: { left, right, top, bottom } } = chart;
 
                             ctx.save();
                             ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
@@ -5210,9 +5482,9 @@
                             ctx.lineWidth = 1;
                             ctx.textBaseline = 'middle';
 
-                            meta.data.forEach((arc, i) => {
+                            const callouts = meta.data.map((arc, i) => {
                                 const value = Number(dataset.data?.[i] || 0);
-                                if (!(value > 0)) return;
+                                if (!(value > 0)) return null;
 
                                 const labelText = `${value} (${formatThaiMoney(budgets[i] || 0)})`;
                                 const textWidth = ctx.measureText(labelText).width;
@@ -5222,29 +5494,47 @@
                                 const sx = arc.x + Math.cos(angle) * (arc.outerRadius - 1);
                                 const sy = arc.y + Math.sin(angle) * (arc.outerRadius - 1);
                                 const mx = arc.x + Math.cos(angle) * (arc.outerRadius + 10);
-                                let my = arc.y + Math.sin(angle) * (arc.outerRadius + 10);
-                                let tx = mx + (isRight ? 12 : -12);
+                                const my = arc.y + Math.sin(angle) * (arc.outerRadius + 10);
 
+                                return { labelText, textWidth, side: isRight ? 'right' : 'left', sx, sy, mx, targetY: my, y: my };
+                            }).filter(Boolean);
+
+                            ['left', 'right'].forEach((side) => {
+                                const items = callouts.filter((item) => item.side === side).sort((a, b) => a.targetY - b.targetY);
+                                const minGap = 18;
+                                let cursor = top + 12;
+                                items.forEach((item) => {
+                                    item.y = Math.max(Math.min(item.targetY, bottom - 12), cursor);
+                                    cursor = item.y + minGap;
+                                });
+                                const overflow = (items[items.length - 1]?.y || 0) - (bottom - 12);
+                                if (overflow > 0) {
+                                    cursor = bottom - 12;
+                                    items.slice().reverse().forEach((item) => {
+                                        item.y = Math.min(item.y - overflow, cursor);
+                                        item.y = Math.max(item.y, top + 12);
+                                        cursor = item.y - minGap;
+                                    });
+                                }
+                            });
+
+                            callouts.forEach((item) => {
+                                const isRight = item.side === 'right';
+                                let tx = item.mx + (isRight ? 14 : -14);
                                 if (isRight) {
-                                    if (tx + textWidth > right - 4) tx = right - textWidth - 4;
-                                    if (tx < left + 4) tx = left + 4;
+                                    tx = Math.min(Math.max(tx, left + 4), right - item.textWidth - 4);
                                     ctx.textAlign = 'left';
                                 } else {
-                                    if (tx - textWidth < left + 4) tx = left + textWidth + 4;
-                                    if (tx > right - 4) tx = right - 4;
+                                    tx = Math.max(Math.min(tx, right - 4), left + item.textWidth + 4);
                                     ctx.textAlign = 'right';
                                 }
-
-                                if (my < top + 10) my = top + 10;
-                                if (my > bottom - 10) my = bottom - 10;
-
                                 ctx.beginPath();
-                                ctx.moveTo(sx, sy);
-                                ctx.lineTo(mx, my);
-                                ctx.lineTo(tx + (isRight ? -4 : 4), my);
+                                ctx.moveTo(item.sx, item.sy);
+                                ctx.lineTo(item.mx, item.y);
+                                ctx.lineTo(tx + (isRight ? -4 : 4), item.y);
                                 ctx.stroke();
 
-                                ctx.fillText(labelText, tx, my);
+                                ctx.fillText(item.labelText, tx, item.y);
                             });
 
                             const center = meta.data[0];
@@ -7031,6 +7321,8 @@
 
             /* ========= 2) Publications × Role ต่อบุคคล (แนวนอน stacked + label นอกแท่ง) ========= */
             (function() {
+                if (window.__dashboardUseFilteredAuthorRole !== false) return;
+
                 const outputs = Array.isArray(window.outputs) ? window.outputs : [];
 
                 const authorRoleByYear = {};
@@ -7216,13 +7508,14 @@
                     chartFundingSplit: 'สัดส่วนทุน ภายใน/ภายนอก (รายปี)',
                     chartBudgetPerYear: 'งบประมาณรวม (รายปี)',
                     chartBudgetByPi: 'งบประมาณรวมรายปี เฉพาะโครงการที่หน่วยวิจัยฯ เป็น PI หลัก',
+                    chartBudgetByInvestigator: 'งบประมาณที่ได้รับแบ่งจากรายชื่อผู้วิจัยหลัก (PI / Co-PI)',
                     chartExternalBySource: 'สัดส่วนทุนภายนอกที่ได้รับตามแหล่งทุน',
                     chartInternalBySource: 'สัดส่วนทุนภายในที่ได้รับตามแหล่งทุน',
                     chartExternalBySourceYear: 'ทุนภายนอกตามแหล่งทุน: แนวโน้มรายปี',
                     chartInternalBySourceYear: 'ทุนภายในตามแหล่งทุน: แนวโน้มรายปี',
                     chartOutputStacked: 'Output แยกประเภท (รายปี)',
                     chartPublicationPerYear: 'Publication รายปี',
-                    chartAuthorRolePerYear: 'บทบาทผู้เขียน (First/Co/Corresponding) รายปี + Top N',
+                    chartAuthorRolePerYear: 'บทบาทผู้เขียนผลงานวิชาการรายปี (First Author / Co-author / Corresponding Author)',
                     chartStatusYear: 'สถานะโครงการ (รายปี)',
                     chartCollabBreakdown: 'ความร่วมมือ (นอกคณะ/ในคณะ/ในหน่วย)',
                     chartPIsPerUnit: 'จำนวนงานของ PI ตามหน่วยงาน',
@@ -7234,7 +7527,7 @@
                     'chartRedZoneTimeline', 'chartOverdueProjects',
                     'chartCoResearchByUnitWindow', 'chartProjectsPerYear',
                     'chartYearlyNewVsTotal', 'chartFundingSplit',
-                    'chartBudgetPerYear', 'chartBudgetByPi',
+                    'chartBudgetPerYear', 'chartBudgetByPi', 'chartBudgetByInvestigator',
                     'chartExternalBySource',
                     'chartInternalBySource', 'chartExternalBySourceYear',
                     'chartInternalBySourceYear', 'chartOutputStacked',
@@ -7807,20 +8100,6 @@
                 const getBudget = (p) => safeNum(p?.total_budget ?? p?.budget ?? 0);
                 const getType = (p) => safeText(p?.project_type, 'ไม่ระบุประเภท');
                 const getYearLabel = (p) => safeText(p?.start_year, 'ไม่ระบุปี');
-                const isPolicyUnitPiProject = (p) => {
-                    if (typeof isPiInPolicyUnit === 'function') {
-                        return isPiInPolicyUnit(p);
-                    }
-                    const text = [
-                        p?.project_list,
-                        p?.pi_affiliation,
-                        p?.unit_name,
-                        p?.department,
-                    ].map((value) => String(value || '').toLowerCase()).join(' ');
-                    return text.includes('หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ')
-                        || text.includes('siriraj health policy')
-                        || text.includes('policy-driven health');
-                };
                 const escapeHtml = (value) => String(value)
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
@@ -8412,6 +8691,187 @@
                     });
                 }
 
+                function renderBudgetByInvestigator(rows) {
+                    const canvas = document.getElementById('chartBudgetByInvestigator');
+                    if (!canvas) return;
+                    Chart.getChart(canvas)?.destroy();
+
+                    const grouped = new Map();
+                    const ensure = (name) => {
+                        const key = safeText(name, 'ไม่ระบุชื่อ');
+                        if (!grouped.has(key)) {
+                            grouped.set(key, {
+                                name: key,
+                                pi: 0,
+                                copi: 0,
+                                projectIds: new Set(),
+                            });
+                        }
+                        return grouped.get(key);
+                    };
+
+                    (Array.isArray(rows) ? rows : []).forEach((project) => {
+                        const budget = getBudget(project);
+                        if (!(budget > 0)) return;
+
+                        const piName = safeText(project?.pi_name);
+                        if (piName && isPolicyUnitPiProject(project)) {
+                            const item = ensure(piName);
+                            item.pi += budget;
+                            item.projectIds.add(project?.id);
+                        }
+
+                        const seenCopis = new Set();
+                        (Array.isArray(project?.copis) ? project.copis : []).forEach((copi) => {
+                            const name = safeText(copi?.name);
+                            if (!isPolicyUnitCopi(copi)) return;
+                            if (!name || seenCopis.has(name)) return;
+                            seenCopis.add(name);
+                            const item = ensure(name);
+                            item.copi += budget;
+                            item.projectIds.add(project?.id);
+                        });
+                    });
+
+                    const rowsByPerson = Array.from(grouped.values())
+                        .map((item) => ({
+                            ...item,
+                            total: item.pi + item.copi,
+                            projectCount: Array.from(item.projectIds).filter((id) => id !== undefined && id !== null).length,
+                        }))
+                        .filter((item) => item.total > 0)
+                        .sort((a, b) => (b.total - a.total) || String(a.name).localeCompare(String(b.name), 'th'))
+                        .slice(0, 15);
+
+                    if (!rowsByPerson.length) {
+                        drawEmptyChart(canvas);
+                        return;
+                    }
+
+                    clearEmptyChartState(canvas);
+                    const labels = rowsByPerson.map((item) => item.name);
+                    const maxLabelLength = 34;
+                    const displayLabels = labels.map((label) => label.length > maxLabelLength ? `${label.slice(0, maxLabelLength - 1)}…` : label);
+                    const horizontalTotalLabelPlugin = {
+                        id: `rtHorizontalBudgetInvestigator_${Math.random().toString(36).slice(2, 8)}`,
+                        afterDatasetsDraw(chart) {
+                            const { ctx, chartArea: { right, left } } = chart;
+                            ctx.save();
+                            ctx.font = '700 11px sans-serif';
+                            ctx.fillStyle = '#0f172a';
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'middle';
+                            rowsByPerson.forEach((item, index) => {
+                                if (!(item.total > 0)) return;
+                                let endX = null;
+                                let y = null;
+                                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                                    if (!chart.isDatasetVisible(datasetIndex)) return;
+                                    const value = Number(dataset.data?.[index] || 0);
+                                    if (!(value > 0)) return;
+                                    const element = chart.getDatasetMeta(datasetIndex)?.data?.[index];
+                                    if (!element) return;
+                                    endX = Math.max(endX ?? element.x, element.x);
+                                    y = element.y;
+                                });
+                                if (endX === null || y === null) return;
+                                const text = formatThaiMoney(item.total);
+                                const x = Math.min(Math.max(endX + 8, left + 4), right - 68);
+                                ctx.fillText(text, x, y);
+                            });
+                            ctx.restore();
+                        }
+                    };
+
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: displayLabels,
+                            datasets: [
+                                {
+                                    label: 'PI',
+                                    data: rowsByPerson.map((item) => item.pi),
+                                    backgroundColor: 'rgba(37, 99, 235, 0.86)',
+                                    borderColor: '#1d4ed8',
+                                    borderWidth: 1,
+                                    borderRadius: 8,
+                                    maxBarThickness: 28,
+                                },
+                                {
+                                    label: 'Co-PI',
+                                    data: rowsByPerson.map((item) => item.copi),
+                                    backgroundColor: 'rgba(20, 184, 166, 0.82)',
+                                    borderColor: '#0f766e',
+                                    borderWidth: 1,
+                                    borderRadius: 8,
+                                    maxBarThickness: 28,
+                                }
+                            ]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 350
+                            },
+                            layout: {
+                                padding: {
+                                    right: 42
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        title: (items) => labels[items?.[0]?.dataIndex] || '',
+                                        label: (ctx) => ` ${ctx.dataset.label}: ${fmtMoney.format(ctx.raw || 0)} บาท`,
+                                        footer: (items) => {
+                                            const index = items?.[0]?.dataIndex ?? 0;
+                                            const item = rowsByPerson[index];
+                                            return item ? `${item.projectCount.toLocaleString('th-TH')} โครงการ | รวม ${formatThaiMoney(item.total)}` : '';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    grace: '12%',
+                                    ticks: {
+                                        callback: (value) => `${(Number(value) / 1_000_000).toLocaleString('th-TH', { maximumFractionDigits: 0 })} ล.`
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'ล้านบาท'
+                                    },
+                                    grid: {
+                                        color: 'rgba(148,163,184,0.2)'
+                                    }
+                                },
+                                y: {
+                                    stacked: true,
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        autoSkip: false
+                                    }
+                                }
+                            }
+                        },
+                        plugins: [horizontalTotalLabelPlugin]
+                    });
+
+                    const chart = Chart.getChart(canvas);
+                    if (chart) {
+                        chart.$investigatorLabels = labels;
+                    }
+                }
+
                 function getRelatedOutputs(rows) {
                     return (Array.isArray(rows) ? rows : []).flatMap((project) => {
                         const list = Array.isArray(project?.outputs) ? project.outputs : [];
@@ -8776,13 +9236,13 @@
                 }
 
                 function renderAuthorRolePerYearFiltered(rows) {
-                    const canvas = document.getElementById('chartAuthorRolePerYear');
+                    const board = document.getElementById('dashboardAuthorRoleBoard');
                     const yearSelect = document.getElementById('yearFilter');
                     const prevButton = document.getElementById('btnPrevYear');
                     const nextButton = document.getElementById('btnNextYear');
                     const searchInput = document.getElementById('authorSearch');
                     const topNSelect = document.getElementById('topN');
-                    if (!canvas) return;
+                    if (!board) return;
 
                     if (!window.__dashboardAuthorRoleFilteredBound) {
                         [yearSelect, topNSelect].forEach((node) => node?.addEventListener('change', () => {
@@ -8792,13 +9252,29 @@
                             window.setTimeout(() => renderAuthorRolePerYearFiltered(getRows()), 0);
                         });
                         prevButton?.addEventListener('click', () => {
+                            if (!yearSelect) return;
+                            const options = Array.from(yearSelect?.options || []);
+                            const currentIndex = options.findIndex((option) => option.value === yearSelect.value);
+                            if (currentIndex > 0) {
+                                yearSelect.value = options[currentIndex - 1].value;
+                            }
                             window.setTimeout(() => renderAuthorRolePerYearFiltered(getRows()), 0);
                         });
                         nextButton?.addEventListener('click', () => {
+                            if (!yearSelect) return;
+                            const options = Array.from(yearSelect?.options || []);
+                            const currentIndex = options.findIndex((option) => option.value === yearSelect.value);
+                            if (currentIndex >= 0 && currentIndex < options.length - 1) {
+                                yearSelect.value = options[currentIndex + 1].value;
+                            }
                             window.setTimeout(() => renderAuthorRolePerYearFiltered(getRows()), 0);
                         });
                         window.__dashboardAuthorRoleFilteredBound = true;
                     }
+
+                    const renderAuthorEmpty = (message = 'ไม่พบข้อมูลบทบาทผู้เขียนในเงื่อนไขนี้') => {
+                        board.innerHTML = `<div class="dashboard-author-empty">${escapeHtml(message)}</div>`;
+                    };
 
                     const publicationRows = getRelatedOutputs(rows).filter((item) => isPublicationType(item.type));
                     const authorRoleByYear = {};
@@ -8834,7 +9310,7 @@
                     }
 
                     if (!yearsCE.length) {
-                        drawEmptyChart(canvas);
+                        renderAuthorEmpty('ไม่พบผลงานวิชาการในชุดข้อมูลที่เลือก');
                         return;
                     }
 
@@ -8857,65 +9333,56 @@
                     const topRows = authorRows.slice(0, topN);
 
                     if (!topRows.length) {
-                        drawEmptyChart(canvas);
+                        renderAuthorEmpty(searchTerm ? 'ไม่พบชื่อผู้เขียนที่ตรงกับคำค้นหา' : 'ไม่พบข้อมูลบทบาทผู้เขียนในปีนี้');
                         return;
                     }
 
-                    clearEmptyChartState(canvas);
-                    canvas.height = Math.min(Math.max(280, topRows.length * 20), 420);
-                    Chart.getChart(canvas)?.destroy();
-                    new Chart(canvas, {
-                        type: 'bar',
-                        data: {
-                            labels: topRows.map((item) => item.name),
-                            datasets: [
-                                { key: 'first', label: 'First-author' },
-                                { key: 'co', label: 'Co-author' },
-                                { key: 'corresponding', label: 'Corresponding' }
-                            ].map((config, index) => ({
-                                label: config.label,
-                                data: topRows.map((item) => item[config.key] || 0),
-                                backgroundColor: `hsl(${(index * 48) % 360} 70% 60%)`,
-                                stack: 'roles',
-                                borderWidth: 1
-                            }))
-                        },
-                        options: {
-                            indexAxis: 'y',
-                            responsive: true,
-                            layout: {
-                                padding: {
-                                    right: 36
-                                }
-                            },
-                            plugins: {
-                                legend: {
-                                    position: 'bottom'
-                                },
-                                title: {
-                                    display: true,
-                                    text: `ปี ${toBE(selectedYear)} (พ.ศ.)`
-                                },
-                                tooltip: {
-                                    mode: 'index',
-                                    intersect: false
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    beginAtZero: true,
-                                    grace: '15%',
-                                    ticks: {
-                                        precision: 0
-                                    }
-                                },
-                                y: {
-                                    stacked: true
-                                }
-                            }
-                        },
-                        plugins: [stackedTotalRight]
-                    });
+                    const maxTotal = Math.max(...topRows.map((item) => item.total), 1);
+                    const totalEntries = topRows.reduce((sum, item) => sum + item.total, 0);
+                    const totalFirst = topRows.reduce((sum, item) => sum + Number(item.first || 0), 0);
+                    const totalCo = topRows.reduce((sum, item) => sum + Number(item.co || 0), 0);
+                    const totalCorresponding = topRows.reduce((sum, item) => sum + Number(item.corresponding || 0), 0);
+                    const segment = (value, type) => {
+                        const count = Number(value || 0);
+                        if (!(count > 0)) return '';
+                        const width = Math.max(3, (count / maxTotal) * 100);
+                        const label = count >= 2 ? count.toLocaleString('th-TH') : '';
+                        return `<span class="dashboard-author-segment is-${type}" style="width:${width.toFixed(2)}%;" title="${count.toLocaleString('th-TH')}">${label}</span>`;
+                    };
+                    const rowsHtml = topRows.map((item) => `
+                        <div class="dashboard-author-row">
+                            <div class="dashboard-author-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
+                            <div class="dashboard-author-stack" aria-label="${escapeHtml(item.name)} ${item.total} รายการ">
+                                ${segment(item.first, 'first')}
+                                ${segment(item.co, 'co')}
+                                ${segment(item.corresponding, 'corresponding')}
+                            </div>
+                            <div class="dashboard-author-total">${Number(item.total || 0).toLocaleString('th-TH')}</div>
+                        </div>
+                    `).join('');
+
+                    board.innerHTML = `
+                        <div class="dashboard-author-summary">
+                            <div class="dashboard-author-metric">
+                                <span>ปี พ.ศ.</span>
+                                <strong>${escapeHtml(toBE(selectedYear))}</strong>
+                            </div>
+                            <div class="dashboard-author-metric">
+                                <span>ผู้เขียนที่แสดง</span>
+                                <strong>${topRows.length.toLocaleString('th-TH')}</strong>
+                            </div>
+                            <div class="dashboard-author-metric">
+                                <span>รายการบทบาทรวม</span>
+                                <strong>${totalEntries.toLocaleString('th-TH')}</strong>
+                            </div>
+                        </div>
+                        <div class="dashboard-author-legend">
+                            <span><i style="background:#e45050"></i>First Author ${totalFirst.toLocaleString('th-TH')}</span>
+                            <span><i style="background:#d9bd45"></i>Co-author ${totalCo.toLocaleString('th-TH')}</span>
+                            <span><i style="background:#82d94a"></i>Corresponding Author ${totalCorresponding.toLocaleString('th-TH')}</span>
+                        </div>
+                        <div class="dashboard-author-list">${rowsHtml}</div>
+                    `;
                 }
 
                 function renderStatusYearFiltered(rows) {
@@ -9764,6 +10231,90 @@
                 function renderFundingSourceTopChartsFiltered(rows) {
                     const TOP_N_SOURCES = 5;
                     const FUNDING_COLORS = ['#dc4b4b', '#d4a153', '#9acb4b', '#4fbf5f', '#3cb9c8', '#5f88d6', '#7b5ac8'];
+                    const drawFundingCallouts = (chart, entries, totalCount) => {
+                        const dataset = chart.data.datasets?.[0];
+                        const meta = chart.getDatasetMeta(0);
+                        if (!dataset || !meta?.data?.length) return;
+
+                        const { ctx, chartArea: { left, right, top, bottom } } = chart;
+                        ctx.save();
+                        ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
+                        ctx.fillStyle = '#0f172a';
+                        ctx.strokeStyle = 'rgba(100,116,139,0.5)';
+                        ctx.lineWidth = 1;
+                        ctx.textBaseline = 'middle';
+
+                        const callouts = meta.data.map((arc, index) => {
+                            const value = Number(dataset.data?.[index] || 0);
+                            if (!(value > 0)) return null;
+                            const labelText = `${value} (${formatThaiMoney(entries[index]?.budget || 0)})`;
+                            const textWidth = ctx.measureText(labelText).width;
+                            const angle = (arc.startAngle + arc.endAngle) / 2;
+                            const isRight = Math.cos(angle) >= 0;
+                            const sx = arc.x + Math.cos(angle) * (arc.outerRadius - 1);
+                            const sy = arc.y + Math.sin(angle) * (arc.outerRadius - 1);
+                            const mx = arc.x + Math.cos(angle) * (arc.outerRadius + 10);
+                            const targetY = arc.y + Math.sin(angle) * (arc.outerRadius + 10);
+
+                            return {
+                                labelText,
+                                textWidth,
+                                side: isRight ? 'right' : 'left',
+                                sx,
+                                sy,
+                                mx,
+                                targetY,
+                                y: targetY
+                            };
+                        }).filter(Boolean);
+
+                        ['left', 'right'].forEach((side) => {
+                            const items = callouts.filter((item) => item.side === side).sort((a, b) => a.targetY - b.targetY);
+                            const minGap = 18;
+                            let cursor = top + 12;
+                            items.forEach((item) => {
+                                item.y = Math.max(Math.min(item.targetY, bottom - 12), cursor);
+                                cursor = item.y + minGap;
+                            });
+                            const overflow = (items[items.length - 1]?.y || 0) - (bottom - 12);
+                            if (overflow > 0) {
+                                cursor = bottom - 12;
+                                items.slice().reverse().forEach((item) => {
+                                    item.y = Math.min(item.y - overflow, cursor);
+                                    item.y = Math.max(item.y, top + 12);
+                                    cursor = item.y - minGap;
+                                });
+                            }
+                        });
+
+                        callouts.forEach((item) => {
+                            const isRight = item.side === 'right';
+                            let tx = item.mx + (isRight ? 14 : -14);
+                            if (isRight) {
+                                tx = Math.min(Math.max(tx, left + 4), right - item.textWidth - 4);
+                                ctx.textAlign = 'left';
+                            } else {
+                                tx = Math.max(Math.min(tx, right - 4), left + item.textWidth + 4);
+                                ctx.textAlign = 'right';
+                            }
+                            ctx.beginPath();
+                            ctx.moveTo(item.sx, item.sy);
+                            ctx.lineTo(item.mx, item.y);
+                            ctx.lineTo(tx + (isRight ? -4 : 4), item.y);
+                            ctx.stroke();
+                            ctx.fillText(item.labelText, tx, item.y);
+                        });
+
+                        const center = meta.data[0];
+                        if (center) {
+                            ctx.textAlign = 'center';
+                            ctx.fillStyle = '#334155';
+                            ctx.font = '700 12px "IBM Plex Sans Thai", sans-serif';
+                            ctx.fillText(`รวม ${totalCount}`, center.x, center.y);
+                        }
+
+                        ctx.restore();
+                    };
 
                     const renderSingle = (canvasId, targetType, groupKey) => {
                         const canvas = document.getElementById(canvasId);
@@ -9812,60 +10363,7 @@
                         const detailPlugin = {
                             id: `${canvasId}_detail_plugin`,
                             afterDatasetsDraw(chart) {
-                                const dataset = chart.data.datasets?.[0];
-                                const meta = chart.getDatasetMeta(0);
-                                if (!dataset || !meta?.data?.length) return;
-                                const { ctx, chartArea: { left, right, top, bottom } } = chart;
-                                ctx.save();
-                                ctx.font = '700 11px "IBM Plex Sans Thai", sans-serif';
-                                ctx.fillStyle = '#0f172a';
-                                ctx.strokeStyle = 'rgba(100,116,139,0.5)';
-                                ctx.lineWidth = 1;
-                                ctx.textBaseline = 'middle';
-
-                                meta.data.forEach((arc, index) => {
-                                    const value = Number(dataset.data?.[index] || 0);
-                                    if (!(value > 0)) return;
-                                    const labelText = `${value} (${formatThaiMoney(topEntries[index]?.budget || 0)})`;
-                                    const textWidth = ctx.measureText(labelText).width;
-                                    const angle = (arc.startAngle + arc.endAngle) / 2;
-                                    const isRight = Math.cos(angle) >= 0;
-                                    const sx = arc.x + Math.cos(angle) * (arc.outerRadius - 1);
-                                    const sy = arc.y + Math.sin(angle) * (arc.outerRadius - 1);
-                                    const mx = arc.x + Math.cos(angle) * (arc.outerRadius + 10);
-                                    let my = arc.y + Math.sin(angle) * (arc.outerRadius + 10);
-                                    let tx = mx + (isRight ? 12 : -12);
-
-                                    if (isRight) {
-                                        if (tx + textWidth > right - 4) tx = right - textWidth - 4;
-                                        if (tx < left + 4) tx = left + 4;
-                                        ctx.textAlign = 'left';
-                                    } else {
-                                        if (tx - textWidth < left + 4) tx = left + textWidth + 4;
-                                        if (tx > right - 4) tx = right - 4;
-                                        ctx.textAlign = 'right';
-                                    }
-
-                                    if (my < top + 10) my = top + 10;
-                                    if (my > bottom - 10) my = bottom - 10;
-
-                                    ctx.beginPath();
-                                    ctx.moveTo(sx, sy);
-                                    ctx.lineTo(mx, my);
-                                    ctx.lineTo(tx + (isRight ? -4 : 4), my);
-                                    ctx.stroke();
-                                    ctx.fillText(labelText, tx, my);
-                                });
-
-                                const center = meta.data[0];
-                                if (center) {
-                                    ctx.textAlign = 'center';
-                                    ctx.fillStyle = '#334155';
-                                    ctx.font = '700 12px "IBM Plex Sans Thai", sans-serif';
-                                    ctx.fillText(`รวม ${totalCount}`, center.x, center.y);
-                                }
-
-                                ctx.restore();
+                                drawFundingCallouts(chart, topEntries, totalCount);
                             }
                         };
 
@@ -10072,6 +10570,7 @@
                     renderFundingSplit(rows);
                     renderBudgetPerYear(rows);
                     renderBudgetByPi(rows);
+                    renderBudgetByInvestigator(rows);
                     renderOutputStackedFiltered(rows);
                     renderFundingSourceYearChartsFiltered(rows);
                     renderPublicationPerYearFiltered(rows);

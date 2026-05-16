@@ -433,6 +433,47 @@
                     </td>
                 </tr>
             </table>
+            @php
+                $pdfMoney = fn ($value) => number_format((float) $value, 2) . ' บ.';
+                $budgetSummary = $budgetSummary ?? [];
+            @endphp
+            <table class="summary-box" style="margin-top: 10px;">
+                <tr>
+                    <td colspan="4" style="width: 100%; background: #f8fafc;">
+                        <div class="metric-label" style="font-size: 10.5pt;">งบประมาณสนับสนุนที่ได้รับจากโครงการวิจัยในบทบาทหัวหน้าโครงการ (PI) หรือหัวหน้าโครงการร่วม (Co-PI)</div>
+                        <table style="margin-top: 6px; font-size: 11.5pt;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; border-bottom: 1px solid #dde6f6;">บทบาท</th>
+                                    <th style="text-align:right; border-bottom: 1px solid #dde6f6;">ภายใน</th>
+                                    <th style="text-align:right; border-bottom: 1px solid #dde6f6;">ภายนอก</th>
+                                    <th style="text-align:right; border-bottom: 1px solid #dde6f6;">รวม</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (['pi' => 'PI', 'co_pi' => 'Co-PI'] as $roleKey => $roleLabel)
+                                    <tr>
+                                        <td style="font-weight:bold;">{{ $roleLabel }}</td>
+                                        @foreach (['internal', 'external', 'total'] as $fundingKey)
+                                            @php $cell = data_get($budgetSummary, "{$roleKey}.{$fundingKey}", ['count' => 0, 'budget' => 0]); @endphp
+                                            <td style="text-align:right;">
+                                                {{ $pdfMoney($cell['budget'] ?? 0) }}
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" style="text-align:right; border-top: 1px solid #dde6f6; font-weight:bold;">
+                                        รวมทั้งหมด {{ $pdfMoney(data_get($budgetSummary, 'grand_total.budget', 0)) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </td>
+                </tr>
+            </table>
             @if (($stats['missions'] ?? 0) > 0)
                 <table class="summary-box" style="margin-top: 10px;">
                     <tr>

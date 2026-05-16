@@ -867,6 +867,11 @@
                             📊 Gantt
                         </a>
 
+                        <button type="button" id="duplicateProjectBtn"
+                            class="project-header-action project-header-action--edit">
+                            ⧉ Duplicate
+                        </button>
+
                         {{-- Delete --}}
                         <button type="button" id="deleteProjectBtn"
                             class="project-header-action project-header-action--delete">
@@ -2179,6 +2184,9 @@
                 <a href="{{ route('projects.gantt', $project) }}" class="detail-fab-item detail-fab-item--gantt">
                     📊 Gantt
                 </a>
+                <button type="button" id="detailFabDuplicateBtn" class="detail-fab-item detail-fab-item--edit">
+                    ⧉ Duplicate โครงการ
+                </button>
                 <button type="button" id="detailFabDeleteBtn" class="detail-fab-item detail-fab-item--delete">
                     🗑️ ลบ
                 </button>
@@ -2363,6 +2371,105 @@
         })();
 
         const deleteBtn = document.getElementById('deleteProjectBtn');
+        const duplicateBtn = document.getElementById('duplicateProjectBtn');
+        const duplicateProjectUrl = @json(route('projects.duplicate', $project));
+        const duplicateCsrfToken = @json(csrf_token());
+        const currentProjectName = @json((string) ($project->project_name_th ?? ''));
+
+        function suggestedDuplicateProjectName(projectName) {
+            const baseName = String(projectName || '').trim();
+            if (!baseName) return 'โครงการใหม่ phase 2';
+            if (/phase\s*\d+$/i.test(baseName)) {
+                return baseName.replace(/phase\s*(\d+)$/i, (_, number) => `phase ${Number(number || 1) + 1}`);
+            }
+            return `${baseName} phase 2`;
+        }
+
+        async function promptDuplicateProject() {
+            const result = await Swal.fire({
+                title: 'Duplicate โครงการ',
+                width: 'min(920px, 94vw)',
+                html: '<div class="text-left text-sm text-slate-600">ระบบจะคัดลอกข้อมูลหลักและทีมวิจัย โดยไม่คัดลอก FTE, IRB, output, progress report, task และ log</div>',
+                input: 'textarea',
+                inputLabel: 'ชื่อโครงการใหม่',
+                inputValue: suggestedDuplicateProjectName(currentProjectName),
+                inputAttributes: {
+                    rows: 4,
+                    maxlength: 5000,
+                    autocapitalize: 'off',
+                    autocomplete: 'off'
+                },
+                customClass: {
+                    input: 'text-left leading-relaxed'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'สร้างโครงการซ้ำ',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#7c3aed',
+                showLoaderOnConfirm: true,
+                inputValidator: (value) => {
+                    if (!String(value || '').trim()) return 'กรุณาระบุชื่อโครงการใหม่';
+                    if (String(value || '').trim() === String(currentProjectName || '').trim()) return 'ชื่อโครงการใหม่ต้องไม่ซ้ำกับชื่อเดิม';
+                    return null;
+                },
+                preConfirm: async (name) => {
+                    const csrf = duplicateCsrfToken || document.querySelector('meta[name="csrf-token"]')?.content || '';
+                    try {
+                        const response = await fetch(duplicateProjectUrl, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrf
+                            },
+                            body: JSON.stringify({ project_name_th: String(name || '').trim() })
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            const message = data?.errors?.project_name_th?.[0] || data?.message || 'สร้างโครงการซ้ำไม่สำเร็จ';
+                            Swal.showValidationMessage(message);
+                            return false;
+                        }
+                        return data;
+                    } catch (error) {
+                        Swal.showValidationMessage('เชื่อมต่อ server ไม่สำเร็จ');
+                        return false;
+                    }
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            });
+
+            if (!result.isConfirmed || !result.value?.project) return;
+
+            const created = result.value.project;
+            const next = await Swal.fire({
+                icon: 'success',
+                title: 'สร้างโครงการซ้ำแล้ว',
+                text: created.project_name_th || '',
+                showDenyButton: true,
+                confirmButtonText: 'ไปหน้ารายละเอียด',
+                denyButtonText: 'แก้ไข',
+                confirmButtonColor: '#2563eb',
+                denyButtonColor: '#7c3aed'
+            });
+
+            if (next.isDenied && created.edit_url) {
+                location.href = created.edit_url;
+                return;
+            }
+            if (created.show_url) {
+                location.href = created.show_url;
+            }
+        }
+
+        if (duplicateBtn) {
+            duplicateBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                promptDuplicateProject();
+            });
+        }
+
         if (deleteBtn) {
             deleteBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -2530,6 +2637,13 @@
             });
 
             const fabDeleteBtn = document.getElementById('detailFabDeleteBtn');
+            const fabDuplicateBtn = document.getElementById('detailFabDuplicateBtn');
+            if (fabDuplicateBtn) {
+                fabDuplicateBtn.addEventListener('click', () => {
+                    setOpen(false);
+                    promptDuplicateProject();
+                });
+            }
             if (fabDeleteBtn && deleteBtn) {
                 fabDeleteBtn.addEventListener('click', () => {
                     setOpen(false);

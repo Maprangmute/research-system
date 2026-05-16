@@ -1231,6 +1231,7 @@
                                 }
                                 $showUrl = route('projects.show', $project);
                                 $editUrl = route('projects.edit', $project);
+                                $duplicateUrl = route('projects.duplicate', $project);
                                 $pdfUrl = route('projects.pdf', $project);
                                 $progressUrl = route('projects.progress_reports.index', $project);
                                 $fteProjectUrl = route('fte.project.detail', $project);
@@ -1238,6 +1239,7 @@
                             @endphp
                             <tr class="hover:bg-indigo-50/40 transition cursor-default" data-show-url="{{ $showUrl }}"
                                 data-edit-url="{{ $editUrl }}" data-pdf-url="{{ $pdfUrl }}"
+                                data-duplicate-url="{{ $duplicateUrl }}"
                                 data-progress-url="{{ $progressUrl }}" data-fte-project-url="{{ $fteProjectUrl }}"
                                 data-delete-form-id="{{ $deleteFormId }}"
                                 data-project-name="{{ $project->project_name_th }}"
@@ -1563,6 +1565,8 @@
                 คัดลอกชื่อโครงการ</button>
             <button type="button" data-action="edit" class="w-full text-left px-3 py-2 hover:bg-indigo-50">✏️
                 แก้ไข</button>
+            <button type="button" data-action="duplicate" class="w-full text-left px-3 py-2 hover:bg-violet-50 text-violet-700">⧉
+                Duplicate โครงการ</button>
             <button type="button" data-action="pdf"
                 class="w-full text-left px-3 py-2 hover:bg-green-50 text-green-700">🖨️ พิมพ์ PDF</button>
             <button type="button" data-action="progress"
@@ -1592,6 +1596,7 @@
 
             menu.dataset.showUrl = row.getAttribute('data-show-url') || '';
             menu.dataset.editUrl = row.getAttribute('data-edit-url') || '';
+            menu.dataset.duplicateUrl = row.getAttribute('data-duplicate-url') || '';
             menu.dataset.pdfUrl = row.getAttribute('data-pdf-url') || '';
             menu.dataset.progressUrl = row.getAttribute('data-progress-url') || '';
             menu.dataset.fteProjectUrl = row.getAttribute('data-fte-project-url') || '';
@@ -1692,6 +1697,95 @@
             return copied;
         }
 
+        function suggestedDuplicateProjectName(projectName) {
+            const baseName = String(projectName || '').trim();
+            if (!baseName) return 'โครงการใหม่ phase 2';
+            if (/phase\s*\d+$/i.test(baseName)) {
+                return baseName.replace(/phase\s*(\d+)$/i, (_, number) => `phase ${Number(number || 1) + 1}`);
+            }
+            return `${baseName} phase 2`;
+        }
+
+        async function promptDuplicateProject(duplicateUrl, projectName) {
+            const initialName = suggestedDuplicateProjectName(projectName);
+            const duplicateCsrfToken = @json(csrf_token());
+            const result = await Swal.fire({
+                title: 'Duplicate โครงการ',
+                width: 'min(920px, 94vw)',
+                html: '<div class="text-left text-sm text-slate-600">ระบบจะคัดลอกข้อมูลหลักและทีมวิจัย โดยไม่คัดลอก FTE, IRB, output, progress report, task และ log</div>',
+                input: 'textarea',
+                inputLabel: 'ชื่อโครงการใหม่',
+                inputValue: initialName,
+                inputAttributes: {
+                    rows: 4,
+                    maxlength: 5000,
+                    autocapitalize: 'off',
+                    autocomplete: 'off'
+                },
+                customClass: {
+                    input: 'text-left leading-relaxed'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'สร้างโครงการซ้ำ',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#7c3aed',
+                showLoaderOnConfirm: true,
+                inputValidator: (value) => {
+                    if (!String(value || '').trim()) return 'กรุณาระบุชื่อโครงการใหม่';
+                    if (String(value || '').trim() === String(projectName || '').trim()) return 'ชื่อโครงการใหม่ต้องไม่ซ้ำกับชื่อเดิม';
+                    return null;
+                },
+                preConfirm: async (name) => {
+                    const csrf = duplicateCsrfToken || document.querySelector('meta[name="csrf-token"]')?.content || '';
+                    try {
+                        const response = await fetch(duplicateUrl, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrf
+                            },
+                            body: JSON.stringify({ project_name_th: String(name || '').trim() })
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            const message = data?.errors?.project_name_th?.[0] || data?.message || 'สร้างโครงการซ้ำไม่สำเร็จ';
+                            Swal.showValidationMessage(message);
+                            return false;
+                        }
+                        return data;
+                    } catch (error) {
+                        Swal.showValidationMessage('เชื่อมต่อ server ไม่สำเร็จ');
+                        return false;
+                    }
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            });
+
+            if (!result.isConfirmed || !result.value?.project) return;
+
+            const created = result.value.project;
+            const next = await Swal.fire({
+                icon: 'success',
+                title: 'สร้างโครงการซ้ำแล้ว',
+                text: created.project_name_th || '',
+                showDenyButton: true,
+                confirmButtonText: 'ไปหน้ารายละเอียด',
+                denyButtonText: 'แก้ไข',
+                confirmButtonColor: '#2563eb',
+                denyButtonColor: '#7c3aed'
+            });
+
+            if (next.isDenied && created.edit_url) {
+                location.href = created.edit_url;
+                return;
+            }
+            if (created.show_url) {
+                location.href = created.show_url;
+            }
+        }
+
         (function bindMenu() {
             const m = document.getElementById('row-menu');
             if (!m) return;
@@ -1701,6 +1795,7 @@
                 const act = btn.dataset.action,
                     showUrl = m.dataset.showUrl,
                     editUrl = m.dataset.editUrl,
+                    duplicateUrl = m.dataset.duplicateUrl,
                     pdfUrl = m.dataset.pdfUrl,
                     progressUrl = m.dataset.progressUrl,
                     fteProjectUrl = m.dataset.fteProjectUrl,
@@ -1729,6 +1824,9 @@
                         break;
                     case 'edit':
                         if (editUrl) location.href = editUrl;
+                        break;
+                    case 'duplicate':
+                        if (duplicateUrl) promptDuplicateProject(duplicateUrl, projectName);
                         break;
                     case 'pdf':
                         if (pdfUrl) window.open(pdfUrl, '_blank');

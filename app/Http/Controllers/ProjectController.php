@@ -2067,6 +2067,92 @@ public function store(Request $request)
             ->with('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
     }
 
+    public function duplicate(Request $request, Project $project)
+    {
+        $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
+        $hasPermission = Auth::user()->isAdminLike()
+            || Auth::id() === $project->user_id
+            || $project->fteRoles->contains('name', $fullName);
+
+        if (! $hasPermission) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'project_name_th' => [
+                'required',
+                'string',
+                'max:5000',
+                function (string $attribute, $value, \Closure $fail) {
+                    $name = preg_replace('/\s+/u', ' ', trim((string) $value)) ?? '';
+                    if ($name === '') {
+                        $fail('กรุณาระบุชื่อโครงการ');
+                        return;
+                    }
+
+                    $exists = Project::query()
+                        ->whereRaw('LOWER(TRIM(project_name_th)) = ?', [mb_strtolower($name, 'UTF-8')])
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('มีชื่อโครงการนี้อยู่แล้ว กรุณาเปลี่ยนชื่อ เช่น เติม phase 2');
+                    }
+                },
+            ],
+        ]);
+
+        $newProject = null;
+
+        DB::transaction(function () use ($project, $validated, &$newProject) {
+            $project->loadMissing(['copis', 'coResearches']);
+
+            $newProject = $project->replicate([
+                'project_code',
+                'created_at',
+                'updated_at',
+                'deleted_at',
+            ]);
+            $newProject->project_code = $this->nextProjectCode();
+            $newProject->project_name_th = trim((string) $validated['project_name_th']);
+            $newProject->start_year = null;
+            $newProject->team_start_date = null;
+            $newProject->team_end_date = null;
+            $newProject->proposal_date = null;
+            $newProject->contract_date = null;
+            $newProject->start_date = null;
+            $newProject->end_date = null;
+            $newProject->shortcut_link = null;
+            $newProject->r_code = null;
+            $newProject->user_id = Auth::id();
+            $newProject->updated_by = Auth::id();
+            $newProject->save();
+
+            foreach ($project->copis as $copi) {
+                $copy = $copi->replicate(['project_id', 'created_at', 'updated_at']);
+                $copy->project_id = $newProject->id;
+                $copy->save();
+            }
+
+            foreach ($project->coResearches as $coResearch) {
+                $copy = $coResearch->replicate(['project_id', 'created_at', 'updated_at']);
+                $copy->project_id = $newProject->id;
+                $copy->save();
+            }
+
+        });
+
+        return response()->json([
+            'message' => 'สร้างโครงการซ้ำเรียบร้อยแล้ว',
+            'project' => [
+                'id' => $newProject->id,
+                'project_code' => $newProject->project_code,
+                'project_name_th' => $newProject->project_name_th,
+                'show_url' => route('projects.show', $newProject),
+                'edit_url' => route('projects.edit', $newProject),
+            ],
+        ]);
+    }
+
     public function destroy(Project $project)
     {
         $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);

@@ -776,6 +776,47 @@
                             </div>
                         </article>
                     </div>
+
+                    @php
+                        $money = fn ($value) => number_format((float) $value, 2) . ' บ.';
+                        $budgetSummary = $budgetSummary ?? [];
+                    @endphp
+                    <article class="summary-card md:col-span-2">
+                        <h2 class="text-base font-bold text-slate-900 md:text-lg">งบประมาณสนับสนุนที่ได้รับจากโครงการวิจัยในบทบาทหัวหน้าโครงการ (PI) หรือหัวหน้าโครงการร่วม (Co-PI)</h2>
+                        <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-slate-50 text-slate-600">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-semibold">บทบาท</th>
+                                        <th class="px-4 py-3 text-right font-semibold">ภายใน</th>
+                                        <th class="px-4 py-3 text-right font-semibold">ภายนอก</th>
+                                        <th class="px-4 py-3 text-right font-semibold">รวม</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (['pi' => 'PI', 'co_pi' => 'Co-PI'] as $roleKey => $roleLabel)
+                                        <tr class="border-t border-slate-200">
+                                            <td class="px-4 py-3 font-semibold text-slate-800">{{ $roleLabel }}</td>
+                                            @foreach (['internal', 'external', 'total'] as $fundingKey)
+                                                @php $cell = data_get($budgetSummary, "{$roleKey}.{$fundingKey}", ['count' => 0, 'budget' => 0]); @endphp
+                                                <td class="px-4 py-3 text-right">
+                                                    <div class="font-bold text-slate-900">{{ $money($cell['budget'] ?? 0) }}</div>
+                                                </td>
+                                            @endforeach
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot class="bg-slate-50">
+                                    <tr class="border-t border-slate-200">
+                                        <td class="px-4 py-3 font-bold text-slate-900">รวมทั้งหมด</td>
+                                        <td colspan="3" class="px-4 py-3 text-right">
+                                            <div class="font-extrabold text-slate-950">{{ $money(data_get($budgetSummary, 'grand_total.budget', 0)) }}</div>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </article>
                 </div>
             </div>
         </section>

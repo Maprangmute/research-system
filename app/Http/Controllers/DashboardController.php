@@ -128,6 +128,38 @@ class DashboardController extends Controller
 
             return preg_replace('/\s+/u', ' ', trim($text)) ?: '';
         };
+        $nameCandidates = static function (?string $prefix, ?string $name) use ($stripHonorifics): array {
+            $fullName = trim(implode(' ', array_filter([
+                trim((string) $prefix),
+                trim((string) $name),
+            ])));
+            $bareName = trim((string) $name);
+
+            $strippedFullName = $stripHonorifics($fullName);
+            $strippedBareName = $stripHonorifics($bareName);
+            $parts = preg_split('/\s+/u', $strippedBareName) ?: [];
+            $firstName = trim((string) ($parts[0] ?? ''));
+            $firstLastName = count($parts) > 1
+                ? trim($parts[0].' '.($parts[count($parts) - 1] ?? ''))
+                : '';
+            $firstLastNoSpace = count($parts) > 1
+                ? trim($parts[0].($parts[count($parts) - 1] ?? ''))
+                : '';
+
+            return array_unique(array_filter([
+                $fullName,
+                $bareName,
+                $strippedFullName,
+                $strippedBareName,
+                preg_replace('/\s+/u', '', $fullName),
+                preg_replace('/\s+/u', '', $bareName),
+                preg_replace('/\s+/u', '', $strippedFullName),
+                preg_replace('/\s+/u', '', $strippedBareName),
+                $firstName,
+                $firstLastName,
+                $firstLastNoSpace,
+            ]));
+        };
         $fteProfileUrls = [];
 
         User::query()
@@ -135,7 +167,7 @@ class DashboardController extends Controller
             ->whereNotNull('name')
             ->whereNotNull('profile_photo_path')
             ->get()
-            ->each(function (User $user) use (&$fteProfileUrls, $normalizeName, $stripHonorifics) {
+            ->each(function (User $user) use (&$fteProfileUrls, $normalizeName, $nameCandidates) {
                 $photoPath = trim((string) $user->profile_photo_path);
                 if ($photoPath === '') {
                     return;
@@ -151,36 +183,7 @@ class DashboardController extends Controller
                     $photoUrl = asset('storage/'.$publicPath).'?v='.rawurlencode(md5($publicPath));
                 }
 
-                $fullName = trim(implode(' ', array_filter([
-                    trim((string) $user->prefix),
-                    trim((string) $user->name),
-                ])));
-                $bareName = trim((string) $user->name);
-
-                $strippedFullName = $stripHonorifics($fullName);
-                $strippedBareName = $stripHonorifics($bareName);
-                $parts = preg_split('/\s+/u', $strippedBareName) ?: [];
-                $firstName = trim((string) ($parts[0] ?? ''));
-                $firstLastName = count($parts) > 1
-                    ? trim($parts[0].' '.($parts[count($parts) - 1] ?? ''))
-                    : '';
-                $firstLastNoSpace = count($parts) > 1
-                    ? trim($parts[0].($parts[count($parts) - 1] ?? ''))
-                    : '';
-
-                foreach (array_unique(array_filter([
-                    $fullName,
-                    $bareName,
-                    $strippedFullName,
-                    $strippedBareName,
-                    preg_replace('/\s+/u', '', $fullName),
-                    preg_replace('/\s+/u', '', $bareName),
-                    preg_replace('/\s+/u', '', $strippedFullName),
-                    preg_replace('/\s+/u', '', $strippedBareName),
-                    $firstName,
-                    $firstLastName,
-                    $firstLastNoSpace,
-                ])) as $candidate) {
+                foreach ($nameCandidates($user->prefix, $user->name) as $candidate) {
                     foreach (array_unique(array_filter([
                         $normalizeName($candidate),
                         $normalizeName($candidate, true),
@@ -192,7 +195,79 @@ class DashboardController extends Controller
                 }
             });
 
-        $dashboardProjectsJs = $projects->map(function ($project) {
+        $fteUserMetaByName = [];
+        $isConsultantText = static function (?string $value): bool {
+            $text = mb_strtolower(trim((string) $value), 'UTF-8');
+
+            return $text !== '' && (
+                str_contains($text, 'research consultant')
+                || str_contains($text, 'consultant')
+                || str_contains($text, 'ที่ปรึกษา')
+            );
+        };
+
+        User::query()
+            ->select($existingColumns('users', [
+                'id', 'prefix', 'name', 'position', 'skill_role', 'role', 'is_borrowed', 'borrowed_department',
+            ]))
+            ->whereNotNull('name')
+            ->get()
+            ->each(function (User $user) use (&$fteUserMetaByName, $normalizeName, $nameCandidates, $isConsultantText) {
+                $position = trim((string) ($user->position ?? ''));
+                $skillRole = trim((string) ($user->skill_role ?? ''));
+                $role = trim((string) ($user->role ?? ''));
+                $isBorrowed = (bool) ($user->is_borrowed ?? false);
+                $isResigned = $role === User::ROLE_RESIGNED
+                    || str_contains(mb_strtolower($position.' '.$skillRole.' '.(string) $user->name, 'UTF-8'), 'ลาออก');
+                $isConsultant = $isConsultantText($position)
+                    || $isConsultantText($skillRole)
+                    || $isConsultantText($user->name);
+
+                $meta = [
+                    'id' => $user->id,
+                    'name' => trim((string) $user->name),
+                    'position' => $position,
+                    'skill_role' => $skillRole,
+                    'role' => $role,
+                    'is_borrowed' => $isBorrowed,
+                    'is_resigned' => $isResigned,
+                    'is_consultant' => $isConsultant,
+                    'is_unit_user' => ! $isBorrowed && ! $isResigned && ! $isConsultant,
+                ];
+
+                foreach ($nameCandidates($user->prefix ?? '', $user->name) as $candidate) {
+                    foreach (array_unique(array_filter([
+                        $normalizeName($candidate),
+                        $normalizeName($candidate, true),
+                    ])) as $key) {
+                        if ($key !== '' && ! array_key_exists($key, $fteUserMetaByName)) {
+                            $fteUserMetaByName[$key] = $meta;
+                        }
+                    }
+                }
+            });
+
+        $resolveFteUserMeta = static function (?string $name) use ($fteUserMetaByName, $normalizeName, $stripHonorifics): ?array {
+            foreach (array_unique(array_filter([
+                $name,
+                $stripHonorifics($name),
+                preg_replace('/\s+/u', '', (string) $name),
+                preg_replace('/\s+/u', '', $stripHonorifics($name)),
+            ])) as $candidate) {
+                foreach (array_unique(array_filter([
+                    $normalizeName($candidate),
+                    $normalizeName($candidate, true),
+                ])) as $key) {
+                    if ($key !== '' && array_key_exists($key, $fteUserMetaByName)) {
+                        return $fteUserMetaByName[$key];
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        $dashboardProjectsJs = $projects->map(function ($project) use ($resolveFteUserMeta) {
             return [
                 'id' => $project->id,
                 'project_name_th' => $project->project_name_th,
@@ -234,19 +309,31 @@ class DashboardController extends Controller
                     'unit_status' => $coResearch->unit_status,
                     'affiliation' => $coResearch->affiliation,
                 ])->values(),
-                'fte_roles' => $project->fteRoles->map(fn($fteRole) => [
-                    'id' => $fteRole->id,
-                    'project_id' => $fteRole->project_id,
-                    'name' => $fteRole->name,
-                    'role_group' => $fteRole->role_group,
-                    'fte_value' => $fteRole->fte_value,
-                    'fte' => $fteRole->fte,
-                    'hours' => $fteRole->hours,
-                    'job_detail' => $fteRole->job_detail,
-                    'task_detail' => $fteRole->task_detail,
-                    'start_date' => $fteRole->start_date,
-                    'end_date' => $fteRole->end_date,
-                ])->values(),
+                'fte_roles' => $project->fteRoles->map(function ($fteRole) use ($resolveFteUserMeta) {
+                    $userMeta = $resolveFteUserMeta($fteRole->name);
+
+                    return [
+                        'id' => $fteRole->id,
+                        'project_id' => $fteRole->project_id,
+                        'name' => $fteRole->name,
+                        'role_group' => $fteRole->role_group,
+                        'fte_value' => $fteRole->fte_value,
+                        'fte' => $fteRole->fte,
+                        'hours' => $fteRole->hours,
+                        'job_detail' => $fteRole->job_detail,
+                        'task_detail' => $fteRole->task_detail,
+                        'start_date' => $fteRole->start_date,
+                        'end_date' => $fteRole->end_date,
+                        'user' => $userMeta,
+                        'user_id' => $userMeta['id'] ?? null,
+                        'skill_role' => $userMeta['skill_role'] ?? null,
+                        'position' => $userMeta['position'] ?? null,
+                        'is_unit_user' => (bool) ($userMeta['is_unit_user'] ?? false),
+                        'is_resigned' => (bool) ($userMeta['is_resigned'] ?? false),
+                        'is_consultant' => (bool) ($userMeta['is_consultant'] ?? false),
+                        'is_borrowed' => (bool) ($userMeta['is_borrowed'] ?? false),
+                    ];
+                })->values(),
                 'irbs' => $project->irbs->map(fn($irb) => [
                     'id' => $irb->id,
                     'project_id' => $irb->project_id,
@@ -322,7 +409,9 @@ class DashboardController extends Controller
             ->orderBy('funding_source')
             ->pluck('funding_source');
 
-        $view = ResponsiveView::resolve($request, 'dashboard');
+        $view = $request->query('view') === 'legacy'
+            ? ResponsiveView::resolve($request, 'dashboard')
+            : 'dashboard-insight';
 
         return view($view, compact(
             'projects',

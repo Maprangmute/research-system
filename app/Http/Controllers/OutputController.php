@@ -4457,17 +4457,17 @@ class OutputController extends Controller
             [
                 'key' => 'trust',
                 'label' => 'Credibility',
-                'title' => 'Trend in same-project collaboration between SHP unit and Siriraj faculty',
+                'title' => 'Trend in collaboration interest with Siriraj Health Policy among Siriraj professionals',
                 'unit' => 'โครงการ',
-                'detail' => "แนวโน้มโครงการที่มีทั้งคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ทำงานร่วมกัน\n\nจำนวนโครงการวิจัยที่เกิดการทำงานร่วมกันระหว่างสองกลุ่มนี้ และเข้ามาอยู่ในบทบาทใดบ้าง (PI, Co-PI และ Co-Researcher)",
+                'detail' => "แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานร่วมกับ Siriraj Health Policy\n\nจำนวนโครงการวิจัยที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาลเข้ามามีส่วนร่วม และเข้ามาอยู่ในบทบาทใดบ้าง (PI, Co-PI และ Co-Researcher)",
                 'role_stats' => $facultySirirajRoleStats,
             ],
             [
                 'key' => 'truth',
                 'label' => 'Validation',
-                'title' => 'Trends in same-project collaboration for research-to-policy work',
+                'title' => 'Trends in Siriraj health professionals’ interest in research-to-policy work',
                 'unit' => 'โครงการ',
-                'detail' => "แนวโน้มโครงการที่มีทั้งคนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ และคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ทำงานร่วมกันในประเด็นการขับเคลื่อนนโยบายและระบบสุขภาพ (Health Policy, Health System)\n\nจำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย โดยต้องมีทั้งสองกลุ่มเป็นส่วนร่วมในโครงการเดียวกัน และแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย\nAgeing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Technical Cohorts\n\n*Theme/เนื้อหา Rational Drug Use (RDU) และ Global Health อาจยังถูกมองเป็น Operational project ภายในคณะแพทยศาสตร์ศิริราชพยาบาล มากกว่า Research model จึงยังไม่ถูกรวมในการวิเคราะห์",
+                'detail' => "แนวโน้มคนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) ที่ให้ความสนใจทำงานด้านการขับเคลื่อนนโยบาย และระบบสุขภาพ (Health Policy, Health System)\n\nจำนวนโครงการวิจัยที่นำไปสู่การขับเคลื่อนนโยบาย ที่คนภายในคณะแพทยศาสตร์ศิริราชพยาบาล (แพทย์, บุคลากรทางการแพทย์) เข้ามาเป็นส่วนร่วม โดยแบ่งตามประเภท Theme/เนื้อหาของงานวิจัย\nAgeing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Technical Cohorts\n\n*Theme/เนื้อหา Rational Drug Use (RDU) และ Global Health อาจยังถูกมองเป็น Operational project ภายในคณะแพทยศาสตร์ศิริราชพยาบาล มากกว่า Research model จึงยังไม่ถูกรวมในการวิเคราะห์",
                 'role_stats' => $clinicalLedIntegrationRoleStats,
             ],
             [
@@ -4594,21 +4594,21 @@ class OutputController extends Controller
         $frameworkTruthShape = $frameworkShape($frameworkTrendSummaryRows, 'truth');
         $frameworkPolicyShape = $frameworkShape($frameworkTrendSummaryRows, 'policy_impact');
         $frameworkHeadlineLead = (str_contains($frameworkTruthShape, 'เพิ่ม') || str_contains($frameworkPolicyShape, 'เพิ่ม'))
-            ? 'จำนวนโครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ร่วมกันเพิ่มขึ้นในภาพรวม'
-            : 'จำนวนโครงการที่มีทั้งคนในหน่วยวิจัยฯ และคนภายในคณะฯ ร่วมกันยังไม่เพิ่มขึ้นชัดเจนในภาพรวม';
+            ? 'จำนวนโครงการและการมีส่วนร่วมเพิ่มขึ้นในภาพรวม'
+            : 'จำนวนโครงการและการมีส่วนร่วมยังไม่เพิ่มขึ้นชัดเจนในภาพรวม';
         $frameworkBody = str_contains($frameworkTruthShape, 'เพิ่ม')
-            ? 'แนวโน้มสะท้อนการเพิ่มขึ้นของโครงการที่เชื่อมคนในหน่วยวิจัยฯ กับคนภายในคณะแพทยศาสตร์ศิริราชพยาบาลในงานวิจัยเชิงระบบและงานที่เชื่อมกับบริการจริงมากขึ้น'
-            : 'แนวโน้มยังไม่สะท้อนการเพิ่มขึ้นของ Validation แบบโครงการร่วมสองกลุ่มอย่างชัดเจน จึงควรอ่านร่วมกับจำนวนโครงการและ output ในแต่ละปี';
+            ? 'แนวโน้มสะท้อนการเพิ่มขึ้นของการมีส่วนร่วมของบุคลากรศิริราชในงานวิจัยเชิงระบบและงานที่เชื่อมกับบริการจริงมากขึ้น โดยเฉพาะการดึง clinical skill เข้ามาผสานกับงานวิจัย'
+            : 'แนวโน้มยังไม่สะท้อนการเพิ่มขึ้นของ Validation อย่างชัดเจน จึงควรอ่านร่วมกับจำนวนโครงการและ output ในแต่ละปี';
         $frameworkBody .= str_contains($frameworkPolicyShape, 'เพิ่ม')
             ? ' รวมถึงเริ่มเห็น output ที่ต่อยอดไปสู่ Impact ต่อระบบสุขภาพและการตัดสินใจเชิงนโยบายมากขึ้นในช่วงหลัง'
             : ' ส่วน Impact ยังไม่เพิ่มชัดเจนในช่วงข้อมูลนี้';
         $frameworkFocus = (str_contains($frameworkTruthShape, 'เพิ่ม') && str_contains($frameworkPolicyShape, 'เพิ่ม'))
-            ? 'ภาพรวมแสดงให้เห็นว่า การเติบโตของโครงการไม่ได้เพิ่มเฉพาะจำนวนงานวิจัย แต่รวมถึงการทำงานร่วมกันระหว่างคนในหน่วยวิจัยฯ และคนภายในคณะฯ พร้อมการต่อยอดไปสู่ผลลัพธ์ที่เชื่อมกับระบบสุขภาพมากขึ้น โดยปี ' . ($frameworkPeak?->year ?: '-') . ' เป็นจุดสูงสุดทั้งในด้านโครงการร่วมสองกลุ่มและ Impact ต่อระบบสุขภาพ'
+            ? 'ภาพรวมแสดงให้เห็นว่า การเติบโตของโครงการไม่ได้เพิ่มเฉพาะจำนวนงานวิจัย แต่รวมถึงการมีส่วนร่วมของ clinical expert และการต่อยอดไปสู่ผลลัพธ์ที่เชื่อมกับระบบสุขภาพมากขึ้น โดยปี ' . ($frameworkPeak?->year ?: '-') . ' เป็นจุดสูงสุดทั้งในด้านการบูรณาการ clinical skill และ Impact ต่อระบบสุขภาพ'
             : 'ภาพรวมยังควรอ่านแบบแยกเส้น เพราะ Validation และ Impact ไม่ได้เพิ่มพร้อมกันอย่างชัดเจนในทุกปี';
         $frameworkHasCurrentYearData = $frameworkTrendYears
             ->contains(fn ($year) => (int) $year === (int) $currentYearBe);
         $frameworkTrendSummary = (object) [
-            'headline' => 'ช่วงปี ' . ($frameworkFirst?->year ?: '-') . ' - ' . ($frameworkLast?->year ?: '-') . ' ' . $frameworkHeadlineLead . ' โดย Validation ของโครงการร่วมสองกลุ่ม ' . $frameworkTruthShape . ' จาก ' . number_format((int) ($frameworkFirst?->truth ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->truth ?? 0)) . ' โครงการ ขณะที่ Impact ' . $frameworkPolicyShape . ' จาก ' . number_format((int) ($frameworkFirst?->policy_impact ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->policy_impact ?? 0)) . ' รายการ และสูงสุดในปี ' . ($frameworkPolicyPeak?->year ?: '-'),
+            'headline' => 'ช่วงปี ' . ($frameworkFirst?->year ?: '-') . ' - ' . ($frameworkLast?->year ?: '-') . ' ' . $frameworkHeadlineLead . ' โดย Validation ' . $frameworkTruthShape . ' จาก ' . number_format((int) ($frameworkFirst?->truth ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->truth ?? 0)) . ' โครงการ ขณะที่ Impact ' . $frameworkPolicyShape . ' จาก ' . number_format((int) ($frameworkFirst?->policy_impact ?? 0)) . ' เป็น ' . number_format((int) ($frameworkLast?->policy_impact ?? 0)) . ' รายการ และสูงสุดในปี ' . ($frameworkPolicyPeak?->year ?: '-'),
             'body' => $frameworkBody,
             'focus' => $frameworkFocus,
             'note' => $frameworkHasCurrentYearData ? 'ปี ' . $currentYearBe . ' ยังเป็นปีที่ข้อมูลกำลังเข้า ไม่ควรสรุปว่า trend ลดลงถาวร' : null,
@@ -8774,6 +8774,7 @@ class OutputController extends Controller
         $textbookRows = $this->buildPersonalTextbookRows($user);
         $awardRows = $this->buildPersonalAwardRows($user);
         $otherRows = $this->buildPersonalOtherRows($user);
+        $budgetSummary = $this->buildPersonalBudgetSummary($user);
         $projectStatRows = $projectRows->where('source_label', 'Project')->values();
 
         $stats = [
@@ -8797,6 +8798,7 @@ class OutputController extends Controller
             'subject' => $user,
             'subjectRouteKey' => $this->personalOutputRouteKey($user),
             'stats' => $stats,
+            'budgetSummary' => $budgetSummary,
             'projectRows' => $projectRows,
             'missionRows' => $missionRows,
             'researchRows' => $researchRows,
@@ -8893,6 +8895,123 @@ class OutputController extends Controller
         return $projectRows
             ->sortByDesc(fn ($row) => $row->sort_year)
             ->values();
+    }
+
+    private function buildPersonalBudgetSummary(User $user): array
+    {
+        $matchesUser = fn (?string $value) => $this->matchesUserThaiName($value, $user);
+        $projectColumns = [
+            'id',
+            'project_code',
+            'project_name_th',
+            'funding_type',
+            'budget',
+            'pi_name',
+        ];
+        if (Schema::hasColumn('projects', 'total_budget')) {
+            $projectColumns[] = 'total_budget';
+        }
+
+        $blankBucket = static fn () => [
+            'count' => 0,
+            'budget' => 0.0,
+        ];
+        $summary = [
+            'pi' => [
+                'label' => 'PI',
+                'internal' => $blankBucket(),
+                'external' => $blankBucket(),
+                'unspecified' => $blankBucket(),
+                'total' => $blankBucket(),
+            ],
+            'co_pi' => [
+                'label' => 'Co-PI',
+                'internal' => $blankBucket(),
+                'external' => $blankBucket(),
+                'unspecified' => $blankBucket(),
+                'total' => $blankBucket(),
+            ],
+            'grand_total' => $blankBucket(),
+        ];
+
+        $addBudget = function (string $roleKey, Project $project) use (&$summary): void {
+            $budget = $this->personalProjectBudgetAmount($project);
+            if ($budget <= 0) {
+                return;
+            }
+
+            $fundingKey = $this->personalFundingTypeKey($project->funding_type ?? null);
+            if ($fundingKey === 'unspecified') {
+                return;
+            }
+
+            $summary[$roleKey][$fundingKey]['count']++;
+            $summary[$roleKey][$fundingKey]['budget'] += $budget;
+            $summary[$roleKey]['total']['count']++;
+            $summary[$roleKey]['total']['budget'] += $budget;
+            $summary['grand_total']['count']++;
+            $summary['grand_total']['budget'] += $budget;
+        };
+
+        Project::query()
+            ->select($projectColumns)
+            ->with('copis:id,project_id,name')
+            ->get()
+            ->each(function (Project $project) use ($matchesUser, $addBudget) {
+                if ($matchesUser($project->pi_name)) {
+                    $addBudget('pi', $project);
+                }
+
+                if ($project->copis->contains(fn ($copi) => $matchesUser($copi->name ?? null))) {
+                    $addBudget('co_pi', $project);
+                }
+            });
+
+        return $summary;
+    }
+
+    private function personalFundingTypeKey(?string $fundingType): string
+    {
+        $normalized = mb_strtolower(trim((string) $fundingType), 'UTF-8');
+        if ($normalized === '') {
+            return 'unspecified';
+        }
+
+        if (str_contains($normalized, 'ภายใน') || str_contains($normalized, 'internal')) {
+            return 'internal';
+        }
+
+        if (str_contains($normalized, 'ภายนอก') || str_contains($normalized, 'external')) {
+            return 'external';
+        }
+
+        return 'unspecified';
+    }
+
+    private function personalProjectBudgetAmount(Project $project): float
+    {
+        $totalBudget = $project->getAttribute('total_budget');
+        $budget = $this->parsePersonalBudgetValue($totalBudget);
+        if ($budget > 0) {
+            return $budget;
+        }
+
+        return $this->parsePersonalBudgetValue($project->budget ?? null);
+    }
+
+    private function parsePersonalBudgetValue($raw): float
+    {
+        if ($raw === null || $raw === '') {
+            return 0.0;
+        }
+
+        if (is_numeric($raw)) {
+            return (float) $raw;
+        }
+
+        $normalized = preg_replace('/[^0-9.\-]/', '', (string) $raw);
+
+        return is_numeric($normalized) ? (float) $normalized : 0.0;
     }
 
     private function buildPersonalMissionRows(User $user): Collection
