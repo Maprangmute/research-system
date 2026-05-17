@@ -1813,9 +1813,11 @@
             const money = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 });
             const CURRENT_BE_YEAR = new Date().getFullYear() + 543;
             const PREVIOUS_BE_YEAR = CURRENT_BE_YEAR - 1;
+            const PREVIOUS_PREVIOUS_BE_YEAR = CURRENT_BE_YEAR - 2;
             const CURRENT_BE_YEAR_LABEL = String(CURRENT_BE_YEAR);
             const PREVIOUS_BE_YEAR_LABEL = String(PREVIOUS_BE_YEAR);
-            const CURRENT_YEAR_RANGE_LABEL = `${PREVIOUS_BE_YEAR_LABEL}-${CURRENT_BE_YEAR_LABEL}`;
+            const PREVIOUS_PREVIOUS_BE_YEAR_LABEL = String(PREVIOUS_PREVIOUS_BE_YEAR);
+            const CURRENT_YEAR_RANGE_LABEL = `${PREVIOUS_PREVIOUS_BE_YEAR_LABEL}-${CURRENT_BE_YEAR_LABEL}`;
             const els = {
                 year: document.getElementById('filterYear'),
                 theme: document.getElementById('filterTheme'),
@@ -3025,14 +3027,23 @@
             }
 
             function authorYearsForSelection(selection) {
-                return Array.from(new Set(String(selection || '').match(/\d{4}/g) || []));
+                const years = Array.from(new Set(String(selection || '').match(/\d{4}/g) || []));
+                if (years.length === 2 && String(selection || '').includes('-')) {
+                    const [start, end] = years.map(Number).sort((a, b) => a - b);
+                    return Array.from({ length: end - start + 1 }, (_, index) => String(start + index));
+                }
+                return years;
+            }
+
+            function isUnitAuthor(author) {
+                return author?.is_unit_user === true;
             }
 
             function authorRowsForYear(publications, year) {
                 const selectedYears = authorYearsForSelection(year);
                 const map = new Map();
                 publications.filter((o) => selectedYears.includes(outputYear(o))).forEach((o) => {
-                    (Array.isArray(o.authors) ? o.authors : []).forEach((a) => {
+                    (Array.isArray(o.authors) ? o.authors : []).filter(isUnitAuthor).forEach((a) => {
                         const name = text(a.name);
                         const role = norm(a.role);
                         if (!name) return;
@@ -3091,14 +3102,14 @@
                     .sort((a, b) => Number(a.label.match(/\d{4}/)?.[0] || 99999) - Number(b.label.match(/\d{4}/)?.[0] || 99999));
                 const peakPubYear = pubRows.reduce((best, item) => (!best || item.value > best.value ? item : best), null);
                 const authorRoleRows = Array.from(publications.reduce((map, o) => {
-                    (Array.isArray(o.authors) ? o.authors : []).forEach((a) => {
+                    (Array.isArray(o.authors) ? o.authors : []).filter(isUnitAuthor).forEach((a) => {
                         const role = authorRoleLabel(a.role);
                         map.set(role, (map.get(role) || 0) + 1);
                     });
                     return map;
                 }, new Map()).entries()).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
                 const topRole = authorRoleRows[0];
-                return `ในกลุ่มผลงานวิชาการ มี publication ${fmt.format(publications.length)} รายการ${peakPubYear ? ` โดยปีที่ publication เด่นที่สุดคือ ${peakPubYear.label} (${fmt.format(peakPubYear.value)} รายการ)` : ''}. ${topRole ? `เมื่อรวมทุกปี บทบาทผู้เขียนที่ปรากฏมากที่สุดคือ ${topRole.label} ${fmt.format(topRole.value)} ครั้ง. ` : ''}${authorYearNarrative(publications, els.authorYear.value)} กราฟนี้มีตัวเลือกปีปัจจุบัน ปีก่อน และช่วงปีก่อน-ปีปัจจุบัน โดยจำกัดที่ Top 5 เพื่อให้อ่านชื่อและสัดส่วนบทบาทได้ชัดขึ้น.`;
+                return `ในกลุ่มผลงานวิชาการ มี publication ${fmt.format(publications.length)} รายการ${peakPubYear ? ` โดยปีที่ publication เด่นที่สุดคือ ${peakPubYear.label} (${fmt.format(peakPubYear.value)} รายการ)` : ''}. ${topRole ? `เมื่อรวมทุกปี บทบาทผู้เขียนของคนในหน่วยวิจัยฯ ที่ปรากฏมากที่สุดคือ ${topRole.label} ${fmt.format(topRole.value)} ครั้ง. ` : ''}${authorYearNarrative(publications, els.authorYear.value)} กราฟนี้แสดงเฉพาะคนในหน่วยวิจัยฯ และมีตัวเลือกปีปัจจุบัน ปีก่อน และช่วงปีก่อนหน้าหน้า-ปีปัจจุบัน โดยจำกัดที่ Top 5 เพื่อให้อ่านชื่อและสัดส่วนบทบาทได้ชัดขึ้น.`;
             }
 
             function renderOutputs(rows) {
@@ -3158,9 +3169,10 @@
             function renderAuthors(publications) {
                 const currentBeYear = CURRENT_BE_YEAR_LABEL;
                 const previousBeYear = PREVIOUS_BE_YEAR_LABEL;
+                const previousPreviousBeYear = PREVIOUS_PREVIOUS_BE_YEAR_LABEL;
                 const rangeYear = CURRENT_YEAR_RANGE_LABEL;
                 const dataYears = sortYearLabels(new Set(publications.map(outputYear))).filter((year) => !isFutureYearLabel(year)).reverse();
-                const years = [rangeYear, currentBeYear, previousBeYear, ...dataYears.filter((year) => ![currentBeYear, previousBeYear].includes(year))];
+                const years = [rangeYear, currentBeYear, previousBeYear, previousPreviousBeYear, ...dataYears.filter((year) => ![currentBeYear, previousBeYear, previousPreviousBeYear].includes(year))];
                 const current = els.authorYear.value;
                 els.authorYear.innerHTML = years.map((y) => `<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join('');
                 if (years.includes(current)) els.authorYear.value = current;
@@ -3171,7 +3183,7 @@
                 const map = new Map();
                 const selectedYears = authorYearsForSelection(selected);
                 publications.filter((o) => selectedYears.includes(outputYear(o))).forEach((o) => {
-                    (Array.isArray(o.authors) ? o.authors : []).forEach((a) => {
+                    (Array.isArray(o.authors) ? o.authors : []).filter(isUnitAuthor).forEach((a) => {
                         const name = text(a.name);
                         const role = norm(a.role);
                         if (!name) return;

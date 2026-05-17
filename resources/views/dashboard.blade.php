@@ -4190,7 +4190,7 @@
                         if (!isPublicationType(o.type)) return false;
                         const y = normalizeYear(o.year);
                         if (!y || String(y) !== String(yearCEValue)) return false;
-                        const authors = Array.isArray(o.authors) ? o.authors : [];
+                        const authors = (Array.isArray(o.authors) ? o.authors : []).filter(isUnitAuthor);
                         return authors.some(a => (a.name || '').trim() === name && (a.role || '').toLowerCase() === role);
                     });
                     return {
@@ -7149,6 +7149,7 @@
         <script>
             /* ========= Helpers ========= */
             const ROLES = ['first', 'co', 'corresponding'];
+            const isUnitAuthor = (author) => author?.is_unit_user === true;
 
             function isPublicationType(t = '') {
                 const s = String(t ?? '').toLowerCase();
@@ -7332,7 +7333,7 @@
                     const y = normalizeYear(o.year);
                     if (!y) return;
                     yearSetCE.add(y);
-                    const authors = Array.isArray(o.authors) ? o.authors : [];
+                    const authors = (Array.isArray(o.authors) ? o.authors : []).filter(isUnitAuthor);
                     authorRoleByYear[y] = authorRoleByYear[y] || {};
                     authors.forEach(a => {
                         const name = (a.name || '').trim();
@@ -9284,7 +9285,7 @@
                         const year = normalizeYear(item.year);
                         if (!year) return;
                         yearSetCE.add(year);
-                        const authors = Array.isArray(item.authors) ? item.authors : [];
+                        const authors = (Array.isArray(item.authors) ? item.authors : []).filter(isUnitAuthor);
                         authorRoleByYear[year] = authorRoleByYear[year] || {};
                         authors.forEach((author) => {
                             const name = (author.name || '').trim();

@@ -6994,6 +6994,8 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         <div>
                             <div class="section-tag section-tag--emerald">Networking</div>
                             <h2 class="max-w-6xl text-2xl font-semibold leading-tight text-slate-900 md:text-3xl">เครือข่ายและการเสริมศักยภาพ <span class="ml-1 text-lg font-medium text-slate-500">({{ number_format($networkingCount) }} รายการ)</span></h2>
+                            <p class="mt-3 max-w-4xl whitespace-pre-line text-base font-semibold leading-relaxed text-emerald-900 md:text-lg">We speak science to power and culture.
+For the benefit of mankind, our pursuit knows no bounds.</p>
                         </div>
                         <div class="network-kpi-grid mt-5">
                             <div class="network-kpi-card">

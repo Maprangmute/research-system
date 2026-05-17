@@ -128,12 +128,17 @@ class DashboardController extends Controller
 
             return preg_replace('/\s+/u', ' ', trim($text)) ?: '';
         };
-        $nameCandidates = static function (?string $prefix, ?string $name) use ($stripHonorifics): array {
+        $nameCandidates = static function (?string $prefix, ?string $name, ?string $prefixEn = '', ?string $nameEn = '') use ($stripHonorifics): array {
             $fullName = trim(implode(' ', array_filter([
                 trim((string) $prefix),
                 trim((string) $name),
             ])));
+            $englishFullName = trim(implode(' ', array_filter([
+                trim((string) $prefixEn),
+                trim((string) $nameEn),
+            ])));
             $bareName = trim((string) $name);
+            $bareEnglishName = trim((string) $nameEn);
 
             $strippedFullName = $stripHonorifics($fullName);
             $strippedBareName = $stripHonorifics($bareName);
@@ -155,6 +160,10 @@ class DashboardController extends Controller
                 preg_replace('/\s+/u', '', $bareName),
                 preg_replace('/\s+/u', '', $strippedFullName),
                 preg_replace('/\s+/u', '', $strippedBareName),
+                $englishFullName,
+                $bareEnglishName,
+                preg_replace('/\s+/u', '', $englishFullName),
+                preg_replace('/\s+/u', '', $bareEnglishName),
                 $firstName,
                 $firstLastName,
                 $firstLastNoSpace,
@@ -163,7 +172,7 @@ class DashboardController extends Controller
         $fteProfileUrls = [];
 
         User::query()
-            ->select(['prefix', 'name', 'profile_photo_path'])
+            ->select(['prefix', 'name', 'prefix_en', 'name_en', 'profile_photo_path'])
             ->whereNotNull('name')
             ->whereNotNull('profile_photo_path')
             ->get()
@@ -183,7 +192,7 @@ class DashboardController extends Controller
                     $photoUrl = asset('storage/'.$publicPath).'?v='.rawurlencode(md5($publicPath));
                 }
 
-                foreach ($nameCandidates($user->prefix, $user->name) as $candidate) {
+                foreach ($nameCandidates($user->prefix, $user->name, $user->prefix_en ?? '', $user->name_en ?? '') as $candidate) {
                     foreach (array_unique(array_filter([
                         $normalizeName($candidate),
                         $normalizeName($candidate, true),
@@ -208,7 +217,7 @@ class DashboardController extends Controller
 
         User::query()
             ->select($existingColumns('users', [
-                'id', 'prefix', 'name', 'position', 'skill_role', 'role', 'is_borrowed', 'borrowed_department',
+                'id', 'prefix', 'name', 'prefix_en', 'name_en', 'position', 'skill_role', 'role', 'is_borrowed', 'borrowed_department',
             ]))
             ->whereNotNull('name')
             ->get()
@@ -235,7 +244,7 @@ class DashboardController extends Controller
                     'is_unit_user' => ! $isBorrowed && ! $isResigned && ! $isConsultant,
                 ];
 
-                foreach ($nameCandidates($user->prefix ?? '', $user->name) as $candidate) {
+                foreach ($nameCandidates($user->prefix ?? '', $user->name, $user->prefix_en ?? '', $user->name_en ?? '') as $candidate) {
                     foreach (array_unique(array_filter([
                         $normalizeName($candidate),
                         $normalizeName($candidate, true),
@@ -267,7 +276,24 @@ class DashboardController extends Controller
             return null;
         };
 
-        $dashboardProjectsJs = $projects->map(function ($project) use ($resolveFteUserMeta) {
+        $mapDashboardAuthor = static function ($author) use ($resolveFteUserMeta): array {
+            $userMeta = $resolveFteUserMeta($author->name);
+            $isUnitAuthor = $userMeta !== null
+                && ! (bool) ($userMeta['is_resigned'] ?? false)
+                && ! (bool) ($userMeta['is_consultant'] ?? false);
+
+            return [
+                'name' => $author->name,
+                'role' => $author->role,
+                'user_id' => $userMeta['id'] ?? null,
+                'is_unit_user' => $isUnitAuthor,
+                'is_resigned' => (bool) ($userMeta['is_resigned'] ?? false),
+                'is_consultant' => (bool) ($userMeta['is_consultant'] ?? false),
+                'is_borrowed' => (bool) ($userMeta['is_borrowed'] ?? false),
+            ];
+        };
+
+        $dashboardProjectsJs = $projects->map(function ($project) use ($resolveFteUserMeta, $mapDashboardAuthor) {
             return [
                 'id' => $project->id,
                 'project_name_th' => $project->project_name_th,
@@ -350,16 +376,13 @@ class DashboardController extends Controller
                     'title' => $output->title,
                     'year' => $output->year,
                     'created_at' => optional($output->created_at)->toDateTimeString(),
-                    'authors' => $output->authors->map(fn($author) => [
-                        'name' => $author->name,
-                        'role' => $author->role,
-                    ])->values(),
+                    'authors' => $output->authors->map($mapDashboardAuthor)->values(),
                 ])->values(),
             ];
         })->values();
 
         // Keep backward-compatible payloads for the legacy mobile dashboard view.
-        $outputsForJs = $outputs->map(function ($output) use ($projects) {
+        $outputsForJs = $outputs->map(function ($output) use ($projects, $mapDashboardAuthor) {
             $projectName = $projects->firstWhere('id', $output->project_id)?->project_name_th;
 
             return [
@@ -370,10 +393,7 @@ class DashboardController extends Controller
                 'title' => $output->title,
                 'year' => $output->year,
                 'created_at' => optional($output->created_at)->toDateTimeString(),
-                'authors' => $output->authors->map(fn($author) => [
-                    'name' => $author->name,
-                    'role' => $author->role,
-                ])->values(),
+                'authors' => $output->authors->map($mapDashboardAuthor)->values(),
             ];
         })->values();
 
