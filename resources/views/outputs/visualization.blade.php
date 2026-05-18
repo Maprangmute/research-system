@@ -6991,7 +6991,15 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     $networkingCommunicationFeatures = collect($networkingSummary['communication_features'] ?? []);
                     $networkingFeaturesByYear = $networkingCommunicationFeatures
                         ->groupBy(fn ($feature) => (string) ($feature->year_be ?: 'ไม่ระบุปี'))
-                        ->sortKeysDesc();
+                        ->map(fn ($features) => collect($features)
+                            ->sortByDesc(fn ($feature) => is_numeric($feature->sort_date_timestamp ?? null) ? (int) $feature->sort_date_timestamp : 0)
+                            ->values())
+                        ->sortKeysUsing(function ($left, $right) {
+                            $leftYear = is_numeric($left) ? (int) $left : PHP_INT_MIN;
+                            $rightYear = is_numeric($right) ? (int) $right : PHP_INT_MIN;
+
+                            return $rightYear <=> $leftYear;
+                        });
                 @endphp
                 <section class="scene">
                     <article class="fade-up panel section-panel section-panel--emerald p-5 md:p-7">
@@ -7116,7 +7124,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                                     <div class="network-feature-card__body">
                                                         <div class="network-feature-card__meta">
                                                             <span class="network-feature-card__pill">{{ $featureKindLabel }}</span>
-                                                            <span class="network-feature-card__pill">{{ $feature->year_be ?: '-' }}</span>
+                                                            <span class="network-feature-card__pill">{{ $feature->display_date ?: ($feature->year_be ?: '-') }}</span>
                                                             @if (! $featureHasLink)
                                                                 <span class="network-feature-card__pill">ไม่มีลิงก์</span>
                                                             @endif

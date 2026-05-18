@@ -1532,6 +1532,18 @@ class OutputController extends Controller
             'back_office' => 'พันธกิจ',
             'external' => 'Extra',
         ];
+        $parseOutputSortDate = function ($value): ?Carbon {
+            $normalized = $this->normalizeThaiDateInput($value);
+            if (! $normalized || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $normalized)) {
+                return null;
+            }
+
+            try {
+                return Carbon::parse($normalized)->startOfDay();
+            } catch (\Throwable) {
+                return null;
+            }
+        };
 
         $projectRows = $this->visibleProjectOutputsQuery($request)
             ->with([
@@ -1557,13 +1569,14 @@ class OutputController extends Controller
                 'created_at',
             ])
             ->get()
-            ->map(function (Output $output) use ($extractTypeCode, $sourceLabelMap) {
+            ->map(function (Output $output) use ($extractTypeCode, $sourceLabelMap, $parseOutputSortDate) {
                 $typeCode = $extractTypeCode($output->type) ?? 'OTHER';
                 $authors = $typeCode === 'EA119'
                     ? $output->bookAuthors->pluck('name')->filter()->values()->all()
                     : ($typeCode === 'EA118'
                         ? $output->awardRecipients->pluck('name')->filter()->values()->all()
                         : $output->authors->pluck('name')->filter()->values()->all());
+                $sortDate = $parseOutputSortDate($output->year);
                 $fallbackPresenter = $authors[0] ?? '';
                 $conferenceWithPresenter = $output->conferences->first(function ($conferenceItem) {
                     return trim((string) $conferenceItem->presenterDisplay()) !== '';
@@ -1585,6 +1598,8 @@ class OutputController extends Controller
                     'link' => $output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null,
                     'detail' => trim((string) ($output->project_output ?? '')),
                     'created_at' => $output->created_at,
+                    'sort_date_timestamp' => $sortDate?->timestamp,
+                    'display_date' => $sortDate ? $sortDate->format('d-m-') . ($sortDate->year + 543) : null,
                     'journal' => trim((string) ($output->journal ?? '')),
                     'quartile' => strtoupper(trim((string) ($output->quartile ?? ''))),
                     'impact_factor' => $output->impact_factor !== null ? (float) $output->impact_factor : null,
@@ -1613,8 +1628,9 @@ class OutputController extends Controller
                 'created_at',
             ])
             ->get()
-            ->map(function (BackOfficeTaskOutput $output) use ($extractTypeCode, $sourceLabelMap, $normalizeNames) {
+            ->map(function (BackOfficeTaskOutput $output) use ($extractTypeCode, $sourceLabelMap, $normalizeNames, $parseOutputSortDate) {
                 $typeCode = $extractTypeCode($output->type) ?? 'OTHER';
+                $sortDate = $parseOutputSortDate($output->year);
                 $conference = collect($output->conferences ?? [])->first();
                 $authors = $typeCode === 'EA119'
                     ? $normalizeNames($output->book_authors ?? [])
@@ -1635,6 +1651,8 @@ class OutputController extends Controller
                     'link' => $output->task ? route('back_office.show', $output->task) : null,
                     'detail' => trim((string) ($output->project_output ?? '')),
                     'created_at' => $output->created_at,
+                    'sort_date_timestamp' => $sortDate?->timestamp,
+                    'display_date' => $sortDate ? $sortDate->format('d-m-') . ($sortDate->year + 543) : null,
                     'journal' => trim((string) ($output->journal ?? '')),
                     'quartile' => strtoupper(trim((string) ($output->quartile ?? ''))),
                     'impact_factor' => $output->impact_factor !== null ? (float) $output->impact_factor : null,
@@ -1678,6 +1696,7 @@ class OutputController extends Controller
                     : ($typeCode === 'EA118'
                         ? $output->awardRecipients->pluck('name')->filter()->values()->all()
                         : $output->authors->pluck('name')->filter()->values()->all());
+                $sortDate = $output->publish_date?->copy()->startOfDay();
                 $fallbackPresenter = $authors[0] ?? '';
                 $conferencePresenter = trim((string) ($conference?->presenterDisplay() ?? ''));
                 return (object) [
@@ -1694,6 +1713,8 @@ class OutputController extends Controller
                     'link' => route('outputs.external-academic.show', $output),
                     'detail' => trim((string) ($output->note ?? '')),
                     'created_at' => $output->created_at,
+                    'sort_date_timestamp' => $sortDate?->timestamp,
+                    'display_date' => $sortDate ? $sortDate->format('d-m-') . ($sortDate->year + 543) : null,
                     'journal' => trim((string) ($output->journal ?? '')),
                     'quartile' => strtoupper(trim((string) ($output->quartile ?? ''))),
                     'impact_factor' => $output->impact_factor !== null ? (float) $output->impact_factor : null,
@@ -1807,8 +1828,12 @@ class OutputController extends Controller
                     return $rightYear <=> $leftYear;
                 }
 
-                $leftCreatedAt = $left->created_at?->timestamp ?? PHP_INT_MIN;
-                $rightCreatedAt = $right->created_at?->timestamp ?? PHP_INT_MIN;
+                $leftCreatedAt = is_numeric($left->sort_date_timestamp ?? null)
+                    ? (int) $left->sort_date_timestamp
+                    : ($left->created_at?->timestamp ?? PHP_INT_MIN);
+                $rightCreatedAt = is_numeric($right->sort_date_timestamp ?? null)
+                    ? (int) $right->sort_date_timestamp
+                    : ($right->created_at?->timestamp ?? PHP_INT_MIN);
 
                 if ($leftCreatedAt !== $rightCreatedAt) {
                     return $rightCreatedAt <=> $leftCreatedAt;
