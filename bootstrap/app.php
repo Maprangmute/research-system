@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\EnsureTermsAccepted;
 use App\Http\Middleware\PreventAuthenticatedResponseCache;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -15,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             PreventAuthenticatedResponseCache::class,
+            EnsureTermsAccepted::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

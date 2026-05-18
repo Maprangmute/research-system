@@ -12,6 +12,7 @@ use App\Http\Controllers\AiDashboardController;
 use App\Http\Controllers\OutputController;
 use App\Http\Controllers\BackOfficeController;
 use App\Http\Controllers\UserActivityLogController;
+use App\Http\Controllers\TermsAcceptanceController;
 
 
 use App\Http\Controllers\DocumentController;
@@ -39,6 +40,11 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::get('/seminar', [OutputController::class, 'seminar'])->name('seminar');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/terms/accept', [TermsAcceptanceController::class, 'show'])->name('terms.accept');
+    Route::post('/terms/accept', [TermsAcceptanceController::class, 'store'])->name('terms.accept.store');
+});
 
 Route::middleware(['auth'])->group(function () {
     Route::view('/user-guide', 'user_guide')->name('user_guide');

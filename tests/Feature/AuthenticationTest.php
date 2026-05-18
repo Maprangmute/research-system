@@ -30,6 +30,30 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 
+    public function test_authenticated_users_without_current_terms_are_redirected_to_terms_gate(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertRedirect(route('terms.accept', absolute: false));
+    }
+
+    public function test_terms_acceptance_is_recorded_after_login(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post(route('terms.accept.store'), [
+            'terms_accepted' => '1',
+        ]);
+
+        $user->refresh();
+        $this->assertNotNull($user->terms_accepted_at);
+        $this->assertSame(config('terms.current_version'), $user->terms_accepted_version);
+        $this->assertNotNull($user->terms_accepted_ip);
+        $response->assertRedirect(route('dashboard'));
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();

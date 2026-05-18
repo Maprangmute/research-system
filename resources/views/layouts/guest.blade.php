@@ -14,7 +14,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="facebook-domain-verification" content="tqgjbs7tegolvhlsr90o4exb5aq6hg">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title>SiHP Research Data</title>   <!-- 👈 ตั้งชื่อแท็บเว็บตรงนี้ -->
+        <title>SiHP Research Database Management system</title>   <!-- 👈 ตั้งชื่อแท็บเว็บตรงนี้ -->
         <link rel="icon" type="image/x-icon" href="{{ asset('images/favicon.ico') }}">
         <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16x16.png') }}">
         <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32x32.png') }}">

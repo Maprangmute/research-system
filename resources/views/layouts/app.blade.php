@@ -1,11 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 
+@php
+    $appTitle = 'SiHP Research Database Management system';
+    $routeName = request()->route()?->getName();
+    $pageTitle = match (true) {
+        request()->routeIs('dashboard') => 'แดชบอร์ด',
+        request()->routeIs('dashboard.command-center') => 'แดชบอร์ดภาพรวม',
+        request()->routeIs('overview') => 'ภาพรวมระบบ',
+        request()->routeIs('projects.index') => 'โครงการวิจัย',
+        request()->routeIs('projects.create') => 'เพิ่มโครงการ',
+        request()->routeIs('projects.edit') => 'แก้ไขโครงการ',
+        request()->routeIs('projects.progress_reports.*') => 'รายงานความก้าวหน้า',
+        request()->routeIs('projects.gantt*') => 'แผนงานโครงการ',
+        request()->routeIs('back_office.index') => 'ภารกิจ',
+        request()->routeIs('back_office.*') => 'ภารกิจ',
+        request()->routeIs('outputs.index') => 'ภาพรวมผลงาน',
+        request()->routeIs('outputs.people*') => 'ผลงานรายบุคคล',
+        request()->routeIs('outputs.papers') => 'บทความวิจัย',
+        request()->routeIs('outputs.presentations') => 'งานนำเสนอ',
+        request()->routeIs('outputs.textbooks') => 'ตำราและบทหนังสือ',
+        request()->routeIs('outputs.visualization*') => 'ข้อมูลผลงานสำหรับสัมมนา',
+        request()->routeIs('outputs.project-data-quality*') => 'รายงานข้อมูลผิดพลาดของโปรเจค',
+        request()->routeIs('outputs.external-academic*') => 'ผลงานวิชาการภายนอก',
+        request()->routeIs('outputs.*') => 'ผลงานวิชาการ',
+        request()->routeIs('fte.index') => 'FTE รายบุคคล',
+        request()->routeIs('fte.detail') => 'รายละเอียด FTE รายบุคคล',
+        request()->routeIs('fte.project.index') => 'FTE รายโปรเจค',
+        request()->routeIs('fte.project.detail') => 'รายละเอียด FTE รายโปรเจค',
+        request()->routeIs('fte.*') => 'FTE',
+        request()->routeIs('users.index') => 'จัดการผู้ใช้',
+        request()->routeIs('users.manage') => 'จัดการสิทธิ์ผู้ใช้',
+        request()->routeIs('users.create') => 'เพิ่มผู้ใช้',
+        request()->routeIs('users.edit') => 'แก้ไขผู้ใช้',
+        request()->routeIs('profile.show') => 'แก้ไขข้อมูลส่วนตัว',
+        request()->routeIs('user_guide') => 'คู่มือการใช้งาน',
+        request()->routeIs('project_logs.*') => 'ประวัติโครงการ',
+        request()->routeIs('back_office_action_logs.*') => 'ประวัติ Back Office',
+        request()->routeIs('user_activity_logs.*') => 'ประวัติการใช้งาน',
+        request()->routeIs('rm.ai_dashboard.*') => 'แดชบอร์ด AI',
+        default => 'ระบบจัดการฐานข้อมูลงานวิจัย',
+    };
+    $fullPageTitle = "{$pageTitle} - {$appTitle}";
+@endphp
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="facebook-domain-verification" content="tqgjbs7tegolvhlsr90o4exb5aq6hg">
-    <title>Research Management</title>
+    <title>{{ $fullPageTitle }}</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('images/favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16x16.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32x32.png') }}">
@@ -969,7 +1012,7 @@
             x-effect="window.dispatchEvent(new CustomEvent('app-mobile-nav', { detail: { open: openNav } }))">
             <div class="container mx-auto px-4 py-3">
                 <div class="app-nav-shell mobile-nav">
-                    <a href="/rm" class="app-brand brand" aria-label="SiHP Research Database management system">
+                    <a href="/rm" class="app-brand brand" aria-label="{{ $fullPageTitle }}">
                         <img src="{{ asset('images/sihp-logo.png') }}" alt="" class="app-brand__logo">
                         <span class="app-brand__text">
                             <span class="app-brand__primary">SiHP Research</span>
@@ -1129,7 +1172,7 @@
 
                         <button type="button" class="inline-flex mobile-nav-toggle text-gray-600"
                             :class="{ 'is-open': openNav }"
-                            @click="openNav = !openNav" aria-label="Toggle navigation">
+                            @click="openNav = !openNav" aria-label="เปิดเมนู">
                             <span class="mobile-nav-toggle__label">เมนู</span>
                             <span class="mobile-hamburger" aria-hidden="true">
                                 <span></span>
@@ -1154,7 +1197,7 @@
                         <div class="pt-1 pb-2 border-b flex items-center justify-between border-slate-200">
                             <div class="text-sm font-semibold text-slate-700">เมนู</div>
                             <button type="button" class="inline-flex mobile-nav-toggle text-gray-600"
-                                @click="openNav = false" aria-label="Close navigation">
+                                @click="openNav = false" aria-label="ปิดเมนู">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />
                                 </svg>

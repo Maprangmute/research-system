@@ -391,6 +391,10 @@ class User extends Authenticatable
     'borrowed_department',
     'role',
     'profile_photo_path',
+    'terms_accepted_at',
+    'terms_accepted_version',
+    'terms_accepted_ip',
+    'terms_accepted_user_agent',
 ];
 
 
@@ -426,6 +430,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_borrowed' => 'boolean',
+            'terms_accepted_at' => 'datetime',
         ];
     }
 
