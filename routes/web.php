@@ -225,6 +225,8 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/fte/{person}/pdf', [FteController::class, 'exportPdf'])->name('fte.pdf');
     Route::get('/fte/{person}/word', [FteController::class, 'exportWord'])->name('fte.word');
     Route::get('/outputs', [OutputController::class, 'index'])->name('outputs.index');
+    Route::get('/outputs/items/{source}/{id}/edit', [OutputController::class, 'editOutputItem'])->name('outputs.items.edit');
+    Route::put('/outputs/items/{source}/{id}', [OutputController::class, 'updateOutputItem'])->name('outputs.items.update');
     Route::get('/outputs/pdf', [OutputController::class, 'outputsPdf'])->name('outputs.pdf');
     Route::get('/outputs/excel', [OutputController::class, 'outputsExcel'])->name('outputs.excel');
     Route::get('/outputs/people', [OutputController::class, 'people'])->name('outputs.people');

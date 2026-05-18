@@ -417,6 +417,7 @@
                     field.dataset.paperAjaxBound = 'true';
                     field.addEventListener('change', () => {
                         clearTimeout(liveSearchTimer);
+                        if (controller) controller.abort();
                         fetchAndRender(buildUrlFromForm(form, true), { updateUrl: true });
                     });
                 });
@@ -433,6 +434,7 @@
                     field.addEventListener('compositionend', () => {
                         isComposing = false;
                         clearTimeout(liveSearchTimer);
+                        if (controller) controller.abort();
                         liveSearchTimer = setTimeout(() => {
                             fetchAndRender(buildUrlFromForm(form, true), { updateUrl: true });
                         }, 300);
@@ -441,9 +443,17 @@
                     field.addEventListener('input', () => {
                         if (isComposing) return;
                         clearTimeout(liveSearchTimer);
+                        if (controller) controller.abort();
                         liveSearchTimer = setTimeout(() => {
                             fetchAndRender(buildUrlFromForm(form, true), { updateUrl: true });
                         }, 300);
+                    });
+                    field.addEventListener('keydown', (event) => {
+                        if (event.key !== 'Enter') return;
+                        event.preventDefault();
+                        clearTimeout(liveSearchTimer);
+                        if (controller) controller.abort();
+                        fetchAndRender(buildUrlFromForm(form, true), { updateUrl: true });
                     });
                 });
 

@@ -570,6 +570,642 @@ class OutputController extends Controller
             ->with('success', 'ลบรายการเรียบร้อยแล้ว');
     }
 
+    public function editOutputItem(string $source, int $id)
+    {
+        [$source, $output] = $this->resolveEditableOutputItem($source, $id);
+
+        return response()->json([
+            'ok' => true,
+            'source' => $source,
+            'update_url' => route('outputs.items.update', ['source' => $source, 'id' => $id]),
+            'output' => $this->serializeEditableOutputItem($source, $output),
+        ]);
+    }
+
+    public function updateOutputItem(Request $request, string $source, int $id)
+    {
+        [$source, $output] = $this->resolveEditableOutputItem($source, $id);
+
+        if ($source === 'extra') {
+            $request->merge([
+                'publish_date' => $this->normalizeThaiDateInput($request->input('publish_date')),
+            ]);
+        }
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:5000'],
+            'type' => ['required', 'string', 'max:255'],
+            'year' => ['nullable', 'string', 'max:255'],
+            'publish_date' => ['nullable', 'date'],
+            'project_output' => ['nullable', 'string', 'max:5000'],
+            'note' => ['nullable', 'string', 'max:5000'],
+            'job_category' => ['nullable', 'string', 'max:255'],
+            'journal' => ['nullable', 'string', 'max:500'],
+            'quartile' => ['nullable', 'in:Q1,Q2,Q3,Q4,TCI 1,TCI 2'],
+            'impact_factor' => ['nullable', 'numeric', 'min:0', 'max:99999.999'],
+            'book_title' => ['nullable', 'string', 'max:1000'],
+            'publisher_name' => ['nullable', 'string', 'max:1000'],
+            'chapter_pages' => ['nullable', 'string', 'max:1000'],
+            'isbn' => ['nullable', 'string', 'max:1000'],
+            'authors' => ['nullable', 'array'],
+            'authors.*.id' => ['nullable', 'integer'],
+            'authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'authors.*.role' => ['nullable', 'in:first,co,corresponding,awardee'],
+            'authors.*.person_type' => ['nullable', 'in:unit,internal,external'],
+            'authors.*.name' => ['nullable', 'string', 'max:500'],
+            'award_recipients' => ['nullable', 'array'],
+            'award_recipients.*.id' => ['nullable', 'integer'],
+            'award_recipients.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'award_recipients.*.person_type' => ['nullable', 'in:unit,internal,external'],
+            'award_recipients.*.name' => ['nullable', 'string', 'max:500'],
+            'book_authors' => ['nullable', 'array'],
+            'book_authors.*.id' => ['nullable', 'integer'],
+            'book_authors.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'book_authors.*.person_type' => ['nullable', 'in:internal,external'],
+            'book_authors.*.name' => ['nullable', 'string', 'max:500'],
+            'conference_id' => ['nullable', 'integer'],
+            'conference_name' => ['nullable', 'string', 'max:500'],
+            'conference_presentation_type' => ['nullable', 'string', 'max:255'],
+            'conference_location' => ['nullable', 'string', 'max:500'],
+            'conference_presenters' => ['nullable', 'array'],
+            'conference_presenters.*.id' => ['nullable', 'integer'],
+            'conference_presenters.*.user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'conference_presenters.*.person_type' => ['nullable', 'in:internal,external'],
+            'conference_presenters.*.note' => ['nullable', 'string', 'max:500'],
+            'conference_presenters.*.name' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $typeCode = $this->editableOutputTypeCode(trim((string) ($validated['type'] ?? '')));
+        $conditionalErrors = [];
+
+        if ($source === 'extra') {
+            if (blank($validated['publish_date'] ?? null)) {
+                $conditionalErrors['publish_date'][] = 'กรุณาเลือกวันที่ publish';
+            }
+            if (blank($validated['job_category'] ?? null)) {
+                $conditionalErrors['job_category'][] = 'กรุณาเลือก Theme / Job category';
+            }
+        } elseif (blank($validated['year'] ?? null)) {
+            $conditionalErrors['year'][] = 'กรุณาเลือกวันที่ publish';
+        }
+
+        if ($typeCode === 'EA101') {
+            if (blank($validated['journal'] ?? null)) {
+                $conditionalErrors['journal'][] = 'กรุณากรอก Journal';
+            }
+            $conditionalErrors = array_merge($conditionalErrors, $this->validateEditablePeopleRows($validated['authors'] ?? [], 'authors', 'ผู้เขียน', true, ['first', 'co', 'corresponding']));
+        }
+
+        if ($typeCode === 'EA103') {
+            if (blank($validated['conference_name'] ?? null)) {
+                $conditionalErrors['conference_name'][] = 'กรุณากรอกชื่อ Conference';
+            }
+            $conditionalErrors = array_merge($conditionalErrors, $this->validateEditablePeopleRows($validated['conference_presenters'] ?? [], 'conference_presenters', 'ผู้นำเสนอ', false, null, true));
+        }
+
+        if ($typeCode === 'EA118') {
+            $conditionalErrors = array_merge($conditionalErrors, $this->validateEditablePeopleRows($validated['award_recipients'] ?? [], 'award_recipients', 'ผู้ได้รับรางวัล'));
+        }
+
+        if ($typeCode === 'EA119') {
+            foreach ([
+                'book_title' => 'กรุณากรอกชื่อหนังสือ',
+                'publisher_name' => 'กรุณากรอกชื่อสำนักพิมพ์',
+                'chapter_pages' => 'กรุณากรอกชื่อบท / เลขหน้า',
+            ] as $field => $message) {
+                if (blank($validated[$field] ?? null)) {
+                    $conditionalErrors[$field][] = $message;
+                }
+            }
+            $conditionalErrors = array_merge($conditionalErrors, $this->validateEditablePeopleRows($validated['book_authors'] ?? [], 'book_authors', 'ผู้เขียน'));
+        }
+
+        if ($conditionalErrors !== []) {
+            throw \Illuminate\Validation\ValidationException::withMessages($conditionalErrors);
+        }
+
+        DB::transaction(function () use ($source, $output, $validated) {
+            $type = trim((string) ($validated['type'] ?? ''));
+            $typeCode = $this->editableOutputTypeCode($type);
+            $isEA101 = $typeCode === 'EA101';
+            $isEA103 = $typeCode === 'EA103';
+            $isEA118 = $typeCode === 'EA118';
+            $isEA119 = $typeCode === 'EA119';
+
+            if ($source === 'extra') {
+                /** @var ExternalOutput $output */
+                $output->update([
+                    'type' => $typeCode ?: $type,
+                    'job_category' => $this->nullableTrim($validated['job_category'] ?? null),
+                    'title' => trim((string) $validated['title']),
+                    'note' => $this->nullableTrim($validated['note'] ?? $validated['project_output'] ?? null),
+                    'publish_date' => $validated['publish_date'] ?? null,
+                    'journal' => $isEA101 ? $this->nullableTrim($validated['journal'] ?? null) : null,
+                    'quartile' => $isEA101 ? $this->nullableTrim($validated['quartile'] ?? null) : null,
+                    'impact_factor' => $isEA101 && ($validated['impact_factor'] ?? null) !== '' ? ($validated['impact_factor'] ?? null) : null,
+                    'book_title' => $isEA119 ? $this->nullableTrim($validated['book_title'] ?? null) : null,
+                    'publisher_name' => $isEA119 ? $this->nullableTrim($validated['publisher_name'] ?? null) : null,
+                    'chapter_pages' => $isEA119 ? $this->nullableTrim($validated['chapter_pages'] ?? null) : null,
+                    'isbn' => $isEA119 ? $this->nullableTrim($validated['isbn'] ?? null) : null,
+                    'updated_by' => auth()->id(),
+                ]);
+                $this->syncExternalEditableOutputRelations($output, $validated, $isEA101, $isEA103, $isEA118, $isEA119);
+
+                return;
+            }
+
+            $basePayload = [
+                'type' => $type,
+                'title' => trim((string) $validated['title']),
+                'year' => $validated['year'] ?? null,
+                'project_output' => $validated['project_output'] ?? $validated['note'] ?? null,
+                'journal' => $isEA101 ? $this->nullableTrim($validated['journal'] ?? null) : null,
+                'quartile' => $isEA101 ? $this->nullableTrim($validated['quartile'] ?? null) : null,
+                'impact_factor' => $isEA101 && ($validated['impact_factor'] ?? null) !== '' ? ($validated['impact_factor'] ?? null) : null,
+                'book_title' => $isEA119 ? $this->nullableTrim($validated['book_title'] ?? null) : null,
+                'publisher_name' => $isEA119 ? $this->nullableTrim($validated['publisher_name'] ?? null) : null,
+                'chapter_pages' => $isEA119 ? $this->nullableTrim($validated['chapter_pages'] ?? null) : null,
+                'isbn' => $isEA119 ? $this->nullableTrim($validated['isbn'] ?? null) : null,
+            ];
+
+            $output->update($basePayload);
+
+            if ($source === 'project') {
+                $this->syncProjectEditableOutputRelations($output, $validated, $isEA101, $isEA103, $isEA118, $isEA119);
+            } else {
+                $this->syncBackOfficeEditableOutputRelations($output, $validated, $typeCode ?: $type);
+            }
+        });
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'อัปเดตผลงานเรียบร้อย',
+        ]);
+    }
+
+    private function resolveEditableOutputItem(string $source, int $id): array
+    {
+        $source = match (strtolower(trim($source))) {
+            'project' => 'project',
+            'mission', 'back-office', 'back_office' => 'mission',
+            'extra', 'external' => 'extra',
+            default => abort(404),
+        };
+
+        $output = match ($source) {
+            'project' => Output::query()
+                ->with(['authors', 'awardRecipients', 'bookAuthors', 'conferences.presenters'])
+                ->findOrFail($id),
+            'mission' => BackOfficeTaskOutput::query()
+                ->with(['contributorLinks.user', 'authorLinks.user', 'awardRecipientLinks.user', 'bookAuthorLinks.user', 'conferenceLinks.presenters.user'])
+                ->findOrFail($id),
+            'extra' => ExternalOutput::query()
+                ->with(['authors', 'awardRecipients', 'bookAuthors', 'conferences.presenters'])
+                ->findOrFail($id),
+        };
+
+        $this->authorizeEditableOutputItem($source, $output);
+
+        return [$source, $output];
+    }
+
+    private function authorizeEditableOutputItem(string $source, $output): void
+    {
+        $user = auth()->user();
+        if (!$user) {
+            abort(403);
+        }
+
+        if ($user->isAdminLike()) {
+            return;
+        }
+
+        $fullName = trim(($user->prefix ?? '') . ' ' . ($user->name ?? ''));
+
+        if ($source === 'project') {
+            $allowed = $output->project()
+                ->where(function ($query) use ($user, $fullName) {
+                    $query->where('user_id', $user->id)
+                        ->orWhereHas('fteRoles', function ($roleQuery) use ($fullName) {
+                            $roleQuery->where('name', $fullName);
+                        });
+                })
+                ->exists();
+            abort_unless($allowed, 403);
+
+            return;
+        }
+
+        if ($source === 'mission') {
+            $allowed = (int) ($output->owner_user_id ?? 0) === (int) $user->id
+                || trim((string) ($output->owner_name ?? '')) === $fullName
+                || $output->contributorLinks()
+                    ->where(function ($query) use ($user, $fullName) {
+                        $query->where('user_id', $user->id)
+                            ->orWhere('name', $fullName);
+                    })
+                    ->exists()
+                || $output->task()
+                    ->where(function ($query) use ($user, $fullName) {
+                        $query->where('created_by', $user->id)
+                            ->orWhereHas('entries', function ($entryQuery) use ($fullName) {
+                                $entryQuery->where('person_name', $fullName);
+                            });
+                    })
+                    ->exists();
+            abort_unless($allowed, 403);
+        }
+    }
+
+    private function serializeEditableOutputItem(string $source, $output): array
+    {
+        if ($source === 'extra') {
+            $conference = $output->conferences->first();
+
+            return [
+                'title' => (string) ($output->title ?? ''),
+                'type' => (string) ($output->type ?? ''),
+                'job_category' => (string) ($output->job_category ?? ''),
+                'note' => (string) ($output->note ?? ''),
+                'publish_date' => $output->publish_date?->format('Y-m-d') ?? '',
+                'journal' => (string) ($output->journal ?? ''),
+                'quartile' => (string) ($output->quartile ?? ''),
+                'impact_factor' => $output->impact_factor !== null ? (string) $output->impact_factor : '',
+                'book_title' => (string) ($output->book_title ?? ''),
+                'publisher_name' => (string) ($output->publisher_name ?? ''),
+                'chapter_pages' => (string) ($output->chapter_pages ?? ''),
+                'isbn' => (string) ($output->isbn ?? ''),
+                'authors' => $this->serializePeopleRows($output->authors, true),
+                'award_recipients' => $this->serializePeopleRows($output->awardRecipients),
+                'book_authors' => $this->serializePeopleRows($output->bookAuthors),
+                'conference' => $this->serializeConferenceRow($conference, true),
+            ];
+        }
+
+        if ($source === 'mission') {
+            $conference = collect($output->resolvedConferences())->first();
+
+            return [
+                'title' => (string) ($output->title ?? ''),
+                'type' => (string) ($output->type ?? ''),
+                'year' => (string) ($output->year ?? ''),
+                'project_output' => (string) ($output->project_output ?? ''),
+                'journal' => (string) ($output->journal ?? ''),
+                'quartile' => (string) ($output->quartile ?? ''),
+                'impact_factor' => $output->impact_factor !== null ? (string) $output->impact_factor : '',
+                'book_title' => (string) ($output->book_title ?? ''),
+                'publisher_name' => (string) ($output->publisher_name ?? ''),
+                'chapter_pages' => (string) ($output->chapter_pages ?? ''),
+                'isbn' => (string) ($output->isbn ?? ''),
+                'authors' => $this->serializePeopleRows($output->resolvedAuthors(), true),
+                'award_recipients' => $this->serializePeopleRows($output->resolvedAwardRecipients()),
+                'book_authors' => $this->serializePeopleRows($output->resolvedBookAuthors()),
+                'conference' => $this->serializeConferenceRow($conference, false),
+                'contributors' => $output->resolvedContributors()->values()->all(),
+            ];
+        }
+
+        $conference = $output->conferences->first();
+
+        return [
+            'title' => (string) ($output->title ?? ''),
+            'type' => (string) ($output->type ?? ''),
+            'year' => (string) ($output->year ?? ''),
+            'project_output' => (string) ($output->project_output ?? ''),
+            'journal' => (string) ($output->journal ?? ''),
+            'quartile' => (string) ($output->quartile ?? ''),
+            'impact_factor' => $output->impact_factor !== null ? (string) $output->impact_factor : '',
+            'book_title' => (string) ($output->book_title ?? ''),
+            'publisher_name' => (string) ($output->publisher_name ?? ''),
+            'chapter_pages' => (string) ($output->chapter_pages ?? ''),
+            'isbn' => (string) ($output->isbn ?? ''),
+            'authors' => $this->serializePeopleRows($output->authors, true),
+            'award_recipients' => $this->serializePeopleRows($output->awardRecipients),
+            'book_authors' => $this->serializePeopleRows($output->bookAuthors),
+            'conference' => $this->serializeConferenceRow($conference, false),
+        ];
+    }
+
+    private function serializePeopleRows($items, bool $includeRole = false): array
+    {
+        return collect($items ?? [])
+            ->map(function ($item) use ($includeRole) {
+                $row = is_array($item) ? $item : [
+                    'id' => $item->id ?? null,
+                    'user_id' => $item->user_id ?? null,
+                    'name' => $item->name ?? '',
+                    'role' => $item->role ?? '',
+                    'person_type' => $item->person_type ?? '',
+                ];
+
+                return [
+                    'id' => $row['id'] ?? null,
+                    'user_id' => $row['user_id'] ?? null,
+                    'person_type' => $row['person_type'] ?? (!empty($row['user_id']) ? 'internal' : 'external'),
+                    'role' => $includeRole ? ($row['role'] ?? '') : '',
+                    'name' => trim((string) ($row['name'] ?? '')),
+                ];
+            })
+            ->filter(fn (array $row) => $row['name'] !== '' || !empty($row['user_id']))
+            ->values()
+            ->all();
+    }
+
+    private function serializeConferenceRow($conference, bool $external): array
+    {
+        if (!$conference) {
+            return [
+                'id' => null,
+                'name' => '',
+                'presentation_type' => '',
+                'location' => '',
+                'presenters' => [],
+            ];
+        }
+
+        $conferenceArray = is_array($conference) ? $conference : null;
+        $presenters = $conferenceArray
+            ? collect($conferenceArray['presenters'] ?? [])
+            : collect($conference->presenters ?? []);
+
+        return [
+            'id' => $conferenceArray['id'] ?? ($conference->id ?? null),
+            'name' => (string) ($conferenceArray['name'] ?? $conference->name ?? ''),
+            'presentation_type' => (string) ($conferenceArray['presentation_type'] ?? $conference->presentation_type ?? ''),
+            'location' => (string) ($conferenceArray['location'] ?? $conference->location ?? ''),
+            'presenters' => $presenters
+                ->map(function ($presenter) use ($external) {
+                    $row = is_array($presenter) ? $presenter : [
+                        'id' => $presenter->id ?? null,
+                        'user_id' => $presenter->user_id ?? null,
+                        'person_type' => $presenter->person_type ?? '',
+                        'name' => $presenter->name ?? '',
+                    ];
+
+                    return [
+                        'id' => $row['id'] ?? null,
+                        'user_id' => $row['user_id'] ?? null,
+                        'person_type' => $row['person_type'] ?? '',
+                        'note' => trim((string) ($row['note'] ?? $row['name'] ?? '')),
+                    ];
+                })
+                ->filter(fn (array $row) => $row['note'] !== '' || !empty($row['user_id']))
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function editableOutputTypeCode(string $type): ?string
+    {
+        if (preg_match('/EA\d{3}/i', $type, $matches)) {
+            return strtoupper($matches[0]);
+        }
+
+        return null;
+    }
+
+    private function syncProjectEditableOutputRelations(Output $output, array $data, bool $isEA101, bool $isEA103, bool $isEA118, bool $isEA119): void
+    {
+        $output->authors()->delete();
+        $output->awardRecipients()->delete();
+        $output->bookAuthors()->delete();
+        $output->conferences()->each(fn (OutputConference $conference) => $conference->presenters()->delete());
+        $output->conferences()->delete();
+
+        if ($isEA101) {
+            $authors = $this->cleanEditablePeople($data['authors'] ?? [], ['first', 'co', 'corresponding']);
+            if ($authors !== []) {
+                $output->authors()->createMany($authors);
+            }
+        }
+
+        if ($isEA118) {
+            $recipients = $this->cleanEditablePeople($data['award_recipients'] ?? []);
+            if ($recipients !== []) {
+                $output->awardRecipients()->createMany($recipients);
+            }
+        }
+
+        if ($isEA119) {
+            $authors = $this->cleanEditablePeople($data['book_authors'] ?? []);
+            if ($authors !== []) {
+                $output->bookAuthors()->createMany($authors);
+            }
+        }
+
+        if ($isEA103) {
+            $this->createProjectEditableConference($output, $data);
+        }
+    }
+
+    private function syncExternalEditableOutputRelations(ExternalOutput $output, array $data, bool $isEA101, bool $isEA103, bool $isEA118, bool $isEA119): void
+    {
+        $output->authors()->delete();
+        $output->awardRecipients()->delete();
+        $output->bookAuthors()->delete();
+
+        if ($isEA101) {
+            $authors = $this->cleanEditablePeople($data['authors'] ?? [], ['first', 'co', 'corresponding']);
+            if ($authors !== []) {
+                $output->authors()->createMany($authors);
+            }
+        }
+
+        if ($isEA118) {
+            $recipients = $this->cleanEditablePeople($data['award_recipients'] ?? []);
+            if ($recipients !== []) {
+                $output->awardRecipients()->createMany($recipients);
+            }
+        }
+
+        if ($isEA119) {
+            $authors = $this->cleanEditablePeople($data['book_authors'] ?? []);
+            if ($authors !== []) {
+                $output->bookAuthors()->createMany($authors);
+            }
+        }
+
+        $this->syncExternalOutputConferences($output, $data, $isEA103);
+    }
+
+    private function syncBackOfficeEditableOutputRelations(BackOfficeTaskOutput $output, array $data, string $type): void
+    {
+        $output->authorLinks()->delete();
+        $output->awardRecipientLinks()->delete();
+        $output->bookAuthorLinks()->delete();
+        $output->conferenceLinks()->each(fn ($conference) => $conference->presenters()->delete());
+        $output->conferenceLinks()->delete();
+
+        if (str_starts_with($type, 'EA101')) {
+            $rows = $this->cleanEditablePeople($data['authors'] ?? [], ['first', 'co', 'corresponding'], true);
+            foreach ($rows as $row) {
+                $output->authorLinks()->create($row);
+            }
+        }
+
+        if (str_starts_with($type, 'EA118')) {
+            $rows = $this->cleanEditablePeople($data['award_recipients'] ?? [], null, true);
+            foreach ($rows as $row) {
+                $output->awardRecipientLinks()->create($row);
+            }
+        }
+
+        if (str_starts_with($type, 'EA119')) {
+            $rows = $this->cleanEditablePeople($data['book_authors'] ?? [], null, true);
+            foreach ($rows as $row) {
+                $output->bookAuthorLinks()->create($row);
+            }
+        }
+
+        if (str_starts_with($type, 'EA103')) {
+            $conferenceName = $this->nullableTrim($data['conference_name'] ?? null);
+            $presentationType = $this->nullableTrim($data['conference_presentation_type'] ?? null);
+            $location = $this->nullableTrim($data['conference_location'] ?? null);
+            $presenters = $this->cleanEditableConferencePresenters($data['conference_presenters'] ?? [], true);
+            if ($conferenceName || $presentationType || $location || $presenters !== []) {
+                $conference = $output->conferenceLinks()->create([
+                    'name' => $conferenceName,
+                    'presentation_type' => $presentationType,
+                    'location' => $location,
+                ]);
+                foreach ($presenters as $presenter) {
+                    $conference->presenters()->create($presenter);
+                }
+            }
+        }
+    }
+
+    private function createProjectEditableConference(Output $output, array $data): void
+    {
+        $conferenceName = $this->nullableTrim($data['conference_name'] ?? null);
+        $presentationType = $this->nullableTrim($data['conference_presentation_type'] ?? null);
+        $location = $this->nullableTrim($data['conference_location'] ?? null);
+        $presenters = $this->cleanEditableConferencePresenters($data['conference_presenters'] ?? []);
+
+        if (!$conferenceName && !$presentationType && !$location && $presenters === []) {
+            return;
+        }
+
+        $conference = $output->conferences()->create([
+            'name' => $conferenceName,
+            'presentation_type' => $presentationType,
+            'location' => $location,
+        ]);
+
+        if ($presenters !== []) {
+            $conference->presenters()->createMany($presenters);
+        }
+    }
+
+    private function cleanEditablePeople(array $rows, ?array $allowedRoles = null, bool $keepPersonType = false): array
+    {
+        return collect($rows)
+            ->map(function ($row) use ($allowedRoles, $keepPersonType) {
+                $name = $this->nullableTrim($row['name'] ?? null);
+                $userId = (($row['user_id'] ?? null) !== null && (int) $row['user_id'] > 0) ? (int) $row['user_id'] : null;
+                $role = $this->nullableTrim($row['role'] ?? null);
+                $personType = $this->nullableTrim($row['person_type'] ?? null);
+
+                if (!$name && !$userId) {
+                    return null;
+                }
+
+                $payload = [
+                    'user_id' => $userId,
+                    'name' => $name,
+                ];
+
+                if ($allowedRoles !== null) {
+                    $role = $role && in_array($role, $allowedRoles, true) ? $role : 'co';
+                    $payload['role'] = $role;
+                }
+
+                if ($keepPersonType) {
+                    $payload['person_type'] = $personType;
+                }
+
+                return $payload;
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function cleanEditableConferencePresenters(array $rows, bool $keepPersonType = false): array
+    {
+        return collect($rows)
+            ->map(function ($row) use ($keepPersonType) {
+                $name = $this->nullableTrim($row['note'] ?? $row['name'] ?? null);
+                $userId = (($row['user_id'] ?? null) !== null && (int) $row['user_id'] > 0) ? (int) $row['user_id'] : null;
+                if (!$name && !$userId) {
+                    return null;
+                }
+
+                $payload = [
+                    'user_id' => $userId,
+                    'name' => $name,
+                ];
+                if ($keepPersonType) {
+                    $payload['person_type'] = $this->nullableTrim($row['person_type'] ?? null);
+                }
+
+                return $payload;
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function validateEditablePeopleRows(
+        array $rows,
+        string $field,
+        string $label,
+        bool $requireRole = false,
+        ?array $allowedRoles = null,
+        bool $presenterNameField = false
+    ): array {
+        $rows = collect($rows)->values();
+        $errors = [];
+
+        if ($rows->isEmpty()) {
+            $errors[$field][] = "กรุณาเพิ่ม{$label}อย่างน้อย 1 รายชื่อ";
+            return $errors;
+        }
+
+        $validCount = 0;
+        foreach ($rows as $index => $row) {
+            $row = is_array($row) ? $row : [];
+            $personType = trim((string) ($row['person_type'] ?? ''));
+            $name = trim((string) ($presenterNameField ? ($row['note'] ?? $row['name'] ?? '') : ($row['name'] ?? '')));
+            $userId = (($row['user_id'] ?? null) !== null && (int) $row['user_id'] > 0) ? (int) $row['user_id'] : null;
+            $role = trim((string) ($row['role'] ?? ''));
+
+            if ($personType === '' && $name === '' && !$userId && (!$requireRole || $role === '')) {
+                continue;
+            }
+
+            $validCount++;
+
+            if ($personType === '') {
+                $errors["{$field}.{$index}.person_type"][] = "กรุณาเลือกประเภท{$label}";
+            }
+
+            if ($requireRole && ($role === '' || ($allowedRoles !== null && !in_array($role, $allowedRoles, true)))) {
+                $errors["{$field}.{$index}.role"][] = "กรุณาเลือกบทบาท{$label}";
+            }
+
+            if ($name === '' && !$userId) {
+                $errors["{$field}.{$index}.name"][] = "กรุณาระบุชื่อ{$label}";
+            }
+        }
+
+        if ($validCount === 0) {
+            $errors[$field][] = "กรุณาเพิ่ม{$label}อย่างน้อย 1 รายชื่อ";
+        }
+
+        return $errors;
+    }
+
     public function moveExternalAcademicToProject(Request $request, ExternalOutput $externalOutput): RedirectResponse
     {
         $validated = $request->validate([
@@ -766,6 +1402,8 @@ class OutputController extends Controller
             'typeOptions' => $payload['typeOptions'],
             'yearOptions' => $payload['yearOptions'],
             'workStatusOptions' => $payload['workStatusOptions'],
+            'jobCategoryOptions' => self::EXTERNAL_JOB_CATEGORIES,
+            'userDirectory' => $this->buildOutputUserDirectory(),
             'exportMinDate' => $this->exportMinDate($payload['items']),
         ]);
     }
@@ -1251,6 +1889,7 @@ class OutputController extends Controller
                 'detail' => $detailText !== '' ? $detailText : null,
                 'related_link' => $relatedLink,
                 'link' => $output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null,
+                'edit_url' => route('outputs.items.edit', ['source' => 'project', 'id' => $output->id]),
                 'special' => $special,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
@@ -1308,6 +1947,7 @@ class OutputController extends Controller
                 'detail' => null,
                 'related_link' => null,
                 'link' => $output->task ? route('back_office.show', $output->task) : null,
+                'edit_url' => route('outputs.items.edit', ['source' => 'mission', 'id' => $output->id]),
                 'special' => $special,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
@@ -1373,6 +2013,7 @@ class OutputController extends Controller
                 'detail' => $detailText !== '' ? $detailText : null,
                 'related_link' => $relatedLink,
                 'link' => route('outputs.external-academic.show', $output),
+                'edit_url' => route('outputs.items.edit', ['source' => 'extra', 'id' => $output->id]),
                 'special' => $special,
                 'created_at' => $output->created_at,
                 'sort_year' => $yearBe ?? 0,
@@ -2226,6 +2867,60 @@ class OutputController extends Controller
             'peak_year_count' => (int) ($textbookYears->max() ?? 0),
             'latest' => $sortRowsNewestFirst($textbookRows)->take(5)->map($buildSummaryListItem)->values(),
         ];
+        $networkingCommunicationFeatures = $sortRowsNewestFirst($networkingRows)
+            ->map(function ($row) use ($buildSummaryListItem) {
+                $item = $buildSummaryListItem($row);
+                $title = trim((string) ($item->title ?? ''));
+                $typeCode = strtoupper(trim((string) ($row->type_code ?? '')));
+                $kind = match ($typeCode) {
+                    'EA114' => 'EA114',
+                    'EA115' => 'EA115',
+                    'EA117' => 'EA117',
+                    default => Str::startsWith(Str::lower($title), 'article:') ? 'Article' : 'News',
+                };
+                $cleanTitle = trim((string) preg_replace('/^(news|article)\s*:\s*/iu', '', $title));
+                $item->content_kind = $kind;
+                $item->feature_type_code = $typeCode ?: 'EA108';
+                $item->clean_title = $cleanTitle !== '' ? $cleanTitle : $title;
+                $item->external_link = trim((string) ($item->modal_link ?? '')) ?: trim((string) ($item->link ?? '')) ?: null;
+
+                return $item;
+            })
+            ->values();
+        $networkingPreviewHashCandidatesByLink = $networkingCommunicationFeatures
+            ->pluck('external_link')
+            ->filter()
+            ->unique()
+            ->mapWithKeys(fn ($link) => [(string) $link => OutputLinkPreview::hashCandidates((string) $link)]);
+        $networkingPreviewByHash = OutputLinkPreview::query()
+            ->whereIn('url_hash', $networkingPreviewHashCandidatesByLink->flatten()->unique()->values())
+            ->where('fetch_status', 'ok')
+            ->orderByRaw("CASE WHEN preview_image_url IS NOT NULL AND preview_image_url <> '' THEN 0 WHEN provider <> 'screenshotone' THEN 1 ELSE 2 END")
+            ->latest('fetched_at')
+            ->get()
+            ->groupBy('url_hash')
+            ->map(fn (Collection $previews) => $previews->first());
+        $networkingCommunicationFeatures = $networkingCommunicationFeatures
+            ->map(function ($item) use ($networkingPreviewHashCandidatesByLink, $networkingPreviewByHash) {
+                $preview = collect($networkingPreviewHashCandidatesByLink->get((string) ($item->external_link ?? ''), []))
+                    ->map(fn ($hash) => $networkingPreviewByHash->get($hash))
+                    ->filter()
+                    ->first();
+                $item->link_preview = $preview ? [
+                    'id' => $preview->id,
+                    'title' => $preview->title,
+                    'description' => $preview->description,
+                    'preview_image_url' => $preview->preview_image_url,
+                    'preview_image_path' => $preview->preview_image_path,
+                    'thumbnail_url' => $preview->thumbnail_url,
+                    'author_name' => $preview->author_name,
+                    'provider_name' => $preview->provider_name,
+                    'fetched_at' => $preview->fetched_at?->timezone('Asia/Bangkok')->format('d/m/Y H:i'),
+                ] : null;
+
+                return $item;
+            })
+            ->values();
         $networkingSummary = [
             'count' => $networkingRows->count(),
             'latest_year' => $networkingYears->keys()->last(),
@@ -2239,45 +2934,7 @@ class OutputController extends Controller
             'ea115_count' => (int) $networkingRows->where('type_code', 'EA115')->count(),
             'ea117_count' => (int) $networkingRows->where('type_code', 'EA117')->count(),
             'latest' => $sortRowsNewestFirst($networkingRows)->take(5)->map($buildSummaryListItem)->values(),
-            'communication_features' => $sortRowsNewestFirst($networkingRows)
-                ->map(function ($row) use ($buildSummaryListItem) {
-                    $item = $buildSummaryListItem($row);
-                    $title = trim((string) ($item->title ?? ''));
-                    $typeCode = strtoupper(trim((string) ($row->type_code ?? '')));
-                    $kind = match ($typeCode) {
-                        'EA114' => 'EA114',
-                        'EA115' => 'EA115',
-                        'EA117' => 'EA117',
-                        default => Str::startsWith(Str::lower($title), 'article:') ? 'Article' : 'News',
-                    };
-                    $cleanTitle = trim((string) preg_replace('/^(news|article)\s*:\s*/iu', '', $title));
-                    $item->content_kind = $kind;
-                    $item->feature_type_code = $typeCode ?: 'EA108';
-                    $item->clean_title = $cleanTitle !== '' ? $cleanTitle : $title;
-                    $item->external_link = trim((string) ($item->modal_link ?? '')) ?: trim((string) ($item->link ?? '')) ?: null;
-                    $preview = $item->external_link
-                        ? OutputLinkPreview::query()
-                            ->whereIn('url_hash', OutputLinkPreview::hashCandidates((string) $item->external_link))
-                            ->where('fetch_status', 'ok')
-                            ->orderByRaw("CASE WHEN preview_image_url IS NOT NULL AND preview_image_url <> '' THEN 0 WHEN provider <> 'screenshotone' THEN 1 ELSE 2 END")
-                            ->latest('fetched_at')
-                            ->first()
-                        : null;
-                    $item->link_preview = $preview ? [
-                        'id' => $preview->id,
-                        'title' => $preview->title,
-                        'description' => $preview->description,
-                        'preview_image_url' => $preview->preview_image_url,
-                        'preview_image_path' => $preview->preview_image_path,
-                        'thumbnail_url' => $preview->thumbnail_url,
-                        'author_name' => $preview->author_name,
-                        'provider_name' => $preview->provider_name,
-                        'fetched_at' => $preview->fetched_at?->timezone('Asia/Bangkok')->format('d/m/Y H:i'),
-                    ] : null;
-
-                    return $item;
-                })
-                ->values(),
+            'communication_features' => $networkingCommunicationFeatures,
         ];
 
         $yearTotals = $filtered
@@ -6165,7 +6822,7 @@ class OutputController extends Controller
 
     private function visualizationDataVersion(): string
     {
-        return Cache::remember('outputs_visualization:data_version', now()->addSeconds(5), function () {
+        return Cache::remember('outputs_visualization:data_version', now()->addMinute(), function () {
             $tables = [
                 'outputs',
                 'output_authors',
@@ -6197,10 +6854,12 @@ class OutputController extends Controller
                     continue;
                 }
 
-                $count = DB::table($table)->count();
-                $updatedAt = Schema::hasColumn($table, 'updated_at')
-                    ? (string) DB::table($table)->max('updated_at')
-                    : '';
+                $hasUpdatedAt = Schema::hasColumn($table, 'updated_at');
+                $snapshot = DB::table($table)
+                    ->selectRaw($hasUpdatedAt ? 'COUNT(*) as row_count, MAX(updated_at) as updated_at' : 'COUNT(*) as row_count')
+                    ->first();
+                $count = (int) ($snapshot->row_count ?? 0);
+                $updatedAt = $hasUpdatedAt ? (string) ($snapshot->updated_at ?? '') : '';
                 $parts[] = $table . ':' . $count . ':' . $updatedAt;
             }
 

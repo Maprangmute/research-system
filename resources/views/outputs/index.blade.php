@@ -225,6 +225,175 @@
             color: #9d174d;
         }
 
+        .output-title-edit-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            color: #0f172a;
+            transition: color 0.16s ease;
+        }
+
+        .output-title-edit-btn:hover {
+            color: #047857;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .output-title-edit-btn:focus-visible {
+            outline: 3px solid rgba(16, 185, 129, 0.28);
+            outline-offset: 3px;
+            border-radius: 0.5rem;
+        }
+
+        .outputs-edit-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 80;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.48);
+            backdrop-filter: blur(6px);
+        }
+
+        .outputs-edit-modal.is-open {
+            display: flex;
+        }
+
+        .outputs-edit-dialog {
+            width: min(98vw, 1120px);
+            max-height: min(92vh, 860px);
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid #dbe7f5;
+            background: #fff;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.26);
+        }
+
+        .outputs-edit-field {
+            width: 100%;
+            border-radius: 0.75rem;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            padding: 0.7rem 0.85rem;
+            font-size: 0.875rem;
+            color: #0f172a;
+        }
+
+        .outputs-edit-field:focus {
+            border-color: #10b981;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16);
+        }
+
+        .outputs-edit-invalid {
+            border-color: #ef4444 !important;
+            background: #fef2f2 !important;
+            box-shadow: 0 0 0 3px rgba(254, 202, 202, 0.82) !important;
+        }
+
+        .outputs-edit-person-row {
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 768px) {
+            .outputs-edit-person-row--author {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.4fr) auto;
+            }
+
+            .outputs-edit-person-row--plain {
+                grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.7fr) auto;
+            }
+        }
+
+        .outputs-edit-section[hidden] {
+            display: none;
+        }
+
+        .outputs-edit-section {
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+        }
+
+        .outputs-edit-section--ea101 {
+            border-color: #bfdbfe;
+            background: rgba(239, 246, 255, 0.72);
+        }
+
+        .outputs-edit-section--ea101 .outputs-edit-section-title {
+            color: #1e40af;
+        }
+
+        .outputs-edit-section--ea103 {
+            border-color: #fed7aa;
+            background: rgba(255, 247, 237, 0.78);
+        }
+
+        .outputs-edit-section--ea103 .outputs-edit-section-title {
+            color: #9a3412;
+        }
+
+        .outputs-edit-section--ea118 {
+            border-color: #ddd6fe;
+            background: rgba(245, 243, 255, 0.78);
+        }
+
+        .outputs-edit-section--ea118 .outputs-edit-section-title {
+            color: #5b21b6;
+        }
+
+        .outputs-edit-section--ea119 {
+            border-color: #a7f3d0;
+            background: rgba(236, 253, 245, 0.78);
+        }
+
+        .outputs-edit-section--ea119 .outputs-edit-section-title {
+            color: #047857;
+        }
+
+        .outputs-edit-add-btn {
+            border-radius: 0.5rem;
+            padding: 0.45rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .outputs-edit-add-btn--ea101 { background: #2563eb; }
+        .outputs-edit-add-btn--ea103 { background: #ea580c; }
+        .outputs-edit-add-btn--ea118 { background: #7c3aed; }
+        .outputs-edit-add-btn--ea119 { background: #059669; }
+
+        @media (max-width: 767px) {
+            .outputs-edit-modal {
+                align-items: stretch;
+                padding: 0;
+            }
+
+            .outputs-edit-dialog {
+                width: 100vw;
+                max-height: 100dvh;
+                border-radius: 0;
+                border-left: 0;
+                border-right: 0;
+            }
+
+            .outputs-edit-dialog form {
+                max-height: 100dvh;
+            }
+
+            .outputs-edit-section {
+                padding: 0.8rem;
+            }
+
+            .outputs-edit-add-btn,
+            [data-output-edit-remove] {
+                width: 100%;
+            }
+        }
+
         .output-export-btn {
             display: inline-flex;
             align-items: center;
@@ -681,7 +850,9 @@
                             @endphp
                             <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                 <div class="space-y-2">
-                                    <h3 class="cell-clamp-3 text-sm font-semibold leading-6 text-slate-900">{{ $output->title ?: '-' }}</h3>
+                                    <button type="button" class="output-title-edit-btn cell-clamp-3 text-sm font-semibold leading-6" data-output-edit-url="{{ $output->edit_url ?? '' }}">
+                                        {{ $output->title ?: '-' }}
+                                    </button>
                                     @if (!empty($output->source_badge))
                                         <span class="{{ $outputSourceBadgeClass($output->source_badge) }}">{{ $output->source_badge }}</span>
                                     @endif
@@ -766,7 +937,9 @@
                                     @endphp
                                     <tr class="transition hover:bg-indigo-50/40">
                                         <td class="px-4 py-4 text-slate-900">
-                                            <div class="cell-clamp-3 font-semibold leading-6">{{ $output->title ?: '-' }}</div>
+                                            <button type="button" class="output-title-edit-btn cell-clamp-3 font-semibold leading-6" data-output-edit-url="{{ $output->edit_url ?? '' }}">
+                                                {{ $output->title ?: '-' }}
+                                            </button>
                                             @if (!empty($output->source_badge))
                                                 <span class="{{ $outputSourceBadgeClass($output->source_badge) }}">{{ $output->source_badge }}</span>
                                             @endif
@@ -1001,6 +1174,175 @@
         </div>
     </div>
 
+    <div id="outputsEditModal" class="outputs-edit-modal" aria-hidden="true">
+        <datalist id="outputsEditResearchNames">
+            @foreach (($userDirectory ?? collect()) as $userOption)
+                <option value="{{ $userOption['research_display_name'] ?? '' }}"></option>
+            @endforeach
+        </datalist>
+        <datalist id="outputsEditFullNames">
+            @foreach (($userDirectory ?? collect()) as $userOption)
+                <option value="{{ $userOption['full_name'] ?? '' }}"></option>
+            @endforeach
+        </datalist>
+        <div class="outputs-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="outputsEditTitle">
+            <form id="outputsEditForm" method="POST" class="flex max-h-[92vh] flex-col">
+                @csrf
+                @method('PUT')
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+                    <div>
+                        <div id="outputsEditTitle" class="text-base font-semibold text-slate-900">แก้ไขผลงาน</div>
+                        <p id="outputsEditSubtitle" class="mt-1 text-sm text-slate-500">กำลังโหลดข้อมูล...</p>
+                    </div>
+                    <button type="button" class="rounded-lg px-2 py-1 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700" data-output-edit-close>
+                        ปิด
+                    </button>
+                </div>
+
+                <div class="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+                    <div id="outputsEditErrors" class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <label class="block md:col-span-2">
+                            <span class="text-xs font-semibold text-slate-600">ชื่อผลงาน</span>
+                            <input name="title" class="outputs-edit-field mt-1.5" required>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">ประเภทผลงาน</span>
+                            <select name="type" class="outputs-edit-field mt-1.5" required data-output-edit-type>
+                                @foreach ($typeOptions as $type)
+                                    <option value="{{ $type }}">{{ $type }}</option>
+                                @endforeach
+                                @foreach (['EA101', 'EA103', 'EA118', 'EA119', 'EA120'] as $fallbackType)
+                                    <option value="{{ $fallbackType }}">{{ $fallbackType }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="block" data-output-edit-year-wrap>
+                            <span class="text-xs font-semibold text-slate-600">ปี / วันที่ publish</span>
+                            <div class="relative mt-1.5">
+                                <input id="outputsEditYearDate" type="text" name="year" readonly
+                                    class="js-date-be w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-blue-500"
+                                    placeholder="กรุณาเลือกวันที่">
+                                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                                    data-open-picker data-target="outputsEditYearDate">
+                                    📅
+                                </button>
+                            </div>
+                        </label>
+                        <label class="hidden" data-output-edit-publish-wrap>
+                            <span class="text-xs font-semibold text-slate-600">วันที่ publish</span>
+                            <div class="relative mt-1.5">
+                                <input id="outputsEditPublishDate" type="text" name="publish_date" readonly
+                                    class="js-date-be w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 pr-10 text-sm focus:ring-2 focus:ring-blue-500"
+                                    placeholder="กรุณาเลือกวันที่">
+                                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                                    data-open-picker data-target="outputsEditPublishDate">
+                                    📅
+                                </button>
+                            </div>
+                        </label>
+                        <label class="hidden md:col-span-2" data-output-edit-job-wrap>
+                            <span class="text-xs font-semibold text-slate-600">Theme / Job category</span>
+                            <select name="job_category" class="outputs-edit-field mt-1.5">
+                                <option value="">ไม่ระบุ</option>
+                                @foreach (($jobCategoryOptions ?? []) as $category)
+                                    <option value="{{ $category }}">{{ $category }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="block md:col-span-2">
+                            <span class="text-xs font-semibold text-slate-600">รายละเอียด / หมายเหตุ / Link</span>
+                            <textarea name="project_output" rows="3" class="outputs-edit-field mt-1.5"></textarea>
+                            <textarea name="note" rows="3" class="outputs-edit-field mt-1.5 hidden"></textarea>
+                        </label>
+                    </div>
+
+                    <section class="outputs-edit-section outputs-edit-section--ea101" data-output-edit-section="EA101" hidden>
+                        <div class="outputs-edit-section-title text-sm font-semibold">EA101 Research paper / Journal article</div>
+                        <div class="mt-3 grid gap-4 md:grid-cols-3">
+                            <label class="block md:col-span-2"><span class="text-xs font-semibold text-slate-600">Journal</span><input name="journal" class="outputs-edit-field mt-1.5"></label>
+                            <label class="block"><span class="text-xs font-semibold text-slate-600">Ranking</span><select name="quartile" class="outputs-edit-field mt-1.5"><option value="">ไม่ระบุ</option>@foreach (['Q1','Q2','Q3','Q4','TCI 1','TCI 2'] as $q)<option value="{{ $q }}">{{ $q }}</option>@endforeach</select></label>
+                            <label class="block"><span class="text-xs font-semibold text-slate-600">Impact factor</span><input type="number" step="0.001" name="impact_factor" class="outputs-edit-field mt-1.5"></label>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between gap-3">
+                            <div class="outputs-edit-section-title text-xs font-semibold">Authors</div>
+                            <button type="button" class="outputs-edit-add-btn outputs-edit-add-btn--ea101" data-output-edit-add="authors">+ เพิ่มผู้เขียน</button>
+                        </div>
+                        <div class="mt-3 space-y-2" data-output-edit-list="authors"></div>
+                        <div class="mt-3 flex justify-center">
+                            <button type="button" class="outputs-edit-add-btn outputs-edit-add-btn--ea101" data-output-edit-add="authors">+ เพิ่มผู้เขียน</button>
+                        </div>
+                    </section>
+
+                    <section class="outputs-edit-section outputs-edit-section--ea103" data-output-edit-section="EA103" hidden>
+                        <div class="outputs-edit-section-title text-sm font-semibold">EA103 Presentation in academic conference</div>
+                        <div class="mt-3 grid gap-4 md:grid-cols-3">
+                            <label class="block"><span class="text-xs font-semibold text-slate-600">Conference</span><input name="conference_name" class="outputs-edit-field mt-1.5"></label>
+                            <label class="block">
+                                <span class="text-xs font-semibold text-slate-600">Presentation type</span>
+                                <select name="conference_presentation_type" class="outputs-edit-field mt-1.5">
+                                    <option value="">ไม่ระบุ</option>
+                                    @foreach (['Oral Presentation', 'Poster Presentation', 'Abstract Presentation', 'Panel Discussion', 'Keynote Speech', 'World café', 'Moderator'] as $presentationType)
+                                        <option value="{{ $presentationType }}">{{ $presentationType }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label class="block"><span class="text-xs font-semibold text-slate-600">Location</span><input name="conference_location" class="outputs-edit-field mt-1.5"></label>
+                            <input type="hidden" name="conference_id">
+                        </div>
+                        <div class="mt-4 flex items-center justify-between gap-3">
+                            <div class="outputs-edit-section-title text-xs font-semibold">Presenters</div>
+                            <button type="button" class="outputs-edit-add-btn outputs-edit-add-btn--ea103" data-output-edit-add="conference_presenters">+ เพิ่มผู้นำเสนอ</button>
+                        </div>
+                        <div class="mt-3 space-y-2" data-output-edit-list="conference_presenters"></div>
+                        <div class="mt-3 flex justify-center">
+                            <button type="button" class="outputs-edit-add-btn outputs-edit-add-btn--ea103" data-output-edit-add="conference_presenters">+ เพิ่มผู้นำเสนอ</button>
+                        </div>
+                    </section>
+
+                    <section class="outputs-edit-section outputs-edit-section--ea118" data-output-edit-section="EA118" hidden>
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="outputs-edit-section-title text-sm font-semibold">EA118 Award and recognition</div>
+                            <button type="button" class="outputs-edit-add-btn outputs-edit-add-btn--ea118" data-output-edit-add="award_recipients">+ เพิ่มผู้ได้รับรางวัล</button>
+                        </div>
+                        <div class="mt-3 space-y-2" data-output-edit-list="award_recipients"></div>
+                        <div class="mt-3 flex justify-center">
+                            <button type="button" class="outputs-edit-add-btn outputs-edit-add-btn--ea118" data-output-edit-add="award_recipients">+ เพิ่มผู้ได้รับรางวัล</button>
+                        </div>
+                    </section>
+
+                    <section class="outputs-edit-section outputs-edit-section--ea119" data-output-edit-section="EA119" hidden>
+                        <div class="outputs-edit-section-title text-sm font-semibold">EA119 Textbook / Book chapter</div>
+                        <div class="mt-3 grid gap-4 md:grid-cols-2">
+                            <label class="block"><span class="text-xs font-semibold text-slate-600">Book title</span><input name="book_title" class="outputs-edit-field mt-1.5"></label>
+                            <label class="block"><span class="text-xs font-semibold text-slate-600">Publisher</span><input name="publisher_name" class="outputs-edit-field mt-1.5"></label>
+                            <label class="block"><span class="text-xs font-semibold text-slate-600">Chapter / Pages</span><input name="chapter_pages" class="outputs-edit-field mt-1.5"></label>
+                            <label class="block"><span class="text-xs font-semibold text-slate-600">ISBN</span><input name="isbn" class="outputs-edit-field mt-1.5"></label>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between gap-3">
+                            <div class="outputs-edit-section-title text-xs font-semibold">Book authors</div>
+                            <button type="button" class="outputs-edit-add-btn outputs-edit-add-btn--ea119" data-output-edit-add="book_authors">+ เพิ่มผู้เขียน</button>
+                        </div>
+                        <div class="mt-3 space-y-2" data-output-edit-list="book_authors"></div>
+                        <div class="mt-3 flex justify-center">
+                            <button type="button" class="outputs-edit-add-btn outputs-edit-add-btn--ea119" data-output-edit-add="book_authors">+ เพิ่มผู้เขียน</button>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="flex flex-col gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end">
+                    <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100" data-output-edit-close>
+                        ยกเลิก
+                    </button>
+                    <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700" data-output-edit-submit>
+                        บันทึก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         (() => {
             'use strict';
@@ -1027,17 +1369,26 @@
                 exportTrigger: '[data-output-export-trigger]',
                 exportClose: '[data-output-export-close]',
                 exportRangeFields: '#outputsExportRangeFields',
+                editModal: '#outputsEditModal',
+                editForm: '#outputsEditForm',
+                editSubtitle: '#outputsEditSubtitle',
+                editErrors: '#outputsEditErrors',
+                editClose: '[data-output-edit-close]',
+                editTrigger: '[data-output-edit-url]',
+                editSubmit: '[data-output-edit-submit]',
             };
 
             let controller = null;
             let requestToken = 0;
             let debounceTimer = null;
+            let isSearchComposing = false;
             let drawerOpen = false;
             let previousBodyOverflow = '';
             let exportUrls = { pdf: '', excel: '' };
 
             const query = (selector, root = document) => root.querySelector(selector);
             const queryAll = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+            const outputUserDirectory = @json(($userDirectory ?? collect())->values());
             const currentPath = window.location.pathname;
             const getPrimaryForm = () => query(selectors.primaryForm);
             const getDrawerForm = () => query(selectors.drawerForm);
@@ -1107,6 +1458,17 @@
                         }
 
                         setFieldValue(targetField, sourceField.value);
+                    });
+                });
+            };
+
+            const syncSearchFieldsFromInput = (sourceField) => {
+                if (!sourceField || sourceField.name !== 'search') return;
+                getForms().forEach((targetForm) => {
+                    queryAll('input[name="search"]', targetForm).forEach((targetField) => {
+                        if (targetField !== sourceField) {
+                            targetField.value = sourceField.value || '';
+                        }
                     });
                 });
             };
@@ -1236,6 +1598,448 @@
                 modal.setAttribute('aria-hidden', 'true');
             };
 
+            const outputTypeCode = (value) => {
+                const match = String(value || '').match(/EA\d{3}/i);
+                return match ? match[0].toUpperCase() : '';
+            };
+
+            const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+            }[char]));
+
+            const setNamedValue = (form, name, value) => {
+                const escapedName = window.CSS?.escape ? CSS.escape(name) : name.replace(/"/g, '\\"');
+                const field = form?.elements?.namedItem(name) || query(`[name="${escapedName}"]`, form);
+                if (!field) return;
+                field.value = value ?? '';
+            };
+
+            const setEditErrors = (message, errors = null) => {
+                const box = query(selectors.editErrors);
+                if (!box) return;
+                const lines = [];
+                if (message) lines.push(message);
+                if (errors) {
+                    Object.values(errors).flat().forEach((line) => lines.push(line));
+                }
+                box.innerHTML = lines.map((line) => `<div>${String(line)}</div>`).join('');
+                box.classList.toggle('hidden', lines.length === 0);
+            };
+
+            const visibleEditTarget = (field) => {
+                if (!field) return null;
+                const row = field.closest('[data-output-edit-row]');
+                if (field.matches('[data-output-edit-name-input]') && row) {
+                    const userSelect = query('[data-output-edit-user-select]', row);
+                    const userWrap = query('[data-output-edit-user-wrap]', row);
+                    if (userSelect && userWrap && !userWrap.classList.contains('hidden')) {
+                        return userSelect.tomselect?.control || userSelect;
+                    }
+                }
+                if (field._flatpickr?.altInput) {
+                    return field._flatpickr.altInput;
+                }
+                return field;
+            };
+
+            const markEditInvalid = (field) => {
+                const target = visibleEditTarget(field);
+                target?.classList?.add('outputs-edit-invalid');
+            };
+
+            const clearEditInvalids = (form) => {
+                queryAll('.outputs-edit-invalid', form).forEach((field) => {
+                    field.classList.remove('outputs-edit-invalid');
+                });
+            };
+
+            const validateEditPeopleRows = (form, kind, label, options = {}) => {
+                const list = query(`[data-output-edit-list="${kind}"]`, form);
+                const rows = queryAll('[data-output-edit-row]', list);
+                const errors = [];
+                let firstInvalid = null;
+                let hasAnyRowData = false;
+
+                rows.forEach((row) => {
+                    const personType = query('[data-output-edit-person-type]', row);
+                    const nameInput = query('[data-output-edit-name-input]', row);
+                    const userSelect = query('[data-output-edit-user-select]', row);
+                    const roleSelect = query(`[name$="[role]"]`, row);
+                    const isInternal = personType?.value === 'internal';
+                    const nameValue = String(nameInput?.value || '').trim();
+                    const userValue = String(userSelect?.value || '').trim();
+                    const roleValue = String(roleSelect?.value || '').trim();
+                    const rowHasData = String(personType?.value || '').trim() !== '' || nameValue !== '' || userValue !== '' || roleValue !== '';
+
+                    if (!rowHasData) return;
+                    hasAnyRowData = true;
+
+                    if (!personType?.value) {
+                        errors.push(`กรุณาเลือกประเภท${label}`);
+                        markEditInvalid(personType);
+                        firstInvalid ||= personType;
+                    }
+                    if (options.requireRole && !roleValue) {
+                        errors.push(`กรุณาเลือกบทบาท${label}`);
+                        markEditInvalid(roleSelect);
+                        firstInvalid ||= roleSelect;
+                    }
+                    if ((isInternal && !userValue) || (!isInternal && nameValue === '')) {
+                        errors.push(`กรุณาระบุชื่อ${label}`);
+                        markEditInvalid(nameInput);
+                        firstInvalid ||= visibleEditTarget(nameInput) || nameInput;
+                    }
+                });
+
+                if (!hasAnyRowData) {
+                    errors.push(`กรุณาเพิ่ม${label}อย่างน้อย 1 รายชื่อ`);
+                    firstInvalid ||= query(`[data-output-edit-add="${kind}"]`, form);
+                }
+
+                return { errors, firstInvalid };
+            };
+
+            const validateEditForm = (form) => {
+                clearEditInvalids(form);
+                const errors = [];
+                let firstInvalid = null;
+                const source = form.dataset.source || '';
+                const code = outputTypeCode(form.elements.namedItem('type')?.value);
+                const requireField = (name, message) => {
+                    const field = form.elements.namedItem(name);
+                    if (!field || String(field.value || '').trim() !== '') return;
+                    errors.push(message);
+                    markEditInvalid(field);
+                    firstInvalid ||= visibleEditTarget(field) || field;
+                };
+
+                requireField('title', 'กรุณากรอกชื่อผลงาน');
+                requireField('type', 'กรุณาเลือกประเภทผลงาน');
+                if (source === 'extra') {
+                    requireField('publish_date', 'กรุณาเลือกวันที่ publish');
+                    requireField('job_category', 'กรุณาเลือก Theme / Job category');
+                } else {
+                    requireField('year', 'กรุณาเลือกวันที่ publish');
+                }
+
+                if (code === 'EA101') {
+                    requireField('journal', 'กรุณากรอก Journal');
+                    const result = validateEditPeopleRows(form, 'authors', 'ผู้เขียน', { requireRole: true });
+                    errors.push(...result.errors);
+                    firstInvalid ||= result.firstInvalid;
+                }
+                if (code === 'EA103') {
+                    requireField('conference_name', 'กรุณากรอกชื่อ Conference');
+                    const result = validateEditPeopleRows(form, 'conference_presenters', 'ผู้นำเสนอ');
+                    errors.push(...result.errors);
+                    firstInvalid ||= result.firstInvalid;
+                }
+                if (code === 'EA118') {
+                    const result = validateEditPeopleRows(form, 'award_recipients', 'ผู้ได้รับรางวัล');
+                    errors.push(...result.errors);
+                    firstInvalid ||= result.firstInvalid;
+                }
+                if (code === 'EA119') {
+                    requireField('book_title', 'กรุณากรอกชื่อหนังสือ');
+                    requireField('publisher_name', 'กรุณากรอกชื่อสำนักพิมพ์');
+                    requireField('chapter_pages', 'กรุณากรอกชื่อบท / เลขหน้า');
+                    const result = validateEditPeopleRows(form, 'book_authors', 'ผู้เขียน');
+                    errors.push(...result.errors);
+                    firstInvalid ||= result.firstInvalid;
+                }
+
+                if (errors.length > 0) {
+                    setEditErrors('กรุณาตรวจสอบข้อมูลที่จำเป็น', [...new Set(errors)]);
+                    firstInvalid?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+                    window.setTimeout(() => firstInvalid?.focus?.({ preventScroll: true }), 250);
+                    return false;
+                }
+
+                return true;
+            };
+
+            const setEditLoading = (isLoading) => {
+                const form = query(selectors.editForm);
+                const submit = query(selectors.editSubmit);
+                if (submit) submit.textContent = isLoading ? 'กำลังบันทึก...' : 'บันทึก';
+                form?.querySelectorAll('input, select, textarea, button').forEach((field) => {
+                    if (field.matches(selectors.editClose)) return;
+                    field.disabled = isLoading;
+                });
+            };
+
+            const clearEditLists = (form) => {
+                queryAll('[data-output-edit-list]', form).forEach((list) => {
+                    list.innerHTML = '';
+                });
+            };
+
+            const personTypeOptions = (kind) => {
+                const hasUnit = kind === 'award_recipients';
+                return `
+                    <option value="">กรุณาเลือก</option>
+                    ${hasUnit ? '<option value="unit">หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>' : ''}
+                    <option value="internal">คนในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</option>
+                    <option value="external">คนนอก</option>
+                `;
+            };
+
+            const syncEditPersonRow = (row, kind) => {
+                if (!row) return;
+                const personType = query('[data-output-edit-person-type]', row)?.value || '';
+                const nameInput = query('[data-output-edit-name-input]', row);
+                const userIdInput = query('[data-output-edit-user-id]', row);
+                const userSelect = query('[data-output-edit-user-select]', row);
+                const manualWrap = query('[data-output-edit-manual-wrap]', row);
+                const userWrap = query('[data-output-edit-user-wrap]', row);
+                if (!nameInput || !userIdInput || !userSelect) return;
+
+                const isInternal = personType === 'internal';
+                const isAwardUnit = personType === 'unit' && kind === 'award_recipients';
+                const useResearchName = kind === 'authors';
+                manualWrap?.classList.toggle('hidden', isInternal);
+                userWrap?.classList.toggle('hidden', !isInternal);
+                nameInput.removeAttribute('list');
+                nameInput.readOnly = isAwardUnit;
+                if (isAwardUnit) {
+                    nameInput.value = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
+                    userIdInput.value = '';
+                    if (userSelect) userSelect.value = '';
+                } else if (isInternal) {
+                    const selected = outputUserDirectory.find((user) => String(user.id) === String(userSelect.value || userIdInput.value || ''));
+                    if (selected) {
+                        userSelect.value = String(selected.id);
+                        userIdInput.value = String(selected.id);
+                        nameInput.value = useResearchName ? (selected.research_display_name || '') : (selected.full_name || '');
+                    } else {
+                        userIdInput.value = '';
+                        nameInput.value = '';
+                    }
+                } else if (!isInternal) {
+                    userIdInput.value = '';
+                    if (userSelect) userSelect.value = '';
+                }
+            };
+
+            const outputUserOptions = (kind, selectedId = '') => {
+                const useResearchName = kind === 'authors';
+                return [
+                    '<option value="">พิมพ์เพื่อค้นหาชื่อ</option>',
+                    ...outputUserDirectory.map((user) => {
+                        const label = useResearchName ? (user.research_display_name || '') : (user.full_name || '');
+                        const id = String(user.id || '');
+                        if (!id || !label) return '';
+                        const selected = String(selectedId || '') === id ? ' selected' : '';
+                        return `<option value="${escapeHtml(id)}"${selected}>${escapeHtml(label)}</option>`;
+                    }),
+                ].join('');
+            };
+
+            const syncEditDatepickers = (form) => {
+                const normalizePickerValue = (value) => {
+                    const raw = String(value || '').trim();
+                    let match = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                    if (match) {
+                        return `${match[3].padStart(2, '0')}-${match[2].padStart(2, '0')}-${match[1]}`;
+                    }
+                    match = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+                    if (match) {
+                        return `${match[1].padStart(2, '0')}-${match[2].padStart(2, '0')}-${match[3]}`;
+                    }
+                    return raw;
+                };
+
+                const syncThaiAlt = (dateInput) => {
+                    const fp = dateInput?._flatpickr;
+                    const selected = fp?.selectedDates?.[0];
+                    if (!fp?.altInput || !(selected instanceof Date) || Number.isNaN(selected.getTime())) return;
+                    const day = selected.getDate();
+                    const month = selected.toLocaleDateString('th-TH', { month: 'long' });
+                    const year = selected.getFullYear() + 543;
+                    fp.altInput.value = `${day} ${month} ${year}`;
+                };
+
+                const dateInputs = ['year', 'publish_date']
+                    .map((name) => form?.elements?.namedItem(name))
+                    .filter((input) => input instanceof HTMLInputElement);
+
+                dateInputs.forEach((input) => {
+                    input.value = normalizePickerValue(input.value);
+                });
+
+                if (typeof window.initDateBE === 'function') {
+                    window.initDateBE(form);
+                }
+
+                dateInputs.forEach((input) => {
+                    if (input._flatpickr && input.value) {
+                        input._flatpickr.setDate(input.value, false, 'd-m-Y');
+                        syncThaiAlt(input);
+                    }
+                });
+            };
+
+            const addPeopleRow = (kind, row = {}, options = {}) => {
+                const { focus = false } = options;
+                const form = query(selectors.editForm);
+                const list = query(`[data-output-edit-list="${kind}"]`, form);
+                if (!list) return;
+                const index = list.children.length;
+                const isAuthor = kind === 'authors';
+                const isPresenter = kind === 'conference_presenters';
+                const nameField = isPresenter ? 'note' : 'name';
+                const label = isPresenter ? 'ชื่อผู้นำเสนอ' : (kind === 'award_recipients' ? 'ชื่อผู้ได้รับรางวัล' : 'ชื่อผู้เขียน');
+                const roleSelect = isAuthor
+                    ? `<label class="block"><span class="text-xs font-semibold text-slate-600">บทบาทผู้เขียน (Role)</span><select name="${kind}[${index}][role]" class="outputs-edit-field mt-1.5"><option value="">เลือกบทบาท</option><option value="first">First-author</option><option value="co">Co-author</option><option value="corresponding">Corresponding author</option></select></label>`
+                    : '';
+                const rowClass = isAuthor ? 'outputs-edit-person-row--author' : 'outputs-edit-person-row--plain';
+                const inferredPersonType = row.person_type || (row.user_id ? 'internal' : (row.name || row.note ? 'external' : ''));
+
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="outputs-edit-person-row ${rowClass} grid gap-2 rounded-xl border border-slate-200 bg-white p-3" data-output-edit-row data-output-edit-kind="${kind}">
+                        <input type="hidden" name="${kind}[${index}][id]" value="">
+                        <input type="hidden" name="${kind}[${index}][user_id]" value="" data-output-edit-user-id>
+                        ${roleSelect}
+                        <label class="block">
+                            <span class="text-xs font-semibold text-slate-600">คนในหน่วย / คนนอก</span>
+                            <select name="${kind}[${index}][person_type]" class="outputs-edit-field mt-1.5" data-output-edit-person-type>
+                                ${personTypeOptions(kind)}
+                            </select>
+                        </label>
+                        <div class="block">
+                            <span class="text-xs font-semibold text-slate-600">${label}</span>
+                            <div data-output-edit-manual-wrap>
+                                <input name="${kind}[${index}][${nameField}]" class="outputs-edit-field mt-1.5" data-output-edit-name-input placeholder="${isPresenter ? 'ชื่อผู้นำเสนอ' : 'เลือกประเภทก่อน'}">
+                            </div>
+                            <div class="hidden" data-output-edit-user-wrap>
+                                <select class="outputs-edit-field mt-1.5" data-output-edit-user-select>
+                                    ${outputUserOptions(kind, row.user_id || '')}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex items-end justify-end">
+                            <button type="button" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100" data-output-edit-remove>ลบ</button>
+                        </div>
+                    </div>
+                `);
+                const created = list.lastElementChild;
+                setNamedValue(created, `${kind}[${index}][id]`, row.id || '');
+                setNamedValue(created, `${kind}[${index}][user_id]`, row.user_id || '');
+                setNamedValue(created, `${kind}[${index}][person_type]`, inferredPersonType);
+                if (isAuthor) setNamedValue(created, `${kind}[${index}][role]`, row.role || 'co');
+                setNamedValue(created, `${kind}[${index}][${nameField}]`, row[nameField] || row.name || '');
+                const userSelect = query('[data-output-edit-user-select]', created);
+                if (userSelect) {
+                    userSelect.value = row.user_id ? String(row.user_id) : '';
+                    if (typeof window.ensureProjectSearchDropdown === 'function') {
+                        window.ensureProjectSearchDropdown(userSelect, {
+                            placeholder: 'พิมพ์เพื่อค้นหาชื่อ',
+                            searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อ',
+                        });
+                    }
+                }
+                syncEditPersonRow(created, kind);
+                if (focus) {
+                    window.requestAnimationFrame(() => {
+                        created.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        const focusTarget = query('[data-output-edit-person-type]', created)
+                            || query('[data-output-edit-name-input]', created)
+                            || query('input, select, textarea, button', created);
+                        focusTarget?.focus({ preventScroll: true });
+                    });
+                }
+            };
+
+            const updateEditSpecialSections = () => {
+                const form = query(selectors.editForm);
+                if (!form) return;
+                const code = outputTypeCode(form.elements.namedItem('type')?.value);
+                queryAll('[data-output-edit-section]', form).forEach((section) => {
+                    section.hidden = section.dataset.outputEditSection !== code;
+                });
+            };
+
+            const fillEditForm = (payload) => {
+                const form = query(selectors.editForm);
+                const output = payload.output || {};
+                if (!form) return;
+
+                form.reset();
+                clearEditLists(form);
+                form.action = payload.update_url;
+                form.dataset.source = payload.source || '';
+                setEditErrors('');
+
+                query(selectors.editSubtitle).textContent = payload.source === 'extra'
+                    ? 'แก้รายการ Extra โดยตรงจากหน้า overview'
+                    : (payload.source === 'mission' ? 'แก้รายการ Mission โดยตรงจากหน้า overview' : 'แก้รายการ Project output โดยตรงจากหน้า overview');
+
+                const isExtra = payload.source === 'extra';
+                query('[data-output-edit-year-wrap]', form)?.classList.toggle('hidden', isExtra);
+                query('[data-output-edit-publish-wrap]', form)?.classList.toggle('hidden', !isExtra);
+                query('[data-output-edit-job-wrap]', form)?.classList.toggle('hidden', !isExtra);
+                form.elements.namedItem('project_output')?.classList.toggle('hidden', isExtra);
+                form.elements.namedItem('note')?.classList.toggle('hidden', !isExtra);
+
+                const typeSelect = form.elements.namedItem('type');
+                if (typeSelect && output.type && !Array.from(typeSelect.options).some((option) => option.value === output.type)) {
+                    typeSelect.insertAdjacentHTML('afterbegin', `<option value="${escapeHtml(output.type)}">${escapeHtml(output.type)}</option>`);
+                }
+
+                ['title', 'type', 'year', 'publish_date', 'job_category', 'project_output', 'note', 'journal', 'quartile', 'impact_factor', 'book_title', 'publisher_name', 'chapter_pages', 'isbn'].forEach((name) => {
+                    setNamedValue(form, name, output[name] || '');
+                });
+
+                if (isExtra && !output.note && output.project_output) setNamedValue(form, 'note', output.project_output);
+                if (!isExtra && !output.project_output && output.note) setNamedValue(form, 'project_output', output.note);
+
+                (output.authors || []).forEach((row) => addPeopleRow('authors', row));
+                (output.award_recipients || []).forEach((row) => addPeopleRow('award_recipients', row));
+                (output.book_authors || []).forEach((row) => addPeopleRow('book_authors', row));
+                const conference = output.conference || {};
+                setNamedValue(form, 'conference_id', conference.id || '');
+                setNamedValue(form, 'conference_name', conference.name || '');
+                setNamedValue(form, 'conference_presentation_type', conference.presentation_type || '');
+                setNamedValue(form, 'conference_location', conference.location || '');
+                (conference.presenters || []).forEach((row) => addPeopleRow('conference_presenters', row));
+
+                updateEditSpecialSections();
+                syncEditDatepickers(form);
+            };
+
+            const openEditModal = async (url) => {
+                const modal = query(selectors.editModal);
+                const subtitle = query(selectors.editSubtitle);
+                if (!modal || !url) return;
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                if (subtitle) subtitle.textContent = 'กำลังโหลดข้อมูล...';
+                setEditErrors('');
+
+                try {
+                    const response = await fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                    });
+                    const payload = await response.json();
+                    if (!response.ok || !payload.ok) throw new Error(payload.message || `HTTP ${response.status}`);
+                    fillEditForm(payload);
+                } catch (error) {
+                    setEditErrors(error.message || 'โหลดข้อมูลไม่สำเร็จ');
+                }
+            };
+
+            const closeEditModal = () => {
+                const modal = query(selectors.editModal);
+                if (!modal) return;
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                setEditLoading(false);
+            };
+
             const syncFormsWithUrl = (url) => {
                 getForms().forEach((form) => {
                     queryAll('[name]', form).forEach((field) => {
@@ -1331,16 +2135,35 @@
                     queryAll('[data-output-live]', form).forEach((field) => {
                         if (field.matches('input[type="text"], input[type="search"]')) {
                             field.addEventListener('input', () => {
-                                syncFormsFromSource(form);
+                                if (isSearchComposing) return;
+                                if (controller) controller.abort();
+                                syncSearchFieldsFromInput(field);
                                 updateFilterBadges();
-                                submitDebounced(260);
+                                submitDebounced(300);
                             });
                             field.addEventListener('keydown', (event) => {
                                 if (event.key === 'Enter') {
                                     event.preventDefault();
+                                    window.clearTimeout(debounceTimer);
                                     syncFormsFromSource(form);
-                                    submitDebounced(0);
+                                    const primaryForm = getPrimaryForm() || form;
+                                    fetchAndRender(buildUrlFromForm(primaryForm), { updateUrl: true });
                                 }
+                            });
+                            field.addEventListener('compositionstart', () => {
+                                isSearchComposing = true;
+                            });
+                            field.addEventListener('compositionend', () => {
+                                isSearchComposing = false;
+                                if (controller) controller.abort();
+                                syncSearchFieldsFromInput(field);
+                                updateFilterBadges();
+                                submitDebounced(300);
+                            });
+                            field.addEventListener('change', () => {
+                                syncSearchFieldsFromInput(field);
+                                updateFilterBadges();
+                                submitDebounced(180);
                             });
                             return;
                         }
@@ -1437,6 +2260,103 @@
                 });
             };
 
+            const bindEditModal = () => {
+                if (window.__outputsEditModalBound) return;
+                window.__outputsEditModalBound = true;
+
+                document.addEventListener('click', (event) => {
+                    const trigger = event.target.closest(selectors.editTrigger);
+                    if (trigger) {
+                        const url = trigger.dataset.outputEditUrl || '';
+                        if (!url) return;
+                        event.preventDefault();
+                        openEditModal(url);
+                        return;
+                    }
+
+                    if (event.target.closest(selectors.editClose)) {
+                        event.preventDefault();
+                        closeEditModal();
+                        return;
+                    }
+
+                    const addButton = event.target.closest('[data-output-edit-add]');
+                    if (addButton) {
+                        event.preventDefault();
+                        addPeopleRow(addButton.dataset.outputEditAdd, {}, { focus: true });
+                        return;
+                    }
+
+                    const removeButton = event.target.closest('[data-output-edit-remove]');
+                    if (removeButton) {
+                        event.preventDefault();
+                        removeButton.closest('[data-output-edit-row]')?.remove();
+                        return;
+                    }
+
+                    const personType = event.target.closest('[data-output-edit-person-type]');
+                    if (personType) {
+                        const row = personType.closest('[data-output-edit-row]');
+                        syncEditPersonRow(row, row?.dataset.outputEditKind || '');
+                    }
+                });
+
+                query(selectors.editModal)?.addEventListener('click', (event) => {
+                    if (event.target === event.currentTarget) {
+                        closeEditModal();
+                    }
+                });
+
+                query(selectors.editForm)?.addEventListener('change', (event) => {
+                    if (event.target.matches('[data-output-edit-type]')) {
+                        updateEditSpecialSections();
+                    }
+                    if (event.target.matches('[data-output-edit-person-type], [data-output-edit-user-select]')) {
+                        const row = event.target.closest('[data-output-edit-row]');
+                        syncEditPersonRow(row, row?.dataset.outputEditKind || '');
+                    }
+                });
+
+                query(selectors.editForm)?.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const form = event.currentTarget;
+                    if (!form.action) return;
+                    setEditErrors('');
+                    if (!validateEditForm(form)) return;
+                    if (typeof window.syncDateInputsBeforeSubmit === 'function') {
+                        window.syncDateInputsBeforeSubmit(form);
+                    }
+                    setEditLoading(true);
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                            body: new FormData(form),
+                        });
+                        const payload = await response.json().catch(() => ({}));
+                        if (!response.ok || payload.ok === false) {
+                            setEditErrors(payload.message || 'บันทึกไม่สำเร็จ', payload.errors || null);
+                            return;
+                        }
+
+                        closeEditModal();
+                        const currentUrl = new URL(window.location.href);
+                        fetchAndRender(currentUrl, { updateUrl: false });
+                    } catch (error) {
+                        setEditErrors(error.message || 'บันทึกไม่สำเร็จ');
+                    } finally {
+                        setEditLoading(false);
+                    }
+                });
+
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape' && query(selectors.editModal)?.classList.contains('is-open')) {
+                        closeEditModal();
+                    }
+                });
+            };
+
             const bindDrawer = () => {
                 if (window.__outputsDrawerBound) return;
                 window.__outputsDrawerBound = true;
@@ -1460,6 +2380,7 @@
                 bindDelegatedLinks();
                 bindDrawer();
                 bindExportModal();
+                bindEditModal();
                 updateFilterBadges();
                 updateExportRangeState();
                 syncFabVisibility();
