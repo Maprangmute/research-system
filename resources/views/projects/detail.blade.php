@@ -1599,20 +1599,29 @@
                     }
                 }
 
-                // ฟังก์ชันช่วย: ถ้าเป็น URL ให้ลิงก์, ไม่ใช่ก็แสดงข้อความ
                 function linkify_if_url($text)
                 {
                     $txt = trim($text ?? '');
                     if (!$txt) {
                         return '-';
                     }
-                    return filter_var($txt, FILTER_VALIDATE_URL)
-                        ? '<a href="' .
-                                e($txt) .
-                                '" target="_blank" class="text-blue-600 underline break-words">' .
-                                e($txt) .
-                                '</a>'
-                        : e($txt);
+
+                    $pattern = '/(https?:\/\/[^\s<>"\'\]\)]+)/iu';
+                    $parts = preg_split($pattern, $txt, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+
+                    if (!$parts) {
+                        return e($txt);
+                    }
+
+                    return collect($parts)->map(function ($part) use ($pattern) {
+                        if (preg_match($pattern, $part) === 1) {
+                            $url = trim((string) $part);
+
+                            return '<a href="' . e($url) . '" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline break-words">' . e($url) . '</a>';
+                        }
+
+                        return e($part);
+                    })->implode('');
                 }
 
                 $typeUniverseSource = collect($outputTypeOptions ?? [])

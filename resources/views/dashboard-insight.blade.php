@@ -823,6 +823,16 @@
             height: 400px;
         }
 
+        .di-chart--people-budget {
+            height: 760px !important;
+            min-height: 760px !important;
+            flex: 0 0 auto !important;
+        }
+
+        .di-card--people-budget {
+            min-height: 830px !important;
+        }
+
         .fte-avatar-chart-shell {
             position: relative;
             flex: 1;
@@ -1596,9 +1606,9 @@
                             <h3>💰 งบประมาณที่ได้รับ (รวมรายปี) เฉพาะโครงการที่หน่วยวิจัยฯ เป็น PI หลัก</h3>
                             <div class="di-chart"><canvas id="chartBudgetPolicyPiYear"></canvas></div>
                         </article>
-                        <article class="di-card">
+                        <article class="di-card di-card--people-budget">
                             <h3>💰 งบประมาณที่ได้รับแบ่งจากรายชื่อผู้วิจัยหลัก (PI / Co-PI)</h3>
-                            <div class="di-chart di-chart--tall"><canvas id="chartBudgetPeople"></canvas></div>
+                            <div class="di-chart di-chart--people-budget"><canvas id="chartBudgetPeople"></canvas></div>
                         </article>
                         <article class="di-card">
                             <h3>🏦 งบประมาณ ภายใน / ภายนอกที่ได้รับ</h3>
@@ -1927,7 +1937,8 @@
                             }
                         });
                         if (!anchorElement || !(total > 0)) return;
-                        const label = options.formatter ? options.formatter(total) : fmt.format(total);
+                        const label = options.formatter ? options.formatter(total, { chart, index, total }) : fmt.format(total);
+                        if (!label) return;
                         if (isHorizontal) {
                             const x = Math.min(anchorElement.x + 10, chart.chartArea.right - ctx.measureText(label).width - 2);
                             ctx.fillText(label, x, anchorElement.y);
@@ -2953,27 +2964,55 @@
                     });
                 });
                 const people = new Map();
-                const addPerson = (name, role, amount) => {
+                const addPerson = (name, role, amount, projectKey) => {
                     const key = text(name, 'ไม่ระบุชื่อ');
-                    if (!people.has(key)) people.set(key, { name: key, pi: 0, copi: 0 });
+                    if (!people.has(key)) {
+                        people.set(key, {
+                            name: key,
+                            pi: 0,
+                            copi: 0,
+                            projectIds: new Set(),
+                            piProjectIds: new Set(),
+                            copiProjectIds: new Set(),
+                        });
+                    }
                     people.get(key)[role] += amount;
+                    if (projectKey !== undefined && projectKey !== null && String(projectKey).trim() !== '') {
+                        people.get(key).projectIds.add(String(projectKey));
+                        if (role === 'pi') people.get(key).piProjectIds.add(String(projectKey));
+                        if (role === 'copi') people.get(key).copiProjectIds.add(String(projectKey));
+                    }
                 };
                 chartFundingRows.forEach((p) => {
                     const amount = budget(p);
                     if (!(amount > 0)) return;
-                    if (isPolicyPi(p) && text(p.pi_name)) addPerson(p.pi_name, 'pi', amount);
+                    const projectKey = p.id ?? p.project_id ?? p.project_code ?? p.project_name_th;
+                    if (isPolicyPi(p) && text(p.pi_name)) addPerson(p.pi_name, 'pi', amount, projectKey);
+                    const seenCopis = new Set();
                     (Array.isArray(p.copis) ? p.copis : []).forEach((copi) => {
-                        if (isPolicyCopi(copi) && text(copi.name)) addPerson(copi.name, 'copi', amount);
+                        const name = text(copi.name);
+                        if (!isPolicyCopi(copi) || !name || seenCopis.has(name)) return;
+                        seenCopis.add(name);
+                        addPerson(name, 'copi', amount, projectKey);
                     });
                 });
                 const peopleRows = Array.from(people.values())
-                    .map((x) => ({ ...x, total: x.pi + x.copi }))
+                    .map((x) => ({
+                        ...x,
+                        total: x.pi + x.copi,
+                        projectCount: x.projectIds.size,
+                        piProjectCount: x.piProjectIds.size,
+                        copiProjectCount: x.copiProjectIds.size,
+                    }))
                     .sort((a, b) => b.total - a.total)
                     .slice(0, 15);
                 renderChart('chartBudgetPeople', {
                     type: 'bar',
                     data: {
-                        labels: peopleRows.map((x) => x.name),
+                        labels: peopleRows.map((x) => [
+                            x.name,
+                            `PI: ${fmt.format(x.piProjectCount || 0)} โครงการ | Co-PI: ${fmt.format(x.copiProjectCount || 0)} โครงการ`,
+                        ]),
                         datasets: [
                             barDataset('PI', peopleRows.map((x) => x.pi / 1_000_000), FUNDING_COLORS.pi),
                             barDataset('Co-PI', peopleRows.map((x) => x.copi / 1_000_000), FUNDING_COLORS.copi),
@@ -2986,7 +3025,11 @@
                             diValueLabel: { display: false },
                             diStackTotalLabel: { display: true, formatter: (value) => `${money.format(value)} ลบ.` }
                         },
-                        scales: { x: { stacked: true, beginAtZero: true, grace: '12%' }, y: { stacked: true } }
+                        layout: { padding: { right: 72 } },
+                        scales: {
+                            x: { stacked: true, beginAtZero: true, grace: '14%' },
+                            y: { stacked: true, offset: true, ticks: { autoSkip: false, padding: 14, font: { size: 10 }, lineHeight: 1.45 } }
+                        }
                     }
                 });
                 const totalBudget = chartFundingRows.reduce((sum, p) => sum + budget(p), 0);

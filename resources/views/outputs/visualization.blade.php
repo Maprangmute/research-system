@@ -6861,6 +6861,10 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     <div class="mt-4 flex flex-1 items-start justify-center">
                         <div class="h-[360px] w-full max-w-[880px]"><canvas id="chartPaperRanking"></canvas></div>
                     </div>
+                    <p class="mt-4 rounded-xl border border-rose-100 bg-rose-50/70 px-4 py-3 text-sm leading-7 text-slate-700">
+                        <span class="font-semibold text-slate-900">หมายเหตุ:</span>
+                        ค่า Impact Factor (IF) และ Quartile (Q) ให้ใช้ค่าตามปีที่บทความได้รับการตีพิมพ์ โดยค่า IF อ้างอิงจากฐานข้อมูล Journal Citation Reports (JCR) และค่า Q อ้างอิงจากฐานข้อมูล SCImago Journal & Country Rank (SJR) ตามเกณฑ์ของมหาวิทยาลัยมหิดล
+                    </p>
                 </article>
                 <article class="fade-up panel section-panel section-panel--rose flex h-full flex-col p-5 md:p-6">
                     <h3 class="text-xl font-semibold text-slate-900">ตีพิมพ์ไป</h3>

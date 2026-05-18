@@ -3017,7 +3017,9 @@
                     const minHeight = canvas.id === 'chartRedZoneTimeline'
                         ? 300
                         : (canvas.id === 'chartOverdueProjects' ? 360 : 170);
-                    const maxHeight = canvas.id === 'chartOverdueProjects' ? 520 : 460;
+                    const maxHeight = canvas.id === 'chartBudgetByInvestigator'
+                        ? 680
+                        : (canvas.id === 'chartOverdueProjects' ? 520 : 460);
                     const target = Math.round(Math.min(maxHeight, Math.max(minHeight, base * scale * boost)));
                     const h = `${target}px`;
                     const minWidth = chartMinimumWidth(canvas.id, vw);
@@ -8706,6 +8708,8 @@
                                 pi: 0,
                                 copi: 0,
                                 projectIds: new Set(),
+                                piProjectIds: new Set(),
+                                copiProjectIds: new Set(),
                             });
                         }
                         return grouped.get(key);
@@ -8720,6 +8724,7 @@
                             const item = ensure(piName);
                             item.pi += budget;
                             item.projectIds.add(project?.id);
+                            item.piProjectIds.add(project?.id);
                         }
 
                         const seenCopis = new Set();
@@ -8731,6 +8736,7 @@
                             const item = ensure(name);
                             item.copi += budget;
                             item.projectIds.add(project?.id);
+                            item.copiProjectIds.add(project?.id);
                         });
                     });
 
@@ -8739,6 +8745,8 @@
                             ...item,
                             total: item.pi + item.copi,
                             projectCount: Array.from(item.projectIds).filter((id) => id !== undefined && id !== null).length,
+                            piProjectCount: Array.from(item.piProjectIds).filter((id) => id !== undefined && id !== null).length,
+                            copiProjectCount: Array.from(item.copiProjectIds).filter((id) => id !== undefined && id !== null).length,
                         }))
                         .filter((item) => item.total > 0)
                         .sort((a, b) => (b.total - a.total) || String(a.name).localeCompare(String(b.name), 'th'))
@@ -8750,13 +8758,22 @@
                     }
 
                     clearEmptyChartState(canvas);
+                    canvas.dataset.baseHeight = String(Math.max(460, rowsByPerson.length * 42 + 120));
+                    window.applyChartCanvasSizing?.();
                     const labels = rowsByPerson.map((item) => item.name);
                     const maxLabelLength = 34;
-                    const displayLabels = labels.map((label) => label.length > maxLabelLength ? `${label.slice(0, maxLabelLength - 1)}…` : label);
+                    const displayLabels = rowsByPerson.map((item) => {
+                        const label = item.name.length > maxLabelLength ? `${item.name.slice(0, maxLabelLength - 1)}…` : item.name;
+
+                        return [
+                            label,
+                            `PI: ${item.piProjectCount.toLocaleString('th-TH')} โครงการ | Co-PI: ${item.copiProjectCount.toLocaleString('th-TH')} โครงการ`,
+                        ];
+                    });
                     const horizontalTotalLabelPlugin = {
                         id: `rtHorizontalBudgetInvestigator_${Math.random().toString(36).slice(2, 8)}`,
                         afterDatasetsDraw(chart) {
-                            const { ctx, chartArea: { right, left } } = chart;
+                            const { ctx, chartArea: { left } } = chart;
                             ctx.save();
                             ctx.font = '700 11px sans-serif';
                             ctx.fillStyle = '#0f172a';
@@ -8776,14 +8793,15 @@
                                     y = element.y;
                                 });
                                 if (endX === null || y === null) return;
-                                const text = formatThaiMoney(item.total);
-                                const x = Math.min(Math.max(endX + 8, left + 4), right - 68);
-                                ctx.fillText(text, x, y);
+                                const totalText = formatThaiMoney(item.total);
+                                const maxWidth = ctx.measureText(totalText).width;
+                                const maxX = chart.width - maxWidth - 10;
+                                const x = Math.min(Math.max(endX + 8, left + 4), Math.max(left + 4, maxX));
+                                ctx.fillText(totalText, x, y);
                             });
                             ctx.restore();
                         }
                     };
-
                     new Chart(canvas, {
                         type: 'bar',
                         data: {
@@ -8818,7 +8836,7 @@
                             },
                             layout: {
                                 padding: {
-                                    right: 42
+                                    right: 76
                                 }
                             },
                             plugins: {
@@ -8841,7 +8859,7 @@
                                 x: {
                                     stacked: true,
                                     beginAtZero: true,
-                                    grace: '12%',
+                                    grace: '18%',
                                     ticks: {
                                         callback: (value) => `${(Number(value) / 1_000_000).toLocaleString('th-TH', { maximumFractionDigits: 0 })} ล.`
                                     },

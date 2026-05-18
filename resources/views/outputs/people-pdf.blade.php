@@ -457,7 +457,8 @@
                                         @foreach (['internal', 'external', 'total'] as $fundingKey)
                                             @php $cell = data_get($budgetSummary, "{$roleKey}.{$fundingKey}", ['count' => 0, 'budget' => 0]); @endphp
                                             <td style="text-align:right;">
-                                                {{ $pdfMoney($cell['budget'] ?? 0) }}
+                                                <div style="font-weight:bold; color:#0f172a;">{{ $pdfMoney($cell['budget'] ?? 0) }}</div>
+                                                <div style="margin-top:2px; font-size:10pt; color:#64748b;">{{ number_format((int) ($cell['count'] ?? 0)) }} โครงการ</div>
                                             </td>
                                         @endforeach
                                     </tr>
@@ -466,7 +467,8 @@
                             <tfoot>
                                 <tr>
                                     <td colspan="4" style="text-align:right; border-top: 1px solid #dde6f6; font-weight:bold;">
-                                        รวมทั้งหมด {{ $pdfMoney(data_get($budgetSummary, 'grand_total.budget', 0)) }}
+                                        <div>รวมทั้งหมด {{ $pdfMoney(data_get($budgetSummary, 'grand_total.budget', 0)) }}</div>
+                                        <div style="margin-top:2px; font-size:10pt; color:#64748b;">{{ number_format((int) data_get($budgetSummary, 'grand_total.count', 0)) }} โครงการ</div>
                                     </td>
                                 </tr>
                             </tfoot>

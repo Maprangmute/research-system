@@ -801,6 +801,7 @@
                                                 @php $cell = data_get($budgetSummary, "{$roleKey}.{$fundingKey}", ['count' => 0, 'budget' => 0]); @endphp
                                                 <td class="px-4 py-3 text-right">
                                                     <div class="font-bold text-slate-900">{{ $money($cell['budget'] ?? 0) }}</div>
+                                                    <div class="mt-1 text-xs font-semibold text-slate-500">{{ number_format((int) ($cell['count'] ?? 0)) }} โครงการ</div>
                                                 </td>
                                             @endforeach
                                         </tr>
@@ -811,6 +812,7 @@
                                         <td class="px-4 py-3 font-bold text-slate-900">รวมทั้งหมด</td>
                                         <td colspan="3" class="px-4 py-3 text-right">
                                             <div class="font-extrabold text-slate-950">{{ $money(data_get($budgetSummary, 'grand_total.budget', 0)) }}</div>
+                                            <div class="mt-1 text-xs font-semibold text-slate-500">{{ number_format((int) data_get($budgetSummary, 'grand_total.count', 0)) }} โครงการ</div>
                                         </td>
                                     </tr>
                                 </tfoot>
