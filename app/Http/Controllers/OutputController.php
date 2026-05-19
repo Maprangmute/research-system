@@ -2452,11 +2452,10 @@ class OutputController extends Controller
         };
         $buildSummaryListItem = static function ($row) use ($extractFirstUrl) {
             $detail = trim((string) ($row->detail ?? ''));
-            $sourceLink = trim((string) ($row->link ?? '')) ?: null;
             $detailLink = $extractFirstUrl($detail);
 
             return (object) array_merge((array) $row, [
-                'modal_link' => $detailLink ?: $sourceLink,
+                'modal_link' => $detailLink,
                 'modal_detail' => $detail !== '' ? $detail : null,
             ]);
         };
@@ -2533,14 +2532,13 @@ class OutputController extends Controller
                         $typeCode = strtoupper((string) ($row->type_code ?? 'OTHER'));
                         $detail = trim((string) ($row->detail ?? ''));
                         $detailLink = $extractFirstUrl($detail);
-                        $sourceLink = trim((string) ($row->link ?? '')) ?: null;
                         return (object) [
                             'title' => trim((string) ($row->title ?? '')) ?: '-',
                             'type_code' => $typeCode,
                             'type_label' => $eaFullNameMap[$typeCode] ?? ('ประเภท ' . $typeCode),
                             'year_be' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null,
-                            'link' => $detailLink ?: $sourceLink,
-                            'source_link' => $sourceLink,
+                            'link' => $detailLink,
+                            'source_link' => trim((string) ($row->link ?? '')) ?: null,
                             'detail' => $detail !== '' ? $detail : null,
                         ];
                     })
@@ -3568,18 +3566,20 @@ class OutputController extends Controller
         $impactOutputRows = $impactCodes->mapWithKeys(fn ($code) => [
             $code => (int) $impactRows->where('type_code', $code)->count(),
         ]);
-        $impactOutputItems = $impactCodes->mapWithKeys(function ($code) use ($impactRows, $sortRowsNewestFirst, $eaFullNameMap) {
+        $impactOutputItems = $impactCodes->mapWithKeys(function ($code) use ($impactRows, $sortRowsNewestFirst, $eaFullNameMap, $extractFirstUrl) {
             return [
                 $code => $sortRowsNewestFirst($impactRows->where('type_code', $code)->values())
-                    ->map(fn ($row) => (object) [
-                        'title' => trim((string) ($row->title ?? '')) ?: '-',
-                        'reference' => trim((string) ($row->reference ?? '')) ?: '-',
-                        'year' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null,
-                        'source_label' => trim((string) ($row->source_label ?? '')),
-                        'type_code' => $code,
-                        'type_label' => $eaFullNameMap[$code] ?? $code,
-                        'link' => trim((string) ($row->link ?? '')) ?: null,
-                    ])
+                    ->map(function ($row) use ($code, $eaFullNameMap, $extractFirstUrl) {
+                        return (object) [
+                            'title' => trim((string) ($row->title ?? '')) ?: '-',
+                            'reference' => trim((string) ($row->reference ?? '')) ?: '-',
+                            'year' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null,
+                            'source_label' => trim((string) ($row->source_label ?? '')),
+                            'type_code' => $code,
+                            'type_label' => $eaFullNameMap[$code] ?? $code,
+                            'link' => $extractFirstUrl(trim((string) ($row->detail ?? ''))),
+                        ];
+                    })
                     ->values(),
             ];
         });
@@ -3601,10 +3601,10 @@ class OutputController extends Controller
                     ->values(),
             ];
         });
-        $impactTrendItems = $impactCodes->mapWithKeys(function ($code) use ($impactRows, $impactTrendYears, $sortRowsNewestFirst, $eaFullNameMap) {
+        $impactTrendItems = $impactCodes->mapWithKeys(function ($code) use ($impactRows, $impactTrendYears, $sortRowsNewestFirst, $eaFullNameMap, $extractFirstUrl) {
             return [
                 $code => $impactTrendYears
-                    ->mapWithKeys(function ($year) use ($impactRows, $sortRowsNewestFirst, $code, $eaFullNameMap) {
+                    ->mapWithKeys(function ($year) use ($impactRows, $sortRowsNewestFirst, $code, $eaFullNameMap, $extractFirstUrl) {
                         return [(string) $year => $sortRowsNewestFirst($impactRows
                             ->where('type_code', $code)
                             ->where('year_be', (int) $year)
@@ -3613,7 +3613,7 @@ class OutputController extends Controller
                                 'title' => trim((string) ($row->title ?? '')) ?: '-',
                                 'meta' => trim((string) ($row->reference ?? '')) ?: '-',
                                 'type' => $code . ' ' . ($eaFullNameMap[$code] ?? $code),
-                                'link' => trim((string) ($row->link ?? '')) ?: null,
+                                'link' => $extractFirstUrl(trim((string) ($row->detail ?? ''))),
                                 'year' => (int) $year,
                                 'people' => [],
                             ])
@@ -3621,19 +3621,19 @@ class OutputController extends Controller
                     }),
             ];
         });
-        $impactTrendItemsByYear = $impactTrendYears->mapWithKeys(function ($year) use ($impactRows, $impactCodes, $sortRowsNewestFirst, $eaFullNameMap) {
+        $impactTrendItemsByYear = $impactTrendYears->mapWithKeys(function ($year) use ($impactRows, $impactCodes, $sortRowsNewestFirst, $eaFullNameMap, $extractFirstUrl) {
             return [(string) $year => $sortRowsNewestFirst($impactRows
                 ->whereIn('type_code', $impactCodes->all())
                 ->where('year_be', (int) $year)
                 ->values())
-                ->map(function ($row) use ($eaFullNameMap) {
+                ->map(function ($row) use ($eaFullNameMap, $extractFirstUrl) {
                     $code = trim((string) ($row->type_code ?? ''));
 
                     return [
                         'title' => trim((string) ($row->title ?? '')) ?: '-',
                         'meta' => trim((string) ($row->reference ?? '')) ?: '-',
                         'type' => trim($code . ' ' . ($eaFullNameMap[$code] ?? $code)),
-                        'link' => trim((string) ($row->link ?? '')) ?: null,
+                        'link' => $extractFirstUrl(trim((string) ($row->detail ?? ''))),
                         'year' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : (int) $year,
                         'people' => [],
                     ];
@@ -5094,7 +5094,7 @@ class OutputController extends Controller
                         ->values()];
                 }),
             'policy_impact' => $frameworkTrendYears
-                ->mapWithKeys(function ($year) use ($impactRows, $normalizeProjectType, $sortRowsNewestFirst, $impactCodes) {
+                ->mapWithKeys(function ($year) use ($impactRows, $normalizeProjectType, $sortRowsNewestFirst, $impactCodes, $extractFirstUrl) {
                     return [(string) $year => $sortRowsNewestFirst($impactRows
                         ->whereIn('type_code', $impactCodes->all())
                         ->where('year_be', (int) $year)
@@ -5105,7 +5105,7 @@ class OutputController extends Controller
                             'type' => trim((string) ($row->project_type ?? '')) !== ''
                                 ? $normalizeProjectType($row->project_type)
                                 : (trim((string) ($row->source_label ?? '')) ?: trim((string) ($row->type_code ?? ''))),
-                            'link' => trim((string) ($row->link ?? '')) ?: null,
+                            'link' => $extractFirstUrl(trim((string) ($row->detail ?? ''))),
                             'year' => is_numeric($row->year_be ?? null) ? (int) $row->year_be : null,
                         ])
                         ->values()];

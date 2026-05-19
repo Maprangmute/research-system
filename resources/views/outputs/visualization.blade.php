@@ -1513,15 +1513,15 @@
             max-height: 120px;
             align-items: flex-start;
             padding: 6px;
-            overflow: visible;
+            overflow: hidden;
             position: relative;
             z-index: 1;
         }
         .unit-contribution-matrix .doctor-lane-cell:hover {
-            z-index: 80;
+            z-index: 2;
         }
         .unit-contribution-matrix .doctor-lane-row:hover {
-            z-index: 70;
+            z-index: 2;
         }
         .unit-contribution-matrix .doctor-lane-row .doctor-lane-theme {
             min-height: 96px;
@@ -1563,15 +1563,17 @@
         }
         .unit-avatar-stack {
             width: 100%;
-            max-height: 142px;
+            max-height: 84px;
+            overflow-x: hidden;
             overflow-y: auto;
-            overflow-x: visible;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(46px, 46px));
+            grid-template-columns: repeat(auto-fill, minmax(38px, 38px));
             justify-content: center;
             align-content: start;
-            gap: 8px;
-            padding: 3px 4px 6px;
+            gap: 6px;
+            padding: 2px 3px 4px;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable both-edges;
             scrollbar-width: thin;
             scrollbar-color: #a7f3d0 transparent;
         }
@@ -1579,8 +1581,9 @@
             isolation: auto;
         }
         .unit-avatar-stack:hover {
-            overflow: visible;
-            z-index: 90;
+            overflow-x: hidden;
+            overflow-y: auto;
+            z-index: 1;
         }
         .unit-avatar-stack::-webkit-scrollbar {
             width: 5px;
@@ -1607,10 +1610,25 @@
             box-shadow: 0 0 0 1px #cbd5e1, 0 8px 16px rgba(15, 23, 42, .10);
         }
         .unit-avatar-stack img {
-            width: 46px;
-            height: 46px;
+            width: 38px;
+            height: 38px;
             border-width: 3px;
             box-shadow: 0 0 0 1px #a7f3d0, 0 8px 16px rgba(15, 23, 42, .12);
+        }
+        .unit-avatar-more {
+            display: inline-flex;
+            width: 38px;
+            height: 38px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            border: 2px solid #ffffff;
+            background: #ecfdf5;
+            box-shadow: 0 0 0 1px #86efac, 0 8px 16px rgba(15, 23, 42, .10);
+            color: #047857;
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1;
         }
         @media (hover: hover) and (pointer: fine) {
             .doctor-avatar-stack a:hover,
@@ -1625,9 +1643,9 @@
                 box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px #6366f1, 0 28px 58px rgba(15, 23, 42, .36);
             }
             .unit-avatar-stack img:hover {
-                z-index: 120;
-                transform: scale(3.15);
-                box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px #10b981, 0 28px 58px rgba(15, 23, 42, .38);
+                z-index: 1;
+                transform: none;
+                box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #10b981, 0 12px 24px rgba(15, 23, 42, .18);
             }
         }
         .doctor-mobile-timeline {
@@ -1745,6 +1763,48 @@
         .clinical-led-chart-inner {
             height: 100%;
             min-width: 920px;
+        }
+        .clinical-led-chart-scroll canvas {
+            touch-action: pan-x pan-y;
+        }
+        .policy-framework-chart-scroll {
+            height: 360px;
+            overflow-x: visible;
+            overflow-y: visible;
+            padding-bottom: 4px;
+        }
+        .policy-framework-chart-inner {
+            height: 100%;
+            min-width: 0;
+        }
+        .policy-framework-chart-scroll canvas {
+            touch-action: pan-x pan-y;
+        }
+        .policy-impact-chart-scroll {
+            height: 360px;
+            overflow-x: visible;
+            overflow-y: visible;
+            padding-bottom: 4px;
+        }
+        .policy-impact-chart-inner {
+            height: 100%;
+            min-width: 0;
+        }
+        .policy-impact-chart-scroll canvas {
+            touch-action: pan-x pan-y;
+        }
+        .data-literacy-chart-scroll {
+            height: 360px;
+            overflow-x: visible;
+            overflow-y: visible;
+            padding-bottom: 4px;
+        }
+        .data-literacy-chart-inner {
+            height: 100%;
+            min-width: 0;
+        }
+        .data-literacy-chart-scroll canvas {
+            touch-action: pan-x pan-y;
         }
         .policy-trend-panel {
             border: 1px solid #e2e8f0;
@@ -2056,6 +2116,16 @@
         .fte-radar-chart-wrap {
             margin-top: 18px;
             height: 430px;
+            overflow-x: visible;
+            overflow-y: visible;
+            padding-bottom: 4px;
+        }
+        .fte-radar-chart-inner {
+            height: 100%;
+            min-width: 0;
+        }
+        .fte-radar-chart-wrap canvas {
+            touch-action: pan-x pan-y;
         }
         .fte-radar-legend {
             display: flex;
@@ -2806,6 +2876,24 @@
             .viz-page [class*="h-[390px]"] {
                 height: 340px !important;
             }
+            .policy-framework-chart-scroll {
+                height: 360px !important;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+            }
+            .policy-framework-chart-inner {
+                min-width: 820px;
+            }
+            .policy-impact-chart-scroll {
+                height: 360px !important;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+            }
+            .policy-impact-chart-inner {
+                min-width: 900px;
+            }
             .type-chart-wrap {
                 height: 420px;
             }
@@ -3125,6 +3213,24 @@
             .viz-page [class*="h-[380px]"],
             .viz-page [class*="h-[390px]"] {
                 height: 360px !important;
+            }
+            .policy-framework-chart-scroll {
+                height: 360px !important;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+            }
+            .policy-framework-chart-inner {
+                min-width: 860px;
+            }
+            .policy-impact-chart-scroll {
+                height: 360px !important;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+            }
+            .policy-impact-chart-inner {
+                min-width: 940px;
             }
             .type-chart-wrap {
                 height: 460px;
@@ -4279,6 +4385,42 @@
                 white-space: normal;
                 line-height: 1.3;
             }
+            .policy-framework-chart-scroll {
+                height: 330px !important;
+                margin-left: -4px;
+                margin-right: -4px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 0 4px 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .policy-framework-chart-inner {
+                min-width: 720px;
+            }
+            .policy-impact-chart-scroll {
+                height: 340px !important;
+                margin-left: -4px;
+                margin-right: -4px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 0 4px 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .policy-impact-chart-inner {
+                min-width: 780px;
+            }
+            .data-literacy-chart-scroll {
+                height: 340px !important;
+                margin-left: -4px;
+                margin-right: -4px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 0 4px 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .data-literacy-chart-inner {
+                min-width: 760px;
+            }
             .fte-radar-chart-wrap {
                 height: 360px;
             }
@@ -4825,6 +4967,80 @@
                 justify-content: flex-start;
             }
         }
+        @media (max-width: 767px) {
+            .clinical-led-chart-scroll {
+                height: 340px !important;
+                margin-left: -4px;
+                margin-right: -4px;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                padding: 0 4px 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .clinical-led-chart-inner {
+                width: auto !important;
+                min-width: 760px !important;
+                height: 100%;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1279px) {
+            .clinical-led-chart-scroll {
+                height: 360px !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                padding-bottom: 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .clinical-led-chart-inner {
+                width: auto !important;
+                min-width: 860px !important;
+                height: 100%;
+            }
+        }
+        @media (max-width: 767px) {
+            .fte-radar-chart-wrap {
+                height: 380px !important;
+                margin-left: -4px;
+                margin-right: -4px;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                padding: 0 4px 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .fte-radar-chart-inner {
+                width: auto !important;
+                min-width: 680px !important;
+                height: 100%;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1279px) {
+            .fte-radar-chart-wrap {
+                height: 430px !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                padding-bottom: 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .fte-radar-chart-inner {
+                width: auto !important;
+                min-width: 760px !important;
+                height: 100%;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1279px) {
+            .data-literacy-chart-scroll {
+                height: 360px !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                padding-bottom: 8px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .data-literacy-chart-inner {
+                width: auto !important;
+                min-width: 860px !important;
+                height: 100%;
+            }
+        }
         @media (min-width: 600px) and (max-width: 767px) and (orientation: portrait) {
             .viz-page > div {
                 padding-left: 18px !important;
@@ -5111,6 +5327,354 @@
                 display: none !important;
             }
         }
+        @media (max-width: 640px) {
+            .viz-page .policy-framework-chart-scroll {
+                height: 360px !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                overflow: visible !important;
+                padding: 0 0 6px !important;
+            }
+            .viz-page .policy-framework-chart-inner {
+                width: 100% !important;
+                min-width: 0 !important;
+                height: 100% !important;
+            }
+            .viz-page .policy-framework-chart-scroll canvas {
+                width: 100% !important;
+                height: 100% !important;
+            }
+            .viz-page .policy-impact-chart-scroll,
+            .viz-page .data-literacy-chart-scroll,
+            .viz-page .fte-radar-chart-wrap {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                overflow: visible !important;
+                padding: 0 0 6px !important;
+            }
+            .viz-page .policy-impact-chart-scroll {
+                height: 360px !important;
+            }
+            .viz-page .data-literacy-chart-scroll {
+                height: 350px !important;
+            }
+            .viz-page .fte-radar-chart-wrap {
+                height: 390px !important;
+            }
+            .viz-page .policy-impact-chart-inner,
+            .viz-page .data-literacy-chart-inner,
+            .viz-page .fte-radar-chart-inner {
+                width: 100% !important;
+                min-width: 0 !important;
+                height: 100% !important;
+            }
+            .viz-page .policy-impact-chart-scroll canvas,
+            .viz-page .data-literacy-chart-scroll canvas,
+            .viz-page .fte-radar-chart-wrap canvas {
+                width: 100% !important;
+                height: 100% !important;
+            }
+            .viz-page .nature-sticky {
+                overflow: hidden !important;
+            }
+            .viz-page .nature-map {
+                width: min(100%, calc(100vw - 72px)) !important;
+                max-width: 360px !important;
+                min-height: 0 !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+                overflow: hidden !important;
+                border-radius: 18px !important;
+                padding: 8px !important;
+            }
+            .viz-page .nature-map > .absolute.inset-6 {
+                inset: 16px !important;
+            }
+            .viz-page .nature-map .nature-bubble {
+                transform: translate(-50%, -50%) !important;
+                box-shadow: 0 7px 16px rgba(15, 23, 42, .10) !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="aging"] {
+                left: 34% !important;
+                top: 52% !important;
+                width: 42% !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="hta"] {
+                left: 66% !important;
+                top: 52% !important;
+                width: 42% !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="access_population"] {
+                left: 50% !important;
+                top: 73% !important;
+                width: 32% !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="device_innovation"] {
+                left: 50% !important;
+                top: 28% !important;
+                width: 22% !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="data_rwe"] {
+                left: 35% !important;
+                top: 31% !important;
+                width: 18% !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="ai_digital"] {
+                left: 65% !important;
+                top: 31% !important;
+                width: 18% !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="drug_rdu"] {
+                left: 31% !important;
+                top: 73% !important;
+                width: 17% !important;
+            }
+            .viz-page .nature-map .nature-bubble::before,
+            .viz-page .nature-map .nature-bubble__callout,
+            .viz-page .nature-map .nature-callout-layer,
+            .viz-page .nature-map .nature-map-callout {
+                display: none !important;
+            }
+            .viz-page .nature-map .nature-bubble__inner {
+                display: grid !important;
+                width: 100%;
+                max-width: 100%;
+                place-items: center;
+                gap: 1px;
+                padding: 0 5px !important;
+                color: inherit !important;
+                text-align: center;
+            }
+            .viz-page .nature-map .nature-bubble__inner > div:first-child {
+                max-width: 100%;
+                overflow-wrap: anywhere;
+                font-size: clamp(9px, 2.7vw, 13px) !important;
+                font-weight: 900 !important;
+                line-height: 1.05 !important;
+            }
+            .viz-page .nature-map .nature-bubble__inner > div + div {
+                margin-top: 2px !important;
+                font-size: clamp(8px, 2.2vw, 10px) !important;
+                font-weight: 800 !important;
+                line-height: 1 !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="device_innovation"] .nature-bubble__inner,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="data_rwe"] .nature-bubble__inner,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="ai_digital"] .nature-bubble__inner,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="drug_rdu"] .nature-bubble__inner {
+                padding: 0 2px !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="device_innovation"] .nature-bubble__inner > div:first-child,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="data_rwe"] .nature-bubble__inner > div:first-child,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="ai_digital"] .nature-bubble__inner > div:first-child,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="drug_rdu"] .nature-bubble__inner > div:first-child {
+                font-size: clamp(7px, 2vw, 9px) !important;
+                line-height: 1 !important;
+            }
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="device_innovation"] .nature-bubble__inner > div + div,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="data_rwe"] .nature-bubble__inner > div + div,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="ai_digital"] .nature-bubble__inner > div + div,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="drug_rdu"] .nature-bubble__inner > div + div {
+                display: none !important;
+            }
+        }
+        .viz-page .unit-contribution-matrix .doctor-lane-cell {
+            overflow: hidden !important;
+        }
+        .viz-page .unit-contribution-matrix .unit-avatar-stack {
+            grid-template-columns: repeat(auto-fill, minmax(34px, 34px)) !important;
+            justify-content: center !important;
+            max-height: 82px !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable both-edges;
+        }
+        .viz-page .unit-contribution-matrix .unit-avatar-stack:hover {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+        }
+        .viz-page .unit-contribution-matrix .unit-avatar-stack img,
+        .viz-page .unit-contribution-matrix .unit-avatar-more {
+            width: 34px !important;
+            height: 34px !important;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .viz-page .unit-contribution-matrix .unit-avatar-stack img:hover,
+            .viz-page .unit-contribution-matrix .unit-avatar-stack a:hover,
+            .viz-page .unit-contribution-matrix .unit-avatar-stack a:focus-visible {
+                transform: none !important;
+                z-index: 1 !important;
+            }
+        }
+        @media (max-width: 640px) {
+            .viz-page .doctor-mobile-year .doctor-avatar-stack img {
+                transform: none !important;
+            }
+            .viz-page .unit-mobile-avatar-grid {
+                grid-template-columns: repeat(auto-fill, minmax(42px, 42px)) !important;
+                gap: 7px !important;
+            }
+            .viz-page .unit-mobile-avatar-grid img {
+                width: 42px !important;
+                height: 42px !important;
+            }
+        }
+        .unit-avatar-zoom-preview {
+            position: fixed;
+            left: var(--avatar-zoom-x, 12px);
+            top: var(--avatar-zoom-y, 12px);
+            z-index: 220;
+            width: 184px;
+            max-width: calc(100vw - 24px);
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transform: none;
+            transition: opacity .1s ease, visibility 0s linear .1s;
+        }
+        .unit-avatar-zoom-preview.is-visible {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity .1s ease;
+        }
+        .unit-avatar-zoom-preview__card {
+            overflow: hidden;
+            border: 1px solid rgba(16, 185, 129, .35);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .97);
+            box-shadow: 0 22px 54px rgba(15, 23, 42, .24);
+            backdrop-filter: blur(10px);
+        }
+        .unit-avatar-zoom-preview img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            background: #f1f5f9;
+        }
+        .unit-avatar-zoom-preview__name {
+            padding: 9px 10px 10px;
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+        @media (max-width: 640px) {
+            .unit-avatar-zoom-preview {
+                width: 156px;
+            }
+            .unit-avatar-zoom-preview__name {
+                font-size: 11px;
+            }
+        }
+        @media (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+            .viz-page .policy-axis-card .doctor-lane-board {
+                overflow-x: hidden !important;
+                padding-bottom: 0 !important;
+            }
+            .viz-page .policy-axis-card .doctor-lane-grid {
+                min-width: 0 !important;
+                width: 100% !important;
+            }
+            .viz-page .policy-axis-card .doctor-lane-row,
+            .viz-page .policy-axis-card .doctor-lane-head {
+                grid-template-columns: minmax(128px, 0.9fr) repeat(var(--doctor-year-count, 1), minmax(0, 1fr)) !important;
+            }
+            .viz-page .policy-axis-card .doctor-lane-theme,
+            .viz-page .policy-axis-card .doctor-lane-year,
+            .viz-page .policy-axis-card .doctor-lane-cell {
+                padding: 6px !important;
+            }
+            .viz-page .policy-axis-card .doctor-lane-theme .text-sm,
+            .viz-page .policy-axis-card .doctor-lane-cell,
+            .viz-page .policy-axis-card .doctor-lane-year {
+                font-size: 0.68rem !important;
+                line-height: 1.22 !important;
+            }
+            .viz-page .policy-axis-card .doctor-lane-cell {
+                min-height: 54px !important;
+            }
+            .viz-page .policy-axis-card .doctor-avatar-stack {
+                gap: 4px !important;
+            }
+            .viz-page .policy-axis-card .doctor-avatar-stack img {
+                width: 30px !important;
+                height: 30px !important;
+                border-width: 2px !important;
+            }
+            .viz-page .policy-axis-card .unit-contribution-matrix .doctor-lane-row,
+            .viz-page .policy-axis-card .unit-contribution-matrix .doctor-lane-head {
+                grid-template-columns: minmax(132px, 0.92fr) repeat(var(--doctor-year-count, 1), minmax(0, 1fr)) !important;
+            }
+            .viz-page .policy-axis-card .unit-contribution-matrix .doctor-lane-cell,
+            .viz-page .policy-axis-card .unit-contribution-matrix .doctor-lane-row .doctor-lane-theme {
+                min-height: 72px !important;
+                max-height: 92px !important;
+            }
+            .viz-page .policy-axis-card .unit-avatar-stack {
+                grid-template-columns: repeat(auto-fill, minmax(26px, 26px)) !important;
+                gap: 3px !important;
+                max-height: 70px !important;
+                padding: 1px !important;
+            }
+            .viz-page .policy-axis-card .unit-avatar-stack img {
+                width: 26px !important;
+                height: 26px !important;
+                border-width: 2px !important;
+            }
+            .viz-page .policy-axis-card .unit-cell-count {
+                font-size: 0.56rem !important;
+                padding: 1px 5px !important;
+            }
+            .viz-page .policy-axis-card .doctor-role-tabs {
+                max-width: 100% !important;
+            }
+        }
+        @media (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+            .viz-page .policy-framework-chart-scroll,
+            .viz-page .policy-impact-chart-scroll,
+            .viz-page .clinical-led-chart-scroll,
+            .viz-page .fte-radar-chart-wrap {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                overflow-x: visible !important;
+                overflow-y: visible !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                box-sizing: border-box !important;
+            }
+            .viz-page .policy-framework-chart-scroll,
+            .viz-page .policy-impact-chart-scroll,
+            .viz-page .clinical-led-chart-scroll {
+                height: 360px !important;
+            }
+            .viz-page .fte-radar-chart-wrap {
+                height: 420px !important;
+            }
+            .viz-page .policy-framework-chart-inner,
+            .viz-page .policy-impact-chart-inner,
+            .viz-page .clinical-led-chart-inner,
+            .viz-page .fte-radar-chart-inner {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                height: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .viz-page .policy-framework-chart-scroll canvas,
+            .viz-page .policy-impact-chart-scroll canvas,
+            .viz-page .clinical-led-chart-scroll canvas,
+            .viz-page .fte-radar-chart-wrap canvas {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100% !important;
+                display: block !important;
+            }
+        }
     </style>
 
     <div class="viz-page min-h-screen pb-10">
@@ -5251,8 +5815,10 @@
                     </div>
                     <div class="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
                         <div class="policy-trend-panel flex h-full flex-col">
-                            <div class="h-[360px]">
-                                <canvas id="chartPolicyFrameworkTrend"></canvas>
+                            <div class="policy-framework-chart-scroll">
+                                <div class="policy-framework-chart-inner">
+                                    <canvas id="chartPolicyFrameworkTrend"></canvas>
+                                </div>
                             </div>
                             @if ($policyFrameworkSummary)
                                 <div class="mt-4 flex-1 rounded-2xl border border-sky-300 bg-sky-50 px-4 py-4">
@@ -5571,8 +6137,10 @@
                                         </div>
                                         <span class="policy-pill">{{ number_format((int) $policyImpactOutputs->sum()) }} รายการ</span>
                                     </div>
-                                    <div class="mt-3 h-[360px]">
-                                        <canvas id="chartPolicyImpactTrend"></canvas>
+                                    <div class="policy-impact-chart-scroll mt-3">
+                                        <div class="policy-impact-chart-inner">
+                                            <canvas id="chartPolicyImpactTrend"></canvas>
+                                        </div>
                                     </div>
                                     @if ($policyImpactTrendSummaryRows->isNotEmpty())
                                         <div class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4">
@@ -5619,13 +6187,13 @@
                                             </div>
                                             <div class="policy-mini-list mt-3 space-y-2">
                                                 @forelse (collect($policyImpactOutputItems[$code] ?? []) as $item)
-                                                    @if (($isPublicSeminar ?? false) || ! $item->link)
+                                                    @if (! $item->link)
                                                         <div class="policy-mini-link">
                                                             <div class="text-xs font-semibold leading-snug text-slate-900">{{ $item->title }}</div>
                                                             <div class="mt-1 text-[11px] text-slate-500">{{ $item->reference }} · {{ $item->source_label ?: '-' }} · ปี {{ $item->year ?: '-' }}</div>
                                                         </div>
                                                     @else
-                                                        <a href="{{ $item->link }}" class="policy-mini-link">
+                                                        <a href="{{ $item->link }}" target="_blank" rel="noopener" class="policy-mini-link">
                                                             <div class="text-xs font-semibold leading-snug text-slate-900">{{ $item->title }}</div>
                                                             <div class="mt-1 text-[11px] text-slate-500">{{ $item->reference }} · {{ $item->source_label ?: '-' }} · ปี {{ $item->year ?: '-' }}</div>
                                                         </a>
@@ -6135,7 +6703,9 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     </div>
                                 </div>
                                 <div class="fte-radar-chart-wrap">
-                                    <canvas id="chartFteSkillRadar" class="block h-full w-full"></canvas>
+                                    <div class="fte-radar-chart-inner">
+                                        <canvas id="chartFteSkillRadar" class="block h-full w-full"></canvas>
+                                    </div>
                                 </div>
                                 <div class="mt-2 text-xs leading-relaxed text-slate-500">
                                     หมายเหตุ: กราฟนี้รวมจำนวนกำลังคนทั้งหมดที่เคยร่วมงานในช่วงเวลาที่แสดง รวมถึงบุคลากรที่ได้ลาออกแล้วด้วย
@@ -6334,8 +6904,10 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     </div>
                                     <span class="policy-pill">RWD / Primary / Mixed</span>
                                 </div>
-                                <div class="mt-3 h-[360px]">
-                                    <canvas id="chartDataLiteracyTrend" class="block h-full w-full"></canvas>
+                                <div class="data-literacy-chart-scroll mt-3">
+                                    <div class="data-literacy-chart-inner">
+                                        <canvas id="chartDataLiteracyTrend" class="block h-full w-full"></canvas>
+                                    </div>
                                 </div>
                             </div>
 
@@ -6468,7 +7040,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 <div class="policy-axis-card mt-4">
                     <div class="policy-section-title">
                         <div>
-                            <h3 class="text-xl font-semibold text-slate-900">การผลักด้นของเเพทย์ในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพในด้านต่างๆ</h3>
+                            <h3 class="text-xl font-semibold text-slate-900">การผลักดันของแพทย์ในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพในด้านต่างๆ</h3>
                         </div>
                     </div>
                     @php
@@ -6750,7 +7322,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                 class="output-item-button js-output-item"
                                                 style="{{ $outputTypeCardStyle($item->type_code) }}"
                                                 data-title="{{ $item->title }}"
-                                                data-link="{{ ($isPublicSeminar ?? false) ? '' : ($item->link ?? '') }}"
+                                                data-link="{{ $item->link ?? '' }}"
                                                 data-detail="{{ $item->detail ?? '' }}"
                                                 data-type="{{ $item->type_code }} - {{ $item->type_label }}"
                                             >
@@ -7424,7 +7996,31 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                 return window.matchMedia('(min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)').matches;
             }
             function isClinicalLedCompactViewport() {
-                return isCompactViewport() || isTabletLandscapeCompact();
+                return window.matchMedia('(max-width: 1279px)').matches;
+            }
+            function isPolicyFrameworkCompactViewport() {
+                return window.matchMedia('(max-width: 1279px)').matches;
+            }
+            function isPolicyFrameworkPhoneViewport() {
+                return window.matchMedia('(max-width: 640px)').matches;
+            }
+            function isPolicyImpactCompactViewport() {
+                return window.matchMedia('(max-width: 1279px)').matches;
+            }
+            function isPolicyImpactPhoneViewport() {
+                return window.matchMedia('(max-width: 640px)').matches;
+            }
+            function isFteRadarCompactViewport() {
+                return window.matchMedia('(max-width: 1279px)').matches;
+            }
+            function isFteRadarPhoneViewport() {
+                return window.matchMedia('(max-width: 640px)').matches;
+            }
+            function isDataLiteracyCompactViewport() {
+                return window.matchMedia('(max-width: 1279px)').matches;
+            }
+            function isDataLiteracyPhoneViewport() {
+                return window.matchMedia('(max-width: 640px)').matches;
             }
 
             const safeLabels = (labels) => (labels && labels.length ? labels : ['ไม่มีข้อมูล']);
@@ -7553,6 +8149,76 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     }
                 });
             };
+            const setupUnitAvatarZoomPreview = () => {
+                const avatarImages = Array.from(document.querySelectorAll('.unit-contribution-matrix .unit-avatar-stack img, .unit-mobile-avatar-grid img'));
+                if (!avatarImages.length) return;
+
+                const preview = document.createElement('div');
+                preview.className = 'unit-avatar-zoom-preview';
+                preview.setAttribute('aria-hidden', 'true');
+                preview.innerHTML = `
+                    <div class="unit-avatar-zoom-preview__card">
+                        <img src="" alt="">
+                        <div class="unit-avatar-zoom-preview__name"></div>
+                    </div>
+                `;
+                document.body.appendChild(preview);
+
+                const previewImage = preview.querySelector('img');
+                const previewName = preview.querySelector('.unit-avatar-zoom-preview__name');
+                let hideTimer = null;
+
+                const movePreview = (event) => {
+                    const width = preview.offsetWidth || 184;
+                    const height = preview.offsetHeight || 230;
+                    const gap = 14;
+                    let x = (event?.clientX ?? (window.innerWidth / 2)) + gap;
+                    let y = (event?.clientY ?? (window.innerHeight / 2)) - 24;
+
+                    if (x + width + 12 > window.innerWidth) {
+                        x = (event?.clientX ?? window.innerWidth) - width - gap;
+                    }
+                    if (y + height + 12 > window.innerHeight) {
+                        y = window.innerHeight - height - 12;
+                    }
+                    if (y < 12) y = 12;
+                    if (x < 12) x = 12;
+
+                    preview.style.setProperty('--avatar-zoom-x', `${Math.round(x)}px`);
+                    preview.style.setProperty('--avatar-zoom-y', `${Math.round(y)}px`);
+                };
+
+                const showPreview = (image, event) => {
+                    window.clearTimeout(hideTimer);
+                    const title = image.getAttribute('title') || image.getAttribute('alt') || '';
+                    const name = title.split(' · ')[0] || image.getAttribute('alt') || 'บุคลากร';
+                    previewImage.src = image.currentSrc || image.src;
+                    previewImage.alt = name;
+                    previewName.textContent = title || name;
+                    preview.classList.add('is-visible');
+                    movePreview(event);
+                };
+
+                const hidePreview = (delay = 0) => {
+                    window.clearTimeout(hideTimer);
+                    hideTimer = window.setTimeout(() => {
+                        preview.classList.remove('is-visible');
+                    }, delay);
+                };
+
+                avatarImages.forEach((image) => {
+                    image.setAttribute('tabindex', '0');
+                    image.addEventListener('pointerenter', (event) => showPreview(image, event));
+                    image.addEventListener('pointermove', movePreview);
+                    image.addEventListener('pointerleave', () => hidePreview());
+                    image.addEventListener('focus', (event) => showPreview(image, event));
+                    image.addEventListener('blur', () => hidePreview());
+                    image.addEventListener('click', (event) => {
+                        showPreview(image, event);
+                        hidePreview(2200);
+                    });
+                });
+            };
             const setupFteCapacityFollow = () => {
                 const mq = window.matchMedia('(min-width: 1280px), (min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)');
                 const tables = Array.from(document.querySelectorAll('[data-fte-capacity-tables]'));
@@ -7662,17 +8328,17 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             if (canvasId === 'chartFteSkillRadar') {
                                 chart.options.layout = chart.options.layout || {};
                                 chart.options.layout.padding = {
-                                    top: isCompactViewport() ? 18 : 34,
-                                    right: isCompactViewport() ? 10 : 24,
-                                    bottom: isCompactViewport() ? 8 : 12,
-                                    left: isCompactViewport() ? 10 : 24
+                                    top: isFteRadarCompactViewport() ? 18 : 34,
+                                    right: isFteRadarCompactViewport() ? 10 : 24,
+                                    bottom: isFteRadarCompactViewport() ? 8 : 12,
+                                    left: isFteRadarCompactViewport() ? 10 : 24
                                 };
                                 chart.options.scales = chart.options.scales || {};
                                 chart.options.scales.r = chart.options.scales.r || {};
                                 chart.options.scales.r.pointLabels = {
                                     ...(chart.options.scales.r.pointLabels || {}),
-                                    padding: isCompactViewport() ? 10 : 18,
-                                    font: { family: chartFontFamily, size: isCompactViewport() ? 10 : 13, weight: '600' }
+                                    padding: isFteRadarCompactViewport() ? 10 : 18,
+                                    font: { family: chartFontFamily, size: isFteRadarCompactViewport() ? 10 : 13, weight: '600' }
                                 };
                             }
                             chart.resize();
@@ -7709,11 +8375,110 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                 },
             };
             const fteRadarLabels = (fteSkillRadarRows || []).map((row) => row.label);
+            const fteRadarShortLabel = (label) => {
+                const value = String(label || '');
+                if (value.includes('Scientific')) return 'Scientific';
+                if (value.includes('Project Management')) return 'Project Mgmt';
+                if (value.includes('Operations')) return 'Ops/Admin';
+                if (value.includes('IT')) return 'IT/Data';
+                if (value.includes('Communication')) return 'Comms/PR';
+                return value;
+            };
+            const fteRadarChartLabels = isFteRadarPhoneViewport()
+                ? fteRadarLabels.map(fteRadarShortLabel)
+                : fteRadarLabels;
+            const fteRadarFormatNumber = (value, options = {}) => Number(value || 0).toLocaleString(undefined, options);
+            const fteRadarMetricMeta = {
+                hours: { label: 'เวลาทำงาน', unit: 'ชั่วโมง', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+                tasks: { label: 'ภาระงาน', unit: 'งาน', color: '#f97316', bg: '#fff7ed', border: '#fed7aa' },
+                people: { label: 'กำลังคน', unit: 'คน', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+            };
+            const openFteSkillRadarModal = (row, metric = 'tasks') => {
+                if (!row || !frameworkModal || !frameworkModalBody) return;
+                const metricMeta = fteRadarMetricMeta[metric] || fteRadarMetricMeta.tasks;
+                const selectedRaw = Number(row?.[metric] || 0);
+                const selectedPct = Number(row?.[`${metric}_pct`] || 0);
+                const selectedValue = metric === 'hours'
+                    ? fteRadarFormatNumber(selectedRaw, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+                    : fteRadarFormatNumber(selectedRaw);
+                const roleRows = normalizeFrameworkItems(row.role_breakdown)
+                    .filter((role) => Number(role?.people || 0) > 0 || Number(role?.tasks || 0) > 0)
+                    .sort((a, b) => Number(b?.tasks || 0) - Number(a?.tasks || 0));
+                const maxRoleTasks = Math.max(1, ...roleRows.map((role) => Number(role?.tasks || 0)));
+                const roleHtml = roleRows.length
+                    ? roleRows.map((role) => {
+                        const tasks = Number(role?.tasks || 0);
+                        const people = Number(role?.people || 0);
+                        const totalPeople = Number(role?.total_people || 0);
+                        const width = Math.max(4, Math.round((tasks / maxRoleTasks) * 100));
+                        return `
+                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <div class="min-w-0 text-sm font-semibold leading-snug text-slate-900">${escapeFrameworkHtml(role.position_group || 'ไม่ระบุตำแหน่ง')}</div>
+                                    <div class="shrink-0 text-xs font-semibold text-slate-500">${fteRadarFormatNumber(tasks)} งาน</div>
+                                </div>
+                                <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                                    <div class="h-full rounded-full" style="width:${width}%; background:${metricMeta.color};"></div>
+                                </div>
+                                <div class="mt-2 text-xs leading-relaxed text-slate-500">${fteRadarFormatNumber(people)} คน${totalPeople > 0 ? ` จากทั้งหมด ${fteRadarFormatNumber(totalPeople)} คนในกลุ่มตำแหน่งนี้` : ''}</div>
+                            </div>
+                        `;
+                    }).join('')
+                    : '<div class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">ยังไม่มี breakdown ตามกลุ่มตำแหน่ง</div>';
+
+                frameworkModalTone = { bg: metricMeta.bg, border: metricMeta.border, accent: metricMeta.color, header: metricMeta.bg };
+                frameworkModalTitle.textContent = row.label || 'FTE Skill Profile';
+                frameworkModalSubtitle.innerHTML = `<span class="text-base font-semibold text-slate-700">${escapeFrameworkHtml(row.thai || '')}</span>`;
+                frameworkModalBody.innerHTML = `
+                    <div class="grid gap-4">
+                        <div class="rounded-2xl border px-4 py-4" style="border-color:${metricMeta.border}; background:${metricMeta.bg};">
+                            <div class="text-xs font-semibold uppercase tracking-wide" style="color:${metricMeta.color};">ค่าที่เลือกจากกราฟ</div>
+                            <div class="mt-2 flex flex-wrap items-end gap-3">
+                                <div class="text-4xl font-semibold leading-none" style="color:${metricMeta.color};">${escapeFrameworkHtml(selectedValue)}</div>
+                                <div class="pb-1 text-sm font-semibold text-slate-700">${escapeFrameworkHtml(metricMeta.unit)} · ${selectedPct.toFixed(1)}% ของแกน radar</div>
+                            </div>
+                            <div class="mt-2 text-sm leading-relaxed text-slate-600">แตะคนละสีบน radar เพื่อดูมุมมองเวลาทำงาน ภาระงาน หรือกำลังคนของ skill เดียวกัน</div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <div class="rounded-xl border border-blue-100 bg-blue-50 px-3 py-3">
+                                <div class="text-xs font-semibold text-blue-700">เวลาทำงาน</div>
+                                <div class="mt-1 text-2xl font-semibold text-slate-900">${fteRadarFormatNumber(row.hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
+                                <div class="text-xs text-slate-500">ชั่วโมง · ${Number(row.hours_pct || 0).toFixed(1)}%</div>
+                            </div>
+                            <div class="rounded-xl border border-orange-100 bg-orange-50 px-3 py-3">
+                                <div class="text-xs font-semibold text-orange-700">ภาระงาน</div>
+                                <div class="mt-1 text-2xl font-semibold text-slate-900">${fteRadarFormatNumber(row.tasks)}</div>
+                                <div class="text-xs text-slate-500">งาน · ${Number(row.tasks_pct || 0).toFixed(1)}%</div>
+                            </div>
+                            <div class="rounded-xl border border-violet-100 bg-violet-50 px-3 py-3">
+                                <div class="text-xs font-semibold text-violet-700">กำลังคน</div>
+                                <div class="mt-1 text-2xl font-semibold text-slate-900">${fteRadarFormatNumber(row.people)}</div>
+                                <div class="text-xs text-slate-500">คน · ${Number(row.people_pct || 0).toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                                <div class="text-xs font-semibold text-slate-500">โครงการวิจัย</div>
+                                <div class="mt-1 text-xl font-semibold text-slate-900">${fteRadarFormatNumber(row.project_count)}</div>
+                            </div>
+                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                                <div class="text-xs font-semibold text-slate-500">พันธกิจ / Back office</div>
+                                <div class="mt-1 text-xl font-semibold text-slate-900">${fteRadarFormatNumber(row.backoffice_count)}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold text-slate-900">กลุ่มตำแหน่งที่เกี่ยวข้อง</div>
+                            <div class="mt-2 grid gap-2">${roleHtml}</div>
+                        </div>
+                    </div>
+                `;
+                showFrameworkModal();
+            };
             if (fteRadarLabels.length) {
                 renderChart('chartFteSkillRadar', {
                     type: 'radar',
                     data: {
-                        labels: fteRadarLabels,
+                        labels: fteRadarChartLabels,
                         datasets: [
                             {
                                 label: 'เวลาทำงาน (ชั่วโมง)',
@@ -7725,10 +8490,10 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                 borderColor: fteRadarColors.hours.border,
                                 pointBackgroundColor: fteRadarColors.hours.point,
                                 pointBorderColor: '#ffffff',
-                                pointRadius: 3,
-                                pointHoverRadius: 3,
+                                pointRadius: isFteRadarCompactViewport() ? 4 : 3,
+                                pointHoverRadius: isFteRadarCompactViewport() ? 7 : 5,
                                 pointHoverBorderWidth: 1,
-                                pointHitRadius: 8,
+                                pointHitRadius: isFteRadarCompactViewport() ? 24 : 14,
                                 borderWidth: 2,
                                 hoverBorderWidth: 2
                             },
@@ -7742,10 +8507,10 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                 borderColor: fteRadarColors.tasks.border,
                                 pointBackgroundColor: fteRadarColors.tasks.point,
                                 pointBorderColor: '#ffffff',
-                                pointRadius: 3,
-                                pointHoverRadius: 3,
+                                pointRadius: isFteRadarCompactViewport() ? 4 : 3,
+                                pointHoverRadius: isFteRadarCompactViewport() ? 7 : 5,
                                 pointHoverBorderWidth: 1,
-                                pointHitRadius: 8,
+                                pointHitRadius: isFteRadarCompactViewport() ? 24 : 14,
                                 borderWidth: 2,
                                 hoverBorderWidth: 2
                             },
@@ -7759,10 +8524,10 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                 borderColor: fteRadarColors.people.border,
                                 pointBackgroundColor: fteRadarColors.people.point,
                                 pointBorderColor: '#ffffff',
-                                pointRadius: 3,
-                                pointHoverRadius: 3,
+                                pointRadius: isFteRadarCompactViewport() ? 4 : 3,
+                                pointHoverRadius: isFteRadarCompactViewport() ? 7 : 5,
                                 pointHoverBorderWidth: 1,
-                                pointHitRadius: 8,
+                                pointHitRadius: isFteRadarCompactViewport() ? 24 : 14,
                                 borderWidth: 2,
                                 hoverBorderWidth: 2
                             }
@@ -7774,24 +8539,32 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                         animation: chartAnim,
                         layout: {
                             padding: {
-                                top: isCompactViewport() ? 18 : 34,
-                                right: isCompactViewport() ? 10 : 24,
-                                bottom: isCompactViewport() ? 8 : 12,
-                                left: isCompactViewport() ? 10 : 24
+                                top: isFteRadarCompactViewport() ? 18 : 34,
+                                right: isFteRadarCompactViewport() ? 10 : 24,
+                                bottom: isFteRadarCompactViewport() ? 8 : 12,
+                                left: isFteRadarCompactViewport() ? 10 : 24
                             }
                         },
                         interaction: {
                             mode: 'nearest',
-                            intersect: true
+                            intersect: false
                         },
                         hover: {
                             mode: 'nearest',
-                            intersect: true
+                            intersect: false
                         },
                         onHover: (event, activeElements) => {
                             if (event?.native?.target) {
                                 event.native.target.style.cursor = activeElements?.length ? 'pointer' : 'default';
                             }
+                        },
+                        onClick: (event, _activeElements, chart) => {
+                            const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true);
+                            if (!nearest.length) return;
+                            const point = nearest[0];
+                            const dataset = chart.data.datasets?.[point.datasetIndex] || {};
+                            const row = fteSkillRadarRows?.[point.index ?? point.dataIndex ?? 0];
+                            openFteSkillRadarModal(row, dataset.rawMetric || 'tasks');
                         },
                         scales: {
                             r: {
@@ -7807,8 +8580,8 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                 },
                                 pointLabels: {
                                     color: '#0f172a',
-                                    padding: isCompactViewport() ? 10 : 18,
-                                    font: { family: chartFontFamily, size: isCompactViewport() ? 10 : 13, weight: '600' }
+                                    padding: isFteRadarCompactViewport() ? 10 : 18,
+                                    font: { family: chartFontFamily, size: isFteRadarCompactViewport() ? 10 : 13, weight: '600' }
                                 },
                                 angleLines: { color: 'rgba(148, 163, 184, 0.36)' },
                                 grid: { color: 'rgba(148, 163, 184, 0.42)' }
@@ -7985,6 +8758,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     borderColor: '#4f46e5',
                     backgroundColor: 'rgba(79, 70, 229, .12)',
                     pointBackgroundColor: '#4f46e5',
+                    pointRadius: isPolicyFrameworkCompactViewport() ? 4 : 3,
+                    pointHitRadius: isPolicyFrameworkCompactViewport() ? 22 : 14,
+                    pointHoverRadius: isPolicyFrameworkCompactViewport() ? 7 : 6,
                     tension: .35,
                     fill: true
                 },
@@ -7995,6 +8771,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     borderColor: '#0f766e',
                     backgroundColor: 'rgba(15, 118, 110, .10)',
                     pointBackgroundColor: '#0f766e',
+                    pointRadius: isPolicyFrameworkCompactViewport() ? 4 : 3,
+                    pointHitRadius: isPolicyFrameworkCompactViewport() ? 22 : 14,
+                    pointHoverRadius: isPolicyFrameworkCompactViewport() ? 7 : 6,
                     tension: .35,
                     fill: true
                 },
@@ -8005,6 +8784,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     borderColor: '#c2410c',
                     backgroundColor: 'rgba(194, 65, 12, .12)',
                     pointBackgroundColor: '#c2410c',
+                    pointRadius: isPolicyFrameworkCompactViewport() ? 4 : 3,
+                    pointHitRadius: isPolicyFrameworkCompactViewport() ? 22 : 14,
+                    pointHoverRadius: isPolicyFrameworkCompactViewport() ? 7 : 6,
                     tension: .35,
                     fill: true
                 }
@@ -8219,8 +9001,8 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                 </div>
                             </div>
                         `;
-                        return link && !isPublicSeminar
-                            ? `<a href="${escapeFrameworkHtml(link)}" class="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 hover:border-blue-200 hover:bg-blue-50">${inner}</a>`
+                        return link
+                            ? `<a href="${escapeFrameworkHtml(link)}" target="_blank" rel="noopener" class="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 hover:border-blue-200 hover:bg-blue-50">${inner}</a>`
                             : `<div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">${inner}</div>`;
                     }).join('')}</div>${pager}`
                     : '<div class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">ไม่มีรายการ</div>';
@@ -8391,20 +9173,48 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                         responsive: true,
                         maintainAspectRatio: false,
                         animation: chartAnim,
-                        interaction: { mode: 'index', intersect: false },
+                        interaction: { mode: 'nearest', intersect: false },
+                        layout: {
+                            padding: {
+                                top: isPolicyFrameworkCompactViewport() ? 18 : 24,
+                                right: isPolicyFrameworkCompactViewport() ? 14 : 18,
+                                bottom: isPolicyFrameworkCompactViewport() ? 4 : 8,
+                                left: isPolicyFrameworkCompactViewport() ? 8 : 12
+                            }
+                        },
                         scales: {
-                            x: { ticks: { color: textColor }, grid: { display: false } },
+                            x: {
+                                ticks: {
+                                    color: textColor,
+                                    maxRotation: 0,
+                                    autoSkip: isPolicyFrameworkPhoneViewport() ? true : !isPolicyFrameworkCompactViewport(),
+                                    maxTicksLimit: isPolicyFrameworkPhoneViewport() ? 5 : undefined,
+                                    font: { size: isPolicyFrameworkCompactViewport() ? 11 : 12 }
+                                },
+                                grid: { display: false }
+                            },
                             y: {
                                 beginAtZero: true,
                                 suggestedMax: suggestedAxisMax(frameworkTrendValues, 10),
-                                ticks: { color: textColor, precision: 0 },
+                                ticks: {
+                                    color: textColor,
+                                    precision: 0,
+                                    font: { size: isPolicyFrameworkCompactViewport() ? 11 : 12 }
+                                },
                                 grid: { color: gridColor }
                             }
                         },
                         plugins: {
                             legend: {
                                 position: 'bottom',
-                                labels: { color: textColor, boxWidth: 14, boxHeight: 8, padding: 10 }
+                                align: isCompactViewport() ? 'start' : 'center',
+                                labels: {
+                                    color: textColor,
+                                    boxWidth: isPolicyFrameworkCompactViewport() ? 10 : 14,
+                                    boxHeight: isPolicyFrameworkCompactViewport() ? 7 : 8,
+                                    padding: isPolicyFrameworkCompactViewport() ? 8 : 10,
+                                    font: { size: isPolicyFrameworkCompactViewport() ? 11 : 12 }
+                                }
                             },
                             datalabels: {
                                 display: false
@@ -8412,11 +9222,13 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                         },
                         onHover: (event, elements) => {
                             const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartPolicyFrameworkTrend');
-                            if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                            const nearest = event?.chart?.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true) || [];
+                            if (target) target.style.cursor = nearest.length ? 'pointer' : 'default';
                         },
                         onClick: (event, elements, chart) => {
-                            if (!elements.length) return;
-                            const point = elements[0];
+                            const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true);
+                            if (!nearest.length) return;
+                            const point = nearest[0];
                             const dataset = chart.data.datasets[point.datasetIndex];
                             const year = chart.data.labels[point.index];
                             const count = dataset.data[point.index];
@@ -8445,6 +9257,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             borderColor: '#4f46e5',
                             backgroundColor: 'rgba(79, 70, 229, .12)',
                             pointBackgroundColor: '#4f46e5',
+                            pointRadius: isClinicalLedCompactViewport() ? 4 : 4,
+                            pointHitRadius: isClinicalLedCompactViewport() ? 24 : 16,
+                            pointHoverRadius: isClinicalLedCompactViewport() ? 7 : 6,
                             tension: .35,
                             fill: true
                         },
@@ -8551,6 +9366,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             borderColor: '#d97706',
                             backgroundColor: 'rgba(217, 119, 6, .12)',
                             pointBackgroundColor: '#d97706',
+                            pointRadius: isClinicalLedCompactViewport() ? 4 : 4,
+                            pointHitRadius: isClinicalLedCompactViewport() ? 24 : 16,
+                            pointHoverRadius: isClinicalLedCompactViewport() ? 7 : 6,
                             tension: .35,
                             fill: true
                         },
@@ -8561,6 +9379,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             borderColor: '#0f766e',
                             backgroundColor: 'rgba(15, 118, 110, .10)',
                             pointBackgroundColor: '#0f766e',
+                            pointRadius: isClinicalLedCompactViewport() ? 4 : 4,
+                            pointHitRadius: isClinicalLedCompactViewport() ? 24 : 16,
+                            pointHoverRadius: isClinicalLedCompactViewport() ? 7 : 6,
                             tension: .35,
                             fill: true
                         }
@@ -8578,11 +9399,12 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             left: isClinicalLedCompactViewport() ? 8 : 12
                         }
                     },
-                    interaction: { mode: 'index', intersect: false },
+                    interaction: { mode: 'nearest', intersect: false },
                     elements: {
                         point: {
                             radius: () => isClinicalLedCompactViewport() ? 3 : 4,
-                            hoverRadius: () => isClinicalLedCompactViewport() ? 5 : 6
+                            hitRadius: () => isClinicalLedCompactViewport() ? 24 : 16,
+                            hoverRadius: () => isClinicalLedCompactViewport() ? 7 : 6
                         },
                         line: {
                             borderWidth: () => isClinicalLedCompactViewport() ? 2 : 3
@@ -8720,6 +9542,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             borderColor: '#2563eb',
                             backgroundColor: 'rgba(37, 99, 235, .12)',
                             pointBackgroundColor: '#2563eb',
+                            pointRadius: isDataLiteracyCompactViewport() ? 4 : 3,
+                            pointHitRadius: isDataLiteracyCompactViewport() ? 22 : 14,
+                            pointHoverRadius: isDataLiteracyCompactViewport() ? 7 : 6,
                             tension: .35,
                             fill: true
                         },
@@ -8730,6 +9555,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             borderColor: '#0f766e',
                             backgroundColor: 'rgba(15, 118, 110, .10)',
                             pointBackgroundColor: '#0f766e',
+                            pointRadius: isDataLiteracyCompactViewport() ? 4 : 3,
+                            pointHitRadius: isDataLiteracyCompactViewport() ? 22 : 14,
+                            pointHoverRadius: isDataLiteracyCompactViewport() ? 7 : 6,
                             tension: .35,
                             fill: true
                         },
@@ -8740,6 +9568,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             borderColor: '#7c3aed',
                             backgroundColor: 'rgba(124, 58, 237, .10)',
                             pointBackgroundColor: '#7c3aed',
+                            pointRadius: isDataLiteracyCompactViewport() ? 4 : 3,
+                            pointHitRadius: isDataLiteracyCompactViewport() ? 22 : 14,
+                            pointHoverRadius: isDataLiteracyCompactViewport() ? 7 : 6,
                             tension: .35,
                             fill: true
                         }
@@ -8749,22 +9580,61 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: chartAnim,
-                    interaction: { mode: 'nearest', intersect: true },
+                    interaction: { mode: 'nearest', intersect: false },
+                    layout: {
+                        padding: {
+                            top: isDataLiteracyCompactViewport() ? 18 : 24,
+                            right: isDataLiteracyCompactViewport() ? 14 : 18,
+                            bottom: isDataLiteracyCompactViewport() ? 4 : 8,
+                            left: isDataLiteracyCompactViewport() ? 8 : 12
+                        }
+                    },
                     scales: {
-                        x: { ticks: { color: textColor }, grid: { display: false } },
+                            x: {
+                                ticks: {
+                                    color: textColor,
+                                    maxRotation: 0,
+                                    autoSkip: isDataLiteracyPhoneViewport() ? true : !isDataLiteracyCompactViewport(),
+                                    maxTicksLimit: isDataLiteracyPhoneViewport() ? 4 : undefined,
+                                    font: { size: isDataLiteracyCompactViewport() ? 11 : 12 }
+                                },
+                                grid: { display: false }
+                        },
                         y: {
                             beginAtZero: true,
                             suggestedMax: suggestedAxisMax([...dataLiteracyRealWorld, ...dataLiteracyPrimary, ...dataLiteracyCombined], 5),
-                            ticks: { color: textColor, precision: 0 },
+                            ticks: {
+                                color: textColor,
+                                precision: 0,
+                                font: { size: isDataLiteracyCompactViewport() ? 11 : 12 }
+                            },
                             grid: { color: gridColor }
                         }
                     },
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: textColor, boxWidth: 14, boxHeight: 8, padding: 10 }
+                            align: isCompactViewport() ? 'start' : 'center',
+                            labels: {
+                                color: textColor,
+                                boxWidth: isDataLiteracyCompactViewport() ? 10 : 14,
+                                boxHeight: isDataLiteracyCompactViewport() ? 7 : 8,
+                                generateLabels: (chart) => {
+                                    const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    if (!isDataLiteracyPhoneViewport()) return labels;
+                                    return labels.map((label) => ({
+                                        ...label,
+                                        text: label.text === 'Real-World Data + Primary Data'
+                                            ? 'RWD + Primary'
+                                            : (label.text === 'Real-World Data' ? 'RWD' : label.text)
+                                    }));
+                                },
+                                padding: isDataLiteracyCompactViewport() ? 8 : 10,
+                                font: { size: isDataLiteracyCompactViewport() ? 11 : 12 }
+                            }
                         },
                         datalabels: {
+                            display: !isCompactViewport(),
                             color: '#334155',
                             anchor: 'end',
                             align: 'top',
@@ -8774,11 +9644,11 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     },
                     onHover: (event, elements, chart) => {
                         const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartDataLiteracyTrend');
-                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true);
                         if (target) target.style.cursor = nearest.length ? 'pointer' : 'default';
                     },
                     onClick: (event, elements, chart) => {
-                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true);
                         if (!nearest.length) return;
                         const point = nearest[0];
                         const dataset = chart.data.datasets?.[point.datasetIndex] || {};
@@ -8790,18 +9660,35 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
 
             const policyTrendLabels = safeLabels(policyImpactTrendYears);
             const policyTrendDatasetMeta = {
-                EA101: { label: 'Research Paper and Journal Article', unit: 'รายการ' },
-                EA109: { label: 'Change in Practices / Procedures / Policy', unit: 'รายการ' },
-                EA102: { label: 'Reports and White Papers', unit: 'รายการ' },
-                EA106: { label: 'Policy Recommendations', unit: 'รายการ' }
+                EA101: {
+                    label: 'Research Paper and Journal Article',
+                    unit: 'รายการ',
+                    tone: { bg: '#eff6ff', border: '#bfdbfe', accent: '#7aa2f7', header: '#eff6ff' }
+                },
+                EA109: {
+                    label: 'Change in Practices / Procedures / Policy',
+                    unit: 'รายการ',
+                    tone: { bg: '#fff7ed', border: '#fed7aa', accent: '#d97706', header: '#fff7ed' }
+                },
+                EA102: {
+                    label: 'Reports and White Papers',
+                    unit: 'รายการ',
+                    tone: { bg: '#ecfdf5', border: '#99f6e4', accent: '#0f766e', header: '#ecfdf5' }
+                },
+                EA106: {
+                    label: 'Policy Recommendations',
+                    unit: 'รายการ',
+                    tone: { bg: '#eff6ff', border: '#bfdbfe', accent: '#2563eb', header: '#eff6ff' }
+                }
             };
-            const openPolicyImpactTrendModal = (year) => {
-                const items = normalizeFrameworkItems(policyImpactTrendItemsByYear?.[String(year)]);
+            const openPolicyImpactTrendModal = (datasetKey, year) => {
+                const meta = policyTrendDatasetMeta?.[datasetKey] || { label: 'Impact', unit: 'รายการ' };
+                const items = normalizeFrameworkItems(policyImpactTrendItems?.[datasetKey]?.[String(year)] ?? policyImpactTrendItemsByYear?.[String(year)]);
                 if (!frameworkModal || !frameworkModalBody) return;
-                frameworkModalTone = frameworkToneStyles.policy_impact;
-                frameworkModalTitle.textContent = 'Impact';
-                frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} รายการ</span></span>`;
-                setFrameworkModalItems(items, 'รายการ', { year: String(year || '') });
+                frameworkModalTone = meta.tone || frameworkToneStyles.policy_impact;
+                frameworkModalTitle.textContent = meta.label || 'Impact';
+                frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} ${escapeFrameworkHtml(meta.unit || 'รายการ')}</span></span>`;
+                setFrameworkModalItems(items, meta.unit || 'รายการ', { year: String(year || '') });
                 showFrameworkModal();
             };
             const policyTrendDatasets = [
@@ -8812,6 +9699,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     borderColor: '#7aa2f7',
                     backgroundColor: 'rgba(122, 162, 247, .14)',
                     pointBackgroundColor: '#7aa2f7',
+                    pointRadius: isPolicyImpactCompactViewport() ? 4 : 3,
+                    pointHitRadius: isPolicyImpactCompactViewport() ? 22 : 14,
+                    pointHoverRadius: isPolicyImpactCompactViewport() ? 7 : 6,
                     tension: .35,
                     fill: true
                 },
@@ -8822,6 +9712,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     borderColor: '#d97706',
                     backgroundColor: 'rgba(217, 119, 6, .14)',
                     pointBackgroundColor: '#d97706',
+                    pointRadius: isPolicyImpactCompactViewport() ? 4 : 3,
+                    pointHitRadius: isPolicyImpactCompactViewport() ? 22 : 14,
+                    pointHoverRadius: isPolicyImpactCompactViewport() ? 7 : 6,
                     tension: .35,
                     fill: true
                 },
@@ -8832,6 +9725,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     borderColor: '#0f766e',
                     backgroundColor: 'rgba(15, 118, 110, .12)',
                     pointBackgroundColor: '#0f766e',
+                    pointRadius: isPolicyImpactCompactViewport() ? 4 : 3,
+                    pointHitRadius: isPolicyImpactCompactViewport() ? 22 : 14,
+                    pointHoverRadius: isPolicyImpactCompactViewport() ? 7 : 6,
                     tension: .35,
                     fill: true
                 },
@@ -8842,6 +9738,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     borderColor: '#2563eb',
                     backgroundColor: 'rgba(37, 99, 235, .12)',
                     pointBackgroundColor: '#2563eb',
+                    pointRadius: isPolicyImpactCompactViewport() ? 4 : 3,
+                    pointHitRadius: isPolicyImpactCompactViewport() ? 22 : 14,
+                    pointHoverRadius: isPolicyImpactCompactViewport() ? 7 : 6,
                     tension: .35,
                     fill: true
                 }
@@ -8858,22 +9757,65 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: chartAnim,
-                    interaction: { mode: 'index', intersect: false },
+                    interaction: { mode: 'nearest', intersect: false },
+                    layout: {
+                        padding: {
+                            top: isPolicyImpactCompactViewport() ? 18 : 24,
+                            right: isPolicyImpactCompactViewport() ? 14 : 18,
+                            bottom: isPolicyImpactCompactViewport() ? 4 : 8,
+                            left: isPolicyImpactCompactViewport() ? 8 : 12
+                        }
+                    },
                     scales: {
-                        x: { ticks: { color: textColor }, grid: { display: false } },
+                        x: {
+                            ticks: {
+                                color: textColor,
+                                maxRotation: 0,
+                                autoSkip: isPolicyImpactPhoneViewport() ? true : !isPolicyImpactCompactViewport(),
+                                maxTicksLimit: isPolicyImpactPhoneViewport() ? 4 : undefined,
+                                font: { size: isPolicyImpactCompactViewport() ? 11 : 12 }
+                            },
+                            grid: { display: false }
+                        },
                         y: {
                             beginAtZero: true,
                             suggestedMax: suggestedAxisMax(policyTrendTotals, 5),
-                            ticks: { color: textColor, precision: 0 },
+                            ticks: {
+                                color: textColor,
+                                precision: 0,
+                                font: { size: isPolicyImpactCompactViewport() ? 11 : 12 }
+                            },
                             grid: { color: gridColor }
                         }
                     },
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: textColor, boxWidth: 14, boxHeight: 8, padding: 10 }
+                            align: isCompactViewport() ? 'start' : 'center',
+                            labels: {
+                                color: textColor,
+                                boxWidth: isPolicyImpactCompactViewport() ? 10 : 14,
+                                boxHeight: isPolicyImpactCompactViewport() ? 7 : 8,
+                                generateLabels: (chart) => {
+                                    const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    if (!isPolicyImpactPhoneViewport()) return labels;
+                                    const shortLabels = {
+                                        'Research Paper and Journal Article': 'Paper',
+                                        'Change in Practices / Procedures / Policy': 'Practice/Policy',
+                                        'Reports and White Papers': 'Reports',
+                                        'Policy Recommendations': 'Policy Rec.'
+                                    };
+                                    return labels.map((label) => ({
+                                        ...label,
+                                        text: shortLabels[label.text] || label.text
+                                    }));
+                                },
+                                padding: isPolicyImpactCompactViewport() ? 8 : 10,
+                                font: { size: isPolicyImpactCompactViewport() ? 11 : 12 }
+                            }
                         },
                         datalabels: {
+                            display: !isCompactViewport(),
                             align: 'top',
                             anchor: 'end',
                             color: '#334155',
@@ -8881,15 +9823,18 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             formatter: (value) => Number(value || 0) > 0 ? Number(value) : ''
                         }
                     },
-                    onHover: (event, elements) => {
+                    onHover: (event, elements, chart) => {
                         const target = event?.native?.target || event?.chart?.canvas || document.getElementById('chartPolicyImpactTrend');
-                        if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true);
+                        if (target) target.style.cursor = nearest.length ? 'pointer' : 'default';
                     },
                     onClick: (event, elements, chart) => {
-                        if (!elements.length) return;
-                        const point = elements[0];
+                        const nearest = chart.getElementsAtEventForMode(event, 'nearest', { intersect: false }, true);
+                        if (!nearest.length) return;
+                        const point = nearest[0];
+                        const dataset = chart.data.datasets?.[point.datasetIndex] || {};
                         const year = chart.data.labels[point.index];
-                        openPolicyImpactTrendModal(year);
+                        openPolicyImpactTrendModal(dataset.key, year);
                     }
                 }
             });
@@ -9470,6 +10415,10 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
             });
 
             document.querySelectorAll('.js-output-item').forEach((btn) => {
+                const itemLink = (btn.getAttribute('data-link') || '').trim();
+                if (itemLink === '') {
+                    btn.style.cursor = 'default';
+                }
                 btn.addEventListener('click', () => {
                     const title = btn.getAttribute('data-title') || 'รายละเอียดผลงาน';
                     const link = (btn.getAttribute('data-link') || '').trim();
@@ -9481,52 +10430,11 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                         .trim();
 
                     if (link !== '') {
-                        const safeLink = escapeHtml(link);
-                        const normalizedLink = normalizeText(link);
-                        const normalizedDetail = normalizeText(detail);
-                        const detailWithoutUrl = stripUrls(detail);
-                        const shouldShowDetail = detail !== ''
-                            && normalizedDetail !== normalizedLink
-                            && detailWithoutUrl !== '';
-                        const detailHtml = shouldShowDetail
-                            ? `<div class="viz-detail-box mt-3">${escapeHtml(detail)}</div>`
-                            : '';
-                        const typeHtml = type !== ''
-                            ? `<div class="mt-2 text-xs text-slate-500">ประเภท Output: <span class="font-semibold text-slate-700">${escapeHtml(type)}</span></div>`
-                            : '';
-                        openModal(
-                            title,
-                            `<div class="viz-link-card">
-                                <div class="text-xs font-semibold uppercase tracking-wide text-blue-800">Link</div>
-                                <a href="${safeLink}" target="_blank" rel="noopener" class="mt-1 block break-all text-sm font-medium text-blue-700 underline">${safeLink}</a>
-                                <div class="mt-3 flex items-center justify-end">
-                                    <a href="${safeLink}" target="_blank" rel="noopener" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">เปิดลิงก์ใหม่</a>
-                                </div>
-                            </div>
-                            ${typeHtml}
-                            ${detailHtml}`
-                        );
+                        window.open(link, '_blank', 'noopener');
                         return;
                     }
 
-                    if (detail !== '') {
-                        const typeHtml = type !== ''
-                            ? `<div class="mb-2 text-xs text-slate-500">ประเภท Output: <span class="font-semibold text-slate-700">${escapeHtml(type)}</span></div>`
-                            : '';
-                        openModal(
-                            title,
-                            `${typeHtml}<div class="viz-detail-box">${escapeHtml(detail)}</div>`
-                        );
-                        return;
-                    }
-
-                    const typeHtml = type !== ''
-                        ? `<div class="mb-2 text-xs text-slate-500">ประเภท Output: <span class="font-semibold text-slate-700">${escapeHtml(type)}</span></div>`
-                        : '';
-                    openModal(
-                        title,
-                        `${typeHtml}<div class="viz-detail-box text-slate-500">ไม่มีรายละเอียด</div>`
-                    );
+                    return;
                 });
             });
             window.addEventListener('resize', resizeRenderedCharts, { passive: true });
@@ -9542,6 +10450,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
             resizeRenderedCharts();
             enhanceThemeGapWithAi();
             setupDoctorRoleTables();
+            setupUnitAvatarZoomPreview();
             setupFteCapacityFollow();
 
         })();
