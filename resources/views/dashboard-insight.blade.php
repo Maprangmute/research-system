@@ -852,6 +852,160 @@
             pointer-events: none;
         }
 
+        .di-skill-capacity-card {
+            min-height: 430px;
+            border-color: #c7d7eb;
+            border-radius: 20px;
+            background: #ffffff;
+        }
+
+        .di-skill-capacity-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .di-skill-capacity-kicker {
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        .di-skill-capacity-title {
+            margin-top: 4px;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1.45;
+        }
+
+        .di-skill-capacity-table-wrap {
+            overflow-x: visible;
+            border: 1px solid #d5e1ef;
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .di-skill-capacity-table {
+            width: 100%;
+            min-width: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+            color: #233047;
+            font-size: 13px;
+            table-layout: fixed;
+        }
+
+        .di-skill-capacity-table th,
+        .di-skill-capacity-table td {
+            padding: 13px 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid #dce4ee;
+        }
+
+        .di-skill-capacity-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .045em;
+            text-align: left;
+            text-transform: uppercase;
+        }
+
+        .di-skill-capacity-table tbody td {
+            background: #ffffff;
+        }
+
+        .di-skill-capacity-table tfoot td {
+            background: #eef3f8;
+            color: #0f172a;
+            font-weight: 900;
+            border-bottom: 0;
+        }
+
+        .di-skill-capacity-table__group {
+            background: #e8f2ff !important;
+            color: #1e3a8a !important;
+            text-align: center !important;
+        }
+
+        .di-skill-capacity-table__group--current {
+            background: #e8f8ef !important;
+            color: #047857 !important;
+        }
+
+        .di-skill-capacity-table--skill thead tr:first-child th:nth-child(3),
+        .di-skill-capacity-table--skill tbody td:nth-child(3),
+        .di-skill-capacity-table--skill tfoot td:nth-child(2) {
+            border-left: 1px solid #d5e1ef;
+        }
+
+        .di-skill-capacity-table--skill thead tr:first-child th:nth-child(4),
+        .di-skill-capacity-table--skill tbody td:nth-child(5),
+        .di-skill-capacity-table--skill tfoot td:nth-child(4) {
+            border-left: 3px solid #d5e1ef;
+        }
+
+        .di-skill-capacity-table__num {
+            text-align: center;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .di-skill-capacity-rank {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            min-height: 28px;
+            border-radius: 999px;
+            background: #dff3ff;
+            color: #036987;
+            font-weight: 900;
+        }
+
+        .di-skill-capacity-count {
+            color: #067a3f;
+            font-weight: 900;
+        }
+
+        .di-skill-capacity-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .di-skill-capacity-borrowed {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            min-height: 24px;
+            border-radius: 999px;
+            background: #fef3c7;
+            color: #b45309;
+            font-weight: 900;
+        }
+
+        .di-skill-capacity-empty {
+            color: #94a3b8;
+        }
+
+        .di-skill-capacity-note {
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
         .fte-avatar-marker {
             position: absolute;
             display: flex;
@@ -1382,13 +1536,19 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    @if ($canDownloadDashboardData ?? false)
+        <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    @endif
 
     <div class="di-page">
         <div class="di-overlay" id="diOverlay"></div>
         <div class="di-floating-actions" aria-label="Dashboard tools">
             <button id="openFilterPopup" type="button" class="di-fab"><span>≡</span>ฟิลเตอร์</button>
-            <button id="openDownloadPopup" type="button" class="di-fab"><span>↓</span>โหลด</button>
+            @if ($canDownloadDashboardData ?? false)
+                <button id="openDownloadPopup" type="button" class="di-fab"><span>↓</span>โหลด</button>
+            @endif
         </div>
+        @if ($canDownloadDashboardData ?? false)
         <aside id="downloadPopup" class="di-download-popup" aria-hidden="true">
             <div class="di-popup-head" style="display:flex;">
                 <div>
@@ -1397,10 +1557,12 @@
                 </div>
                 <button id="closeDownloadPopup" type="button" class="di-close" aria-label="ปิด">×</button>
             </div>
-            <p id="downloadSummary" class="mt-2 text-sm leading-relaxed text-slate-600">ดาวน์โหลดข้อมูลตามตัวกรองปัจจุบันเป็น CSV</p>
-            <button id="downloadCsv" type="button" class="di-download-action">ดาวน์โหลด CSV</button>
+            <p id="downloadSummary" class="mt-2 text-sm leading-relaxed text-slate-600">ดาวน์โหลดข้อมูลตามตัวกรองปัจจุบันเป็น Excel หรือ CSV</p>
+            <button id="downloadExcel" type="button" class="di-download-action">ดาวน์โหลด Excel</button>
+            <button id="downloadCsv" type="button" class="di-download-action mt-3">ดาวน์โหลด CSV</button>
             <a href="{{ url('/dashboard?view=legacy') }}" class="mt-3 inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-extrabold text-slate-700">เปิดหน้าเดิม</a>
         </aside>
+        @endif
         <div id="chartDetailModal" class="di-modal" aria-hidden="true">
             <div class="di-modal-panel">
                 <div class="di-modal-head">
@@ -1778,9 +1940,50 @@
                                 <div class="fte-avatar-layer" id="chartFtePeopleAvatarLayer" aria-hidden="true"></div>
                             </div>
                         </article>
-                        <article class="di-card">
-                            <h3>🧭 FTE ตามสายงาน / Skill</h3>
-                            <div class="di-chart"><canvas id="chartFteRole"></canvas></div>
+                        <article class="di-card di-skill-capacity-card">
+                            <div class="di-skill-capacity-head">
+                                <div>
+                                    <div class="di-skill-capacity-kicker">Skill set capacity</div>
+                                    <div class="di-skill-capacity-title">ภาพรวมของการกระจายคน (Workforce) เเละ เวลาการทำงาน (Time Spending) ตามกลุ่มทักษะ</div>
+                                </div>
+                            </div>
+                            <div class="di-skill-capacity-table-wrap">
+                                <table class="di-skill-capacity-table di-skill-capacity-table--skill">
+                                    <colgroup>
+                                        <col style="width:44px;">
+                                        <col style="width:30%;">
+                                        <col style="width:11%;">
+                                        <col style="width:14%;">
+                                        <col style="width:11%;">
+                                        <col style="width:13%;">
+                                        <col style="width:15%;">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2" class="di-skill-capacity-table__num"></th>
+                                            <th rowspan="2">Skill set</th>
+                                            <th colspan="2" class="di-skill-capacity-table__num di-skill-capacity-table__group di-skill-capacity-table__group--current">Current Situation</th>
+                                            <th colspan="3" class="di-skill-capacity-table__num di-skill-capacity-table__group">Position</th>
+                                        </tr>
+                                        <tr>
+                                            <th class="di-skill-capacity-table__num">Workforce</th>
+                                            <th class="di-skill-capacity-table__num">Time Spent (%)</th>
+                                            <th class="di-skill-capacity-table__num">Position</th>
+                                            <th class="di-skill-capacity-table__num">Position (%)</th>
+                                            <th class="di-skill-capacity-table__num">Position ที่ยืมตัวมา</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="skillCapacityBody">
+                                        <tr>
+                                            <td colspan="7" class="di-skill-capacity-table__num">กำลังประมวลผลข้อมูล</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="skillCapacityFoot"></tfoot>
+                                </table>
+                            </div>
+                            <div class="di-skill-capacity-note">
+                                หมายเหตุ: Position รวมตำแหน่งในแต่ละ Skill set, Position (%) แสดงสัดส่วนต่อ Position ทั้งหมด, Workforce นับจำนวนคนไม่ซ้ำจากภาระงาน FTE ที่เข้าแต่ละ Skill set, Time Spending (%) แสดงสัดส่วน FTE ของภาระงานในแต่ละ Skill set และ Position ที่ยืมตัวมาแสดงจำนวนตำแหน่งยืมตัวในแต่ละสายงาน
+                            </div>
                         </article>
                     </div>
                     <aside class="di-workload-aside">
@@ -1804,7 +2007,11 @@
     <script>
         (() => {
             const projects = @json($dashboardProjectsJs);
+            const dashboardFteSkillAnalysis = @json($dashboardFteSkillAnalysis ?? []);
             const fteProfileUrls = @json($fteProfileUrls ?? []);
+            const externalOutputs = @json($externalOutputsData ?? []);
+            const backOfficeRows = @json($backOfficeData ?? []);
+            const canDownloadDashboardData = @json($canDownloadDashboardData ?? false);
             const chartMap = new Map();
             const COLORS = ['#2563eb', '#14b8a6', '#d99b2b', '#ef4444', '#22c55e', '#7c3aed', '#06b6d4', '#94a3b8'];
             const FTE_AVATAR_COLORS = ['#0f766e', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#65a30d', '#db2777', '#dc2626'];
@@ -1821,6 +2028,7 @@
             const FUNDING_SOURCE_COLORS = ['#2563eb', '#14b8a6', '#f59e0b', '#ef4444', '#22c55e', '#8b5cf6', '#06b6d4', '#64748b', '#d946ef', '#84cc16'];
             const fmt = new Intl.NumberFormat('th-TH');
             const money = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 });
+            const oneDecimal = new Intl.NumberFormat('th-TH', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
             const CURRENT_BE_YEAR = new Date().getFullYear() + 543;
             const PREVIOUS_BE_YEAR = CURRENT_BE_YEAR - 1;
             const PREVIOUS_PREVIOUS_BE_YEAR = CURRENT_BE_YEAR - 2;
@@ -1848,6 +2056,7 @@
                 openDownload: document.getElementById('openDownloadPopup'),
                 closeDownload: document.getElementById('closeDownloadPopup'),
                 downloadCsv: document.getElementById('downloadCsv'),
+                downloadExcel: document.getElementById('downloadExcel'),
                 detailModal: document.getElementById('chartDetailModal'),
                 detailClose: document.getElementById('chartDetailClose'),
                 detailTitle: document.getElementById('chartDetailTitle'),
@@ -2247,6 +2456,19 @@
                 if (r.is_resigned || r.is_consultant || r.is_borrowed) return false;
                 return r.is_unit_user === true;
             };
+            const skillSetDisplayLabel = (value) => {
+                const raw = text(value, 'ไม่ระบุ');
+                const normalized = norm(raw);
+                if (normalized.includes('scientific') || normalized.includes('research')) return 'Scientific';
+                if (normalized.includes('management') || normalized.includes('coordination') || normalized.includes('project')) return 'Management';
+                if (normalized.includes('communication') || normalized.includes('public relation') || normalized.includes('it') || normalized.includes('data')) return 'IT + Communication';
+                if (normalized.includes('operation') || normalized.includes('administrative') || normalized.includes('admin') || normalized.includes('logistics')) return 'Logistics + Admin';
+                return raw;
+            };
+            const skillSetSortRank = (value) => {
+                const label = skillSetDisplayLabel(value);
+                return ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'].indexOf(label);
+            };
             const isPolicyUnitText = (value) => {
                 const v = norm(value).replace(/[()]/g, ' ');
                 return (v.includes('ภายในหน่วยวิจัย') && v.includes('สุขภา'))
@@ -2509,23 +2731,252 @@
                 return /[",\n]/.test(textValue) ? `"${textValue.replace(/"/g, '""')}"` : textValue;
             }
 
-            function downloadFilteredCsv() {
-                const rows = filteredRows();
-                const header = ['id', 'project_code', 'project_name_th', 'pi_name', 'start_year', 'project_type', 'theme', 'funding_type', 'funding_source', 'planning_status', 'budget'];
-                const csv = [
-                    header.join(','),
-                    ...rows.map((p) => header.map((key) => csvEscape(key === 'budget' ? budget(p) : p[key])).join(','))
-                ].join('\n');
-                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            function exportStamp() {
+                return new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+            }
+
+            function outputAuthorText(output) {
+                return (Array.isArray(output?.authors) ? output.authors : [])
+                    .map((author) => [author.name, author.role].filter(Boolean).join(' / '))
+                    .filter(Boolean)
+                    .join('; ');
+            }
+
+            function selectedProjectIds(rows) {
+                return new Set(rows.map((p) => String(p.id ?? '')).filter(Boolean));
+            }
+
+            function externalOutputYear(row) {
+                return normalizeYearLabel(row.publish_year ?? row.publish_date ?? row.created_at);
+            }
+
+            function backOfficeYear(row) {
+                return normalizeYearLabel(row.year ?? row.start_date ?? row.created_at);
+            }
+
+            function filteredExternalOutputs() {
+                const year = text(els.year?.value);
+                const search = norm(els.search?.value);
+                return (Array.isArray(externalOutputs) ? externalOutputs : []).filter((row) => {
+                    if (year && externalOutputYear(row) !== year) return false;
+                    if (search) {
+                        const haystack = [row.code, row.output_code, row.title, row.type, row.job_category, row.journal, row.note]
+                            .map(norm).join(' ');
+                        if (!haystack.includes(search)) return false;
+                    }
+                    return true;
+                });
+            }
+
+            function filteredBackOfficeRows() {
+                const year = text(els.year?.value);
+                const search = norm(els.search?.value);
+                return (Array.isArray(backOfficeRows) ? backOfficeRows : []).filter((row) => {
+                    if (year && backOfficeYear(row) !== year) return false;
+                    if (search) {
+                        const haystack = [row.code, row.backoffice_id, row.title, row.description, row.purpose, row.creator_name]
+                            .map(norm).join(' ');
+                        if (!haystack.includes(search)) return false;
+                    }
+                    return true;
+                });
+            }
+
+            function downloadBlob(content, filename, type = 'text/csv;charset=utf-8;') {
+                const blob = new Blob([content], { type });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
                 a.href = url;
-                a.download = `dashboard-projects-${stamp}.csv`;
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 URL.revokeObjectURL(url);
+            }
+
+            function projectExportRows(rows) {
+                return rows.map((p) => ({
+                    id: p.id ?? '',
+                    project_code: p.project_code ?? '',
+                    project_name_th: p.project_name_th ?? '',
+                    pi_name: p.pi_name ?? '',
+                    start_year: yearLabel(p),
+                    project_type: p.project_type ?? '',
+                    theme: p.theme ?? '',
+                    funding_type: p.funding_type ?? '',
+                    funding_source: p.funding_source ?? '',
+                    planning_status: p.planning_status ?? '',
+                    budget: budget(p),
+                    irb_count: (p.irbs || []).length,
+                    copi_count: (p.copis || []).length,
+                    coresearch_count: (p.co_researches || []).length,
+                    fte_count: (p.fte_roles || []).length,
+                    output_count: (p.outputs || []).length,
+                }));
+            }
+
+            function irbExportRows(rows) {
+                return rows.flatMap((p) => (p.irbs || []).map((irb) => ({
+                    project_code: p.project_code ?? '',
+                    project_name_th: p.project_name_th ?? '',
+                    pi_name: p.pi_name ?? '',
+                    start_year: yearLabel(p),
+                    irb_code: irb.code ?? '',
+                    irb_exp_date: irb.exp_date ?? '',
+                    irb_source: irb.source ?? irb.irb_source ?? '',
+                })));
+            }
+
+            function copiExportRows(rows) {
+                return rows.flatMap((p) => (p.copis || []).map((copi) => ({
+                    project_code: p.project_code ?? '',
+                    project_name_th: p.project_name_th ?? '',
+                    pi_name: p.pi_name ?? '',
+                    start_year: yearLabel(p),
+                    copi_name: copi.name ?? '',
+                    copi_affiliation: copi.affiliation ?? '',
+                })));
+            }
+
+            function coResearchExportRows(rows) {
+                return rows.flatMap((p) => (p.co_researches || []).map((coResearch) => ({
+                    project_code: p.project_code ?? '',
+                    project_name_th: p.project_name_th ?? '',
+                    pi_name: p.pi_name ?? '',
+                    start_year: yearLabel(p),
+                    name: coResearch.name ?? '',
+                    unit_status: coResearch.unit_status ?? '',
+                    affiliation: coResearch.affiliation ?? '',
+                })));
+            }
+
+            function fteExportRows(rows) {
+                return rows.flatMap((p) => (p.fte_roles || []).map((fte) => ({
+                    project_code: p.project_code ?? '',
+                    project_name_th: p.project_name_th ?? '',
+                    pi_name: p.pi_name ?? '',
+                    start_year: yearLabel(p),
+                    name: fte.name ?? '',
+                    role_group: fte.role_group ?? '',
+                    skill_role: fte.skill_role ?? '',
+                    position: fte.position ?? '',
+                    job_detail: fte.job_detail ?? '',
+                    fte_value: fte.fte_value ?? fte.fte ?? '',
+                    hours: fte.hours ?? '',
+                    task_detail: fte.task_detail ?? '',
+                    start_date: fte.start_date ?? '',
+                    end_date: fte.end_date ?? '',
+                    is_borrowed: fte.is_borrowed ? 'yes' : '',
+                })));
+            }
+
+            function outputExportRows(rows) {
+                return relatedOutputs(rows).map((output) => ({
+                    project_code: output.project?.project_code ?? '',
+                    project_name_th: output.project?.project_name_th ?? output.project_name ?? '',
+                    pi_name: output.project?.pi_name ?? '',
+                    start_year: output.project ? yearLabel(output.project) : '',
+                    output_code: output.output_code ?? output.code ?? '',
+                    output_type: output.type ?? '',
+                    output_title: output.title ?? '',
+                    output_year: outputYear(output),
+                    journal: output.journal ?? '',
+                    quartile: output.quartile ?? '',
+                    impact_factor: output.impact_factor ?? '',
+                    authors: outputAuthorText(output),
+                    created_at: output.created_at ?? '',
+                    updated_at: output.updated_at ?? '',
+                }));
+            }
+
+            function externalOutputExportRows() {
+                return filteredExternalOutputs().map((output) => ({
+                    output_code: output.output_code ?? output.code ?? '',
+                    output_type: output.type ?? '',
+                    job_category: output.job_category ?? '',
+                    output_title: output.title ?? '',
+                    publish_date: output.publish_date ?? '',
+                    publish_year: externalOutputYear(output),
+                    journal: output.journal ?? '',
+                    quartile: output.quartile ?? '',
+                    impact_factor: output.impact_factor ?? '',
+                    note: output.note ?? '',
+                    url: output.url ?? '',
+                    created_at: output.created_at ?? '',
+                    updated_at: output.updated_at ?? '',
+                }));
+            }
+
+            function backOfficeExportRows() {
+                return filteredBackOfficeRows().map((row) => ({
+                    backoffice_id: row.backoffice_id ?? row.code ?? '',
+                    title: row.title ?? '',
+                    purpose: row.purpose ?? '',
+                    description: row.description ?? '',
+                    start_date: row.start_date ?? '',
+                    end_date: row.end_date ?? '',
+                    year: backOfficeYear(row),
+                    entries_count: row.entries_count ?? '',
+                    outputs_count: row.outputs_count ?? '',
+                    hours: row.hours ?? '',
+                    fte: row.fte ?? '',
+                    creator_name: row.creator_name ?? '',
+                    url: row.url ?? '',
+                    created_at: row.created_at ?? '',
+                    updated_at: row.updated_at ?? '',
+                }));
+            }
+
+            function csvRowsFromObjects(rows, recordType) {
+                return rows.map((row) => ({
+                    record_type: recordType,
+                    ...row,
+                }));
+            }
+
+            function downloadFilteredCsv() {
+                if (!canDownloadDashboardData) return;
+                const rows = filteredRows();
+                const combined = [
+                    ...csvRowsFromObjects(projectExportRows(rows), 'project'),
+                    ...csvRowsFromObjects(outputExportRows(rows), 'project_output'),
+                    ...csvRowsFromObjects(externalOutputExportRows(), 'external_output'),
+                    ...csvRowsFromObjects(backOfficeExportRows(), 'back_office'),
+                    ...csvRowsFromObjects(fteExportRows(rows), 'fte'),
+                ];
+                const headers = Array.from(combined.reduce((set, row) => {
+                    Object.keys(row).forEach((key) => set.add(key));
+                    return set;
+                }, new Set(['record_type'])));
+                const csv = [
+                    headers.join(','),
+                    ...combined.map((row) => headers.map((key) => csvEscape(row[key])).join(','))
+                ].join('\n');
+                downloadBlob('\uFEFF' + csv, `dashboard-insight-${exportStamp()}.csv`);
+            }
+
+            function appendSheet(workbook, rows, name) {
+                const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ note: 'ไม่มีข้อมูลตามเงื่อนไขที่เลือก' }]);
+                XLSX.utils.book_append_sheet(workbook, ws, name);
+            }
+
+            function downloadFilteredExcel() {
+                if (!canDownloadDashboardData) return;
+                if (typeof XLSX === 'undefined') {
+                    alert('ไม่พบโมดูลสำหรับสร้างไฟล์ Excel');
+                    return;
+                }
+                const rows = filteredRows();
+                const workbook = XLSX.utils.book_new();
+                appendSheet(workbook, projectExportRows(rows), 'Projects');
+                appendSheet(workbook, irbExportRows(rows), 'IRB');
+                appendSheet(workbook, copiExportRows(rows), 'Co-PI');
+                appendSheet(workbook, coResearchExportRows(rows), 'Co-Research');
+                appendSheet(workbook, fteExportRows(rows), 'FTE');
+                appendSheet(workbook, outputExportRows(rows), 'Project Outputs');
+                appendSheet(workbook, externalOutputExportRows(), 'External Outputs');
+                appendSheet(workbook, backOfficeExportRows(), 'Back Office');
+                XLSX.writeFile(workbook, `dashboard-insight-${exportStamp()}.xlsx`);
             }
 
             function projectsTable(rows) {
@@ -2628,12 +3079,27 @@
                     const type = id === 'chartExternalBySourceYear' ? 'ภายนอก' : 'ภายใน';
                     matched = rows.filter((p) => yearLabel(p) === label && fundingType(p) === type && fundingSource(p) === dataset && budget(p) > 0);
                 } else if (id === 'chartBudgetPeople') {
-                    title = `${dataset}: ${label}`;
-                    matched = currentPastRows(rows).filter((p) => {
-                        if (!(budget(p) > 0)) return false;
-                        if (dataset === 'PI') return isPolicyPi(p) && text(p.pi_name) === label;
-                        return (Array.isArray(p.copis) ? p.copis : []).some((copi) => isPolicyCopi(copi) && text(copi.name) === label);
-                    });
+                    const personName = text(chart.$budgetPeopleLabels?.[point.index], label);
+                    const idGroups = chart.$budgetPeopleProjectIds?.[personName] || null;
+                    const roleIds = idGroups
+                        ? (dataset === 'PI' ? idGroups.pi : (dataset === 'Co-PI' ? idGroups.copi : idGroups.all))
+                        : null;
+                    const ids = Array.isArray(roleIds) && roleIds.length ? roleIds : idGroups?.all;
+                    const titleRole = Array.isArray(roleIds) && roleIds.length ? dataset : 'PI / Co-PI';
+                    title = `${titleRole}: ${personName}`;
+                    if (Array.isArray(ids)) {
+                        const idSet = new Set(ids.map((value) => String(value)));
+                        matched = currentPastRows(rows).filter((p) => {
+                            const projectKey = p.id ?? p.project_id ?? p.project_code ?? p.project_name_th;
+                            return idSet.has(String(projectKey)) && budget(p) > 0;
+                        });
+                    } else {
+                        matched = currentPastRows(rows).filter((p) => {
+                            if (!(budget(p) > 0)) return false;
+                            if (dataset === 'PI') return isPolicyPi(p) && text(p.pi_name) === personName;
+                            return (Array.isArray(p.copis) ? p.copis : []).some((copi) => isPolicyCopi(copi) && text(copi.name) === personName);
+                        });
+                    }
                 } else if (id === 'chartOutputType' || id === 'chartPublicationYear' || id === 'chartOutputStacked') {
                     const outputs = relatedOutputs(rows).filter((o) => !isFutureYearLabel(outputYear(o)));
                     const selected = id === 'chartOutputType'
@@ -2659,10 +3125,6 @@
                     title = `FTE: ${dataset}`;
                     matched = rows.filter((p) => (Array.isArray(p.fte_roles) ? p.fte_roles : [])
                         .some((r) => isEligibleWorkloadFte(r) && text(r.name, 'ไม่ระบุชื่อ') === dataset));
-                } else if (id === 'chartFteRole') {
-                    title = `FTE สายงาน / Skill: ${label}`;
-                    matched = rows.filter((p) => (Array.isArray(p.fte_roles) ? p.fte_roles : [])
-                        .some((r) => isEligibleWorkloadFte(r) && fteSkillLabel(r) === label));
                 }
 
                 const unique = Array.from(new Map(matched.map((p) => [p.id, p])).values());
@@ -2687,7 +3149,12 @@
                     ? `กำลังวิเคราะห์ ${fmt.format(rows.length)} โครงการ ตาม ${active.length} เงื่อนไขที่เลือก`
                     : `กำลังแสดงข้อมูลทั้งหมด ${fmt.format(rows.length)} โครงการในระบบ`;
                 updateText('filterSummary', summary);
-                updateText('downloadSummary', `ดาวน์โหลด ${fmt.format(rows.length)} โครงการตามตัวกรองปัจจุบันเป็น CSV`);
+                if (canDownloadDashboardData) {
+                    const outputCount = outputExportRows(rows).length;
+                    const externalOutputCount = externalOutputExportRows().length;
+                    const backOfficeCount = backOfficeExportRows().length;
+                    updateText('downloadSummary', `ดาวน์โหลด ${fmt.format(rows.length)} โครงการ, ${fmt.format(outputCount + externalOutputCount)} outputs และ ${fmt.format(backOfficeCount)} back office ตามตัวกรองปัจจุบันเป็น Excel หรือ CSV`);
+                }
                 updateText('rtFilterBadge', `${fmt.format(rows.length)} โครงการ`);
                 updateText('rtSummaryCaption', active.length ? 'สรุปตามฟิลเตอร์ปัจจุบัน' : 'สรุปข้อมูลทั้งหมดในระบบ');
                 document.getElementById('activeFilterPills').innerHTML = active.length
@@ -3032,6 +3499,18 @@
                         }
                     }
                 });
+                const budgetPeopleChart = chartMap.get('chartBudgetPeople');
+                if (budgetPeopleChart) {
+                    budgetPeopleChart.$budgetPeopleLabels = peopleRows.map((x) => x.name);
+                    budgetPeopleChart.$budgetPeopleProjectIds = Object.fromEntries(peopleRows.map((x) => [
+                        x.name,
+                        {
+                            pi: Array.from(x.piProjectIds),
+                            copi: Array.from(x.copiProjectIds),
+                            all: Array.from(x.projectIds),
+                        }
+                    ]));
+                }
                 const totalBudget = chartFundingRows.reduce((sum, p) => sum + budget(p), 0);
                 const topSource = sourceRows[0];
                 const fundedRows = chartFundingRows.filter((p) => budget(p) > 0);
@@ -3336,6 +3815,154 @@
                     : 'ยังไม่มีข้อมูล Co-Research เพียงพอสำหรับอ่านภาระประสานงานในชุดข้อมูลนี้');
             }
 
+            function renderSkillCapacityTable(rows, workloadItems, totalFte) {
+                const body = document.getElementById('skillCapacityBody');
+                const foot = document.getElementById('skillCapacityFoot');
+                if (!body || !foot) return [];
+
+                const capacityRows = Array.isArray(dashboardFteSkillAnalysis?.capacity_skill_rows)
+                    ? dashboardFteSkillAnalysis.capacity_skill_rows
+                    : [];
+                if (capacityRows.length) {
+                    const workforceTotal = Number(dashboardFteSkillAnalysis.capacity_workforce_total || 0);
+                    const workforceFteTotal = Number(dashboardFteSkillAnalysis.capacity_workforce_fte_total || 0);
+                    const positionTotal = Number(dashboardFteSkillAnalysis.capacity_total || 0);
+                    const borrowedTotal = Number(dashboardFteSkillAnalysis.capacity_skill_borrowed_total || 0);
+
+                    body.innerHTML = capacityRows.map((row, index) => `
+                        <tr>
+                            <td><span class="di-skill-capacity-rank">${fmt.format(index + 1)}</span></td>
+                            <td><div class="di-skill-capacity-name"><span>${escapeHtml(text(row.skill_role, '-'))}</span></div></td>
+                            <td class="di-skill-capacity-table__num" data-label="Workforce"><span class="di-skill-capacity-count">${fmt.format(Number(row.workforce_people || 0))}</span></td>
+                            <td class="di-skill-capacity-table__num" data-label="Time Spending (%)">${oneDecimal.format(Number(row.time_spending_pct || 0))}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Position"><span class="di-skill-capacity-count">${fmt.format(Number(row.people || 0))}</span></td>
+                            <td class="di-skill-capacity-table__num" data-label="Position (%)">${oneDecimal.format(Number(row.pct || 0))}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Position ที่ยืมตัวมา">${
+                                Number(row.borrowed_people || 0) > 0
+                                    ? `<span class="di-skill-capacity-borrowed">${fmt.format(Number(row.borrowed_people || 0))}</span>`
+                                    : '<span class="di-skill-capacity-empty">-</span>'
+                            }</td>
+                        </tr>
+                    `).join('');
+                    foot.innerHTML = `
+                        <tr>
+                            <td colspan="2">รวม</td>
+                            <td class="di-skill-capacity-table__num" data-label="Workforce">${fmt.format(workforceTotal)}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Time Spending (%)">${workforceFteTotal > 0 ? oneDecimal.format(100) : oneDecimal.format(0)}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Position">${fmt.format(positionTotal)}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Position (%)">${positionTotal > 0 ? oneDecimal.format(100) : oneDecimal.format(0)}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Position ที่ยืมตัวมา">${borrowedTotal > 0 ? fmt.format(borrowedTotal) : '-'}</td>
+                        </tr>
+                    `;
+
+                    return capacityRows.map((row) => ({
+                        skill: text(row.skill_role, '-'),
+                        fte: Number(row.time_spending_pct || 0),
+                        workforcePeople: Number(row.workforce_people || 0),
+                        timeSpendingPct: Number(row.time_spending_pct || 0),
+                        people: Number(row.people || 0),
+                        borrowedPeople: Number(row.borrowed_people || 0),
+                    }));
+                }
+
+                const allFteItems = rows.flatMap((p) => (Array.isArray(p.fte_roles) ? p.fte_roles : []).map((r) => ({ ...r, project: p })));
+                const skillMap = new Map();
+                const ensureSkill = (skill) => {
+                    const key = skillSetDisplayLabel(skill);
+                    if (!skillMap.has(key)) {
+                        skillMap.set(key, {
+                            skill: key,
+                            fte: 0,
+                            workforce: new Set(),
+                            positionPeople: new Set(),
+                            borrowedPeople: new Set(),
+                        });
+                    }
+                    return skillMap.get(key);
+                };
+
+                workloadItems.forEach((item) => {
+                    const value = fteValue(item);
+                    if (!(value > 0)) return;
+                    const row = ensureSkill(fteSkillLabel(item));
+                    row.fte += value;
+                    const personKey = normalizePersonKey(item.name);
+                    if (personKey) row.workforce.add(personKey);
+                });
+
+                allFteItems.forEach((item) => {
+                    const personKey = normalizePersonKey(item.name);
+                    if (!personKey || item.is_resigned || item.is_consultant) return;
+                    if (!item.is_unit_user && !item.user_id && !item.user) return;
+                    const row = ensureSkill(fteSkillLabel(item));
+                    row.positionPeople.add(personKey);
+                    if (item.is_borrowed) row.borrowedPeople.add(personKey);
+                });
+
+                const skillRows = Array.from(skillMap.values())
+                    .map((row) => ({
+                        ...row,
+                        workforcePeople: row.workforce.size,
+                        timeSpendingPct: totalFte ? (row.fte / totalFte) * 100 : 0,
+                        people: row.positionPeople.size,
+                        borrowedPeople: row.borrowedPeople.size,
+                    }))
+                    .filter((row) => row.fte > 0 || row.people > 0)
+                    .sort((a, b) => {
+                        const rankA = skillSetSortRank(a.skill);
+                        const rankB = skillSetSortRank(b.skill);
+                        if (rankA !== -1 || rankB !== -1) {
+                            if (rankA === -1) return 1;
+                            if (rankB === -1) return -1;
+                            return rankA - rankB;
+                        }
+                        return (b.fte - a.fte) || (b.people - a.people) || a.skill.localeCompare(b.skill, 'th');
+                    })
+                    .slice(0, 4);
+
+                if (!skillRows.length) {
+                    body.innerHTML = '<tr><td colspan="7" class="di-skill-capacity-table__num">ไม่มีข้อมูล Skill set capacity ใน scope นี้</td></tr>';
+                    foot.innerHTML = '';
+                    return [];
+                }
+
+                const positionTotal = new Set(Array.from(skillMap.values()).flatMap((row) => Array.from(row.positionPeople))).size;
+                const borrowedTotal = skillRows.reduce((sum, row) => sum + row.borrowedPeople, 0);
+                const workforceTotal = new Set(workloadItems.map((item) => normalizePersonKey(item.name)).filter(Boolean)).size;
+                const displayedFteTotal = skillRows.reduce((sum, row) => sum + row.fte, 0);
+                const displayedPeopleTotal = skillRows.reduce((sum, row) => sum + row.people, 0);
+
+                body.innerHTML = skillRows.map((row, index) => {
+                    const positionPct = positionTotal ? (row.people / positionTotal) * 100 : 0;
+                    return `
+                        <tr>
+                            <td><span class="di-skill-capacity-rank">${fmt.format(index + 1)}</span></td>
+                            <td><div class="di-skill-capacity-name"><span>${escapeHtml(row.skill)}</span></div></td>
+                            <td class="di-skill-capacity-table__num" data-label="Workforce"><span class="di-skill-capacity-count">${fmt.format(row.workforcePeople)}</span></td>
+                            <td class="di-skill-capacity-table__num" data-label="Time Spending (%)">${money.format(row.timeSpendingPct)}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Position"><span class="di-skill-capacity-count">${fmt.format(row.people)}</span></td>
+                            <td class="di-skill-capacity-table__num" data-label="Position (%)">${money.format(positionPct)}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Position ที่ยืมตัวมา">${
+                                row.borrowedPeople > 0
+                                    ? `<span class="di-skill-capacity-borrowed">${fmt.format(row.borrowedPeople)}</span>`
+                                    : '<span class="di-skill-capacity-empty">-</span>'
+                            }</td>
+                        </tr>
+                    `;
+                }).join('');
+                foot.innerHTML = `
+                    <tr>
+                        <td colspan="2">รวม</td>
+                        <td class="di-skill-capacity-table__num" data-label="Workforce">${fmt.format(workforceTotal)}</td>
+                        <td class="di-skill-capacity-table__num" data-label="Time Spending (%)">${displayedFteTotal > 0 ? money.format(100) : money.format(0)}</td>
+                        <td class="di-skill-capacity-table__num" data-label="Position">${fmt.format(displayedPeopleTotal)}</td>
+                        <td class="di-skill-capacity-table__num" data-label="Position (%)">${displayedPeopleTotal > 0 ? money.format(100) : money.format(0)}</td>
+                        <td class="di-skill-capacity-table__num" data-label="Position ที่ยืมตัวมา">${borrowedTotal > 0 ? fmt.format(borrowedTotal) : '-'}</td>
+                    </tr>
+                `;
+                return skillRows;
+            }
+
             function renderWorkload(rows) {
                 const fteItems = rows
                     .flatMap((p) => (Array.isArray(p.fte_roles) ? p.fte_roles : []).map((r) => ({ ...r, project: p })))
@@ -3363,32 +3990,27 @@
                         },
                     }
                 });
-                const fteRoleRows = top(groupSum(fteItems, fteSkillLabel, fteValue), 10);
-                renderChart('chartFteRole', {
-                    type: 'bar',
-                    data: { labels: fteRoleRows.map((x) => x.label), datasets: [barDataset('FTE', fteRoleRows.map((x) => x.value), '#2563eb')] },
-                    options: { indexAxis: 'y', plugins: { legend: { display: false }, diValueLabel: { formatter: (value) => money.format(value) } }, scales: { x: { beginAtZero: true } } }
-                });
                 const totalFte = fteItems.reduce((sum, item) => sum + fteValue(item), 0);
+                const skillCapacityRows = renderSkillCapacityTable(rows, fteItems, totalFte);
                 const projectCount = new Set(fteItems.filter((item) => fteValue(item) > 0).map((item) => item.project?.id).filter(Boolean)).size;
                 const topPerson = fteRows[0];
-                const topRole = fteRoleRows[0];
-                const secondRole = fteRoleRows[1];
+                const topRole = skillCapacityRows[0] ? { label: skillCapacityRows[0].skill, value: skillCapacityRows[0].fte } : null;
                 const topFivePeopleTotal = fteRows.slice(0, 5).reduce((sum, item) => sum + item.value, 0);
                 const topPersonShare = totalFte ? (topPerson?.value || 0) / totalFte * 100 : 0;
                 const topFiveShare = totalFte ? topFivePeopleTotal / totalFte * 100 : 0;
-                const skillRowsDetailed = fteRoleRows.map((item) => {
-                    const scoped = fteItems.filter((row) => fteSkillLabel(row) === item.label && fteValue(row) > 0);
+                const skillRowsDetailed = skillCapacityRows.map((item) => {
+                    const scoped = fteItems.filter((row) => fteSkillLabel(row) === item.skill && fteValue(row) > 0);
                     const peopleRows = top(groupSum(scoped, (row) => text(row.name, 'ไม่ระบุชื่อ'), fteValue), 3);
-                    const peopleCount = new Set(scoped.map((row) => normalizePersonKey(row.name)).filter(Boolean)).size;
+                    const peopleCount = item.workforcePeople;
                     const projectCountForSkill = new Set(scoped.map((row) => row.project?.id).filter(Boolean)).size;
                     return {
-                        ...item,
-                        share: totalFte ? item.value / totalFte * 100 : 0,
+                        label: item.skill,
+                        value: item.fte,
+                        share: item.timeSpendingPct,
                         people: peopleCount,
                         projects: projectCountForSkill,
-                        avgPerPerson: peopleCount ? item.value / peopleCount : 0,
-                        avgPerProject: projectCountForSkill ? item.value / projectCountForSkill : 0,
+                        avgPerPerson: peopleCount ? item.fte / peopleCount : 0,
+                        avgPerProject: projectCountForSkill ? item.fte / projectCountForSkill : 0,
                         topPeople: peopleRows,
                     };
                 });
@@ -3455,6 +4077,7 @@
                 if (event.target === els.detailModal) closeDetail();
             });
             els.downloadCsv?.addEventListener('click', downloadFilteredCsv);
+            els.downloadExcel?.addEventListener('click', downloadFilteredExcel);
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') {
                     setPopup(null);

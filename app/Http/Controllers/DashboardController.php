@@ -83,7 +83,8 @@ class DashboardController extends Controller
                 'progressReports',
                 'outputs' => fn($query) => $query
                     ->select($existingColumns('outputs', [
-                        'id', 'project_id', 'type', 'title', 'year', 'created_at',
+                        'id', 'project_id', 'output_code', 'type', 'title', 'year',
+                        'journal', 'quartile', 'impact_factor', 'created_at', 'updated_at',
                     ]))
                     ->with([
                         'authors' => fn($authorQuery) => $authorQuery->select($existingColumns('output_authors', [
@@ -100,6 +101,50 @@ class DashboardController extends Controller
         $outputs         = $projects->flatMap->outputs;
         $irbs            = $projects->flatMap->irbs;
         $progressReports = $projects->flatMap->progressReports;
+        $canDownloadDashboardData = in_array(optional($request->user())->role, [
+            User::ROLE_UNIT_EXECUTIVE,
+            User::ROLE_ADMIN,
+            User::ROLE_SU_ADMIN,
+        ], true);
+
+        $externalOutputs = $canDownloadDashboardData ? ExternalOutput::query()
+            ->select($existingColumns('external_outputs', [
+                'id',
+                'output_code',
+                'type',
+                'job_category',
+                'title',
+                'note',
+                'publish_date',
+                'journal',
+                'quartile',
+                'impact_factor',
+                'created_at',
+                'updated_at',
+            ]))
+            ->latest()
+            ->get() : collect();
+
+        $backOfficeTasks = $canDownloadDashboardData ? BackOfficeTask::query()
+            ->with([
+                'creator:id,prefix,name',
+                'entries:id,task_id,hours,fte_value',
+            ])
+            ->select($existingColumns('back_office_tasks', [
+                'id',
+                'backoffice_id',
+                'title',
+                'description',
+                'purpose',
+                'start_date',
+                'end_date',
+                'created_by',
+                'updated_at',
+                'created_at',
+            ]))
+            ->withCount(['entries', 'outputs'])
+            ->latest()
+            ->get() : collect();
         $normalizeName = static function (?string $value, bool $squash = false): string {
             $text = mb_strtolower(trim((string) $value), 'UTF-8');
             $text = preg_replace('/\s+/u', ' ', $text) ?: '';
@@ -371,13 +416,71 @@ class DashboardController extends Controller
                 'outputs' => $project->outputs->map(fn($output) => [
                     'id' => $output->id,
                     'project_id' => $output->project_id,
+                    'code' => trim((string) ($output->output_code ?? '')) ?: Output::formatOutputCode((int) $output->id),
+                    'output_code' => trim((string) ($output->output_code ?? '')) ?: Output::formatOutputCode((int) $output->id),
                     'project_name' => $project->project_name_th,
                     'type' => $output->type,
                     'title' => $output->title,
                     'year' => $output->year,
+                    'journal' => $output->journal,
+                    'quartile' => $output->quartile,
+                    'impact_factor' => $output->impact_factor,
                     'created_at' => optional($output->created_at)->toDateTimeString(),
+                    'updated_at' => optional($output->updated_at)->toDateTimeString(),
                     'authors' => $output->authors->map($mapDashboardAuthor)->values(),
                 ])->values(),
+            ];
+        })->values();
+        $dashboardFteSkillAnalysis = app(OutputController::class)->buildFteSkillAnalysis(null, null);
+
+        $externalOutputsData = $externalOutputs->map(function (ExternalOutput $output) {
+            $publishDate = $this->toCarbonOrNull($output->publish_date);
+
+            return [
+                'id' => $output->id,
+                'code' => trim((string) ($output->output_code ?? '')) ?: ExternalOutput::formatOutputCode((int) $output->id),
+                'output_code' => trim((string) ($output->output_code ?? '')) ?: ExternalOutput::formatOutputCode((int) $output->id),
+                'type' => trim((string) ($output->type ?? '')) ?: 'ไม่ระบุประเภท',
+                'job_category' => trim((string) ($output->job_category ?? '')) ?: '-',
+                'title' => trim((string) ($output->title ?? '')) ?: 'ไม่ระบุชื่อผลงาน',
+                'note' => trim((string) ($output->note ?? '')),
+                'publish_date' => $publishDate?->format('Y-m-d'),
+                'publish_year' => $publishDate?->year ?? $this->extractYear($output->created_at),
+                'journal' => trim((string) ($output->journal ?? '')) ?: '-',
+                'quartile' => trim((string) ($output->quartile ?? '')) ?: '-',
+                'impact_factor' => $this->toFloat($output->impact_factor),
+                'created_at' => optional($output->created_at)->toDateTimeString(),
+                'updated_at' => optional($output->updated_at)->toDateTimeString(),
+                'url' => route('outputs.external-academic.show', $output),
+            ];
+        })->values();
+
+        $backOfficeData = $backOfficeTasks->map(function (BackOfficeTask $task) {
+            $hours = (float) $task->entries->sum(fn ($entry) => $this->toFloat($entry->hours));
+            $fte = (float) $task->entries->sum(fn ($entry) => $this->toFloat($entry->fte_value));
+            $creatorName = trim(implode(' ', array_filter([
+                trim((string) ($task->creator?->prefix ?? '')),
+                trim((string) ($task->creator?->name ?? '')),
+            ])));
+
+            return [
+                'id' => $task->id,
+                'code' => trim((string) ($task->backoffice_id ?? '')) ?: BackOfficeTask::formatBackOfficeId((int) $task->id),
+                'backoffice_id' => trim((string) ($task->backoffice_id ?? '')) ?: BackOfficeTask::formatBackOfficeId((int) $task->id),
+                'title' => trim((string) ($task->title ?? '')) ?: 'ไม่ระบุชื่องาน',
+                'description' => trim((string) ($task->description ?? '')),
+                'purpose' => trim((string) ($task->purpose ?? '')),
+                'start_date' => $this->toCarbonOrNull($task->start_date)?->format('Y-m-d'),
+                'end_date' => $this->toCarbonOrNull($task->end_date)?->format('Y-m-d'),
+                'year' => $this->extractYear($task->start_date ?: $task->created_at),
+                'entries_count' => (int) ($task->entries_count ?? 0),
+                'outputs_count' => (int) ($task->outputs_count ?? 0),
+                'hours' => round($hours, 2),
+                'fte' => round($fte, 4),
+                'creator_name' => $creatorName !== '' ? $creatorName : 'ไม่ระบุผู้บันทึก',
+                'created_at' => optional($task->created_at)->toDateTimeString(),
+                'updated_at' => optional($task->updated_at)->toDateTimeString(),
+                'url' => route('back_office.show', $task),
             ];
         })->values();
 
@@ -436,6 +539,7 @@ class DashboardController extends Controller
         return view($view, compact(
             'projects',
             'dashboardProjectsJs',
+            'dashboardFteSkillAnalysis',
             'copis',
             'coResearches',
             'fteRoles',
@@ -444,6 +548,9 @@ class DashboardController extends Controller
             'irbs',
             'progressReports',
             'fteProfileUrls',
+            'externalOutputsData',
+            'backOfficeData',
+            'canDownloadDashboardData',
             'themes',
             'typeOptions',
             'statusOptions',

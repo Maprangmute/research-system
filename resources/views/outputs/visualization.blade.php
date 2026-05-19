@@ -931,6 +931,144 @@
             padding: 12px 14px 14px;
             overflow: auto;
         }
+        .seminar-terms-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 120;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, .68);
+            padding: 18px;
+        }
+        .seminar-terms-modal.open {
+            display: flex;
+        }
+        .seminar-terms-card {
+            width: min(920px, 100%);
+            max-height: min(86vh, 780px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+            border-radius: 18px;
+            background: #ffffff;
+            box-shadow: 0 28px 80px rgba(15, 23, 42, .34);
+        }
+        .seminar-terms-head {
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            padding: 18px 22px 14px;
+        }
+        .seminar-terms-kicker {
+            color: #0f766e;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+        .seminar-terms-title {
+            margin-top: 6px;
+            color: #0f172a;
+            font-size: clamp(18px, 2vw, 24px);
+            font-weight: 900;
+            line-height: 1.3;
+        }
+        .seminar-terms-body {
+            overflow: auto;
+            padding: 18px 22px;
+            color: #334155;
+            font-size: 15px;
+            line-height: 1.72;
+        }
+        .seminar-terms-body p {
+            margin: 0 0 12px;
+        }
+        .seminar-terms-body ul {
+            display: grid;
+            gap: 10px;
+            margin: 0 0 14px;
+            padding-left: 20px;
+        }
+        .seminar-terms-body li::marker {
+            color: #0f766e;
+        }
+        .seminar-terms-foot {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid #e2e8f0;
+            background: #ffffff;
+            padding: 16px 22px 20px;
+        }
+        .seminar-terms-accept {
+            min-height: 44px;
+            border: 0;
+            border-radius: 999px;
+            background: #0f766e;
+            color: #ffffff;
+            padding: 0 22px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 12px 24px rgba(15, 118, 110, .22);
+        }
+        .seminar-terms-accept:hover {
+            background: #115e59;
+        }
+        body.seminar-terms-lock {
+            overflow: hidden;
+        }
+        @media (max-width: 900px) {
+            .seminar-terms-modal {
+                padding: 14px;
+            }
+            .seminar-terms-card {
+                width: 100%;
+                max-height: 88vh;
+                border-radius: 16px;
+            }
+            .seminar-terms-head {
+                padding: 16px 18px 12px;
+            }
+            .seminar-terms-body {
+                padding: 16px 18px;
+                font-size: 14px;
+                line-height: 1.68;
+            }
+            .seminar-terms-foot {
+                padding: 14px 18px 18px;
+            }
+        }
+        @media (max-width: 640px) {
+            .seminar-terms-modal {
+                align-items: stretch;
+                padding: 10px;
+            }
+            .seminar-terms-card {
+                max-height: calc(100vh - 20px);
+                border-radius: 14px;
+            }
+            .seminar-terms-title {
+                font-size: 18px;
+            }
+            .seminar-terms-body {
+                padding: 14px;
+                font-size: 13px;
+                line-height: 1.62;
+            }
+            .seminar-terms-body ul {
+                gap: 8px;
+                padding-left: 18px;
+            }
+            .seminar-terms-foot {
+                padding: 12px 14px 14px;
+            }
+            .seminar-terms-accept {
+                width: 100%;
+                min-height: 48px;
+            }
+        }
         .viz-pdf-popover {
             position: fixed;
             left: 14px;
@@ -2043,6 +2181,9 @@
         .fte-capability-group--it .fte-capability-chip--primary {
             background: #7c3aed;
         }
+        .fte-capability-group--communication .fte-capability-chip--primary {
+            background: #db2777;
+        }
         .fte-capability-group--logistics .fte-capability-chip--primary {
             background: #d97706;
         }
@@ -2054,6 +2195,9 @@
         }
         .fte-capability-group--it .fte-capability-group__head {
             border-left: 5px solid #7c3aed;
+        }
+        .fte-capability-group--communication .fte-capability-group__head {
+            border-left: 5px solid #db2777;
         }
         .fte-capability-group--logistics .fte-capability-group__head {
             border-left: 5px solid #d97706;
@@ -2184,16 +2328,23 @@
         }
         @media (min-width: 1280px) {
             .fte-capacity-tables {
-                grid-template-columns: minmax(0, 1.15fr) minmax(380px, .85fr);
+                grid-template-columns: minmax(0, .9fr) minmax(260px, .42fr);
                 align-items: start;
+            }
+            .fte-capacity-card[data-fte-capacity-left] {
+                position: sticky;
+                top: 96px;
+                z-index: 2;
+                max-height: calc(100vh - 112px);
+                overflow-y: auto;
             }
             .fte-capacity-sticky-col {
                 position: relative;
                 align-self: start;
             }
             .fte-capacity-card--sticky {
-                transform: translate3d(0, var(--fte-capacity-stick-y, 0px), 0);
-                will-change: transform;
+                transform: none;
+                will-change: auto;
             }
         }
         .fte-capacity-card {
@@ -2325,8 +2476,69 @@
             text-align: left;
             text-transform: uppercase;
         }
+        .fte-capacity-table__group {
+            background: #eaf4ff !important;
+            border-bottom-color: #bfdbfe !important;
+            color: #1e3a8a !important;
+            font-size: 10px !important;
+            font-weight: 900 !important;
+            letter-spacing: .08em !important;
+            text-align: center !important;
+        }
+        .fte-capacity-table__group--current {
+            background: #e9f8f0 !important;
+            border-bottom-color: #bfdbfe !important;
+            color: #047857 !important;
+        }
         .fte-capacity-table th.fte-capacity-table__num {
             text-align: center;
+        }
+        .fte-capacity-table--skill {
+            min-width: 0;
+            table-layout: fixed;
+        }
+        .fte-capacity-table--skill th:nth-child(2),
+        .fte-capacity-table--skill td:nth-child(2) {
+            width: 30%;
+            min-width: 0;
+        }
+        .fte-capacity-table--skill thead tr:first-child th:first-child {
+            background: #f8fafc;
+            border-right: 1px solid #dbeafe;
+        }
+        .fte-capacity-table--skill thead tr:first-child th:nth-child(3),
+        .fte-capacity-table--skill tbody td:nth-child(3),
+        .fte-capacity-table--skill tfoot td:nth-child(2) {
+            border-left: 1px solid #dbeafe;
+        }
+        .fte-capacity-table--skill thead tr:first-child th:nth-child(4),
+        .fte-capacity-table--skill tbody td:nth-child(5),
+        .fte-capacity-table--skill tfoot td:nth-child(4) {
+            border-left: 1px solid #dbeafe;
+        }
+        .fte-capacity-table--skill thead tr:nth-child(2) th {
+            background: #f4f8fd;
+            font-size: 10px;
+            letter-spacing: .04em;
+            line-height: 1.2;
+        }
+        .fte-capacity-table--skill tbody td,
+        .fte-capacity-table--skill tfoot td {
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+        .fte-capacity-table--position {
+            min-width: 0;
+            table-layout: fixed;
+        }
+        .fte-capacity-table--position th,
+        .fte-capacity-table--position td {
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+        .fte-capacity-table--position th {
+            font-size: 10px;
+            letter-spacing: 0;
         }
         .fte-capacity-table tbody td {
             border-bottom: 1px solid #e5e7eb;
@@ -2357,13 +2569,225 @@
             font-size: 12px;
             line-height: 1.55;
         }
+        .fte-current-matrix-stack {
+            display: grid;
+            gap: 16px;
+            margin-top: 18px;
+        }
+        .fte-current-matrix {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #ffffff;
+            overflow: hidden;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .04);
+        }
+        .fte-current-matrix__head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #ffffff;
+            padding: 14px 16px 12px;
+        }
+        .fte-current-matrix__kicker {
+            margin-bottom: 4px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .06em;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+        .fte-current-matrix h4 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.35;
+            text-align: left;
+        }
+        .fte-current-matrix__summary {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 7px;
+        }
+        .fte-current-matrix__summary span {
+            display: inline-flex;
+            align-items: center;
+            min-height: 30px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+            padding: 5px 9px;
+            color: #334155;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .fte-current-matrix__scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            background: #ffffff;
+        }
+        .fte-current-matrix__table {
+            width: 100%;
+            min-width: 940px;
+            border-collapse: separate;
+            border-spacing: 0;
+            color: #334155;
+            font-size: 13px;
+            table-layout: fixed;
+        }
+        .fte-current-matrix__table th,
+        .fte-current-matrix__table td {
+            border: 0;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 10px 10px;
+            vertical-align: middle;
+        }
+        .fte-current-matrix__table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            line-height: 1.2;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        .fte-current-matrix__table thead th:first-child {
+            width: 255px;
+        }
+        .fte-current-matrix__table thead th:last-child {
+            width: auto;
+        }
+        .fte-current-matrix__skill {
+            border-left: 1px solid #dbeafe !important;
+            background: #eaf4ff !important;
+            color: #1e3a8a !important;
+            text-align: center !important;
+        }
+        .fte-current-matrix__skill span {
+            display: block;
+            max-width: 150px;
+            margin: 0 auto;
+            color: #1e3a8a;
+            font-size: 10px;
+            font-weight: 900;
+            line-height: 1.25;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .fte-current-matrix__total-head {
+            background: #eaf4ff !important;
+            color: #1e3a8a !important;
+            text-align: center !important;
+        }
+        .fte-current-matrix__table tbody th,
+        .fte-current-matrix__table tfoot th {
+            background: inherit;
+            color: #0f172a;
+            font-weight: 800;
+            text-align: left;
+        }
+        .fte-current-matrix__role {
+            display: block;
+            max-width: 235px;
+            overflow-wrap: anywhere;
+            line-height: 1.28;
+        }
+        .fte-current-matrix__table tbody tr:nth-child(even) th,
+        .fte-current-matrix__table tbody tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+        .fte-current-matrix__table tbody tr:hover th,
+        .fte-current-matrix__table tbody tr:hover td {
+            background-color: #eef6ff;
+        }
+        .fte-current-matrix__table tbody td,
+        .fte-current-matrix__table tfoot td {
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.15;
+            font-variant-numeric: tabular-nums;
+        }
+        .fte-current-matrix__table tbody td.is-empty {
+            color: #cbd5e1;
+            font-weight: 700;
+        }
+        .fte-current-matrix__cell-bar {
+            display: none;
+        }
+        .fte-current-matrix__value,
+        .fte-current-matrix__dash {
+            position: relative;
+            z-index: 1;
+        }
+        .fte-current-matrix__dash {
+            color: #cbd5e1;
+        }
+        .fte-current-matrix__grand-cell .fte-current-matrix__value {
+            display: inline;
+            min-width: 0;
+            border-radius: 0;
+            background: transparent;
+            padding: 0;
+            color: #0f172a;
+            box-shadow: none;
+        }
+        .fte-current-matrix__table tfoot tr:first-child th,
+        .fte-current-matrix__table tfoot tr:first-child td {
+            border-top: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
+            background: #d9fbe6;
+            color: #064e3b;
+            font-weight: 900;
+        }
+        .fte-current-matrix__table tfoot tr:last-child th,
+        .fte-current-matrix__table tfoot tr:last-child td {
+            background: #eaf4ff;
+            color: #1e3a8a;
+            font-weight: 900;
+        }
+        .fte-current-matrix__table--time tfoot tr:first-child td {
+            background: #d9fbe6;
+            color: #064e3b;
+        }
+        @media (max-width: 640px) {
+            .fte-current-matrix__head {
+                display: grid;
+                padding: 14px;
+            }
+            .fte-current-matrix__summary {
+                justify-content: flex-start;
+            }
+            .fte-current-matrix h4 {
+                font-size: 16px;
+            }
+            .fte-current-matrix__table {
+                min-width: 900px;
+                font-size: 12px;
+            }
+            .fte-current-matrix__table thead th:first-child {
+                width: 210px;
+            }
+        }
         .fte-capacity-rank {
             display: inline-flex;
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             align-items: center;
             justify-content: center;
-            border-radius: 9px;
+            border-radius: 8px;
             background: #eef2ff;
             color: #334155;
             font-size: 12px;
@@ -2412,6 +2836,7 @@
             gap: 8px;
             color: #0f172a;
             font-weight: 800;
+            line-height: 1.3;
         }
         .fte-capacity-skill-dot {
             width: 10px;
@@ -3203,7 +3628,50 @@
                 -webkit-line-clamp: 2;
             }
         }
-        @media (min-width: 1024px) and (max-width: 1279px) and (orientation: landscape) {
+        @media (min-width: 1200px) and (max-width: 1279px) and (orientation: landscape) {
+            .fte-capacity-tables {
+                grid-template-columns: minmax(0, .9fr) minmax(260px, .42fr);
+                align-items: start;
+            }
+            .fte-capacity-card[data-fte-capacity-left] {
+                position: static;
+                top: auto;
+                z-index: auto;
+                max-height: none;
+                overflow: visible;
+            }
+            .fte-capacity-sticky-col {
+                position: relative;
+                align-self: start;
+                min-width: 0;
+            }
+            .fte-capacity-card--sticky {
+                position: sticky;
+                top: 80px;
+                max-height: calc(100vh - 96px);
+                overflow-y: auto;
+                transform: none;
+                will-change: auto;
+            }
+            .fte-current-matrix__table {
+                min-width: 860px;
+            }
+            .fte-current-matrix__table thead th:first-child {
+                width: 190px;
+            }
+            .fte-current-matrix__head {
+                padding: 12px 14px 10px;
+            }
+            .fte-current-matrix h4 {
+                font-size: 13px;
+                line-height: 1.35;
+            }
+            .fte-current-matrix__summary {
+                flex-shrink: 0;
+            }
+            .fte-capacity-position-cards {
+                display: none !important;
+            }
             .viz-page > div {
                 padding-left: 24px !important;
                 padding-right: 24px !important;
@@ -3472,7 +3940,9 @@
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(5),
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(5),
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(6),
-            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(6) {
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(6),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(7),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(7) {
                 width: 12%;
             }
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th {
@@ -3615,9 +4085,16 @@
                 line-height: 1.3 !important;
             }
             .fte-capacity-tables {
-                grid-template-columns: minmax(0, .58fr) minmax(0, .42fr);
+                grid-template-columns: minmax(0, 1fr);
                 align-items: start;
-                gap: 14px;
+                gap: 12px;
+            }
+            .fte-capacity-card[data-fte-capacity-left] {
+                position: static;
+                top: auto;
+                z-index: auto;
+                max-height: none;
+                overflow: visible;
             }
             .fte-capacity-card {
                 padding: 12px;
@@ -3651,8 +4128,12 @@
                 min-width: 0;
             }
             .fte-capacity-card--sticky {
-                transform: translate3d(0, var(--fte-capacity-stick-y, 0px), 0);
-                will-change: transform;
+                position: static;
+                top: auto;
+                max-height: none;
+                overflow: visible;
+                transform: none;
+                will-change: auto;
             }
             .fte-capacity-table-wrap {
                 overflow-x: auto;
@@ -3663,10 +4144,11 @@
                 min-width: 520px !important;
             }
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table {
-                min-width: 600px !important;
+                min-width: 0 !important;
+                table-layout: fixed !important;
             }
             .fte-capacity-sticky-col .fte-capacity-table {
-                min-width: 420px !important;
+                min-width: 0 !important;
             }
             .fte-capacity-table th,
             .fte-capacity-table td,
@@ -3802,6 +4284,28 @@
                 table-layout: fixed !important;
                 font-size: 10px;
             }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table-wrap {
+                overflow-x: visible !important;
+                -webkit-overflow-scrolling: touch;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                table-layout: fixed !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill col:nth-child(2) {
+                width: 30% !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill th:nth-child(2),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill td:nth-child(2) {
+                width: 30% !important;
+                min-width: 0 !important;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table {
+                min-width: 0 !important;
+                table-layout: fixed !important;
+            }
             .fte-capacity-table th,
             .fte-capacity-table td,
             .fte-capacity-table tbody td,
@@ -3816,6 +4320,52 @@
                 letter-spacing: 0 !important;
                 line-height: 1.15;
                 white-space: normal;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table__group {
+                font-size: 9px !important;
+                letter-spacing: .06em !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-skill-name {
+                font-size: 11px;
+                line-height: 1.25;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-skill-name,
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-skill-name span {
+                overflow-wrap: normal;
+                word-break: normal;
+                white-space: normal;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-current-matrix__scroll {
+                overflow-x: visible !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-current-matrix__table {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                table-layout: fixed !important;
+                font-size: 10px;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-current-matrix__table th,
+            .fte-capacity-card[data-fte-capacity-left] .fte-current-matrix__table td {
+                padding: 7px 5px;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-current-matrix__table thead th:first-child {
+                width: 30%;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-current-matrix__table thead th:last-child {
+                width: auto;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-current-matrix__skill span {
+                max-width: none;
+                font-size: 8.5px;
+                letter-spacing: 0;
+                line-height: 1.15;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-current-matrix__role {
+                max-width: none;
+                overflow-wrap: normal;
+                word-break: normal;
+                font-size: 11px;
             }
             .fte-capacity-table__num {
                 white-space: normal;
@@ -3835,12 +4385,14 @@
             .fte-capacity-table th:nth-child(4),
             .fte-capacity-table td:nth-child(4),
             .fte-capacity-table th:nth-child(5),
-            .fte-capacity-table td:nth-child(5) {
-                width: 14% !important;
-            }
+            .fte-capacity-table td:nth-child(5),
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(6),
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(6) {
-                width: 11% !important;
+                width: 13% !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(7),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(7) {
+                width: 12% !important;
             }
             .fte-capacity-sticky-col .fte-capacity-table th:nth-child(3),
             .fte-capacity-sticky-col .fte-capacity-table td:nth-child(3),
@@ -5675,6 +6227,33 @@
                 display: block !important;
             }
         }
+        @media (min-width: 1280px) {
+            .fte-capacity-tables {
+                align-items: stretch !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] {
+                position: static !important;
+                top: auto !important;
+                z-index: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+            .fte-capacity-sticky-col {
+                position: relative !important;
+                align-self: stretch !important;
+                height: 100% !important;
+                min-width: 0;
+            }
+            .fte-capacity-card--sticky {
+                position: relative !important;
+                top: 0 !important;
+                align-self: flex-start !important;
+                max-height: calc(100vh - 112px) !important;
+                overflow-y: auto !important;
+                transform: translate3d(0, var(--fte-capacity-stick-y, 0px), 0) !important;
+                will-change: transform !important;
+            }
+        }
     </style>
 
     <div class="viz-page min-h-screen pb-10">
@@ -6650,6 +7229,19 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     $fteCapacityYearTotal = (int) data_get($fteSkills, 'capacity_year_total', 0);
                     $fteCapacityYearBorrowedTotal = (int) data_get($fteSkills, 'capacity_year_borrowed_total', 0);
                     $fteCapacityTotal = (int) data_get($fteSkills, 'capacity_total', 0);
+                    $fteCapacityWorkforceTotal = (int) data_get($fteSkills, 'capacity_workforce_total', 0);
+                    $fteCapacityWorkforceFteTotal = (float) data_get($fteSkills, 'capacity_workforce_fte_total', 0);
+                    $fteCapacityCurrentSituation = data_get($fteSkills, 'capacity_current_situation_matrix', []);
+                    $fteCapacityCurrentSituationSkills = collect(data_get($fteCapacityCurrentSituation, 'skill_order', []));
+                    $fteCapacityCurrentSituationRows = collect(data_get($fteCapacityCurrentSituation, 'rows', []));
+                    $fteCapacityCurrentSituationWorkforceTotals = collect(data_get($fteCapacityCurrentSituation, 'workforce_totals', []));
+                    $fteCapacityCurrentSituationTimeTotals = collect(data_get($fteCapacityCurrentSituation, 'time_totals', []));
+                    $fteCapacityCurrentSituationPlan = collect(data_get($fteCapacityCurrentSituation, 'plan_by_skill', []));
+                    $fteCapacityCurrentSituationPlanAllocation = collect(data_get($fteCapacityCurrentSituation, 'plan_allocation_by_skill', []));
+                    $fteCapacityCurrentSituationWorkforceGrandTotal = (int) data_get($fteCapacityCurrentSituation, 'workforce_grand_total', 0);
+                    $fteCapacityCurrentSituationTimeGrandTotal = (float) data_get($fteCapacityCurrentSituation, 'time_grand_total', 0);
+                    $fteCapacityCurrentSituationPlanTotal = (int) data_get($fteCapacityCurrentSituation, 'plan_total', 0);
+                    $fteCapacityCurrentSituationPlanAllocationTotal = (float) data_get($fteCapacityCurrentSituation, 'plan_allocation_total', 0);
                     $fteCapacitySkillBorrowedTotal = (int) data_get($fteSkills, 'capacity_skill_borrowed_total', 0);
                     $fteCapacityRegularTotal = (int) data_get($fteSkills, 'capacity_regular_total', 0);
                     $fteCapacityBorrowedTotal = (int) data_get($fteSkills, 'capacity_borrowed_total', 0);
@@ -6658,6 +7250,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             'scientific' => 'fte-capability-group--scientific',
                             'management' => 'fte-capability-group--management',
                             'it' => 'fte-capability-group--it',
+                            'communication' => 'fte-capability-group--communication',
                             'logistics' => 'fte-capability-group--logistics',
                             default => '',
                         };
@@ -6666,8 +7259,9 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         return match ((string) $key) {
                             'scientific' => 'ทักษะแกนวิชาการตั้งแต่ตั้งโจทย์ ทบทวนหลักฐาน เก็บและวิเคราะห์ข้อมูล ไปจนถึงเขียนและเผยแพร่ผลงาน',
                             'management' => 'ทักษะจัดการโครงการ เอกสารกำกับ ทุน IRB การประสาน stakeholder และการปิดงานให้เดินต่อได้',
-                            'it_communication' => 'ทักษะสื่อสาร สร้างสื่อ ระบบข้อมูล โปรแกรม และ technical support ที่ช่วยให้งานวิจัยใช้งานได้จริง',
-                            'logistics_admin' => 'งานสนับสนุนด้านระบบ เอกสาร บุคลากร การจัดประชุม และงานปฏิบัติการที่ทำให้ระบบทำงานต่อเนื่อง',
+                            'it_data_systems' => 'ทักษะระบบข้อมูล โปรแกรม ฐานข้อมูล และ technical support ที่ช่วยให้งานวิจัยใช้งานได้จริง',
+                            'communication_pr' => 'ทักษะจัดทำสื่อ การสื่อสาร และประชาสัมพันธ์เพื่อเผยแพร่หรือต่อยอดงานวิจัย',
+                            'operations_admin' => 'งานสนับสนุนด้านเอกสาร บุคลากร การจัดประชุม และงานปฏิบัติการที่ทำให้ระบบทำงานต่อเนื่อง',
                             default => 'กลุ่มทักษะจากภาระงาน FTE',
                         };
                     };
@@ -6675,8 +7269,9 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         return match ((string) $key) {
                             'scientific' => 'Scientific',
                             'management' => 'Management',
-                            'it_communication' => 'IT + Communication',
-                            'logistics_admin' => 'IT and Admin',
+                            'it_data_systems' => 'IT & Data',
+                            'communication_pr' => 'Communication',
+                            'operations_admin' => 'Operations',
                             default => '',
                         };
                     };
@@ -6729,48 +7324,56 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         </div>
                         @if ($fteCapacityPositionRows->isNotEmpty() || $fteCapacitySkillRows->isNotEmpty())
                             <div class="fte-capacity-tables mt-5" data-fte-capacity-tables>
-                                @if ($fteCapacityPositionRows->isNotEmpty())
+                                @if ($fteCapacitySkillRows->isNotEmpty())
                                     <div class="fte-capacity-card" data-fte-capacity-left>
                                         <div class="fte-capacity-card__head">
                                             <div>
-                                                <div class="fte-capacity-card__kicker">Position capacity</div>
-                                                <div class="fte-capacity-card__title">อัตรากำลังจริง แบ่งตามชื่อตำแหน่ง</div>
-                                            </div>
-                                            <div class="fte-capacity-metrics">
-                                                <div class="fte-capacity-metric">
-                                                    <div class="fte-capacity-metric__label">ทั้งหมด</div>
-                                                    <div class="fte-capacity-metric__value">{{ number_format($fteCapacityRegularTotal + $fteCapacityBorrowedTotal) }}</div>
-                                                </div>
-                                                <div class="fte-capacity-metric">
-                                                    <div class="fte-capacity-metric__label">ยืมตัว</div>
-                                                    <div class="fte-capacity-metric__value">{{ number_format($fteCapacityBorrowedTotal) }}</div>
-                                                </div>
+                                                <div class="fte-capacity-card__kicker">Skill set capacity</div>
+                                                <div class="fte-capacity-card__title">ภาพรวมของการกระจายคน (Workforce) เเละ เวลาการทำงาน (Time Spending) ตามกลุ่มทักษะ</div>
                                             </div>
                                         </div>
                                         <div class="fte-capacity-table-wrap">
-                                            <table class="fte-capacity-table" style="min-width: 760px;">
+                                            <table class="fte-capacity-table fte-capacity-table--skill">
+                                            <colgroup>
+                                                <col style="width:44px;">
+                                                <col style="width:30%;">
+                                                <col style="width:11%;">
+                                                <col style="width:14%;">
+                                                <col style="width:11%;">
+                                                <col style="width:13%;">
+                                                <col style="width:15%;">
+                                            </colgroup>
                                             <thead>
                                                 <tr>
-                                                    <th class="fte-capacity-table__num" style="width:52px;"></th>
-                                                    <th>ตำแหน่ง / สายงาน</th>
-                                                    <th class="fte-capacity-table__num" style="width:96px;">ทั้งหมด</th>
-                                                    <th class="fte-capacity-table__num" style="width:96px;">ยืมตัวมา</th>
+                                                    <th rowspan="2" class="fte-capacity-table__num"></th>
+                                                    <th rowspan="2">Skill set</th>
+                                                    <th colspan="2" class="fte-capacity-table__num fte-capacity-table__group fte-capacity-table__group--current">Current Situation</th>
+                                                    <th colspan="3" class="fte-capacity-table__num fte-capacity-table__group">Position</th>
+                                                </tr>
+                                                <tr>
+                                                    <th class="fte-capacity-table__num">Workforce</th>
+                                                    <th class="fte-capacity-table__num">Time Spent (%)</th>
+                                                    <th class="fte-capacity-table__num">Position</th>
+                                                    <th class="fte-capacity-table__num">Position (%)</th>
+                                                    <th class="fte-capacity-table__num">Position ที่ยืมตัวมา</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach ($fteCapacityPositionRows as $row)
-                                                    @php
-                                                        $regularPeople = (int) ($row->people ?? 0);
-                                                        $borrowedPeople = (int) ($row->borrowed_people ?? 0);
-                                                        $totalPeople = $regularPeople + $borrowedPeople;
-                                                    @endphp
+                                                @foreach ($fteCapacitySkillRows as $row)
                                                     <tr>
-                                                        <td class="fte-capacity-table__num"><span class="fte-capacity-rank">{{ number_format($loop->iteration) }}</span></td>
-                                                        <td data-label="ตำแหน่ง / สายงาน"><span class="fte-capacity-position__name">{{ $row->position_group }}</span></td>
-                                                        <td class="fte-capacity-table__num" data-label="ทั้งหมด"><span class="fte-capacity-count">{{ number_format($totalPeople) }}</span></td>
-                                                        <td class="fte-capacity-table__num" data-label="ยืมตัวมา">
-                                                            @if ($borrowedPeople > 0)
-                                                                <span class="fte-borrowed-badge">{{ number_format($borrowedPeople) }}</span>
+                                                        <td><span class="fte-capacity-rank">{{ $loop->iteration }}</span></td>
+                                                        <td>
+                                                            <div class="fte-capacity-skill-name">
+                                                                <span>{{ $row->skill_role }}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="fte-capacity-table__num" data-label="Workforce"><span class="fte-capacity-count">{{ number_format((int) ($row->workforce_people ?? 0)) }}</span></td>
+                                                        <td class="fte-capacity-table__num" data-label="Time Spending (%)">{{ number_format((float) ($row->time_spending_pct ?? 0), 1) }}</td>
+                                                        <td class="fte-capacity-table__num" data-label="Position"><span class="fte-capacity-count">{{ number_format((int) ($row->people ?? 0)) }}</span></td>
+                                                        <td class="fte-capacity-table__num" data-label="Position (%)">{{ number_format((float) ($row->pct ?? 0), 1) }}</td>
+                                                        <td class="fte-capacity-table__num" data-label="Position ที่ยืมตัวมา">
+                                                            @if ((int) ($row->borrowed_people ?? 0) > 0)
+                                                                <span class="fte-borrowed-badge">{{ number_format((int) $row->borrowed_people) }}</span>
                                                             @else
                                                                 <span class="fte-borrowed-empty">-</span>
                                                             @endif
@@ -6781,76 +7384,197 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             <tfoot>
                                                 <tr>
                                                     <td colspan="2">รวม</td>
-                                                    <td class="fte-capacity-table__num" data-label="ทั้งหมด">{{ number_format($fteCapacityRegularTotal + $fteCapacityBorrowedTotal) }}</td>
-                                                    <td class="fte-capacity-table__num" data-label="ยืมตัวมา">{{ $fteCapacityBorrowedTotal > 0 ? number_format($fteCapacityBorrowedTotal) : '-' }}</td>
+                                                    <td class="fte-capacity-table__num" data-label="Workforce">{{ number_format($fteCapacityWorkforceTotal) }}</td>
+                                                    <td class="fte-capacity-table__num" data-label="Time Spending (%)">{{ number_format($fteCapacityWorkforceFteTotal > 0 ? 100 : 0, 1) }}</td>
+                                                    <td class="fte-capacity-table__num" data-label="Position">{{ number_format($fteCapacityTotal) }}</td>
+                                                    <td class="fte-capacity-table__num" data-label="Position (%)">{{ number_format($fteCapacityTotal > 0 ? 100 : 0, 1) }}</td>
+                                                    <td class="fte-capacity-table__num" data-label="Position ที่ยืมตัวมา">{{ $fteCapacitySkillBorrowedTotal > 0 ? number_format($fteCapacitySkillBorrowedTotal) : '-' }}</td>
                                                 </tr>
                                             </tfoot>
                                             </table>
                                         </div>
-                                        <div class="fte-capacity-position-cards">
-                                            @foreach ($fteCapacityPositionRows as $row)
-                                                @php
-                                                    $regularPeople = (int) ($row->people ?? 0);
-                                                    $borrowedPeople = (int) ($row->borrowed_people ?? 0);
-                                                    $totalPeople = $regularPeople + $borrowedPeople;
-                                                @endphp
-                                                <article class="fte-capacity-position-card">
-                                                    <div class="fte-capacity-position-card__head">
-                                                        <span class="fte-capacity-rank">{{ number_format($loop->iteration) }}</span>
-                                                        <div class="min-w-0">
-                                                            <div class="fte-capacity-position__name">{{ $row->position_group }}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="fte-capacity-position-card__metrics">
-                                                        <div class="fte-capacity-position-card__metric">
-                                                            <div class="fte-capacity-position-card__metric-label">ทั้งหมด</div>
-                                                            <div class="fte-capacity-position-card__metric-value">{{ number_format($totalPeople) }}</div>
-                                                        </div>
-                                                        <div class="fte-capacity-position-card__metric">
-                                                            <div class="fte-capacity-position-card__metric-label">ยืมตัว</div>
-                                                            <div class="fte-capacity-position-card__metric-value">{{ $borrowedPeople > 0 ? number_format($borrowedPeople) : '-' }}</div>
-                                                        </div>
-                                                    </div>
-                                                </article>
-                                            @endforeach
+                                        <div class="fte-capacity-table-note">
+                                            หมายเหตุ: Position รวมตำแหน่งในแต่ละ Skill set, Position (%) แสดงสัดส่วนต่อ Position ทั้งหมด, Workforce นับจำนวนคนไม่ซ้ำจากภาระงาน FTE ที่เข้าแต่ละ Skill set, Time Spending (%) แสดงสัดส่วน FTE ของภาระงานในแต่ละ Skill set และ Position ที่ยืมตัวมาแสดงจำนวนตำแหน่งยืมตัวในแต่ละสายงาน
                                         </div>
+                                        @if ($fteCapacityCurrentSituationSkills->isNotEmpty() && $fteCapacityCurrentSituationRows->isNotEmpty())
+                                            <div class="fte-current-matrix-stack">
+                                                <section class="fte-current-matrix">
+                                                    <div class="fte-current-matrix__head">
+                                                        <div>
+                                                            <div class="fte-current-matrix__kicker">Current workforce by position</div>
+                                                            <h4>การกระจายคน (Workforce) ตามตำแหน่ง (Position) และกลุ่มทักษะ (Skillset) Current Situation</h4>
+                                                        </div>
+                                                        <div class="fte-current-matrix__summary">
+                                                            <span>Workforce {{ number_format($fteCapacityCurrentSituationWorkforceGrandTotal) }}</span>
+                                                            <span>Position {{ number_format($fteCapacityCurrentSituationPlanTotal) }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="fte-current-matrix__scroll">
+                                                        <table class="fte-current-matrix__table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th class="fte-current-matrix__row-head">ตำแหน่ง / Position</th>
+                                                                    @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
+                                                                        <th class="fte-current-matrix__skill fte-current-matrix__skill--{{ $loop->iteration }}">
+                                                                            <span>{{ $skillRole }}</span>
+                                                                        </th>
+                                                                    @endforeach
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach ($fteCapacityCurrentSituationRows as $matrixRow)
+                                                                    <tr>
+                                                                        <th>
+                                                                            <span class="fte-current-matrix__role">{{ $matrixRow->position_group }}</span>
+                                                                        </th>
+                                                                        @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
+                                                                            @php
+                                                                                $workforceCells = (array) ($matrixRow->workforce ?? []);
+                                                                                $value = (int) ($workforceCells[$skillRole] ?? 0);
+                                                                            @endphp
+                                                                            <td class="{{ $value > 0 ? 'is-filled' : 'is-empty' }}" style="--cell-fill: {{ min(100, $value * 7) }}%;">
+                                                                                @if ($value > 0)
+                                                                                    <span class="fte-current-matrix__cell-bar"></span>
+                                                                                    <span class="fte-current-matrix__value">{{ number_format($value) }}</span>
+                                                                                @else
+                                                                                    <span class="fte-current-matrix__dash">-</span>
+                                                                                @endif
+                                                                            </td>
+                                                                        @endforeach
+                                                                    </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                            <tfoot>
+                                                                <tr>
+                                                                    <th>Total Workforce by Skill Set</th>
+                                                                    @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
+                                                                        <td>{{ number_format((int) ($fteCapacityCurrentSituationWorkforceTotals[$skillRole] ?? 0)) }}</td>
+                                                                    @endforeach
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>Position Allocation by Skill Set (%)</th>
+                                                                    @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
+                                                                        <td>{{ number_format((int) ($fteCapacityCurrentSituationPlan[$skillRole] ?? 0)) }}</td>
+                                                                    @endforeach
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
+                                                </section>
+
+                                                <section class="fte-current-matrix">
+                                                    <div class="fte-current-matrix__head">
+                                                        <div>
+                                                            <div class="fte-current-matrix__kicker">FTE distribution by position</div>
+                                                            <h4>การกระจายเวลาทำงาน (Time Spending) ตามตำแหน่ง (Position) และกลุ่มทักษะ (Skillset) Current Situation</h4>
+                                                        </div>
+                                                    </div>
+                                                    <div class="fte-current-matrix__scroll">
+                                                        <table class="fte-current-matrix__table fte-current-matrix__table--time">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th class="fte-current-matrix__row-head">ตำแหน่ง / Position</th>
+                                                                    @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
+                                                                        <th class="fte-current-matrix__skill fte-current-matrix__skill--{{ $loop->iteration }}">
+                                                                            <span>{{ $skillRole }}</span>
+                                                                        </th>
+                                                                    @endforeach
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach ($fteCapacityCurrentSituationRows as $matrixRow)
+                                                                    <tr>
+                                                                        <th>
+                                                                            <span class="fte-current-matrix__role">{{ $matrixRow->position_group }}</span>
+                                                                        </th>
+                                                                        @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
+                                                                            @php
+                                                                                $timeCells = (array) ($matrixRow->time ?? []);
+                                                                                $value = (float) ($timeCells[$skillRole] ?? 0);
+                                                                            @endphp
+                                                                            <td class="{{ $value > 0 ? 'is-filled' : 'is-empty' }}" style="--cell-fill: {{ min(100, $value * 2.5) }}%;">
+                                                                                @if ($value > 0)
+                                                                                    <span class="fte-current-matrix__cell-bar"></span>
+                                                                                    <span class="fte-current-matrix__value">{{ number_format($value, 2) }}%</span>
+                                                                                @else
+                                                                                    <span class="fte-current-matrix__dash">-</span>
+                                                                                @endif
+                                                                            </td>
+                                                                        @endforeach
+                                                                    </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                            <tfoot>
+                                                                <tr>
+                                                                    <th>Total Time Spent by Skill Set (%)</th>
+                                                                    @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
+                                                                        <td>{{ number_format((float) ($fteCapacityCurrentSituationTimeTotals[$skillRole] ?? 0), 2) }}%</td>
+                                                                    @endforeach
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>Position Allocation by Skill Set (%)</th>
+                                                                    @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
+                                                                        <td>{{ number_format((float) ($fteCapacityCurrentSituationPlanAllocation[$skillRole] ?? 0), 2) }}%</td>
+                                                                    @endforeach
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
+                                                </section>
+                                            </div>
+                                        @endif
                                     </div>
                                 @endif
 
-                                @if ($fteCapacitySkillRows->isNotEmpty())
+                                @if ($fteCapacityPositionRows->isNotEmpty())
                                     <div class="fte-capacity-sticky-col" data-fte-capacity-right>
-                                        <div class="fte-capacity-card fte-capacity-card--sticky" data-fte-capacity-follow>
+                                        <div class="fte-capacity-card fte-capacity-card--sticky">
                                             <div class="fte-capacity-card__head">
                                                 <div>
-                                                    <div class="fte-capacity-card__kicker">Skill set capacity</div>
-                                                    <div class="fte-capacity-card__title">อัตรากำลังจริง แบ่งตาม Skill set</div>
+                                                    <div class="fte-capacity-card__kicker">Position capacity</div>
+                                                    <div class="fte-capacity-card__title">อัตรากำลังจริง แบ่งตามชื่อตำแหน่ง</div>
+                                                </div>
+                                                <div class="fte-capacity-metrics">
+                                                    <div class="fte-capacity-metric">
+                                                        <div class="fte-capacity-metric__label">ทั้งหมด</div>
+                                                        <div class="fte-capacity-metric__value">{{ number_format($fteCapacityRegularTotal + $fteCapacityBorrowedTotal) }}</div>
+                                                    </div>
+                                                    <div class="fte-capacity-metric">
+                                                        <div class="fte-capacity-metric__label">ยืมตัว</div>
+                                                        <div class="fte-capacity-metric__value">{{ number_format($fteCapacityBorrowedTotal) }}</div>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="fte-capacity-table-wrap">
-                                                <table class="fte-capacity-table" style="min-width: 520px;">
+                                                <table class="fte-capacity-table fte-capacity-table--position" style="min-width: 0;">
+                                                <colgroup>
+                                                    <col style="width:40px;">
+                                                    <col>
+                                                    <col style="width:66px;">
+                                                    <col style="width:74px;">
+                                                </colgroup>
                                                 <thead>
                                                     <tr>
-                                                        <th style="width:52px;"></th>
-                                                        <th>สายงาน</th>
-                                                        <th class="fte-capacity-table__num" style="width:86px;">ทั้งหมด</th>
-                                                        <th class="fte-capacity-table__num" style="width:74px;">%</th>
-                                                        <th class="fte-capacity-table__num" style="width:86px;">ยืมตัวมา</th>
+                                                        <th class="fte-capacity-table__num"></th>
+                                                        <th>ตำแหน่ง / สายงาน</th>
+                                                        <th class="fte-capacity-table__num">ทั้งหมด</th>
+                                                        <th class="fte-capacity-table__num">ยืมตัวมา</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    @foreach ($fteCapacitySkillRows as $row)
+                                                    @foreach ($fteCapacityPositionRows as $row)
+                                                        @php
+                                                            $regularPeople = (int) ($row->people ?? 0);
+                                                            $borrowedPeople = (int) ($row->borrowed_people ?? 0);
+                                                            $totalPeople = $regularPeople + $borrowedPeople;
+                                                        @endphp
                                                         <tr>
-                                                            <td><span class="fte-capacity-rank">{{ $loop->iteration }}</span></td>
-                                                            <td>
-                                                                <div class="fte-capacity-skill-name">
-                                                                    <span>{{ $row->skill_role }}</span>
-                                                                </div>
-                                                            </td>
-                                                            <td class="fte-capacity-table__num" data-label="ทั้งหมด"><span class="fte-capacity-count">{{ number_format((int) ($row->people ?? 0)) }}</span></td>
-                                                            <td class="fte-capacity-table__num" data-label="%">{{ number_format((float) ($row->pct ?? 0), 1) }}</td>
+                                                            <td class="fte-capacity-table__num"><span class="fte-capacity-rank">{{ number_format($loop->iteration) }}</span></td>
+                                                            <td data-label="ตำแหน่ง / สายงาน"><span class="fte-capacity-position__name">{{ $row->position_group }}</span></td>
+                                                            <td class="fte-capacity-table__num" data-label="ทั้งหมด"><span class="fte-capacity-count">{{ number_format($totalPeople) }}</span></td>
                                                             <td class="fte-capacity-table__num" data-label="ยืมตัวมา">
-                                                                @if ((int) ($row->borrowed_people ?? 0) > 0)
-                                                                    <span class="fte-borrowed-badge">{{ number_format((int) $row->borrowed_people) }}</span>
+                                                                @if ($borrowedPeople > 0)
+                                                                    <span class="fte-borrowed-badge">{{ number_format($borrowedPeople) }}</span>
                                                                 @else
                                                                     <span class="fte-borrowed-empty">-</span>
                                                                 @endif
@@ -6861,15 +7585,38 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                 <tfoot>
                                                     <tr>
                                                         <td colspan="2">รวม</td>
-                                                        <td class="fte-capacity-table__num" data-label="ทั้งหมด">{{ number_format($fteCapacityTotal) }}</td>
-                                                        <td class="fte-capacity-table__num" data-label="%">{{ number_format($fteCapacityTotal > 0 ? 100 : 0, 1) }}</td>
-                                                        <td class="fte-capacity-table__num" data-label="ยืมตัวมา">{{ $fteCapacitySkillBorrowedTotal > 0 ? number_format($fteCapacitySkillBorrowedTotal) : '-' }}</td>
+                                                        <td class="fte-capacity-table__num" data-label="ทั้งหมด">{{ number_format($fteCapacityRegularTotal + $fteCapacityBorrowedTotal) }}</td>
+                                                        <td class="fte-capacity-table__num" data-label="ยืมตัวมา">{{ $fteCapacityBorrowedTotal > 0 ? number_format($fteCapacityBorrowedTotal) : '-' }}</td>
                                                     </tr>
                                                 </tfoot>
                                                 </table>
                                             </div>
-                                            <div class="fte-capacity-table-note">
-                                                หมายเหตุ: จำนวนทั้งหมดรวมคนยืมตัวไว้แล้ว และแสดงจำนวนยืมตัวแยกอีกคอลัมน์เพื่อให้เห็นสัดส่วนภายในแต่ละสายงาน
+                                            <div class="fte-capacity-position-cards">
+                                                @foreach ($fteCapacityPositionRows as $row)
+                                                    @php
+                                                        $regularPeople = (int) ($row->people ?? 0);
+                                                        $borrowedPeople = (int) ($row->borrowed_people ?? 0);
+                                                        $totalPeople = $regularPeople + $borrowedPeople;
+                                                    @endphp
+                                                    <article class="fte-capacity-position-card">
+                                                        <div class="fte-capacity-position-card__head">
+                                                            <span class="fte-capacity-rank">{{ number_format($loop->iteration) }}</span>
+                                                            <div class="min-w-0">
+                                                                <div class="fte-capacity-position__name">{{ $row->position_group }}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="fte-capacity-position-card__metrics">
+                                                            <div class="fte-capacity-position-card__metric">
+                                                                <div class="fte-capacity-position-card__metric-label">ทั้งหมด</div>
+                                                                <div class="fte-capacity-position-card__metric-value">{{ number_format($totalPeople) }}</div>
+                                                            </div>
+                                                            <div class="fte-capacity-position-card__metric">
+                                                                <div class="fte-capacity-position-card__metric-label">ยืมตัว</div>
+                                                                <div class="fte-capacity-position-card__metric-value">{{ $borrowedPeople > 0 ? number_format($borrowedPeople) : '-' }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </article>
+                                                @endforeach
                                             </div>
                                         </div>
                                     </div>
@@ -7722,6 +8469,30 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
         </div>
     </div>
 
+    @if ($isPublicSeminar ?? false)
+        <div id="seminarTermsModal" class="seminar-terms-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="seminarTermsTitle">
+            <div class="seminar-terms-card">
+                <div class="seminar-terms-head">
+                    <div class="seminar-terms-kicker">Terms of Use & Disclaimer</div>
+                    <h2 id="seminarTermsTitle" class="seminar-terms-title">ข้อตกลงและเงื่อนไขการใช้งานระบบ</h2>
+                </div>
+                <div class="seminar-terms-body">
+                    <p>ระบบฐานข้อมูลโครงการวิจัยและการติดตามงานนี้ มีวัตถุประสงค์เพื่อสนับสนุนการดำเนินงานภายในองค์กร ได้แก่ การบริหารจัดการโครงการ การติดตามความก้าวหน้า การจัดสรรทรัพยากร และการพัฒนาประสิทธิภาพการทำงานในภาพรวม</p>
+                    <ul>
+                        <li><strong>วัตถุประสงค์ของข้อมูล:</strong> ข้อมูลที่จัดเก็บจะถูกนำไปใช้ในลักษณะภาพรวม (Aggregated Data) เพื่อการวิเคราะห์เชิงระบบและการพัฒนาการดำเนินงานในระดับองค์กร โดยมุ่งเน้นการสนับสนุนการทำงานของบุคลากร และไม่ได้มีวัตถุประสงค์หลักเพื่อใช้ในการประเมินผลประสิทธิภาพการทำงานรายบุคคล</li>
+                        <li><strong>การคุ้มครองข้อมูลและความเป็นส่วนตัว:</strong> องค์กรให้ความสำคัญกับความเป็นส่วนตัวและความปลอดภัยของข้อมูล โดยข้อมูลจะไม่ถูกเปิดเผยต่อบุคคลภายนอก เว้นแต่มีความจำเป็นตามภารกิจขององค์กร หรือเป็นไปตามข้อกำหนดทางกฎหมาย</li>
+                        <li><strong>การเข้าถึงสิทธิ์:</strong> ผู้ใช้งานสามารถเข้าถึง ตรวจสอบ และจัดการข้อมูลของตนเองในระบบได้ ภายใต้มาตรการการยืนยันตัวตนและสิทธิ์การเข้าถึง (Access Rights) ที่องค์กรกำหนด</li>
+                        <li><strong>ความถูกต้องของข้อมูลและการจำกัดความรับผิดชอบ:</strong> ผู้ใช้งานมีหน้าที่ตรวจสอบและรับรองความถูกต้องของข้อมูลที่นำเข้าสู่ระบบ ทั้งนี้ องค์กรขอสงวนสิทธิ์ในการรับผิดชอบต่อความเสียหายใด ๆ ที่เกิดจากการนำข้อมูลไปใช้ผิดวัตถุประสงค์ หรือการเข้าถึงข้อมูลโดยไม่ได้รับอนุญาต อันเกิดจากความประมาทเลินเล่อในการรักษาบัญชีผู้ใช้งาน (Username/Password) หรือมาตรการรักษาความปลอดภัยส่วนบุคคลของผู้ใช้งานเอง</li>
+                    </ul>
+                    <p>ข้อมูลในระบบนี้ประกอบด้วย Project Overview, Process &amp; Timeline, Workforce, Budget และ Outputs โดยจัดทำขึ้นเพื่อการใช้งานภายในองค์กร ภายใต้การสัมมนาเชิงปฏิบัติการ ‘การทำแผนปฏิบัติการของหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ’ ซึ่งจัดขึ้นระหว่างวันศุกร์ที่ 22 ถึงวันเสาร์ที่ 23 พฤษภาคม พ.ศ. 2569 โดยระบบแสดงผลข้อมูล (Visualization Web-based Application) นี้จะแสดงผลเฉพาะช่วงวันที่ 15-30 พฤษภาคม พ.ศ. 2569 เท่านั้น และภายหลังจากช่วงเวลาดังกล่าวจะไม่สามารถเข้าถึงระบบได้</p>
+                </div>
+                <div class="seminar-terms-foot">
+                    <button id="seminarTermsAccept" type="button" class="seminar-terms-accept">รับทราบและเข้าใช้งาน</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div id="outputItemModal" class="viz-modal" aria-hidden="true">
         <div class="viz-modal-card">
             <div class="viz-modal-head">
@@ -7957,6 +8728,37 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
             const policyImpactTrendItemsByYear = @json(collect($policyImpactTrend['items_by_year'] ?? []));
             const fteSkillRadarRows = @json(collect(data_get($fteSkillAnalysis ?? [], 'radar_rows', []))->values());
             const isPublicSeminar = @json($isPublicSeminar ?? false);
+            if (isPublicSeminar) {
+                const termsModal = document.getElementById('seminarTermsModal');
+                const termsAccept = document.getElementById('seminarTermsAccept');
+                const termsStorageKey = 'sihealthpolicy.seminar.terms.accepted.v1';
+                const accepted = (() => {
+                    try {
+                        return window.localStorage?.getItem(termsStorageKey) === 'yes';
+                    } catch (error) {
+                        return false;
+                    }
+                })();
+                const showTermsModal = () => {
+                    if (!termsModal) return;
+                    termsModal.classList.add('open');
+                    termsModal.setAttribute('aria-hidden', 'false');
+                    document.body.classList.add('seminar-terms-lock');
+                    window.setTimeout(() => termsAccept?.focus(), 50);
+                };
+                const acceptTerms = () => {
+                    try {
+                        window.localStorage?.setItem(termsStorageKey, 'yes');
+                    } catch (error) {
+                        // Continue without persistent storage if the browser blocks it.
+                    }
+                    termsModal?.classList.remove('open');
+                    termsModal?.setAttribute('aria-hidden', 'true');
+                    document.body.classList.remove('seminar-terms-lock');
+                };
+                termsAccept?.addEventListener('click', acceptTerms);
+                if (!accepted) showTermsModal();
+            }
             const themeGapAi = {
                 enabled: @json(!($isPublicSeminar ?? false) && $policyImpactThemeAiFacts->isNotEmpty()),
                 endpoint: @json(($isPublicSeminar ?? false) ? null : route('outputs.visualization.theme-gap-ai', [], false)),
@@ -8218,43 +9020,6 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                         hidePreview(2200);
                     });
                 });
-            };
-            const setupFteCapacityFollow = () => {
-                const mq = window.matchMedia('(min-width: 1280px), (min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)');
-                const tables = Array.from(document.querySelectorAll('[data-fte-capacity-tables]'));
-                if (!tables.length) return;
-
-                const update = () => {
-                    tables.forEach((tableGroup) => {
-                        const left = tableGroup.querySelector('[data-fte-capacity-left]');
-                        const card = tableGroup.querySelector('[data-fte-capacity-follow]');
-                        if (!left || !card || !mq.matches) {
-                            if (card) card.style.setProperty('--fte-capacity-stick-y', '0px');
-                            return;
-                        }
-
-                        const topOffset = 96;
-                        const groupTop = tableGroup.getBoundingClientRect().top + window.scrollY;
-                        const leftHeight = left.offsetHeight || 0;
-                        const cardHeight = card.offsetHeight || 0;
-                        const maxMove = Math.max(0, leftHeight - cardHeight);
-                        const rawMove = window.scrollY - groupTop + topOffset;
-                        const move = Math.max(0, Math.min(maxMove, rawMove));
-
-                        card.style.setProperty('--fte-capacity-stick-y', `${Math.round(move)}px`);
-                    });
-                };
-
-                update();
-                window.addEventListener('scroll', update, { passive: true });
-                window.addEventListener('resize', update, { passive: true });
-                window.visualViewport?.addEventListener('resize', update, { passive: true });
-                if (typeof ResizeObserver !== 'undefined') {
-                    tables.forEach((tableGroup) => {
-                        const observer = new ResizeObserver(update);
-                        observer.observe(tableGroup);
-                    });
-                }
             };
             const renderedCharts = new Map();
             const pendingChartConfigs = new Map();
@@ -10373,6 +11138,53 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
             };
             setupNatureScrollSpy();
 
+            window.__fteCapacityFollowCleanup?.();
+            const setupFteCapacityFollow = () => {
+                const shell = document.querySelector('[data-fte-capacity-tables]');
+                const rightCol = document.querySelector('[data-fte-capacity-right]');
+                const card = rightCol?.querySelector('.fte-capacity-card--sticky');
+                if (!shell || !rightCol || !card) return;
+
+                const media = window.matchMedia('(min-width: 1280px)');
+                let ticking = false;
+
+                const update = () => {
+                    ticking = false;
+
+                    if (!media.matches) {
+                        card.style.setProperty('--fte-capacity-stick-y', '0px');
+                        return;
+                    }
+
+                    const topOffset = 96;
+                    const shellRect = shell.getBoundingClientRect();
+                    const shellHeight = shell.offsetHeight;
+                    const cardHeight = card.offsetHeight;
+                    const maxY = Math.max(0, shellHeight - cardHeight);
+                    const y = Math.min(maxY, Math.max(0, topOffset - shellRect.top));
+                    card.style.setProperty('--fte-capacity-stick-y', `${Math.round(y)}px`);
+                };
+
+                const requestUpdate = () => {
+                    if (ticking) return;
+                    ticking = true;
+                    window.requestAnimationFrame(update);
+                };
+
+                window.addEventListener('scroll', requestUpdate, { passive: true });
+                window.addEventListener('resize', requestUpdate);
+                media.addEventListener?.('change', requestUpdate);
+                update();
+
+                window.__fteCapacityFollowCleanup = () => {
+                    window.removeEventListener('scroll', requestUpdate);
+                    window.removeEventListener('resize', requestUpdate);
+                    media.removeEventListener?.('change', requestUpdate);
+                    card.style.setProperty('--fte-capacity-stick-y', '0px');
+                };
+            };
+            setupFteCapacityFollow();
+
             const modal = document.getElementById('outputItemModal');
             const modalTitle = document.getElementById('outputItemModalTitle');
             const modalBody = document.getElementById('outputItemModalBody');
@@ -10451,7 +11263,6 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
             enhanceThemeGapWithAi();
             setupDoctorRoleTables();
             setupUnitAvatarZoomPreview();
-            setupFteCapacityFollow();
 
         })();
     </script>

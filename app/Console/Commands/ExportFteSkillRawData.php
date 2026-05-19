@@ -293,10 +293,10 @@ class ExportFteSkillRawData extends Command
             $taskText = $normalizeText($task);
             $text = $normalizeText($task . ' ' . $job . ' ' . $sourceCategory);
             $fallback = [
-                'key' => 'logistics_admin',
-                'label' => 'งานสนับสนุนปฏิบัติการ',
-                'thai' => 'งานสนับสนุนปฏิบัติการ',
-                'item_key' => 'logistics_admin_support_documents',
+                'key' => 'operations_admin',
+                'label' => 'Operations & Administrative Support',
+                'thai' => 'Operations & Administrative Support',
+                'item_key' => 'operations_admin_support_documents',
                 'item_label' => 'งานบริการสิ่งสนับสนุนและเอกสาร',
                 'tone' => 'logistics',
                 'item_order' => 999,
@@ -342,7 +342,7 @@ class ExportFteSkillRawData extends Command
     {
         return [
             'scientific' => [
-                'label' => 'งานวิชาการและหลักฐาน',
+                'label' => 'Scientific Research',
                 'tone' => 'scientific',
                 'items' => [
                     ['key' => 'review_literature', 'label' => 'review literature', 'keywords' => ['review literature', 'literature review', 'ทบทวนวรรณกรรม', 'systematic', 'meta']],
@@ -365,7 +365,7 @@ class ExportFteSkillRawData extends Command
                 ],
             ],
             'management' => [
-                'label' => 'งานบริหารโครงการและกำกับเอกสาร',
+                'label' => 'Project Management & Coordination',
                 'tone' => 'management',
                 'items' => [
                     ['key' => 'coordination', 'label' => 'ติดต่อประสานงาน', 'keywords' => ['ติดต่อประสานงาน', 'ประสานงาน', 'coordinator']],
@@ -384,21 +384,27 @@ class ExportFteSkillRawData extends Command
                     ['key' => 'meeting_minutes', 'label' => 'งานด้านการลงวาระและรายงานการประชุม', 'keywords' => ['วาระ', 'รายงานการประชุม', 'minutes']],
                 ],
             ],
-            'it_communication' => [
-                'label' => 'งานสื่อสาร ระบบข้อมูล และเทคนิค',
+            'it_data_systems' => [
+                'label' => 'IT & Data Management Systems',
                 'tone' => 'it',
                 'items' => [
-                    ['key' => 'public_relations', 'label' => 'ประชาสัมพันธ์', 'keywords' => ['ประชาสัมพันธ์', 'pr']],
-                    ['key' => 'communication_assets', 'label' => 'จัดทำสื่อ / Communication Assets', 'keywords' => ['communication assets', 'จัดทำสื่อ', 'สื่อ']],
                     ['key' => 'research_system', 'label' => 'สร้างโปรแกรม ฐานข้อมูล และ โปรแกรมที่เกี่ยวข้องกับงานวิจัย', 'keywords' => ['โปรแกรม', 'ฐานข้อมูล', 'database', 'website', 'ระบบ']],
-                    ['key' => 'technical_support', 'label' => 'IT and Technical support', 'keywords' => ['it', 'technical', 'full stack', 'ux/ui', 'support']],
-                    ['key' => 'communication_work', 'label' => 'งานด้านการสื่อสาร และประชาสัมพันธ์', 'keywords' => ['การสื่อสาร', 'สื่อสาร']],
-                    ['key' => 'media_design', 'label' => 'งานด้านออกแบบ และผลิตสื่อ', 'keywords' => ['ออกแบบ', 'ผลิตสื่อ', 'branding']],
+                    ['key' => 'technical_support', 'label' => 'IT and Technical support', 'keywords' => ['it and technical support', 'it support', 'technical support', 'full stack', 'ux/ui', 'it & information', 'information technology', 'เทคโนโลยีสารสนเทศ']],
                     ['key' => 'technology_information', 'label' => 'งานด้านการพัฒนาเทคโนโลยีและสารสนเทศ', 'keywords' => ['เทคโนโลยี', 'สารสนเทศ']],
                 ],
             ],
-            'logistics_admin' => [
-                'label' => 'งานสนับสนุนปฏิบัติการ',
+            'communication_pr' => [
+                'label' => 'Communication & Public Relations',
+                'tone' => 'communication',
+                'items' => [
+                    ['key' => 'public_relations', 'label' => 'ประชาสัมพันธ์', 'keywords' => ['ประชาสัมพันธ์', 'pr']],
+                    ['key' => 'communication_assets', 'label' => 'จัดทำสื่อ / Communication Assets', 'keywords' => ['communication assets', 'จัดทำสื่อ', 'สื่อ']],
+                    ['key' => 'communication_work', 'label' => 'งานด้านการสื่อสาร และประชาสัมพันธ์', 'keywords' => ['การสื่อสาร', 'สื่อสาร']],
+                    ['key' => 'media_design', 'label' => 'งานด้านออกแบบ และผลิตสื่อ', 'keywords' => ['ออกแบบ', 'ผลิตสื่อ', 'branding']],
+                ],
+            ],
+            'operations_admin' => [
+                'label' => 'Operations & Administrative Support',
                 'tone' => 'logistics',
                 'items' => [
                     ['key' => 'knowledge_sharing', 'label' => 'จัดกิจกรรมการแลกเปลี่ยนเรียนรู้ (Knowledge Sharing)', 'keywords' => ['knowledge sharing', 'แลกเปลี่ยนเรียนรู้']],

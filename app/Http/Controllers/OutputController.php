@@ -5675,7 +5675,7 @@ class OutputController extends Controller
             ->all();
     }
 
-    private function buildFteSkillAnalysis(?int $yearFrom, ?int $yearTo): array
+    public function buildFteSkillAnalysis(?int $yearFrom, ?int $yearTo): array
     {
         $normalizeText = static fn ($value): string => Str::of((string) $value)->lower()->replace(["\r", "\n", "\t"], ' ')->replaceMatches('/\s+/u', ' ')->trim()->toString();
         $displayText = static fn ($value): string => Str::of((string) $value)->replace(["\r", "\n", "\t"], ' ')->replaceMatches('/\s+/u', ' ')->trim()->toString();
@@ -5722,6 +5722,9 @@ class OutputController extends Controller
         $activeUnitUserById = $activeUnitUsers->keyBy(fn ($user) => (int) $user->id);
         $userSkillRole = static function (?User $user): string {
             $storedRole = trim((string) ($user?->skill_role ?? ''));
+            if ($storedRole === 'Multidisciplinary Research') {
+                return $storedRole;
+            }
             if ($storedRole !== '' && in_array($storedRole, User::SKILL_ROLES, true)) {
                 return $storedRole;
             }
@@ -5835,6 +5838,8 @@ class OutputController extends Controller
                 if (Str::contains($text, ['นักวิจัย', 'หัวหน้าหน่วย', 'รองหัวหน้าหน่วย', 'health policy', 'policy unit'])) {
                     return 'นักวิจัย';
                 }
+
+                return 'สหสาขาวิชาชีพ';
             }
 
             return $skillRole !== '' ? $skillRole : ($position !== '' ? $position : 'ไม่ระบุตำแหน่ง');
@@ -5952,7 +5957,7 @@ class OutputController extends Controller
         };
         $fteSkillTaxonomy = [
             'scientific' => [
-                'label' => 'งานวิชาการและหลักฐาน',
+                'label' => 'Scientific Research',
                 'tone' => 'scientific',
                 'items' => [
                     ['key' => 'review_literature', 'label' => 'review literature', 'keywords' => ['review literature', 'literature review', 'ทบทวนวรรณกรรม', 'systematic', 'meta']],
@@ -5975,7 +5980,7 @@ class OutputController extends Controller
                 ],
             ],
             'management' => [
-                'label' => 'งานบริหารโครงการและกำกับเอกสาร',
+                'label' => 'Project Management & Coordination',
                 'tone' => 'management',
                 'items' => [
                     ['key' => 'coordination', 'label' => 'ติดต่อประสานงาน', 'keywords' => ['ติดต่อประสานงาน', 'ประสานงาน', 'coordinator']],
@@ -5994,21 +5999,27 @@ class OutputController extends Controller
                     ['key' => 'meeting_minutes', 'label' => 'งานด้านการลงวาระและรายงานการประชุม', 'keywords' => ['วาระ', 'รายงานการประชุม', 'minutes']],
                 ],
             ],
-            'it_communication' => [
-                'label' => 'งานสื่อสาร ระบบข้อมูล และเทคนิค',
+            'it_data_systems' => [
+                'label' => 'IT & Data Management Systems',
                 'tone' => 'it',
                 'items' => [
-                    ['key' => 'public_relations', 'label' => 'ประชาสัมพันธ์', 'keywords' => ['ประชาสัมพันธ์', 'pr']],
-                    ['key' => 'communication_assets', 'label' => 'จัดทำสื่อ / Communication Assets', 'keywords' => ['communication assets', 'จัดทำสื่อ', 'สื่อ']],
                     ['key' => 'research_system', 'label' => 'สร้างโปรแกรม ฐานข้อมูล และ โปรแกรมที่เกี่ยวข้องกับงานวิจัย', 'keywords' => ['โปรแกรม', 'ฐานข้อมูล', 'database', 'website', 'ระบบ']],
-                    ['key' => 'technical_support', 'label' => 'IT and Technical support', 'keywords' => ['it', 'technical', 'full stack', 'ux/ui', 'support']],
-                    ['key' => 'communication_work', 'label' => 'งานด้านการสื่อสาร และประชาสัมพันธ์', 'keywords' => ['การสื่อสาร', 'สื่อสาร']],
-                    ['key' => 'media_design', 'label' => 'งานด้านออกแบบ และผลิตสื่อ', 'keywords' => ['ออกแบบ', 'ผลิตสื่อ', 'branding']],
+                    ['key' => 'technical_support', 'label' => 'IT and Technical support', 'keywords' => ['it and technical support', 'it support', 'technical support', 'full stack', 'ux/ui', 'it & information', 'information technology', 'เทคโนโลยีสารสนเทศ']],
                     ['key' => 'technology_information', 'label' => 'งานด้านการพัฒนาเทคโนโลยีและสารสนเทศ', 'keywords' => ['เทคโนโลยี', 'สารสนเทศ']],
                 ],
             ],
-            'logistics_admin' => [
-                'label' => 'งานสนับสนุนปฏิบัติการ',
+            'communication_pr' => [
+                'label' => 'Communication & Public Relations',
+                'tone' => 'communication',
+                'items' => [
+                    ['key' => 'public_relations', 'label' => 'ประชาสัมพันธ์', 'keywords' => ['ประชาสัมพันธ์', 'pr']],
+                    ['key' => 'communication_assets', 'label' => 'จัดทำสื่อ / Communication Assets', 'keywords' => ['communication assets', 'จัดทำสื่อ', 'สื่อ']],
+                    ['key' => 'communication_work', 'label' => 'งานด้านการสื่อสาร และประชาสัมพันธ์', 'keywords' => ['การสื่อสาร', 'สื่อสาร']],
+                    ['key' => 'media_design', 'label' => 'งานด้านออกแบบ และผลิตสื่อ', 'keywords' => ['ออกแบบ', 'ผลิตสื่อ', 'branding']],
+                ],
+            ],
+            'operations_admin' => [
+                'label' => 'Operations & Administrative Support',
                 'tone' => 'logistics',
                 'items' => [
                     ['key' => 'knowledge_sharing', 'label' => 'จัดกิจกรรมการแลกเปลี่ยนเรียนรู้ (Knowledge Sharing)', 'keywords' => ['knowledge sharing', 'แลกเปลี่ยนเรียนรู้']],
@@ -6023,7 +6034,7 @@ class OutputController extends Controller
         $skillFor = static function (string $task, string $job, string $sourceCategory = '', string $personSkillRole = '') use ($normalizeText, $fteSkillTaxonomy): array {
             $taskText = $normalizeText($task);
             $text = $normalizeText($task . ' ' . $job . ' ' . $sourceCategory);
-            $fallback = ['key' => 'logistics_admin', 'label' => 'งานสนับสนุนปฏิบัติการ', 'thai' => 'งานสนับสนุนปฏิบัติการ', 'item_key' => 'logistics_admin_support_documents', 'item_label' => 'งานบริการสิ่งสนับสนุนและเอกสาร', 'tone' => 'logistics'];
+            $fallback = ['key' => 'operations_admin', 'label' => 'Operations & Administrative Support', 'thai' => 'Operations & Administrative Support', 'item_key' => 'operations_admin_support_documents', 'item_label' => 'งานบริการสิ่งสนับสนุนและเอกสาร', 'tone' => 'logistics'];
             $makeSkill = static function (string $groupKey, string $itemKey) use ($fteSkillTaxonomy): ?array {
                 $group = $fteSkillTaxonomy[$groupKey] ?? null;
                 if (! $group) {
@@ -6053,13 +6064,13 @@ class OutputController extends Controller
             if (! $isResearchProject) {
                 if (Str::contains($categoryText, ['เทคโนโลยีสารสนเทศ', 'สารสนเทศ', 'ฐานข้อมูล', 'it & information', 'information technology'])
                     || ($personSkillRole === 'IT & Data Management Systems' && Str::contains($categoryText, ['it', 'information', 'เทคโนโลยี', 'ข้อมูล']))) {
-                    return $makeSkill('it_communication', 'technology_information') ?? $fallback;
+                    return $makeSkill('it_data_systems', 'technology_information') ?? $fallback;
                 }
                 if (Str::contains($categoryText, ['ประชาสัมพันธ์', 'corporate communication', 'communication'])) {
-                    return $makeSkill('it_communication', 'communication_work') ?? $fallback;
+                    return $makeSkill('communication_pr', 'communication_work') ?? $fallback;
                 }
                 if (Str::contains($categoryText, ['ทรัพยากรบุคคล', 'human resources', 'administration', 'บริหารงานทั่วไป', 'เลขานุการ'])) {
-                    return $makeSkill('logistics_admin', 'human_resources') ?? $fallback;
+                    return $makeSkill('operations_admin', 'human_resources') ?? $fallback;
                 }
             }
 
@@ -6270,9 +6281,14 @@ class OutputController extends Controller
                 ->values();
         };
         $fteCapacitySkillPeople = $primaryFteCapacitySkillPeople($uniqueRows);
-        $fteCapacitySkillRows = $fteCapacitySkillPeople
+        $fteCapacitySkillPeopleByRole = $fteCapacitySkillPeople
             ->groupBy('skill_role')
-            ->map(function (Collection $peopleRows, string $skillGroup) {
+            ->map(fn (Collection $peopleRows) => $peopleRows->values());
+        $fteCapacitySkillRows = $capacitySkillSetOrder
+            ->keys()
+            ->map(function (string $skillGroup) use ($fteCapacitySkillPeopleByRole) {
+                $peopleRows = $fteCapacitySkillPeopleByRole->get($skillGroup, collect());
+
                 return (object) [
                     'skill_role' => $skillGroup,
                     'people' => (int) $peopleRows->count(),
@@ -6280,19 +6296,141 @@ class OutputController extends Controller
                     'borrowed_people' => (int) $peopleRows->filter(fn ($row) => (bool) ($row->is_borrowed ?? false))->count(),
                 ];
             })
-            ->sortBy(fn ($row) => sprintf(
-                '%03d-%s',
-                (int) ($capacitySkillSetOrder[(string) ($row->skill_role ?? '')] ?? 999),
-                (string) ($row->skill_role ?? '')
-            ))
+            ->values();
+        $workforceSkillGroupFor = static function ($row) use ($capacitySkillSetGroup): ?string {
+            return match ((string) data_get($row, 'skill.key')) {
+                'scientific' => $capacitySkillSetGroup('Scientific Research'),
+                'management' => $capacitySkillSetGroup('Project Management & Coordination'),
+                'it_data_systems' => $capacitySkillSetGroup('IT & Data Management Systems'),
+                'communication_pr' => $capacitySkillSetGroup('Communication & Public Relations'),
+                'operations_admin' => $capacitySkillSetGroup('Operations & Administrative Support'),
+                default => null,
+            };
+        };
+        $workforceRows = $uniqueRows
+            ->filter(fn ($row) => (int) ($row->user_id ?? 0) > 0)
+            ->map(function ($row) use ($workforceSkillGroupFor) {
+                $row->workforce_skill_role = $workforceSkillGroupFor($row);
+                return $row;
+            })
+            ->filter(fn ($row) => filled($row->workforce_skill_role ?? null));
+        $workforceCountsBySkill = $workforceRows
+            ->groupBy(fn ($row) => (string) $row->workforce_skill_role)
+            ->map(fn (Collection $rows) => (int) $rows->pluck('user_id')->filter()->unique()->count());
+        $workforceFteBySkill = $workforceRows
+            ->groupBy(fn ($row) => (string) $row->workforce_skill_role)
+            ->map(fn (Collection $rows) => (float) $rows->sum(fn ($row) => (float) ($row->fte ?? 0)));
+        $workforceFteTotal = (float) $workforceFteBySkill->sum();
+        $workforceTotal = (int) $workforceRows
+            ->pluck('user_id')
+            ->filter()
+            ->unique()
+            ->count();
+        $fteCapacitySkillRows = $fteCapacitySkillRows
+            ->map(function ($row) use ($workforceCountsBySkill, $workforceFteBySkill, $workforceFteTotal) {
+                $skillRole = (string) ($row->skill_role ?? '');
+                $row->workforce_people = (int) ($workforceCountsBySkill[$skillRole] ?? 0);
+                $row->time_spending_pct = $workforceFteTotal > 0
+                    ? round(((float) ($workforceFteBySkill[$skillRole] ?? 0) / $workforceFteTotal) * 100, 1)
+                    : 0.0;
+                return $row;
+            })
             ->values();
         $fteCapacityTotal = max(1, (int) $fteCapacitySkillRows->sum('people'));
+        $fteCapacityWorkforceTotal = $workforceTotal;
         $fteCapacitySkillRows = $fteCapacitySkillRows
             ->map(function ($row) use ($fteCapacityTotal) {
                 $row->pct = round(((int) ($row->people ?? 0) / $fteCapacityTotal) * 100, 1);
                 return $row;
             })
             ->values();
+        $currentSituationSkillOrder = collect([
+            'Scientific Research',
+            'Project Management & Coordination',
+            'IT & Data Management Systems',
+            'Communication & Public Relations',
+            'Operations & Administrative Support',
+        ]);
+        $currentSituationSkillKeyFor = static function ($row) use ($capacitySkillSetGroup): ?string {
+            return match ((string) data_get($row, 'skill.key')) {
+                'scientific' => $capacitySkillSetGroup('Scientific Research'),
+                'management' => $capacitySkillSetGroup('Project Management & Coordination'),
+                'it_data_systems' => $capacitySkillSetGroup('IT & Data Management Systems'),
+                'communication_pr' => $capacitySkillSetGroup('Communication & Public Relations'),
+                'operations_admin' => $capacitySkillSetGroup('Operations & Administrative Support'),
+                default => null,
+            };
+        };
+        $currentSituationRows = $uniqueRows
+            ->filter(fn ($row) => (int) ($row->user_id ?? 0) > 0)
+            ->map(function ($row) use ($currentSituationSkillKeyFor) {
+                $row->current_situation_skill = $currentSituationSkillKeyFor($row);
+                return $row;
+            })
+            ->filter(fn ($row) => filled($row->current_situation_skill ?? null) && filled($row->user_position_group ?? null));
+        $currentSituationPositionOrder = $positionGroupOrder;
+        $currentSituationPositionGroups = $currentSituationRows
+            ->pluck('user_position_group')
+            ->filter()
+            ->unique()
+            ->sortBy(fn ($group) => sprintf(
+                '%03d-%s',
+                (int) ($currentSituationPositionOrder[(string) $group] ?? 999),
+                (string) $group
+            ))
+            ->values();
+        $currentSituationFteTotal = (float) $currentSituationRows->sum(fn ($row) => (float) ($row->fte ?? 0));
+        $currentSituationPlanBySkill = $fteCapacitySkillRows
+            ->mapWithKeys(fn ($row) => [(string) ($row->skill_role ?? '') => (int) ($row->people ?? 0)]);
+        $currentSituationPlanTotal = (int) $currentSituationPlanBySkill->sum();
+        $currentSituationMatrixRows = $currentSituationPositionGroups
+            ->map(function (string $positionGroup) use ($currentSituationRows, $currentSituationSkillOrder, $currentSituationFteTotal) {
+                $rows = $currentSituationRows->filter(fn ($row) => (string) ($row->user_position_group ?? '') === $positionGroup);
+                $workforceCells = [];
+                $timeCells = [];
+
+                foreach ($currentSituationSkillOrder as $skillRole) {
+                    $skillRows = $rows->filter(fn ($row) => (string) ($row->current_situation_skill ?? '') === $skillRole);
+                    $workforceCells[$skillRole] = (int) $skillRows->pluck('user_id')->filter()->unique()->count();
+                    $timeCells[$skillRole] = $currentSituationFteTotal > 0
+                        ? round(((float) $skillRows->sum(fn ($row) => (float) ($row->fte ?? 0)) / $currentSituationFteTotal) * 100, 2)
+                        : 0.0;
+                }
+
+                return (object) [
+                    'position_group' => $positionGroup,
+                    'workforce' => $workforceCells,
+                    'workforce_total' => (int) $rows->pluck('user_id')->filter()->unique()->count(),
+                    'time' => $timeCells,
+                    'time_total' => round((float) array_sum($timeCells), 2),
+                ];
+            })
+            ->values();
+        $currentSituationWorkforceTotals = [];
+        $currentSituationTimeTotals = [];
+        foreach ($currentSituationSkillOrder as $skillRole) {
+            $skillRows = $currentSituationRows->filter(fn ($row) => (string) ($row->current_situation_skill ?? '') === $skillRole);
+            $currentSituationWorkforceTotals[$skillRole] = (int) $skillRows->pluck('user_id')->filter()->unique()->count();
+            $currentSituationTimeTotals[$skillRole] = $currentSituationFteTotal > 0
+                ? round(((float) $skillRows->sum(fn ($row) => (float) ($row->fte ?? 0)) / $currentSituationFteTotal) * 100, 2)
+                : 0.0;
+        }
+        $currentSituationMatrix = [
+            'skill_order' => $currentSituationSkillOrder->values(),
+            'rows' => $currentSituationMatrixRows,
+            'workforce_totals' => $currentSituationWorkforceTotals,
+            'workforce_grand_total' => (int) $currentSituationRows->pluck('user_id')->filter()->unique()->count(),
+            'time_totals' => $currentSituationTimeTotals,
+            'time_grand_total' => $currentSituationFteTotal > 0 ? 100.0 : 0.0,
+            'plan_by_skill' => $currentSituationPlanBySkill,
+            'plan_total' => $currentSituationPlanTotal,
+            'plan_allocation_by_skill' => $currentSituationPlanTotal > 0
+                ? $currentSituationSkillOrder->mapWithKeys(fn ($skillRole) => [
+                    $skillRole => round(((int) ($currentSituationPlanBySkill[$skillRole] ?? 0) / $currentSituationPlanTotal) * 100, 2),
+                ])
+                : collect(),
+            'plan_allocation_total' => $currentSituationPlanTotal > 0 ? 100.0 : 0.0,
+        ];
         $capacityYear = $yearTo ?? $uniqueRows->pluck('year')->filter(fn ($year) => is_numeric($year))->max();
         $capacityYear = is_numeric($capacityYear) ? (int) $capacityYear : null;
         $capacityYearPeople = $capacityYear !== null
@@ -6465,29 +6603,17 @@ class OutputController extends Controller
             'operations_admin' => [
                 'label' => 'Operations & Administrative Support',
                 'thai' => 'ปฏิบัติการและธุรการสนับสนุน',
-                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'logistics_admin',
+                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'operations_admin',
             ],
             'it_data_systems' => [
                 'label' => 'IT & Data Management Systems',
                 'thai' => 'ระบบข้อมูลและเทคโนโลยี',
-                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'it_communication'
-                    && ! in_array((string) data_get($row->skill, 'item_key'), [
-                        'it_communication_public_relations',
-                        'it_communication_communication_assets',
-                        'it_communication_communication_work',
-                        'it_communication_media_design',
-                    ], true),
+                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'it_data_systems',
             ],
             'communication_pr' => [
                 'label' => 'Communication & Public Relations',
                 'thai' => 'สื่อสารและประชาสัมพันธ์',
-                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'it_communication'
-                    && in_array((string) data_get($row->skill, 'item_key'), [
-                        'it_communication_public_relations',
-                        'it_communication_communication_assets',
-                        'it_communication_communication_work',
-                        'it_communication_media_design',
-                    ], true),
+                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'communication_pr',
             ],
         ]);
         $radarRawRows = $radarAxes
@@ -6672,6 +6798,9 @@ class OutputController extends Controller
             'capacity_year_total' => (int) $capacityYearSkillRows->sum('people'),
             'capacity_year_borrowed_total' => (int) $capacityYearSkillRows->sum('borrowed_people'),
             'capacity_total' => (int) $fteCapacitySkillRows->sum('people'),
+            'capacity_workforce_total' => $fteCapacityWorkforceTotal,
+            'capacity_workforce_fte_total' => $workforceFteTotal,
+            'capacity_current_situation_matrix' => $currentSituationMatrix,
             'capacity_skill_borrowed_total' => (int) $fteCapacitySkillRows->sum('borrowed_people'),
             'capacity_regular_total' => (int) $fteCapacityPositionRows->sum('people'),
             'capacity_borrowed_total' => (int) $fteCapacityPositionRows->sum('borrowed_people'),
