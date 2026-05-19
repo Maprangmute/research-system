@@ -29,6 +29,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -5462,6 +5463,7 @@ class OutputController extends Controller
         }
 
         $fteSkillAnalysis = $this->buildFteSkillAnalysis($yearFrom, $yearTo);
+        $this->ensureFreshProjectNatureInsight();
         $aiProjectNatureInsight = $this->latestAiVisualizationInsight('project_nature', 'global');
 
         $view = view('outputs.visualization', [
@@ -6589,41 +6591,26 @@ class OutputController extends Controller
             })
             ->sortKeys()
             ->values();
-        $radarAxes = collect([
-            'scientific_research' => [
-                'label' => 'Scientific Research',
-                'thai' => 'งานวิจัยและวิชาการ',
-                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'scientific',
-            ],
-            'project_management' => [
-                'label' => 'Project Management & Coordination',
-                'thai' => 'บริหารโครงการและประสานงาน',
-                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'management',
-            ],
-            'operations_admin' => [
-                'label' => 'Operations & Administrative Support',
-                'thai' => 'ปฏิบัติการและธุรการสนับสนุน',
-                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'operations_admin',
-            ],
-            'it_data_systems' => [
-                'label' => 'IT & Data Management Systems',
-                'thai' => 'ระบบข้อมูลและเทคโนโลยี',
-                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'it_data_systems',
-            ],
-            'communication_pr' => [
-                'label' => 'Communication & Public Relations',
-                'thai' => 'สื่อสารและประชาสัมพันธ์',
-                'match' => fn ($row): bool => (string) data_get($row->skill, 'key') === 'communication_pr',
-            ],
-        ]);
-        $radarRawRows = $radarAxes
-            ->map(function (array $axis, string $key) use ($uniqueRows, $positionGroupOrder, $positionGroupTotals) {
-                $rows = $uniqueRows->filter($axis['match']);
+        $radarSkillKeyFor = static function (string $skillRole): string {
+            return match ($skillRole) {
+                'Scientific Research' => 'scientific_research',
+                'Project Management & Coordination' => 'project_management',
+                'IT & Data Management Systems' => 'it_data_systems',
+                'Communication & Public Relations' => 'communication_pr',
+                'Operations & Administrative Support' => 'operations_admin',
+                default => Str::slug($skillRole, '_'),
+            };
+        };
+        $radarWorkforceTotal = (int) $fteCapacitySkillRows->sum(fn ($row) => (int) ($row->workforce_people ?? 0));
+        $radarRawRows = $fteCapacitySkillRows
+            ->map(function ($capacityRow) use ($currentSituationRows, $positionGroupOrder, $positionGroupTotals, $radarSkillKeyFor, $radarWorkforceTotal) {
+                $skillRole = (string) ($capacityRow->skill_role ?? '');
+                $rows = $currentSituationRows->filter(fn ($row) => (string) ($row->current_situation_skill ?? '') === $skillRole);
                 $peopleByRole = $rows
                     ->groupBy(fn ($row) => (string) ($row->user_position_group ?? 'ไม่ระบุตำแหน่ง'))
                     ->map(fn (Collection $groupRows, string $positionGroup) => (object) [
                         'position_group' => $positionGroup,
-                        'people' => (int) $groupRows->pluck('person_key')->unique()->count(),
+                        'people' => (int) $groupRows->pluck('user_id')->filter()->unique()->count(),
                         'total_people' => (int) ($positionGroupTotals[$positionGroup] ?? 0),
                         'tasks' => (int) $groupRows->count(),
                     ])
@@ -6636,22 +6623,22 @@ class OutputController extends Controller
                     ->values();
 
                 return (object) [
-                    'key' => $key,
-                    'label' => $axis['label'],
-                    'thai' => $axis['thai'],
-                    'hours' => round((float) $rows->sum(fn ($row) => (float) ($row->hours ?? 0)), 1),
-                    'tasks' => (int) $rows->count(),
-                    'people' => (int) $rows->pluck('person_key')->unique()->count(),
+                    'key' => $radarSkillKeyFor($skillRole),
+                    'label' => $skillRole,
+                    'thai' => $skillRole,
+                    'hours' => round((float) ($capacityRow->time_spending_pct ?? 0), 1),
+                    'tasks' => (int) ($capacityRow->people ?? 0),
+                    'people' => (int) ($capacityRow->workforce_people ?? 0),
+                    'position_pct' => round((float) ($capacityRow->pct ?? 0), 1),
+                    'workforce_pct' => $radarWorkforceTotal > 0
+                        ? round(((int) ($capacityRow->workforce_people ?? 0) / $radarWorkforceTotal) * 100, 1)
+                        : 0.0,
                     'project_count' => (int) $rows->where('source', 'research')->pluck('container_id')->unique()->count(),
                     'backoffice_count' => (int) $rows->where('source', 'backoffice')->pluck('container_id')->unique()->count(),
                     'role_breakdown' => $peopleByRole,
                 ];
             })
             ->values();
-        $radarMaxHours = max(1.0, (float) $radarRawRows->max('hours'));
-        $radarMaxTasks = max(1, (int) $radarRawRows->max('tasks'));
-        $radarMaxPeople = max(1, (int) $radarRawRows->max('people'));
-        $radarScale = 90;
         $radarRows = $radarRawRows
             ->map(fn ($row) => (object) [
                 'key' => $row->key,
@@ -6663,9 +6650,9 @@ class OutputController extends Controller
                 'project_count' => $row->project_count,
                 'backoffice_count' => $row->backoffice_count,
                 'role_breakdown' => $row->role_breakdown,
-                'hours_pct' => round(((float) $row->hours / $radarMaxHours) * $radarScale, 1),
-                'tasks_pct' => round(((int) $row->tasks / $radarMaxTasks) * $radarScale, 1),
-                'people_pct' => round(((int) $row->people / $radarMaxPeople) * $radarScale, 1),
+                'hours_pct' => round((float) $row->hours, 1),
+                'tasks_pct' => round((float) $row->position_pct, 1),
+                'people_pct' => round((float) $row->workforce_pct, 1),
             ])
             ->values();
         $radarNonZeroRows = $radarRows
@@ -6675,6 +6662,8 @@ class OutputController extends Controller
         $topHourAxis = $radarNonZeroRows->sortByDesc('hours_pct')->first();
         $topPeopleAxis = $radarNonZeroRows->sortByDesc('people_pct')->first();
         $secondaryTaskAxis = $radarNonZeroRows->sortByDesc('tasks_pct')->skip(1)->first();
+        $secondaryHourAxis = $radarNonZeroRows->sortByDesc('hours_pct')->skip(1)->first();
+        $secondaryPeopleAxis = $radarNonZeroRows->sortByDesc('people_pct')->skip(1)->first();
         $radarLowRows = $radarNonZeroRows
             ->sortBy('tasks_pct')
             ->take(2)
@@ -6682,16 +6671,39 @@ class OutputController extends Controller
         $fteRadarChartInsight = null;
         if ($radarNonZeroRows->isNotEmpty()) {
             $lowAxisText = $radarLowRows->pluck('thai')->implode(' และ ');
+            $positionTopLabel = (string) ($topTaskAxis->label ?? '-');
+            $timeTopLabel = (string) ($topHourAxis->label ?? '-');
+            $workforceTopLabel = (string) ($topPeopleAxis->label ?? '-');
+            $positionTopPct = number_format((float) ($topTaskAxis->tasks_pct ?? 0), 1);
+            $timeTopPct = number_format((float) ($topHourAxis->hours_pct ?? 0), 1);
+            $workforceTopPct = number_format((float) ($topPeopleAxis->people_pct ?? 0), 1);
+            $secondaryLabel = (string) ($secondaryTaskAxis->label ?? 'กลุ่มทักษะบริหารและประสานงาน');
+            $positionGap = number_format(max(0, (float) ($topTaskAxis->tasks_pct ?? 0) - (float) ($secondaryTaskAxis->tasks_pct ?? 0)), 1);
+            $timeGap = number_format(max(0, (float) ($topHourAxis->hours_pct ?? 0) - (float) ($secondaryHourAxis->hours_pct ?? 0)), 1);
+            $workforceGap = number_format(max(0, (float) ($topPeopleAxis->people_pct ?? 0) - (float) ($secondaryPeopleAxis->people_pct ?? 0)), 1);
+            $lowestAxis = $radarNonZeroRows->sortBy('people_pct')->first() ?: $radarLowRows->first();
+            $lowestLabel = (string) ($lowestAxis->label ?? ($lowAxisText !== '' ? $lowAxisText : 'กลุ่มทักษะรอง'));
+            $lowestWorkforcePct = number_format((float) ($lowestAxis->people_pct ?? 0), 1);
+            $allTopSame = $positionTopLabel === $timeTopLabel && $timeTopLabel === $workforceTopLabel;
+            $alignmentText = $allTopSame
+                ? 'เพราะสามตัวชี้วัดชี้ไปที่กลุ่มทักษะเดียวกัน จึงอ่านได้ว่า Scientific Research ไม่ได้เด่นเฉพาะในผังตำแหน่ง แต่เด่นในเวลางานจริงและจำนวนคนด้วย'
+                : 'เพราะสามตัวชี้วัดไม่ได้ชี้ไปที่กลุ่มทักษะเดียวกันทั้งหมด จึงควรอ่านว่าโครงสร้างตำแหน่ง เวลางานจริง และจำนวนคนยังเล่าเรื่องคนละมุม';
             $fteRadarChartInsight = sprintf(
-                'รูปทรงกราฟสะท้อนว่า capacity ของหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพยังวางน้ำหนักไว้ที่การผลิตหลักฐานและงานวิชาการเป็นหลัก โดยภาระงานสูงสุดอยู่ที่ %s (%s%%), เวลาทำงานสูงสุดอยู่ที่ %s (%s%%) และกำลังคนสูงสุดอยู่ที่ %s (%s%%). แกนรองที่ตามมาคือ %s ซึ่งเป็นงานที่ช่วยประคองให้โครงการวิจัยเดินได้จริง ตั้งแต่ประสานผู้เกี่ยวข้อง จัดการเอกสาร กำกับเวลา ไปจนถึงส่งต่อผลลัพธ์ให้ใช้ประโยชน์เชิงนโยบาย. ขณะเดียวกัน แกนที่ยังมีสัดส่วนต่ำคือ %s หากสองแกนนี้เป็นทักษะยุทธศาสตร์ของหน่วย ควรหาแผนเพิ่มงานที่มองเห็นได้ชัดขึ้น หรือกระจายคน/บทบาทให้เกิด capacity ด้านระบบข้อมูล เทคโนโลยี งานปฏิบัติการ และธุรการสนับสนุน ไม่ให้เป็นเพียงงานแฝงในงานวิจัยหรือการประสานโครงการ.',
-                (string) ($topTaskAxis->label ?? '-'),
-                number_format((float) ($topTaskAxis->tasks_pct ?? 0), 1),
-                (string) ($topHourAxis->label ?? '-'),
-                number_format((float) ($topHourAxis->hours_pct ?? 0), 1),
-                (string) ($topPeopleAxis->label ?? '-'),
-                number_format((float) ($topPeopleAxis->people_pct ?? 0), 1),
-                (string) ($secondaryTaskAxis->label ?? 'แกนบริหารและประสานงาน'),
-                $lowAxisText !== '' ? $lowAxisText : 'ยังไม่พบแกนรอง'
+                'ภาพนี้บอกว่า Scientific Research ยังเป็น “แรงโน้มถ่วง” ของกำลังคนในหน่วยอย่างชัดเจน: Position หนาแน่นที่สุดที่ %s (%s%%), Time Spending สูงสุดที่ %s (%s%%) และ Workforce มากที่สุดที่ %s (%s%%). %s. เมื่อเทียบกับกลุ่มทักษะที่ตามมาอย่าง %s ช่องว่างอยู่ที่ประมาณ %s%% ในมุม Position, %s%% ในมุม Time Spending และ %s%% ในมุม Workforce จึงไม่ใช่แค่กลุ่มทักษะหลักนำอยู่เล็กน้อย แต่เป็นกลุ่มงานที่รับน้ำหนักของหน่วยค่อนข้างมาก. จุดนี้เป็นทั้งข้อดีและสัญญาณเตือน: หน่วยมีฐานวิชาการแข็ง แต่ถ้า portfolio โตขึ้น งานข้อมูล การสื่อสาร และงานสนับสนุนอาจถูกดึงกลับไปพึ่งคนกลุ่มเดิมมากขึ้น. ส่วน %s ควรถูกมองเป็นกลไกที่ทำให้งานวิจัยเดินได้จริง ไม่ใช่งานธุรการธรรมดา ขณะที่ %s มี Workforce เพียง %s%% เมื่อเทียบกับ Scientific Research จึงควรถามต่อว่าเป็น skill ที่ยังขาดจริง หรือเป็นงานที่เกิดขึ้นแล้วแต่ถูกบันทึกแฝงใน Scientific / Project Management. ถ้าหน่วยต้องการขยับจากการผลิตหลักฐานไปสู่การใช้หลักฐานเชิงนโยบาย IT/Data, Communication และ Operations ควรมีเจ้าภาพ เวลา และตัวชี้วัดที่มองเห็นได้ชัดกว่านี้',
+                $positionTopLabel,
+                $positionTopPct,
+                $timeTopLabel,
+                $timeTopPct,
+                $workforceTopLabel,
+                $workforceTopPct,
+                $alignmentText,
+                $secondaryLabel,
+                $positionGap,
+                $timeGap,
+                $workforceGap,
+                $secondaryLabel,
+                $lowestLabel,
+                $lowestWorkforcePct
             );
         }
         $positionBreakdownText = static function ($roleBreakdown, ?int $limit = null): string {
@@ -6734,15 +6746,15 @@ class OutputController extends Controller
             $tasksPct = number_format((float) ($row->tasks_pct ?? 0), 1);
             $peoplePct = number_format((float) ($row->people_pct ?? 0), 1);
             $hoursPct = number_format((float) ($row->hours_pct ?? 0), 1);
-            $trendText = "รูปทรงกราฟอยู่ที่ภาระงาน {$tasksPct}%, เวลาทำงาน {$hoursPct}% และกำลังคน {$peoplePct}%";
+            $profileText = "มี Position {$tasks} ตำแหน่ง ({$tasksPct}%), Workforce {$people} คน ({$peoplePct}%) และใช้เวลา {$hours}% ของ Time Spending รวม";
 
             return match ((string) ($row->key ?? '')) {
-                'scientific_research' => "Scientific Research เป็นแกนที่ดันกราฟออกมากที่สุด {$trendText} แปลว่างานหลักของหน่วยยังอยู่ที่งานวิจัยและวิชาการ โดยมีหลายตำแหน่งเข้ามาร่วมขับเคลื่อน เช่น {$breakdown}.",
-                'project_management' => "Project Management & Coordination เป็นแกนรองที่ตาม Scientific Research ชัดเจน {$trendText} แนวโน้มนี้สะท้อนว่างานบริหารโครงการและประสานงานเป็นฐานสำคัญที่ทำให้งานวิจัยเดินต่อได้ โดยมี {$breakdown}.",
-                'it_data_systems' => "IT & Data Management Systems ยังเป็นแกนขนาดเล็กกว่าแกนวิจัยและบริหารโครงการ {$trendText} จึงควรดูต่อว่าระบบข้อมูลเป็น capacity หลักแล้วหรือยัง หรือยังถูกบันทึกแฝงอยู่ในงานวิจัย/งานประสาน.",
-                'communication_pr' => "Communication & Public Relations อยู่ในกลุ่มแกนรองของกราฟ {$trendText} แนวโน้มนี้บอกว่างานสื่อสารมีบทบาทต่อการเผยแพร่และต่อยอดงานวิจัย แต่ยังไม่ได้ขยายเท่าแกนวิจัยและบริหารโครงการ โดยมี {$breakdown}.",
-                'operations_admin' => "Operations & Administrative Support เป็นแกนที่ยังต่ำในรูปทรงกราฟ {$trendText} ไม่ได้แปลว่าไม่สำคัญ แต่อาจสะท้อนว่างานสนับสนุนจำนวนหนึ่งถูกบันทึกอยู่ในหมวดประสานงานหรือวิชาการ.",
-                default => "{$row->label}: {$trendText}.",
+                'scientific_research' => "Scientific Research เป็นฐานความสามารถหลักของหน่วย: {$profileText}. ภาพนี้บอกว่างานวิชาการไม่ได้เป็นเพียงบทบาทของนักวิจัยบางตำแหน่ง แต่เป็นแรงงานรวมของหลายสายงาน เช่น {$breakdown} จึงควรใช้แกนนี้เป็นตัวตั้งในการวางแผนคุณภาพหลักฐานและการส่งต่อผลงานสู่การใช้ประโยชน์.",
+                'project_management' => "Project Management & Coordination คือกลไกที่ทำให้งานวิจัยจำนวนมากเดินเป็นระบบ: {$profileText}. ถ้าแกนนี้สูงใกล้กับงานวิชาการ แปลว่าหน่วยใช้พลังไม่น้อยไปกับการประสานทุน IRB เวลา เอกสาร และ stakeholder โดยมี {$breakdown} เป็นกำลังหลัก จุดอ่านสำคัญคือควรทำให้บทบาทบริหารโครงการมองเห็นเป็น capacity จริง ไม่ใช่งานแทรกของทุกคน.",
+                'it_data_systems' => "IT & Data Management Systems เป็นตัวชี้วัดความพร้อมของหน่วยในการทำงานแบบ data-driven: {$profileText}. ถ้าสัดส่วนยังบางเมื่อเทียบกับงานวิจัย แปลว่าโครงสร้างข้อมูลอาจยังพึ่งพาคนเฉพาะจุดหรือถูกซ่อนอยู่ในงานโครงการ ควรถามต่อว่าระบบข้อมูล ฐานข้อมูล dashboard และ technical support ถูกจัดเป็นกำลังหลักพอสำหรับ portfolio ที่ใหญ่ขึ้นหรือยัง.",
+                'communication_pr' => "Communication & Public Relations เป็นแกนที่บอกว่างานวิจัยถูกแปลงเป็นการสื่อสารได้มากแค่ไหน: {$profileText}. ถ้าแกนนี้ยังเป็นรอง แปลว่าหน่วยมีโอกาสเพิ่มแรงส่งจากหลักฐานไปสู่ผู้ใช้จริง ไม่ว่าจะเป็น policy brief, เวที stakeholder, สื่อความรู้ หรือการเล่า impact โดยมี {$breakdown} เป็นฐานคนที่เกี่ยวข้อง.",
+                'operations_admin' => "Operations & Administrative Support คือชั้นงานที่ทำให้ระบบไม่สะดุด: {$profileText}. หากตัวเลขดูต่ำ ไม่ควรอ่านว่าไม่สำคัญทันที แต่อาจแปลว่างานเอกสาร การจัดประชุม HR และงานปฏิบัติการจำนวนหนึ่งถูกบันทึกปนอยู่ในงานประสานหรือวิชาการ จุดที่ควรทำต่อคือแยกบทบาทสนับสนุนให้ชัด เพื่อเห็นต้นทุนเวลาจริงของการขับเคลื่อนหน่วย.",
+                default => "{$row->label} มีรูปทรงกำลังคนเฉพาะตัว: {$profileText}. ควรอ่านร่วมกับตารางด้านล่างเพื่อดูว่าความต่างระหว่างตำแหน่ง คนจริง และเวลาทำงานสะท้อนช่องว่าง capacity หรือเพียงรูปแบบการบันทึกภาระงาน.",
             };
         };
         $fteSkillInsights = collect();
@@ -6762,15 +6774,15 @@ class OutputController extends Controller
             ->values();
         if ($unmentionedRadarRows->isNotEmpty()) {
             $fteSkillInsights->push(
-                'ส่วนแกนที่ยังไม่ได้ถูกหยิบมาเล่าข้างต้นคือ ' .
+                'แกนที่ยังไม่เด่นเท่ากลุ่มหลักคือ ' .
                 $unmentionedRadarRows->pluck('label')->implode(' และ ') .
-                ' ซึ่งยังมีสัดส่วนต่ำเมื่อเทียบกับแกนหลัก หากเป็นทักษะยุทธศาสตร์ควรหาแผนเพิ่มงานหรือกระจายคนเพื่อสร้าง capacity'
+                ' จุดนี้ควรใช้เป็นคำถามเชิงจัดการมากกว่าข้อสรุปทันที: หน่วยต้องการให้ทักษะเหล่านี้โตขึ้นเป็น capacity ยุทธศาสตร์ หรือควรเก็บเป็นงานสนับสนุนเฉพาะจุดแล้วออกแบบ workflow ให้ไม่เป็นคอขวด'
             );
         } elseif ($radarLowRows->isNotEmpty()) {
             $fteSkillInsights->push(
-                'ส่วนแกนที่ยังมีสัดส่วนต่ำคือ ' .
+                'แกนที่บางที่สุดในภาพนี้คือ ' .
                 $radarLowRows->pluck('label')->implode(' และ ') .
-                ' หากเป็นทักษะยุทธศาสตร์ควรหาแผนเพิ่มงานหรือกระจายคนเพื่อสร้าง capacity'
+                ' ซึ่งอาจเป็นทั้งช่องว่างกำลังคน หรือเป็นสัญญาณว่างานบางส่วนยังถูกบันทึกอยู่ใต้หมวดอื่น ควรตรวจร่วมกับรายการภาระงานรายคนก่อนตัดสินใจเพิ่มคนหรือปรับบทบาท'
             );
         }
 
@@ -6828,6 +6840,61 @@ class OutputController extends Controller
             ->latest('generated_at')
             ->latest('id')
             ->first();
+    }
+
+    private function ensureFreshProjectNatureInsight(): void
+    {
+        if (! Schema::hasTable('ai_visualization_insights') || ! Schema::hasTable('projects')) {
+            return;
+        }
+
+        $latest = $this->latestAiVisualizationInsight('project_nature', 'global');
+        $projectQuery = Project::query()
+            ->where(function ($query) {
+                $query->whereNotNull('project_name_th')
+                    ->orWhereNotNull('project_name_en');
+            });
+
+        $projectCount = (int) (clone $projectQuery)->count();
+        if ($projectCount <= 0) {
+            return;
+        }
+
+        $latestProjectUpdatedAt = (string) (clone $projectQuery)->max('updated_at');
+        $outputCount = Schema::hasTable('outputs')
+            ? (int) Output::query()
+                ->where(function ($query) {
+                    $query->whereNotNull('title')
+                        ->orWhereNotNull('project_output');
+                })
+                ->count()
+            : 0;
+
+        $snapshot = (array) ($latest?->input_snapshot ?? []);
+        $cachedProjects = collect(data_get($snapshot, 'projects', []));
+        $cachedProjectCount = (int) data_get($snapshot, 'project_count', $cachedProjects->count());
+        $hasCachedOutputCount = array_key_exists('output_count', $snapshot);
+        $cachedOutputCount = (int) data_get($snapshot, 'output_count', 0);
+        $cachedLatestProjectUpdatedAt = (string) data_get($snapshot, 'latest_updated_at', '');
+
+        $isStale = ! $latest
+            || $cachedProjectCount !== $projectCount
+            || ($hasCachedOutputCount && $cachedOutputCount !== $outputCount)
+            || ($latestProjectUpdatedAt !== '' && $cachedLatestProjectUpdatedAt !== $latestProjectUpdatedAt);
+
+        if (! $isStale || ! Cache::add('ai_visualization_project_nature_lazy_refresh', true, now()->addMinutes(5))) {
+            return;
+        }
+
+        app()->terminating(function () {
+            try {
+                Artisan::call('outputs:generate-visualization-ai-insights');
+            } catch (\Throwable $exception) {
+                report($exception);
+            } finally {
+                Cache::forget('ai_visualization_project_nature_lazy_refresh');
+            }
+        });
     }
 
     private function findAiVisualizationInsight(string $type, string $scopeKey, string $inputHash): ?AiVisualizationInsight

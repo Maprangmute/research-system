@@ -1309,6 +1309,23 @@
             box-shadow: 0 18px 38px rgba(15, 118, 110, .12);
             background: linear-gradient(180deg, #ffffff, #f8fffd);
         }
+        .nature-mobile-policy-reading {
+            display: none;
+        }
+        @media (max-width: 767px), (min-width: 768px) and (max-width: 1279px) and (orientation: portrait) {
+            .nature-mobile-policy-reading {
+                display: block;
+                margin-top: 12px;
+            }
+            .nature-desktop-policy-reading {
+                display: none;
+            }
+            .nature-policy-reading-label {
+                max-width: 100%;
+                white-space: normal;
+                line-height: 1.2;
+            }
+        }
         .section-panel::before {
             content: "";
             position: absolute;
@@ -2217,6 +2234,7 @@
         }
         .fte-radar-card__head {
             display: flex;
+            flex-wrap: wrap;
             align-items: flex-start;
             justify-content: space-between;
             gap: 14px;
@@ -2274,9 +2292,9 @@
         .fte-radar-legend {
             display: flex;
             flex-wrap: wrap;
-            justify-content: flex-end;
+            justify-content: flex-start;
             gap: 10px 16px;
-            max-width: 430px;
+            max-width: none;
             font-size: 12px;
             font-weight: 700;
             color: #0f172a;
@@ -2773,12 +2791,50 @@
             .fte-current-matrix h4 {
                 font-size: 16px;
             }
+            .fte-current-matrix__scroll {
+                width: 100%;
+                max-width: 100%;
+                overflow-x: auto;
+                overflow-y: visible;
+            }
             .fte-current-matrix__table {
-                min-width: 900px;
-                font-size: 12px;
+                width: 100%;
+                min-width: 0;
+                table-layout: fixed;
+                font-size: 11px;
             }
             .fte-current-matrix__table thead th:first-child {
-                width: 210px;
+                width: 118px;
+            }
+            .fte-current-matrix__table th,
+            .fte-current-matrix__table td {
+                padding: 8px 5px;
+            }
+            .fte-current-matrix__table thead th {
+                font-size: 9px;
+                letter-spacing: 0;
+                line-height: 1.15;
+                white-space: normal;
+                text-transform: none;
+            }
+            .fte-current-matrix__skill span {
+                writing-mode: horizontal-tb;
+                transform: none;
+                max-width: 100%;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                font-size: 9px;
+                line-height: 1.15;
+            }
+            .fte-current-matrix__role {
+                max-width: 110px;
+                font-size: 10px;
+                line-height: 1.2;
+            }
+            .fte-current-matrix__table tbody td,
+            .fte-current-matrix__table tfoot td {
+                font-size: 10px;
+                line-height: 1.1;
             }
         }
         .fte-capacity-rank {
@@ -3542,6 +3598,18 @@
             }
         }
         @media (min-width: 768px) and (max-width: 1279px) and (orientation: portrait) {
+            .fte-capacity-card[data-fte-capacity-left] {
+                order: 2;
+            }
+            .fte-capacity-sticky-col {
+                order: 1;
+                width: 100%;
+                max-width: 100%;
+            }
+            .fte-capacity-sticky-col .fte-capacity-card {
+                width: 100%;
+                max-width: 100%;
+            }
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table-wrap {
                 display: none;
             }
@@ -4433,6 +4501,15 @@
             .nature-layout {
                 grid-template-columns: minmax(0, 1fr) !important;
             }
+            .nature-mobile-policy-reading {
+                margin-top: 18px;
+                padding: 22px !important;
+                scroll-margin-top: 110px;
+            }
+            .nature-mobile-policy-reading .text-xl {
+                font-size: 20px !important;
+                line-height: 1.45 !important;
+            }
             .nature-sticky {
                 position: static !important;
                 top: auto !important;
@@ -4444,20 +4521,20 @@
                 min-height: 520px !important;
                 height: auto !important;
                 aspect-ratio: 1 !important;
-                overflow: visible !important;
+                overflow: hidden !important;
                 border-radius: 32px !important;
                 background: linear-gradient(135deg, #ffffff, #f8fafc) !important;
                 padding: 16px !important;
             }
             .nature-callout-layer {
-                display: block;
+                display: none !important;
                 position: absolute;
                 inset: 0;
                 z-index: 120;
                 pointer-events: none;
             }
             .nature-map-callout {
-                display: block;
+                display: none !important;
                 position: absolute;
                 z-index: 121;
                 width: 124px;
@@ -4584,7 +4661,27 @@
                 box-shadow: 0 10px 24px rgba(15, 23, 42, .10) !important;
             }
             .nature-bubble__inner {
-                display: none !important;
+                display: grid !important;
+                width: 100%;
+                max-width: 100%;
+                place-items: center;
+                gap: 2px;
+                padding: 0 8px !important;
+                color: inherit !important;
+                text-align: center;
+            }
+            .nature-bubble__inner > div:first-child {
+                max-width: 100%;
+                overflow-wrap: anywhere;
+                font-size: clamp(11px, 1.55vw, 15px) !important;
+                font-weight: 900 !important;
+                line-height: 1.08 !important;
+            }
+            .nature-bubble__inner > div + div {
+                margin-top: 2px !important;
+                font-size: clamp(9px, 1.25vw, 11px) !important;
+                font-weight: 800 !important;
+                line-height: 1 !important;
             }
             .nature-map .nature-bubble[data-nature-bubble="aging"],
             .nature-map .nature-bubble[data-nature-bubble="aging"].is-active,
@@ -5154,6 +5251,86 @@
                 gap: 12px;
                 text-align: right;
             }
+            .fte-capacity-sticky-col .fte-capacity-table-wrap {
+                overflow-x: auto;
+                border: 1px solid #e2e8f0;
+                border-radius: 14px;
+                background: #ffffff;
+                width: 100%;
+                max-width: 100%;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table,
+            .fte-capacity-sticky-col .fte-capacity-table thead,
+            .fte-capacity-sticky-col .fte-capacity-table tbody,
+            .fte-capacity-sticky-col .fte-capacity-table tfoot,
+            .fte-capacity-sticky-col .fte-capacity-table tr,
+            .fte-capacity-sticky-col .fte-capacity-table th,
+            .fte-capacity-sticky-col .fte-capacity-table td {
+                display: revert !important;
+                width: auto !important;
+                min-width: 0 !important;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table {
+                display: table !important;
+                width: 100% !important;
+                min-width: 100% !important;
+                table-layout: fixed;
+                border-collapse: separate;
+                border-spacing: 0;
+                font-size: 12px;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table thead {
+                display: table-header-group !important;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table tbody {
+                display: table-row-group !important;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table tfoot {
+                display: table-footer-group !important;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table tr {
+                display: table-row !important;
+                border: 0;
+                border-radius: 0;
+                background: transparent;
+                padding: 0;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table th,
+            .fte-capacity-sticky-col .fte-capacity-table td {
+                display: table-cell !important;
+                padding: 10px 8px !important;
+                border-bottom: 1px solid #e5e7eb;
+                background: #ffffff;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table tbody tr:nth-child(even) td {
+                background: #f8fafc;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table tfoot tr {
+                display: table-row !important;
+                border: 0;
+                background: transparent;
+                padding: 0;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table tfoot td {
+                background: #f1f5f9;
+                font-weight: 800;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table td.fte-capacity-table__num,
+            .fte-capacity-sticky-col .fte-capacity-table tfoot td.fte-capacity-table__num {
+                display: table-cell !important;
+                text-align: center;
+                border-top: 0;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table td.fte-capacity-table__num::before,
+            .fte-capacity-sticky-col .fte-capacity-table tfoot td.fte-capacity-table__num::before {
+                content: none !important;
+            }
+            .fte-capacity-sticky-col .fte-capacity-table tbody td:first-child {
+                width: auto;
+            }
+            .fte-capacity-sticky-col .fte-capacity-position-cards {
+                display: none !important;
+            }
             .fte-capacity-table-note {
                 font-size: 11px;
             }
@@ -5520,19 +5697,37 @@
             }
         }
         @media (max-width: 767px) {
+            .fte-capacity-card[data-fte-capacity-left] {
+                order: 2;
+            }
+            .fte-capacity-sticky-col {
+                order: 1;
+                width: 100%;
+                max-width: 100%;
+            }
+            .fte-capacity-sticky-col .fte-capacity-card {
+                width: 100%;
+                max-width: 100%;
+            }
             .clinical-led-chart-scroll {
-                height: 340px !important;
-                margin-left: -4px;
-                margin-right: -4px;
-                overflow-x: auto !important;
-                overflow-y: hidden !important;
-                padding: 0 4px 8px;
-                -webkit-overflow-scrolling: touch;
+                height: 380px !important;
+                margin-left: 0;
+                margin-right: 0;
+                overflow-x: visible !important;
+                overflow-y: visible !important;
+                padding: 0;
             }
             .clinical-led-chart-inner {
-                width: auto !important;
-                min-width: 760px !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
                 height: 100%;
+            }
+            .clinical-led-chart-scroll canvas {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100% !important;
+                display: block !important;
             }
         }
         @media (min-width: 768px) and (max-width: 1279px) {
@@ -5876,6 +6071,66 @@
             }
 
             .viz-page .doctor-role-floating {
+                display: none !important;
+            }
+
+            .viz-page .nature-sticky {
+                overflow: hidden !important;
+            }
+
+            .viz-page .nature-map {
+                width: min(100%, 620px) !important;
+                max-width: 620px !important;
+                min-height: 0 !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+                overflow: hidden !important;
+            }
+
+            .viz-page .nature-map .nature-bubble::before,
+            .viz-page .nature-map .nature-bubble__callout,
+            .viz-page .nature-map .nature-callout-layer,
+            .viz-page .nature-map .nature-map-callout {
+                display: none !important;
+            }
+
+            .viz-page .nature-map .nature-bubble__inner {
+                display: grid !important;
+                width: 100%;
+                max-width: 100%;
+                place-items: center;
+                gap: 2px;
+                padding: 0 8px !important;
+                color: inherit !important;
+                text-align: center;
+            }
+
+            .viz-page .nature-map .nature-bubble__inner > div:first-child {
+                max-width: 100%;
+                overflow-wrap: anywhere;
+                font-size: clamp(11px, 1.55vw, 15px) !important;
+                font-weight: 900 !important;
+                line-height: 1.08 !important;
+            }
+
+            .viz-page .nature-map .nature-bubble__inner > div + div {
+                margin-top: 2px !important;
+                font-size: clamp(9px, 1.25vw, 11px) !important;
+                font-weight: 800 !important;
+                line-height: 1 !important;
+            }
+
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="device_innovation"] .nature-bubble__inner,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="data_rwe"] .nature-bubble__inner,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="ai_digital"] .nature-bubble__inner,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="drug_rdu"] .nature-bubble__inner {
+                padding: 0 4px !important;
+            }
+
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="device_innovation"] .nature-bubble__inner > div + div,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="data_rwe"] .nature-bubble__inner > div + div,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="ai_digital"] .nature-bubble__inner > div + div,
+            .viz-page .nature-map .nature-bubble[data-nature-bubble="drug_rdu"] .nature-bubble__inner > div + div {
                 display: none !important;
             }
         }
@@ -6419,9 +6674,6 @@
                                     @if (!empty($policyFrameworkSummary->note))
                                         <div class="mt-3 rounded-xl bg-white/65 px-3 py-2 text-xs leading-relaxed text-slate-500">{{ $policyFrameworkSummary->note }}</div>
                                     @endif
-                                    <div class="mt-3 rounded-xl bg-white/65 px-3 py-2 text-xs leading-relaxed text-slate-500">
-                                        {{ $analysisInsightRemark }}
-                                    </div>
                                 </div>
                             @endif
                         </div>
@@ -6600,9 +6852,6 @@
                                                     {{ $expertClinicalInterpretation }}
                                                 </div>
                                             </div>
-                                            <div class="rounded-xl bg-white/70 px-3 py-3 text-xs leading-relaxed text-slate-500">
-                                                {{ $analysisInsightRemark }}
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -6748,9 +6997,6 @@
                                                         {{ $incompleteCurrentYearNote }}
                                                     </div>
                                                 @endif
-                                                <div class="rounded-xl bg-white/70 px-3 py-3 text-xs leading-relaxed text-slate-500">
-                                                    {{ $analysisInsightRemark }}
-                                                </div>
                                             </div>
                                         </div>
                                     @endif
@@ -6800,9 +7046,6 @@
                                 </div>
                                 <div class="mt-3 rounded-xl bg-slate-50 px-4 py-4">
                                     <div class="whitespace-pre-line text-sm leading-relaxed text-slate-700" data-theme-gap-ai-field="paragraph">{{ $policyImpactThemeNarrativeParagraph }}</div>
-                                </div>
-                                <div class="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500">
-                                    {{ $analysisInsightRemark }}
                                 </div>
                             </div>
                     </div>
@@ -6963,9 +7206,6 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                     {{ $incompleteCurrentYearNote }}
                                                 </div>
                                             @endif
-                                            <div class="rounded-xl bg-white/70 px-3 py-3 text-xs leading-relaxed text-slate-500">
-                                                {{ $analysisInsightRemark }}
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -7076,6 +7316,54 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             ->values()
                             ->all();
                     };
+                    $fallbackNatureThemeByKey = $natureThemes->keyBy(fn ($theme) => (string) data_get($theme, 'key'));
+                    $aiNatureThemeRows = $aiSectionCards
+                        ->map(function ($card, $index) use ($aiNatureText, $aiNatureList, $aiNatureClusterByKey, $natureAiKeyFor, $fallbackNatureThemeByKey) {
+                            $rawKey = trim((string) data_get($card, 'theme_key', ''));
+                            $label = $aiNatureText(data_get($card, 'label')) ?: $aiNatureText(data_get($card, 'headline')) ?: ('AI cluster ' . ($index + 1));
+                            $key = $rawKey !== '' ? Str::slug($rawKey, '_') : '';
+                            if ($key === '') {
+                                $key = $natureAiKeyFor($label) ?: ('ai_cluster_' . ($index + 1));
+                            }
+                            $cluster = $aiNatureClusterByKey->get($key, []);
+                            $fallbackTheme = $fallbackNatureThemeByKey->get($key, []);
+                            $projectCount = (int) (data_get($card, 'project_count') ?: data_get($cluster, 'project_count') ?: data_get($fallbackTheme, 'count') ?: 0);
+                            $outputCount = (int) (data_get($card, 'output_count') ?: data_get($cluster, 'output_count') ?: data_get($fallbackTheme, 'output_count') ?: 0);
+                            $keywords = $aiNatureList(data_get($card, 'keywords'));
+                            if (empty($keywords)) {
+                                $keywords = collect(data_get($fallbackTheme, 'keywords', []))->take(5)->values()->all();
+                            }
+
+                            return [
+                                'key' => $key,
+                                'label' => $label,
+                                'short_label' => Str::limit($label, 38, '...'),
+                                'keywords' => $keywords,
+                                'count' => $projectCount,
+                                'share' => 0,
+                                'output_count' => $outputCount,
+                                'work_done' => $aiNatureText(data_get($card, 'work_done')),
+                                'reading' => $aiNatureText(data_get($card, 'reading')),
+                                'output_direction' => $aiNatureText(data_get($card, 'output_direction')),
+                                'next_step' => $aiNatureText(data_get($card, 'next_step')),
+                                'evidence_note' => $aiNatureText(data_get($card, 'evidence_note')),
+                            ];
+                        })
+                        ->filter(fn ($theme) => trim((string) data_get($theme, 'label')) !== '')
+                        ->sortByDesc(fn ($theme) => (int) data_get($theme, 'count', 0))
+                        ->values();
+                    if ($aiNatureThemeRows->isNotEmpty()) {
+                        $aiNatureTotal = max(1, (int) $aiNatureThemeRows->sum('count'));
+                        $natureThemes = $aiNatureThemeRows
+                            ->map(function ($theme) use ($aiNatureTotal) {
+                                $theme['share'] = round(((int) data_get($theme, 'count', 0) / $aiNatureTotal) * 100, 1);
+                                return $theme;
+                            })
+                            ->values();
+                        $natureTotal = (int) data_get($nature, 'project_total', 0);
+                        $topNatureThemes = $natureThemes->take(3);
+                        $maxNatureCount = max(1, (int) $natureThemes->max('count'));
+                    }
                     $natureBubbleLayout = [
                         'aging' => ['x' => 31, 'y' => 50, 'r' => 25, 'bg' => '#bae6fd', 'border' => '#38bdf8', 'text' => '#0c4a6e'],
                         'hta' => ['x' => 67, 'y' => 50, 'r' => 25, 'bg' => '#fed7aa', 'border' => '#fb923c', 'text' => '#7c2d12'],
@@ -7085,6 +7373,31 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         'ai_digital' => ['x' => 63, 'y' => 30, 'r' => 8, 'bg' => '#ddd6fe', 'border' => '#a78bfa', 'text' => '#4c1d95'],
                         'drug_rdu' => ['x' => 30, 'y' => 73, 'r' => 7.2, 'bg' => '#fecdd3', 'border' => '#fb7185', 'text' => '#881337'],
                     ];
+                    $dynamicNaturePalette = [
+                        ['bg' => '#bae6fd', 'border' => '#38bdf8', 'text' => '#0c4a6e'],
+                        ['bg' => '#fed7aa', 'border' => '#fb923c', 'text' => '#7c2d12'],
+                        ['bg' => '#bbf7d0', 'border' => '#4ade80', 'text' => '#14532d'],
+                        ['bg' => '#fef08a', 'border' => '#eab308', 'text' => '#713f12'],
+                        ['bg' => '#ddd6fe', 'border' => '#a78bfa', 'text' => '#4c1d95'],
+                        ['bg' => '#fecdd3', 'border' => '#fb7185', 'text' => '#881337'],
+                        ['bg' => '#cbd5e1', 'border' => '#94a3b8', 'text' => '#334155'],
+                    ];
+                    foreach ($natureThemes->values() as $index => $theme) {
+                        $key = (string) data_get($theme, 'key');
+                        if ($key === '' || isset($natureBubbleLayout[$key])) {
+                            continue;
+                        }
+                        $count = (int) data_get($theme, 'count', 0);
+                        $ratio = $maxNatureCount > 0 ? max(0.25, min(1, $count / $maxNatureCount)) : 0.35;
+                        $angle = -1.5708 + (($index / max(1, $natureThemes->count())) * 6.28318);
+                        $orbit = $index === 0 ? 0 : 24;
+                        $palette = $dynamicNaturePalette[$index % count($dynamicNaturePalette)];
+                        $natureBubbleLayout[$key] = array_merge($palette, [
+                            'x' => round(50 + cos($angle) * $orbit, 2),
+                            'y' => round(50 + sin($angle) * $orbit, 2),
+                            'r' => round(10 + ($ratio * 12), 2),
+                        ]);
+                    }
                 @endphp
 
                 <div class="nature-shell rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,.05)] md:p-6">
@@ -7113,6 +7426,13 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     </div>
 
                     <div class="nature-layout mt-5 grid gap-6 lg:grid-cols-[minmax(520px,620px)_minmax(0,1fr)] lg:items-stretch">
+                        <div class="nature-mobile-policy-reading rounded-[24px] border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-5 shadow-sm">
+                            <div class="nature-policy-reading-label inline-flex items-center rounded-full border border-teal-200 bg-white px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-teal-800 shadow-sm">
+                                {{ $hasAiProjectOutputInsight ? 'AI policy translation reading' : 'Portfolio reading' }}
+                            </div>
+                            <div class="mt-3 text-xl font-semibold leading-snug text-slate-950">{{ $aiNatureSummary !== '' ? $aiNatureSummary : data_get($nature, 'headline') }}</div>
+                        </div>
+
                         <div class="nature-rail relative lg:self-stretch">
                             <div class="nature-sticky rounded-[26px] border border-slate-200 bg-slate-50 p-4 shadow-sm md:p-5">
                                 <div class="flex items-center justify-between gap-3">
@@ -7157,9 +7477,11 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         </div>
 
                         <div class="grid gap-4">
-                            <div class="rounded-[24px] bg-slate-50 p-5">
-                                <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{{ $hasAiProjectOutputInsight ? 'AI policy translation reading' : 'Portfolio reading' }}</div>
-                                <div class="mt-2 text-xl font-semibold leading-snug text-slate-950">{{ $aiNatureSummary !== '' ? $aiNatureSummary : data_get($nature, 'headline') }}</div>
+                            <div class="nature-desktop-policy-reading rounded-[24px] border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 p-5 shadow-sm">
+                                <div class="nature-policy-reading-label inline-flex items-center rounded-full border border-teal-200 bg-white px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-teal-800 shadow-sm">
+                                    {{ $hasAiProjectOutputInsight ? 'AI policy translation reading' : 'Portfolio reading' }}
+                                </div>
+                                <div class="mt-3 text-xl font-semibold leading-snug text-slate-950">{{ $aiNatureSummary !== '' ? $aiNatureSummary : data_get($nature, 'headline') }}</div>
                             </div>
 
                             @foreach ($natureThemes as $theme)
@@ -7175,7 +7497,10 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     $displayReading = $aiNatureText(data_get($aiCard, 'reading')) ?: data_get($theme, 'reading');
                                     $displayOutputDirection = $aiNatureText(data_get($aiCard, 'output_direction')) ?: data_get($theme, 'output_direction');
                                     $displayNextStep = $aiNatureText(data_get($aiCard, 'next_step')) ?: data_get($theme, 'next_step');
-                                    $displayEvidenceNote = $aiNatureText(data_get($aiCard, 'evidence_note'));
+                                    $displayEvidenceNote = $aiNatureText(data_get($aiCard, 'evidence_note')) ?: data_get($theme, 'evidence_note', '');
+                                    if (Str::startsWith($displayEvidenceNote, ['มี output รองรับ ', 'ยังไม่พบ output ที่ผูกกับกลุ่มนี้ชัดเจน'])) {
+                                        $displayEvidenceNote = '';
+                                    }
                                 @endphp
                                 <div id="nature-card-{{ data_get($theme, 'key') }}" class="nature-card scroll-mt-24 rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm" data-nature-card="{{ data_get($theme, 'key') }}">
                                     <div>
@@ -7189,23 +7514,26 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                         </div>
                                     </div>
 
-                                    <div class="mt-5 grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+                                    <div class="mt-5 grid gap-5 lg:grid-cols-2">
                                         <div class="border-t border-slate-200 pt-4">
                                             <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">สิ่งที่เกิดขึ้น</div>
                                             <div class="mt-2 text-sm leading-relaxed text-slate-700">{{ $displayWorkDone }}</div>
-                                            <div class="mt-3 text-sm leading-relaxed text-slate-500">{{ $displayReading }}</div>
-                                            @if ($displayEvidenceNote !== '')
-                                                <div class="mt-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">{{ $displayEvidenceNote }}</div>
-                                            @endif
                                         </div>
                                         <div class="border-t border-teal-200 pt-4">
                                             <div class="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">ทิศทางของ output</div>
                                             <div class="mt-2 text-sm leading-relaxed text-slate-700">{{ $displayOutputDirection }}</div>
                                         </div>
+                                        <div class="border-t border-slate-200 pt-4 lg:col-span-2">
+                                            <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">มุมอ่านเชิงยุทธศาสตร์</div>
+                                            <div class="mt-2 text-sm leading-relaxed text-slate-600">{{ $displayReading }}</div>
+                                        </div>
                                         <div class="border-t border-amber-200 bg-amber-50/50 px-4 py-3 lg:col-span-2">
                                             <div class="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">การต่อยอด</div>
                                             <div class="mt-2 text-sm leading-relaxed text-slate-700">{{ $displayNextStep }}</div>
                                         </div>
+                                        @if ($displayEvidenceNote !== '')
+                                            <div class="rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500 lg:col-span-2">{{ $displayEvidenceNote }}</div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
@@ -7735,9 +8063,6 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             {{ $incompleteCurrentYearNote }}
                                         </div>
                                     @endif
-                                    <div class="rounded-xl bg-white/70 px-3 py-3 text-xs leading-relaxed text-slate-500">
-                                        {{ $analysisInsightRemark }}
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -9149,9 +9474,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                 if (value.includes('Communication')) return 'Comms/PR';
                 return value;
             };
-            const fteRadarChartLabels = isFteRadarPhoneViewport()
-                ? fteRadarLabels.map(fteRadarShortLabel)
-                : fteRadarLabels;
+            const fteRadarChartLabels = fteRadarLabels;
             const fteRadarFormatNumber = (value, options = {}) => Number(value || 0).toLocaleString(undefined, options);
             const fteRadarMetricMeta = {
                 hours: { label: 'เวลาทำงาน', unit: 'ชั่วโมง', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
@@ -9180,7 +9503,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             <div class="rounded-xl border border-slate-200 bg-white px-3 py-3">
                                 <div class="flex flex-wrap items-start justify-between gap-2">
                                     <div class="min-w-0 text-sm font-semibold leading-snug text-slate-900">${escapeFrameworkHtml(role.position_group || 'ไม่ระบุตำแหน่ง')}</div>
-                                    <div class="shrink-0 text-xs font-semibold text-slate-500">${fteRadarFormatNumber(tasks)} งาน</div>
+                                    <div class="shrink-0 text-xs font-semibold text-slate-500">${fteRadarFormatNumber(tasks)} รายการ FTE</div>
                                 </div>
                                 <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
                                     <div class="h-full rounded-full" style="width:${width}%; background:${metricMeta.color};"></div>
@@ -9200,7 +9523,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             <div class="text-xs font-semibold uppercase tracking-wide" style="color:${metricMeta.color};">ค่าที่เลือกจากกราฟ</div>
                             <div class="mt-2 flex flex-wrap items-end gap-3">
                                 <div class="text-4xl font-semibold leading-none" style="color:${metricMeta.color};">${escapeFrameworkHtml(selectedValue)}</div>
-                                <div class="pb-1 text-sm font-semibold text-slate-700">${escapeFrameworkHtml(metricMeta.unit)} · ${selectedPct.toFixed(1)}% ของแกน radar</div>
+                                <div class="pb-1 text-sm font-semibold text-slate-700">${escapeFrameworkHtml(metricMeta.unit)} · ${selectedPct.toFixed(1)}% ของภาพรวม Skill set capacity</div>
                             </div>
                             <div class="mt-2 text-sm leading-relaxed text-slate-600">แตะคนละสีบน radar เพื่อดูมุมมองเวลาทำงาน ภาระงาน หรือกำลังคนของ skill เดียวกัน</div>
                         </div>
@@ -9219,16 +9542,6 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                 <div class="text-xs font-semibold text-violet-700">กำลังคน</div>
                                 <div class="mt-1 text-2xl font-semibold text-slate-900">${fteRadarFormatNumber(row.people)}</div>
                                 <div class="text-xs text-slate-500">คน · ${Number(row.people_pct || 0).toFixed(1)}%</div>
-                            </div>
-                        </div>
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                                <div class="text-xs font-semibold text-slate-500">โครงการวิจัย</div>
-                                <div class="mt-1 text-xl font-semibold text-slate-900">${fteRadarFormatNumber(row.project_count)}</div>
-                            </div>
-                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                                <div class="text-xs font-semibold text-slate-500">พันธกิจ / Back office</div>
-                                <div class="mt-1 text-xl font-semibold text-slate-900">${fteRadarFormatNumber(row.backoffice_count)}</div>
                             </div>
                         </div>
                         <div>
@@ -9335,13 +9648,13 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             r: {
                                 beginAtZero: true,
                                 min: 0,
-                                max: 90,
+                                max: 100,
                                 ticks: {
-                                    stepSize: 22.5,
+                                    stepSize: 25,
                                     color: '#0f172a',
                                     backdropColor: 'rgba(255, 255, 255, 0.72)',
                                     font: { family: chartFontFamily, weight: '400' },
-                                    callback: (value) => `${Number(value).toFixed(2)}%`
+                                    callback: (value) => `${Number(value).toFixed(0)}%`
                                 },
                                 pointLabels: {
                                     color: '#0f172a',
@@ -9365,7 +9678,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                 callbacks: {
                                     title: (items) => {
                                         const row = fteSkillRadarRows?.[items?.[0]?.dataIndex || 0];
-                                        return row ? [row.label, row.thai] : '';
+                                        return row ? row.label : '';
                                     },
                                     label: (context) => {
                                         const row = fteSkillRadarRows?.[context.dataIndex] || {};
@@ -9374,14 +9687,6 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                         const raw = Number(row?.[metric] || 0);
                                         const value = metric === 'hours' ? raw.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : raw.toLocaleString();
                                         return `${context.dataset.label}: ${Number(context.parsed.r || 0).toFixed(1)}% (${value} ${unit})`;
-                                    },
-                                    afterBody: (items) => {
-                                        const row = fteSkillRadarRows?.[items?.[0]?.dataIndex || 0];
-                                        if (!row) return [];
-                                        return [
-                                            `โครงการวิจัย: ${Number(row.project_count || 0).toLocaleString()} งาน`,
-                                            `พันธกิจ: ${Number(row.backoffice_count || 0).toLocaleString()} งาน`,
-                                        ];
                                     }
                                 }
                             }
