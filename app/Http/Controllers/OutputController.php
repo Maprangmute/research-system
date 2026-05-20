@@ -6319,6 +6319,17 @@ class OutputController extends Controller
         $workforceCountsBySkill = $workforceRows
             ->groupBy(fn ($row) => (string) $row->workforce_skill_role)
             ->map(fn (Collection $rows) => (int) $rows->pluck('user_id')->filter()->unique()->count());
+        $taskRowsForRadar = $rows
+            ->filter(fn ($row) => (int) ($row->user_id ?? 0) > 0)
+            ->map(function ($row) use ($workforceSkillGroupFor) {
+                $row->radar_task_skill_role = $workforceSkillGroupFor($row);
+                return $row;
+            })
+            ->filter(fn ($row) => filled($row->radar_task_skill_role ?? null));
+        $taskCountsBySkill = $taskRowsForRadar
+            ->groupBy(fn ($row) => (string) $row->radar_task_skill_role)
+            ->map(fn (Collection $rows) => (int) $rows->count());
+        $taskTotal = max(1, (int) $taskCountsBySkill->sum());
         $workforceFteBySkill = $workforceRows
             ->groupBy(fn ($row) => (string) $row->workforce_skill_role)
             ->map(fn (Collection $rows) => (float) $rows->sum(fn ($row) => (float) ($row->fte ?? 0)));
@@ -6329,12 +6340,14 @@ class OutputController extends Controller
             ->unique()
             ->count();
         $fteCapacitySkillRows = $fteCapacitySkillRows
-            ->map(function ($row) use ($workforceCountsBySkill, $workforceFteBySkill, $workforceFteTotal) {
+            ->map(function ($row) use ($workforceCountsBySkill, $workforceFteBySkill, $workforceFteTotal, $taskCountsBySkill, $taskTotal) {
                 $skillRole = (string) ($row->skill_role ?? '');
                 $row->workforce_people = (int) ($workforceCountsBySkill[$skillRole] ?? 0);
                 $row->time_spending_pct = $workforceFteTotal > 0
                     ? round(((float) ($workforceFteBySkill[$skillRole] ?? 0) / $workforceFteTotal) * 100, 1)
                     : 0.0;
+                $row->task_count = (int) ($taskCountsBySkill[$skillRole] ?? 0);
+                $row->task_pct = round(((int) ($row->task_count ?? 0) / $taskTotal) * 100, 1);
                 return $row;
             })
             ->values();
@@ -6603,9 +6616,10 @@ class OutputController extends Controller
         };
         $radarWorkforceTotal = (int) $fteCapacitySkillRows->sum(fn ($row) => (int) ($row->workforce_people ?? 0));
         $radarRawRows = $fteCapacitySkillRows
-            ->map(function ($capacityRow) use ($currentSituationRows, $positionGroupOrder, $positionGroupTotals, $radarSkillKeyFor, $radarWorkforceTotal) {
+            ->map(function ($capacityRow) use ($currentSituationRows, $positionGroupOrder, $positionGroupTotals, $radarSkillKeyFor, $radarWorkforceTotal, $taskCountsBySkill, $taskTotal) {
                 $skillRole = (string) ($capacityRow->skill_role ?? '');
                 $rows = $currentSituationRows->filter(fn ($row) => (string) ($row->current_situation_skill ?? '') === $skillRole);
+                $taskCount = (int) ($taskCountsBySkill[$skillRole] ?? 0);
                 $peopleByRole = $rows
                     ->groupBy(fn ($row) => (string) ($row->user_position_group ?? 'ไม่ระบุตำแหน่ง'))
                     ->map(fn (Collection $groupRows, string $positionGroup) => (object) [
@@ -6627,9 +6641,9 @@ class OutputController extends Controller
                     'label' => $skillRole,
                     'thai' => $skillRole,
                     'hours' => round((float) ($capacityRow->time_spending_pct ?? 0), 1),
-                    'tasks' => (int) ($capacityRow->people ?? 0),
+                    'tasks' => $taskCount,
                     'people' => (int) ($capacityRow->workforce_people ?? 0),
-                    'position_pct' => round((float) ($capacityRow->pct ?? 0), 1),
+                    'task_pct' => round(($taskCount / $taskTotal) * 100, 1),
                     'workforce_pct' => $radarWorkforceTotal > 0
                         ? round(((int) ($capacityRow->workforce_people ?? 0) / $radarWorkforceTotal) * 100, 1)
                         : 0.0,
@@ -6651,7 +6665,7 @@ class OutputController extends Controller
                 'backoffice_count' => $row->backoffice_count,
                 'role_breakdown' => $row->role_breakdown,
                 'hours_pct' => round((float) $row->hours, 1),
-                'tasks_pct' => round((float) $row->position_pct, 1),
+                'tasks_pct' => round((float) $row->task_pct, 1),
                 'people_pct' => round((float) $row->workforce_pct, 1),
             ])
             ->values();
@@ -6686,10 +6700,11 @@ class OutputController extends Controller
             $lowestWorkforcePct = number_format((float) ($lowestAxis->people_pct ?? 0), 1);
             $allTopSame = $positionTopLabel === $timeTopLabel && $timeTopLabel === $workforceTopLabel;
             $alignmentText = $allTopSame
-                ? 'เพราะสามตัวชี้วัดชี้ไปที่กลุ่มทักษะเดียวกัน จึงอ่านได้ว่า Scientific Research ไม่ได้เด่นเฉพาะในผังตำแหน่ง แต่เด่นในเวลางานจริงและจำนวนคนด้วย'
-                : 'เพราะสามตัวชี้วัดไม่ได้ชี้ไปที่กลุ่มทักษะเดียวกันทั้งหมด จึงควรอ่านว่าโครงสร้างตำแหน่ง เวลางานจริง และจำนวนคนยังเล่าเรื่องคนละมุม';
+                ? "ทั้งสามตัวชี้วัดชี้ไปที่กลุ่มทักษะเดียวกัน จึงสะท้อนว่า {$positionTopLabel} เป็นฐานกำลังหลักของภาระงาน FTE ทั้งในมิติภาระงาน เวลาทำงาน และกำลังคน"
+                : 'ทั้งสามตัวชี้วัดไม่ได้ชี้ไปที่กลุ่มทักษะเดียวกันทั้งหมด จึงควรอ่านว่า workload, time spending และ workforce กำลังสะท้อน capacity คนละมิติของหน่วย';
             $fteRadarChartInsight = sprintf(
-                'ภาพนี้บอกว่า Scientific Research ยังเป็น “แรงโน้มถ่วง” ของกำลังคนในหน่วยอย่างชัดเจน: Position หนาแน่นที่สุดที่ %s (%s%%), Time Spending สูงสุดที่ %s (%s%%) และ Workforce มากที่สุดที่ %s (%s%%). %s. เมื่อเทียบกับกลุ่มทักษะที่ตามมาอย่าง %s ช่องว่างอยู่ที่ประมาณ %s%% ในมุม Position, %s%% ในมุม Time Spending และ %s%% ในมุม Workforce จึงไม่ใช่แค่กลุ่มทักษะหลักนำอยู่เล็กน้อย แต่เป็นกลุ่มงานที่รับน้ำหนักของหน่วยค่อนข้างมาก. จุดนี้เป็นทั้งข้อดีและสัญญาณเตือน: หน่วยมีฐานวิชาการแข็ง แต่ถ้า portfolio โตขึ้น งานข้อมูล การสื่อสาร และงานสนับสนุนอาจถูกดึงกลับไปพึ่งคนกลุ่มเดิมมากขึ้น. ส่วน %s ควรถูกมองเป็นกลไกที่ทำให้งานวิจัยเดินได้จริง ไม่ใช่งานธุรการธรรมดา ขณะที่ %s มี Workforce เพียง %s%% เมื่อเทียบกับ Scientific Research จึงควรถามต่อว่าเป็น skill ที่ยังขาดจริง หรือเป็นงานที่เกิดขึ้นแล้วแต่ถูกบันทึกแฝงใน Scientific / Project Management. ถ้าหน่วยต้องการขยับจากการผลิตหลักฐานไปสู่การใช้หลักฐานเชิงนโยบาย IT/Data, Communication และ Operations ควรมีเจ้าภาพ เวลา และตัวชี้วัดที่มองเห็นได้ชัดกว่านี้',
+                '%s เป็นฐานกำลังหลักของภาระงาน FTE: ภาระงานสูงสุดอยู่ที่ %s (%s%%), Time Spending สูงสุดอยู่ที่ %s (%s%%) และ Workforce สูงสุดอยู่ที่ %s (%s%%). %s. เมื่อเทียบกับกลุ่มทักษะลำดับถัดไปอย่าง %s ช่องว่างอยู่ที่ประมาณ %s%% ในมุมภาระงาน, %s%% ในมุม Time Spending และ %s%% ในมุม Workforce แปลว่าหน่วยมี capacity และ capability หลักอยู่ที่การผลิตหลักฐานค่อนข้างชัด. จุดแข็งคือฐานวิชาการของหน่วยมีน้ำหนักพอที่จะขับเคลื่อนงานวิจัย แต่หากจำนวนงานหรือโครงการขยายตัว การสื่อสารเชิงนโยบาย การจัดการข้อมูล และงานสนับสนุนระบบจะยิ่งสำคัญต่อการนำหลักฐานไปใช้จริง. ส่วน %s ควรถูกอ่านเป็น research infrastructure ไม่ใช่งานธุรการ เพราะเป็นกลไกที่ทำให้ทุน IRB เอกสาร stakeholder และ timeline ของโครงการเดินต่อได้ ขณะที่ %s มี Workforce เพียง %s%% จึงควรตรวจต่อว่าเป็นช่องว่างกำลังคนจริง หรือเป็นงานที่เกิดขึ้นแล้วแต่ถูกบันทึกปนอยู่ในหมวดอื่น. ดังนั้น IT/Data, Communication และ Operations ควรถูกมองเป็น capability ที่วัดได้ในงานหรือโครงการ ไม่ใช่เพียงงานสนับสนุนปลายน้ำ',
+                $positionTopLabel,
                 $positionTopLabel,
                 $positionTopPct,
                 $timeTopLabel,
@@ -6746,7 +6761,7 @@ class OutputController extends Controller
             $tasksPct = number_format((float) ($row->tasks_pct ?? 0), 1);
             $peoplePct = number_format((float) ($row->people_pct ?? 0), 1);
             $hoursPct = number_format((float) ($row->hours_pct ?? 0), 1);
-            $profileText = "มี Position {$tasks} ตำแหน่ง ({$tasksPct}%), Workforce {$people} คน ({$peoplePct}%) และใช้เวลา {$hours}% ของ Time Spending รวม";
+            $profileText = "มีภาระงาน {$tasks} รายการ ({$tasksPct}%), Workforce {$people} คน ({$peoplePct}%) และใช้เวลา {$hours}% ของ Time Spending รวม";
 
             return match ((string) ($row->key ?? '')) {
                 'scientific_research' => "Scientific Research เป็นฐานความสามารถหลักของหน่วย: {$profileText}. ภาพนี้บอกว่างานวิชาการไม่ได้เป็นเพียงบทบาทของนักวิจัยบางตำแหน่ง แต่เป็นแรงงานรวมของหลายสายงาน เช่น {$breakdown} จึงควรใช้แกนนี้เป็นตัวตั้งในการวางแผนคุณภาพหลักฐานและการส่งต่อผลงานสู่การใช้ประโยชน์.",
@@ -7983,7 +7998,8 @@ class OutputController extends Controller
             ->with(['conferences:id,output_id,name,presentation_type,location,note', 'conferences.presenters:id,output_conference_id,user_id,name']);
 
         $backOfficeQuery = $this->visibleBackOfficeOutputsQuery()
-            ->where('type', 'like', 'EA103%');
+            ->where('type', 'like', 'EA103%')
+            ->with(['conferenceLinks.presenters.user']);
 
         $externalQuery = ExternalOutput::query()
             ->where('type', 'EA103')
@@ -8008,7 +8024,6 @@ class OutputController extends Controller
         $presenterFilter = trim((string) $request->input('presenter', ''));
         $activity = trim((string) $request->input('activity', ''));
         $searchPeople = $this->resolvePaperSearchPeople($search);
-        $presenterPeople = $this->resolvePaperSearchPeople($presenterFilter);
         $baseRows = $baseQuery->get()
             ->flatMap(function (Output $output) {
                 $yearBe = $this->normalizeYearFilter($output->year);
@@ -8023,7 +8038,7 @@ class OutputController extends Controller
                     ]]);
 
                 return $conferences->map(function ($conference) use ($output, $yearBe) {
-                    $presenterNames = method_exists($conference, 'presenterNames') ? $conference->presenterNames() : [];
+                    $presenterNames = $this->normalizePresenterNameList(method_exists($conference, 'presenterNames') ? $conference->presenterNames() : []);
                     $presenterIds = collect($conference->presenters ?? [])->pluck('user_id')->filter()->values();
 
                     return (object) [
@@ -8040,8 +8055,8 @@ class OutputController extends Controller
                         'conference_name' => $conference->name ?: '-',
                         'presentation_type' => $conference->presentation_type ?: '-',
                         'location' => $conference->location ?: '-',
-                        'presenter_name' => implode(', ', $presenterNames) ?: '-',
-                        'presenter_names' => collect($presenterNames)->filter()->values(),
+                        'presenter_name' => $presenterNames->implode(', ') ?: '-',
+                        'presenter_names' => $presenterNames,
                         'presenter_user_ids' => $presenterIds,
                         'displayed_at' => $output->updated_at ?? $output->created_at,
                         'created_at' => $output->created_at,
@@ -8062,7 +8077,7 @@ class OutputController extends Controller
                     ->map(fn ($name) => trim((string) $name))
                     ->filter()
                     ->values();
-                $authors = collect($output->authors ?? [])
+                $authors = collect($output->resolvedAuthors())
                     ->map(function ($author) {
                         if (is_array($author)) {
                             return trim((string) ($author['name'] ?? ''));
@@ -8074,25 +8089,24 @@ class OutputController extends Controller
                     ->values();
                 $fallbackPresenter = $authors->first() ?: '-';
 
-                return collect($output->conferences ?? [])->map(function ($conference, $index) use ($output, $yearBe, $fallbackPresenter, $contributorNames, $taskEntryNames) {
+                return collect($output->resolvedConferences())->map(function ($conference, $index) use ($output, $yearBe, $fallbackPresenter, $contributorNames, $taskEntryNames) {
                     $conference = is_array($conference) ? $conference : [];
                     $presenters = collect($conference['presenters'] ?? [])
                         ->filter(fn ($presenter) => is_array($presenter))
                         ->values();
-                    $presenterNames = $presenters
+                    $presenterNames = $this->normalizePresenterNameList($presenters
                         ->pluck('name')
                         ->map(fn ($name) => trim((string) $name))
                         ->filter()
-                        ->values();
+                        ->values());
                     $presenterIds = $presenters->pluck('user_id')->filter()->values();
                     $presenter = trim((string) (($conference['presenter_name'] ?? $conference['note'] ?? '') ?: ''));
-                    $displayPresenter = $presenterNames->implode(', ') ?: ($presenter !== '' ? $presenter : $fallbackPresenter);
+                    $fallbackPresenterNames = $this->normalizePresenterNameList($presenter !== '' ? [$presenter] : [$fallbackPresenter]);
+                    $displayPresenter = $presenterNames->implode(', ') ?: ($fallbackPresenterNames->implode(', ') ?: '-');
                     $matchNames = $presenterNames
-                        ->merge($presenter !== '' ? [$presenter] : [])
-                        ->merge($contributorNames)
-                        ->merge($contributorNames->isEmpty() ? $taskEntryNames : [])
+                        ->merge($fallbackPresenterNames)
                         ->filter()
-                        ->unique()
+                        ->unique(fn ($name) => $this->normalizePaperAuthorExactName((string) $name))
                         ->values();
 
                     return (object) [
@@ -8136,7 +8150,7 @@ class OutputController extends Controller
                     ]]);
 
                 return $conferences->map(function ($conference) use ($output, $yearBe) {
-                    $presenterNames = method_exists($conference, 'presenterNames') ? $conference->presenterNames() : [];
+                    $presenterNames = $this->normalizePresenterNameList(method_exists($conference, 'presenterNames') ? $conference->presenterNames() : []);
                     $presenterIds = collect($conference->presenters ?? [])->pluck('user_id')->filter()->values();
 
                     return (object) [
@@ -8153,8 +8167,8 @@ class OutputController extends Controller
                         'conference_name' => $conference->name ?: '-',
                         'presentation_type' => $conference->presentation_type ?: '-',
                         'location' => $conference->location ?: '-',
-                        'presenter_name' => implode(', ', $presenterNames) ?: '-',
-                        'presenter_names' => collect($presenterNames)->filter()->values(),
+                        'presenter_name' => $presenterNames->implode(', ') ?: '-',
+                        'presenter_names' => $presenterNames,
                         'presenter_user_ids' => $presenterIds,
                         'displayed_at' => $output->updated_at ?? $output->created_at,
                         'created_at' => $output->created_at,
@@ -8169,7 +8183,7 @@ class OutputController extends Controller
         $allRows = $baseRows->merge($backOfficeRows)->merge($externalRows);
 
         $rows = $allRows
-            ->filter(function ($row) use ($search, $searchPeople, $activity, $presenterFilter, $presenterPeople) {
+            ->filter(function ($row) use ($search, $searchPeople, $activity, $presenterFilter) {
                 if ($searchPeople->isNotEmpty()) {
                     if (! $this->outputRowMatchesAnyUser($row, $searchPeople, 'presenter_names', 'presenter_user_ids')) {
                         return false;
@@ -8192,11 +8206,7 @@ class OutputController extends Controller
                     }
                 }
 
-                if ($presenterPeople->isNotEmpty()) {
-                    if (! $this->outputRowMatchesAnyUser($row, $presenterPeople, 'presenter_names', 'presenter_user_ids')) {
-                        return false;
-                    }
-                } elseif ($presenterFilter !== '' && trim((string) $row->presenter_name) !== $presenterFilter) {
+                if ($presenterFilter !== '' && ! collect($row->presenter_names ?? [])->contains(fn ($name) => $this->paperAuthorNameMatchesFilter((string) $name, $presenterFilter))) {
                     return false;
                 }
 
@@ -8230,15 +8240,17 @@ class OutputController extends Controller
             'items' => $rows,
             'summary' => [
             'total_presentations' => $rows->count(),
-            'unique_presenters' => $rows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->count(),
+            'unique_presenters' => $this->presentationPresenterOptions($rows)->count(),
             'top_presenter' => $this->topLabel(
-                $rows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()
+                $rows->flatMap(fn ($row) => collect($row->presenter_names ?? []))
+                    ->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')
+                    ->countBy()
             ),
             'top_conference' => $this->topLabel(
                 $rows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()
             ),
             ],
-            'presenterOptions' => $allRows->pluck('presenter_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
+            'presenterOptions' => $this->presentationPresenterOptions($allRows),
             'conferenceOptions' => $allRows->pluck('conference_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
             'activityOptions' => $defaultActivityOptions
                 ->merge($allRows->pluck('presentation_type'))
@@ -8600,7 +8612,8 @@ class OutputController extends Controller
             ->with(['authors:id,output_id,user_id,role,name']);
 
         $backOfficeQuery = $this->visibleBackOfficeOutputsQuery()
-            ->where('type', 'like', 'EA101%');
+            ->where('type', 'like', 'EA101%')
+            ->with(['authorLinks.user']);
 
         $externalQuery = ExternalOutput::query()
             ->where('type', 'EA101')
@@ -8616,9 +8629,6 @@ class OutputController extends Controller
         $searchPeople = $this->resolvePaperSearchPeople($search);
         $searchPeopleIds = $searchPeople->pluck('id')->map(fn ($id) => (int) $id)->filter()->unique()->values();
         $searchPeopleAliases = $this->paperSearchPeopleAliases($searchPeople);
-        $authorPeople = $this->resolvePaperSearchPeople($authorFilter);
-        $authorPeopleIds = $authorPeople->pluck('id')->map(fn ($id) => (int) $id)->filter()->unique()->values();
-        $authorPeopleAliases = $this->paperSearchPeopleAliases($authorPeople);
 
         if ($searchPeople->isNotEmpty()) {
             $baseQuery->whereHas('authors', function (Builder $authorQ) use ($searchPeopleIds, $searchPeopleAliases) {
@@ -8656,21 +8666,9 @@ class OutputController extends Controller
         }
 
         if ($role !== '' || $authorFilter !== '') {
-            $baseQuery->whereHas('authors', function (Builder $authorQ) use ($role, $authorFilter, $authorPeople, $authorPeopleIds, $authorPeopleAliases) {
+            $baseQuery->whereHas('authors', function (Builder $authorQ) use ($role) {
                 if ($role !== '') {
                     $authorQ->where('role', $role);
-                }
-
-                if ($authorPeople->isNotEmpty()) {
-                    $authorQ->where(function (Builder $personQ) use ($authorPeopleIds, $authorPeopleAliases) {
-                        $personQ->whereIn('user_id', $authorPeopleIds);
-
-                        if (!empty($authorPeopleAliases)) {
-                            $personQ->orWhereIn('name', $authorPeopleAliases);
-                        }
-                    });
-                } elseif ($authorFilter !== '') {
-                    $authorQ->where('name', $authorFilter);
                 }
             });
         }
@@ -8692,54 +8690,70 @@ class OutputController extends Controller
             $externalQuery->whereYear('publish_date', $yearFilter - 543);
         }
 
-        $projectPapers = $baseQuery->get()->map(function (Output $output) use ($authorFilter) {
-            $yearBe = $this->normalizeYearFilter($output->year);
-            $authorsByRole = $output->authors
-                ->groupBy(fn ($author) => strtolower((string) $author->role))
-                ->map(fn (Collection $group) => $group->pluck('name')->filter()->values());
-            $matchedAuthorRoles = collect();
+        $projectPapers = $baseQuery->get()
+            ->toBase()
+            ->filter(function (Output $output) use ($role, $authorFilter) {
+                if ($authorFilter === '' && $role === '') {
+                    return true;
+                }
 
-            if ($authorFilter !== '') {
-                $matchedAuthorRoles = $output->authors
-                    ->filter(fn ($author) => trim((string) $author->name) === $authorFilter)
-                    ->pluck('role')
-                    ->filter()
-                    ->map(fn ($role) => $this->formatAuthorRoleLabel((string) $role))
-                    ->unique()
-                    ->values();
-            }
+                return $output->authors->contains(fn ($author) => $this->paperAuthorMatchesFilter(
+                    (string) $author->name,
+                    (string) $author->role,
+                    $authorFilter,
+                    $role
+                ));
+            })
+            ->values()
+            ->map(function (Output $output) use ($authorFilter) {
+                $yearBe = $this->normalizeYearFilter($output->year);
+                $authorsByRole = $output->authors
+                    ->groupBy(fn ($author) => strtolower((string) $author->role))
+                    ->map(fn (Collection $group) => $group->pluck('name')->filter()->values());
+                $matchedAuthorRoles = collect();
 
-            return (object) [
-                'id' => $output->id,
-                'output_code' => $output->output_code,
-                'source_badge' => null,
-                'title' => $output->title ?: '-',
-                'type' => $output->type ?: '-',
-                'year_be' => $yearBe,
-                'journal' => $output->journal ?: '-',
-                'quartile' => $output->quartile ?: '-',
-                'impact_factor' => $output->impact_factor,
-                'detail' => $output->project_output ?: null,
-                'project_label' => $output->project?->project_name_th ?: '-',
-                'project_code' => $output->project?->project_code ?: null,
-                'source_reference_id' => $output->project?->project_code ?: null,
-                'source_reference_name' => $output->project?->project_name_th ?: null,
-                'project_link' => $output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null,
-                'authors' => $output->authors->pluck('name')->filter()->values(),
-                'authors_by_role' => $authorsByRole,
-                'matched_author_roles' => $matchedAuthorRoles,
-                'displayed_at' => $output->updated_at ?? $output->created_at,
-                'created_at' => $output->created_at,
-                'sort_title' => mb_strtolower((string) $output->title),
-                'sort_journal' => mb_strtolower((string) $output->journal),
-                'sort_quartile' => mb_strtolower((string) $output->quartile),
-                'sort_year' => $yearBe ?? 0,
-            ];
-        });
+                if ($authorFilter !== '') {
+                    $matchedAuthorRoles = $output->authors
+                        ->filter(fn ($author) => $this->paperAuthorNameMatchesFilter((string) $author->name, $authorFilter))
+                        ->pluck('role')
+                        ->filter()
+                        ->map(fn ($role) => $this->formatAuthorRoleLabel((string) $role))
+                        ->unique()
+                        ->values();
+                }
+
+                return (object) [
+                    'id' => $output->id,
+                    'output_code' => $output->output_code,
+                    'source_badge' => null,
+                    'title' => $output->title ?: '-',
+                    'type' => $output->type ?: '-',
+                    'year_be' => $yearBe,
+                    'journal' => $output->journal ?: '-',
+                    'quartile' => $output->quartile ?: '-',
+                    'impact_factor' => $output->impact_factor,
+                    'detail' => $output->project_output ?: null,
+                    'project_label' => $output->project?->project_name_th ?: '-',
+                    'project_code' => $output->project?->project_code ?: null,
+                    'source_reference_id' => $output->project?->project_code ?: null,
+                    'source_reference_name' => $output->project?->project_name_th ?: null,
+                    'project_link' => $output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null,
+                    'authors' => $output->authors->pluck('name')->filter()->values(),
+                    'authors_by_role' => $authorsByRole,
+                    'matched_author_roles' => $matchedAuthorRoles,
+                    'displayed_at' => $output->updated_at ?? $output->created_at,
+                    'created_at' => $output->created_at,
+                    'sort_title' => mb_strtolower((string) $output->title),
+                    'sort_journal' => mb_strtolower((string) $output->journal),
+                    'sort_quartile' => mb_strtolower((string) $output->quartile),
+                    'sort_year' => $yearBe ?? 0,
+                ];
+            });
 
         $backOfficePapers = $backOfficeQuery->get()
-            ->filter(function (BackOfficeTaskOutput $output) use ($search, $searchPeople, $role, $authorFilter, $authorPeople) {
-                $authors = collect($output->authors ?? [])
+            ->toBase()
+            ->filter(function (BackOfficeTaskOutput $output) use ($search, $searchPeople, $role, $authorFilter) {
+                $authors = collect($output->resolvedAuthors())
                     ->map(function ($author) {
                         if (is_array($author)) {
                             return trim((string) ($author['name'] ?? ''));
@@ -8771,11 +8785,7 @@ class OutputController extends Controller
                 }
 
                 if ($authorFilter !== '' || $role !== '') {
-                    if ($authorPeople->isNotEmpty() && $role === '') {
-                        return $this->backOfficePaperMatchesAnyUser($output, $authorPeople);
-                    }
-
-                    return collect($output->authors ?? [])->contains(function ($author) use ($authorFilter, $role, $authorPeople) {
+                    return collect($output->resolvedAuthors())->contains(function ($author) use ($authorFilter, $role) {
                         if (!is_array($author)) {
                             return false;
                         }
@@ -8783,28 +8793,16 @@ class OutputController extends Controller
                         $name = trim((string) ($author['name'] ?? ''));
                         $authorRole = strtolower(trim((string) ($author['role'] ?? '')));
 
-                        if ($authorPeople->isNotEmpty()) {
-                            $matchesPerson = $authorPeople->contains(fn (User $user) => $this->matchesUserOutputContributor($name, $user));
-                            if (! $matchesPerson) {
-                                return false;
-                            }
-                        } elseif ($authorFilter !== '' && $name !== $authorFilter) {
-                            return false;
-                        }
-
-                        if ($role !== '' && $authorRole !== strtolower($role)) {
-                            return false;
-                        }
-
-                        return true;
+                        return $this->paperAuthorMatchesFilter($name, $authorRole, $authorFilter, $role);
                     });
                 }
 
                 return true;
             })
+            ->values()
             ->map(function (BackOfficeTaskOutput $output) use ($authorFilter) {
                 $yearBe = $this->normalizeYearFilter($output->year);
-                $authors = collect($output->authors ?? [])
+                $authors = collect($output->resolvedAuthors())
                     ->map(function ($author) {
                         if (is_array($author)) {
                             return [
@@ -8828,7 +8826,7 @@ class OutputController extends Controller
 
                 if ($authorFilter !== '') {
                     $matchedAuthorRoles = $authors
-                        ->filter(fn ($author) => $author['name'] === $authorFilter)
+                        ->filter(fn ($author) => $this->paperAuthorNameMatchesFilter((string) $author['name'], $authorFilter))
                         ->pluck('role')
                         ->filter()
                         ->map(fn ($role) => $this->formatAuthorRoleLabel((string) $role))
@@ -8866,7 +8864,8 @@ class OutputController extends Controller
             });
 
         $externalPapers = $externalQuery->get()
-            ->filter(function (ExternalOutput $output) use ($search, $searchPeople, $role, $authorFilter, $authorPeople) {
+            ->toBase()
+            ->filter(function (ExternalOutput $output) use ($search, $searchPeople, $role, $authorFilter) {
                 if ($searchPeople->isEmpty() && $search !== '') {
                     $haystack = mb_strtolower(implode(' ', array_filter([
                         $output->output_code,
@@ -8884,30 +8883,19 @@ class OutputController extends Controller
                 }
 
                 if ($authorFilter !== '' || $role !== '') {
-                    return $output->authors->contains(function ($author) use ($authorFilter, $role, $authorPeople) {
-                        if ($authorPeople->isNotEmpty()) {
-                            $matchesPerson = $authorPeople->contains(function (User $user) use ($author) {
-                                return (int) ($author->user_id ?? 0) === (int) $user->id
-                                    || $this->matchesUserOutputContributor((string) $author->name, $user);
-                            });
-
-                            if (! $matchesPerson) {
-                                return false;
-                            }
-                        } elseif ($authorFilter !== '' && trim((string) $author->name) !== $authorFilter) {
-                            return false;
-                        }
-
-                        if ($role !== '' && strtolower(trim((string) $author->role)) !== strtolower($role)) {
-                            return false;
-                        }
-
-                        return true;
+                    return $output->authors->contains(function ($author) use ($authorFilter, $role) {
+                        return $this->paperAuthorMatchesFilter(
+                            (string) $author->name,
+                            (string) $author->role,
+                            $authorFilter,
+                            $role
+                        );
                     });
                 }
 
                 return true;
             })
+            ->values()
             ->map(function (ExternalOutput $output) use ($authorFilter) {
                 $yearBe = $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
                 $authorsByRole = $output->authors
@@ -8917,7 +8905,7 @@ class OutputController extends Controller
 
                 if ($authorFilter !== '') {
                     $matchedAuthorRoles = $output->authors
-                        ->filter(fn ($author) => trim((string) $author->name) === $authorFilter)
+                        ->filter(fn ($author) => $this->paperAuthorNameMatchesFilter((string) $author->name, $authorFilter))
                         ->pluck('role')
                         ->filter()
                         ->map(fn ($role) => $this->formatAuthorRoleLabel((string) $role))
@@ -9004,7 +8992,8 @@ class OutputController extends Controller
             ->with(['bookAuthors:id,output_id,user_id,name']);
 
         $backOfficeQuery = $this->visibleBackOfficeOutputsQuery()
-            ->where('type', 'like', 'EA119%');
+            ->where('type', 'like', 'EA119%')
+            ->with(['bookAuthorLinks.user']);
 
         $externalQuery = ExternalOutput::query()
             ->where('type', 'EA119')
@@ -9028,22 +9017,13 @@ class OutputController extends Controller
         $search = trim((string) $request->input('search', ''));
         $authorFilter = trim((string) $request->input('author', ''));
         $searchPeople = $this->resolvePaperSearchPeople($search);
-        $authorPeople = $this->resolvePaperSearchPeople($authorFilter);
 
         $projectRows = $baseQuery->get()
-            ->filter(function (Output $output) use ($search, $searchPeople, $authorFilter, $authorPeople) {
-                $authors = $output->bookAuthors->pluck('name')->filter();
+            ->toBase()
+            ->filter(function (Output $output) use ($search, $searchPeople, $authorFilter) {
+                $authors = $this->normalizePresenterNameList($output->bookAuthors->pluck('name')->filter());
 
-                if ($authorPeople->isNotEmpty()) {
-                    $row = (object) [
-                        'author_names' => $authors,
-                        'author_user_ids' => $output->bookAuthors->pluck('user_id')->filter()->values(),
-                    ];
-
-                    if (! $this->outputRowMatchesAnyUser($row, $authorPeople, 'author_names', 'author_user_ids')) {
-                        return false;
-                    }
-                } elseif ($authorFilter !== '' && !$authors->contains($authorFilter)) {
+                if ($authorFilter !== '' && ! $authors->contains(fn ($name) => $this->paperAuthorNameMatchesFilter((string) $name, $authorFilter))) {
                     return false;
                 }
 
@@ -9076,9 +9056,10 @@ class OutputController extends Controller
 
                 return true;
             })
+            ->values()
             ->map(function (Output $output) {
                 $yearBe = $this->normalizeYearFilter($output->year);
-                $authors = $output->bookAuthors->pluck('name')->filter()->values();
+                $authors = $this->normalizePresenterNameList($output->bookAuthors->pluck('name')->filter());
                 $authorUserIds = $output->bookAuthors->pluck('user_id')->filter()->values();
 
                 return (object) [
@@ -9106,25 +9087,21 @@ class OutputController extends Controller
             });
 
         $backOfficeRows = $backOfficeQuery->get()
-            ->filter(function (BackOfficeTaskOutput $output) use ($search, $searchPeople, $authorFilter, $authorPeople) {
-                $authorRows = collect($output->book_authors ?? [])
+            ->toBase()
+            ->filter(function (BackOfficeTaskOutput $output) use ($search, $searchPeople, $authorFilter) {
+                $authorRows = collect($output->resolvedBookAuthors())
                     ->map(fn ($author) => is_array($author) ? $author : ['name' => (string) $author]);
-                $authors = $authorRows
+                $authors = $this->normalizePresenterNameList($authorRows
                     ->pluck('name')
                     ->map(fn ($name) => trim((string) $name))
                     ->filter()
-                    ->values();
+                    ->values());
                 $row = (object) [
                     'author_names' => $authors,
                     'author_user_ids' => $authorRows->pluck('user_id')->filter()->values(),
                 ];
 
-                if ($authorPeople->isNotEmpty()) {
-                    if (! $this->outputRowMatchesAnyUser($row, $authorPeople, 'author_names', 'author_user_ids')
-                        && ! $this->backOfficePaperMatchesAnyUser($output, $authorPeople)) {
-                        return false;
-                    }
-                } elseif ($authorFilter !== '' && !$authors->contains($authorFilter)) {
+                if ($authorFilter !== '' && ! $authors->contains(fn ($name) => $this->paperAuthorNameMatchesFilter((string) $name, $authorFilter))) {
                     return false;
                 }
 
@@ -9151,26 +9128,19 @@ class OutputController extends Controller
 
                 return true;
             })
+            ->values()
             ->map(function (BackOfficeTaskOutput $output) {
                 $yearBe = $this->normalizeYearFilter($output->year);
-                $authorRows = collect($output->book_authors ?? [])
+                $authorRows = collect($output->resolvedBookAuthors())
                     ->map(fn ($author) => is_array($author) ? $author : ['name' => (string) $author]);
-                $authors = $authorRows
+                $authors = $this->normalizePresenterNameList($authorRows
                     ->pluck('name')
                     ->map(fn ($name) => trim((string) $name))
                     ->filter()
-                    ->values();
-                $contributorNames = $this->extractBackOfficeOutputContributorNames($output);
-                $taskEntryNames = collect($output->task?->entries ?? [])
-                    ->pluck('person_name')
-                    ->map(fn ($name) => trim((string) $name))
-                    ->filter()
-                    ->values();
+                    ->values());
                 $matchNames = $authors
-                    ->merge($contributorNames)
-                    ->merge($contributorNames->isEmpty() ? $taskEntryNames : [])
                     ->filter()
-                    ->unique()
+                    ->unique(fn ($name) => $this->normalizePaperAuthorExactName((string) $name))
                     ->values();
 
                 return (object) [
@@ -9198,19 +9168,11 @@ class OutputController extends Controller
             });
 
         $externalRows = $externalQuery->get()
-            ->filter(function (ExternalOutput $output) use ($search, $searchPeople, $authorFilter, $authorPeople) {
-                $authors = $output->bookAuthors->pluck('name')->filter();
+            ->toBase()
+            ->filter(function (ExternalOutput $output) use ($search, $searchPeople, $authorFilter) {
+                $authors = $this->normalizePresenterNameList($output->bookAuthors->pluck('name')->filter());
 
-                if ($authorPeople->isNotEmpty()) {
-                    $row = (object) [
-                        'author_names' => $authors,
-                        'author_user_ids' => $output->bookAuthors->pluck('user_id')->filter()->values(),
-                    ];
-
-                    if (! $this->outputRowMatchesAnyUser($row, $authorPeople, 'author_names', 'author_user_ids')) {
-                        return false;
-                    }
-                } elseif ($authorFilter !== '' && !$authors->contains($authorFilter)) {
+                if ($authorFilter !== '' && ! $authors->contains(fn ($name) => $this->paperAuthorNameMatchesFilter((string) $name, $authorFilter))) {
                     return false;
                 }
 
@@ -9242,9 +9204,10 @@ class OutputController extends Controller
 
                 return true;
             })
+            ->values()
             ->map(function (ExternalOutput $output) {
                 $yearBe = $output->publish_date ? ((int) $output->publish_date->format('Y')) + 543 : null;
-                $authors = $output->bookAuthors->pluck('name')->filter()->values();
+                $authors = $this->normalizePresenterNameList($output->bookAuthors->pluck('name')->filter());
                 $authorUserIds = $output->bookAuthors->pluck('user_id')->filter()->values();
 
                 return (object) [
@@ -9293,7 +9256,12 @@ class OutputController extends Controller
                     $rows->pluck('publisher_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->countBy()
                 ),
             ],
-            'authorOptions' => $rows->flatMap(fn ($row) => $row->authors)->filter()->unique()->sort()->values(),
+            'authorOptions' => $rows
+                ->flatMap(fn ($row) => $this->normalizePresenterNameList($row->authors ?? []))
+                ->filter()
+                ->unique(fn ($name) => $this->normalizePaperAuthorExactName((string) $name))
+                ->sortBy(fn ($name) => mb_strtolower((string) $name, 'UTF-8'))
+                ->values(),
             'publisherOptions' => $rows->pluck('publisher_name')->filter(fn ($name) => $name !== '-' && trim((string) $name) !== '')->unique()->sort()->values(),
             'yearOptions' => $rows->pluck('year_be')->filter()->unique()->sortDesc()->values(),
         ];
@@ -10710,6 +10678,59 @@ class OutputController extends Controller
         }
 
         return $date->format('d-m-') . ($date->year + 543);
+    }
+
+    private function paperAuthorMatchesFilter(string $name, string $authorRole, string $authorFilter, string $role): bool
+    {
+        if ($authorFilter !== '' && ! $this->paperAuthorNameMatchesFilter($name, $authorFilter)) {
+            return false;
+        }
+
+        if ($role !== '' && strtolower(trim($authorRole)) !== strtolower(trim($role))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function paperAuthorNameMatchesFilter(string $name, string $authorFilter): bool
+    {
+        return $this->normalizePaperAuthorExactName($name) !== ''
+            && $this->normalizePaperAuthorExactName($name) === $this->normalizePaperAuthorExactName($authorFilter);
+    }
+
+    private function normalizePresenterNameList($names): Collection
+    {
+        return collect($names)
+            ->flatMap(function ($name) {
+                if (is_array($name)) {
+                    $name = $name['name'] ?? '';
+                }
+
+                return preg_split('/[,;\r\n]+/u', (string) $name) ?: [];
+            })
+            ->map(fn ($name) => preg_replace('/\s+/u', ' ', trim((string) $name)) ?? '')
+            ->filter()
+            ->unique(fn ($name) => $this->normalizePaperAuthorExactName((string) $name))
+            ->values();
+    }
+
+    private function presentationPresenterOptions(Collection $rows): Collection
+    {
+        return $rows
+            ->flatMap(fn ($row) => collect($row->presenter_names ?? []))
+            ->map(fn ($name) => preg_replace('/\s+/u', ' ', trim((string) $name)) ?? '')
+            ->filter(fn ($name) => $name !== '-' && $name !== '')
+            ->unique(fn ($name) => $this->normalizePaperAuthorExactName((string) $name))
+            ->sortBy(fn ($name) => mb_strtolower((string) $name, 'UTF-8'))
+            ->values();
+    }
+
+    private function normalizePaperAuthorExactName(?string $value): string
+    {
+        $value = mb_strtolower(trim((string) $value), 'UTF-8');
+
+        return preg_replace('/[\s\x{200B}\x{200C}\x{200D}\x{FEFF}]+/u', '', $value) ?? '';
     }
 
     private function formatAuthorRoleLabel(string $role): string

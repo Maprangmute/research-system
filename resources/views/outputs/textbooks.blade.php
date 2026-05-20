@@ -102,7 +102,11 @@
 
                 <label class="block">
                     <span class="text-xs font-semibold text-slate-600">Author</span>
-                    <select name="author" data-textbook-auto-submit="true" class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
+                    <select name="author"
+                        data-textbook-auto-submit="true"
+                        data-textbook-author-search="true"
+                        data-search-placeholder="เลือกชื่อผู้เขียน"
+                        class="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm">
                         <option value="">ทั้งหมด</option>
                         @foreach ($authorOptions as $option)
                             <option value="{{ $option }}" @selected(request('author') === $option)>{{ $option }}</option>
@@ -204,7 +208,25 @@
                 const currentResults = getResults();
                 if (!nextResults || !currentResults) return false;
                 currentResults.innerHTML = nextResults.innerHTML;
+                syncAuthorOptionsFromDocument(nextDoc);
                 return true;
+            };
+
+            const syncAuthorOptionsFromDocument = (nextDoc) => {
+                const currentSelect = query('select[name="author"][data-textbook-author-search="true"]');
+                const nextSelect = nextDoc.querySelector('select[name="author"][data-textbook-author-search="true"]');
+                if (!(currentSelect instanceof HTMLSelectElement) || !(nextSelect instanceof HTMLSelectElement)) {
+                    return;
+                }
+
+                const previousValue = currentSelect.value;
+                currentSelect.innerHTML = nextSelect.innerHTML;
+
+                if (Array.from(currentSelect.options).some((option) => option.value === previousValue)) {
+                    currentSelect.value = previousValue;
+                }
+
+                currentSelect.tomselect?.refreshOptions?.();
             };
 
             const scrollToListTop = () => {
@@ -309,6 +331,21 @@
                 });
             };
 
+            const bindTextbookAuthorSearchSelect = () => {
+                const select = query('[data-textbook-author-search="true"]');
+                if (!(select instanceof HTMLSelectElement) || typeof ensureProjectSearchDropdown !== 'function') {
+                    return;
+                }
+
+                const dropdown = ensureProjectSearchDropdown(select, {
+                    placeholder: 'ทั้งหมด',
+                    searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้เขียน',
+                    ignoreSearchWhitespace: true
+                });
+
+                dropdown?.refreshOptions?.();
+            };
+
             document.addEventListener('click', (event) => {
                 const resetLink = event.target.closest('[data-textbooks-reset="true"]');
                 if (resetLink) {
@@ -340,6 +377,7 @@
             });
 
             bindInteractions();
+            bindTextbookAuthorSearchSelect();
         });
     </script>
 @endsection

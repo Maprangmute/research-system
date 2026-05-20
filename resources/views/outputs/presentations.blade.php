@@ -218,7 +218,25 @@
                 const currentResults = getResults();
                 if (!nextResults || !currentResults) return false;
                 currentResults.innerHTML = nextResults.innerHTML;
+                syncPresenterOptionsFromDocument(nextDoc);
                 return true;
+            };
+
+            const syncPresenterOptionsFromDocument = (nextDoc) => {
+                const currentSelect = query('select[name="presenter"][data-presentation-presenter-search="true"]');
+                const nextSelect = nextDoc.querySelector('select[name="presenter"][data-presentation-presenter-search="true"]');
+                if (!(currentSelect instanceof HTMLSelectElement) || !(nextSelect instanceof HTMLSelectElement)) {
+                    return;
+                }
+
+                const previousValue = currentSelect.value;
+                currentSelect.innerHTML = nextSelect.innerHTML;
+
+                if (Array.from(currentSelect.options).some((option) => option.value === previousValue)) {
+                    currentSelect.value = previousValue;
+                }
+
+                currentSelect.tomselect?.refreshOptions?.();
             };
 
             const scrollToListTop = () => {
@@ -333,7 +351,8 @@
 
                 const dropdown = ensureProjectSearchDropdown(select, {
                     placeholder: 'ทั้งหมด',
-                    searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ'
+                    searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้นำเสนอ',
+                    ignoreSearchWhitespace: true
                 });
 
                 dropdown?.refreshOptions?.();

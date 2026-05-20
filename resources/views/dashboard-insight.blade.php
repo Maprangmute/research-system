@@ -865,6 +865,7 @@
             justify-content: space-between;
             gap: 14px;
             margin-bottom: 14px;
+            min-width: 0;
         }
 
         .di-skill-capacity-kicker {
@@ -877,14 +878,18 @@
 
         .di-skill-capacity-title {
             margin-top: 4px;
+            max-width: 100%;
             color: #0f172a;
             font-size: 14px;
             font-weight: 800;
             line-height: 1.45;
+            overflow-wrap: anywhere;
         }
 
         .di-skill-capacity-table-wrap {
-            overflow-x: visible;
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
             border: 1px solid #d5e1ef;
             border-radius: 14px;
             background: #fff;
@@ -946,9 +951,24 @@
         }
 
         .di-skill-capacity-table--skill thead tr:first-child th:nth-child(4),
-        .di-skill-capacity-table--skill tbody td:nth-child(5),
-        .di-skill-capacity-table--skill tfoot td:nth-child(4) {
+        .di-skill-capacity-table--skill tbody td:nth-child(6),
+        .di-skill-capacity-table--skill tfoot td:nth-child(5) {
             border-left: 3px solid #d5e1ef;
+        }
+
+        .di-skill-capacity-table--skill thead tr:nth-child(2) th:nth-child(1) {
+            background: #f5f3ff !important;
+            color: #0f172a !important;
+        }
+
+        .di-skill-capacity-table--skill thead tr:nth-child(2) th:nth-child(2) {
+            background: #eff6ff !important;
+            color: #0f172a !important;
+        }
+
+        .di-skill-capacity-table--skill thead tr:nth-child(2) th:nth-child(3) {
+            background: #fff7ed !important;
+            color: #0f172a !important;
         }
 
         .di-skill-capacity-table__num {
@@ -1390,6 +1410,35 @@
                 left: 72px;
                 width: min(760px, calc(100vw - 96px));
             }
+
+            .di-skill-capacity-title {
+                font-size: 12px;
+                line-height: 1.35;
+            }
+
+            .di-skill-capacity-table th,
+            .di-skill-capacity-table td {
+                padding: 7px 4px;
+            }
+
+            .di-skill-capacity-table th {
+                font-size: 7.5px;
+                letter-spacing: 0;
+                line-height: 1.12;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+
+            .di-skill-capacity-table__group {
+                font-size: 8px !important;
+                letter-spacing: .03em !important;
+            }
+
+            .di-skill-capacity-name {
+                font-size: 10.5px;
+                line-height: 1.25;
+            }
+
         }
 
         @media (max-width: 720px) {
@@ -1498,6 +1547,143 @@
             .di-table {
                 min-width: 620px;
                 font-size: 12px;
+            }
+
+            .di-theme-summary-table {
+                min-width: 0;
+            }
+
+            .di-theme-summary-table thead {
+                display: none;
+            }
+
+            .di-theme-summary-table,
+            .di-theme-summary-table tbody,
+            .di-theme-summary-table tr,
+            .di-theme-summary-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .di-theme-summary-table tr {
+                border-bottom: 1px solid #dbe5f1;
+                padding: 10px 8px;
+            }
+
+            .di-theme-summary-table tr:last-child {
+                border-bottom: 0;
+            }
+
+            .di-theme-summary-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                border-bottom: 0;
+                padding: 5px 0;
+                text-align: right;
+                line-height: 1.45;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+
+            .di-theme-summary-table td::before {
+                content: attr(data-label);
+                flex: 0 0 112px;
+                color: #64748b;
+                font-size: 11px;
+                font-weight: 900;
+                text-align: left;
+            }
+
+            .di-theme-summary-table td:first-child {
+                display: block;
+                text-align: left;
+                font-weight: 850;
+            }
+
+            .di-theme-summary-table td:first-child::before {
+                display: block;
+                margin-bottom: 4px;
+            }
+
+            .di-skill-capacity-head {
+                display: block;
+            }
+
+            .di-skill-capacity-title {
+                font-size: 13px;
+                line-height: 1.5;
+            }
+
+            .di-skill-capacity-table-wrap {
+                overflow-x: visible;
+            }
+
+            .di-skill-capacity-table {
+                min-width: 0;
+                font-size: 12px;
+                table-layout: auto;
+            }
+
+            .di-skill-capacity-table colgroup,
+            .di-skill-capacity-table thead {
+                display: none;
+            }
+
+            .di-skill-capacity-table tbody,
+            .di-skill-capacity-table tfoot,
+            .di-skill-capacity-table tr,
+            .di-skill-capacity-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .di-skill-capacity-table tr {
+                border-bottom: 1px solid #dbe5f1;
+                padding: 9px 8px;
+            }
+
+            .di-skill-capacity-table tr:last-child {
+                border-bottom: 0;
+            }
+
+            .di-skill-capacity-table th,
+            .di-skill-capacity-table td {
+                border-bottom: 0;
+                padding: 5px 0;
+            }
+
+            .di-skill-capacity-table td {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                text-align: right;
+                white-space: normal;
+            }
+
+            .di-skill-capacity-table td::before {
+                content: attr(data-label);
+                flex: 0 0 118px;
+                color: #64748b;
+                font-size: 11px;
+                font-weight: 900;
+                text-align: left;
+                text-transform: uppercase;
+            }
+
+            .di-skill-capacity-table td:nth-child(2) {
+                display: block;
+                text-align: left;
+            }
+
+            .di-skill-capacity-table td:nth-child(2)::before {
+                display: block;
+                margin-bottom: 4px;
+            }
+
+            .di-skill-capacity-table tfoot td {
+                background: transparent;
             }
 
             .di-modal {
@@ -1681,7 +1867,7 @@
                     <div class="di-kpi"><span>โครงการที่มีคนในหน่วยเราเป็น PI</span><strong id="rtSummaryPolicyPiBudget">0 บ.</strong><small id="rtSummaryPolicyPiCount">0 โครงการที่มีงบ</small></div>
                 </div>
                 <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-                    <table class="di-table">
+                    <table class="di-table di-theme-summary-table">
                         <thead>
                             <tr>
                                 <th>กลุ่มเนื้อหาหลักของงาน (Content/Theme)</th>
@@ -1944,30 +2130,32 @@
                             <div class="di-skill-capacity-head">
                                 <div>
                                     <div class="di-skill-capacity-kicker">Skill set capacity</div>
-                                    <div class="di-skill-capacity-title">ภาพรวมของการกระจายคน (Workforce) เเละ เวลาการทำงาน (Time Spending) ตามกลุ่มทักษะ</div>
+                                    <div class="di-skill-capacity-title">ภาพรวมของการกระจายคน (Workforce), เวลาการทำงาน (Time Spending) เเละภาระงาน (Tasks) ตามกลุ่มทักษะ</div>
                                 </div>
                             </div>
                             <div class="di-skill-capacity-table-wrap">
                                 <table class="di-skill-capacity-table di-skill-capacity-table--skill">
                                     <colgroup>
                                         <col style="width:44px;">
-                                        <col style="width:30%;">
+                                        <col style="width:28%;">
+                                        <col style="width:10%;">
+                                        <col style="width:12%;">
+                                        <col style="width:10%;">
                                         <col style="width:11%;">
-                                        <col style="width:14%;">
-                                        <col style="width:11%;">
+                                        <col style="width:12%;">
                                         <col style="width:13%;">
-                                        <col style="width:15%;">
                                     </colgroup>
                                     <thead>
                                         <tr>
                                             <th rowspan="2" class="di-skill-capacity-table__num"></th>
                                             <th rowspan="2">Skill set</th>
-                                            <th colspan="2" class="di-skill-capacity-table__num di-skill-capacity-table__group di-skill-capacity-table__group--current">Current Situation</th>
-                                            <th colspan="3" class="di-skill-capacity-table__num di-skill-capacity-table__group">Position</th>
+                                            <th colspan="3" class="di-skill-capacity-table__num di-skill-capacity-table__group di-skill-capacity-table__group--current">Current Situation (สถานการณ์ทำงานจริง)</th>
+                                            <th colspan="3" class="di-skill-capacity-table__num di-skill-capacity-table__group">Position (กรอบอัตรากำลังตามแผน)</th>
                                         </tr>
                                         <tr>
                                             <th class="di-skill-capacity-table__num">Workforce</th>
                                             <th class="di-skill-capacity-table__num">Time Spent (%)</th>
+                                            <th class="di-skill-capacity-table__num">Tasks (%)</th>
                                             <th class="di-skill-capacity-table__num">Position</th>
                                             <th class="di-skill-capacity-table__num">Position (%)</th>
                                             <th class="di-skill-capacity-table__num">Position ที่ยืมตัวมา</th>
@@ -1975,14 +2163,14 @@
                                     </thead>
                                     <tbody id="skillCapacityBody">
                                         <tr>
-                                            <td colspan="7" class="di-skill-capacity-table__num">กำลังประมวลผลข้อมูล</td>
+                                            <td colspan="8" class="di-skill-capacity-table__num">กำลังประมวลผลข้อมูล</td>
                                         </tr>
                                     </tbody>
                                     <tfoot id="skillCapacityFoot"></tfoot>
                                 </table>
                             </div>
                             <div class="di-skill-capacity-note">
-                                หมายเหตุ: Position รวมตำแหน่งในแต่ละ Skill set, Position (%) แสดงสัดส่วนต่อ Position ทั้งหมด, Workforce นับจำนวนคนไม่ซ้ำจากภาระงาน FTE ที่เข้าแต่ละ Skill set, Time Spending (%) แสดงสัดส่วน FTE ของภาระงานในแต่ละ Skill set และ Position ที่ยืมตัวมาแสดงจำนวนตำแหน่งยืมตัวในแต่ละสายงาน
+                                หมายเหตุ: ตัวเลขนี้เป็นการคำนวณในภาพรวมแบบค่าเฉลี่ย จึงอาจมีข้อจำกัดในการสะท้อนภาระงานจริงรายบุคคล (เช่น กรณีที่มีบุคลากรทำงานหนักเกินเกณฑ์แต่ถูกค่าเฉลี่ยหารลดลง) แนะนำให้ตรวจสอบรายละเอียดเพิ่มเติมจากดัชนี FTE (Full-Time Equivalent) รายบุคคล และอีกสองตารางด้านล่าง
                             </div>
                         </article>
                     </div>
@@ -2441,6 +2629,32 @@
                 return Number.isNaN(d.getTime()) ? null : d;
             };
             const status = (p) => text(p.planning_status, 'ไม่ระบุสถานะ');
+            const projectStatusOrder = [
+                'Project Planing (เริ่มต้น - Submit IRB)',
+                'เก็บข้อมูล',
+                'วิเคราะห์ข้อมูล',
+                'เขียนรายงานเเละ publication',
+                'ปิดโปรเจค',
+            ];
+            const projectStatusDisplayLabel = (value) => {
+                const raw = text(value, 'ไม่ระบุสถานะ');
+                const normalized = norm(raw).replace(/\s+/g, '');
+
+                if (normalized.includes('projectplaning') && normalized.includes('submitirb')) return projectStatusOrder[0];
+                if (normalized.includes('เก็บข้อมูล')) return projectStatusOrder[1];
+                if (normalized.includes('วิเคราะห์ข้อมูล')) return projectStatusOrder[2];
+                if (normalized.includes('เขียนรายงาน')) return projectStatusOrder[3];
+                if (normalized.includes('ปิดโปรเจค')) return projectStatusOrder[4];
+
+                return raw;
+            };
+            const projectStatusChartRows = (rows) => {
+                const counts = groupSum(rows, (p) => projectStatusDisplayLabel(p.planning_status));
+
+                return projectStatusOrder
+                    .map((label) => ({ label, value: Number(counts.find((row) => row.label === label)?.value || 0) }))
+                    .filter((row) => row.value > 0);
+            };
             const fundingType = (p) => text(p.funding_type, 'ไม่ระบุ');
             const fundingSource = (p) => text(p.funding_source, 'ไม่ระบุ');
             const isClosed = (p) => /ปิด|complete|completed|close/i.test(status(p));
@@ -2487,6 +2701,33 @@
                 copi?.unit_status,
                 copi?.person_type,
             ].some(isPolicyUnitText);
+            const collabRawLabel = (p) => text(p.collab_type, text(p.project_list, 'ไม่ระบุ'));
+            const collabDisplayLabel = (value) => {
+                const raw = text(value, 'ไม่ระบุ');
+                const normalized = norm(raw);
+
+                if (isPolicyUnitText(raw)) return 'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
+                if (
+                    normalized === 'cross_dept_in_med' ||
+                    normalized.includes('ข้ามหน่วย') ||
+                    (normalized.includes('นอกหน่วย') && normalized.includes('คณะ')) ||
+                    normalized.includes('ในคณะแพทย์') ||
+                    normalized.includes('ภายในคณะแพทย')
+                ) {
+                    return 'โครงการร่วมมือกับบุคลากรภายในคณะแพทยศาสตร์ศิริราชพยาบาล';
+                }
+                if (
+                    normalized === 'outside_faculty' ||
+                    normalized === 'outside_university' ||
+                    normalized.includes('นอกคณะ') ||
+                    normalized.includes('วิจัยนอกคณะ') ||
+                    normalized.includes('ภายนอกคณะแพทย')
+                ) {
+                    return 'โครงการร่วมมือกับบุคลากรภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล';
+                }
+
+                return raw;
+            };
 
             function escapeHtml(value) {
                 return String(value ?? '')
@@ -3062,10 +3303,10 @@
                     matched = rows.filter((p) => yearLabel(p) === label && fundingType(p) === dataset && budget(p) > 0);
                 } else if (id === 'chartStatus' || id === 'chartOverdue') {
                     title = `สถานะ: ${label}`;
-                    matched = (id === 'chartOverdue' ? overdueProjects(currentPastRows(rows)) : currentPastRows(rows)).filter((p) => status(p) === label);
+                    matched = (id === 'chartOverdue' ? overdueProjects(currentPastRows(rows)) : currentPastRows(rows)).filter((p) => projectStatusDisplayLabel(p.planning_status) === label);
                 } else if (id === 'chartCollab') {
                     title = `ความร่วมมือ: ${label}`;
-                    matched = currentPastRows(rows).filter((p) => text(p.collab_type, text(p.project_list, 'ไม่ระบุ')) === label);
+                    matched = currentPastRows(rows).filter((p) => collabDisplayLabel(collabRawLabel(p)) === label);
                 } else if (id === 'chartFundingSplit') {
                     title = `ทุน: ${label}`;
                     matched = currentPastRows(rows).filter((p) => fundingType(p) === label && budget(p) > 0);
@@ -3194,10 +3435,10 @@
                     });
                 document.getElementById('rtTypeSummaryBody').innerHTML = themeRows.length ? themeRows.map((item) => `
                     <tr>
-                        <td>${escapeHtml(item.label)}</td>
-                        <td class="text-right">${fmt.format(item.value)}</td>
-                        <td class="text-right">${money.format(item.percent)}%</td>
-                        <td class="text-right">${money.format(item.budget)} บ.</td>
+                        <td data-label="Content/Theme">${escapeHtml(item.label)}</td>
+                        <td data-label="จำนวนโครงการ" class="text-right">${fmt.format(item.value)}</td>
+                        <td data-label="สัดส่วน" class="text-right">${money.format(item.percent)}%</td>
+                        <td data-label="งบรวม" class="text-right">${money.format(item.budget)} บ.</td>
                     </tr>
                 `).join('') : '<tr><td colspan="4" class="text-center text-slate-500">ยังไม่มีข้อมูลกลุ่มเนื้อหา</td></tr>';
             }
@@ -3309,13 +3550,13 @@
                     `เส้นสะสมถึงปี ${CURRENT_BE_YEAR_LABEL} รวม ${fmt.format(lifecycleCumulativeRows.length)} โครงการ`,
                     lifecycleFutureRows.length ? `มีโครงการ planning ในอนาคต ${fmt.format(lifecycleFutureRows.length)} โครงการที่ยังไม่ถูกรวมในเส้นสะสม` : '',
                 ].filter(Boolean).join('. '));
-                const statusRows = top(groupSum(analysisRows, status), 8);
+                const statusRows = projectStatusChartRows(analysisRows);
                 renderChart('chartStatus', {
                     type: 'bar',
                     data: { labels: statusRows.map((x) => x.label), datasets: [barDataset('จำนวนโครงการ', statusRows.map((x) => x.value), '#7c3aed')] },
                     options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
                 });
-                const collabRows = top(groupSum(analysisRows, (p) => text(p.collab_type, text(p.project_list, 'ไม่ระบุ'))), 6);
+                const collabRows = top(groupSum(analysisRows, (p) => collabDisplayLabel(collabRawLabel(p))), 6);
                 renderChart('chartCollab', {
                     type: 'bar',
                     data: { labels: collabRows.map((x) => x.label), datasets: [barDataset('จำนวนโครงการ', collabRows.map((x) => x.value), '#14b8a6')] },
@@ -3327,7 +3568,7 @@
                     data: { labels: piUnitRows.map((x) => x.label), datasets: [barDataset('จำนวนโครงการ', piUnitRows.map((x) => x.value), '#2563eb')] },
                     options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
                 });
-                const mainStatus = statusRows[0];
+                const mainStatus = top(groupSum(analysisRows, (p) => projectStatusDisplayLabel(p.planning_status)), 1)[0];
                 const activeCount = analysisRows.filter(isActive).length;
                 const closedCount = analysisRows.filter(isClosed).length;
                 const cancelledCount = analysisRows.filter(isCancelled).length;
@@ -3831,10 +4072,11 @@
 
                     body.innerHTML = capacityRows.map((row, index) => `
                         <tr>
-                            <td><span class="di-skill-capacity-rank">${fmt.format(index + 1)}</span></td>
-                            <td><div class="di-skill-capacity-name"><span>${escapeHtml(text(row.skill_role, '-'))}</span></div></td>
+                            <td data-label="ลำดับ"><span class="di-skill-capacity-rank">${fmt.format(index + 1)}</span></td>
+                            <td data-label="Skill set"><div class="di-skill-capacity-name"><span>${escapeHtml(text(row.skill_role, '-'))}</span></div></td>
                             <td class="di-skill-capacity-table__num" data-label="Workforce"><span class="di-skill-capacity-count">${fmt.format(Number(row.workforce_people || 0))}</span></td>
                             <td class="di-skill-capacity-table__num" data-label="Time Spending (%)">${oneDecimal.format(Number(row.time_spending_pct || 0))}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Tasks (%)">${oneDecimal.format(Number(row.task_pct || 0))}</td>
                             <td class="di-skill-capacity-table__num" data-label="Position"><span class="di-skill-capacity-count">${fmt.format(Number(row.people || 0))}</span></td>
                             <td class="di-skill-capacity-table__num" data-label="Position (%)">${oneDecimal.format(Number(row.pct || 0))}</td>
                             <td class="di-skill-capacity-table__num" data-label="Position ที่ยืมตัวมา">${
@@ -3846,9 +4088,10 @@
                     `).join('');
                     foot.innerHTML = `
                         <tr>
-                            <td colspan="2">รวม</td>
+                            <td colspan="2" data-label="รวม">รวม</td>
                             <td class="di-skill-capacity-table__num" data-label="Workforce">${fmt.format(workforceTotal)}</td>
                             <td class="di-skill-capacity-table__num" data-label="Time Spending (%)">${workforceFteTotal > 0 ? oneDecimal.format(100) : oneDecimal.format(0)}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Tasks (%)">${capacityRows.reduce((sum, row) => sum + Number(row.task_count || 0), 0) > 0 ? oneDecimal.format(100) : oneDecimal.format(0)}</td>
                             <td class="di-skill-capacity-table__num" data-label="Position">${fmt.format(positionTotal)}</td>
                             <td class="di-skill-capacity-table__num" data-label="Position (%)">${positionTotal > 0 ? oneDecimal.format(100) : oneDecimal.format(0)}</td>
                             <td class="di-skill-capacity-table__num" data-label="Position ที่ยืมตัวมา">${borrowedTotal > 0 ? fmt.format(borrowedTotal) : '-'}</td>
@@ -3860,6 +4103,7 @@
                         fte: Number(row.time_spending_pct || 0),
                         workforcePeople: Number(row.workforce_people || 0),
                         timeSpendingPct: Number(row.time_spending_pct || 0),
+                        taskPct: Number(row.task_pct || 0),
                         people: Number(row.people || 0),
                         borrowedPeople: Number(row.borrowed_people || 0),
                     }));
@@ -3871,11 +4115,12 @@
                     const key = skillSetDisplayLabel(skill);
                     if (!skillMap.has(key)) {
                         skillMap.set(key, {
-                            skill: key,
-                            fte: 0,
-                            workforce: new Set(),
-                            positionPeople: new Set(),
-                            borrowedPeople: new Set(),
+                        skill: key,
+                        fte: 0,
+                        taskCount: 0,
+                        workforce: new Set(),
+                        positionPeople: new Set(),
+                        borrowedPeople: new Set(),
                         });
                     }
                     return skillMap.get(key);
@@ -3886,6 +4131,7 @@
                     if (!(value > 0)) return;
                     const row = ensureSkill(fteSkillLabel(item));
                     row.fte += value;
+                    row.taskCount += 1;
                     const personKey = normalizePersonKey(item.name);
                     if (personKey) row.workforce.add(personKey);
                 });
@@ -3921,7 +4167,7 @@
                     .slice(0, 4);
 
                 if (!skillRows.length) {
-                    body.innerHTML = '<tr><td colspan="7" class="di-skill-capacity-table__num">ไม่มีข้อมูล Skill set capacity ใน scope นี้</td></tr>';
+                    body.innerHTML = '<tr><td colspan="8" class="di-skill-capacity-table__num">ไม่มีข้อมูล Skill set capacity ใน scope นี้</td></tr>';
                     foot.innerHTML = '';
                     return [];
                 }
@@ -3930,16 +4176,19 @@
                 const borrowedTotal = skillRows.reduce((sum, row) => sum + row.borrowedPeople, 0);
                 const workforceTotal = new Set(workloadItems.map((item) => normalizePersonKey(item.name)).filter(Boolean)).size;
                 const displayedFteTotal = skillRows.reduce((sum, row) => sum + row.fte, 0);
+                const displayedTaskTotal = skillRows.reduce((sum, row) => sum + row.taskCount, 0);
                 const displayedPeopleTotal = skillRows.reduce((sum, row) => sum + row.people, 0);
 
                 body.innerHTML = skillRows.map((row, index) => {
                     const positionPct = positionTotal ? (row.people / positionTotal) * 100 : 0;
-                    return `
-                        <tr>
-                            <td><span class="di-skill-capacity-rank">${fmt.format(index + 1)}</span></td>
-                            <td><div class="di-skill-capacity-name"><span>${escapeHtml(row.skill)}</span></div></td>
+                    const taskPct = displayedTaskTotal ? (row.taskCount / displayedTaskTotal) * 100 : 0;
+                        return `
+                            <tr>
+                            <td data-label="ลำดับ"><span class="di-skill-capacity-rank">${fmt.format(index + 1)}</span></td>
+                            <td data-label="Skill set"><div class="di-skill-capacity-name"><span>${escapeHtml(row.skill)}</span></div></td>
                             <td class="di-skill-capacity-table__num" data-label="Workforce"><span class="di-skill-capacity-count">${fmt.format(row.workforcePeople)}</span></td>
                             <td class="di-skill-capacity-table__num" data-label="Time Spending (%)">${money.format(row.timeSpendingPct)}</td>
+                            <td class="di-skill-capacity-table__num" data-label="Tasks (%)">${money.format(taskPct)}</td>
                             <td class="di-skill-capacity-table__num" data-label="Position"><span class="di-skill-capacity-count">${fmt.format(row.people)}</span></td>
                             <td class="di-skill-capacity-table__num" data-label="Position (%)">${money.format(positionPct)}</td>
                             <td class="di-skill-capacity-table__num" data-label="Position ที่ยืมตัวมา">${
@@ -3952,9 +4201,10 @@
                 }).join('');
                 foot.innerHTML = `
                     <tr>
-                        <td colspan="2">รวม</td>
+                        <td colspan="2" data-label="รวม">รวม</td>
                         <td class="di-skill-capacity-table__num" data-label="Workforce">${fmt.format(workforceTotal)}</td>
                         <td class="di-skill-capacity-table__num" data-label="Time Spending (%)">${displayedFteTotal > 0 ? money.format(100) : money.format(0)}</td>
+                        <td class="di-skill-capacity-table__num" data-label="Tasks (%)">${displayedTaskTotal > 0 ? money.format(100) : money.format(0)}</td>
                         <td class="di-skill-capacity-table__num" data-label="Position">${fmt.format(displayedPeopleTotal)}</td>
                         <td class="di-skill-capacity-table__num" data-label="Position (%)">${displayedPeopleTotal > 0 ? money.format(100) : money.format(0)}</td>
                         <td class="di-skill-capacity-table__num" data-label="Position ที่ยืมตัวมา">${borrowedTotal > 0 ? fmt.format(borrowedTotal) : '-'}</td>

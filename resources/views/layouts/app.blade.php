@@ -5,7 +5,7 @@
     $appTitle = 'SiHP Research Database Management system';
     $routeName = request()->route()?->getName();
     $pageTitle = match (true) {
-        request()->routeIs('dashboard') => 'แดชบอร์ด',
+        request()->routeIs('dashboard') => 'Dashboard',
         request()->routeIs('dashboard.command-center') => 'แดชบอร์ดภาพรวม',
         request()->routeIs('overview') => 'ภาพรวมระบบ',
         request()->routeIs('projects.index') => 'โครงการวิจัย',
@@ -2159,6 +2159,13 @@
                 value: String(option.value),
                 label: String(option.textContent || '').trim(),
             }));
+        const normalizeSearchText = (value) => {
+            const normalized = String(value || '').toLowerCase().trim();
+
+            return config.ignoreSearchWhitespace
+                ? normalized.replace(/[\s\u200B\u200C\u200D\uFEFF]+/g, '')
+                : normalized;
+        };
 
         const syncLabel = () => {
             const selectedOption = Array.from(select.options).find((option) => option.value === select.value);
@@ -2169,8 +2176,8 @@
         };
 
         const renderOptions = () => {
-            const term = String(searchInput.value || '').toLowerCase().trim();
-            const items = optionItems().filter((item) => term === '' || item.label.toLowerCase().includes(term));
+            const term = normalizeSearchText(searchInput.value);
+            const items = optionItems().filter((item) => term === '' || normalizeSearchText(item.label).includes(term));
             optionsWrap.innerHTML = '';
 
             if (!items.length) {

@@ -1886,16 +1886,20 @@
 
             function getStatusYearChartLabel(p) {
                 const statuses = [
-                    'Project Planing (เริ่มต้น - submit IRB)',
+                    'Project Planing (เริ่มต้น - Submit IRB)',
                     'เก็บข้อมูล',
                     'วิเคราะห์ข้อมูล',
-                    'เขียนรายงานและpublication',
+                    'เขียนรายงานเเละ publication',
                     'ปิดโปรเจค',
-                    'ยกเลิกโปรเจค',
-                    'ไม่ระบุสถานะ'
                 ];
                 const rawStatus = String(p?.planning_status || '').trim();
-                return statuses.includes(rawStatus) ? rawStatus : 'ไม่ระบุสถานะ';
+                const normalized = rawStatus.toLowerCase().replace(/\s+/g, '');
+                if (normalized.includes('projectplaning') && normalized.includes('submitirb')) return statuses[0];
+                if (normalized.includes('เก็บข้อมูล')) return statuses[1];
+                if (normalized.includes('วิเคราะห์ข้อมูล')) return statuses[2];
+                if (normalized.includes('เขียนรายงาน')) return statuses[3];
+                if (normalized.includes('ปิดโปรเจค')) return statuses[4];
+                return null;
             }
 
             function buildOverdueRecord(p, referenceDate = new Date()) {
@@ -3615,9 +3619,9 @@
                 // ถ้ามี p.collab_type ให้ใช้เลย เช่น: 'outside_faculty' | 'cross_dept_in_med' | 'outside_university'
                 if (p.collab_type) {
                     const map = {
-                        outside_faculty: 'นอกคณะ',
-                        cross_dept_in_med: 'ข้ามหน่วย (ในคณะแพทย์)',
-                        outside_university: 'นอกมหาวิทยาลัย'
+                        outside_faculty: 'โครงการร่วมมือกับบุคลากรภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล',
+                        cross_dept_in_med: 'โครงการร่วมมือกับบุคลากรภายในคณะแพทยศาสตร์ศิริราชพยาบาล',
+                        outside_university: 'โครงการร่วมมือกับบุคลากรภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล'
                     };
                     return map[p.collab_type] || 'ไม่ระบุ';
                 }
@@ -3646,8 +3650,8 @@
                 const s = (raw ?? '').toString().trim();
                 if (!s) return null;
                 if (s.includes('ภายในหน่วยวิจัย') && s.includes('สุขภา')) return 'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
-                if (s.includes('นอกหน่วย') && s.includes('คณะ')) return 'โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ';
-                if (s.includes('วิจัยนอกคณะ')) return 'โครงการวิจัยนอกคณะ';
+                if (s.includes('นอกหน่วย') && s.includes('คณะ')) return 'โครงการร่วมมือกับบุคลากรภายในคณะแพทยศาสตร์ศิริราชพยาบาล';
+                if (s.includes('วิจัยนอกคณะ')) return 'โครงการร่วมมือกับบุคลากรภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล';
                 return null;
             }
 
@@ -4680,19 +4684,18 @@
             (function() {
                 const ctx = document.getElementById('chartStatusYear').getContext('2d');
                 const statuses = [
-                    'Project Planing (เริ่มต้น - submit IRB)',
+                    'Project Planing (เริ่มต้น - Submit IRB)',
                     'เก็บข้อมูล',
                     'วิเคราะห์ข้อมูล',
-                    'เขียนรายงานและpublication',
+                    'เขียนรายงานเเละ publication',
                     'ปิดโปรเจค',
-                    'ยกเลิกโปรเจค',
-                    'ไม่ระบุสถานะ'
                 ];
 
                 const statusData = {}; // year → status → count
                 projects.forEach(p => {
                     const year = getYear(p);
                     const status = getStatusYearChartLabel(p);
+                    if (!status) return;
                     if (!statusData[year]) statusData[year] = Object.fromEntries(statuses.map(s => [s, 0]));
                     statusData[year][status]++;
                 });
@@ -4851,8 +4854,8 @@
                 // --- หมวดหมู่ ---
                 const CATS = [
                     'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ',
-                    'โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ',
-                    'โครงการวิจัยนอกคณะ'
+                    'โครงการร่วมมือกับบุคลากรภายในคณะแพทยศาสตร์ศิริราชพยาบาล',
+                    'โครงการร่วมมือกับบุคลากรภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล'
                 ];
 
                 // --- helper: ปีจาก project ---
@@ -8841,19 +8844,18 @@
                     if (!canvas) return;
 
                     const statuses = [
-                        'Project Planing (เริ่มต้น - submit IRB)',
+                        'Project Planing (เริ่มต้น - Submit IRB)',
                         'เก็บข้อมูล',
                         'วิเคราะห์ข้อมูล',
-                        'เขียนรายงานและpublication',
+                        'เขียนรายงานเเละ publication',
                         'ปิดโปรเจค',
-                        'ยกเลิกโปรเจค',
-                        'ไม่ระบุสถานะ'
                     ];
 
                     const statusData = {};
                     rows.forEach((project) => {
                         const year = getYearLabel(project);
                         const status = getStatusYearChartLabel(project);
+                        if (!status) return;
                         statusData[year] = statusData[year] || Object.fromEntries(statuses.map((item) => [item, 0]));
                         statusData[year][status] += 1;
                     });
@@ -8948,8 +8950,8 @@
 
                     const categories = [
                         'โครงการภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ',
-                        'โครงการนอกหน่วย แต่ยังอยู่ในคณะฯ',
-                        'โครงการวิจัยนอกคณะ'
+                        'โครงการร่วมมือกับบุคลากรภายในคณะแพทยศาสตร์ศิริราชพยาบาล',
+                        'โครงการร่วมมือกับบุคลากรภายนอกคณะแพทยศาสตร์ศิริราชพยาบาล'
                     ];
                     const normalizeUnitStatus = (raw) => {
                         const text = (raw ?? '').toString().trim();

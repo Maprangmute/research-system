@@ -2277,7 +2277,7 @@
         }
         .fte-radar-chart-wrap {
             margin-top: 18px;
-            height: 430px;
+            height: 500px;
             overflow-x: visible;
             overflow-y: visible;
             padding-bottom: 4px;
@@ -2305,6 +2305,23 @@
             gap: 7px;
             white-space: nowrap;
         }
+        .fte-radar-legend [data-fte-radar-dataset] {
+            cursor: pointer;
+            user-select: none;
+            border-radius: 999px;
+            outline: none;
+            transition: opacity .16s ease, color .16s ease, background-color .16s ease;
+        }
+        .fte-radar-legend [data-fte-radar-dataset]:focus-visible {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .18);
+        }
+        .fte-radar-legend [data-fte-radar-dataset].is-muted {
+            color: #64748b;
+            opacity: .5;
+        }
+        .fte-radar-legend [data-fte-radar-dataset].is-muted i {
+            background: #cbd5e1 !important;
+        }
         .fte-radar-legend i {
             display: inline-block;
             width: 14px;
@@ -2313,32 +2330,25 @@
             box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .08);
         }
         .fte-insight-card {
-            background: #fbfdff;
+            overflow: hidden;
+            border-color: #c7d2fe;
+            background: #eef2ff;
         }
-        .fte-chart-insight {
-            border-top: 1px solid #e2e8f0;
-            padding-top: 12px;
-        }
-        .fte-chart-insight__body {
-            border-left: 4px solid #2563eb;
-            border-radius: 10px;
-            background: #f8fbff;
-            padding: 10px 12px;
+        .fte-analysis-card__body {
+            margin-top: 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, .9);
+            padding: 13px 14px;
             font-size: 14px;
             font-weight: 400;
-            line-height: 1.625;
+            line-height: 1.68;
             color: #334155;
         }
-        .fte-insight-item {
-            border-left: 4px solid #14b8a6;
-            border-radius: 10px;
-            background: #ffffff;
-            padding: 10px 12px;
-            font-size: 14px;
-            font-weight: 400;
-            line-height: 1.625;
-            color: #334155;
-            box-shadow: 0 6px 16px rgba(15, 23, 42, .035);
+        .fte-analysis-card__label {
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #4338ca;
         }
         .fte-capacity-tables {
             display: grid;
@@ -2517,7 +2527,7 @@
         }
         .fte-capacity-table--skill th:nth-child(2),
         .fte-capacity-table--skill td:nth-child(2) {
-            width: 30%;
+            width: 28%;
             min-width: 0;
         }
         .fte-capacity-table--skill thead tr:first-child th:first-child {
@@ -2530,8 +2540,8 @@
             border-left: 1px solid #dbeafe;
         }
         .fte-capacity-table--skill thead tr:first-child th:nth-child(4),
-        .fte-capacity-table--skill tbody td:nth-child(5),
-        .fte-capacity-table--skill tfoot td:nth-child(4) {
+        .fte-capacity-table--skill tbody td:nth-child(6),
+        .fte-capacity-table--skill tfoot td:nth-child(5) {
             border-left: 1px solid #dbeafe;
         }
         .fte-capacity-table--skill thead tr:nth-child(2) th {
@@ -2539,6 +2549,18 @@
             font-size: 10px;
             letter-spacing: .04em;
             line-height: 1.2;
+        }
+        .fte-capacity-table--skill thead tr:nth-child(2) th:nth-child(1) {
+            background: #f5f3ff !important;
+            color: #0f172a !important;
+        }
+        .fte-capacity-table--skill thead tr:nth-child(2) th:nth-child(2) {
+            background: #eff6ff !important;
+            color: #0f172a !important;
+        }
+        .fte-capacity-table--skill thead tr:nth-child(2) th:nth-child(3) {
+            background: #fff7ed !important;
+            color: #0f172a !important;
         }
         .fte-capacity-table--skill tbody td,
         .fte-capacity-table--skill tfoot td {
@@ -2703,9 +2725,22 @@
             letter-spacing: .04em;
         }
         .fte-current-matrix__total-head {
-            background: #eaf4ff !important;
-            color: #1e3a8a !important;
+            border-left: 2px solid #94a3b8 !important;
+            background: #f1f5f9 !important;
+            color: #334155 !important;
             text-align: center !important;
+        }
+        .fte-current-matrix__table tbody td.fte-current-matrix__grand-cell {
+            border-left: 2px solid #94a3b8 !important;
+            background: #f8fafc !important;
+            color: #334155 !important;
+            font-weight: 900 !important;
+        }
+        .fte-current-matrix__table tbody tr:nth-child(even) td.fte-current-matrix__grand-cell {
+            background: #eef2f7 !important;
+        }
+        .fte-current-matrix__table tbody tr:hover td.fte-current-matrix__grand-cell {
+            background: #e2e8f0 !important;
         }
         .fte-current-matrix__table tbody th,
         .fte-current-matrix__table tfoot th {
@@ -2753,13 +2788,13 @@
         .fte-current-matrix__dash {
             color: #cbd5e1;
         }
-        .fte-current-matrix__grand-cell .fte-current-matrix__value {
+        .fte-current-matrix__table tbody td.fte-current-matrix__grand-cell .fte-current-matrix__value {
             display: inline;
             min-width: 0;
             border-radius: 0;
             background: transparent;
             padding: 0;
-            color: #0f172a;
+            color: #334155;
             box-shadow: none;
         }
         .fte-current-matrix__table tfoot tr:first-child th,
@@ -4339,6 +4374,10 @@
             }
         }
         @media (min-width: 768px) and (max-width: 1366px) {
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-card__title {
+                font-size: 12px !important;
+                line-height: 1.35 !important;
+            }
             .fte-capacity-table-wrap {
                 overflow-x: visible !important;
                 max-width: 100%;
@@ -4363,11 +4402,23 @@
                 table-layout: fixed !important;
             }
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill col:nth-child(2) {
-                width: 30% !important;
+                width: 24% !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill col:nth-child(3),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill col:nth-child(5),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill col:nth-child(6) {
+                width: 9% !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill col:nth-child(4),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill col:nth-child(7) {
+                width: 10% !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill col:nth-child(8) {
+                width: 12% !important;
             }
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill th:nth-child(2),
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table--skill td:nth-child(2) {
-                width: 30% !important;
+                width: 24% !important;
                 min-width: 0 !important;
             }
             .fte-capacity-sticky-col .fte-capacity-table {
@@ -4381,20 +4432,21 @@
             .fte-capacity-table tbody tr:nth-child(even) td,
             .fte-capacity-table tbody tr:hover td,
             .fte-capacity-table tfoot td {
-                padding: 6px 5px !important;
+                padding: 6px 3px !important;
             }
             .fte-capacity-table th {
-                font-size: 8.5px !important;
+                font-size: 7.2px !important;
                 letter-spacing: 0 !important;
-                line-height: 1.15;
+                line-height: 1.12;
                 white-space: normal;
+                overflow-wrap: anywhere;
             }
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table__group {
-                font-size: 9px !important;
-                letter-spacing: .06em !important;
+                font-size: 7.8px !important;
+                letter-spacing: .03em !important;
             }
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-skill-name {
-                font-size: 11px;
+                font-size: 10px;
                 line-height: 1.25;
             }
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-skill-name,
@@ -4455,11 +4507,13 @@
             .fte-capacity-table th:nth-child(5),
             .fte-capacity-table td:nth-child(5),
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(6),
-            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(6) {
-                width: 13% !important;
-            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(6),
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(7),
             .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(7) {
+                width: 10% !important;
+            }
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table th:nth-child(8),
+            .fte-capacity-card[data-fte-capacity-left] .fte-capacity-table td:nth-child(8) {
                 width: 12% !important;
             }
             .fte-capacity-sticky-col .fte-capacity-table th:nth-child(3),
@@ -5071,7 +5125,7 @@
                 min-width: 760px;
             }
             .fte-radar-chart-wrap {
-                height: 360px;
+                height: 390px;
             }
             .fte-radar-card,
             .fte-time-card {
@@ -5088,9 +5142,7 @@
                 width: 12px;
                 height: 12px;
             }
-            .fte-chart-insight__body,
-            .fte-insight-item {
-                border-left-width: 3px;
+            .fte-analysis-card__body {
                 padding: 9px 10px;
                 font-size: 13px;
                 line-height: 1.6;
@@ -5746,7 +5798,7 @@
         }
         @media (max-width: 767px) {
             .fte-radar-chart-wrap {
-                height: 380px !important;
+                height: 400px !important;
                 margin-left: -4px;
                 margin-right: -4px;
                 overflow-x: auto !important;
@@ -5762,7 +5814,7 @@
         }
         @media (min-width: 768px) and (max-width: 1279px) {
             .fte-radar-chart-wrap {
-                height: 430px !important;
+                height: 470px !important;
                 overflow-x: auto !important;
                 overflow-y: hidden !important;
                 padding-bottom: 8px;
@@ -6166,7 +6218,7 @@
                 height: 350px !important;
             }
             .viz-page .fte-radar-chart-wrap {
-                height: 390px !important;
+                height: 420px !important;
             }
             .viz-page .policy-impact-chart-inner,
             .viz-page .data-literacy-chart-inner,
@@ -6460,7 +6512,7 @@
                 height: 360px !important;
             }
             .viz-page .fte-radar-chart-wrap {
-                height: 420px !important;
+                height: 470px !important;
             }
             .viz-page .policy-framework-chart-inner,
             .viz-page .policy-impact-chart-inner,
@@ -7619,10 +7671,10 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     <div>
                                         <div class="fte-radar-card__title">Skill profile จากภาระงาน FTE</div>
                                     </div>
-                                    <div class="fte-radar-legend" aria-label="FTE skill radar legend">
-                                        <span><i style="background:#2563eb;"></i>เวลาทำงาน (ชั่วโมง)</span>
-                                        <span><i style="background:#f97316;"></i>ภาระงาน</span>
-                                        <span><i style="background:#7c3aed;"></i>กำลังคน</span>
+                                    <div class="fte-radar-legend" aria-label="FTE skill radar legend" data-fte-radar-legend>
+                                        <span data-fte-radar-dataset="0" role="button" tabindex="0" aria-pressed="true"><i style="background:#2563eb;"></i>เวลาทำงาน (Time Spending)</span>
+                                        <span data-fte-radar-dataset="1" role="button" tabindex="0" aria-pressed="true"><i style="background:#f97316;"></i>ภาระงาน (Tasks)</span>
+                                        <span data-fte-radar-dataset="2" role="button" tabindex="0" aria-pressed="true"><i style="background:#7c3aed;"></i>กำลังคน (Workforce)</span>
                                     </div>
                                 </div>
                                 <div class="fte-radar-chart-wrap">
@@ -7633,22 +7685,17 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 <div class="mt-2 text-xs leading-relaxed text-slate-500">
                                     หมายเหตุ: กราฟนี้รวมจำนวนกำลังคนทั้งหมดที่เคยร่วมงานในช่วงเวลาที่แสดง รวมถึงบุคลากรที่ได้ลาออกแล้วด้วย
                                 </div>
-                                @if (filled($fteRadarChartInsight))
-                                    <div class="fte-chart-insight">
-                                        <div class="fte-radar-card__title">Analysis insight</div>
-                                        <div class="fte-chart-insight__body mt-3">{{ $fteRadarChartInsight }}</div>
-                                    </div>
-                                @endif
                             </div>
 
-                            <aside class="fte-radar-card fte-insight-card">
-                                <div class="fte-radar-card__title">สิ่งที่เกิดขึ้น</div>
-                                <div class="mt-3 grid gap-3">
-                                    @foreach ($fteRadarInsights as $insight)
-                                        <div class="fte-insight-item">{{ $insight }}</div>
-                                    @endforeach
-                                </div>
-                            </aside>
+                            @if (filled($fteRadarChartInsight))
+                                <aside class="fte-radar-card fte-insight-card">
+                                    <div class="text-xl font-semibold text-slate-950">Analysis Insight</div>
+                                    <div class="fte-analysis-card__body">
+                                        <div class="fte-analysis-card__label">ภาพรวมที่อ่านได้จากกราฟ</div>
+                                        <div>{{ $fteRadarChartInsight }}</div>
+                                    </div>
+                                </aside>
+                            @endif
                         </div>
                         @if ($fteCapacityPositionRows->isNotEmpty() || $fteCapacitySkillRows->isNotEmpty())
                             <div class="fte-capacity-tables mt-5" data-fte-capacity-tables>
@@ -7657,30 +7704,32 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                         <div class="fte-capacity-card__head">
                                             <div>
                                                 <div class="fte-capacity-card__kicker">Skill set capacity</div>
-                                                <div class="fte-capacity-card__title">ภาพรวมของการกระจายคน (Workforce) เเละ เวลาการทำงาน (Time Spending) ตามกลุ่มทักษะ</div>
+                                                <div class="fte-capacity-card__title">ภาพรวมของการกระจายคน (Workforce), เวลาการทำงาน (Time Spending) เเละภาระงาน (Tasks) ตามกลุ่มทักษะ</div>
                                             </div>
                                         </div>
                                         <div class="fte-capacity-table-wrap">
                                             <table class="fte-capacity-table fte-capacity-table--skill">
                                             <colgroup>
                                                 <col style="width:44px;">
-                                                <col style="width:30%;">
+                                                <col style="width:28%;">
+                                                <col style="width:10%;">
+                                                <col style="width:12%;">
+                                                <col style="width:10%;">
                                                 <col style="width:11%;">
-                                                <col style="width:14%;">
-                                                <col style="width:11%;">
+                                                <col style="width:12%;">
                                                 <col style="width:13%;">
-                                                <col style="width:15%;">
                                             </colgroup>
                                             <thead>
                                                 <tr>
                                                     <th rowspan="2" class="fte-capacity-table__num"></th>
                                                     <th rowspan="2">Skill set</th>
-                                                    <th colspan="2" class="fte-capacity-table__num fte-capacity-table__group fte-capacity-table__group--current">Current Situation</th>
-                                                    <th colspan="3" class="fte-capacity-table__num fte-capacity-table__group">Position</th>
+                                                    <th colspan="3" class="fte-capacity-table__num fte-capacity-table__group fte-capacity-table__group--current">Current Situation (สถานการณ์ทำงานจริง)</th>
+                                                    <th colspan="3" class="fte-capacity-table__num fte-capacity-table__group">Position (กรอบอัตรากำลังตามแผน)</th>
                                                 </tr>
                                                 <tr>
                                                     <th class="fte-capacity-table__num">Workforce</th>
                                                     <th class="fte-capacity-table__num">Time Spent (%)</th>
+                                                    <th class="fte-capacity-table__num">Tasks (%)</th>
                                                     <th class="fte-capacity-table__num">Position</th>
                                                     <th class="fte-capacity-table__num">Position (%)</th>
                                                     <th class="fte-capacity-table__num">Position ที่ยืมตัวมา</th>
@@ -7697,6 +7746,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                         </td>
                                                         <td class="fte-capacity-table__num" data-label="Workforce"><span class="fte-capacity-count">{{ number_format((int) ($row->workforce_people ?? 0)) }}</span></td>
                                                         <td class="fte-capacity-table__num" data-label="Time Spending (%)">{{ number_format((float) ($row->time_spending_pct ?? 0), 1) }}</td>
+                                                        <td class="fte-capacity-table__num" data-label="Tasks (%)">{{ number_format((float) ($row->task_pct ?? 0), 1) }}</td>
                                                         <td class="fte-capacity-table__num" data-label="Position"><span class="fte-capacity-count">{{ number_format((int) ($row->people ?? 0)) }}</span></td>
                                                         <td class="fte-capacity-table__num" data-label="Position (%)">{{ number_format((float) ($row->pct ?? 0), 1) }}</td>
                                                         <td class="fte-capacity-table__num" data-label="Position ที่ยืมตัวมา">
@@ -7714,6 +7764,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                     <td colspan="2">รวม</td>
                                                     <td class="fte-capacity-table__num" data-label="Workforce">{{ number_format($fteCapacityWorkforceTotal) }}</td>
                                                     <td class="fte-capacity-table__num" data-label="Time Spending (%)">{{ number_format($fteCapacityWorkforceFteTotal > 0 ? 100 : 0, 1) }}</td>
+                                                    <td class="fte-capacity-table__num" data-label="Tasks (%)">{{ number_format($fteCapacitySkillRows->sum('task_count') > 0 ? 100 : 0, 1) }}</td>
                                                     <td class="fte-capacity-table__num" data-label="Position">{{ number_format($fteCapacityTotal) }}</td>
                                                     <td class="fte-capacity-table__num" data-label="Position (%)">{{ number_format($fteCapacityTotal > 0 ? 100 : 0, 1) }}</td>
                                                     <td class="fte-capacity-table__num" data-label="Position ที่ยืมตัวมา">{{ $fteCapacitySkillBorrowedTotal > 0 ? number_format($fteCapacitySkillBorrowedTotal) : '-' }}</td>
@@ -7722,7 +7773,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                             </table>
                                         </div>
                                         <div class="fte-capacity-table-note">
-                                            หมายเหตุ: Position รวมตำแหน่งในแต่ละ Skill set, Position (%) แสดงสัดส่วนต่อ Position ทั้งหมด, Workforce นับจำนวนคนไม่ซ้ำจากภาระงาน FTE ที่เข้าแต่ละ Skill set, Time Spending (%) แสดงสัดส่วน FTE ของภาระงานในแต่ละ Skill set และ Position ที่ยืมตัวมาแสดงจำนวนตำแหน่งยืมตัวในแต่ละสายงาน
+                                            หมายเหตุ: ตัวเลขนี้เป็นการคำนวณในภาพรวมแบบค่าเฉลี่ย จึงอาจมีข้อจำกัดในการสะท้อนภาระงานจริงรายบุคคล (เช่น กรณีที่มีบุคลากรทำงานหนักเกินเกณฑ์แต่ถูกค่าเฉลี่ยหารลดลง) แนะนำให้ตรวจสอบรายละเอียดเพิ่มเติมจากดัชนี FTE (Full-Time Equivalent) รายบุคคล และอีกสองตารางด้านล่าง
                                         </div>
                                         @if ($fteCapacityCurrentSituationSkills->isNotEmpty() && $fteCapacityCurrentSituationRows->isNotEmpty())
                                             <div class="fte-current-matrix-stack">
@@ -7747,6 +7798,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                                             <span>{{ $skillRole }}</span>
                                                                         </th>
                                                                     @endforeach
+                                                                    <th class="fte-current-matrix__total-head">Grand Total</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
@@ -7769,6 +7821,16 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                                                 @endif
                                                                             </td>
                                                                         @endforeach
+                                                                        @php
+                                                                            $rowWorkforceTotal = (int) ($matrixRow->workforce_total ?? 0);
+                                                                        @endphp
+                                                                        <td class="fte-current-matrix__grand-cell {{ $rowWorkforceTotal > 0 ? 'is-filled' : 'is-empty' }}">
+                                                                            @if ($rowWorkforceTotal > 0)
+                                                                                <span class="fte-current-matrix__value">{{ number_format($rowWorkforceTotal) }}</span>
+                                                                            @else
+                                                                                <span class="fte-current-matrix__dash">-</span>
+                                                                            @endif
+                                                                        </td>
                                                                     </tr>
                                                                 @endforeach
                                                             </tbody>
@@ -7778,15 +7840,20 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                                     @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
                                                                         <td>{{ number_format((int) ($fteCapacityCurrentSituationWorkforceTotals[$skillRole] ?? 0)) }}</td>
                                                                     @endforeach
+                                                                    <td class="fte-current-matrix__grand-cell">{{ number_format($fteCapacityCurrentSituationWorkforceGrandTotal) }}</td>
                                                                 </tr>
                                                                 <tr>
                                                                     <th>Position Allocation by Skill Set (%)</th>
                                                                     @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
                                                                         <td>{{ number_format((int) ($fteCapacityCurrentSituationPlan[$skillRole] ?? 0)) }}</td>
                                                                     @endforeach
+                                                                    <td class="fte-current-matrix__grand-cell">{{ number_format($fteCapacityCurrentSituationPlanTotal) }}</td>
                                                                 </tr>
                                                             </tfoot>
                                                         </table>
+                                                    </div>
+                                                    <div class="fte-capacity-table-note">
+                                                        หมายเหตุ: ตัวเลขนี้เป็นการคำนวณในภาพรวมแบบค่าเฉลี่ย จึงอาจมีข้อจำกัดในการสะท้อนภาระงานจริงรายบุคคล (เช่น กรณีที่มีบุคลากรทำงานหนักเกินเกณฑ์แต่ถูกค่าเฉลี่ยหารลดลง) แนะนำให้ตรวจสอบรายละเอียดเพิ่มเติมจากดัชนี FTE (Full-Time Equivalent) รายบุคคล และอีกสองตารางด้านล่าง
                                                     </div>
                                                 </section>
 
@@ -7807,6 +7874,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                                             <span>{{ $skillRole }}</span>
                                                                         </th>
                                                                     @endforeach
+                                                                    <th class="fte-current-matrix__total-head">Grand Total</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
@@ -7829,6 +7897,16 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                                                 @endif
                                                                             </td>
                                                                         @endforeach
+                                                                        @php
+                                                                            $rowTimeTotal = (float) ($matrixRow->time_total ?? 0);
+                                                                        @endphp
+                                                                        <td class="fte-current-matrix__grand-cell {{ $rowTimeTotal > 0 ? 'is-filled' : 'is-empty' }}">
+                                                                            @if ($rowTimeTotal > 0)
+                                                                                <span class="fte-current-matrix__value">{{ number_format($rowTimeTotal, 2) }}%</span>
+                                                                            @else
+                                                                                <span class="fte-current-matrix__dash">-</span>
+                                                                            @endif
+                                                                        </td>
                                                                     </tr>
                                                                 @endforeach
                                                             </tbody>
@@ -7838,15 +7916,20 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                                     @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
                                                                         <td>{{ number_format((float) ($fteCapacityCurrentSituationTimeTotals[$skillRole] ?? 0), 2) }}%</td>
                                                                     @endforeach
+                                                                    <td class="fte-current-matrix__grand-cell">{{ number_format($fteCapacityCurrentSituationTimeGrandTotal, 2) }}%</td>
                                                                 </tr>
                                                                 <tr>
                                                                     <th>Position Allocation by Skill Set (%)</th>
                                                                     @foreach ($fteCapacityCurrentSituationSkills as $skillRole)
                                                                         <td>{{ number_format((float) ($fteCapacityCurrentSituationPlanAllocation[$skillRole] ?? 0), 2) }}%</td>
                                                                     @endforeach
+                                                                    <td class="fte-current-matrix__grand-cell">{{ number_format($fteCapacityCurrentSituationPlanAllocationTotal, 2) }}%</td>
                                                                 </tr>
                                                             </tfoot>
                                                         </table>
+                                                    </div>
+                                                    <div class="fte-capacity-table-note">
+                                                        หมายเหตุ: ตัวเลขนี้เป็นการคำนวณในภาพรวมแบบค่าเฉลี่ย จึงอาจมีข้อจำกัดในการสะท้อนภาระงานจริงรายบุคคล (เช่น กรณีที่มีบุคลากรทำงานหนักเกินเกณฑ์แต่ถูกค่าเฉลี่ยหารลดลง) แนะนำให้ตรวจสอบรายละเอียดเพิ่มเติมจากดัชนี FTE (Full-Time Equivalent) รายบุคคล และอีกสองตารางด้านล่าง
                                                     </div>
                                                 </section>
                                             </div>
@@ -9356,6 +9439,9 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     Chart.getChart?.(canvas)?.destroy();
                     const chart = new Chart(canvas, config);
                     renderedCharts.set(canvasId, chart);
+                    if (canvasId === 'chartFteSkillRadar') {
+                        setupFteRadarLegendToggle(chart);
+                    }
                     return chart;
                 } catch (error) {
                     console.error(`Unable to render ${canvasId}`, error);
@@ -9418,17 +9504,17 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             if (canvasId === 'chartFteSkillRadar') {
                                 chart.options.layout = chart.options.layout || {};
                                 chart.options.layout.padding = {
-                                    top: isFteRadarCompactViewport() ? 18 : 34,
-                                    right: isFteRadarCompactViewport() ? 10 : 24,
-                                    bottom: isFteRadarCompactViewport() ? 8 : 12,
-                                    left: isFteRadarCompactViewport() ? 10 : 24
+                                    top: isFteRadarCompactViewport() ? 8 : 14,
+                                    right: isFteRadarCompactViewport() ? 4 : 8,
+                                    bottom: isFteRadarCompactViewport() ? 4 : 8,
+                                    left: isFteRadarCompactViewport() ? 4 : 8
                                 };
                                 chart.options.scales = chart.options.scales || {};
                                 chart.options.scales.r = chart.options.scales.r || {};
                                 chart.options.scales.r.pointLabels = {
                                     ...(chart.options.scales.r.pointLabels || {}),
-                                    padding: isFteRadarCompactViewport() ? 10 : 18,
-                                    font: { family: chartFontFamily, size: isFteRadarCompactViewport() ? 10 : 13, weight: '600' }
+                                    padding: isFteRadarCompactViewport() ? 5 : 7,
+                                    font: { family: chartFontFamily, size: isFteRadarCompactViewport() ? 9 : 11, weight: '600' }
                                 };
                             }
                             chart.resize();
@@ -9443,6 +9529,11 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                 const maxVal = Math.max(...(values || [0]), 0);
                 if (maxVal <= 0) return min;
                 return Math.ceil(maxVal * 1.18);
+            };
+            const suggestedPercentAxisMax = (values, min = 40) => {
+                const maxVal = Math.max(...(values || [0]).map((value) => Number(value) || 0), 0);
+                if (maxVal <= 0) return min;
+                return Math.min(100, Math.max(min, Math.ceil(maxVal * 1.18 / 10) * 10));
             };
             const fteRadarColors = {
                 hours: {
@@ -9474,12 +9565,62 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                 if (value.includes('Communication')) return 'Comms/PR';
                 return value;
             };
-            const fteRadarChartLabels = fteRadarLabels;
+            const fteRadarChartLabel = (label) => {
+                const value = String(label || '');
+                if (value.includes('Scientific')) return ['Scientific', 'Research'];
+                if (value.includes('Project Management')) return ['Project Management', '& Coordination'];
+                if (value.includes('Operations')) return ['Operations &', 'Administrative Support'];
+                if (value.includes('IT')) return ['IT & Data', 'Management Systems'];
+                if (value.includes('Communication')) return ['Communication &', 'Public Relations'];
+                return value;
+            };
+            const fteRadarChartLabels = fteRadarLabels.map(fteRadarChartLabel);
+            const fteRadarPercentAxisMax = suggestedPercentAxisMax((fteSkillRadarRows || []).flatMap((row) => [
+                Number(row.hours_pct || 0),
+                Number(row.tasks_pct || 0),
+                Number(row.people_pct || 0),
+            ]), 40);
+            const fteRadarTickStep = fteRadarPercentAxisMax <= 50 ? 10 : 20;
             const fteRadarFormatNumber = (value, options = {}) => Number(value || 0).toLocaleString(undefined, options);
+            const setupFteRadarLegendToggle = (chart) => {
+                const legend = document.querySelector('[data-fte-radar-legend]');
+                if (!chart || !legend) return;
+                if (legend.dataset.fteRadarToggleReady === 'true') {
+                    return;
+                }
+
+                const legendItems = Array.from(legend.querySelectorAll('[data-fte-radar-dataset]'));
+                const syncLegendState = () => {
+                    legendItems.forEach((item) => {
+                        const datasetIndex = Number(item.dataset.fteRadarDataset);
+                        const isVisible = chart.isDatasetVisible(datasetIndex);
+                        item.classList.toggle('is-muted', !isVisible);
+                        item.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
+                    });
+                };
+                const toggleDataset = (item) => {
+                    const datasetIndex = Number(item.dataset.fteRadarDataset);
+                    if (!Number.isInteger(datasetIndex) || !chart.data.datasets?.[datasetIndex]) return;
+                    chart.setDatasetVisibility(datasetIndex, !chart.isDatasetVisible(datasetIndex));
+                    chart.update();
+                    syncLegendState();
+                };
+
+                legendItems.forEach((item) => {
+                    item.addEventListener('click', () => toggleDataset(item));
+                    item.addEventListener('keydown', (event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') return;
+                        event.preventDefault();
+                        toggleDataset(item);
+                    });
+                });
+                legend.dataset.fteRadarToggleReady = 'true';
+                syncLegendState();
+            };
             const fteRadarMetricMeta = {
-                hours: { label: 'เวลาทำงาน', unit: 'ชั่วโมง', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-                tasks: { label: 'ภาระงาน', unit: 'งาน', color: '#f97316', bg: '#fff7ed', border: '#fed7aa' },
-                people: { label: 'กำลังคน', unit: 'คน', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+                hours: { label: 'เวลาทำงาน (Time Spending)', unit: 'Time Spending', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+                tasks: { label: 'ภาระงาน (Tasks)', unit: 'Tasks', color: '#f97316', bg: '#fff7ed', border: '#fed7aa' },
+                people: { label: 'กำลังคน (Workforce)', unit: 'Workforce', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
             };
             const openFteSkillRadarModal = (row, metric = 'tasks') => {
                 if (!row || !frameworkModal || !frameworkModalBody) return;
@@ -9559,51 +9700,51 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                         labels: fteRadarChartLabels,
                         datasets: [
                             {
-                                label: 'เวลาทำงาน (ชั่วโมง)',
+                                label: 'เวลาทำงาน (Time Spending)',
                                 data: fteSkillRadarRows.map((row) => Number(row.hours_pct || 0)),
                                 rawMetric: 'hours',
-                                rawLabel: 'ชั่วโมง',
+                                rawLabel: 'Time Spending',
                                 backgroundColor: fteRadarColors.hours.fill,
                                 hoverBackgroundColor: fteRadarColors.hours.hoverFill,
                                 borderColor: fteRadarColors.hours.border,
                                 pointBackgroundColor: fteRadarColors.hours.point,
-                                pointBorderColor: '#ffffff',
-                                pointRadius: isFteRadarCompactViewport() ? 4 : 3,
-                                pointHoverRadius: isFteRadarCompactViewport() ? 7 : 5,
+                                pointBorderColor: 'transparent',
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
                                 pointHoverBorderWidth: 1,
                                 pointHitRadius: isFteRadarCompactViewport() ? 24 : 14,
                                 borderWidth: 2,
                                 hoverBorderWidth: 2
                             },
                             {
-                                label: 'ภาระงาน',
+                                label: 'ภาระงาน (Tasks)',
                                 data: fteSkillRadarRows.map((row) => Number(row.tasks_pct || 0)),
                                 rawMetric: 'tasks',
-                                rawLabel: 'งาน',
+                                rawLabel: 'Tasks',
                                 backgroundColor: fteRadarColors.tasks.fill,
                                 hoverBackgroundColor: fteRadarColors.tasks.hoverFill,
                                 borderColor: fteRadarColors.tasks.border,
                                 pointBackgroundColor: fteRadarColors.tasks.point,
-                                pointBorderColor: '#ffffff',
-                                pointRadius: isFteRadarCompactViewport() ? 4 : 3,
-                                pointHoverRadius: isFteRadarCompactViewport() ? 7 : 5,
+                                pointBorderColor: 'transparent',
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
                                 pointHoverBorderWidth: 1,
                                 pointHitRadius: isFteRadarCompactViewport() ? 24 : 14,
                                 borderWidth: 2,
                                 hoverBorderWidth: 2
                             },
                             {
-                                label: 'กำลังคน',
+                                label: 'กำลังคน (Workforce)',
                                 data: fteSkillRadarRows.map((row) => Number(row.people_pct || 0)),
                                 rawMetric: 'people',
-                                rawLabel: 'คน',
+                                rawLabel: 'Workforce',
                                 backgroundColor: fteRadarColors.people.fill,
                                 hoverBackgroundColor: fteRadarColors.people.hoverFill,
                                 borderColor: fteRadarColors.people.border,
                                 pointBackgroundColor: fteRadarColors.people.point,
-                                pointBorderColor: '#ffffff',
-                                pointRadius: isFteRadarCompactViewport() ? 4 : 3,
-                                pointHoverRadius: isFteRadarCompactViewport() ? 7 : 5,
+                                pointBorderColor: 'transparent',
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
                                 pointHoverBorderWidth: 1,
                                 pointHitRadius: isFteRadarCompactViewport() ? 24 : 14,
                                 borderWidth: 2,
@@ -9617,10 +9758,10 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                         animation: chartAnim,
                         layout: {
                             padding: {
-                                top: isFteRadarCompactViewport() ? 18 : 34,
-                                right: isFteRadarCompactViewport() ? 10 : 24,
-                                bottom: isFteRadarCompactViewport() ? 8 : 12,
-                                left: isFteRadarCompactViewport() ? 10 : 24
+                                top: isFteRadarCompactViewport() ? 8 : 14,
+                                right: isFteRadarCompactViewport() ? 4 : 8,
+                                bottom: isFteRadarCompactViewport() ? 4 : 8,
+                                left: isFteRadarCompactViewport() ? 4 : 8
                             }
                         },
                         interaction: {
@@ -9648,21 +9789,21 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                             r: {
                                 beginAtZero: true,
                                 min: 0,
-                                max: 100,
+                                max: fteRadarPercentAxisMax,
                                 ticks: {
-                                    stepSize: 25,
-                                    color: '#0f172a',
+                                    stepSize: fteRadarTickStep,
+                                    color: '#475569',
                                     backdropColor: 'rgba(255, 255, 255, 0.72)',
-                                    font: { family: chartFontFamily, weight: '400' },
+                                    font: { family: chartFontFamily, size: isFteRadarCompactViewport() ? 9 : 10, weight: '400' },
                                     callback: (value) => `${Number(value).toFixed(0)}%`
                                 },
                                 pointLabels: {
                                     color: '#0f172a',
-                                    padding: isFteRadarCompactViewport() ? 10 : 18,
-                                    font: { family: chartFontFamily, size: isFteRadarCompactViewport() ? 10 : 13, weight: '600' }
+                                    padding: isFteRadarCompactViewport() ? 5 : 7,
+                                    font: { family: chartFontFamily, size: isFteRadarCompactViewport() ? 9 : 11, weight: '600' }
                                 },
-                                angleLines: { color: 'rgba(148, 163, 184, 0.36)' },
-                                grid: { color: 'rgba(148, 163, 184, 0.42)' }
+                                angleLines: { color: 'rgba(148, 163, 184, 0.32)', lineWidth: 0.8 },
+                                grid: { color: 'rgba(148, 163, 184, 0.36)', lineWidth: 0.8 }
                             }
                         },
                         plugins: {

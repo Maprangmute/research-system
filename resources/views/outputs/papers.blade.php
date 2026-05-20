@@ -314,7 +314,25 @@
                 const currentResults = getResults();
                 if (!nextResults || !currentResults) return false;
                 currentResults.innerHTML = nextResults.innerHTML;
+                syncAuthorOptionsFromDocument(nextDoc);
                 return true;
+            };
+
+            const syncAuthorOptionsFromDocument = (nextDoc) => {
+                const currentSelect = query('select[name="author"][data-paper-author-search="true"]');
+                const nextSelect = nextDoc.querySelector('select[name="author"][data-paper-author-search="true"]');
+                if (!(currentSelect instanceof HTMLSelectElement) || !(nextSelect instanceof HTMLSelectElement)) {
+                    return;
+                }
+
+                const previousValue = currentSelect.value;
+                currentSelect.innerHTML = nextSelect.innerHTML;
+
+                if (Array.from(currentSelect.options).some((option) => option.value === previousValue)) {
+                    currentSelect.value = previousValue;
+                }
+
+                currentSelect.tomselect?.refreshOptions?.();
             };
 
             const scrollToListTop = () => {
@@ -468,7 +486,8 @@
 
                 const dropdown = ensureProjectSearchDropdown(select, {
                     placeholder: 'ทั้งหมด',
-                    searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้เขียนภาษาอังกฤษ'
+                    searchPlaceholder: 'พิมพ์เพื่อค้นหาชื่อผู้เขียนภาษาอังกฤษ',
+                    ignoreSearchWhitespace: true
                 });
 
                 dropdown?.refreshOptions?.();
