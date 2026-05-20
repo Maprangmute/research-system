@@ -1146,7 +1146,7 @@
                                         </td>
                                     </tr>
                                     @if ($tableSpecialItems->isNotEmpty())
-                                        <tr class="back-office-output-special-row" data-output-special-for="output-{{ $output->id }}" data-back-office-output-row data-back-office-search="{{ trim($tableOutputSearch) }}">
+                                        <tr class="back-office-output-special-row" data-output-special-for="output-{{ $output->id }}" data-back-office-output-row data-back-office-output-id="{{ $output->id }}" data-back-office-search="{{ trim($tableOutputSearch) }}">
                                             <td colspan="5">
                                                 <div class="back-office-output-special-inline {{ $tableSpecialToneClass }} {{ $tableSpecialUsesSplitLayout ? 'back-office-output-special-inline--split' : '' }} {{ $tableSpecialSingleDetail ? 'back-office-output-special-inline--single-detail' : '' }}">
                                                     <div class="back-office-output-special-title">ข้อมูล {{ $tableSpecialTitle }}</div>

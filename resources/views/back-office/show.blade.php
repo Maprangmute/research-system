@@ -3012,6 +3012,216 @@
         })();
 
         (() => {
+            const hasMissingOutputLinkNotice = () => {
+                try {
+                    return new URLSearchParams(window.location.search).get('output_missing_link') === '1';
+                } catch (error) {
+                    return false;
+                }
+            };
+            let outputTargetLoading = null;
+            const showOutputTargetLoading = () => {
+                if (!hasMissingOutputLinkNotice()) return;
+                if (!outputTargetLoading) {
+                    outputTargetLoading = document.createElement('div');
+                    outputTargetLoading.className = 'output-target-loading open';
+                    outputTargetLoading.setAttribute('role', 'status');
+                    outputTargetLoading.setAttribute('aria-live', 'polite');
+                    outputTargetLoading.innerHTML = `
+                        <div class="output-target-loading__card">
+                            <span class="output-target-loading__spinner" aria-hidden="true"></span>
+                            <span>กำลังประมวลผล...</span>
+                        </div>
+                    `;
+                    document.body.appendChild(outputTargetLoading);
+                }
+                outputTargetLoading.classList.add('open');
+            };
+            const hideOutputTargetLoading = () => {
+                outputTargetLoading?.classList.remove('open');
+            };
+            const missingOutputLinkMessage = () => {
+                let targetType = 'paper';
+                try {
+                    targetType = new URLSearchParams(window.location.search).get('output_missing_target') || 'paper';
+                } catch (error) {}
+
+                if (targetType === 'presentation') {
+                    return 'ไม่มีการลง link สำหรับ presentation นี้';
+                }
+                if (targetType === 'textbook') {
+                    return 'ไม่มีการลง link สำหรับ textbook นี้';
+                }
+                return 'ไม่มีการลง link สำหรับ paper นี้';
+            };
+
+            const showMissingOutputLinkNotice = (target) => {
+                if (!hasMissingOutputLinkNotice() || document.getElementById('missing-output-link-notice')) return;
+
+                const notice = document.createElement('div');
+                notice.id = 'missing-output-link-notice';
+                notice.className = 'missing-output-link-notice';
+                notice.innerHTML = `
+                    <div class="missing-output-link-notice__text">${missingOutputLinkMessage()}</div>
+                    <button type="button" class="missing-output-link-notice__close" aria-label="ปิด">×</button>
+                `;
+                if (target.tagName === 'TR') {
+                    const noticeRow = document.createElement('tr');
+                    noticeRow.id = 'missing-output-link-notice-row';
+                    noticeRow.className = 'missing-output-link-notice-row';
+                    const cell = document.createElement('td');
+                    cell.colSpan = target.children.length || 1;
+                    cell.appendChild(notice);
+                    noticeRow.appendChild(cell);
+                    target.parentNode.insertBefore(noticeRow, target);
+                } else {
+                    target.insertAdjacentElement('beforebegin', notice);
+                }
+                notice.querySelector('button')?.addEventListener('click', () => notice.remove());
+            };
+
+            const focusOutputHashTarget = () => {
+                let targetId = '';
+                if (window.location.hash && window.location.hash.startsWith('#output-')) {
+                    targetId = window.location.hash.slice(1);
+                } else {
+                    try {
+                        const queryOutputId = new URLSearchParams(window.location.search).get('output_target_id') || '';
+                        if (queryOutputId) {
+                            targetId = `output-${queryOutputId}`;
+                        }
+                    } catch (error) {}
+                }
+                if (!targetId) return;
+                showOutputTargetLoading();
+
+                try {
+                    targetId = decodeURIComponent(targetId);
+                } catch (error) {}
+
+                const outputId = targetId.match(/^output-(\d+)$/)?.[1] || '';
+                const tableTargets = outputId
+                    ? Array.from(document.querySelectorAll(`[data-back-office-output-id="${outputId}"]`))
+                    : [];
+                const visibleTableTarget = tableTargets.find((item) => item instanceof HTMLElement && item.offsetParent !== null);
+                const target = visibleTableTarget || document.getElementById(targetId);
+                if (!target) {
+                    hideOutputTargetLoading();
+                    return;
+                }
+
+                const highlightTargets = tableTargets.length ? tableTargets : [target];
+                highlightTargets.forEach((item) => item.classList.remove('back-office-output-focus-highlight'));
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                void target.offsetWidth;
+                highlightTargets.forEach((item) => item.classList.add('back-office-output-focus-highlight'));
+                if (!hasMissingOutputLinkNotice()) {
+                    window.setTimeout(() => {
+                        highlightTargets.forEach((item) => item.classList.remove('back-office-output-focus-highlight'));
+                    }, 3600);
+                }
+                showMissingOutputLinkNotice(target);
+                window.setTimeout(hideOutputTargetLoading, 700);
+            };
+
+            const style = document.createElement('style');
+            style.textContent = `
+                .back-office-output-focus-highlight {
+                    outline: 3px solid rgba(16, 185, 129, 0.72);
+                    outline-offset: 5px;
+                    background: rgba(236, 253, 245, 0.9) !important;
+                    transition: background-color 0.2s ease, outline-color 0.2s ease;
+                }
+                tr.back-office-output-focus-highlight > td {
+                    background: rgba(236, 253, 245, 0.96) !important;
+                    transition: background-color 0.2s ease;
+                }
+                .missing-output-link-notice {
+                    display: flex;
+                    width: 100%;
+                    align-items: center;
+                    gap: 12px;
+                    margin: 0 0 12px;
+                    border: 2px solid rgba(220, 38, 38, 0.85);
+                    border-radius: 16px;
+                    background: #fef2f2;
+                    box-shadow: 0 14px 32px rgba(185, 28, 28, 0.16);
+                    color: #7f1d1d;
+                    padding: 12px 12px 12px 14px;
+                    font-size: 0.92rem;
+                    font-weight: 700;
+                    line-height: 1.45;
+                }
+                .missing-output-link-notice-row > td {
+                    padding: 0 0 10px !important;
+                    background: transparent !important;
+                    border: 0 !important;
+                }
+                .missing-output-link-notice__text {
+                    min-width: 0;
+                }
+                .missing-output-link-notice__close {
+                    display: inline-flex;
+                    width: 30px;
+                    height: 30px;
+                    flex: 0 0 auto;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 999px;
+                    border: 1px solid rgba(220, 38, 38, 0.35);
+                    background: #ffffff;
+                    color: #b91c1c;
+                    font-size: 1.25rem;
+                    font-weight: 900;
+                    line-height: 1;
+                }
+                .output-target-loading {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 110;
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(15, 23, 42, 0.42);
+                    padding: 16px;
+                }
+                .output-target-loading.open {
+                    display: flex;
+                }
+                .output-target-loading__card {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    border: 1px solid rgba(255, 255, 255, 0.72);
+                    border-radius: 16px;
+                    background: rgba(255, 255, 255, 0.96);
+                    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+                    color: #0f172a;
+                    padding: 14px 18px;
+                    font-size: 0.95rem;
+                    font-weight: 800;
+                }
+                .output-target-loading__spinner {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 999px;
+                    border: 3px solid #cbd5e1;
+                    border-top-color: #dc2626;
+                    animation: output-target-spin 0.8s linear infinite;
+                }
+                @keyframes output-target-spin {
+                    to {
+                        transform: rotate(360deg);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+
+            window.addEventListener('load', () => window.setTimeout(focusOutputHashTarget, 450), { once: true });
+            window.addEventListener('hashchange', () => window.setTimeout(focusOutputHashTarget, 100));
+        })();
+
+        (() => {
             const escapeHtml = window.__backOfficeEscapeHtml;
             const cssEscape = (value) => window.CSS?.escape ? CSS.escape(String(value)) : String(value).replace(/["\\]/g, '\\$&');
             const setSectionCount = (sectionSelector, count) => {

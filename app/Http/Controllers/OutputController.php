@@ -1947,7 +1947,7 @@ class OutputController extends Controller
                 'source_badge' => 'Mission',
                 'detail' => null,
                 'related_link' => null,
-                'link' => $output->task ? route('back_office.show', $output->task) : null,
+                'link' => $output->task ? route('back_office.show', $output->task) . '#output-' . $output->id : null,
                 'edit_url' => route('outputs.items.edit', ['source' => 'mission', 'id' => $output->id]),
                 'special' => $special,
                 'created_at' => $output->created_at,
@@ -2186,6 +2186,29 @@ class OutputController extends Controller
                 return null;
             }
         };
+        $formatRecordTimestamp = static function ($value): string {
+            if (! $value) {
+                return '';
+            }
+
+            try {
+                return Carbon::parse($value)->timezone('Asia/Bangkok')->toIso8601String();
+            } catch (\Throwable) {
+                return '';
+            }
+        };
+        $displayUserName = static function ($user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $fullName = trim((string) ($user->full_name ?? ''));
+            if ($fullName !== '') {
+                return $fullName;
+            }
+
+            return trim(((string) ($user->prefix ?? '')) . ' ' . ((string) ($user->name ?? '')));
+        };
 
         $projectRows = $this->visibleProjectOutputsQuery($request)
             ->with([
@@ -2194,7 +2217,9 @@ class OutputController extends Controller
                 'bookAuthors:id,output_id,name',
                 'conferences:id,output_id,name,presentation_type,location,note',
                 'conferences.presenters:id,output_conference_id,name',
-                'project:id,project_name_th,project_type,budget',
+                'project:id,project_name_th,project_type,budget,user_id,updated_by',
+                'project.createdBy:id,prefix,name,prefix_en,name_en',
+                'project.updatedBy:id,prefix,name,prefix_en,name_en',
             ])
             ->select([
                 'id',
@@ -2208,10 +2233,13 @@ class OutputController extends Controller
                 'impact_factor',
                 'book_title',
                 'publisher_name',
+                'chapter_pages',
+                'isbn',
                 'created_at',
+                'updated_at',
             ])
             ->get()
-            ->map(function (Output $output) use ($extractTypeCode, $sourceLabelMap, $parseOutputSortDate) {
+            ->map(function (Output $output) use ($extractTypeCode, $sourceLabelMap, $parseOutputSortDate, $formatRecordTimestamp, $displayUserName) {
                 $typeCode = $extractTypeCode($output->type) ?? 'OTHER';
                 $authors = $typeCode === 'EA119'
                     ? $output->bookAuthors->pluck('name')->filter()->values()->all()
@@ -2225,8 +2253,11 @@ class OutputController extends Controller
                 });
                 $conference = $conferenceWithPresenter ?: $output->conferences->first();
                 $conferencePresenter = trim((string) ($conference?->presenterDisplay() ?? ''));
+                $createdByName = $displayUserName($output->project?->createdBy);
+                $updatedByName = $displayUserName($output->project?->updatedBy) ?: $createdByName;
 
                 return (object) [
+                    'id' => $output->id,
                     'source' => 'project',
                     'source_label' => $sourceLabelMap['project'],
                     'project_id' => $output->project?->id,
@@ -2240,6 +2271,11 @@ class OutputController extends Controller
                     'link' => $output->project ? route('projects.show', $output->project) . '#output-' . $output->id : null,
                     'detail' => trim((string) ($output->project_output ?? '')),
                     'created_at' => $output->created_at,
+                    'updated_at' => $output->updated_at,
+                    'record_created_by' => $createdByName ?: $sourceLabelMap['project'],
+                    'record_updated_by' => $updatedByName ?: $sourceLabelMap['project'],
+                    'record_created_at' => $formatRecordTimestamp($output->created_at),
+                    'record_updated_at' => $formatRecordTimestamp($output->updated_at ?: $output->created_at),
                     'sort_date_timestamp' => $sortDate?->timestamp,
                     'display_date' => $sortDate ? $sortDate->format('d-m-') . ($sortDate->year + 543) : null,
                     'journal' => trim((string) ($output->journal ?? '')),
@@ -2250,14 +2286,24 @@ class OutputController extends Controller
                     'presenter_name' => $conferencePresenter !== '' ? $conferencePresenter : trim((string) $fallbackPresenter),
                     'book_title' => trim((string) ($output->book_title ?? '')),
                     'publisher_name' => trim((string) ($output->publisher_name ?? '')),
+                    'chapter_pages' => trim((string) ($output->chapter_pages ?? '')),
+                    'isbn' => trim((string) ($output->isbn ?? '')),
                     'authors' => $authors,
                 ];
             });
 
         $backOfficeRows = $this->visibleBackOfficeOutputsQuery()
+            ->with([
+                'owner:id,prefix,name,prefix_en,name_en',
+                'task:id,backoffice_id,title,created_by,updated_by',
+                'task.creator:id,prefix,name,prefix_en,name_en',
+                'task.updater:id,prefix,name,prefix_en,name_en',
+            ])
             ->select([
                 'id',
                 'task_id',
+                'owner_user_id',
+                'owner_name',
                 'type',
                 'title',
                 'year',
@@ -2267,10 +2313,13 @@ class OutputController extends Controller
                 'impact_factor',
                 'book_title',
                 'publisher_name',
+                'chapter_pages',
+                'isbn',
                 'created_at',
+                'updated_at',
             ])
             ->get()
-            ->map(function (BackOfficeTaskOutput $output) use ($extractTypeCode, $sourceLabelMap, $normalizeNames, $parseOutputSortDate) {
+            ->map(function (BackOfficeTaskOutput $output) use ($extractTypeCode, $sourceLabelMap, $normalizeNames, $parseOutputSortDate, $formatRecordTimestamp, $displayUserName) {
                 $typeCode = $extractTypeCode($output->type) ?? 'OTHER';
                 $sortDate = $parseOutputSortDate($output->year);
                 $conference = collect($output->conferences ?? [])->first();
@@ -2278,8 +2327,12 @@ class OutputController extends Controller
                     ? $normalizeNames($output->book_authors ?? [])
                     : $normalizeNames($output->authors ?? []);
                 $fallbackPresenter = $authors[0] ?? '';
+                $ownerName = $output->resolvedOwnerName();
+                $createdByName = $displayUserName($output->task?->creator) ?: $ownerName;
+                $updatedByName = $displayUserName($output->task?->updater) ?: $createdByName;
 
                 return (object) [
+                    'id' => $output->id,
                     'source' => 'back_office',
                     'source_label' => $sourceLabelMap['back_office'],
                     'project_id' => null,
@@ -2290,9 +2343,14 @@ class OutputController extends Controller
                     'title' => trim((string) ($output->title ?? '')) ?: '-',
                     'year_be' => $this->normalizeYearFilter($output->year),
                     'reference' => trim((string) ($output->task?->title ?? '')) ?: 'Mission',
-                    'link' => $output->task ? route('back_office.show', $output->task) : null,
+                    'link' => $output->task ? route('back_office.show', $output->task) . '#output-' . $output->id : null,
                     'detail' => trim((string) ($output->project_output ?? '')),
                     'created_at' => $output->created_at,
+                    'updated_at' => $output->updated_at,
+                    'record_created_by' => $createdByName ?: $sourceLabelMap['back_office'],
+                    'record_updated_by' => $updatedByName ?: $sourceLabelMap['back_office'],
+                    'record_created_at' => $formatRecordTimestamp($output->created_at),
+                    'record_updated_at' => $formatRecordTimestamp($output->updated_at ?: $output->created_at),
                     'sort_date_timestamp' => $sortDate?->timestamp,
                     'display_date' => $sortDate ? $sortDate->format('d-m-') . ($sortDate->year + 543) : null,
                     'journal' => trim((string) ($output->journal ?? '')),
@@ -2303,6 +2361,8 @@ class OutputController extends Controller
                     'presenter_name' => trim((string) (($conference['presenter_name'] ?? '') ?: $fallbackPresenter)),
                     'book_title' => trim((string) ($output->book_title ?? '')),
                     'publisher_name' => trim((string) ($output->publisher_name ?? '')),
+                    'chapter_pages' => trim((string) ($output->chapter_pages ?? '')),
+                    'isbn' => trim((string) ($output->isbn ?? '')),
                     'authors' => $authors,
                 ];
             });
@@ -2314,6 +2374,8 @@ class OutputController extends Controller
                 'bookAuthors:id,external_output_id,name',
                 'conferences:id,external_output_id,name,presentation_type,location,presenter_name',
                 'conferences.presenters:id,external_output_conference_id,name',
+                'creator:id,prefix,name,prefix_en,name_en',
+                'updater:id,prefix,name,prefix_en,name_en',
             ])
             ->select([
                 'id',
@@ -2327,10 +2389,15 @@ class OutputController extends Controller
                 'impact_factor',
                 'book_title',
                 'publisher_name',
+                'chapter_pages',
+                'isbn',
+                'created_by',
+                'updated_by',
                 'created_at',
+                'updated_at',
             ])
             ->get()
-            ->map(function (ExternalOutput $output) use ($extractTypeCode, $sourceLabelMap) {
+            ->map(function (ExternalOutput $output) use ($extractTypeCode, $sourceLabelMap, $formatRecordTimestamp, $displayUserName) {
                 $typeCode = $extractTypeCode($output->type) ?? 'OTHER';
                 $conference = $output->conferences->first();
                 $authors = $typeCode === 'EA119'
@@ -2341,7 +2408,10 @@ class OutputController extends Controller
                 $sortDate = $output->publish_date?->copy()->startOfDay();
                 $fallbackPresenter = $authors[0] ?? '';
                 $conferencePresenter = trim((string) ($conference?->presenterDisplay() ?? ''));
+                $createdByName = $displayUserName($output->creator);
+                $updatedByName = $displayUserName($output->updater) ?: $createdByName;
                 return (object) [
+                    'id' => $output->id,
                     'source' => 'external',
                     'source_label' => $sourceLabelMap['external'],
                     'project_id' => null,
@@ -2355,6 +2425,11 @@ class OutputController extends Controller
                     'link' => route('outputs.external-academic.show', $output),
                     'detail' => trim((string) ($output->note ?? '')),
                     'created_at' => $output->created_at,
+                    'updated_at' => $output->updated_at,
+                    'record_created_by' => $createdByName ?: $sourceLabelMap['external'],
+                    'record_updated_by' => $updatedByName ?: $sourceLabelMap['external'],
+                    'record_created_at' => $formatRecordTimestamp($output->created_at),
+                    'record_updated_at' => $formatRecordTimestamp($output->updated_at ?: $output->created_at),
                     'sort_date_timestamp' => $sortDate?->timestamp,
                     'display_date' => $sortDate ? $sortDate->format('d-m-') . ($sortDate->year + 543) : null,
                     'journal' => trim((string) ($output->journal ?? '')),
@@ -2365,6 +2440,8 @@ class OutputController extends Controller
                     'presenter_name' => $conferencePresenter !== '' ? $conferencePresenter : trim((string) $fallbackPresenter),
                     'book_title' => trim((string) ($output->book_title ?? '')),
                     'publisher_name' => trim((string) ($output->publisher_name ?? '')),
+                    'chapter_pages' => trim((string) ($output->chapter_pages ?? '')),
+                    'isbn' => trim((string) ($output->isbn ?? '')),
                     'authors' => $authors,
                 ];
             });
@@ -2447,7 +2524,15 @@ class OutputController extends Controller
                 return null;
             }
             if (preg_match('/https?:\/\/[^\s<>"\'\]\)]+/iu', $value, $matches) === 1) {
-                return trim((string) ($matches[0] ?? '')) ?: null;
+                return rtrim(trim((string) ($matches[0] ?? '')), " \t\n\r\0\x0B.,;") ?: null;
+            }
+            if (preg_match('/\bwww\.[^\s<>"\'\]\)]+/iu', $value, $matches) === 1) {
+                $url = rtrim(trim((string) ($matches[0] ?? '')), " \t\n\r\0\x0B.,;");
+                return $url !== '' ? 'https://' . $url : null;
+            }
+            if (preg_match('/(?:doi\s*:\s*)?(10\.\d{4,9}\/[^\s<>"\'\]\)]+)/iu', $value, $matches) === 1) {
+                $doi = rtrim(trim((string) ($matches[1] ?? '')), " \t\n\r\0\x0B.,;");
+                return $doi !== '' ? 'https://doi.org/' . $doi : null;
             }
             return null;
         };
@@ -8119,7 +8204,7 @@ class OutputController extends Controller
                         'year_be' => $yearBe,
                         'project_label' => $output->task?->title ?: '-',
                         'project_code' => null,
-                        'project_link' => $output->task ? route('back_office.show', $output->task) : null,
+                        'project_link' => $output->task ? route('back_office.show', $output->task) . '#output-' . $output->id : null,
                         'conference_name' => trim((string) (($conference['name'] ?? '') ?: '-')),
                         'presentation_type' => trim((string) (($conference['presentation_type'] ?? '') ?: '-')),
                         'location' => trim((string) (($conference['location'] ?? '') ?: '-')),
@@ -8850,7 +8935,7 @@ class OutputController extends Controller
                     'backoffice_id' => $output->task?->backoffice_id,
                     'source_reference_id' => $output->task?->backoffice_id ?: ($output->task ? BackOfficeTask::formatBackOfficeId((int) $output->task->id) : null),
                     'source_reference_name' => $output->task?->title ?: 'Mission',
-                    'project_link' => $output->task ? route('back_office.show', $output->task) : null,
+                    'project_link' => $output->task ? route('back_office.show', $output->task) . '#output-' . $output->id : null,
                     'authors' => $authors->pluck('name')->filter()->values(),
                     'authors_by_role' => $authorsByRole,
                     'matched_author_roles' => $matchedAuthorRoles,
@@ -9154,7 +9239,7 @@ class OutputController extends Controller
                     'detail' => $output->project_output ?: null,
                     'project_label' => $output->task?->title ?: 'Mission',
                     'project_code' => null,
-                    'project_link' => $output->task ? route('back_office.show', $output->task) : null,
+                    'project_link' => $output->task ? route('back_office.show', $output->task) . '#output-' . $output->id : null,
                     'authors' => $authors,
                     'author_names' => $matchNames,
                     'author_user_ids' => $authorRows->pluck('user_id')->filter()->values(),
@@ -10806,7 +10891,17 @@ class OutputController extends Controller
         }
 
         if (preg_match('/https?:\/\/[^\s<>"\'\]\)]+/iu', $value, $matches) === 1) {
-            return trim((string) ($matches[0] ?? '')) ?: null;
+            return rtrim(trim((string) ($matches[0] ?? '')), " \t\n\r\0\x0B.,;") ?: null;
+        }
+
+        if (preg_match('/\bwww\.[^\s<>"\'\]\)]+/iu', $value, $matches) === 1) {
+            $url = rtrim(trim((string) ($matches[0] ?? '')), " \t\n\r\0\x0B.,;");
+            return $url !== '' ? 'https://' . $url : null;
+        }
+
+        if (preg_match('/(?:doi\s*:\s*)?(10\.\d{4,9}\/[^\s<>"\'\]\)]+)/iu', $value, $matches) === 1) {
+            $doi = rtrim(trim((string) ($matches[1] ?? '')), " \t\n\r\0\x0B.,;");
+            return $doi !== '' ? 'https://doi.org/' . $doi : null;
         }
 
         return null;

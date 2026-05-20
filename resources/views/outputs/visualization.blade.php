@@ -8602,13 +8602,39 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     <p class="mt-1 text-xs text-slate-500">แสดงทั้งหมด {{ number_format((int) (($paperSummary['all'] ?? collect())->count())) }} รายการ</p>
                     <div class="paper-record-scroll mt-4 flex-1 space-y-2">
                         @forelse (($paperSummary['all'] ?? collect()) as $row)
+                            @php
+                                $paperRecordLink = trim((string) ($row->link ?? ''));
+                                $paperExternalLink = trim((string) ($row->modal_link ?? ''));
+                                $outputItemLink = $paperExternalLink ?: $paperRecordLink;
+
+                                if ($paperRecordLink !== '' && $paperExternalLink === '') {
+                                    $hash = '';
+                                    $baseLink = $outputItemLink;
+                                    if (str_contains($baseLink, '#')) {
+                                        [$baseLink, $hash] = explode('#', $baseLink, 2);
+                                    }
+                                    $outputItemLink = $baseLink . (str_contains($baseLink, '?') ? '&' : '?') . 'output_missing_link=1&output_missing_target=paper&output_target_id=' . urlencode((string) ($row->id ?? '')) . ($hash !== '' ? '#' . $hash : '');
+                                }
+                            @endphp
                             <button
                                 type="button"
                                 class="js-output-item block w-full rounded-lg border border-slate-200 px-3 py-2.5 text-left text-slate-700 hover:bg-slate-50"
                                 data-title="{{ $row->title }}"
-                                data-link="{{ ($isPublicSeminar ?? false) ? '' : ($row->modal_link ?? '') }}"
+                                data-link="{{ ($isPublicSeminar ?? false) ? $paperExternalLink : $outputItemLink }}"
                                 data-detail="{{ $row->modal_detail ?? '' }}"
                                 data-type="EA101 - Research Paper or Journal Article"
+                                data-record-summary="วารสาร: {{ $row->journal ?: '-' }} | Ranking: {{ $row->quartile ?: '-' }} | IF: {{ is_numeric($row->impact_factor) ? number_format((float) $row->impact_factor, 2) : '-' }} | ปี: {{ $row->year_be ?: '-' }}"
+                                data-record-action="ตีพิมพ์บทความวิชาการ"
+                                data-record-people="{{ collect($row->authors ?? [])->filter()->implode(', ') ?: '-' }}"
+                                data-record-journal="{{ $row->journal ?: '-' }}"
+                                data-record-ranking="{{ $row->quartile ?: '-' }}"
+                                data-record-impact-factor="{{ is_numeric($row->impact_factor) ? number_format((float) $row->impact_factor, 2) : '-' }}"
+                                data-record-year="{{ $row->year_be ?: '-' }}"
+                                data-record-created-by="{{ $row->record_created_by ?? '-' }}"
+                                data-record-created-at="{{ $row->record_created_at ?? '' }}"
+                                data-record-updated-by="{{ $row->record_updated_by ?? '-' }}"
+                                data-record-updated-at="{{ $row->record_updated_at ?? '' }}"
+                                data-record-show-audit="{{ ($isPublicSeminar ?? false) ? '0' : '1' }}"
                             >
                                 <div class="font-medium line-clamp-2">{{ $row->title }}</div>
                                 <div class="mt-1 text-xs text-slate-600">
@@ -8642,14 +8668,39 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     <p class="mt-1 text-xs text-slate-500">แสดงทั้งหมด {{ number_format((int) (($presentationSummary['all'] ?? collect())->count())) }} รายการ</p>
                     <div class="paper-record-scroll mt-4 flex-1 space-y-2">
                         @forelse (($presentationSummary['all'] ?? collect()) as $row)
+                            @php
+                                $presentationRecordLink = trim((string) ($row->link ?? ''));
+                                $presentationExternalLink = trim((string) ($row->modal_link ?? ''));
+                                $outputItemLink = $presentationExternalLink ?: $presentationRecordLink;
+
+                                if ($presentationRecordLink !== '' && $presentationExternalLink === '') {
+                                    $hash = '';
+                                    $baseLink = $outputItemLink;
+                                    if (str_contains($baseLink, '#')) {
+                                        [$baseLink, $hash] = explode('#', $baseLink, 2);
+                                    }
+                                    $outputItemLink = $baseLink . (str_contains($baseLink, '?') ? '&' : '?') . 'output_missing_link=1&output_missing_target=presentation&output_target_id=' . urlencode((string) ($row->id ?? '')) . ($hash !== '' ? '#' . $hash : '');
+                                }
+                            @endphp
                             <button
                                 type="button"
                                 class="js-output-item block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
                                 style="{{ $presentationCardStyle($row->presentation_type) }}"
                                 data-title="{{ $row->title }}"
-                                data-link="{{ ($isPublicSeminar ?? false) ? '' : ($row->modal_link ?? '') }}"
+                                data-link="{{ ($isPublicSeminar ?? false) ? $presentationExternalLink : $outputItemLink }}"
                                 data-detail="{{ $row->modal_detail ?? '' }}"
                                 data-type="EA103 - Presentations in Academic Conferences"
+                                data-record-summary="เวที: {{ $row->conference_name ?: '-' }} | ปี: {{ $row->year_be ?: '-' }} | ผู้นำเสนอ: {{ $row->presenter_name ?: '-' }}"
+                                data-record-action="นำเสนอผลงานวิชาการ"
+                                data-record-people="{{ $row->presenter_name ?: '-' }}"
+                                data-record-conference="{{ $row->conference_name ?: '-' }}"
+                                data-record-presentation-type="{{ $row->presentation_type ?: '-' }}"
+                                data-record-year="{{ $row->year_be ?: '-' }}"
+                                data-record-created-by="{{ $row->record_created_by ?? '-' }}"
+                                data-record-created-at="{{ $row->record_created_at ?? '' }}"
+                                data-record-updated-by="{{ $row->record_updated_by ?? '-' }}"
+                                data-record-updated-at="{{ $row->record_updated_at ?? '' }}"
+                                data-record-show-audit="{{ ($isPublicSeminar ?? false) ? '0' : '1' }}"
                             >
                                 <div class="mb-2 flex flex-wrap items-center gap-2">
                                     <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold" style="{{ $presentationBadgeStyle($row->presentation_type) }}">
@@ -8689,14 +8740,41 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                         <p class="mt-1 text-xs text-slate-500">รายการที่แสดงล่าสุด {{ number_format($textbookLatestCount) }} รายการ</p>
                         <div class="mt-4 flex-1 space-y-2">
                             @forelse (($textbookSummary['latest'] ?? collect()) as $row)
+                                @php
+                                    $textbookRecordLink = trim((string) ($row->link ?? ''));
+                                    $textbookExternalLink = trim((string) ($row->modal_link ?? ''));
+                                    $outputItemLink = $textbookExternalLink ?: $textbookRecordLink;
+
+                                    if ($textbookRecordLink !== '' && $textbookExternalLink === '') {
+                                        $hash = '';
+                                        $baseLink = $outputItemLink;
+                                        if (str_contains($baseLink, '#')) {
+                                            [$baseLink, $hash] = explode('#', $baseLink, 2);
+                                        }
+                                        $outputItemLink = $baseLink . (str_contains($baseLink, '?') ? '&' : '?') . 'output_missing_link=1&output_missing_target=textbook&output_target_id=' . urlencode((string) ($row->id ?? '')) . ($hash !== '' ? '#' . $hash : '');
+                                    }
+                                @endphp
                                 <button
                                     type="button"
                                     class="js-output-item block w-full rounded-xl border px-3 py-3 text-left text-slate-700 transition hover:-translate-y-[1px]"
                                     style="{{ isset($textbookYearStyleMap[(string) ($row->year_be ?? '')]) ? $textbookYearStyleMap[(string) ($row->year_be ?? '')] . ' background-image:linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.94));' : 'border-color:#e2e8f0; background:#ffffff;' }}"
                                     data-title="{{ $row->title }}"
-                                    data-link="{{ ($isPublicSeminar ?? false) ? '' : ($row->modal_link ?? '') }}"
+                                    data-link="{{ ($isPublicSeminar ?? false) ? $textbookExternalLink : $outputItemLink }}"
                                     data-detail="{{ $row->modal_detail ?? '' }}"
                                     data-type="EA119 - Textbook / Book Chapter"
+                                    data-record-summary="หนังสือ: {{ $row->book_title ?: '-' }} | สำนักพิมพ์: {{ $row->publisher_name ?: '-' }} | ผู้แต่ง: {{ filled($row->authors ?? []) ? implode(', ', array_filter((array) ($row->authors ?? []))) : '-' }}"
+                                    data-record-action="จัดทำ Textbook / Book Chapter"
+                                    data-record-people="{{ filled($row->authors ?? []) ? implode(', ', array_filter((array) ($row->authors ?? []))) : '-' }}"
+                                    data-record-book-title="{{ $row->book_title ?: '-' }}"
+                                    data-record-publisher="{{ $row->publisher_name ?: '-' }}"
+                                    data-record-pages="{{ ($row->chapter_pages ?? '') ?: '-' }}"
+                                    data-record-isbn="{{ ($row->isbn ?? '') ?: '-' }}"
+                                    data-record-year="{{ $row->year_be ?: '-' }}"
+                                    data-record-created-by="{{ $row->record_created_by ?? '-' }}"
+                                    data-record-created-at="{{ $row->record_created_at ?? '' }}"
+                                    data-record-updated-by="{{ $row->record_updated_by ?? '-' }}"
+                                    data-record-updated-at="{{ $row->record_updated_at ?? '' }}"
+                                    data-record-show-audit="{{ ($isPublicSeminar ?? false) ? '0' : '1' }}"
                                 >
                                     <div class="font-medium line-clamp-2">{{ $row->title }}</div>
                                     <div class="mt-2 grid gap-1 text-xs">
@@ -11675,13 +11753,15 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
             document.querySelectorAll('.js-output-item').forEach((btn) => {
                 const itemLink = (btn.getAttribute('data-link') || '').trim();
                 if (itemLink === '') {
-                    btn.style.cursor = 'default';
+                    btn.style.cursor = 'pointer';
                 }
                 btn.addEventListener('click', () => {
                     const title = btn.getAttribute('data-title') || 'รายละเอียดผลงาน';
                     const link = (btn.getAttribute('data-link') || '').trim();
                     const detail = (btn.getAttribute('data-detail') || '').trim();
                     const type = (btn.getAttribute('data-type') || '').trim();
+                    const summary = (btn.getAttribute('data-record-summary') || '').trim();
+                    const data = btn.dataset || {};
                     const normalizeText = (value) => String(value || '').trim().replace(/\/+$/, '').toLowerCase();
                     const stripUrls = (value) => String(value || '')
                         .replace(/https?:\/\/[^\s<>"'\]\)]+/giu, '')
@@ -11692,7 +11772,77 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                         return;
                     }
 
-                    return;
+                    const cleanDetail = stripUrls(detail);
+                    const fieldCard = (label, value) => {
+                        const cleanValue = String(value || '').trim();
+                        if (!cleanValue || cleanValue === '-') return '';
+                        return `<div class="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                            <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">${escapeHtml(label)}</div>
+                            <div class="mt-1 text-sm font-semibold leading-6 text-slate-800">${escapeHtml(cleanValue)}</div>
+                        </div>`;
+                    };
+                    const formatRecordDateTime = (value) => {
+                        const rawValue = String(value || '').trim();
+                        if (!rawValue) return '';
+                        const parsed = new Date(rawValue);
+                        if (Number.isNaN(parsed.getTime())) return rawValue;
+
+                        try {
+                            return new Intl.DateTimeFormat('th-TH', {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                                timeZone: 'Asia/Bangkok',
+                            }).format(parsed);
+                        } catch (error) {
+                            return parsed.toLocaleString('th-TH');
+                        }
+                    };
+                    const eaSpecificFields = (() => {
+                        if (/EA101/i.test(type)) {
+                            return [
+                                fieldCard('ผู้ทำ / ผู้เขียน', data.recordPeople),
+                                fieldCard('ทำอะไร', data.recordAction),
+                                fieldCard('วารสาร', data.recordJournal),
+                                fieldCard('Ranking', data.recordRanking),
+                                fieldCard('Impact Factor', data.recordImpactFactor),
+                                fieldCard('ปี', data.recordYear),
+                            ];
+                        }
+                        if (/EA103/i.test(type)) {
+                            return [
+                                fieldCard('ผู้ทำ / ผู้นำเสนอ', data.recordPeople),
+                                fieldCard('ทำอะไร', data.recordAction),
+                                fieldCard('เวที', data.recordConference),
+                                fieldCard('รูปแบบการนำเสนอ', data.recordPresentationType),
+                                fieldCard('ปี', data.recordYear),
+                            ];
+                        }
+                        if (/EA119/i.test(type)) {
+                            return [
+                                fieldCard('ผู้ทำ / ผู้แต่ง', data.recordPeople),
+                                fieldCard('ทำอะไร', data.recordAction),
+                                fieldCard('ชื่อหนังสือ', data.recordBookTitle),
+                                fieldCard('สำนักพิมพ์', data.recordPublisher),
+                                fieldCard('ชื่อบท / เลขหน้า', data.recordPages),
+                                fieldCard('ISBN', data.recordIsbn),
+                                fieldCard('ปี', data.recordYear),
+                            ];
+                        }
+                        return [];
+                    })().filter(Boolean);
+                    const recordAuditFields = data.recordShowAudit === '0' ? [] : [
+                        fieldCard('กรอกโดย', data.recordCreatedBy),
+                        fieldCard('กรอกเมื่อ', formatRecordDateTime(data.recordCreatedAt)),
+                        fieldCard('อัปเดตล่าสุดโดย', data.recordUpdatedBy),
+                        fieldCard('อัปเดตล่าสุดเมื่อ', formatRecordDateTime(data.recordUpdatedAt)),
+                    ].filter(Boolean);
+                    const bodyParts = [
+                        type ? `<div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">${escapeHtml(type)}</div>` : '',
+                        eaSpecificFields.length ? `<div class="grid gap-3 md:grid-cols-2">${eaSpecificFields.join('')}</div>` : (summary ? `<div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-700">${escapeHtml(summary)}</div>` : ''),
+                        recordAuditFields.length ? `<div class="grid gap-3 md:grid-cols-2">${recordAuditFields.join('')}</div>` : '',
+                        cleanDetail ? `<div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-700 whitespace-pre-wrap">${escapeHtml(cleanDetail)}</div>` : '',
+                    ].filter(Boolean);
+                    openModal(title, `<div class="space-y-3">${bodyParts.join('')}</div>`);
                 });
             });
             window.addEventListener('resize', resizeRenderedCharts, { passive: true });

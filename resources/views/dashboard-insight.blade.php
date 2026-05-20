@@ -3303,7 +3303,7 @@
                     matched = rows.filter((p) => yearLabel(p) === label && fundingType(p) === dataset && budget(p) > 0);
                 } else if (id === 'chartStatus' || id === 'chartOverdue') {
                     title = `สถานะ: ${label}`;
-                    matched = (id === 'chartOverdue' ? overdueProjects(currentPastRows(rows)) : currentPastRows(rows)).filter((p) => projectStatusDisplayLabel(p.planning_status) === label);
+                    matched = (id === 'chartOverdue' ? overdueProjects(currentPastRows(rows)) : rows).filter((p) => projectStatusDisplayLabel(p.planning_status) === label);
                 } else if (id === 'chartCollab') {
                     title = `ความร่วมมือ: ${label}`;
                     matched = currentPastRows(rows).filter((p) => collabDisplayLabel(collabRawLabel(p)) === label);
@@ -3550,7 +3550,7 @@
                     `เส้นสะสมถึงปี ${CURRENT_BE_YEAR_LABEL} รวม ${fmt.format(lifecycleCumulativeRows.length)} โครงการ`,
                     lifecycleFutureRows.length ? `มีโครงการ planning ในอนาคต ${fmt.format(lifecycleFutureRows.length)} โครงการที่ยังไม่ถูกรวมในเส้นสะสม` : '',
                 ].filter(Boolean).join('. '));
-                const statusRows = projectStatusChartRows(analysisRows);
+                const statusRows = projectStatusChartRows(rows);
                 renderChart('chartStatus', {
                     type: 'bar',
                     data: { labels: statusRows.map((x) => x.label), datasets: [barDataset('จำนวนโครงการ', statusRows.map((x) => x.value), '#7c3aed')] },
