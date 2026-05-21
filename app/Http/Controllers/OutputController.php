@@ -2146,7 +2146,7 @@ class OutputController extends Controller
     public function visualization(Request $request)
     {
         $isPublicSeminar = (bool) $request->attributes->get('is_public_seminar', false);
-        $canManageVisualizationSections = ! $isPublicSeminar && (bool) ($request->user()?->isAdminEquivalent() ?? false);
+        $canManageVisualizationSections = ! $isPublicSeminar && (bool) ($request->user()?->hasRole(User::ROLE_ADMIN) ?? false);
         $visualizationSectionVisibility = $this->visualizationSectionVisibility();
 
         if ($request->query('__realtime_version') === '1') {
@@ -5662,7 +5662,7 @@ class OutputController extends Controller
 
     public function updateVisualizationSectionVisibility(Request $request)
     {
-        abort_unless((bool) ($request->user()?->isAdminEquivalent() ?? false), 403);
+        abort_unless((bool) ($request->user()?->hasRole(User::ROLE_ADMIN) ?? false), 403);
 
         $validated = $request->validate([
             'section' => ['required', 'string', 'in:' . implode(',', array_keys(self::VISUALIZATION_SECTION_DEFINITIONS))],
