@@ -37,6 +37,10 @@
             $titleParts->push('แหล่งข้อมูล ' . ($sourceLabelMap[$selectedSource] ?? $selectedSource));
         }
         $pageTitle = $baseTitle . ($titleParts->isNotEmpty() ? ' ' . $titleParts->implode(' ') : '');
+        $visualizationSectionDefinitions = $visualizationSectionDefinitions ?? [];
+        $visualizationSectionVisibility = $visualizationSectionVisibility ?? collect($visualizationSectionDefinitions)->mapWithKeys(fn ($label, $key) => [$key => true])->all();
+        $canManageVisualizationSections = (bool) ($canManageVisualizationSections ?? false);
+        $isVizSectionVisible = static fn (string $key): bool => (bool) ($visualizationSectionVisibility[$key] ?? true);
 
         $currentYearBe = (int) now()->setTimezone('Asia/Bangkok')->format('Y') + 543;
         $trendPreviousYear = $trendSummary['previous_year'] ?? null;
@@ -1341,6 +1345,70 @@
         .section-panel--amber::before { background: linear-gradient(90deg, #d97706, #fde68a); }
         .section-panel--rose::before { background: linear-gradient(90deg, #be123c, #fda4af); }
         .section-panel--emerald::before { background: linear-gradient(90deg, #047857, #a7f3d0); }
+        .viz-page:not(.viz-page--can-manage) .viz-section.is-viz-section-off {
+            display: none !important;
+        }
+        .viz-page--can-manage .viz-section {
+            position: relative;
+        }
+        .viz-page--can-manage .viz-section.is-viz-section-off {
+            opacity: .52;
+            filter: grayscale(.55);
+        }
+        .viz-section-admin-control {
+            display: flex;
+            grid-column: 1 / -1;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+            border: 1px solid #dbeafe;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #eff6ff, #ffffff);
+            padding: 10px 12px;
+            color: #1e3a8a;
+        }
+        .viz-section-admin-control__meta {
+            min-width: 0;
+        }
+        .viz-section-admin-control__label {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+        .viz-section-admin-control__status {
+            margin-top: 2px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .viz-section-toggle {
+            display: inline-flex;
+            min-height: 38px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            border: 1px solid #bfdbfe;
+            background: #ffffff;
+            padding: 0 14px;
+            font-size: 12px;
+            font-weight: 800;
+            color: #1d4ed8;
+            transition: background .2s ease, border-color .2s ease, color .2s ease, opacity .2s ease;
+        }
+        .viz-section-toggle:hover {
+            border-color: #60a5fa;
+            background: #dbeafe;
+        }
+        .viz-section.is-viz-section-off .viz-section-toggle {
+            border-color: #bbf7d0;
+            color: #047857;
+        }
+        .viz-section-toggle[disabled] {
+            cursor: wait;
+            opacity: .62;
+        }
         .section-tag {
             display: inline-flex;
             align-items: center;
@@ -6585,7 +6653,7 @@
         }
     </style>
 
-    <div class="viz-page min-h-screen pb-10">
+    <div class="viz-page {{ $canManageVisualizationSections ? 'viz-page--can-manage' : '' }} min-h-screen pb-10">
         {{-- PDF export is hidden for now. Keep the route/export code available for later use. --}}
         <div class="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 md:px-8 md:py-8 2xl:px-10">
             <section class="fade-up hero-panel section-panel section-panel--slate p-7 md:p-10">
@@ -6663,7 +6731,7 @@
                 $policyProjectTypeRows = collect(data_get($policyProjectNature, 'type_rows', []));
                 $policyProjectTotal = (int) data_get($policyProjectNature, 'project_total', 0);
             @endphp
-            <section class="fade-up panel section-panel section-panel--slate fte-skill-section p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--slate fte-skill-section viz-section {{ $isVizSectionVisible('project_scope') ? '' : 'is-viz-section-off' }} p-5 md:p-6" data-viz-section="project_scope" data-viz-section-title="Project Scope">
                 <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                     <div>
                         <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Project Scope</div>
@@ -6683,7 +6751,7 @@
             </section>
 
 
-            <section class="fade-up panel section-panel section-panel--indigo policy-shell p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--indigo policy-shell viz-section {{ $isVizSectionVisible('policy_decision') ? '' : 'is-viz-section-off' }} p-5 md:p-6" data-viz-section="policy_decision" data-viz-section-title="Policy-Relevant Decision-Making">
                 <div class="policy-brief">
                     <div class="section-tag section-tag--indigo">การเชื่อมโยงงานวิจัยสู่การตัดสินใจเชิงนโยบาย</div>
                     <div class="w-full">
@@ -7292,7 +7360,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
 
             </section>
 
-            <section class="fade-up panel section-panel section-panel--slate nature-section p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--slate nature-section viz-section {{ $isVizSectionVisible('research_nature') ? '' : 'is-viz-section-off' }} p-5 md:p-6" data-viz-section="research_nature" data-viz-section-title="Research Nature Analysis">
                 @php
                     $nature = $projectNatureAnalysis ?? [];
                     $natureThemes = collect(data_get($nature, 'theme_rows', []));
@@ -7620,7 +7688,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 </div>
             </section>
 
-            <section class="fade-up panel section-panel section-panel--slate p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--slate viz-section {{ $isVizSectionVisible('fte_skill_map') ? '' : 'is-viz-section-off' }} p-5 md:p-6" data-viz-section="fte_skill_map" data-viz-section-title="FTE Skill Map">
                 @php
                     $fteSkills = $fteSkillAnalysis ?? [];
                     $fteSkillGroups = collect(data_get($fteSkills, 'grouped_task_rows', []));
@@ -8067,7 +8135,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 </div>
             </section>
 
-            <section class="fade-up panel section-panel section-panel--indigo policy-shell p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--indigo policy-shell viz-section {{ $isVizSectionVisible('data_literacy') ? '' : 'is-viz-section-off' }} p-5 md:p-6" data-viz-section="data_literacy" data-viz-section-title="Data Literacy Skill">
                 <div class="policy-axis-card mt-4">
                     <div class="contribution-card">
                         <div class="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-4">
@@ -8181,7 +8249,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 </div>
             </section>
 
-            <section class="fade-up panel section-panel section-panel--indigo policy-shell p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--indigo policy-shell viz-section {{ $isVizSectionVisible('people_contribution') ? '' : 'is-viz-section-off' }} p-5 md:p-6" data-viz-section="people_contribution" data-viz-section-title="People Contribution">
                 <div class="policy-axis-card mt-4">
                     <div class="policy-section-title">
                         <div>
@@ -8440,14 +8508,14 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
 
             </section>
 
-            <section class="fade-up panel section-panel section-panel--teal mt-8 p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--teal viz-section {{ $isVizSectionVisible('output_intelligence') ? '' : 'is-viz-section-off' }} mt-8 p-5 md:p-6" data-viz-section="output_intelligence" data-viz-section-title="Output Intelligence">
                 <div class="section-tag section-tag--teal">Output Intelligence</div>
                 <h2 class="max-w-[1500px] font-semibold text-slate-900" style="font-size: clamp(24px, 1.9vw, 32px); line-height: 1.42; letter-spacing: 0;">
                     ผลงานที่เกิดขึ้นในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ
                 </h2>
             </section>
 
-            <section class="fade-up panel section-panel section-panel--teal mt-4 p-5 md:p-6">
+            <section class="fade-up panel section-panel section-panel--teal viz-section {{ $isVizSectionVisible('theme_output') ? '' : 'is-viz-section-off' }} mt-4 p-5 md:p-6" data-viz-section="theme_output" data-viz-section-title="Theme Output">
                 <div class="flex flex-wrap items-end justify-between gap-3">
                     <div>
                         <div class="section-tag section-tag--teal">Theme Output</div>
@@ -8533,7 +8601,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 </div>
             </section>
 
-            <section class="scene scene--compact grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            <section class="scene scene--compact viz-section {{ $isVizSectionVisible('output_trend') ? '' : 'is-viz-section-off' }} grid gap-4 lg:grid-cols-[1.15fr_0.85fr]" data-viz-section="output_trend" data-viz-section-title="Output Trend">
                 <article class="fade-up panel section-panel section-panel--indigo chart-sticky h-full p-4 md:p-5">
                     <div class="section-tag section-tag--indigo">Output Trend</div>
                     <h2 class="text-base font-semibold text-slate-900">ผลงานที่เกิดขึ้น <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($totalCount) }} รายการ)</span></h2>
@@ -8575,7 +8643,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 </article>
             </section>
 
-            <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            <section class="scene scene--balanced viz-section {{ $isVizSectionVisible('type_of_output') ? '' : 'is-viz-section-off' }} grid gap-4 lg:grid-cols-[1.15fr_0.85fr]" data-viz-section="type_of_output" data-viz-section-title="Type Of Output">
                 <article class="fade-up panel section-panel section-panel--amber chart-sticky h-full p-4 md:p-5">
                     <div class="section-tag section-tag--amber">Type Of Output</div>
                     <h2 class="text-base font-semibold text-slate-900">ประเภทผลงานที่เกิดขึ้นจากหลายมิติ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($typeSectionTotal) }} รายการ)</span></h2>
@@ -8609,7 +8677,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 </article>
             </section>
 
-            <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            <section class="scene scene--balanced viz-section {{ $isVizSectionVisible('publications') ? '' : 'is-viz-section-off' }} grid gap-4 lg:grid-cols-[1.15fr_0.85fr]" data-viz-section="publications" data-viz-section-title="Publications">
                 <article class="fade-up panel section-panel section-panel--rose chart-sticky flex h-full flex-col p-4 md:p-5">
                     <div class="section-tag section-tag--rose">Publications</div>
                     <h2 class="text-base font-semibold text-slate-900">ผลงานการตีพิมพ์ต่างๆ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($paperCount) }} รายการ)</span></h2>
@@ -8679,7 +8747,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                 </article>
             </section>
 
-            <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            <section class="scene scene--balanced viz-section {{ $isVizSectionVisible('presentations') ? '' : 'is-viz-section-off' }} grid gap-4 lg:grid-cols-[1.15fr_0.85fr]" data-viz-section="presentations" data-viz-section-title="Presentations">
                 <article class="fade-up panel section-panel section-panel--emerald chart-sticky flex h-full flex-col p-4 md:p-5">
                     <div class="section-tag section-tag--emerald">Presentations</div>
                     <h2 class="text-base font-semibold text-slate-900">ผลงานการนำเสนอต่างๆ <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($presentationCount) }} รายการ)</span></h2>
@@ -8751,7 +8819,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
             </section>
 
             @if ($textbookCount > 0)
-                <section class="scene scene--balanced grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+                <section class="scene scene--balanced viz-section {{ $isVizSectionVisible('textbooks') ? '' : 'is-viz-section-off' }} grid gap-4 lg:grid-cols-[1.15fr_0.85fr]" data-viz-section="textbooks" data-viz-section-title="Textbooks">
                     <article class="fade-up panel section-panel section-panel--teal chart-sticky flex h-full flex-col p-4 md:p-5">
                         <div class="section-tag section-tag--teal">Textbooks</div>
                         <h2 class="text-base font-semibold text-slate-900">ผลงาน Textbooks <span class="ml-1 text-sm font-medium text-slate-500">({{ number_format($textbookCount) }} รายการ)</span></h2>
@@ -8834,7 +8902,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                             return $rightYear <=> $leftYear;
                         });
                 @endphp
-                <section class="scene">
+                <section class="scene viz-section {{ $isVizSectionVisible('networking') ? '' : 'is-viz-section-off' }}" data-viz-section="networking" data-viz-section-title="Networking">
                     <article class="fade-up panel section-panel section-panel--emerald p-5 md:p-7">
                         <div>
                             <div class="section-tag section-tag--emerald">Networking</div>
@@ -9242,6 +9310,72 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
             const policyImpactTrendItemsByYear = @json(collect($policyImpactTrend['items_by_year'] ?? []));
             const fteSkillRadarRows = @json(collect(data_get($fteSkillAnalysis ?? [], 'radar_rows', []))->values());
             const isPublicSeminar = @json($isPublicSeminar ?? false);
+            const canManageVisualizationSections = @json($canManageVisualizationSections);
+            const visualizationSectionVisibility = @json($visualizationSectionVisibility);
+            const visualizationSectionUpdateEndpoint = @json(($isPublicSeminar ?? false) ? null : route('outputs.visualization.sections.update', [], false));
+            const visualizationSectionCsrf = @json(csrf_token());
+
+            function installVisualizationSectionControls() {
+                if (!canManageVisualizationSections || !visualizationSectionUpdateEndpoint) return;
+                document.querySelectorAll('[data-viz-section]').forEach((section) => {
+                    const sectionKey = section.dataset.vizSection || '';
+                    if (!sectionKey || section.querySelector(':scope > .viz-section-admin-control')) return;
+
+                    const label = section.dataset.vizSectionTitle || sectionKey;
+                    const control = document.createElement('div');
+                    control.className = 'viz-section-admin-control';
+                    control.innerHTML = `
+                        <div class="viz-section-admin-control__meta">
+                            <div class="viz-section-admin-control__label">Admin section visibility</div>
+                            <div class="viz-section-admin-control__status"></div>
+                        </div>
+                        <button type="button" class="viz-section-toggle"></button>
+                    `;
+
+                    const status = control.querySelector('.viz-section-admin-control__status');
+                    const button = control.querySelector('.viz-section-toggle');
+                    const sync = () => {
+                        const enabled = !section.classList.contains('is-viz-section-off');
+                        status.textContent = `${label}: ${enabled ? 'เปิดให้ผู้ใช้เห็นอยู่' : 'ปิดจากผู้ใช้ทั่วไปอยู่'}`;
+                        button.textContent = enabled ? 'ปิด section' : 'เปิด section';
+                        button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+                    };
+
+                    button.addEventListener('click', async () => {
+                        const nextEnabled = section.classList.contains('is-viz-section-off');
+                        button.disabled = true;
+                        section.classList.toggle('is-viz-section-off', !nextEnabled);
+                        sync();
+
+                        try {
+                            const response = await fetch(visualizationSectionUpdateEndpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': visualizationSectionCsrf,
+                                },
+                                body: JSON.stringify({ section: sectionKey, enabled: nextEnabled }),
+                            });
+                            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                            const payload = await response.json();
+                            section.classList.toggle('is-viz-section-off', !payload.enabled);
+                            visualizationSectionVisibility[sectionKey] = Boolean(payload.enabled);
+                        } catch (error) {
+                            section.classList.toggle('is-viz-section-off', nextEnabled);
+                            status.textContent = `${label}: บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง`;
+                        } finally {
+                            button.disabled = false;
+                            sync();
+                        }
+                    });
+
+                    section.prepend(control);
+                    sync();
+                });
+            }
+
+            installVisualizationSectionControls();
             if (isPublicSeminar) {
                 const termsModal = document.getElementById('seminarTermsModal');
                 const termsAccept = document.getElementById('seminarTermsAccept');
@@ -10318,7 +10452,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                                 </div>
                             </div>
                         `;
-                        return link
+                        return link && !frameworkModalState.disableLinks
                             ? `<a href="${escapeFrameworkHtml(link)}" target="_blank" rel="noopener" class="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 hover:border-blue-200 hover:bg-blue-50">${inner}</a>`
                             : `<div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">${inner}</div>`;
                     }).join('')}</div>${pager}`
@@ -10380,11 +10514,12 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                     frameworkModalBody.querySelector('.js-framework-filter-role')?.focus();
                 }
             };
-            const setFrameworkModalItems = (items, unit, initialFilters = {}) => {
+            const setFrameworkModalItems = (items, unit, initialFilters = {}, options = {}) => {
                 frameworkModalState = {
                     items: sortedFrameworkItems(items),
                     page: 1,
                     unit: unit || 'รายการ',
+                    disableLinks: Boolean(options.disableLinks),
                     filters: {
                         q: initialFilters.q || '',
                         year: initialFilters.year || '',
@@ -10439,7 +10574,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                 frameworkModalTone = frameworkToneStyles[datasetKey] || frameworkToneStyles.trust;
                 frameworkModalTitle.textContent = frameworkTrendMeta[datasetKey] || 'รายการ';
                 frameworkModalSubtitle.innerHTML = `<span class="inline-flex items-baseline gap-2"><span class="text-2xl font-semibold" style="color:${frameworkModalTone.accent}">ปี ${escapeFrameworkHtml(year)}</span><span class="text-base font-semibold text-slate-700">${items.length.toLocaleString()} ${escapeFrameworkHtml(frameworkTrendUnits[datasetKey] || 'รายการ')}</span></span>`;
-                setFrameworkModalItems(items, frameworkTrendUnits[datasetKey] || 'รายการ', { year: String(year || '') });
+                setFrameworkModalItems(items, frameworkTrendUnits[datasetKey] || 'รายการ', { year: String(year || '') }, { disableLinks: isPublicSeminar && ['trust', 'truth'].includes(datasetKey) });
                 showFrameworkModal();
             };
             const openFrameworkAllModal = (datasetKey, label, unit) => {
@@ -10448,7 +10583,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                 frameworkModalTone = frameworkToneStyles[datasetKey] || frameworkToneStyles.trust;
                 frameworkModalTitle.textContent = label || frameworkTrendMeta[datasetKey] || 'รายการ';
                 frameworkModalSubtitle.innerHTML = `<span class="text-base font-semibold text-slate-700">รวม ${items.length.toLocaleString()} ${escapeFrameworkHtml(unit || frameworkTrendUnits[datasetKey] || 'รายการ')}</span>`;
-                setFrameworkModalItems(items, unit || frameworkTrendUnits[datasetKey] || 'รายการ');
+                setFrameworkModalItems(items, unit || frameworkTrendUnits[datasetKey] || 'รายการ', {}, { disableLinks: isPublicSeminar && ['trust', 'truth'].includes(datasetKey) });
                 showFrameworkModal();
             };
             const openOutputItemsModal = (items, title, unit = 'รายการ', initialFilters = {}, tone = null) => {

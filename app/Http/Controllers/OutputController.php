@@ -51,6 +51,25 @@ class OutputController extends Controller
         '06 Other Areas',
     ];
 
+    private const VISUALIZATION_SECTION_VISIBILITY_SETTING_KEY = 'outputs.visualization.section_visibility';
+
+    private const VISUALIZATION_SECTION_DEFINITIONS = [
+        'project_scope' => 'Project Scope',
+        'policy_decision' => 'Policy-Relevant Decision-Making',
+        'research_nature' => 'Research Nature Analysis',
+        'fte_skill_map' => 'FTE Skill Map',
+        'data_literacy' => 'Data Literacy Skill',
+        'people_contribution' => 'People Contribution',
+        'output_intelligence' => 'Output Intelligence',
+        'theme_output' => 'Theme Output',
+        'output_trend' => 'Output Trend',
+        'type_of_output' => 'Type Of Output',
+        'publications' => 'Publications',
+        'presentations' => 'Presentations',
+        'textbooks' => 'Textbooks',
+        'networking' => 'Networking',
+    ];
+
     public function externalAcademic(Request $request)
     {
         $query = ExternalOutput::query()
@@ -2127,6 +2146,8 @@ class OutputController extends Controller
     public function visualization(Request $request)
     {
         $isPublicSeminar = (bool) $request->attributes->get('is_public_seminar', false);
+        $canManageVisualizationSections = ! $isPublicSeminar && (bool) ($request->user()?->isAdminEquivalent() ?? false);
+        $visualizationSectionVisibility = $this->visualizationSectionVisibility();
 
         if ($request->query('__realtime_version') === '1') {
             return response()
@@ -5625,6 +5646,9 @@ class OutputController extends Controller
             'visualizationRealtimeVersion' => $this->visualizationRealtimeVersion(),
             'isPublicSeminar' => $isPublicSeminar,
             'visualizationRouteName' => $isPublicSeminar ? 'seminar' : 'outputs.visualization',
+            'visualizationSectionDefinitions' => self::VISUALIZATION_SECTION_DEFINITIONS,
+            'visualizationSectionVisibility' => $visualizationSectionVisibility,
+            'canManageVisualizationSections' => $canManageVisualizationSections,
         ]);
 
         if ($useRenderedVisualizationCache && $renderedVisualizationCacheKey) {
@@ -5634,6 +5658,28 @@ class OutputController extends Controller
         }
 
         return $view;
+    }
+
+    public function updateVisualizationSectionVisibility(Request $request)
+    {
+        abort_unless((bool) ($request->user()?->isAdminEquivalent() ?? false), 403);
+
+        $validated = $request->validate([
+            'section' => ['required', 'string', 'in:' . implode(',', array_keys(self::VISUALIZATION_SECTION_DEFINITIONS))],
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        $visibility = $this->visualizationSectionVisibility();
+        $visibility[$validated['section']] = (bool) $validated['enabled'];
+
+        $this->storeVisualizationSectionVisibility($visibility, (int) $request->user()->id);
+
+        return response()->json([
+            'ok' => true,
+            'section' => $validated['section'],
+            'enabled' => $visibility[$validated['section']],
+            'visibility' => $visibility,
+        ]);
     }
 
     public function seminar(Request $request)
@@ -7095,7 +7141,62 @@ class OutputController extends Controller
             'query' => $query,
             'version' => $this->visualizationDataVersion(),
             'view_version' => $this->visualizationViewVersion(),
+            'section_visibility_version' => $this->visualizationSectionVisibilityVersion(),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function visualizationSectionVisibility(): array
+    {
+        $default = array_fill_keys(array_keys(self::VISUALIZATION_SECTION_DEFINITIONS), true);
+
+        if (! Schema::hasTable('app_settings')) {
+            return $default;
+        }
+
+        $rawValue = DB::table('app_settings')
+            ->where('key', self::VISUALIZATION_SECTION_VISIBILITY_SETTING_KEY)
+            ->value('value');
+
+        $stored = is_string($rawValue) ? json_decode($rawValue, true) : null;
+        if (! is_array($stored)) {
+            return $default;
+        }
+
+        return collect($default)
+            ->mapWithKeys(fn ($enabled, $section) => [$section => array_key_exists($section, $stored) ? (bool) $stored[$section] : true])
+            ->all();
+    }
+
+    private function storeVisualizationSectionVisibility(array $visibility, int $userId): void
+    {
+        abort_unless(Schema::hasTable('app_settings'), 500, 'app_settings table is not available. Run migrations first.');
+
+        $payload = collect(self::VISUALIZATION_SECTION_DEFINITIONS)
+            ->mapWithKeys(fn ($label, $section) => [$section => (bool) ($visibility[$section] ?? true)])
+            ->all();
+
+        DB::table('app_settings')->updateOrInsert(
+            ['key' => self::VISUALIZATION_SECTION_VISIBILITY_SETTING_KEY],
+            [
+                'value' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'updated_by' => $userId,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+    }
+
+    private function visualizationSectionVisibilityVersion(): string
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return 'missing';
+        }
+
+        $updatedAt = DB::table('app_settings')
+            ->where('key', self::VISUALIZATION_SECTION_VISIBILITY_SETTING_KEY)
+            ->value('updated_at');
+
+        return (string) ($updatedAt ?: 'default');
     }
 
     private function visualizationViewVersion(): string

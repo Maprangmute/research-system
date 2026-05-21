@@ -2438,12 +2438,12 @@
                     <div class="di-kpi"><span>หัวหน้าโครงการ</span><strong id="heroSummaryPi">0 ท่าน</strong><small>จำนวน PI</small></div>
                     <div class="di-kpi"><span>ผู้วิจัยร่วม</span><strong id="heroSummaryCopi">0 ท่าน</strong><small>Co-PI ไม่ซ้ำ</small></div>
                     <div class="di-kpi"><span>ผู้ร่วมวิจัย</span><strong id="heroSummaryCoResearch">0 ท่าน</strong><small>Co-Research ไม่ซ้ำ</small></div>
-                    <div class="di-kpi"><span>ผลงานวิจัย</span><strong id="heroSummaryOutputs">0</strong><small>Outputs</small></div>
+                            <div class="di-kpi"><span>รวมจำนวนโครงการ</span><strong id="heroSummaryOutputs">0</strong><small>Outputs</small></div>
                 </div>
                 <div class="di-kpi-grid di-summary-budget-grid">
                     <div class="di-kpi"><span>งบประมาณรวม</span><strong id="rtSummaryBudget">0 บ.</strong><small>รวมเฉพาะข้อมูลใน scope</small></div>
                     <div class="di-kpi"><span>งบเฉลี่ย/โครงการ</span><strong id="rtSummaryAvgBudget">0 บ.</strong><small>ไม่นับโครงการไม่มีงบ</small></div>
-                    <div class="di-kpi"><span>โครงการที่มีคนในหน่วยเราเป็น PI</span><strong id="rtSummaryPolicyPiBudget">0 บ.</strong><small id="rtSummaryPolicyPiCount">0 โครงการที่มีงบ</small></div>
+                            <div class="di-kpi"><span>โครงการที่มีคนในหน่วย SIHP เป็น PI</span><strong id="rtSummaryPolicyPiBudget">0 บ.</strong><small id="rtSummaryPolicyPiCount">0 โครงการที่มีงบ</small></div>
                 </div>
                 <h3 class="di-summary-table-title">ตารางสรุปตามกลุ่มเนื้อหาหลักของงาน (Content/Theme)</h3>
                 <div class="mt-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
@@ -3236,6 +3236,7 @@
             const outputTypeLabel = (type) => {
                 const raw = text(type, 'ไม่ระบุประเภท');
                 if (/^EA101\b/i.test(raw) || raw === 'EA101') return 'EA101 Research Paper or Journal Article';
+                if (/^EA103\b/i.test(raw) || raw === 'EA103') return 'EA103 Presentations in Academic Conferences';
                 return raw;
             };
             const beYear = (value) => normalizeYearLabel(value, '');
@@ -4243,7 +4244,79 @@
                 ];
             }
 
+            function outputRecordLink(output, fallback = '-') {
+                const title = text(output.title || output.output_title || output.output_code || output.code, fallback);
+                const url = output.url || output.project_output || output.link || '';
+                return url
+                    ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="text-blue-700 font-semibold hover:underline">${escapeHtml(title)}</a>`
+                    : escapeHtml(title);
+            }
+
+            function outputProjectCell(output) {
+                const project = output.project;
+                const projectName = text(project?.project_name_th || output.project_name || output.source_label, '-');
+                if (project?.id) {
+                    return `<a href="${projectUrl(project.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(projectName)}</a>`;
+                }
+                const url = output.url || output.project_output || output.link || '';
+                return url
+                    ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="text-blue-700 font-semibold hover:underline">${escapeHtml(projectName)}</a>`
+                    : escapeHtml(projectName);
+            }
+
+            function outputRecordsTable(outputs, context = {}) {
+                const uniqueOutputs = Array.from(new Map(outputs.map((output, index) => {
+                    const key = output.id ?? output.output_code ?? output.code ?? `${output.source_kind || 'output'}-${outputYear(output)}-${output.title || output.output_title || index}`;
+                    return [String(key), output];
+                })).values());
+                if (!uniqueOutputs.length) return '<div class="di-empty">ไม่พบรายการ Publication ในกลุ่มนี้</div>';
+
+                const projectRows = Array.from(new Map(uniqueOutputs
+                    .map((output) => output.project)
+                    .filter(Boolean)
+                    .map((project) => [project.id ?? project.project_id ?? project.project_code ?? project.project_name_th, project])
+                ).values());
+                const kpis = modalKpis(projectRows, { ...context, outputs: uniqueOutputs });
+
+                return `
+                    <div class="di-modal-content di-modal-content--output">
+                    <div class="di-modal-summary">
+                        ${kpis.map(([label, value]) => `<div class="di-modal-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}
+                    </div>
+                    <div class="di-modal-table-wrap">
+                        <table class="di-table di-modal-table">
+                            <thead>
+                                <tr>
+                                    <th>Publication</th>
+                                    <th>ประเภท</th>
+                                    <th>ปี</th>
+                                    <th>โครงการ/แหล่งที่มา</th>
+                                    <th>ผู้เขียน</th>
+                                    <th>Journal/แหล่งเผยแพร่</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${uniqueOutputs.map((output) => `
+                                    <tr>
+                                        <td data-label="Publication">${outputRecordLink(output)}</td>
+                                        <td data-label="ประเภท">${escapeHtml(outputTypeLabel(output.type))}</td>
+                                        <td data-label="ปี">${escapeHtml(outputYear(output))}</td>
+                                        <td data-label="โครงการ/แหล่งที่มา">${outputProjectCell(output)}</td>
+                                        <td data-label="ผู้เขียน">${escapeHtml(outputAuthorText(output) || '-')}</td>
+                                        <td data-label="Journal/แหล่งเผยแพร่">${escapeHtml(text(output.journal || output.source || output.publisher || output.source_label, '-'))}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    </div>
+                `;
+            }
+
             function projectsTable(rows, context = {}) {
+                if (context.chartId === 'chartPublicationYear') {
+                    return outputRecordsTable(Array.isArray(context.outputs) ? context.outputs : [], context);
+                }
                 if (!rows.length) return '<div class="di-empty">ไม่พบรายการโครงการในกลุ่มนี้</div>';
                 const kind = context.kind || 'portfolio';
                 const kpis = modalKpis(rows, context);
@@ -5076,6 +5149,7 @@
                 const pubRows = top(groupSum(pubs, outputYear), 99)
                     .filter((item) => item.label !== 'ไม่ระบุปี')
                     .filter((item) => !isFutureYearLabel(item.label))
+                    .filter((item) => yearNumber(item.label) >= 2561)
                     .sort((a, b) => Number(a.label.match(/\d{4}/)?.[0] || 99999) - Number(b.label.match(/\d{4}/)?.[0] || 99999));
                 renderChart('chartPublicationYear', {
                     type: 'bar',
