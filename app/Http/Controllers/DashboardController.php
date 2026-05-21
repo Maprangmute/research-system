@@ -122,6 +122,11 @@ class DashboardController extends Controller
                 'created_at',
                 'updated_at',
             ]))
+            ->with([
+                'authors' => fn($authorQuery) => $authorQuery->select($existingColumns('external_output_authors', [
+                    'id', 'external_output_id', 'name', 'role',
+                ])),
+            ])
             ->latest()
             ->get() : collect();
 
@@ -129,6 +134,14 @@ class DashboardController extends Controller
             ->with([
                 'creator:id,prefix,name',
                 'entries:id,task_id,hours,fte_value',
+                'outputs' => fn($query) => $query
+                    ->select($existingColumns('back_office_task_outputs', [
+                        'id', 'task_id', 'owner_user_id', 'owner_name', 'title', 'type',
+                        'year', 'journal', 'publisher_name', 'created_at', 'updated_at',
+                    ]))
+                    ->with([
+                        'authorLinks.user',
+                    ]),
             ])
             ->select($existingColumns('back_office_tasks', [
                 'id',
@@ -433,7 +446,7 @@ class DashboardController extends Controller
         })->values();
         $dashboardFteSkillAnalysis = app(OutputController::class)->buildFteSkillAnalysis(null, null);
 
-        $externalOutputsData = $externalOutputs->map(function (ExternalOutput $output) {
+        $externalOutputsData = $externalOutputs->map(function (ExternalOutput $output) use ($mapDashboardAuthor) {
             $publishDate = $this->toCarbonOrNull($output->publish_date);
 
             return [
@@ -452,10 +465,11 @@ class DashboardController extends Controller
                 'created_at' => optional($output->created_at)->toDateTimeString(),
                 'updated_at' => optional($output->updated_at)->toDateTimeString(),
                 'url' => route('outputs.external-academic.show', $output),
+                'authors' => $output->authors->map($mapDashboardAuthor)->values(),
             ];
         })->values();
 
-        $backOfficeData = $backOfficeTasks->map(function (BackOfficeTask $task) {
+        $backOfficeData = $backOfficeTasks->map(function (BackOfficeTask $task) use ($mapDashboardAuthor) {
             $hours = (float) $task->entries->sum(fn ($entry) => $this->toFloat($entry->hours));
             $fte = (float) $task->entries->sum(fn ($entry) => $this->toFloat($entry->fte_value));
             $creatorName = trim(implode(' ', array_filter([
@@ -481,6 +495,23 @@ class DashboardController extends Controller
                 'created_at' => optional($task->created_at)->toDateTimeString(),
                 'updated_at' => optional($task->updated_at)->toDateTimeString(),
                 'url' => route('back_office.show', $task),
+                'outputs' => $task->outputs->map(function ($output) use ($task, $mapDashboardAuthor) {
+                    $year = $this->extractYear($output->year ?: $output->created_at);
+                    return [
+                        'id' => $output->id,
+                        'code' => 'BO-OUT-'.$output->id,
+                        'type' => trim((string) ($output->type ?? '')) ?: 'ไม่ระบุประเภท',
+                        'title' => trim((string) ($output->title ?? '')) ?: 'ไม่ระบุชื่อผลงาน',
+                        'year' => $year,
+                        'journal' => trim((string) ($output->journal ?? $output->publisher_name ?? '')) ?: '-',
+                        'created_at' => optional($output->created_at)->toDateTimeString(),
+                        'updated_at' => optional($output->updated_at)->toDateTimeString(),
+                        'url' => route('back_office.show', $task),
+                        'authors' => collect($output->resolvedAuthors())
+                            ->map(fn (array $author) => $mapDashboardAuthor((object) $author))
+                            ->values(),
+                    ];
+                })->values(),
             ];
         })->values();
 

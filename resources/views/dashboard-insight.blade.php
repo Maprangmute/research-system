@@ -411,6 +411,58 @@
             font-size: 11px;
         }
 
+        .di-summary-table-title {
+            margin-top: 16px;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 900;
+            line-height: 1.35;
+        }
+
+        .di-theme-summary-table {
+            table-layout: fixed;
+        }
+
+        .di-theme-summary-table th:first-child,
+        .di-theme-summary-table td:first-child {
+            width: 56%;
+        }
+
+        .di-theme-summary-table th:nth-child(2),
+        .di-theme-summary-table td:nth-child(2) {
+            width: 14%;
+        }
+
+        .di-theme-summary-table th:nth-child(3),
+        .di-theme-summary-table td:nth-child(3) {
+            width: 14%;
+        }
+
+        .di-theme-summary-table th:nth-child(4),
+        .di-theme-summary-table td:nth-child(4) {
+            width: 16%;
+        }
+
+        .di-summary-content-theme-table thead th {
+            background: #e0f2fe;
+            color: #075985;
+            border-bottom-color: #bae6fd;
+        }
+
+        .di-summary-type-table thead th {
+            background: #ecfdf5;
+            color: #047857;
+            border-bottom-color: #bbf7d0;
+        }
+
+        .di-theme-summary-table tbody tr:nth-child(odd) td {
+            background: #ffffff;
+        }
+
+        .di-theme-summary-table tbody tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
         .di-summary-budget-grid .di-kpi strong {
             font-size: clamp(18px, 1.5vw, 25px);
         }
@@ -477,6 +529,14 @@
             color: #0f172a;
             font-size: 12px;
             font-weight: 900;
+        }
+
+        .di-ai-insight-note {
+            margin-top: 14px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 400;
+            line-height: 1.6;
         }
 
         .di-analysis-card:nth-child(2) {
@@ -898,8 +958,7 @@
         .di-skill-capacity-table {
             width: 100%;
             min-width: 0;
-            border-collapse: separate;
-            border-spacing: 0;
+            border-collapse: collapse;
             color: #233047;
             font-size: 13px;
             table-layout: fixed;
@@ -910,16 +969,26 @@
             padding: 13px 12px;
             vertical-align: middle;
             border-bottom: 1px solid #dce4ee;
+            border-left: 1px solid #dce4ee;
+        }
+
+        .di-skill-capacity-table th:first-child,
+        .di-skill-capacity-table td:first-child {
+            border-left: 0;
         }
 
         .di-skill-capacity-table th {
             background: #f8fafc;
             color: #475569;
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 900;
-            letter-spacing: .045em;
+            letter-spacing: 0;
+            line-height: 1.2;
             text-align: left;
-            text-transform: uppercase;
+            text-transform: none;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: normal;
         }
 
         .di-skill-capacity-table tbody td {
@@ -936,6 +1005,8 @@
         .di-skill-capacity-table__group {
             background: #e8f2ff !important;
             color: #1e3a8a !important;
+            font-size: 9.5px !important;
+            line-height: 1.22 !important;
             text-align: center !important;
         }
 
@@ -947,13 +1018,25 @@
         .di-skill-capacity-table--skill thead tr:first-child th:nth-child(3),
         .di-skill-capacity-table--skill tbody td:nth-child(3),
         .di-skill-capacity-table--skill tfoot td:nth-child(2) {
-            border-left: 1px solid #d5e1ef;
+            border-left: 1px solid #dce4ee;
+        }
+
+        .di-skill-capacity-table--skill thead tr:first-child th:nth-child(2),
+        .di-skill-capacity-table--skill tbody td:nth-child(2) {
+            border-left: 0;
+        }
+
+        .di-skill-capacity-table--skill thead tr:first-child th:nth-child(2) {
+            font-size: 14px;
+            line-height: 1.25;
         }
 
         .di-skill-capacity-table--skill thead tr:first-child th:nth-child(4),
+        .di-skill-capacity-table--skill thead tr:nth-child(2) th:nth-child(4),
         .di-skill-capacity-table--skill tbody td:nth-child(6),
         .di-skill-capacity-table--skill tfoot td:nth-child(5) {
-            border-left: 3px solid #d5e1ef;
+            border-left: 1px solid #dce4ee !important;
+            box-shadow: none;
         }
 
         .di-skill-capacity-table--skill thead tr:nth-child(2) th:nth-child(1) {
@@ -971,10 +1054,19 @@
             color: #0f172a !important;
         }
 
+        .di-skill-capacity-table--skill thead tr:nth-child(2) th {
+            text-align: center;
+            vertical-align: middle;
+        }
+
         .di-skill-capacity-table__num {
             text-align: center;
-            white-space: nowrap;
             font-variant-numeric: tabular-nums;
+        }
+
+        .di-skill-capacity-table tbody .di-skill-capacity-table__num,
+        .di-skill-capacity-table tfoot .di-skill-capacity-table__num {
+            white-space: nowrap;
         }
 
         .di-skill-capacity-rank {
@@ -1000,7 +1092,9 @@
             gap: 8px;
             min-width: 0;
             color: #0f172a;
-            font-weight: 800;
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1.35;
         }
 
         .di-skill-capacity-borrowed {
@@ -1121,6 +1215,16 @@
             border-radius: 16px;
             background: #fff;
             padding: 10px 12px;
+            cursor: pointer;
+            transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+        }
+
+        .di-author-row:hover,
+        .di-author-row:focus {
+            border-color: #c4b5fd;
+            box-shadow: 0 12px 30px rgba(109, 40, 217, 0.12);
+            outline: none;
+            transform: translateY(-1px);
         }
 
         .di-author-name {
@@ -1236,9 +1340,11 @@
         }
 
         .di-modal-panel {
-            width: min(980px, 96vw);
-            max-height: min(82vh, 760px);
-            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            width: min(1280px, 96vw);
+            max-height: min(92dvh, 920px);
+            overflow: hidden;
             border: 1px solid rgba(203, 213, 225, 0.95);
             border-radius: 26px;
             background: #fff;
@@ -1274,7 +1380,139 @@
         }
 
         .di-modal-body {
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
             padding: 14px 18px 18px;
+        }
+
+        .di-modal-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .di-modal-content {
+            --modal-accent-bg: #eef6ff;
+            --modal-accent-text: #1e3a8a;
+            --modal-accent-border: #bfdbfe;
+            --modal-kpi-bg: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        }
+
+        .di-modal-content--funding {
+            --modal-accent-bg: #fff7ed;
+            --modal-accent-text: #9a3412;
+            --modal-accent-border: #fed7aa;
+            --modal-kpi-bg: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+        }
+
+        .di-modal-content--output {
+            --modal-accent-bg: #faf5ff;
+            --modal-accent-text: #6d28d9;
+            --modal-accent-border: #e9d5ff;
+            --modal-kpi-bg: linear-gradient(180deg, #faf5ff 0%, #ffffff 100%);
+        }
+
+        .di-modal-content--operation {
+            --modal-accent-bg: #ecfeff;
+            --modal-accent-text: #0e7490;
+            --modal-accent-border: #a5f3fc;
+            --modal-kpi-bg: linear-gradient(180deg, #ecfeff 0%, #ffffff 100%);
+        }
+
+        .di-modal-content--risk {
+            --modal-accent-bg: #fef2f2;
+            --modal-accent-text: #b91c1c;
+            --modal-accent-border: #fecaca;
+            --modal-kpi-bg: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
+        }
+
+        .di-modal-content--workload {
+            --modal-accent-bg: #f5f3ff;
+            --modal-accent-text: #5b21b6;
+            --modal-accent-border: #ddd6fe;
+            --modal-kpi-bg: linear-gradient(180deg, #f5f3ff 0%, #ffffff 100%);
+        }
+
+        .di-modal-kpi {
+            border: 1px solid var(--modal-accent-border);
+            border-radius: 16px;
+            background: var(--modal-kpi-bg);
+            padding: 11px 12px;
+        }
+
+        .di-modal-kpi span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 850;
+            line-height: 1.35;
+        }
+
+        .di-modal-kpi strong {
+            display: block;
+            margin-top: 4px;
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 950;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+        }
+
+        .di-modal-table-wrap {
+            overflow: auto;
+            border: 1px solid #dbe5f1;
+            border-radius: 18px;
+            background: #fff;
+        }
+
+        .di-modal-table {
+            min-width: 920px;
+            table-layout: fixed;
+        }
+
+        .di-modal-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: var(--modal-accent-bg);
+            color: var(--modal-accent-text);
+            font-size: 11px;
+        }
+
+        .di-modal-table tbody tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
+        .di-modal-table th:first-child,
+        .di-modal-table td:first-child {
+            width: 36%;
+        }
+
+        .di-modal-table th:nth-child(2),
+        .di-modal-table td:nth-child(2) {
+            width: 16%;
+        }
+
+        .di-modal-table th:nth-child(3),
+        .di-modal-table td:nth-child(3) {
+            width: 9%;
+        }
+
+        .di-modal-table th:nth-child(4),
+        .di-modal-table td:nth-child(4) {
+            width: 13%;
+        }
+
+        .di-modal-table th:nth-child(5),
+        .di-modal-table td:nth-child(5) {
+            width: 13%;
+        }
+
+        .di-modal-table th:nth-child(6),
+        .di-modal-table td:nth-child(6) {
+            width: 13%;
         }
 
         @media (max-width: 1366px) {
@@ -1439,6 +1677,90 @@
                 line-height: 1.25;
             }
 
+            .di-ops-charts .di-watch-card {
+                grid-column: 1 / -1;
+                width: 100%;
+                min-height: auto;
+            }
+
+            .di-watch-card .overflow-x-auto {
+                overflow-x: visible;
+            }
+
+            .di-watch-table {
+                width: 100%;
+                min-width: 0;
+                table-layout: auto;
+            }
+
+            .di-modal {
+                padding: 14px;
+            }
+
+            .di-modal-panel {
+                width: calc(100vw - 28px);
+                max-height: calc(100dvh - 28px);
+                border-radius: 22px;
+            }
+
+            .di-modal-body {
+                padding: 14px;
+            }
+
+            .di-modal-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .di-modal-table-wrap {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .di-modal-table {
+                min-width: 760px;
+            }
+
+        }
+
+        @media (min-width: 721px) and (max-width: 900px) and (orientation: portrait) {
+            .di-modal-table-wrap {
+                overflow-x: visible;
+            }
+
+            .di-modal-table {
+                min-width: 0;
+                width: 100%;
+                table-layout: fixed;
+                font-size: 11px;
+            }
+
+            .di-modal-table th,
+            .di-modal-table td {
+                padding: 9px 7px;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+
+            .di-modal-table th:first-child,
+            .di-modal-table td:first-child {
+                width: 32%;
+            }
+
+            .di-modal-table th:nth-child(2),
+            .di-modal-table td:nth-child(2) {
+                width: 16%;
+            }
+
+            .di-modal-table th:nth-child(3),
+            .di-modal-table td:nth-child(3),
+            .di-modal-table th:nth-child(4),
+            .di-modal-table td:nth-child(4),
+            .di-modal-table th:nth-child(5),
+            .di-modal-table td:nth-child(5),
+            .di-modal-table th:nth-child(6),
+            .di-modal-table td:nth-child(6) {
+                width: 13%;
+            }
         }
 
         @media (max-width: 720px) {
@@ -1534,6 +1856,92 @@
                 grid-template-columns: 1fr !important;
             }
 
+            .di-ops-charts .di-watch-card {
+                width: calc(100vw - 24px);
+                max-width: none;
+                margin-left: calc(50% - 50vw + 12px);
+                margin-right: calc(50% - 50vw + 12px);
+                min-height: auto;
+            }
+
+            .di-watch-card .overflow-x-auto {
+                overflow-x: visible;
+            }
+
+            .di-watch-table {
+                min-width: 0;
+                width: 100%;
+            }
+
+            .di-watch-table thead {
+                display: none;
+            }
+
+            .di-watch-table,
+            .di-watch-table tbody,
+            .di-watch-table tr,
+            .di-watch-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .di-watch-table tr {
+                margin-bottom: 10px;
+                border: 1px solid #dbe5f1;
+                border-radius: 14px;
+                background: #ffffff;
+                padding: 10px 11px;
+                box-sizing: border-box;
+                overflow: hidden;
+            }
+
+            .di-watch-table tr:last-child {
+                margin-bottom: 0;
+            }
+
+            .di-watch-table td {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+                border-bottom: 1px solid rgba(148, 163, 184, .22);
+                padding: 8px 0;
+                text-align: right;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+
+            .di-watch-table td:last-child {
+                border-bottom: 0;
+                padding-bottom: 0;
+            }
+
+            .di-watch-table td::before {
+                content: attr(data-label);
+                flex: 0 0 82px;
+                color: #64748b;
+                font-size: 11px;
+                font-weight: 900;
+                text-align: left;
+            }
+
+            .di-watch-table td:first-child {
+                display: block;
+                margin: -10px -11px 6px;
+                padding: 10px 11px;
+                background: #eff6ff;
+                color: #1d4ed8;
+                text-align: left;
+                font-weight: 850;
+            }
+
+            .di-watch-table td:first-child::before {
+                display: block;
+                margin-bottom: 4px;
+                color: currentColor;
+                opacity: .72;
+            }
+
             .di-portfolio-summary-list span,
             .di-funding-summary-list span,
             .di-output-summary-list span,
@@ -1549,10 +1957,17 @@
                 font-size: 12px;
             }
 
-            .di-theme-summary-table {
+            .di-table.di-watch-table {
                 min-width: 0;
+                width: 100%;
             }
 
+            .di-theme-summary-table {
+                min-width: 0;
+                table-layout: auto;
+            }
+
+            .di-theme-summary-table colgroup,
             .di-theme-summary-table thead {
                 display: none;
             }
@@ -1565,30 +1980,67 @@
                 width: 100%;
             }
 
+            .di-theme-summary-table th:first-child,
+            .di-theme-summary-table td:first-child,
+            .di-theme-summary-table th:nth-child(2),
+            .di-theme-summary-table td:nth-child(2),
+            .di-theme-summary-table th:nth-child(3),
+            .di-theme-summary-table td:nth-child(3),
+            .di-theme-summary-table th:nth-child(4),
+            .di-theme-summary-table td:nth-child(4) {
+                width: 100%;
+            }
+
             .di-theme-summary-table tr {
-                border-bottom: 1px solid #dbe5f1;
-                padding: 10px 8px;
+                margin-bottom: 10px;
+                border: 1px solid #dbe5f1;
+                border-radius: 14px;
+                padding: 10px 11px;
+                box-sizing: border-box;
+                overflow: hidden;
             }
 
             .di-theme-summary-table tr:last-child {
-                border-bottom: 0;
+                margin-bottom: 0;
+            }
+
+            .di-summary-content-theme-table tr {
+                border-color: #bae6fd;
+                background: #f0f9ff;
+            }
+
+            .di-summary-type-table tr {
+                border-color: #bbf7d0;
+                background: #f0fdf4;
+            }
+
+            .di-theme-summary-table tbody tr:nth-child(odd) td,
+            .di-theme-summary-table tbody tr:nth-child(even) td {
+                background: transparent;
             }
 
             .di-theme-summary-table td {
                 display: flex;
+                align-items: flex-start;
                 justify-content: space-between;
                 gap: 12px;
-                border-bottom: 0;
-                padding: 5px 0;
+                border-bottom: 1px solid rgba(148, 163, 184, .22);
+                padding: 8px 0;
                 text-align: right;
                 line-height: 1.45;
                 white-space: normal;
                 overflow-wrap: anywhere;
+                box-sizing: border-box;
+            }
+
+            .di-theme-summary-table td:last-child {
+                border-bottom: 0;
+                padding-bottom: 0;
             }
 
             .di-theme-summary-table td::before {
                 content: attr(data-label);
-                flex: 0 0 112px;
+                flex: 0 0 104px;
                 color: #64748b;
                 font-size: 11px;
                 font-weight: 900;
@@ -1597,13 +2049,27 @@
 
             .di-theme-summary-table td:first-child {
                 display: block;
+                margin: -10px -11px 6px;
+                padding: 10px 11px;
                 text-align: left;
                 font-weight: 850;
+            }
+
+            .di-summary-content-theme-table td:first-child {
+                background: #e0f2fe !important;
+                color: #075985;
+            }
+
+            .di-summary-type-table td:first-child {
+                background: #dcfce7 !important;
+                color: #047857;
             }
 
             .di-theme-summary-table td:first-child::before {
                 display: block;
                 margin-bottom: 4px;
+                color: currentColor;
+                opacity: .72;
             }
 
             .di-skill-capacity-head {
@@ -1693,13 +2159,130 @@
 
             .di-modal-panel {
                 width: 100%;
-                max-height: calc(100vh - 16px);
+                max-height: calc(100dvh - 16px);
                 border-radius: 18px;
             }
 
             .di-modal-head,
             .di-modal-body {
                 padding: 12px;
+            }
+
+            .di-modal-head {
+                align-items: flex-start;
+            }
+
+            .di-modal-title {
+                font-size: 16px;
+            }
+
+            .di-modal-subtitle {
+                font-size: 12px;
+            }
+
+            .di-modal-summary {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .di-modal-kpi {
+                padding: 9px 10px;
+            }
+
+            .di-modal-kpi strong {
+                font-size: 16px;
+            }
+
+            .di-modal-table-wrap {
+                overflow: visible;
+                border: 0;
+                border-radius: 0;
+                background: transparent;
+            }
+
+            .di-modal-table {
+                min-width: 0;
+                width: 100%;
+                table-layout: auto;
+            }
+
+            .di-modal-table thead {
+                display: none;
+            }
+
+            .di-modal-table,
+            .di-modal-table tbody,
+            .di-modal-table tr,
+            .di-modal-table td {
+                display: block;
+                width: 100% !important;
+                max-width: 100%;
+            }
+
+            .di-modal-table tr {
+                margin-bottom: 10px;
+                border: 1px solid #dbe5f1;
+                border-radius: 16px;
+                background: #ffffff;
+                padding: 10px 11px;
+                box-sizing: border-box;
+                overflow: hidden;
+            }
+
+            .di-modal-table tr:last-child {
+                margin-bottom: 0;
+            }
+
+            .di-modal-table td {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+                border-bottom: 1px solid rgba(148, 163, 184, .22);
+                padding: 8px 0;
+                text-align: right;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                box-sizing: border-box;
+            }
+
+            .di-modal-table td:last-child {
+                border-bottom: 0;
+            }
+
+            .di-modal-table td::before {
+                content: attr(data-label);
+                flex: 0 0 92px;
+                max-width: 42%;
+                color: #64748b;
+                font-size: 11px;
+                font-weight: 900;
+                text-align: left;
+            }
+
+            .di-modal-table td > *:not(:first-child),
+            .di-modal-table td > a,
+            .di-modal-table td {
+                min-width: 0;
+            }
+
+            .di-modal-table td:first-child {
+                display: block;
+                width: auto !important;
+                max-width: none;
+                margin: -10px -11px 7px;
+                padding: 11px;
+                background: var(--modal-accent-bg) !important;
+                color: var(--modal-accent-text);
+                text-align: left;
+                font-weight: 850;
+            }
+
+            .di-modal-table td:first-child::before {
+                display: block;
+                margin-bottom: 4px;
+                color: currentColor;
+                opacity: .72;
             }
 
             .di-author-row {
@@ -1791,7 +2374,7 @@
                         </select>
                     </label>
                     <label class="di-field">
-                        <span>Theme</span>
+                        <span>ลักษณะโครงการ (TYPE)</span>
                         <select id="filterTheme">
                             <option value="">ทั้งหมด</option>
                             @foreach ($themes as $theme)
@@ -1800,7 +2383,7 @@
                         </select>
                     </label>
                     <label class="di-field">
-                        <span>ประเภทโครงการ</span>
+                        <span>กลุ่มเนื้อหาหลักของงาน (Content/Theme)</span>
                         <select id="filterType">
                             <option value="">ทั้งหมด</option>
                             @foreach ($typeOptions as $type)
@@ -1849,14 +2432,10 @@
                         <h2>ภาพรวมโครงการวิจัย</h2>
                         <p class="mt-2 text-sm font-semibold text-slate-600">เอกสารสรุปข้อมูลทั้งหมดตามตัวกรองปัจจุบัน</p>
                     </div>
-                    <div class="di-insight">
-                        <span id="rtFilterBadge" class="di-pill">0 โครงการ</span>
-                        <div id="rtSummaryCaption" class="mt-2">สรุปตามฟิลเตอร์ปัจจุบัน</div>
-                    </div>
                 </div>
                 <div class="di-kpi-grid di-summary-grid">
                     <div class="di-kpi"><span>โครงการ</span><strong id="heroSummaryProjects">0</strong><small>ทั้งหมดใน scope</small></div>
-                    <div class="di-kpi"><span>หัวหน้าโครงการ</span><strong id="heroSummaryPi">0 ท่าน</strong><small>PI ไม่ซ้ำ</small></div>
+                    <div class="di-kpi"><span>หัวหน้าโครงการ</span><strong id="heroSummaryPi">0 ท่าน</strong><small>จำนวน PI</small></div>
                     <div class="di-kpi"><span>ผู้วิจัยร่วม</span><strong id="heroSummaryCopi">0 ท่าน</strong><small>Co-PI ไม่ซ้ำ</small></div>
                     <div class="di-kpi"><span>ผู้ร่วมวิจัย</span><strong id="heroSummaryCoResearch">0 ท่าน</strong><small>Co-Research ไม่ซ้ำ</small></div>
                     <div class="di-kpi"><span>ผลงานวิจัย</span><strong id="heroSummaryOutputs">0</strong><small>Outputs</small></div>
@@ -1866,11 +2445,38 @@
                     <div class="di-kpi"><span>งบเฉลี่ย/โครงการ</span><strong id="rtSummaryAvgBudget">0 บ.</strong><small>ไม่นับโครงการไม่มีงบ</small></div>
                     <div class="di-kpi"><span>โครงการที่มีคนในหน่วยเราเป็น PI</span><strong id="rtSummaryPolicyPiBudget">0 บ.</strong><small id="rtSummaryPolicyPiCount">0 โครงการที่มีงบ</small></div>
                 </div>
-                <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-                    <table class="di-table di-theme-summary-table">
+                <h3 class="di-summary-table-title">ตารางสรุปตามกลุ่มเนื้อหาหลักของงาน (Content/Theme)</h3>
+                <div class="mt-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                    <table class="di-table di-theme-summary-table di-summary-content-theme-table">
+                        <colgroup>
+                            <col style="width: 56%;">
+                            <col style="width: 14%;">
+                            <col style="width: 14%;">
+                            <col style="width: 16%;">
+                        </colgroup>
                         <thead>
                             <tr>
                                 <th>กลุ่มเนื้อหาหลักของงาน (Content/Theme)</th>
+                                <th class="text-right">จำนวนโครงการ</th>
+                                <th class="text-right">สัดส่วน</th>
+                                <th class="text-right">งบรวม</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rtContentThemeSummaryBody"></tbody>
+                    </table>
+                </div>
+                <h3 class="di-summary-table-title">ตารางสรุปตามลักษณะโครงการ (TYPE)</h3>
+                <div class="mt-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                    <table class="di-table di-theme-summary-table di-summary-type-table">
+                        <colgroup>
+                            <col style="width: 56%;">
+                            <col style="width: 14%;">
+                            <col style="width: 14%;">
+                            <col style="width: 16%;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>ลักษณะโครงการ (TYPE)</th>
                                 <th class="text-right">จำนวนโครงการ</th>
                                 <th class="text-right">สัดส่วน</th>
                                 <th class="text-right">งบรวม</th>
@@ -1933,6 +2539,7 @@
                             <strong>ภาพสะท้อนของหน่วยงาน</strong>
                             <span id="portfolioReflection">กำลังประมวลผลภาพสะท้อนของหน่วยงาน</span>
                         </div>
+                    <div class="di-ai-insight-note">เป็นการใช้ AI ช่วยวิเคราะห์เบื้องต้น อันเกิดจาก data ของหน่วย และยังต้องอาศัยการร่วมกันคิดของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน</div>
                     </aside>
                 </div>
             </section>
@@ -1999,6 +2606,7 @@
                             <strong>ภาพสะท้อนของหน่วยงาน</strong>
                             <span id="fundingReflection">กำลังประมวลผลภาพสะท้อนด้านแหล่งทุน</span>
                         </div>
+                    <div class="di-ai-insight-note">เป็นการใช้ AI ช่วยวิเคราะห์เบื้องต้น อันเกิดจาก data ของหน่วย และยังต้องอาศัยการร่วมกันคิดของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน</div>
                     </aside>
                 </div>
             </section>
@@ -2051,6 +2659,7 @@
                             <strong>ภาพสะท้อนของหน่วยงาน</strong>
                             <span id="outputReflection">กำลังประมวลผลบทบาทผู้เขียน</span>
                         </div>
+                    <div class="di-ai-insight-note">เป็นการใช้ AI ช่วยวิเคราะห์เบื้องต้น อันเกิดจาก data ของหน่วย และยังต้องอาศัยการร่วมกันคิดของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน</div>
                     </aside>
                 </div>
             </section>
@@ -2076,10 +2685,10 @@
                             <h3>🔴 โครงการเกินกำหนดตามสัญญา/ทีมวิจัย</h3>
                             <div class="di-chart"><canvas id="chartOverdue"></canvas></div>
                         </article>
-                        <article class="di-card">
+                        <article class="di-card di-watch-card">
                             <h3>รายการโครงการที่ควรติดตาม</h3>
                             <div class="overflow-x-auto">
-                                <table class="di-table">
+                                <table class="di-table di-watch-table">
                                     <thead>
                                         <tr>
                                             <th>โครงการ</th>
@@ -2106,6 +2715,7 @@
                             <strong>ภาพสะท้อนของหน่วยงาน</strong>
                             <span id="opsReflection">กำลังประมวลผลภาระประสานงาน</span>
                         </div>
+                    <div class="di-ai-insight-note">เป็นการใช้ AI ช่วยวิเคราะห์เบื้องต้น อันเกิดจาก data ของหน่วย และยังต้องอาศัยการร่วมกันคิดของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน</div>
                     </aside>
                 </div>
             </section>
@@ -2186,6 +2796,7 @@
                             <strong>ภาพสะท้อนของหน่วยงาน</strong>
                             <span id="workloadReflection">กำลังประมวลผลการกระจายภาระงาน</span>
                         </div>
+                    <div class="di-ai-insight-note">เป็นการใช้ AI ช่วยวิเคราะห์เบื้องต้น อันเกิดจาก data ของหน่วย และยังต้องอาศัยการร่วมกันคิดของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน</div>
                     </aside>
                 </div>
             </section>
@@ -2620,13 +3231,23 @@
                 return raw;
             };
             const yearLabel = (p) => normalizeYearLabel(p.start_year);
-            const outputYear = (o) => normalizeYearLabel(o.year ?? o.export_year ?? o.date ?? o.created_at);
+            const outputYear = (o) => normalizeYearLabel(o.year ?? o.publish_year ?? o.export_year ?? o.publish_date ?? o.date ?? o.created_at);
             const isPublication = (type) => /paper|journal|publication|article|EA101/i.test(text(type));
+            const outputTypeLabel = (type) => {
+                const raw = text(type, 'ไม่ระบุประเภท');
+                if (/^EA101\b/i.test(raw) || raw === 'EA101') return 'EA101 Research Paper or Journal Article';
+                return raw;
+            };
             const beYear = (value) => normalizeYearLabel(value, '');
             const parseDate = (value) => {
                 if (!value) return null;
                 const d = new Date(value);
                 return Number.isNaN(d.getTime()) ? null : d;
+            };
+            const dateLabel = (value) => {
+                const d = value instanceof Date ? value : parseDate(value);
+                if (!d) return '-';
+                return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
             };
             const status = (p) => text(p.planning_status, 'ไม่ระบุสถานะ');
             const projectStatusOrder = [
@@ -2662,7 +3283,7 @@
             const isActive = (p) => !isClosed(p) && !isCancelled(p);
             const projectUrl = (id) => `/rm/projects/${id}`;
             const projectEndDate = (p) => parseDate(p.team_end_date || p.end_date || p.finish_date);
-            const fteSkillLabel = (r) => text(r.role_group || r.skill_role || r.job_detail || r.task_detail, 'ไม่ระบุสายงาน');
+            const fteSkillLabel = (r) => text(r.skill_role || r.role_group || r.job_detail || r.task_detail, 'ไม่ระบุสายงาน');
             const fteValue = (r) => num(r?.fte_value || r?.fte || r?.hours);
             const isEligibleWorkloadFte = (r) => {
                 if (!r || !(fteValue(r) > 0)) return false;
@@ -2679,6 +3300,21 @@
                 if (normalized.includes('operation') || normalized.includes('administrative') || normalized.includes('admin') || normalized.includes('logistics')) return 'Logistics + Admin';
                 return raw;
             };
+            const skillSetCanonicalLabel = (value) => {
+                const raw = text(value, 'ไม่ระบุ');
+                const normalized = norm(raw);
+                if (normalized.includes('scientific') || normalized === 'research') return 'Scientific Research';
+                if (normalized.includes('it') || normalized.includes('data')) return 'IT & Data Management Systems';
+                if (normalized.includes('communication') || normalized.includes('public relation')) return 'Communication & Public Relations';
+                if (normalized.includes('management') || normalized.includes('coordination') || normalized === 'project') return 'Project Management & Coordination';
+                if (normalized.includes('operation') || normalized.includes('administrative') || normalized.includes('admin') || normalized.includes('logistics')) return 'Operations & Administrative Support';
+                return raw;
+            };
+            const skillSetCanonicalKey = (value) => norm(skillSetCanonicalLabel(value));
+            const dashboardSkillSummaryByKey = new Map(
+                (Array.isArray(dashboardFteSkillAnalysis?.skill_rows) ? dashboardFteSkillAnalysis.skill_rows : [])
+                    .map((row) => [skillSetCanonicalKey(row.label || row.thai || row.key), row])
+            );
             const skillSetSortRank = (value) => {
                 const label = skillSetDisplayLabel(value);
                 return ['Scientific', 'Management', 'IT + Communication', 'Logistics + Admin'].indexOf(label);
@@ -2783,8 +3419,48 @@
             function relatedOutputs(rows) {
                 return rows.flatMap((p) => (Array.isArray(p.outputs) ? p.outputs : []).map((o) => ({
                     ...o,
+                    source_kind: 'project',
+                    source_label: 'Project output',
                     project: p,
                 })));
+            }
+
+            function externalPublicationOutputs() {
+                return filteredExternalOutputs().map((o) => ({
+                    ...o,
+                    id: `external-${o.id ?? o.code ?? o.output_code}`,
+                    year: o.publish_year ?? externalOutputYear(o),
+                    source_kind: 'extra',
+                    source_label: 'Extra output',
+                    project_name: 'Extra output',
+                    authors: Array.isArray(o.authors) ? o.authors : [],
+                }));
+            }
+
+            function backOfficePublicationOutputs() {
+                return filteredBackOfficeRows().flatMap((task) => (Array.isArray(task.outputs) ? task.outputs : []).map((output) => ({
+                    ...output,
+                    id: `backoffice-${output.id ?? output.code}`,
+                    year: output.year ?? backOfficeYear(task),
+                    source_kind: 'backoffice',
+                    source_label: 'Back office',
+                    project_name: text(task.title, 'Back office'),
+                    url: output.url || task.url,
+                    journal: output.journal || task.creator_name || '-',
+                    authors: Array.isArray(output.authors) ? output.authors : [],
+                })));
+            }
+
+            function combinedOutputRecords(rows = filteredRows()) {
+                return [
+                    ...relatedOutputs(rows),
+                    ...externalPublicationOutputs(),
+                    ...backOfficePublicationOutputs(),
+                ].filter((o) => !isFutureYearLabel(outputYear(o)));
+            }
+
+            function authorPublicationOutputs(rows = filteredRows()) {
+                return combinedOutputRecords(rows).filter((o) => isPublication(o.type));
             }
 
             function groupSum(items, keyFn, valueFn = () => 1) {
@@ -3220,49 +3896,421 @@
                 XLSX.writeFile(workbook, `dashboard-insight-${exportStamp()}.xlsx`);
             }
 
-            function projectsTable(rows) {
+            function modalKindForChart(id) {
+                if (/Irb|Overdue|RedZone/.test(id)) return 'risk';
+                if (/Budget|Funding|External|Internal/.test(id)) return 'funding';
+                if (/Output|Publication/.test(id)) return 'output';
+                if (/CoResearch|Collab|PiUnit/.test(id)) return 'operation';
+                if (/Fte/.test(id)) return 'workload';
+                return 'portfolio';
+            }
+
+            function modalKpis(rows, context = {}) {
+                const kind = context.kind || 'portfolio';
+                const chartId = context.chartId || '';
+                const totalBudget = rows.reduce((sum, p) => sum + budget(p), 0);
+                const piCount = new Set(rows.map((p) => text(p.pi_name)).filter(Boolean)).size;
+                const activeCount = rows.filter((p) => isActive(p)).length;
+                const uniqueCoResearchCount = (items) => new Set(items.flatMap((p) => (Array.isArray(p.co_researches) ? p.co_researches : [])
+                    .map((c) => text(c.name))
+                    .filter(Boolean))).size;
+                if (chartId === 'chartProjectsPerYear') {
+                    return [
+                        ['โครงการปีนี้', fmt.format(rows.length)],
+                        ['ยัง Active', fmt.format(activeCount)],
+                        ['งบรวมในปี', `${money.format(totalBudget)} บ.`],
+                        ['จำนวน PI', `${fmt.format(piCount)} ท่าน`],
+                    ];
+                }
+                if (chartId === 'chartLifecycle') {
+                    return [
+                        ['ชุดที่เลือก', context.dataset || '-'],
+                        ['จำนวนโครงการ', fmt.format(rows.length)],
+                        ['Active', fmt.format(activeCount)],
+                        ['ปิด/ยกเลิก', `${fmt.format(rows.filter(isClosed).length)} / ${fmt.format(rows.filter(isCancelled).length)}`],
+                    ];
+                }
+                if (chartId === 'chartStatus') {
+                    return [
+                        ['สถานะที่เลือก', context.focus || '-'],
+                        ['จำนวนโครงการ', fmt.format(rows.length)],
+                        ['งบรวม', `${money.format(totalBudget)} บ.`],
+                        ['จำนวน PI', `${fmt.format(piCount)} ท่าน`],
+                    ];
+                }
+                if (chartId === 'chartContractOverview' || chartId === 'chartRedZoneTimeline' || chartId === 'chartOverdue') {
+                    const overdueCount = overdueProjects(rows).length;
+                    const nearestEnd = rows.map(projectEndDate).filter(Boolean).sort((a, b) => a - b)[0];
+                    return [
+                        ['กลุ่มสัญญา', context.focus || '-'],
+                        ['จำนวนโครงการ', fmt.format(rows.length)],
+                        ['เกินกำหนด', fmt.format(overdueCount)],
+                        ['วันสิ้นสุดใกล้สุด', dateLabel(nearestEnd)],
+                    ];
+                }
+                if (chartId === 'chartBudgetPeople') {
+                    return [
+                        ['บุคคล/บทบาท', context.focus || '-'],
+                        ['บทบาทที่กด', context.dataset || '-'],
+                        ['โครงการมีงบ', fmt.format(rows.length)],
+                        ['วงเงินรวม', `${money.format(totalBudget)} บ.`],
+                    ];
+                }
+                if (chartId === 'chartBudgetYear' || chartId === 'chartBudgetPolicyPiYear') {
+                    return [
+                        ['ปีงบประมาณ', context.focus || '-'],
+                        [chartId === 'chartBudgetPolicyPiYear' ? 'โครงการ PI หน่วยฯ' : 'โครงการมีงบ', fmt.format(rows.length)],
+                        ['งบรวม', `${money.format(totalBudget)} บ.`],
+                        ['งบเฉลี่ย/โครงการ', `${money.format(rows.length ? totalBudget / rows.length : 0)} บ.`],
+                    ];
+                }
+                if (chartId === 'chartFundingTypeYear' || chartId === 'chartFundingSplit') {
+                    const sourceCount = new Set(rows.map(fundingSource).filter(Boolean)).size;
+                    return [
+                        ['ประเภททุน', context.dataset || context.focus || '-'],
+                        ['โครงการมีงบ', fmt.format(rows.length)],
+                        ['งบรวม', `${money.format(totalBudget)} บ.`],
+                        ['จำนวนแหล่งทุน', fmt.format(sourceCount)],
+                    ];
+                }
+                if (chartId === 'chartFundingSource' || chartId === 'chartExternalBySource' || chartId === 'chartInternalBySource' || chartId === 'chartExternalBySourceYear' || chartId === 'chartInternalBySourceYear') {
+                    const typeCount = new Set(rows.map(fundingType).filter(Boolean)).size;
+                    return [
+                        ['แหล่งทุน', context.dataset || context.focus || '-'],
+                        ['โครงการมีงบ', fmt.format(rows.length)],
+                        ['งบรวม', `${money.format(totalBudget)} บ.`],
+                        ['ประเภททุน', fmt.format(typeCount)],
+                    ];
+                }
+                if (chartId === 'chartOutputType' || chartId === 'chartOutputStacked' || chartId === 'chartPublicationYear') {
+                    const outputs = context.outputs || [];
+                    const publicationCount = outputs.filter((o) => isPublication(o.type)).length;
+                    return [
+                        ['กราฟที่เลือก', context.focus || '-'],
+                        ['Output records', fmt.format(outputs.length)],
+                        ['Publication', fmt.format(publicationCount)],
+                        ['โครงการต้นทาง', fmt.format(rows.length)],
+                    ];
+                }
+                if (chartId === 'chartCollab') {
+                    return [
+                        ['รูปแบบความร่วมมือ', context.focus || '-'],
+                        ['จำนวนโครงการ', fmt.format(rows.length)],
+                        ['จำนวนผู้ร่วมวิจัย', `${fmt.format(uniqueCoResearchCount(rows))} ท่าน`],
+                        ['ยัง Active', fmt.format(activeCount)],
+                    ];
+                }
+                if (chartId === 'chartPiUnit') {
+                    return [
+                        ['หน่วยงาน PI', context.focus || '-'],
+                        ['จำนวนโครงการ', fmt.format(rows.length)],
+                        ['จำนวน PI', `${fmt.format(piCount)} ท่าน`],
+                        ['งบรวม', `${money.format(totalBudget)} บ.`],
+                    ];
+                }
+                if (chartId === 'chartCoResearch') {
+                    return [
+                        ['กลุ่ม Co-Research', context.focus || '-'],
+                        ['จำนวนโครงการ', fmt.format(rows.length)],
+                        ['จำนวนผู้ร่วมวิจัย', `${fmt.format(uniqueCoResearchCount(rows))} ท่าน`],
+                        ['ยัง Active', fmt.format(activeCount)],
+                    ];
+                }
+                if (chartId === 'chartIrb') {
+                    const selectedIrbs = context.irbs || [];
+                    const earliest = selectedIrbs.map((irb) => parseDate(irb.exp_date)).filter(Boolean).sort((a, b) => a - b)[0];
+                    return [
+                        ['เดือนหมดอายุ', context.focus || '-'],
+                        ['IRB records', fmt.format(selectedIrbs.length)],
+                        ['โครงการที่เกี่ยวข้อง', fmt.format(rows.length)],
+                        ['วันหมดอายุใกล้สุด', dateLabel(earliest)],
+                    ];
+                }
+                if (chartId === 'chartFtePeople') {
+                    const person = context.dataset || context.focus || '';
+                    const personFteRows = rows.flatMap((p) => (Array.isArray(p.fte_roles) ? p.fte_roles : [])
+                        .filter((r) => isEligibleWorkloadFte(r) && text(r.name, 'ไม่ระบุชื่อ') === person));
+                    const personFte = personFteRows.reduce((sum, r) => sum + fteValue(r), 0);
+                    const skillCount = new Set(personFteRows.map((r) => fteSkillLabel(r)).filter(Boolean)).size;
+                    return [
+                        ['บุคลากร', person || '-'],
+                        ['FTE รวม', money.format(personFte)],
+                        ['โครงการ', fmt.format(rows.length)],
+                        ['Skill set', fmt.format(skillCount)],
+                    ];
+                }
+                if (kind === 'funding') {
+                    return [
+                        ['โครงการมีงบ', fmt.format(rows.length)],
+                        ['งบรวม', `${money.format(totalBudget)} บ.`],
+                        ['งบเฉลี่ย/โครงการ', `${money.format(rows.length ? totalBudget / rows.length : 0)} บ.`],
+                        ['แหล่งทุน', context.focus || '-'],
+                    ];
+                }
+                if (kind === 'output') {
+                    const outputs = context.outputs || relatedOutputs(rows).filter((o) => !isFutureYearLabel(outputYear(o)));
+                    const outputTypes = new Set(outputs.map((o) => outputTypeLabel(o.type))).size;
+                    return [
+                        ['Output ที่เกี่ยวข้อง', fmt.format(outputs.length)],
+                        ['โครงการต้นทาง', fmt.format(rows.length)],
+                        ['ประเภท output', fmt.format(outputTypes)],
+                        ['ปี/หมวดที่เลือก', context.focus || '-'],
+                    ];
+                }
+                if (kind === 'operation') {
+                    const irbCount = rows.reduce((sum, p) => sum + (Array.isArray(p.irbs) ? p.irbs.length : 0), 0);
+                    const overdueCount = overdueProjects(rows).length;
+                    return [
+                        ['โครงการ', fmt.format(rows.length)],
+                        ['ยัง Active', fmt.format(activeCount)],
+                        ['IRB ในรายการ', fmt.format(irbCount)],
+                        ['เกินกำหนด', fmt.format(overdueCount)],
+                    ];
+                }
+                if (kind === 'workload') {
+                    const fteRows = rows.flatMap((p) => (Array.isArray(p.fte_roles) ? p.fte_roles : []).filter(isEligibleWorkloadFte));
+                    const totalFte = fteRows.reduce((sum, r) => sum + fteValue(r), 0);
+                    const peopleCount = new Set(fteRows.map((r) => text(r.name)).filter(Boolean)).size;
+                    return [
+                        ['โครงการ', fmt.format(rows.length)],
+                        ['FTE รวม', money.format(totalFte)],
+                        ['คนที่เกี่ยวข้อง', fmt.format(peopleCount)],
+                        ['เฉลี่ย/โครงการ', money.format(rows.length ? totalFte / rows.length : 0)],
+                    ];
+                }
+                const yearCount = new Set(rows.map((p) => yearLabel(p)).filter((value) => value && value !== '-')).size;
+                return [
+                    ['จำนวนโครงการ', fmt.format(rows.length)],
+                    ['จำนวน PI', `${fmt.format(piCount)} ท่าน`],
+                    ['โครงการ Active', fmt.format(activeCount)],
+                    ['ช่วงปีในกลุ่ม', `${fmt.format(yearCount)} ปี`],
+                ];
+            }
+
+            function modalColumns(context = {}) {
+                const kind = context.kind || 'portfolio';
+                const chartId = context.chartId || '';
+                if (chartId === 'chartProjectsPerYear') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['ลักษณะโครงการ', (p) => escapeHtml(text(p.project_type, '-'))],
+                        ['Content/Theme', (p) => escapeHtml(text(p.theme, '-'))],
+                        ['งบประมาณ', (p) => `${money.format(budget(p))} บ.`],
+                        ['สถานะ', (p) => escapeHtml(status(p))],
+                    ];
+                }
+                if (chartId === 'chartLifecycle') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['ปีเริ่ม', (p) => escapeHtml(yearLabel(p))],
+                        ['สถานะสัญญา', (p) => escapeHtml(contractBucket(p).label)],
+                        ['วันสิ้นสุด', (p) => escapeHtml(dateLabel(projectEndDate(p)))],
+                        ['งบประมาณ', (p) => `${money.format(budget(p))} บ.`],
+                        ['สถานะงาน', (p) => escapeHtml(status(p))],
+                    ];
+                }
+                if (chartId === 'chartStatus') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['ปี', (p) => escapeHtml(yearLabel(p))],
+                        ['สถานะงาน', (p) => escapeHtml(projectStatusDisplayLabel(p.planning_status))],
+                        ['สถานะสัญญา', (p) => escapeHtml(contractBucket(p).label)],
+                        ['วันสิ้นสุด', (p) => escapeHtml(dateLabel(projectEndDate(p)))],
+                    ];
+                }
+                if (chartId === 'chartContractOverview' || chartId === 'chartRedZoneTimeline' || chartId === 'chartOverdue') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['สถานะสัญญา', (p) => escapeHtml(contractBucket(p).label)],
+                        ['วันสิ้นสุด', (p) => escapeHtml(dateLabel(projectEndDate(p)))],
+                        ['สถานะงาน', (p) => escapeHtml(status(p))],
+                        ['งบประมาณ', (p) => `${money.format(budget(p))} บ.`],
+                    ];
+                }
+                if (chartId === 'chartBudgetPeople') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['บทบาทที่เลือก', () => escapeHtml(context.dataset || '-')],
+                        ['PI โครงการ', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['งบประมาณ', (p) => `${money.format(budget(p))} บ.`],
+                        ['แหล่งทุน', (p) => escapeHtml(fundingSource(p))],
+                        ['ปี', (p) => escapeHtml(yearLabel(p))],
+                    ];
+                }
+                if (chartId === 'chartCollab') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['รูปแบบความร่วมมือ', (p) => escapeHtml(collabDisplayLabel(collabRawLabel(p)))],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['Co-Research', (p) => fmt.format(Array.isArray(p.co_researches) ? p.co_researches.length : 0)],
+                        ['ปี', (p) => escapeHtml(yearLabel(p))],
+                        ['สถานะ', (p) => escapeHtml(status(p))],
+                    ];
+                }
+                if (chartId === 'chartPiUnit') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['หน่วยงาน PI', (p) => escapeHtml(text(p.pi_affiliation || p.unit_name || p.department, '-'))],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['งบประมาณ', (p) => `${money.format(budget(p))} บ.`],
+                        ['ปี', (p) => escapeHtml(yearLabel(p))],
+                        ['สถานะ', (p) => escapeHtml(status(p))],
+                    ];
+                }
+                if (chartId === 'chartCoResearch') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['จำนวนผู้ร่วมวิจัย', (p) => `${fmt.format(new Set((Array.isArray(p.co_researches) ? p.co_researches : []).map((c) => text(c.name)).filter(Boolean)).size)} ท่าน`],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['ปี', (p) => escapeHtml(yearLabel(p))],
+                        ['สถานะสัญญา', (p) => escapeHtml(contractBucket(p).label)],
+                        ['สถานะงาน', (p) => escapeHtml(status(p))],
+                    ];
+                }
+                if (chartId === 'chartIrb') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['IRB ใกล้หมดอายุ', (p) => escapeHtml(dateLabel((context.irbs || []).filter((irb) => irb.project?.id === p.id).map((irb) => parseDate(irb.exp_date)).filter(Boolean).sort((a, b) => a - b)[0]))],
+                        ['IRB ทั้งหมด', (p) => fmt.format(Array.isArray(p.irbs) ? p.irbs.length : 0)],
+                        ['สถานะงาน', (p) => escapeHtml(status(p))],
+                        ['วันสิ้นสุดโครงการ', (p) => escapeHtml(dateLabel(projectEndDate(p)))],
+                    ];
+                }
+                if (chartId === 'chartFtePeople') {
+                    const person = context.dataset || context.focus || '';
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['FTE คนนี้', (p) => money.format((p.fte_roles || []).filter((r) => isEligibleWorkloadFte(r) && text(r.name, 'ไม่ระบุชื่อ') === person).reduce((sum, r) => sum + fteValue(r), 0))],
+                        ['Skill set', (p) => escapeHtml(Array.from(new Set((p.fte_roles || []).filter((r) => isEligibleWorkloadFte(r) && text(r.name, 'ไม่ระบุชื่อ') === person).map(fteSkillLabel))).join(', ') || '-')],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['ปี', (p) => escapeHtml(yearLabel(p))],
+                        ['สถานะ', (p) => escapeHtml(status(p))],
+                    ];
+                }
+                if (kind === 'funding') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['ปี', (p) => escapeHtml(yearLabel(p))],
+                        ['ทุน', (p) => escapeHtml(fundingType(p))],
+                        ['แหล่งทุน', (p) => escapeHtml(fundingSource(p))],
+                        ['งบประมาณ', (p) => `${money.format(budget(p))} บ.`],
+                        ['บทบาท', (p) => isPolicyPi(p) ? 'PI หน่วยวิจัยฯ' : 'ร่วม/อื่นๆ'],
+                    ];
+                }
+                if (kind === 'output') {
+                    const outputCountByProject = new Map((context.outputs || []).map((o) => [o.project?.id, 0]));
+                    (context.outputs || []).forEach((o) => outputCountByProject.set(o.project?.id, (outputCountByProject.get(o.project?.id) || 0) + 1));
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['ปีโครงการ', (p) => escapeHtml(yearLabel(p))],
+                        ['Output ในกลุ่มนี้', (p) => fmt.format(outputCountByProject.get(p.id) || (Array.isArray(p.outputs) ? p.outputs.length : 0))],
+                        ['ประเภทหลัก', (p) => escapeHtml(outputTypeLabel((p.outputs || [])[0]?.type))],
+                        ['สถานะ', (p) => escapeHtml(status(p))],
+                    ];
+                }
+                if (kind === 'operation') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['สถานะ', (p) => escapeHtml(status(p))],
+                        ['วันสิ้นสุด', (p) => escapeHtml(dateLabel(projectEndDate(p)))],
+                        ['IRB', (p) => fmt.format(Array.isArray(p.irbs) ? p.irbs.length : 0)],
+                        ['Co-Research', (p) => fmt.format(Array.isArray(p.co_researches) ? p.co_researches.length : 0)],
+                    ];
+                }
+                if (kind === 'workload') {
+                    return [
+                        ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                        ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                        ['FTE รวม', (p) => money.format((p.fte_roles || []).filter(isEligibleWorkloadFte).reduce((sum, r) => sum + fteValue(r), 0))],
+                        ['จำนวนคน', (p) => fmt.format(new Set((p.fte_roles || []).filter(isEligibleWorkloadFte).map((r) => text(r.name)).filter(Boolean)).size)],
+                        ['ปี', (p) => escapeHtml(yearLabel(p))],
+                        ['สถานะ', (p) => escapeHtml(status(p))],
+                    ];
+                }
+                return [
+                    ['โครงการ', (p) => `<a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a>`],
+                    ['PI', (p) => escapeHtml(text(p.pi_name, '-'))],
+                    ['ปี', (p) => escapeHtml(yearLabel(p))],
+                    ['สถานะสัญญา', (p) => escapeHtml(contractBucket(p).label)],
+                    ['วันสิ้นสุด', (p) => escapeHtml(dateLabel(projectEndDate(p)))],
+                    ['สถานะ', (p) => escapeHtml(status(p))],
+                ];
+            }
+
+            function projectsTable(rows, context = {}) {
                 if (!rows.length) return '<div class="di-empty">ไม่พบรายการโครงการในกลุ่มนี้</div>';
+                const kind = context.kind || 'portfolio';
+                const kpis = modalKpis(rows, context);
+                const columns = modalColumns(context);
                 return `
-                    <div class="overflow-x-auto">
-                        <table class="di-table">
+                    <div class="di-modal-content di-modal-content--${escapeHtml(kind)}">
+                    <div class="di-modal-summary">
+                        ${kpis.map(([label, value]) => `<div class="di-modal-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}
+                    </div>
+                    <div class="di-modal-table-wrap">
+                        <table class="di-table di-modal-table">
                             <thead>
                                 <tr>
-                                    <th>โครงการ</th>
-                                    <th>PI</th>
-                                    <th>ปี</th>
-                                    <th>ทุน</th>
-                                    <th>งบประมาณ</th>
-                                    <th>สถานะ</th>
+                                    ${columns.map(([label]) => `<th>${escapeHtml(label)}</th>`).join('')}
                                 </tr>
                             </thead>
                             <tbody>
                                 ${rows.map((p) => `
                                     <tr>
-                                        <td><a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a></td>
-                                        <td>${escapeHtml(text(p.pi_name, '-'))}</td>
-                                        <td>${escapeHtml(yearLabel(p))}</td>
-                                        <td>${escapeHtml(fundingType(p))}</td>
-                                        <td>${money.format(budget(p))} บ.</td>
-                                        <td>${escapeHtml(status(p))}</td>
+                                        ${columns.map(([label, render]) => `<td data-label="${escapeHtml(label)}">${render(p)}</td>`).join('')}
                                     </tr>
                                 `).join('')}
                             </tbody>
                         </table>
                     </div>
+                    </div>
                 `;
             }
 
-            function openDetail(title, rows, subtitle = '') {
+            function resetDetailStage() {
+                if (els.detailBody) {
+                    els.detailBody.scrollTop = 0;
+                    els.detailBody.scrollLeft = 0;
+                    els.detailBody.querySelectorAll('*').forEach((node) => {
+                        if (node instanceof HTMLElement) {
+                            node.scrollTop = 0;
+                            node.scrollLeft = 0;
+                        }
+                    });
+                }
+                const panel = els.detailModal?.querySelector('.di-modal-panel');
+                if (panel instanceof HTMLElement) {
+                    panel.scrollTop = 0;
+                    panel.scrollLeft = 0;
+                }
+            }
+
+            function openDetail(title, rows, subtitle = '', context = {}) {
+                resetDetailStage();
                 els.detailTitle.textContent = title;
                 els.detailSubtitle.textContent = subtitle || `${fmt.format(rows.length)} โครงการ`;
-                els.detailBody.innerHTML = projectsTable(rows);
+                els.detailBody.innerHTML = projectsTable(rows, context);
+                resetDetailStage();
                 els.detailModal?.classList.add('is-open');
                 els.detailModal?.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                requestAnimationFrame(resetDetailStage);
             }
 
             function closeDetail() {
                 els.detailModal?.classList.remove('is-open');
                 els.detailModal?.setAttribute('aria-hidden', 'true');
+                resetDetailStage();
+                if (els.detailBody) els.detailBody.innerHTML = '';
+                els.detailTitle.textContent = 'รายละเอียดข้อมูล';
+                els.detailSubtitle.textContent = '';
+                document.body.style.overflow = '';
             }
 
             function openChartDetail(id, chart, point) {
@@ -3271,6 +4319,7 @@
                 const dataset = text(chart.data.datasets?.[point.datasetIndex]?.label);
                 let matched = [];
                 let title = label;
+                const context = { chartId: id, kind: modalKindForChart(id), focus: label, dataset };
 
                 if (id === 'chartRedZoneTimeline') {
                     title = `RED ZONE ปี ${label}`;
@@ -3303,10 +4352,11 @@
                     matched = rows.filter((p) => yearLabel(p) === label && fundingType(p) === dataset && budget(p) > 0);
                 } else if (id === 'chartStatus' || id === 'chartOverdue') {
                     title = `สถานะ: ${label}`;
-                    matched = (id === 'chartOverdue' ? overdueProjects(currentPastRows(rows)) : rows).filter((p) => projectStatusDisplayLabel(p.planning_status) === label);
+                    matched = (id === 'chartOverdue' ? overdueProjects(currentPastRows(rows)) : rows)
+                        .filter((p) => projectStatusDisplayLabel(p.planning_status) === label || status(p) === label);
                 } else if (id === 'chartCollab') {
                     title = `ความร่วมมือ: ${label}`;
-                    matched = currentPastRows(rows).filter((p) => collabDisplayLabel(collabRawLabel(p)) === label);
+                    matched = rows.filter((p) => collabDisplayLabel(collabRawLabel(p)) === label);
                 } else if (id === 'chartFundingSplit') {
                     title = `ทุน: ${label}`;
                     matched = currentPastRows(rows).filter((p) => fundingType(p) === label && budget(p) > 0);
@@ -3321,6 +4371,7 @@
                     matched = rows.filter((p) => yearLabel(p) === label && fundingType(p) === type && fundingSource(p) === dataset && budget(p) > 0);
                 } else if (id === 'chartBudgetPeople') {
                     const personName = text(chart.$budgetPeopleLabels?.[point.index], label);
+                    context.focus = personName;
                     const idGroups = chart.$budgetPeopleProjectIds?.[personName] || null;
                     const roleIds = idGroups
                         ? (dataset === 'PI' ? idGroups.pi : (dataset === 'Co-PI' ? idGroups.copi : idGroups.all))
@@ -3342,13 +4393,15 @@
                         });
                     }
                 } else if (id === 'chartOutputType' || id === 'chartPublicationYear' || id === 'chartOutputStacked') {
-                    const outputs = relatedOutputs(rows).filter((o) => !isFutureYearLabel(outputYear(o)));
+                    const outputs = combinedOutputRecords(rows);
                     const selected = id === 'chartOutputType'
-                        ? outputs.filter((o) => text(o.type, 'ไม่ระบุประเภท') === label)
+                        ? outputs.filter((o) => outputTypeLabel(o.type) === label)
                         : (id === 'chartOutputStacked'
-                            ? outputs.filter((o) => outputYear(o) === label && text(o.type, 'ไม่ระบุประเภท') === dataset)
+                            ? outputs.filter((o) => outputYear(o) === label && outputTypeLabel(o.type) === dataset)
                             : outputs.filter((o) => outputYear(o) === label && isPublication(o.type)));
                     title = id === 'chartOutputType' ? `Output: ${label}` : (id === 'chartOutputStacked' ? `${dataset} ปี ${label}` : `Publication ปี ${label}`);
+                    context.focus = id === 'chartOutputStacked' ? `${dataset} / ${label}` : label;
+                    context.outputs = selected;
                     matched = selected.map((o) => o.project).filter(Boolean);
                 } else if (id === 'chartPiUnit') {
                     title = `PI หน่วยงาน: ${label}`;
@@ -3358,25 +4411,27 @@
                     matched = rows.filter((p) => (Array.isArray(p.co_researches) ? p.co_researches : []).some((c) => text(c.unit_status || c.affiliation, 'ไม่ระบุหน่วยงาน') === label));
                 } else if (id === 'chartIrb') {
                     title = `IRB ใกล้หมดอายุ: ${label}`;
-                    matched = irbExpiring(rows).filter((irb) => {
+                    const selectedIrbs = irbExpiring(rows).filter((irb) => {
                         const d = parseDate(irb.exp_date);
                         return d && `${d.getFullYear() + 543}-${String(d.getMonth() + 1).padStart(2, '0')}` === label;
-                    }).map((irb) => irb.project).filter(Boolean);
+                    });
+                    context.irbs = selectedIrbs;
+                    matched = selectedIrbs.map((irb) => irb.project).filter(Boolean);
                 } else if (id === 'chartFtePeople') {
                     title = `FTE: ${dataset}`;
                     matched = rows.filter((p) => (Array.isArray(p.fte_roles) ? p.fte_roles : [])
                         .some((r) => isEligibleWorkloadFte(r) && text(r.name, 'ไม่ระบุชื่อ') === dataset));
                 }
 
-                const unique = Array.from(new Map(matched.map((p) => [p.id, p])).values());
-                openDetail(title, unique);
+                const unique = Array.from(new Map(matched.map((p, index) => [p.id ?? p.project_id ?? p.project_code ?? `${p.project_name_th || 'project'}-${index}`, p])).values());
+                openDetail(title, unique, '', context);
             }
 
             function activeFilterLabels() {
                 return [
                     ['ปี', els.year?.value],
-                    ['Theme', els.theme?.value],
-                    ['ประเภท', els.type?.value],
+                    ['ลักษณะโครงการ (TYPE)', els.theme?.value],
+                    ['กลุ่มเนื้อหาหลักของงาน (Content/Theme)', els.type?.value],
                     ['ทุน', els.funding?.value],
                     ['สถานะ', els.status?.value],
                     ['แหล่งทุน', els.source?.value],
@@ -3396,8 +4451,6 @@
                     const backOfficeCount = backOfficeExportRows().length;
                     updateText('downloadSummary', `ดาวน์โหลด ${fmt.format(rows.length)} โครงการ, ${fmt.format(outputCount + externalOutputCount)} outputs และ ${fmt.format(backOfficeCount)} back office ตามตัวกรองปัจจุบันเป็น Excel หรือ CSV`);
                 }
-                updateText('rtFilterBadge', `${fmt.format(rows.length)} โครงการ`);
-                updateText('rtSummaryCaption', active.length ? 'สรุปตามฟิลเตอร์ปัจจุบัน' : 'สรุปข้อมูลทั้งหมดในระบบ');
                 document.getElementById('activeFilterPills').innerHTML = active.length
                     ? active.map(([label, value]) => `<span class="di-pill">${escapeHtml(label)}: ${escapeHtml(value)}</span>`).join('')
                     : '<span class="di-pill">ทั้งหมด</span>';
@@ -3423,9 +4476,29 @@
                 updateText('rtSummaryPolicyPiBudget', `${money.format(policyPiBudget)} บ.`);
                 updateText('rtSummaryPolicyPiCount', `${fmt.format(policyPiFunded.length)} โครงการที่มีงบ`);
 
-                const themeRows = top(groupSum(rows, (p) => text(p.theme || p.project_type, 'ไม่ระบุ'), () => 1), 12)
+                const summarySortKey = (label) => {
+                    const value = String(label ?? '').trim();
+                    const prefix = value.match(/^([A-Za-z]*)(\d+)/);
+
+                    return {
+                        text: value,
+                        alpha: prefix ? prefix[1].toUpperCase() : '',
+                        number: prefix ? Number(prefix[2]) : Number.POSITIVE_INFINITY,
+                    };
+                };
+                const sortSummaryByLabelCode = (items) => items.slice().sort((a, b) => {
+                    const ak = summarySortKey(a.label);
+                    const bk = summarySortKey(b.label);
+
+                    if (ak.number !== bk.number) return ak.number - bk.number;
+                    if (ak.alpha !== bk.alpha) return ak.alpha.localeCompare(bk.alpha);
+                    return ak.text.localeCompare(bk.text, 'th');
+                });
+                const buildSummaryRows = (labelFn) => sortSummaryByLabelCode(groupSum(rows, labelFn, () => 1)
+                    .filter((item) => Number(item.value) > 0))
+                    .slice(0, 12)
                     .map((item) => {
-                        const scoped = rows.filter((p) => text(p.theme || p.project_type, 'ไม่ระบุ') === item.label);
+                        const scoped = rows.filter((p) => labelFn(p) === item.label);
                         const scopedBudget = scoped.reduce((sum, p) => sum + budget(p), 0);
                         return {
                             ...item,
@@ -3433,14 +4506,34 @@
                             budget: scopedBudget
                         };
                     });
-                document.getElementById('rtTypeSummaryBody').innerHTML = themeRows.length ? themeRows.map((item) => `
-                    <tr>
-                        <td data-label="Content/Theme">${escapeHtml(item.label)}</td>
-                        <td data-label="จำนวนโครงการ" class="text-right">${fmt.format(item.value)}</td>
-                        <td data-label="สัดส่วน" class="text-right">${money.format(item.percent)}%</td>
-                        <td data-label="งบรวม" class="text-right">${money.format(item.budget)} บ.</td>
-                    </tr>
-                `).join('') : '<tr><td colspan="4" class="text-center text-slate-500">ยังไม่มีข้อมูลกลุ่มเนื้อหา</td></tr>';
+                const renderSummaryTable = (elementId, summaryRows, emptyText, labelText) => {
+                    const target = document.getElementById(elementId);
+                    if (!target) return;
+
+                    target.innerHTML = summaryRows.length ? summaryRows.map((item) => `
+                        <tr>
+                            <td data-label="${escapeHtml(labelText)}">${escapeHtml(item.label)}</td>
+                            <td data-label="จำนวนโครงการ" class="text-right">${fmt.format(item.value)}</td>
+                            <td data-label="สัดส่วน" class="text-right">${money.format(item.percent)}%</td>
+                            <td data-label="งบรวม" class="text-right">${money.format(item.budget)} บ.</td>
+                        </tr>
+                    `).join('') : `<tr><td colspan="4" class="text-center text-slate-500">${escapeHtml(emptyText)}</td></tr>`;
+                };
+                const contentThemeRows = buildSummaryRows((p) => text(p.project_type, 'ไม่ระบุ'));
+                const typeRows = buildSummaryRows((p) => text(p.theme, 'ไม่ระบุ'));
+
+                renderSummaryTable(
+                    'rtContentThemeSummaryBody',
+                    contentThemeRows,
+                    'ยังไม่มีข้อมูลกลุ่มเนื้อหาหลักของงาน',
+                    'Content/Theme'
+                );
+                renderSummaryTable(
+                    'rtTypeSummaryBody',
+                    typeRows,
+                    'ยังไม่มีข้อมูลลักษณะโครงการ',
+                    'TYPE'
+                );
             }
 
             function overdueProjects(rows) {
@@ -3484,7 +4577,7 @@
                     data: { labels: recentYears, datasets: [barDataset('เกินกำหนด', recentYears.map((year) => overdue.filter((p) => normalizeYearLabel(projectEndDate(p)?.getFullYear()) === year).length), '#ef4444')] },
                     options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
                 });
-                const contractRows = top(groupSum(analysisRows, (p) => contractBucket(p).label), 8);
+                const contractRows = top(groupSum(rows, (p) => contractBucket(p).label), 8);
                 renderChart('chartContractOverview', {
                     type: 'bar',
                     data: { labels: contractRows.map((x) => x.label), datasets: [barDataset('จำนวนโครงการ', contractRows.map((x) => x.value), '#f59e0b')] },
@@ -3556,7 +4649,7 @@
                     data: { labels: statusRows.map((x) => x.label), datasets: [barDataset('จำนวนโครงการ', statusRows.map((x) => x.value), '#7c3aed')] },
                     options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
                 });
-                const collabRows = top(groupSum(analysisRows, (p) => collabDisplayLabel(collabRawLabel(p))), 6);
+                const collabRows = top(groupSum(rows, (p) => collabDisplayLabel(collabRawLabel(p))), 6);
                 renderChart('chartCollab', {
                     type: 'bar',
                     data: { labels: collabRows.map((x) => x.label), datasets: [barDataset('จำนวนโครงการ', collabRows.map((x) => x.value), '#14b8a6')] },
@@ -3568,10 +4661,10 @@
                     data: { labels: piUnitRows.map((x) => x.label), datasets: [barDataset('จำนวนโครงการ', piUnitRows.map((x) => x.value), '#2563eb')] },
                     options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
                 });
-                const mainStatus = top(groupSum(analysisRows, (p) => projectStatusDisplayLabel(p.planning_status)), 1)[0];
-                const activeCount = analysisRows.filter(isActive).length;
-                const closedCount = analysisRows.filter(isClosed).length;
-                const cancelledCount = analysisRows.filter(isCancelled).length;
+                const mainStatus = top(groupSum(rows, (p) => projectStatusDisplayLabel(p.planning_status)), 1)[0];
+                const activeCount = rows.filter(isActive).length;
+                const closedCount = rows.filter(isClosed).length;
+                const cancelledCount = rows.filter(isCancelled).length;
                 const currentYear = CURRENT_BE_YEAR_LABEL;
                 const previousYear = PREVIOUS_BE_YEAR_LABEL;
                 const currentYearCount = analysisRows.filter((p) => yearLabel(p) === currentYear).length;
@@ -3588,22 +4681,22 @@
                 const redTrendText = redTrend.length > 1
                     ? `${redDelta === 0 ? 'ทรงตัวจาก' : (redDelta > 0 ? `เพิ่มขึ้น ${fmt.format(redDelta)} โครงการจาก` : `ลดลง ${fmt.format(Math.abs(redDelta))} โครงการจาก`)}ปีก่อน`
                     : 'ยังไม่มีข้อมูลย้อนหลังให้เทียบ';
-                const statusShare = analysisRows.length && mainStatus ? Math.round((mainStatus.value / analysisRows.length) * 100) : 0;
-                const activeShare = analysisRows.length ? Math.round((activeCount / analysisRows.length) * 100) : 0;
+                const statusShare = rows.length && mainStatus ? Math.round((mainStatus.value / rows.length) * 100) : 0;
+                const activeShare = rows.length ? Math.round((activeCount / rows.length) * 100) : 0;
                 const incompleteContract = contractRows.find((item) => item.label === 'ข้อมูลไม่ครบ');
                 const incompleteText = incompleteContract && incompleteContract.value > 0
                     ? `อย่างไรก็ตาม กราฟสถานะตามสัญญาชี้ว่ามีรายการ “ข้อมูลไม่ครบ” ${fmt.format(incompleteContract.value)} โครงการ จึงควรอ่าน trend ควบคู่กับคุณภาพข้อมูลวันเริ่มต้น/วันสิ้นสุดโครงการ`
                     : 'ข้อมูลตามสัญญามีความพร้อมพอสำหรับอ่านจังหวะติดตามในภาพรวม';
                 if (els.portfolioSummaryList) {
                     els.portfolioSummaryList.innerHTML = [
-                        ['โครงการถึงปีปัจจุบัน', `${fmt.format(analysisRows.length)} โครงการ`],
+                        ['โครงการใน scope', `${fmt.format(rows.length)} โครงการ`],
                         ['Active', `${fmt.format(activeCount)} โครงการ`],
                         ['ควรติดตาม', `${fmt.format(redCount)} โครงการ`],
                         ['ปีนี้ + ปีก่อน', `${fmt.format(twoYearCount)} โครงการ`],
                     ].map(([label, value]) => `<span>${escapeHtml(label)} <b>${escapeHtml(value)}</b></span>`).join('');
                 }
                 updateText('portfolioWhat', mainStatus
-                    ? `ตอนนี้มีโครงการวิจัยที่นับถึงปีปัจจุบัน ${fmt.format(analysisRows.length)} โครงการ สถานะที่เห็นมากที่สุดคือ “${mainStatus.label}” ${fmt.format(mainStatus.value)} โครงการ (${fmt.format(statusShare)}%). ถ้าดูเฉพาะช่วงปีนี้กับปีก่อน (${previousYear}-${currentYear}) จะมีโครงการรวม ${fmt.format(twoYearCount)} โครงการ หรือประมาณ ${fmt.format(twoYearShare)}% ของพอร์ต เพราะปีนี้ยังไม่จบจึงไม่ควรอ่านเป็นแนวโน้มทั้งปีแบบเด็ดขาด. ปีที่งานเข้ามามากที่สุดโดยนับถึงปีปัจจุบันคือ ${peakYear?.label || '-'}${peakYear ? ` จำนวน ${fmt.format(peakYear.value)} โครงการ` : ''}.${futurePlanText ? ` ${futurePlanText}.` : ''}`
+                    ? `ตอนนี้มีโครงการวิจัยใน scope ${fmt.format(rows.length)} โครงการ สถานะที่เห็นมากที่สุดคือ “${mainStatus.label}” ${fmt.format(mainStatus.value)} โครงการ (${fmt.format(statusShare)}%). ถ้าดูเฉพาะช่วงปีนี้กับปีก่อน (${previousYear}-${currentYear}) จะมีโครงการรวม ${fmt.format(twoYearCount)} โครงการ หรือประมาณ ${fmt.format(twoYearShare)}% ของพอร์ต เพราะปีนี้ยังไม่จบจึงไม่ควรอ่านเป็นแนวโน้มทั้งปีแบบเด็ดขาด. ปีที่งานเข้ามามากที่สุดโดยนับถึงปีปัจจุบันคือ ${peakYear?.label || '-'}${peakYear ? ` จำนวน ${fmt.format(peakYear.value)} โครงการ` : ''}.${futurePlanText ? ` ${futurePlanText}.` : ''}`
                     : 'ยังไม่มีข้อมูลสถานะโครงการในชุดนี้');
                 updateText('portfolioReflection', `ภาระงานของหน่วยไม่ได้อยู่ที่จำนวนโครงการใหม่อย่างเดียว แต่ยังมีโครงการ active ที่ต้องดูแลต่อ ${fmt.format(activeCount)} โครงการ (${fmt.format(activeShare)}%) ควบคู่กับโครงการที่ปิดแล้ว ${fmt.format(closedCount)} โครงการ${cancelledCount ? ` และยกเลิก ${fmt.format(cancelledCount)} โครงการ` : ''}. กลุ่ม RED ZONE มี ${fmt.format(redCount)} โครงการ โดยอ่านช่วงปีก่อนถึงปีนี้ (${previousYear}-${currentYear}) แล้ว ${redTrendText}; ควรใช้เป็นรายการตั้งต้นสำหรับติดตามสัญญา IRB และวันสิ้นสุดการทำงานของทีมวิจัย. ${incompleteText}.${collabTop ? ` กราฟสัดส่วนความร่วมมือชี้ว่ารูปแบบหลักคือ “${collabTop.label}” ${fmt.format(collabTop.value)} โครงการ จึงต้องอ่านคู่กับกราฟจำนวนงานของ PI ตามหน่วยงาน` : ''}${topPiUnit ? ` ซึ่งตอนนี้งานกระจุกมากที่สุดที่ “${topPiUnit.label}” ${fmt.format(topPiUnit.value)} โครงการ เพื่อแยกว่าภาระประสานงานอยู่กับเครือข่าย/หน่วยงานใดเป็นหลัก.` : '.'}`);
             }
@@ -3822,6 +4915,85 @@
                     .sort((a, b) => b.total - a.total);
             }
 
+            function authorOutputsForSelection(publications, selectedYear, authorName) {
+                const selectedYears = authorYearsForSelection(selectedYear);
+                const target = norm(authorName);
+                return publications
+                    .filter((o) => selectedYears.includes(outputYear(o)))
+                    .map((o) => {
+                        const roles = (Array.isArray(o.authors) ? o.authors : [])
+                            .filter((a) => isUnitAuthor(a) && norm(a.name) === target)
+                            .map((a) => authorRoleLabel(a.role));
+                        return { output: o, roles };
+                    })
+                    .filter((item) => item.roles.length > 0);
+            }
+
+            function openAuthorDetail(authorName, row, publications) {
+                const selected = els.authorYear.value;
+                const items = authorOutputsForSelection(publications, selected, authorName);
+                const projectsInvolved = new Set(items.map((item) => item.output.project?.id).filter(Boolean)).size;
+                const title = `บทบาทผู้เขียน: ${authorName}`;
+                const subtitle = `${selected} · ${fmt.format(items.length)} ผลงาน`;
+                resetDetailStage();
+                els.detailTitle.textContent = title;
+                els.detailSubtitle.textContent = subtitle;
+                els.detailBody.innerHTML = items.length ? `
+                    <div class="di-modal-content di-modal-content--output">
+                        <div class="di-modal-summary">
+                            <div class="di-modal-kpi"><span>ผลงานรวม</span><strong>${fmt.format(row.total)} ครั้ง</strong></div>
+                            <div class="di-modal-kpi"><span>First Author</span><strong>${fmt.format(row.first)} ครั้ง</strong></div>
+                            <div class="di-modal-kpi"><span>Co-author</span><strong>${fmt.format(row.co)} ครั้ง</strong></div>
+                            <div class="di-modal-kpi"><span>Corresponding</span><strong>${fmt.format(row.corresponding)} ครั้ง</strong></div>
+                        </div>
+                        <div class="di-modal-summary">
+                            <div class="di-modal-kpi"><span>ผลงานที่พบ</span><strong>${fmt.format(items.length)} รายการ</strong></div>
+                            <div class="di-modal-kpi"><span>โครงการต้นทาง</span><strong>${fmt.format(projectsInvolved)} โครงการ</strong></div>
+                            <div class="di-modal-kpi"><span>ช่วงปี</span><strong>${escapeHtml(selected)}</strong></div>
+                            <div class="di-modal-kpi"><span>บทบาทเด่น</span><strong>${escapeHtml(authorDominantRole(row))}</strong></div>
+                        </div>
+                        <div class="di-modal-table-wrap">
+                            <table class="di-table di-modal-table">
+                                <thead>
+                                    <tr>
+                                        <th>ผลงาน</th>
+                                        <th>บทบาท</th>
+                                        <th>ปี</th>
+                                        <th>โครงการ</th>
+                                        <th>Journal/แหล่งเผยแพร่</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${items.map(({ output, roles }) => {
+                                        const project = output.project;
+                                        const projectName = text(project?.project_name_th || output.project_name, '-');
+                                        const projectCell = project?.id
+                                            ? `<a href="${projectUrl(project.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(projectName)}</a>`
+                                            : (output.url
+                                                ? `<a href="${escapeHtml(output.url)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(projectName)}</a>`
+                                                : escapeHtml(projectName));
+                                        return `
+                                            <tr>
+                                                <td data-label="ผลงาน">${escapeHtml(text(output.title || output.output_title || output.output_code, '-'))}</td>
+                                                <td data-label="บทบาท">${escapeHtml(Array.from(new Set(roles)).join(', '))}</td>
+                                                <td data-label="ปี">${escapeHtml(outputYear(output))}</td>
+                                                <td data-label="โครงการ">${projectCell}</td>
+                                                <td data-label="Journal/แหล่งเผยแพร่">${escapeHtml(text(output.journal || output.source || output.publisher || output.source_label, '-'))}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ` : '<div class="di-empty">ไม่พบผลงานของผู้เขียนคนนี้ในเงื่อนไขที่เลือก</div>';
+                els.detailModal?.classList.add('is-open');
+                els.detailModal?.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                resetDetailStage();
+                requestAnimationFrame(resetDetailStage);
+            }
+
             function authorDominantRole(row) {
                 if (!row) return '-';
                 const roles = [
@@ -3876,9 +5048,9 @@
             }
 
             function renderOutputs(rows) {
-                const outputs = relatedOutputs(rows);
+                const outputs = combinedOutputRecords(rows);
                 const chartOutputs = outputs.filter((o) => !isFutureYearLabel(outputYear(o)));
-                const typeRows = top(groupSum(chartOutputs, (o) => text(o.type, 'ไม่ระบุประเภท')), 8);
+                const typeRows = top(groupSum(chartOutputs, (o) => outputTypeLabel(o.type)), 8);
                 renderChart('chartOutputType', {
                     type: 'bar',
                     data: { labels: typeRows.map((x) => x.label), datasets: [barDataset('จำนวน', typeRows.map((x) => x.value), '#7c3aed')] },
@@ -3887,20 +5059,20 @@
                 const outputYears = sortYearLabels(new Set(chartOutputs.map(outputYear)))
                     .filter((year) => !isFutureYearLabel(year))
                     .filter((year) => chartOutputs.some((o) => outputYear(o) === year));
-                const outputTypes = top(groupSum(chartOutputs, (o) => text(o.type, 'ไม่ระบุประเภท')), 7).map((x) => x.label);
+                const outputTypes = top(groupSum(chartOutputs, (o) => outputTypeLabel(o.type)), 7).map((x) => x.label);
                 renderChart('chartOutputStacked', {
                     type: 'bar',
                     data: {
                         labels: outputYears,
                         datasets: outputTypes.map((type, index) => barDataset(
                             type,
-                            outputYears.map((year) => chartOutputs.filter((o) => outputYear(o) === year && text(o.type, 'ไม่ระบุประเภท') === type).length),
+                            outputYears.map((year) => chartOutputs.filter((o) => outputYear(o) === year && outputTypeLabel(o.type) === type).length),
                             COLORS[index % COLORS.length]
                         ))
                     },
                     options: { plugins: { legend: { position: 'bottom' }, diValueLabel: { display: false }, diStackTotalLabel: { display: true } }, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } }
                 });
-                const pubs = chartOutputs.filter((o) => isPublication(o.type));
+                const pubs = authorPublicationOutputs(rows);
                 const pubRows = top(groupSum(pubs, outputYear), 99)
                     .filter((item) => item.label !== 'ไม่ระบุปี')
                     .filter((item) => !isFutureYearLabel(item.label))
@@ -3973,7 +5145,7 @@
                         <span>รวม</span>
                     </div>
                     ${rows.map((x) => `
-                        <div class="di-author-row">
+                        <div class="di-author-row" role="button" tabindex="0" data-author-name="${escapeHtml(x.name)}">
                             <div class="di-author-name" title="${escapeHtml(x.name)}">${escapeHtml(x.name)}</div>
                             <div class="di-author-stack" title="${escapeHtml(`First Author ${fmt.format(x.first)} ครั้ง / Co-author ${fmt.format(x.co)} ครั้ง / Corresponding Author ${fmt.format(x.corresponding)} ครั้ง`)}">
                             ${seg(x.first, 'first')}
@@ -3984,6 +5156,19 @@
                         </div>
                     `).join('')}
                 ` : '<div class="di-empty">ไม่พบข้อมูลบทบาทผู้เขียนในเงื่อนไขนี้</div>';
+                document.querySelectorAll('#authorBoard .di-author-row').forEach((node) => {
+                    const name = node.getAttribute('data-author-name');
+                    const row = rows.find((item) => item.name === name);
+                    if (!row) return;
+                    const open = () => openAuthorDetail(row.name, row, publications);
+                    node.addEventListener('click', open);
+                    node.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            open();
+                        }
+                    });
+                });
             }
 
             function renderOperations(rows) {
@@ -4017,7 +5202,7 @@
                     data: { labels: irbByMonth.map((x) => x.label), datasets: [barDataset('IRB ใกล้หมดอายุ', irbByMonth.map((x) => x.value), '#ef4444')] },
                     options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
                 });
-                const overdueRows = top(groupSum(overdueProjects(rows), status), 8);
+                const overdueRows = top(groupSum(overdueProjects(rows), (p) => projectStatusDisplayLabel(p.planning_status)), 8);
                 renderChart('chartOverdue', {
                     type: 'bar',
                     data: { labels: overdueRows.map((x) => x.label), datasets: [barDataset('เกินกำหนด', overdueRows.map((x) => x.value), '#ef4444')] },
@@ -4027,13 +5212,13 @@
                 const watchRows = [...overdue, ...rows.filter((p) => !budget(p) && isActive(p)).slice(0, Math.max(0, 10 - overdue.length))];
                 document.getElementById('watchTable').innerHTML = watchRows.length ? watchRows.map((p) => `
                     <tr>
-                        <td><a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a></td>
-                        <td>${escapeHtml(text(p.pi_name, '-'))}</td>
-                        <td>${escapeHtml(yearLabel(p))}</td>
-                        <td>${escapeHtml(status(p))}</td>
-                        <td>${overdue.includes(p) ? 'เกินกำหนด/ควรติดตาม' : 'ยังไม่มีข้อมูลงบประมาณ'}</td>
+                        <td data-label="โครงการ"><a href="${projectUrl(p.id)}" class="text-blue-700 font-semibold hover:underline">${escapeHtml(text(p.project_name_th, '-'))}</a></td>
+                        <td data-label="PI">${escapeHtml(text(p.pi_name, '-'))}</td>
+                        <td data-label="ปี">${escapeHtml(yearLabel(p))}</td>
+                        <td data-label="สถานะ">${escapeHtml(status(p))}</td>
+                        <td data-label="หมายเหตุ">${overdue.includes(p) ? 'เกินกำหนด/ควรติดตาม' : 'ยังไม่มีข้อมูลงบประมาณ'}</td>
                     </tr>
-                `).join('') : '<tr><td colspan="5" class="text-center text-slate-500">ยังไม่มีรายการที่ต้องติดตามเด่นชัด</td></tr>';
+                `).join('') : '<tr><td colspan="5" data-label="รายการ" class="text-center text-slate-500">ยังไม่มีรายการที่ต้องติดตามเด่นชัด</td></tr>';
                 const topCoUnit = top(groupSum(coRows, (c) => text(c.unit_status || c.affiliation, 'ไม่ระบุหน่วยงาน')), 1)[0];
                 const coPeopleCount = new Set(coRows.map((c) => norm(c.name)).filter(Boolean)).size;
                 const coProjectCount = new Set(coRows.map((c) => c.project?.id).filter(Boolean)).size;
@@ -4248,19 +5433,26 @@
                 const topFivePeopleTotal = fteRows.slice(0, 5).reduce((sum, item) => sum + item.value, 0);
                 const topPersonShare = totalFte ? (topPerson?.value || 0) / totalFte * 100 : 0;
                 const topFiveShare = totalFte ? topFivePeopleTotal / totalFte * 100 : 0;
+                const allFteItemsForSkillSummary = rows
+                    .flatMap((p) => (Array.isArray(p.fte_roles) ? p.fte_roles : []).map((r) => ({ ...r, project: p })))
+                    .filter((item) => fteValue(item) > 0);
                 const skillRowsDetailed = skillCapacityRows.map((item) => {
-                    const scoped = fteItems.filter((row) => fteSkillLabel(row) === item.skill && fteValue(row) > 0);
+                    const skillKey = skillSetCanonicalKey(item.skill);
+                    const aggregateSkillRow = dashboardSkillSummaryByKey.get(skillKey);
+                    const scoped = allFteItemsForSkillSummary.filter((row) => skillSetCanonicalKey(fteSkillLabel(row)) === skillKey);
                     const peopleRows = top(groupSum(scoped, (row) => text(row.name, 'ไม่ระบุชื่อ'), fteValue), 3);
-                    const peopleCount = item.workforcePeople;
-                    const projectCountForSkill = new Set(scoped.map((row) => row.project?.id).filter(Boolean)).size;
+                    const peopleCount = Number(aggregateSkillRow?.people_count ?? item.workforcePeople ?? 0);
+                    const projectCountForSkill = Number(aggregateSkillRow?.project_count ?? 0)
+                        || new Set(scoped.map((row) => row.project?.id ?? row.project_id).filter(Boolean)).size;
+                    const fteTotalForSkill = Number(aggregateSkillRow?.fte ?? item.fte ?? 0);
                     return {
                         label: item.skill,
-                        value: item.fte,
+                        value: fteTotalForSkill,
                         share: item.timeSpendingPct,
                         people: peopleCount,
                         projects: projectCountForSkill,
-                        avgPerPerson: peopleCount ? item.fte / peopleCount : 0,
-                        avgPerProject: projectCountForSkill ? item.fte / projectCountForSkill : 0,
+                        avgPerPerson: peopleCount ? fteTotalForSkill / peopleCount : 0,
+                        avgPerProject: projectCountForSkill ? fteTotalForSkill / projectCountForSkill : 0,
                         topPeople: peopleRows,
                     };
                 });
@@ -4307,7 +5499,7 @@
             }
 
             function refreshAuthorsOnly() {
-                const publications = relatedOutputs(filteredRows()).filter((o) => isPublication(o.type) && !isFutureYearLabel(outputYear(o)));
+                const publications = authorPublicationOutputs(filteredRows());
                 renderAuthors(publications);
                 updateText('outputReflection', outputAuthorReflection(publications));
             }

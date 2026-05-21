@@ -299,7 +299,7 @@
                 $baseColor
             );
         };
-        $analysisInsightRemark = 'หมายเหตุ: การวิเคราะห์นี้เป็นการใช้ AI เพื่อการวิเคราะห์เบื้องต้น โดยอาศัยข้อมูลที่หน่วยงานนำเข้า ทั้งนี้ ยังจำเป็นต้องอาศัยการพิจารณาร่วมกันของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน และผลการวิเคราะห์อาจเปลี่ยนแปลงได้เมื่อมีข้อมูลเพิ่มเติม';
+        $analysisInsightRemark = 'เป็นการใช้ AI ช่วยวิเคราะห์เบื้องต้น อันเกิดจาก data ของหน่วย และยังต้องอาศัยการร่วมกันคิดของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน';
         $policyImpact = $policyImpact ?? [];
         $policyDataSourceCounts = collect($policyImpact['data_source_counts'] ?? []);
         $policyDataSourceTotal = max(1, (int) $policyDataSourceCounts->sum());
@@ -2523,7 +2523,17 @@
         }
         .fte-capacity-table--skill {
             min-width: 0;
+            border-collapse: collapse;
             table-layout: fixed;
+        }
+        .fte-capacity-table--skill th,
+        .fte-capacity-table--skill td {
+            border-bottom: 1px solid #dce4ee;
+            border-left: 1px solid #dce4ee;
+        }
+        .fte-capacity-table--skill th:first-child,
+        .fte-capacity-table--skill td:first-child {
+            border-left: 0;
         }
         .fte-capacity-table--skill th:nth-child(2),
         .fte-capacity-table--skill td:nth-child(2) {
@@ -2532,17 +2542,22 @@
         }
         .fte-capacity-table--skill thead tr:first-child th:first-child {
             background: #f8fafc;
-            border-right: 1px solid #dbeafe;
+            border-right: 0;
         }
         .fte-capacity-table--skill thead tr:first-child th:nth-child(3),
         .fte-capacity-table--skill tbody td:nth-child(3),
         .fte-capacity-table--skill tfoot td:nth-child(2) {
-            border-left: 1px solid #dbeafe;
+            border-left: 1px solid #dce4ee;
+        }
+        .fte-capacity-table--skill thead tr:first-child th:nth-child(2),
+        .fte-capacity-table--skill tbody td:nth-child(2) {
+            border-left: 0;
         }
         .fte-capacity-table--skill thead tr:first-child th:nth-child(4),
+        .fte-capacity-table--skill thead tr:nth-child(2) th:nth-child(4),
         .fte-capacity-table--skill tbody td:nth-child(6),
         .fte-capacity-table--skill tfoot td:nth-child(5) {
-            border-left: 1px solid #dbeafe;
+            border-left: 1px solid #dce4ee;
         }
         .fte-capacity-table--skill thead tr:nth-child(2) th {
             background: #f4f8fd;
@@ -2602,6 +2617,13 @@
             background: #f1f5f9;
             font-weight: 700;
             color: #0f172a;
+        }
+        .fte-capacity-table--skill tbody td {
+            border-bottom: 1px solid #dce4ee;
+        }
+        .fte-capacity-table--skill tfoot td {
+            border-top: 0;
+            border-bottom: 0;
         }
         .fte-capacity-table-note {
             margin-top: 9px;
@@ -6569,9 +6591,6 @@
             <section class="fade-up hero-panel section-panel section-panel--slate p-7 md:p-10">
                 <div class="hero-kicker">Research Outputs Overview</div>
                 <h1 class="hero-title mt-3 font-semibold text-slate-900">{{ $pageTitle }}</h1>
-                {{-- <p class="mt-3 max-w-5xl text-sm font-normal leading-relaxed text-slate-500 md:text-base">
-                    เป็นการใช้ AI ช่วยวิเคราะห์เบื้องต้น อันเกิดจาก data ของหน่วย และยังต้องอาศัยการร่วมกันคิดของทีมเพื่อให้ได้ข้อสรุปที่ชัดเจน
-                </p> --}}
 
             </section>
 
@@ -6726,6 +6745,7 @@
                                     @if (!empty($policyFrameworkSummary->note))
                                         <div class="mt-3 rounded-xl bg-white/65 px-3 py-2 text-xs leading-relaxed text-slate-500">{{ $policyFrameworkSummary->note }}</div>
                                     @endif
+                                    <p class="mt-3 text-xs font-normal leading-relaxed text-slate-400">{{ $analysisInsightRemark }}</p>
                                 </div>
                             @endif
                         </div>
@@ -6905,6 +6925,7 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <p class="mt-3 text-xs font-normal leading-relaxed text-slate-400">{{ $analysisInsightRemark }}</p>
                                     </div>
                                 </div>
                             @else
@@ -7050,6 +7071,7 @@
                                                     </div>
                                                 @endif
                                             </div>
+                                            <p class="mt-3 text-xs font-normal leading-relaxed text-slate-400">{{ $analysisInsightRemark }}</p>
                                         </div>
                                     @endif
                                 </div>
@@ -7099,6 +7121,7 @@
                                 <div class="mt-3 rounded-xl bg-slate-50 px-4 py-4">
                                     <div class="whitespace-pre-line text-sm leading-relaxed text-slate-700" data-theme-gap-ai-field="paragraph">{{ $policyImpactThemeNarrativeParagraph }}</div>
                                 </div>
+                                <p class="mt-3 text-xs font-normal leading-relaxed text-slate-400">{{ $analysisInsightRemark }}</p>
                             </div>
                     </div>
                 </div>
@@ -7259,6 +7282,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                                 </div>
                                             @endif
                                         </div>
+                                        <p class="mt-3 text-xs font-normal leading-relaxed text-slate-400">{{ $analysisInsightRemark }}</p>
                                     </div>
                                 </div>
 
@@ -7483,6 +7507,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                 {{ $hasAiProjectOutputInsight ? 'AI policy translation reading' : 'Portfolio reading' }}
                             </div>
                             <div class="mt-3 text-xl font-semibold leading-snug text-slate-950">{{ $aiNatureSummary !== '' ? $aiNatureSummary : data_get($nature, 'headline') }}</div>
+                            <p class="mt-3 text-xs font-normal leading-relaxed text-slate-400">{{ $analysisInsightRemark }}</p>
                         </div>
 
                         <div class="nature-rail relative lg:self-stretch">
@@ -7534,6 +7559,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                     {{ $hasAiProjectOutputInsight ? 'AI policy translation reading' : 'Portfolio reading' }}
                                 </div>
                                 <div class="mt-3 text-xl font-semibold leading-snug text-slate-950">{{ $aiNatureSummary !== '' ? $aiNatureSummary : data_get($nature, 'headline') }}</div>
+                                <p class="mt-3 text-xs font-normal leading-relaxed text-slate-400">{{ $analysisInsightRemark }}</p>
                             </div>
 
                             @foreach ($natureThemes as $theme)
@@ -7694,6 +7720,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                         <div class="fte-analysis-card__label">ภาพรวมที่อ่านได้จากกราฟ</div>
                                         <div>{{ $fteRadarChartInsight }}</div>
                                     </div>
+                                    <p class="mt-3 text-xs font-normal leading-relaxed text-slate-400">{{ $analysisInsightRemark }}</p>
                                 </aside>
                             @endif
                         </div>
@@ -8147,6 +8174,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                                         </div>
                                     @endif
                                 </div>
+                                <p class="mt-3 text-xs font-normal leading-relaxed text-slate-400">{{ $analysisInsightRemark }}</p>
                             </div>
                         </div>
                     </div>
@@ -8590,7 +8618,7 @@ Ageing and Frailty, Health System and HTA, Real-World Evidence and Clinical-Tech
                     </div>
                     <p class="mt-4 rounded-xl border border-rose-100 bg-rose-50/70 px-4 py-3 text-sm leading-7 text-slate-700">
                         <span class="font-semibold text-slate-900">หมายเหตุ:</span>
-                        ค่า Impact Factor (IF) และ Quartile (Q) ให้ใช้ค่าตามปีที่บทความได้รับการตีพิมพ์ โดยค่า IF อ้างอิงจากฐานข้อมูล Journal Citation Reports (JCR) และค่า Q อ้างอิงจากฐานข้อมูล SCImago Journal & Country Rank (SJR) ตามเกณฑ์ของมหาวิทยาลัยมหิดล
+                        ค่า Impact Factor (IF) และ Quartile (Q) ใช้ค่าตามปีที่บทความได้รับการตีพิมพ์ โดยค่า IF อ้างอิงจากฐานข้อมูล Journal Citation Reports (JCR) และค่า Q อ้างอิงจากฐานข้อมูล SCImago Journal & Country Rank (SJR) ตามเกณฑ์ของมหาวิทยาลัยมหิดล
                     </p>
                 </article>
                 <article class="fade-up panel section-panel section-panel--rose flex h-full flex-col p-5 md:p-6">
