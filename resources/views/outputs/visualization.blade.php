@@ -7091,7 +7091,7 @@
                             <div class="policy-section-title rounded-xl border border-orange-200 px-3 py-3" style="background-color: #fff7ed;">
                                 <div>
                                     <div class="text-xs font-semibold uppercase tracking-wide text-orange-700">IMPACT</div>
-                                    <h3 class="mt-1 text-xl font-semibold text-slate-900">Outputs contributing to Policy-Impact or Practice Change (No)</h3>
+                                    <h3 class="mt-1 text-xl font-semibold text-slate-900">Outputs contributing to Policy-Impact or Practice Change</h3>
                                     <p class="mt-2 max-w-4xl text-sm leading-relaxed text-slate-700">
                                         จำนวนผลงานและรายละเอียดของผลงานที่มีส่วนในการผลักดันการเปลี่ยนแปลงในเชิงนโยบายหรือการปฏิบัติในระบบสุขภาพ โดยแบ่งตามประเภทผลงาน Research Paper and Journal Article / Change in Practices, Procedure, Policy / Reports and White Paper / Policy Recommendation
                                     </p>
