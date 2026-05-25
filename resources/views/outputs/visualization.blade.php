@@ -39,6 +39,7 @@
         $pageTitle = $baseTitle . ($titleParts->isNotEmpty() ? ' ' . $titleParts->implode(' ') : '');
         $visualizationSectionDefinitions = $visualizationSectionDefinitions ?? [];
         $visualizationSectionVisibility = $visualizationSectionVisibility ?? collect($visualizationSectionDefinitions)->mapWithKeys(fn ($label, $key) => [$key => true])->all();
+        $visualizationInsightVisibility = $visualizationInsightVisibility ?? [];
         $canManageVisualizationSections = (bool) ($canManageVisualizationSections ?? false);
         $isVizSectionVisible = static fn (string $key): bool => (bool) ($visualizationSectionVisibility[$key] ?? true);
 
@@ -1406,6 +1407,108 @@
             color: #047857;
         }
         .viz-section-toggle[disabled] {
+            cursor: wait;
+            opacity: .62;
+        }
+        .viz-page:not(.viz-page--can-manage) .viz-analysis-block.is-viz-insight-off {
+            display: none !important;
+        }
+        .viz-page:not(.viz-page--can-manage) .viz-analysis-layout-has-hidden-block > :not(.viz-analysis-block) {
+            grid-column: 1 / -1;
+        }
+        .viz-page--can-manage .viz-analysis-layout-has-hidden-block > :not(.viz-analysis-block) {
+            grid-column: 1 / -1;
+        }
+        .viz-page--can-manage .viz-analysis-block.is-viz-insight-off {
+            grid-column: 1 / -1;
+            padding: 10px 12px !important;
+            opacity: 1;
+            filter: none;
+        }
+        .viz-page--can-manage .viz-analysis-block.is-viz-insight-off > :not(.viz-insight-admin-control) {
+            display: none !important;
+        }
+        .viz-page--can-manage .viz-analysis-block.is-viz-insight-off .viz-insight-admin-control {
+            margin-bottom: 0;
+        }
+        .viz-page .policy-trend-panel.viz-analysis-layout-has-hidden-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .viz-page .policy-trend-panel.viz-analysis-layout-has-hidden-block .policy-framework-chart-scroll,
+        .viz-page .policy-trend-panel.viz-analysis-layout-has-hidden-block .policy-impact-chart-scroll {
+            flex: 0 0 auto;
+            height: clamp(340px, 42vw, 440px) !important;
+            min-height: 0;
+            width: 100%;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+        .viz-page .policy-trend-panel.viz-analysis-layout-has-hidden-block .policy-framework-chart-inner,
+        .viz-page .policy-trend-panel.viz-analysis-layout-has-hidden-block .policy-impact-chart-inner {
+            width: 100%;
+            height: 100%;
+        }
+        .viz-page .viz-analysis-layout-has-hidden-block.fte-radar-shell > :not(.viz-analysis-block),
+        .viz-page .viz-analysis-layout-has-hidden-block.fte-radar-shell > :not(.viz-analysis-block) .fte-radar-chart-wrap,
+        .viz-page .viz-analysis-layout-has-hidden-block.fte-radar-shell > :not(.viz-analysis-block) .fte-radar-chart-inner {
+            width: 100%;
+            max-width: 100%;
+        }
+        .viz-page--can-manage .viz-analysis-block {
+            position: relative;
+        }
+        .viz-insight-admin-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+            border: 1px solid #fde68a;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #fffbeb, #ffffff);
+            padding: 10px 12px;
+            color: #92400e;
+        }
+        .viz-insight-admin-control__meta {
+            min-width: 0;
+        }
+        .viz-insight-admin-control__label {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+        .viz-insight-admin-control__status {
+            margin-top: 2px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .viz-insight-toggle {
+            display: inline-flex;
+            min-height: 38px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            border: 1px solid #fcd34d;
+            background: #ffffff;
+            padding: 0 14px;
+            font-size: 12px;
+            font-weight: 800;
+            color: #b45309;
+            transition: background .2s ease, border-color .2s ease, color .2s ease, opacity .2s ease;
+        }
+        .viz-insight-toggle:hover {
+            border-color: #f59e0b;
+            background: #fef3c7;
+        }
+        .viz-analysis-block.is-viz-insight-off .viz-insight-toggle {
+            border-color: #bbf7d0;
+            color: #047857;
+        }
+        .viz-insight-toggle[disabled] {
             cursor: wait;
             opacity: .62;
         }
@@ -9312,6 +9415,7 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
             const isPublicSeminar = @json($isPublicSeminar ?? false);
             const canManageVisualizationSections = @json($canManageVisualizationSections);
             const visualizationSectionVisibility = @json($visualizationSectionVisibility);
+            const visualizationInsightVisibility = @json($visualizationInsightVisibility);
             const visualizationSectionUpdateEndpoint = @json(($isPublicSeminar ?? false) ? null : route('outputs.visualization.sections.update', [], false));
             const visualizationSectionCsrf = @json(csrf_token());
 
@@ -9375,7 +9479,128 @@ For the benefit of mankind, our pursuit knows no bounds.</p>
                 });
             }
 
+            function installAnalysisInsightControls() {
+                const candidateCards = [
+                    '.rounded-2xl',
+                    '.fte-insight-card',
+                    'aside',
+                ].join(',');
+                const countsBySection = {};
+                const controllableTitles = {
+                    'Analysis Insight': {
+                        group: 'insight',
+                        label: 'Analysis Insight',
+                        adminLabel: 'Admin Analysis Insight visibility',
+                        offText: 'ปิด Analysis Insight',
+                        onText: 'เปิด Analysis Insight',
+                    },
+                    'Theme output gap analysis': {
+                        group: 'theme_gap',
+                        label: 'Theme output gap analysis',
+                        adminLabel: 'Admin Theme output gap visibility',
+                        offText: 'ปิด Theme output gap',
+                        onText: 'เปิด Theme output gap',
+                    },
+                };
+                const headings = Array.from(document.querySelectorAll('.viz-page *'))
+                    .map((element) => ({ element, config: controllableTitles[element.textContent.trim()] }))
+                    .filter((item) => item.config && item.element.children.length === 0);
+
+                const syncLayout = (card) => {
+                    const parent = card.parentElement;
+                    if (!parent) return;
+
+                    const hasHiddenBlock = Array.from(parent.children)
+                        .some((child) => child.classList?.contains('viz-analysis-block') && child.classList.contains('is-viz-insight-off'));
+                    parent.classList.toggle('viz-analysis-layout-has-hidden-block', hasHiddenBlock);
+                };
+                const requestChartResize = () => {
+                    if (typeof resizeRenderedCharts === 'function') {
+                        window.requestAnimationFrame(() => resizeRenderedCharts());
+                    }
+                };
+
+                headings.forEach(({ element: heading, config }) => {
+                    const card = heading.closest(candidateCards);
+                    if (!card) return;
+
+                    const section = heading.closest('[data-viz-section]');
+                    const sectionKey = section?.dataset.vizSection || 'global';
+                    const sectionLabel = section?.dataset.vizSectionTitle || sectionKey;
+                    const countKey = `${sectionKey}__${config.group}`;
+                    countsBySection[countKey] = (countsBySection[countKey] || 0) + 1;
+                    const insightKey = `${sectionKey}__${config.group}_${countsBySection[countKey]}`;
+                    const insightLabel = countsBySection[countKey] > 1 ? `${sectionLabel} / ${config.label} ${countsBySection[countKey]}` : `${sectionLabel} / ${config.label}`;
+
+                    card.classList.add('viz-analysis-block');
+                    card.dataset.vizInsight = insightKey;
+                    card.dataset.vizInsightTitle = insightLabel;
+                    card.classList.toggle('is-viz-insight-off', visualizationInsightVisibility[insightKey] === false);
+                    syncLayout(card);
+
+                    if (!canManageVisualizationSections || !visualizationSectionUpdateEndpoint || card.querySelector(':scope > .viz-insight-admin-control')) return;
+
+                    const control = document.createElement('div');
+                    control.className = 'viz-insight-admin-control';
+                    control.innerHTML = `
+                        <div class="viz-insight-admin-control__meta">
+                            <div class="viz-insight-admin-control__label">${config.adminLabel}</div>
+                            <div class="viz-insight-admin-control__status"></div>
+                        </div>
+                        <button type="button" class="viz-insight-toggle"></button>
+                    `;
+
+                    const status = control.querySelector('.viz-insight-admin-control__status');
+                    const button = control.querySelector('.viz-insight-toggle');
+                    const sync = () => {
+                        const enabled = !card.classList.contains('is-viz-insight-off');
+                        status.textContent = `${insightLabel}: ${enabled ? 'เปิดให้ผู้ใช้เห็นอยู่' : 'ปิดจากผู้ใช้ทั่วไปอยู่'}`;
+                        button.textContent = enabled ? config.offText : config.onText;
+                        button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+                        syncLayout(card);
+                    };
+
+                    button.addEventListener('click', async () => {
+                        const nextEnabled = card.classList.contains('is-viz-insight-off');
+                        button.disabled = true;
+                        card.classList.toggle('is-viz-insight-off', !nextEnabled);
+                        sync();
+
+                        try {
+                            const response = await fetch(visualizationSectionUpdateEndpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': visualizationSectionCsrf,
+                                },
+                                body: JSON.stringify({ insight: insightKey, enabled: nextEnabled }),
+                            });
+                            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                            const payload = await response.json();
+                            card.classList.toggle('is-viz-insight-off', !payload.enabled);
+                            visualizationInsightVisibility[insightKey] = Boolean(payload.enabled);
+                            syncLayout(card);
+                            requestChartResize();
+                        } catch (error) {
+                            card.classList.toggle('is-viz-insight-off', nextEnabled);
+                            status.textContent = `${insightLabel}: บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง`;
+                            syncLayout(card);
+                            requestChartResize();
+                        } finally {
+                            button.disabled = false;
+                            sync();
+                            requestChartResize();
+                        }
+                    });
+
+                    card.prepend(control);
+                    sync();
+                });
+            }
+
             installVisualizationSectionControls();
+            installAnalysisInsightControls();
             if (isPublicSeminar) {
                 const termsModal = document.getElementById('seminarTermsModal');
                 const termsAccept = document.getElementById('seminarTermsAccept');

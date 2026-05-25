@@ -53,6 +53,8 @@ class OutputController extends Controller
 
     private const VISUALIZATION_SECTION_VISIBILITY_SETTING_KEY = 'outputs.visualization.section_visibility';
 
+    private const VISUALIZATION_INSIGHT_VISIBILITY_SETTING_KEY = 'outputs.visualization.insight_visibility';
+
     private const VISUALIZATION_SECTION_DEFINITIONS = [
         'project_scope' => 'Project Scope',
         'policy_decision' => 'Policy-Relevant Decision-Making',
@@ -2148,6 +2150,7 @@ class OutputController extends Controller
         $isPublicSeminar = (bool) $request->attributes->get('is_public_seminar', false);
         $canManageVisualizationSections = ! $isPublicSeminar && (bool) ($request->user()?->hasRole(User::ROLE_ADMIN) ?? false);
         $visualizationSectionVisibility = $this->visualizationSectionVisibility();
+        $visualizationInsightVisibility = $this->visualizationInsightVisibility();
 
         if ($request->query('__realtime_version') === '1') {
             return response()
@@ -5648,6 +5651,7 @@ class OutputController extends Controller
             'visualizationRouteName' => $isPublicSeminar ? 'seminar' : 'outputs.visualization',
             'visualizationSectionDefinitions' => self::VISUALIZATION_SECTION_DEFINITIONS,
             'visualizationSectionVisibility' => $visualizationSectionVisibility,
+            'visualizationInsightVisibility' => $visualizationInsightVisibility,
             'canManageVisualizationSections' => $canManageVisualizationSections,
         ]);
 
@@ -5665,9 +5669,24 @@ class OutputController extends Controller
         abort_unless((bool) ($request->user()?->hasRole(User::ROLE_ADMIN) ?? false), 403);
 
         $validated = $request->validate([
-            'section' => ['required', 'string', 'in:' . implode(',', array_keys(self::VISUALIZATION_SECTION_DEFINITIONS))],
+            'section' => ['nullable', 'required_without:insight', 'string', 'in:' . implode(',', array_keys(self::VISUALIZATION_SECTION_DEFINITIONS))],
+            'insight' => ['nullable', 'required_without:section', 'string', 'max:120', 'regex:/^[a-z0-9_]+(__insight_[0-9]+)?$/'],
             'enabled' => ['required', 'boolean'],
         ]);
+
+        if (! empty($validated['insight'])) {
+            $visibility = $this->visualizationInsightVisibility();
+            $visibility[$validated['insight']] = (bool) $validated['enabled'];
+
+            $this->storeVisualizationInsightVisibility($visibility, (int) $request->user()->id);
+
+            return response()->json([
+                'ok' => true,
+                'insight' => $validated['insight'],
+                'enabled' => $visibility[$validated['insight']],
+                'visibility' => $visibility,
+            ]);
+        }
 
         $visibility = $this->visualizationSectionVisibility();
         $visibility[$validated['section']] = (bool) $validated['enabled'];
@@ -7142,6 +7161,7 @@ class OutputController extends Controller
             'version' => $this->visualizationDataVersion(),
             'view_version' => $this->visualizationViewVersion(),
             'section_visibility_version' => $this->visualizationSectionVisibilityVersion(),
+            'insight_visibility_version' => $this->visualizationInsightVisibilityVersion(),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
@@ -7167,6 +7187,27 @@ class OutputController extends Controller
             ->all();
     }
 
+    private function visualizationInsightVisibility(): array
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return [];
+        }
+
+        $rawValue = DB::table('app_settings')
+            ->where('key', self::VISUALIZATION_INSIGHT_VISIBILITY_SETTING_KEY)
+            ->value('value');
+
+        $stored = is_string($rawValue) ? json_decode($rawValue, true) : null;
+        if (! is_array($stored)) {
+            return [];
+        }
+
+        return collect($stored)
+            ->filter(fn ($enabled, $insight) => is_string($insight) && preg_match('/^[a-z0-9_]+(__insight_[0-9]+)?$/', $insight))
+            ->map(fn ($enabled) => (bool) $enabled)
+            ->all();
+    }
+
     private function storeVisualizationSectionVisibility(array $visibility, int $userId): void
     {
         abort_unless(Schema::hasTable('app_settings'), 500, 'app_settings table is not available. Run migrations first.');
@@ -7186,6 +7227,26 @@ class OutputController extends Controller
         );
     }
 
+    private function storeVisualizationInsightVisibility(array $visibility, int $userId): void
+    {
+        abort_unless(Schema::hasTable('app_settings'), 500, 'app_settings table is not available. Run migrations first.');
+
+        $payload = collect($visibility)
+            ->filter(fn ($enabled, $insight) => is_string($insight) && preg_match('/^[a-z0-9_]+(__insight_[0-9]+)?$/', $insight))
+            ->map(fn ($enabled) => (bool) $enabled)
+            ->all();
+
+        DB::table('app_settings')->updateOrInsert(
+            ['key' => self::VISUALIZATION_INSIGHT_VISIBILITY_SETTING_KEY],
+            [
+                'value' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'updated_by' => $userId,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+    }
+
     private function visualizationSectionVisibilityVersion(): string
     {
         if (! Schema::hasTable('app_settings')) {
@@ -7194,6 +7255,19 @@ class OutputController extends Controller
 
         $updatedAt = DB::table('app_settings')
             ->where('key', self::VISUALIZATION_SECTION_VISIBILITY_SETTING_KEY)
+            ->value('updated_at');
+
+        return (string) ($updatedAt ?: 'default');
+    }
+
+    private function visualizationInsightVisibilityVersion(): string
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return 'missing';
+        }
+
+        $updatedAt = DB::table('app_settings')
+            ->where('key', self::VISUALIZATION_INSIGHT_VISIBILITY_SETTING_KEY)
             ->value('updated_at');
 
         return (string) ($updatedAt ?: 'default');
