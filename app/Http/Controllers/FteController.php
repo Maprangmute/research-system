@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\BackOfficeEntry;
 use App\Models\BackOfficeTask;
 use App\Models\User;
+use App\Models\WfaReport;
 use App\Support\AuditLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -22,6 +23,7 @@ use PhpOffice\PhpWord\SimpleType\JcTable;
 use PhpOffice\PhpWord\SimpleType\TblWidth;
 use PhpOffice\PhpWord\SimpleType\VerticalJc;
 use PhpOffice\PhpWord\Settings;
+use PhpOffice\PhpWord\Shared\Html;
 
 
 class FteController extends Controller
@@ -679,8 +681,8 @@ public function detail(Request $request, $person)
     $this->ensureCanViewFtePerson((string) $person);
     $data = $this->buildFteDetailData($person);
 
-    // แบ่งหน้าเดือนละ 10 เดือน (เรียงใหม่ล่าสุดก่อน)
-    $months = $data['monthlyFTE']->sortKeysDesc();
+    // แบ่งหน้าเดือนละ 10 เดือน โดยเรียงเดือนจากเก่าไปใหม่
+    $months = $data['monthlyFTE']->sortKeys();
     $perPage = 10;
     $page = LengthAwarePaginator::resolveCurrentPage();
     $sliced = $months->slice(($page - 1) * $perPage, $perPage, true);
@@ -709,8 +711,8 @@ public function detail(Request $request, $person)
         $this->ensureCanViewFteProject($project);
         $data = $this->buildFteProjectData($project);
 
-        // แบ่งหน้าเดือนละ 10 เดือน (ล่าสุดก่อน)
-        $months = $data['monthlyFTE']->sortKeysDesc();
+        // แบ่งหน้าเดือนละ 10 เดือน โดยเรียงเดือนจากเก่าไปใหม่
+        $months = $data['monthlyFTE']->sortKeys();
         $perPage = 10;
         $page = LengthAwarePaginator::resolveCurrentPage();
         $sliced = $months->slice(($page - 1) * $perPage, $perPage, true);
@@ -827,6 +829,542 @@ public function exportWord(Request $request, $person)
         ->deleteFileAfterSend(true);
 }
 
+public function wfaIndex(Request $request)
+{
+    $user = $request->user();
+    $search = trim((string) $request->query('q', ''));
+    $query = WfaReport::query()
+        ->with('user:id,prefix,name,position,role,profile_photo_path')
+        ->latest();
+
+    if (! $this->canViewAnyWfaReport($user)) {
+        $query->where('user_id', $user->id);
+    }
+
+    if ($search !== '') {
+        $query->where(function ($subQuery) use ($search): void {
+            $subQuery
+                ->where('wfa_code', 'like', "%{$search}%")
+                ->orWhere('title', 'like', "%{$search}%")
+                ->orWhere('person_name', 'like', "%{$search}%")
+                ->orWhere('output_text', 'like', "%{$search}%");
+        });
+    }
+
+    $reports = $query->paginate(10)->withQueryString()->fragment('wfa-list-table');
+
+    return view('wfa.index', [
+        'reports' => $reports,
+        'canViewAll' => $this->canViewAnyWfaReport($user),
+        'search' => $search,
+        'monthOptions' => $this->wfaMonthOptions(),
+    ]);
+}
+
+public function wfaCreate(Request $request)
+{
+    $user = $request->user();
+    $month = now()->copy()->startOfMonth();
+
+    return view('wfa.form', [
+        'report' => new WfaReport([
+            'title' => $this->wfaDefaultTitle($user, $month),
+            'filter_mode' => 'month',
+            'filter_year' => $month->year + 543,
+            'filter_month' => $month->month,
+        ]),
+        'users' => $this->wfaAssignableUsers($request->user()),
+        'monthOptions' => $this->wfaMonthOptions(),
+        'isEdit' => false,
+    ]);
+}
+
+public function wfaStore(Request $request)
+{
+    $payload = $this->validatedWfaPayload($request);
+    $report = WfaReport::create($payload);
+
+    if ($request->expectsJson()) {
+        $report->refresh();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'บันทึก WFA แล้ว',
+            'report' => $this->wfaJsonReport($report),
+        ]);
+    }
+
+    return redirect()
+        ->route('wfa.edit', $report)
+        ->with('status', 'บันทึก WFA แล้ว');
+}
+
+public function wfaEdit(Request $request, WfaReport $wfaReport)
+{
+    $this->ensureCanEditWfaReport($wfaReport);
+
+    return view('wfa.form', [
+        'report' => $wfaReport,
+        'users' => $this->wfaAssignableUsers($request->user()),
+        'monthOptions' => $this->wfaMonthOptions(),
+        'isEdit' => true,
+    ]);
+}
+
+public function wfaUpdate(Request $request, WfaReport $wfaReport)
+{
+    $this->ensureCanEditWfaReport($wfaReport);
+    $wfaReport->update($this->validatedWfaPayload($request, $wfaReport));
+
+    if ($request->expectsJson()) {
+        $wfaReport->refresh();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'อัพเดทข้อมูลแล้ว',
+            'report' => $this->wfaJsonReport($wfaReport),
+        ]);
+    }
+
+    return redirect()
+        ->route('wfa.edit', $wfaReport)
+        ->with('status', 'บันทึก WFA แล้ว');
+}
+
+private function wfaJsonReport(WfaReport $report): array
+{
+    $createdAt = $report->created_at?->copy()->setTimezone('Asia/Bangkok');
+    $createdLabel = $createdAt
+        ? $createdAt->copy()->locale('th')->translatedFormat('j F') . ' ' . ($createdAt->year + 543) . ' เวลา ' . $createdAt->format('H:i')
+        : '-';
+
+    return [
+        'id' => $report->id,
+        'code' => $report->wfa_code ?: WfaReport::formatCode((int) $report->id),
+        'person_name' => $report->person_name,
+        'title' => $report->title,
+        'month_label' => $this->wfaMonthLabel($this->wfaReportMonth($report)),
+        'created_at_label' => $createdLabel,
+        'created_timestamp' => $report->created_at?->timestamp ?? 0,
+        'output_text' => $report->output_text ?: '-',
+        'output_html' => $report->output_html,
+        'filter_month_key' => $this->wfaReportMonth($report)->format('Y-m'),
+        'can_edit' => $this->canEditWfaReport($report),
+        'edit_url' => route('wfa.edit', $report),
+        'update_url' => route('wfa.update', $report),
+        'pdf_url' => route('wfa.pdf', $report),
+        'word_url' => route('wfa.word', $report),
+    ];
+}
+
+public function wfaDestroy(WfaReport $wfaReport)
+{
+    $this->ensureCanEditWfaReport($wfaReport);
+    $wfaReport->delete();
+
+    return redirect()
+        ->route('wfa.index')
+        ->with('status', 'ลบ WFA แล้ว');
+}
+
+public function wfaPdf(Request $request, WfaReport $wfaReport)
+{
+    $this->ensureCanViewWfaReport($wfaReport);
+    $wfaReport->refresh();
+    $data = $this->buildWfaExportData($wfaReport);
+    $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
+    $code = $wfaReport->wfa_code ?: WfaReport::formatCode((int) $wfaReport->id);
+    $filename = "{$code}_{$dateStr}_{$data['person']}.pdf";
+
+    $pdf = PDF::loadView('fte.pdf', array_merge($data, [
+        'user' => $request->user(),
+        'profilePhotoDataUri' => $this->resolveUserProfilePhotoDataUriForExport($data['profile'] ?? null),
+    ]));
+
+    AuditLogger::logFileDownload($filename, [
+        'subject_type' => 'wfa_pdf',
+        'subject_label' => (string) $wfaReport->title,
+    ], $request);
+
+    return $pdf->stream($filename);
+}
+
+public function wfaWord(Request $request, WfaReport $wfaReport)
+{
+    $this->ensureCanViewWfaReport($wfaReport);
+    $wfaReport->refresh();
+    $data = $this->buildWfaExportData($wfaReport);
+    $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
+    $safePerson = preg_replace('/[^\pL\pN\-_\s]+/u', '', (string) $data['person']);
+    $code = $wfaReport->wfa_code ?: WfaReport::formatCode((int) $wfaReport->id);
+    $filename = "{$code}_{$dateStr}_" . trim((string) $safePerson) . ".docx";
+    $tempFile = tempnam(sys_get_temp_dir(), 'wfa_word_');
+    $docxPath = $tempFile . '.docx';
+    @unlink($tempFile);
+
+    $this->buildFteWordDocument(
+        array_merge($data, [
+            'user' => $request->user(),
+            'profilePhotoPath' => $this->resolveUserProfilePhotoPathForWordExport($data['profile'] ?? null),
+        ]),
+        $docxPath
+    );
+
+    AuditLogger::logFileDownload($filename, [
+        'subject_type' => 'wfa_word',
+        'subject_label' => (string) $wfaReport->title,
+    ], $request);
+
+    return response()
+        ->download($docxPath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ])
+        ->deleteFileAfterSend(true);
+}
+
+private function canManageAnyWfaReport(?User $user): bool
+{
+    return $user && in_array($user->role, [
+        User::ROLE_ADMIN,
+        User::ROLE_SU_ADMIN,
+    ], true);
+}
+
+private function canViewAnyWfaReport(?User $user): bool
+{
+    return $user && (
+        $this->canManageAnyWfaReport($user)
+        || $user->role === User::ROLE_UNIT_EXECUTIVE
+    );
+}
+
+private function canEditWfaReport(WfaReport $report, ?User $user = null): bool
+{
+    $user ??= Auth::user();
+
+    return $user
+        && ((int) $report->user_id === (int) $user->id || $this->canManageAnyWfaReport($user));
+}
+
+private function ensureCanViewWfaReport(WfaReport $report): void
+{
+    $user = Auth::user();
+    abort_unless($user && ($this->canViewAnyWfaReport($user) || (int) $report->user_id === (int) $user->id), 403);
+}
+
+private function ensureCanEditWfaReport(WfaReport $report): void
+{
+    abort_unless($this->canEditWfaReport($report), 403);
+}
+
+private function wfaAssignableUsers(?User $user): Collection
+{
+    if (! $user?->isAdminLike()) {
+        return collect([$user])->filter();
+    }
+
+    return User::query()
+        ->where('role', '!=', User::ROLE_RESIGNED)
+        ->orderBy('name')
+        ->get(['id', 'prefix', 'name', 'position', 'role']);
+}
+
+private function validatedWfaPayload(Request $request, ?WfaReport $report = null): array
+{
+    $user = $request->user();
+    $data = $request->validate([
+        'filter_month_key' => ['required', 'date_format:Y-m'],
+        'output_html' => ['required', 'string'],
+    ]);
+
+    $ownerId = (int) ($report?->user_id ?? $user->id);
+    $owner = User::findOrFail($ownerId);
+    $selectedMonth = Carbon::createFromFormat('Y-m', $data['filter_month_key'])->startOfMonth();
+    $outputHtml = $this->sanitizeWfaOutputHtml((string) $data['output_html']);
+    $outputText = trim(html_entity_decode(strip_tags(str_replace(['</p>', '</div>', '</li>', '<br>', '<br/>', '<br />'], "\n", $outputHtml))));
+
+    return [
+        'user_id' => $owner->id,
+        'person_name' => $owner->full_name,
+        'title' => $this->wfaDefaultTitle($owner, $selectedMonth),
+        'work_date' => null,
+        'filter_mode' => 'month',
+        'filter_year' => $selectedMonth->year + 543,
+        'filter_month' => $selectedMonth->month,
+        'filter_start' => null,
+        'filter_end' => null,
+        'output_html' => $outputHtml,
+        'output_text' => $outputText,
+    ];
+}
+
+private function buildWfaExportData(WfaReport $report): array
+{
+    $mode = $report->filter_mode ?: 'month';
+    $filter = [
+        'mode' => $mode,
+        'year' => $report->filter_year,
+        'start' => $report->filter_start?->format('d-m-Y'),
+        'end' => $report->filter_end?->format('d-m-Y'),
+    ];
+
+    if ($mode === 'month') {
+        $selectedMonth = $this->wfaReportMonth($report);
+        $from = $selectedMonth->copy()->subMonthNoOverflow()->startOfMonth();
+        $to = $selectedMonth->copy()->addMonthNoOverflow()->endOfMonth();
+        $filter = [
+            'mode' => 'custom',
+            'year' => null,
+            'start' => $from->format('d-m-Y'),
+            'end' => $to->format('d-m-Y'),
+        ];
+    }
+
+    $data = $this->buildFteDetailData($report->person_name, $filter);
+
+    if ($mode === 'month') {
+        $selectedMonth = $this->wfaReportMonth($report);
+        $previousMonth = $this->wfaMonthLabel($selectedMonth->copy()->subMonthNoOverflow());
+        $currentMonth = $this->wfaMonthLabel($selectedMonth);
+        $nextMonth = $this->wfaMonthLabel($selectedMonth->copy()->addMonthNoOverflow());
+        $data['pdfFilter']['mode'] = 'month';
+        $data['pdfFilter']['label'] = "{$previousMonth} - {$currentMonth} - {$nextMonth}";
+        $data['pdfFilter']['output_label'] = $data['pdfFilter']['label'];
+    }
+
+    $outputHtml = $this->sanitizeWfaOutputHtml((string) $report->output_html);
+
+    return array_merge($data, [
+        'wfaReport' => $report,
+        'wfaOutputHtml' => $outputHtml,
+        'wfaOutputPdfHtml' => $this->normalizeWfaOutputHtmlForPdf($outputHtml),
+        'wfaOutputWordHtml' => $this->normalizeWfaOutputHtmlForPdf($outputHtml),
+        'wfaOutputTitle' => 'Output ที่เกิดขึ้นจากการทำงานของเดือน ' . $this->wfaMonthLabel($this->wfaReportMonth($report)->subMonthNoOverflow()),
+    ]);
+}
+
+private function wfaReportMonth(WfaReport $report): Carbon
+{
+    $yearBE = (int) ($report->filter_year ?: now()->year + 543);
+    $yearAD = $yearBE > 2500 ? $yearBE - 543 : $yearBE;
+    $month = (int) ($report->filter_month ?: now()->month);
+
+    return Carbon::createFromDate($yearAD, max(1, min(12, $month)), 1)->startOfMonth();
+}
+
+private function wfaDefaultTitle(User $user, Carbon $month): string
+{
+    return 'WFA ' . $user->full_name . ' ประจำเดือน ' . $this->wfaMonthLabel($month);
+}
+
+private function wfaMonthLabel(Carbon $month): string
+{
+    $date = $month->copy()->locale('th');
+    return $date->translatedFormat('F') . ' ' . ($date->year + 543);
+}
+
+private function wfaMonthOptions(): Collection
+{
+    $current = now()->copy()->startOfMonth();
+
+    $months = collect([
+        $current->copy()->subMonthNoOverflow(),
+        $current,
+        $current->copy()->addMonthNoOverflow(),
+    ]);
+
+    return $months
+        ->unique(fn(Carbon $month) => $month->format('Y-m'))
+        ->sortBy(fn(Carbon $month) => $month->format('Y-m'))
+        ->values()
+        ->map(fn(Carbon $month) => [
+            'value' => $month->format('Y-m'),
+            'label' => $this->wfaMonthLabel($month),
+            'output_label' => $this->wfaMonthLabel($month->copy()->subMonthNoOverflow()),
+            'year' => $month->year + 543,
+            'is_current' => $month->isSameMonth($current),
+        ]);
+}
+
+private function sanitizeWfaOutputHtml(string $html): string
+{
+    $html = trim($html);
+    if ($html === '') {
+        return '';
+    }
+
+    $html = $this->normalizeWfaManualBullets($html);
+
+    libxml_use_internal_errors(true);
+    $dom = new \DOMDocument('1.0', 'UTF-8');
+    $dom->loadHTML('<?xml encoding="utf-8" ?><div>' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+
+    $allowedTags = ['div', 'p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'ul', 'ol', 'li', 'span'];
+    $allowedStyles = ['font-weight', 'font-style', 'text-decoration', 'text-align', 'margin-left'];
+
+    $cleanNode = function (\DOMNode $node) use (&$cleanNode, $allowedTags, $allowedStyles): void {
+        if ($node instanceof \DOMElement) {
+            $tag = strtolower($node->nodeName);
+            if (! in_array($tag, $allowedTags, true)) {
+                $node->parentNode?->removeChild($node);
+                return;
+            }
+
+            foreach (iterator_to_array($node->attributes) as $attribute) {
+                $name = strtolower($attribute->nodeName);
+                if ($name !== 'style') {
+                    $node->removeAttribute($attribute->nodeName);
+                    continue;
+                }
+
+                $style = collect(explode(';', (string) $attribute->nodeValue))
+                    ->map(fn($rule) => trim($rule))
+                    ->filter()
+                    ->map(function ($rule) {
+                        [$property, $value] = array_pad(explode(':', $rule, 2), 2, '');
+                        return [strtolower(trim($property)), trim($value)];
+                    })
+                    ->filter(fn($pair) => in_array($pair[0], $allowedStyles, true))
+                    ->map(fn($pair) => $pair[0] . ':' . preg_replace('/[^a-zA-Z0-9ก-๙#.,()%\s-]/u', '', $pair[1]))
+                    ->implode('; ');
+
+                if ($style === '') {
+                    $node->removeAttribute('style');
+                } else {
+                    $node->setAttribute('style', $style);
+                }
+            }
+        }
+
+        foreach (iterator_to_array($node->childNodes) as $child) {
+            $cleanNode($child);
+        }
+    };
+
+    $cleanNode($dom);
+
+    $body = '';
+    foreach ($dom->documentElement?->childNodes ?? [] as $child) {
+        $body .= $dom->saveHTML($child);
+    }
+
+    return trim($body);
+}
+
+private function normalizeWfaOutputHtmlForPdf(string $html): string
+{
+    $html = trim($html);
+    if ($html === '') {
+        return '';
+    }
+
+    libxml_use_internal_errors(true);
+    $dom = new \DOMDocument('1.0', 'UTF-8');
+    $dom->loadHTML('<?xml encoding="utf-8" ?><div>' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+
+    $collapseTextNodes = function (\DOMNode $node) use (&$collapseTextNodes): void {
+        if ($node instanceof \DOMText) {
+            $node->nodeValue = preg_replace('/[ \t\r\n]+/u', ' ', (string) $node->nodeValue);
+            return;
+        }
+
+        foreach (iterator_to_array($node->childNodes) as $child) {
+            $collapseTextNodes($child);
+        }
+    };
+
+    $collapseTextNodes($dom);
+
+    foreach (iterator_to_array($dom->getElementsByTagName('ul')) as $list) {
+        $table = $dom->createElement('table');
+        $table->setAttribute('class', 'wfa-output-list');
+        $table->setAttribute('style', 'width:100%; border-collapse:collapse; table-layout:fixed; margin:4px 0 8px 0;');
+
+        foreach (iterator_to_array($list->childNodes) as $child) {
+            if (! $child instanceof \DOMElement || strtolower($child->nodeName) !== 'li') {
+                continue;
+            }
+
+            $row = $dom->createElement('tr');
+            $bulletCell = $dom->createElement('td', '•');
+            $bulletCell->setAttribute('class', 'wfa-output-bullet');
+            $bulletCell->setAttribute('style', 'width:18px; border:0; padding:0 0 7px 0; vertical-align:top; text-align:left; font-weight:bold;');
+            $textCell = $dom->createElement('td');
+            $textCell->setAttribute('class', 'wfa-output-item');
+            $textCell->setAttribute('style', 'border:0; padding:0 0 7px 0; vertical-align:top; text-align:left;');
+
+            foreach (iterator_to_array($child->childNodes) as $itemChild) {
+                $textCell->appendChild($itemChild->cloneNode(true));
+            }
+
+            $row->appendChild($bulletCell);
+            $row->appendChild($textCell);
+            $table->appendChild($row);
+        }
+
+        $list->parentNode?->replaceChild($table, $list);
+    }
+
+    $body = '';
+    foreach ($dom->documentElement?->childNodes ?? [] as $child) {
+        $body .= $dom->saveHTML($child);
+    }
+
+    return trim((string) $body);
+}
+
+private function normalizeWfaManualBullets(string $html): string
+{
+    if (!str_contains($html, '•') || preg_match('/<\/?(ul|ol|li)\b/i', $html)) {
+        return $html;
+    }
+
+    $text = preg_replace('/<\s*br\s*\/?>/i', "\n", $html);
+    $text = preg_replace('/<\/\s*(p|div)\s*>/i', "\n", (string) $text);
+    $text = html_entity_decode(strip_tags((string) $text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = preg_replace("/\r\n|\r/u", "\n", (string) $text);
+    $text = preg_replace("/[ \t]+/u", ' ', (string) $text);
+    $text = trim((string) $text);
+
+    if ($text === '' || !str_contains($text, '•')) {
+        return $html;
+    }
+
+    $parts = preg_split('/\s*•\s*/u', $text);
+    if (!is_array($parts) || count($parts) < 2) {
+        return $html;
+    }
+
+    $prefix = trim((string) array_shift($parts));
+    $items = collect($parts)
+        ->map(fn($part) => trim((string) $part))
+        ->filter()
+        ->values();
+
+    if ($items->isEmpty()) {
+        return $html;
+    }
+
+    $result = '';
+    if ($prefix !== '') {
+        $result .= '<p>' . e($prefix) . '</p>';
+    }
+
+    $result .= '<ul>';
+    foreach ($items as $item) {
+        $lines = collect(explode("\n", (string) $item))
+            ->map(fn($line) => trim($line))
+            ->filter()
+            ->map(fn($line) => e($line));
+        $result .= '<li>' . $lines->implode('<br>') . '</li>';
+    }
+    $result .= '</ul>';
+
+    return $result;
+}
+
 private function buildFteWordDocument(array $data, string $targetPath): void
 {
     $phpWord = new PhpWord();
@@ -855,6 +1393,10 @@ private function buildFteWordDocument(array $data, string $targetPath): void
     $monthWorkList = collect($data['monthWorkList'] ?? []);
     $monthProjectStats = $data['monthProjectStats'] ?? [];
     $pdfFilter = $data['pdfFilter'] ?? [];
+    $wfaOutputHtml = trim((string) ($data['wfaOutputWordHtml'] ?? $data['wfaOutputHtml'] ?? ''));
+    $wfaOutputTitle = trim((string) ($data['wfaOutputTitle'] ?? '')) ?: 'Output ที่เกิดขึ้น';
+    $isWfaReport = $wfaOutputHtml !== '';
+    $reportTitle = $isWfaReport ? 'WFA / FTE Individual Report' : 'FTE Individual Report';
     $allRows = $monthlyFTE instanceof Collection ? $monthlyFTE->flatten(1) : collect();
     $projectCount = $allRows->pluck('project.id')->filter()->unique()->count();
     $totalFte = (float) $allRows->sum('fte_value');
@@ -897,10 +1439,10 @@ private function buildFteWordDocument(array $data, string $targetPath): void
 
     $headerTable = $section->addTable($tableBase);
     $headerTable->addRow();
-    $headerTable->addCell(6200, ['valign' => VerticalJc::CENTER])->addText('FTE Individual Report', ['bold' => true, 'size' => 24, 'color' => '0F172A']);
+    $headerTable->addCell(6200, ['valign' => VerticalJc::CENTER])->addText($reportTitle, ['bold' => true, 'size' => 24, 'color' => '0F172A']);
     $headerRight = $headerTable->addCell(3800, ['valign' => VerticalJc::CENTER]);
     $headerRight->addText('Siriraj Health Policy', ['size' => 13, 'color' => '64748B'], ['alignment' => Jc::END, 'spaceAfter' => 40]);
-    $headerRight->addText('รายงานภาระงานรายบุคคล', ['size' => 13, 'color' => '64748B'], ['alignment' => Jc::END]);
+    $headerRight->addText($isWfaReport ? 'รายงานภาระงาน WFA และผลงานที่เกิดขึ้น' : 'รายงานภาระงานรายบุคคล', ['size' => 13, 'color' => '64748B'], ['alignment' => Jc::END]);
 
     $section->addTextBreak(1);
 
@@ -915,7 +1457,9 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         ]);
     }
     $heroCell = $heroTable->addCell(8100, ['valign' => VerticalJc::CENTER]);
-    $heroCell->addText('FTE OVERVIEW', ['bold' => true, 'size' => 14, 'color' => '64748B'], ['spaceAfter' => 60]);
+    if (! $isWfaReport) {
+        $heroCell->addText('FTE OVERVIEW', ['bold' => true, 'size' => 14, 'color' => '64748B'], ['spaceAfter' => 60]);
+    }
     $heroCell->addText($person, ['bold' => true, 'size' => 24, 'color' => '0F172A'], ['spaceAfter' => 120]);
     $heroCell->addText('ตำแหน่ง ' . $position, ['size' => 15, 'color' => '475569'], ['spaceAfter' => 70]);
     $heroCell->addText('ช่วงข้อมูล: ' . $filterLabel, ['size' => 14, 'color' => '64748B'], ['spaceAfter' => 40]);
@@ -945,7 +1489,7 @@ private function buildFteWordDocument(array $data, string $targetPath): void
     $workListTable = $section->addTable(array_merge($tableBase, $cellBorder));
     $workListTable->addRow();
     foreach ([
-        ['ชื่อโครงการ / งาน', 2800],
+        [$isWfaReport ? 'ภาระงาน' : 'ชื่อโครงการ / งาน', 2800],
         ['รายละเอียดงาน', 5400],
         ['สถานะ', 1800],
     ] as [$text, $width]) {
@@ -957,16 +1501,22 @@ private function buildFteWordDocument(array $data, string $targetPath): void
     } else {
         foreach ($monthWorkList as $work) {
             $workListTable->addRow();
-            $workListTable->addCell(2800, ['valign' => VerticalJc::CENTER])->addText((string) ($work['name'] ?? '-'), ['bold' => true, 'size' => 14, 'color' => '0F172A']);
+            $workTitle = (string) ($work['name'] ?? '-');
+            $workListTable->addCell(2800, ['valign' => VerticalJc::CENTER])->addText($workTitle, ['bold' => true, 'size' => 14, 'color' => '0F172A']);
             $detailCell = $workListTable->addCell(5400, ['valign' => VerticalJc::CENTER]);
             $detailGroups = collect($work['work_detail_groups'] ?? [])->filter();
             if ($detailGroups->isEmpty()) {
                 $detailCell->addText('-', ['size' => 13, 'color' => '64748B']);
             } else {
                 foreach ($detailGroups as $group) {
-                    $detailCell->addText('• ' . ($group['job'] ?? 'รายละเอียดงาน'), ['bold' => true, 'size' => 13, 'color' => '0F172A'], ['spaceAfter' => 20]);
+                    $groupLabel = (string) ($group['job'] ?? 'รายละเอียดงาน');
+                    if (str_contains($groupLabel, '•')) {
+                        $this->addManualBulletTextToWordCell($detailCell, $groupLabel, ['bold' => true, 'size' => 13, 'color' => '0F172A']);
+                    } else {
+                        $detailCell->addText('• ' . $groupLabel, ['bold' => true, 'size' => 13, 'color' => '0F172A'], ['spaceAfter' => 20]);
+                    }
                     foreach (collect($group['tasks'] ?? [])->filter() as $task) {
-                        $detailCell->addText('- ' . ($task['task'] ?? '-'), $bodyStyle);
+                        $this->addManualBulletTextToWordCell($detailCell, (string) ($task['task'] ?? '-'), $bodyStyle);
                     }
                 }
             }
@@ -988,7 +1538,7 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         $monthTable->addRow();
         foreach ([
             ['#', 600],
-            ['โครงการ / รายละเอียดงาน', 4000],
+            [$isWfaReport ? 'ภาระงาน / รายละเอียดงาน' : 'โครงการ / รายละเอียดงาน', 4000],
             ['ช่วงเวลา', 2200],
             ['ชั่วโมง', 1000],
             ['วันทำงาน', 1000],
@@ -1001,13 +1551,22 @@ private function buildFteWordDocument(array $data, string $targetPath): void
             $monthTable->addRow();
             $monthTable->addCell(600, ['valign' => VerticalJc::CENTER])->addText((string) ($index + 1), ['size' => 13], ['alignment' => Jc::CENTER]);
 
-            $title = $item->project?->id ? ($item->project->project_name_th ?? '-') : ($item->task_detail ?? '-');
+            $isBackOffice = ! $item->project?->id;
+            $backOfficeTitle = trim((string) ($item->job_name ?? '')) ?: trim((string) ($item->task_detail ?? '')) ?: '-';
+            $backOfficeType = trim((string) ($item->task_detail ?? '')) ?: 'งานนอกโครงการ';
+            $detailText = $isBackOffice
+                ? (trim((string) ($item->job_detail ?? '')) ?: $backOfficeType)
+                : (trim((string) ($item->task_detail ?? '')) ?: trim((string) ($item->job_detail ?? '')) ?: '-');
+            $title = $item->project?->id ? ($item->project->project_name_th ?? '-') : $backOfficeTitle;
             $detailCell = $monthTable->addCell(4000, ['valign' => VerticalJc::CENTER]);
             $detailCell->addText($title, ['bold' => true, 'size' => 14, 'color' => '0F172A'], ['spaceAfter' => 20]);
-            $detailCell->addText('กลุ่ม: ' . ($item->role_group ?? '-'), $bodyStyle, ['spaceAfter' => 10]);
-            $detailCell->addText('รายละเอียดงาน: ' . ($item->task_detail ?? $item->job_detail ?? '-'), $bodyStyle);
-            if (! $item->project?->id) {
-                $detailCell->addText('หมายเหตุ: งานนอกโครงการ', $bodyStyle);
+            if (! $isWfaReport) {
+                $detailCell->addText('กลุ่ม: ' . ($item->role_group ?? '-'), $bodyStyle, ['spaceAfter' => 10]);
+            }
+            $detailCell->addText('รายละเอียดงาน:', $bodyStyle, ['spaceAfter' => 10]);
+            $this->addManualBulletTextToWordCell($detailCell, $detailText, $bodyStyle);
+            if ($isBackOffice) {
+                $detailCell->addText($backOfficeType, $bodyStyle);
             }
 
             $osCarbon = Carbon::parse($item->overlap_start);
@@ -1023,10 +1582,19 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         $section->addTextBreak(1);
     }
 
-    $section->addPageBreak();
-    $section->addText('Output ที่เกิดขึ้น', ['bold' => true, 'size' => 18, 'color' => '0F172A']);
-    $section->addText('ช่วงข้อมูลของ output: ' . ($pdfFilter['output_label'] ?? $filterLabel), ['size' => 13, 'color' => '64748B']);
-    $section->addTextBreak(2);
+    if ($wfaOutputHtml !== '') {
+        $section->addPageBreak();
+        $section->addTextBreak(1);
+        $section->addText($wfaOutputTitle, ['bold' => true, 'size' => 18, 'color' => '0F172A']);
+        $section->addTextBreak(1);
+        Html::addHtml($section, '<div style="font-family: TH Sarabun New; font-size: 12pt; line-height: 1.38; text-align: left;">' . $wfaOutputHtml . '</div>', false, false);
+        $section->addTextBreak(2);
+        $section->addText('ขอรับรองว่าปฏิบัติงานจริง', ['bold' => true, 'size' => 12, 'color' => '111827']);
+        $section->addTextBreak(3);
+        $section->addText('................................................', ['size' => 12, 'color' => '111827']);
+        $section->addText('รศ. พญ.วราลักษณ์ ศรีนนท์ประเสริฐ', ['bold' => true, 'size' => 12, 'color' => '111827']);
+        $section->addText('หัวหน้าหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ', ['size' => 12, 'color' => '111827']);
+    }
 
     $previousEscaping = Settings::isOutputEscapingEnabled();
     Settings::setOutputEscapingEnabled(true);
@@ -1035,6 +1603,41 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         IOFactory::createWriter($phpWord, 'Word2007')->save($targetPath);
     } finally {
         Settings::setOutputEscapingEnabled($previousEscaping);
+    }
+}
+
+private function addManualBulletTextToWordCell($cell, string $text, array $style, array $paragraphStyle = []): void
+{
+    $text = trim(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    if ($text === '') {
+        $cell->addText('-', $style, $paragraphStyle);
+        return;
+    }
+
+    if (!str_contains($text, '•')) {
+        foreach (preg_split("/\r\n|\r|\n/u", $text) ?: [$text] as $line) {
+            $line = trim((string) $line);
+            if ($line !== '') {
+                $cell->addText($line, $style, array_merge(['spaceAfter' => 35], $paragraphStyle));
+            }
+        }
+        return;
+    }
+
+    $parts = preg_split('/\s*•\s*/u', $text);
+    $prefix = trim((string) array_shift($parts));
+    if ($prefix !== '') {
+        $cell->addText($prefix, $style, array_merge(['spaceAfter' => 35], $paragraphStyle));
+    }
+
+    foreach (collect($parts)->map(fn($part) => trim((string) $part))->filter() as $item) {
+        $lines = collect(preg_split("/\r\n|\r|\n/u", (string) $item) ?: [])
+            ->map(fn($line) => trim((string) $line))
+            ->filter()
+            ->values();
+
+        $textLine = $lines->isNotEmpty() ? $lines->implode("\n") : (string) $item;
+        $cell->addText('• ' . $textLine, $style, array_merge(['spaceAfter' => 60], $paragraphStyle));
     }
 }
 
@@ -1210,6 +1813,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
                     'project_id' => $projectId,
                     'task_id' => null,
                     'name' => trim((string) ($project->project_name_th ?? '')) ?: ('โครงการ #' . $projectId),
+                    'role_group' => trim((string) ($item->role_group ?? '')),
                     'status_label' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
                     'status_monthly' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
                     'status_project' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
@@ -1300,10 +1904,12 @@ private function buildFteDetailData(string $person, array $filter = []): array
             if ($entryStart->lte($currentMonthEnd) && $entryEnd->gte($currentMonthStart)) {
                 $taskId = $entry->task?->id;
                 $key = 'back-office:' . (int) $entry->id;
+                $categoryName = $this->backOfficeCategoryLabel($entry->category);
                 $taskName = trim((string) ($entry->task?->title ?? ''));
                 if ($taskName === '') {
                     $taskName = trim((string) ($entry->job_detail ?? '')) ?: 'งานนอกโครงการ';
                 }
+                $workName = trim((string) ($entry->job_name ?? '')) ?: $taskName;
 
                 $entryEndDate = $this->parseInputDate((string) $endRaw)?->endOfDay();
                 $isCompletedThisMonth = $entryEndDate
@@ -1315,7 +1921,8 @@ private function buildFteDetailData(string $person, array $filter = []): array
                     'type' => 'back_office',
                     'project_id' => null,
                     'task_id' => $taskId,
-                    'name' => $taskName,
+                    'name' => $workName,
+                    'role_group' => $categoryName,
                     'status_label' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
                     'status_monthly' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
                     'status_project' => $isCompletedThisMonth ? 'จบงานในเดือนนี้' : 'กำลังดำเนินงาน',
@@ -1379,7 +1986,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
     }
 
     $expanded = $this->rebalanceSplitDisplayValues($expanded);
-    $monthlyFTE = $expanded->groupBy('month')->sortKeysDesc();
+    $monthlyFTE = $expanded->groupBy('month')->sortKeys();
 
     $chartLabels = $monthlyFTE->keys()->values();
     $chartData   = $monthlyFTE->map(fn($rows) => $rows->sum('fte_value'))->values();

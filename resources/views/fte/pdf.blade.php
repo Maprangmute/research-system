@@ -169,6 +169,10 @@
             color: #334155;
             line-height: 1.28;
         }
+        .manual-bullet-line {
+            margin: 0 0 4px 0;
+            line-height: 1.34;
+        }
         .month-block {
             margin-top: 10px;
             page-break-inside: auto;
@@ -214,11 +218,67 @@
         }
         .right { text-align: right; }
         .center { text-align: center; }
-        .blank-output-space {
-            min-height: 760px;
-            border: 1px dashed #cbd5e1;
-            border-radius: 12px;
+        .output-content {
+            min-height: 420px;
+            padding: 0;
             background: #ffffff;
+            color: #111827;
+            font-size: 12pt;
+            line-height: 1.38;
+            text-align: justify;
+            text-justify: distribute;
+            width: 100%;
+        }
+        .output-content p,
+        .output-content div {
+            margin: 0 0 5px 0;
+            text-align: justify;
+            text-justify: distribute;
+        }
+        .output-content ul,
+        .output-content ol {
+            margin-top: 0;
+            margin-bottom: 10px;
+            margin-left: 0;
+            padding-left: 12px;
+        }
+        .output-content li {
+            margin: 0 0 5px 0;
+            padding-left: 2px;
+            line-height: 1.38;
+        }
+        .wfa-output-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4px 0 8px 0;
+            table-layout: fixed;
+        }
+        .wfa-output-list td {
+            border: 0;
+            padding: 0 0 7px 0;
+            vertical-align: top;
+            line-height: 1.38;
+        }
+        .wfa-output-list .wfa-output-bullet {
+            width: 18px;
+            padding-top: 0;
+            text-align: left;
+            font-weight: bold;
+        }
+        .wfa-output-list .wfa-output-item {
+            width: auto;
+            text-align: left;
+            text-justify: none;
+        }
+        .wfa-certification {
+            margin-top: 24pt;
+            font-size: 12pt;
+            line-height: 1.25;
+            color: #111827;
+        }
+        .wfa-certification .sign-line {
+            margin-top: 36pt;
+            letter-spacing: 1px;
         }
     </style>
 </head>
@@ -234,6 +294,7 @@
         $reportNow = now()->setTimezone('Asia/Bangkok')->locale('th');
         $reportDate = $reportNow->translatedFormat('j F') . ' ' . ($reportNow->year + 543) . ' เวลา ' . $reportNow->format('H:i');
         $filterLabel = $pdfFilter['label'] ?? 'ทั้งหมด';
+        $isWfaReport = !empty($wfaOutputHtml ?? null);
         $statusChipClass = static function (?string $status): string {
             $value = mb_strtolower(trim((string) $status), 'UTF-8');
             if (str_contains($value, 'เสร็จ')) return 'work-chip complete';
@@ -241,15 +302,36 @@
             if (str_contains($value, 'วิเคราะห์') || str_contains($value, 'analysis')) return 'work-chip analysis';
             return 'work-chip default';
         };
+        $formatManualBullets = static function ($value): string {
+            $text = trim(html_entity_decode(strip_tags((string) $value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if ($text === '') {
+                return '-';
+            }
+
+            if (!str_contains($text, '•')) {
+                return nl2br(e($text));
+            }
+
+            $parts = preg_split('/\s*•\s*/u', $text);
+            $prefix = trim((string) array_shift($parts));
+            $items = collect($parts)->map(fn($part) => trim((string) $part))->filter()->values();
+            $html = $prefix !== '' ? '<div class="manual-bullet-line">' . e($prefix) . '</div>' : '';
+
+            foreach ($items as $item) {
+                $html .= '<div class="manual-bullet-line">• ' . nl2br(e($item)) . '</div>';
+            }
+
+            return $html !== '' ? $html : nl2br(e($text));
+        };
     @endphp
 
     <htmlpageheader name="Header">
         <table style="width:100%; border-bottom:1px solid #dbe7f5; padding-bottom:6px;">
             <tr>
-                <td style="width:60%; font-size:16pt; font-weight:bold; color:#0f172a;">FTE Individual Report</td>
+                <td style="width:60%; font-size:16pt; font-weight:bold; color:#0f172a;">{{ $isWfaReport ? 'WFA / FTE Individual Report' : 'FTE Individual Report' }}</td>
                 <td style="width:40%; text-align:right; font-size:11pt; color:#64748b;">
                     Siriraj Health Policy<br>
-                    รายงานภาระงานรายบุคคล
+                    {{ $isWfaReport ? 'รายงานภาระงาน WFA และผลงานที่เกิดขึ้น' : 'รายงานภาระงานรายบุคคล' }}
                 </td>
             </tr>
         </table>
@@ -276,7 +358,9 @@
                         @endif
                     </td>
                     <td>
-                        <div class="hero-kicker">FTE Overview</div>
+                        @if (! $isWfaReport)
+                            <div class="hero-kicker">FTE Overview</div>
+                        @endif
                         <div class="hero-title">{{ $person }}</div>
                         <div class="hero-sub">ตำแหน่ง {{ $position }}</div>
                         <div class="hero-meta">ช่วงข้อมูล: {{ $filterLabel }} · รายงานออกเมื่อ {{ $reportDate }}</div>
@@ -318,7 +402,7 @@
             <table class="data-table table-worklist">
                 <thead>
                     <tr>
-                        <th style="width:28%">ชื่อโครงการ / งาน</th>
+                        <th style="width:28%">{{ $isWfaReport ? 'ภาระงาน' : 'ชื่อโครงการ / งาน' }}</th>
                         <th style="width:54%">รายละเอียดงาน</th>
                         <th style="width:18%">สถานะ</th>
                     </tr>
@@ -335,10 +419,10 @@
                                     -
                                 @else
                                     @foreach ($detailGroups as $group)
-                                        <div class="title-main">• {{ $group['job'] ?? 'รายละเอียดงาน' }}</div>
+                                        <div class="title-main">{!! str_contains((string) ($group['job'] ?? ''), '•') ? $formatManualBullets($group['job'] ?? 'รายละเอียดงาน') : '• ' . e($group['job'] ?? 'รายละเอียดงาน') !!}</div>
                                         @php $tasks = collect($group['tasks'] ?? [])->filter(); @endphp
                                         @foreach ($tasks as $task)
-                                            <div class="title-sub" style="margin-left: 14px;">- {{ $task['task'] ?? '-' }}</div>
+                                            <div class="title-sub" style="margin-left: 14px;">{!! $formatManualBullets($task['task'] ?? '-') !!}</div>
                                             <div class="title-sub" style="margin-left: 28px;">({{ $task['range'] ?? '-' }})</div>
                                         @endforeach
                                     @endforeach
@@ -375,7 +459,7 @@
                         <thead>
                             <tr>
                                 <th style="width:6%">#</th>
-                                <th style="width:40%">โครงการ / รายละเอียดงาน</th>
+                                <th style="width:40%">{{ $isWfaReport ? 'ภาระงาน / รายละเอียดงาน' : 'โครงการ / รายละเอียดงาน' }}</th>
                                 <th style="width:18%">ช่วงเวลา</th>
                                 <th style="width:10%">ชั่วโมง</th>
                                 <th style="width:10%">วันทำงาน</th>
@@ -387,17 +471,24 @@
                                 @php
                                     $osCarbon = \Carbon\Carbon::parse($item->overlap_start);
                                     $oeCarbon = \Carbon\Carbon::parse($item->overlap_end);
-                                    $title = $item->project?->id ? ($item->project->project_name_th ?? '-') : ($item->task_detail ?? '-');
                                     $isBackOffice = ! $item->project?->id;
+                                    $backOfficeTitle = trim((string) ($item->job_name ?? '')) ?: trim((string) ($item->task_detail ?? '')) ?: '-';
+                                    $backOfficeType = trim((string) ($item->task_detail ?? '')) ?: 'งานนอกโครงการ';
+                                    $detailText = $isBackOffice
+                                        ? (trim((string) ($item->job_detail ?? '')) ?: $backOfficeType)
+                                        : (trim((string) ($item->task_detail ?? '')) ?: trim((string) ($item->job_detail ?? '')) ?: '-');
+                                    $title = $item->project?->id ? ($item->project->project_name_th ?? '-') : $backOfficeTitle;
                                 @endphp
                                 <tr>
                                     <td class="center">{{ $index + 1 }}</td>
                                     <td>
                                         <div class="title-main">{{ $title }}</div>
-                                        <div class="title-sub">กลุ่ม: {{ $item->role_group ?? '-' }}</div>
-                                        <div class="title-sub">รายละเอียดงาน: {{ $item->task_detail ?? $item->job_detail ?? '-' }}</div>
+                                        @if (! $isWfaReport)
+                                            <div class="title-sub">กลุ่ม: {{ $item->role_group ?? '-' }}</div>
+                                        @endif
+                                        <div class="title-sub">รายละเอียดงาน: {!! $formatManualBullets($detailText) !!}</div>
                                         @if ($isBackOffice)
-                                            <div class="title-sub">หมายเหตุ: งานนอกโครงการ</div>
+                                            <div class="title-sub">{{ $backOfficeType }}</div>
                                         @endif
                                     </td>
                                     <td class="center">
@@ -417,16 +508,21 @@
             @endforelse
         </div>
 
-        <div style="page-break-before: always;"></div>
+        @if (!empty($wfaOutputHtml ?? null))
+            <div style="page-break-before: always;"></div>
+            <div style="height: 18px;"></div>
 
-        <div class="section">
-            <div class="section-head section-head--output">
-                <div class="section-kicker">Outputs</div>
-                <div class="section-title">Output ที่เกิดขึ้น</div>
-                <div class="section-subtitle">ช่วงข้อมูลของ output: {{ $pdfFilter['output_label'] ?? $filterLabel }}</div>
+            <div class="section">
+                <div class="section-title" style="margin-bottom: 14px;">{{ $wfaOutputTitle ?? 'Output ที่เกิดขึ้น' }}</div>
+                <div class="output-content">{!! $wfaOutputPdfHtml ?? $wfaOutputHtml !!}</div>
+                <div class="wfa-certification">
+                    <div style="font-weight: bold;">ขอรับรองว่าปฏิบัติงานจริง</div>
+                    <div class="sign-line">................................................</div>
+                    <div style="font-weight: bold;">รศ. พญ.วราลักษณ์ ศรีนนท์ประเสริฐ</div>
+                    <div>หัวหน้าหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ</div>
+                </div>
             </div>
-            <div class="blank-output-space"></div>
-        </div>
+        @endif
     </div>
 </body>
 </html>

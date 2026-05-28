@@ -219,6 +219,14 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     // ✅ เส้นทางอื่น ๆ
     Route::get('/fte', [FteController::class, 'index'])->name('fte.index');
     Route::get('/fte/projects', [FteController::class, 'projectIndex'])->name('fte.project.index');
+    Route::get('/wfa', [FteController::class, 'wfaIndex'])->name('wfa.index');
+    Route::get('/wfa/create', [FteController::class, 'wfaCreate'])->name('wfa.create');
+    Route::post('/wfa', [FteController::class, 'wfaStore'])->name('wfa.store');
+    Route::get('/wfa/{wfaReport}/edit', [FteController::class, 'wfaEdit'])->name('wfa.edit');
+    Route::put('/wfa/{wfaReport}', [FteController::class, 'wfaUpdate'])->name('wfa.update');
+    Route::delete('/wfa/{wfaReport}', [FteController::class, 'wfaDestroy'])->name('wfa.destroy');
+    Route::get('/wfa/{wfaReport}/pdf', [FteController::class, 'wfaPdf'])->name('wfa.pdf');
+    Route::get('/wfa/{wfaReport}/word', [FteController::class, 'wfaWord'])->name('wfa.word');
     Route::get('/fte/{person}/detail', [FteController::class, 'detail'])->name('fte.detail');
     Route::get('/fte/project/{project}', [FteController::class, 'projectDetail'])->name('fte.project.detail');
     Route::get('/fte/project/{project}/pdf', [FteController::class, 'projectPdf'])->name('fte.project.pdf');

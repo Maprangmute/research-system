@@ -29,6 +29,7 @@
         request()->routeIs('fte.project.index') => 'FTE รายโปรเจค',
         request()->routeIs('fte.project.detail') => 'รายละเอียด FTE รายโปรเจค',
         request()->routeIs('fte.*') => 'FTE',
+        request()->routeIs('wfa.*') => 'WFA',
         request()->routeIs('users.index') => 'จัดการผู้ใช้',
         request()->routeIs('users.manage') => 'จัดการสิทธิ์ผู้ใช้',
         request()->routeIs('users.create') => 'เพิ่มผู้ใช้',
@@ -1108,6 +1109,9 @@
                                 </a>
                             </div>
                         </div>
+
+                        <a href="{{ route('wfa.index') }}"
+                            class="px-2 lg:px-3 py-2 rounded-lg text-[13px] lg:text-sm font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100">WFA</a>
                     </div>
 
                     <div class="app-nav-actions">
@@ -1249,6 +1253,11 @@
                                     <a href="{{ $personalFteRoute }}">FTE ของฉัน</a>
                                 @endif
                                 <a href="{{ route('fte.project.index') }}">FTE รายโปรเจค</a>
+                            </section>
+
+                            <section class="mobile-nav-section">
+                                <div class="mobile-nav-section__title">WFA</div>
+                                <a href="{{ route('wfa.index') }}">WFA Reports</a>
                             </section>
 
                             <section class="mobile-nav-section">

@@ -125,9 +125,30 @@
         $roleOptions = $allRows->pluck('role_group')->filter()->unique()->sort()->values();
         $yearOptions = $monthlyFTE->keys()->map(fn($m) => substr($m, 0, 4))->unique()->sortDesc()->values();
         $monthOptions = $monthlyFTE->keys()->values();
+        $formatManualBullets = static function ($value): string {
+            $text = trim(html_entity_decode(strip_tags((string) $value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if ($text === '') {
+                return '-';
+            }
+
+            if (!str_contains($text, '•')) {
+                return nl2br(e($text));
+            }
+
+            $parts = preg_split('/\s*•\s*/u', $text);
+            $prefix = trim((string) array_shift($parts));
+            $items = collect($parts)->map(fn($part) => trim((string) $part))->filter()->values();
+            $html = $prefix !== '' ? '<div class="mb-1">' . e($prefix) . '</div>' : '';
+
+            foreach ($items as $item) {
+                $html .= '<div class="mb-1 leading-6">• ' . nl2br(e($item)) . '</div>';
+            }
+
+            return $html !== '' ? $html : nl2br(e($text));
+        };
     @endphp
 
-    <div class="max-w-7xl mx-auto p-4 space-y-6">
+    <div class="w-full space-y-6">
         <div class="bg-white border shadow-sm rounded-2xl p-5">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex items-center gap-4">
@@ -280,7 +301,7 @@
                     <article class="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/60 p-4 shadow-sm">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">โครงการ/งาน</div>
+                                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">ชื่อโครงการ/งาน</div>
                                 <div class="mt-1 text-sm font-semibold leading-6 text-slate-800 break-words">
                                     @if (($work['type'] ?? '') === 'project' && !empty($work['project_id']))
                                         <a href="{{ route('projects.show', $work['project_id']) }}" target="_blank" rel="noopener"
@@ -294,6 +315,9 @@
                                         </a>
                                     @else
                                         <span>{{ $work['name'] ?? '-' }}</span>
+                                    @endif
+                                    @if (trim((string) ($work['role_group'] ?? '')) !== '')
+                                        <div class="mt-1 text-xs font-medium leading-5 text-slate-500">{{ $work['role_group'] }}</div>
                                     @endif
                                 </div>
                             </div>
@@ -315,14 +339,14 @@
                                     @foreach ($detailGroups as $group)
                                         <div class="rounded-xl border border-slate-200 bg-white p-3">
                                             <div class="text-sm font-semibold text-slate-800 break-words">
-                                                {{ $group['job'] ?? 'รายละเอียดงาน' }}
+                                                {!! $formatManualBullets($group['job'] ?? 'รายละเอียดงาน') !!}
                                             </div>
                                             @php $tasks = collect($group['tasks'] ?? [])->filter(); @endphp
                                             @if ($tasks->isNotEmpty())
                                                 <div class="mt-2 space-y-1.5">
                                                     @foreach ($tasks as $task)
                                                         <div class="rounded-lg bg-slate-50 px-2.5 py-2">
-                                                            <div class="text-sm text-slate-700 break-words">{{ $task['task'] ?? '-' }}</div>
+                                                            <div class="text-sm text-slate-700 break-words">{!! $formatManualBullets($task['task'] ?? '-') !!}</div>
                                                             <div class="mt-0.5 text-xs text-slate-500">{{ $task['range'] ?? '-' }}</div>
                                                         </div>
                                                     @endforeach
@@ -337,7 +361,7 @@
                         <div class="mt-3 text-xs text-slate-500">
                             <span
                                 class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
-                                {{ ($work['type'] ?? '') === 'back_office' ? 'งานนอกโครงการ' : 'งานโครงการ' }}
+                                {{ ($work['type'] ?? '') === 'back_office' ? (trim((string) ($work['task_detail'] ?? '')) ?: 'งานนอกโครงการ') : 'งานโครงการ' }}
                             </span>
                         </div>
                     </article>
@@ -379,6 +403,9 @@
                                     @else
                                         <span>{{ $work['name'] ?? '-' }}</span>
                                     @endif
+                                    @if (trim((string) ($work['role_group'] ?? '')) !== '')
+                                        <div class="mt-1 text-xs leading-5 text-slate-500">{{ $work['role_group'] }}</div>
+                                    @endif
                                 </td>
                                 <td class="px-3 py-2 text-slate-700 break-words">
                                     @php $detailGroups = collect($work['work_detail_groups'] ?? [])->filter(); @endphp
@@ -389,7 +416,9 @@
                                             @foreach ($detailGroups as $group)
                                                 <li class="leading-snug">
                                                     <div class="font-semibold text-slate-800">
-                                                        <span class="text-slate-400 mr-1">•</span>{{ $group['job'] ?? 'รายละเอียดงาน' }}
+                                                        {!! str_contains((string) ($group['job'] ?? ''), '•')
+                                                            ? $formatManualBullets($group['job'] ?? 'รายละเอียดงาน')
+                                                            : '<span class="text-slate-400 mr-1">•</span>' . e($group['job'] ?? 'รายละเอียดงาน') !!}
                                                     </div>
                                                     @php $tasks = collect($group['tasks'] ?? [])->filter(); @endphp
                                                     @if ($tasks->isNotEmpty())
@@ -397,7 +426,7 @@
                                                             @foreach ($tasks as $task)
                                                                 <li>
                                                                     <span class="text-slate-400 mr-1">-</span>
-                                                                    <span>{{ $task['task'] ?? '-' }}</span>
+                                                                    <span>{!! $formatManualBullets($task['task'] ?? '-') !!}</span>
                                                                     <div class="ml-4 text-slate-500">({{ $task['range'] ?? '-' }})</div>
                                                                 </li>
                                                             @endforeach
@@ -583,7 +612,7 @@
                                                     </a>
                                                 @else
                                                     @php
-                                                        $backOfficeTitle = $item->task_detail ?? '-';
+                                                        $backOfficeTitle = $workloadName !== '' ? $workloadName : ($item->task_detail ?? '-');
                                                     @endphp
                                                     @if (!empty($item->task_id))
                                                         <a href="{{ route('back_office.show', \App\Models\BackOfficeTask::formatBackOfficeId((int) $item->task_id)) }}" target="_blank" rel="noopener"
@@ -593,17 +622,14 @@
                                                     @else
                                                         <span class="text-slate-800">{{ $backOfficeTitle }}</span>
                                                     @endif
-                                                    @if ($workloadName !== '' && $workloadName !== trim((string) $backOfficeTitle))
-                                                        <div class="mt-1 text-sm leading-6">{{ $workloadName }}</div>
-                                                    @endif
-                                                    <div class="text-xs text-slate-500 mt-1">งานนอกโครงการ</div>
+                                                    <div class="text-xs text-slate-500 mt-1">{{ $taskDetailRaw !== '' ? $taskDetailRaw : 'งานนอกโครงการ' }}</div>
                                                 @endif
                                             </td>
                                             <td class="p-2 break-words whitespace-normal" data-label="กลุ่ม">
                                                 {{ $roleGroup }}
                                             </td>
                                             <td class="p-2 break-words whitespace-normal" data-label="รายละเอียดงาน">
-                                                <div class="text-slate-700">{{ $detailText }}</div>
+                                                <div class="text-slate-700">{!! $formatManualBullets($detailText) !!}</div>
                                             </td>
                                             <td class="p-2 text-center" data-label="ช่วงเวลา">
                                                 {{ $os }} {{ $osYear }} - {{ $oe }} {{ $oeYear }}
