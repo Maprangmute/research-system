@@ -8,6 +8,8 @@
                 (($report->filter_year ?: now()->year + 543) > 2500 ? ($report->filter_year ?: now()->year + 543) - 543 : ($report->filter_year ?: now()->year + 543)),
                 $report->filter_month ?: now()->month
             );
+        $selectedMonthOption = collect($monthOptions)->firstWhere('value', $selectedMonthKey);
+        $selectedOutputLabel = $selectedMonthOption['output_label'] ?? '';
         $previousOptionYear = null;
     @endphp
 
@@ -83,6 +85,9 @@
             border-top: 1px solid #e2e8f0;
             padding: 18px;
         }
+        .wfa-editor-wrap {
+            position: relative;
+        }
         .wfa-editor-page {
             width: 100%;
             min-height: 520px;
@@ -97,9 +102,18 @@
             box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
             outline: none;
         }
-        .wfa-editor-page:empty::before {
-            content: attr(data-placeholder);
+        .wfa-editor-placeholder {
+            position: absolute;
+            top: 35px;
+            left: 43px;
+            right: 43px;
             color: #94a3b8;
+            font-size: 18px;
+            line-height: 1.75;
+            pointer-events: none;
+        }
+        .wfa-editor-placeholder.is-hidden {
+            display: none;
         }
         .wfa-editor-page ul,
         .wfa-editor-page ol {
@@ -148,6 +162,13 @@
                 font-size: 16px;
                 line-height: 1.65;
             }
+            .wfa-editor-placeholder {
+                top: 23px;
+                left: 19px;
+                right: 19px;
+                font-size: 16px;
+                line-height: 1.65;
+            }
         }
     </style>
 
@@ -158,11 +179,11 @@
                     <div class="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-extrabold text-slate-600">
                         Work From Anywhere
                     </div>
-                    <h1 class="mt-3 text-2xl font-extrabold text-slate-950 sm:text-3xl">{{ $isEdit ? 'แก้ไข WFA' : 'เพิ่ม WFA' }}</h1>
+                    <h1 class="mt-3 text-2xl font-extrabold text-slate-950 sm:text-3xl">{{ $isEdit ? 'แก้ไขรายงานภาระงาน (WFA)' : 'เพิ่มผลลัพธ์ของงาน (Output) รายเดือน' }}</h1>
                 </div>
                 <a href="{{ route('wfa.index') }}"
                     class="wfa-action border border-slate-300 bg-white text-slate-700 hover:bg-slate-100">
-                    กลับหน้ารายการ
+                    กลับหน้ารายงานภาระงาน (WFA)
                 </a>
             </div>
         </section>
@@ -186,10 +207,10 @@
                         </div>
                     </div>
                     <div id="wfa-save-stay-step" class="wfa-save-prompt-step is-hidden">
-                        <div class="text-base font-extrabold text-slate-950">ต้องการอยู่หน้านี้ต่อหรือกลับไปยังรายการ WFA</div>
+                        <div class="text-base font-extrabold text-slate-950">ต้องการอยู่หน้านี้ต่อหรือกลับไปยังรายงานภาระงาน (WFA)</div>
                         <div class="mt-4 grid gap-2 sm:grid-cols-2">
                             <button type="button" id="wfa-save-stay" class="wfa-action border border-slate-300 bg-white text-slate-700 hover:bg-slate-100">อยู่หน้านี้ต่อ</button>
-                            <a href="{{ route('wfa.index') }}" class="wfa-action bg-blue-600 text-white hover:bg-blue-700">กลับรายการ WFA</a>
+                            <a href="{{ route('wfa.index') }}" class="wfa-action bg-blue-600 text-white hover:bg-blue-700">กลับรายงานภาระงาน (WFA)</a>
                         </div>
                     </div>
                 </div>
@@ -235,8 +256,9 @@
                                     <option disabled>──────── ปี {{ $option['year'] }} ────────</option>
                                 @endif
                                 <option value="{{ $option['value'] }}"
-                                    data-title="WFA {{ auth()->user()->full_name }} ประจำเดือน {{ $option['label'] }}"
+                                    data-title="WFA {{ auth()->user()->full_name }} ประจำเดือน {{ $option['label'] }} และ ผลงานรายเดือน {{ $option['output_label'] }}"
                                     data-output-title="Output ที่เกิดขึ้นจากการทำงานของเดือน {{ $option['output_label'] }}"
+                                    data-output-label="{{ $option['output_label'] }}"
                                     @selected($selectedMonthKey === $option['value'])>
                                     {{ $option['label'] }}{{ $option['is_current'] ? '  เดือนนี้' : '' }}
                                 </option>
@@ -250,7 +272,7 @@
 
             <section class="wfa-panel overflow-hidden">
                 <div class="border-b border-slate-200 p-5">
-                    <h2 id="wfa-output-title" class="text-base font-extrabold text-slate-950">Output ที่เกิดขึ้นจากการทำงานของเดือน {{ collect($monthOptions)->firstWhere('value', $selectedMonthKey)['output_label'] ?? '' }}</h2>
+                    <h2 id="wfa-output-title" class="text-base font-extrabold text-slate-950">Output ที่เกิดขึ้นจากการทำงานของเดือน {{ $selectedOutputLabel }}</h2>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-4 py-3">
                     <button type="button" data-wfa-command="bold" class="wfa-tool" title="ตัวหนา">B</button>
@@ -300,9 +322,14 @@
                         } else {
                             $editorHtml = $report->output_html;
                         }
+                        $showWfaPlaceholder = trim(strip_tags((string) $editorHtml)) === '';
                     @endphp
-                    <div id="wfa-editor" contenteditable="true" class="wfa-editor-page"
-                        data-placeholder="พิมพ์ output ที่เกิดขึ้นจาก WFA">{!! $editorHtml !!}</div>
+                    <div class="wfa-editor-wrap">
+                        <div id="wfa-editor-placeholder" class="wfa-editor-placeholder {{ $showWfaPlaceholder ? '' : 'is-hidden' }}">
+                            พิมพ์ output ที่เกิดขึ้น จาก WFA ในเดือน <strong>{{ $selectedOutputLabel }}</strong>
+                        </div>
+                        <div id="wfa-editor" contenteditable="true" class="wfa-editor-page">{!! $editorHtml !!}</div>
+                    </div>
                 </div>
                 <input type="hidden" name="output_html" id="wfa-output-html" value="">
                 @error('output_html') <div class="px-5 pb-4 text-xs text-red-600">{{ $message }}</div> @enderror
@@ -323,6 +350,7 @@
     <script>
         (() => {
             const editor = document.getElementById('wfa-editor');
+            const editorPlaceholder = document.getElementById('wfa-editor-placeholder');
             const hidden = document.getElementById('wfa-output-html');
             const monthSelect = document.getElementById('wfa-filter-month');
             const titlePreview = document.getElementById('wfa-title-preview');
@@ -332,10 +360,36 @@
             const exportStep = document.getElementById('wfa-save-export-step');
             const stayStep = document.getElementById('wfa-save-stay-step');
 
+            const escapeHtml = (value) => String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+
+            const wfaPlaceholderHtml = (option) => {
+                const outputLabel = option?.dataset.outputLabel || '';
+                return outputLabel
+                    ? `พิมพ์ output ที่เกิดขึ้น จาก WFA ในเดือน <strong>${escapeHtml(outputLabel)}</strong>`
+                    : 'พิมพ์ output ที่เกิดขึ้น จาก WFA';
+            };
+
+            const editorIsEmpty = () => editor.innerHTML.trim() === '' || editor.innerText.trim() === '';
+            const refreshEditorPlaceholder = () => {
+                editorPlaceholder?.classList.toggle('is-hidden', !editorIsEmpty());
+            };
+
+            const setEditorPlaceholder = (option) => {
+                if (!editorPlaceholder) return;
+                editorPlaceholder.innerHTML = wfaPlaceholderHtml(option);
+                refreshEditorPlaceholder();
+            };
+
             document.querySelectorAll('[data-wfa-command]').forEach((button) => {
                 button.addEventListener('click', () => {
                     editor.focus();
                     document.execCommand(button.dataset.wfaCommand, false, null);
+                    refreshEditorPlaceholder();
                 });
             });
 
@@ -343,7 +397,10 @@
                 hidden.value = editor.innerHTML.trim();
             };
 
-            editor.addEventListener('input', syncOutput);
+            editor.addEventListener('input', () => {
+                refreshEditorPlaceholder();
+                syncOutput();
+            });
             form.addEventListener('submit', syncOutput);
             monthSelect.addEventListener('change', () => {
                 const option = monthSelect.options[monthSelect.selectedIndex];
@@ -353,6 +410,7 @@
                 if (option?.dataset.outputTitle) {
                     outputTitle.textContent = option.dataset.outputTitle;
                 }
+                setEditorPlaceholder(option);
             });
             document.getElementById('wfa-save-no-export')?.addEventListener('click', () => {
                 exportStep?.classList.add('is-hidden');

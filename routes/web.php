@@ -225,7 +225,7 @@ Route::middleware(['auth'])->prefix('rm')->group(function () {
     Route::get('/wfa/{wfaReport}/edit', [FteController::class, 'wfaEdit'])->name('wfa.edit');
     Route::put('/wfa/{wfaReport}', [FteController::class, 'wfaUpdate'])->name('wfa.update');
     Route::delete('/wfa/{wfaReport}', [FteController::class, 'wfaDestroy'])->name('wfa.destroy');
-    Route::get('/wfa/{wfaReport}/pdf', [FteController::class, 'wfaPdf'])->name('wfa.pdf');
+    Route::get('/wfa/{wfaReport}/pdf/{filename?}', [FteController::class, 'wfaPdf'])->name('wfa.pdf');
     Route::get('/wfa/{wfaReport}/word', [FteController::class, 'wfaWord'])->name('wfa.word');
     Route::get('/fte/{person}/detail', [FteController::class, 'detail'])->name('fte.detail');
     Route::get('/fte/project/{project}', [FteController::class, 'projectDetail'])->name('fte.project.detail');

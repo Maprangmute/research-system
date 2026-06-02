@@ -53,6 +53,7 @@
                         <li><a class="hover:underline" href="#deep-usage">คู่มือปฏิบัติละเอียด</a></li>
                         <li><a class="hover:underline" href="#role-guide">คู่มือแยกตามบทบาท</a></li>
                         <li><a class="hover:underline" href="#troubleshoot-deep">แก้ปัญหาแบบละเอียด</a></li>
+                        <li><a class="hover:underline" href="#wfa-guide">คู่มือการใช้งาน WFA</a></li>
                         <li><a class="hover:underline" href="#dev">สำหรับนักพัฒนา (Dev)</a></li>
                         <li><a class="hover:underline" href="#faq">คำถามที่พบบ่อย</a></li>
                     </ul>
@@ -856,6 +857,192 @@
                                 <td class="border px-3 py-2">OTP ไม่ผ่าน/หมดอายุ</td>
                                 <td class="border px-3 py-2">เกินเวลารหัส OTP หรือพิมพ์ผิด</td>
                                 <td class="border px-3 py-2">ขอ OTP ใหม่ที่หน้า “ลืมรหัสผ่าน” แล้วกรอกทันที</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="wfa-guide" class="bg-white border rounded-xl p-6 space-y-5">
+                <div>
+                    <div class="text-sm font-semibold text-blue-600">Work From Anywhere</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">คู่มือการใช้งานรายงานภาระงาน (WFA)</h2>
+                    <p class="text-sm text-gray-700">
+                        หน้านี้ใช้สำหรับบันทึกผลลัพธ์ของงานรายเดือน ดูรายการที่บันทึกไว้ และดาวน์โหลดรายงานเป็น PDF หรือ Word
+                        โดยระบบจะดึงข้อมูลภาระงาน/FTE มาแสดงในรายงานให้อัตโนมัติ
+                    </p>
+                </div>
+
+                <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+                    <div class="font-semibold">สิ่งสำคัญเรื่องเดือน</div>
+                    <p class="mt-1">
+                        ช่อง “WFA ประจำเดือน” คือเดือนของรอบรายงาน ส่วนข้อความในช่อง Output จะอ้างอิงเดือนก่อนหน้า 1 เดือนโดยอัตโนมัติ
+                        เช่น เลือก WFA ประจำเดือน มิถุนายน 2569 ระบบจะแสดงข้อความ placeholder ว่าเป็น Output ในเดือน พฤษภาคม 2569
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">ขั้นตอนเพิ่มรายการใหม่</div>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>เข้าเมนู <span class="font-semibold">WFA</span></li>
+                            <li>กด <span class="font-semibold">เพิ่มผลลัพธ์ของงาน (Output) รายเดือน</span></li>
+                            <li>เลือก <span class="font-semibold">WFA ประจำเดือน</span></li>
+                            <li>กรอกข้อมูลในช่องรายละเอียด Output</li>
+                            <li>กด <span class="font-semibold">บันทึก</span></li>
+                            <li>เลือกดาวน์โหลด PDF หรือ Word เมื่อระบบถามหลังบันทึก หรือกดจากรายการภายหลัง</li>
+                        </ol>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">สิทธิ์การใช้งาน</div>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>ผู้ใช้ทั่วไป: เพิ่ม ดู แก้ไข ดาวน์โหลด และลบรายการของตนเอง</li>
+                            <li>ผู้บริหารหน่วย: ดูรายงานของบุคลากรในภาพรวมตามสิทธิ์ที่ได้รับ</li>
+                            <li>Admin/SU Admin: จัดการรายงาน WFA ได้ทุกคน</li>
+                            <li>ถ้าไม่มีสิทธิ์แก้ไข ระบบจะแสดงรายการให้ดูเท่านั้น และซ่อนปุ่มบันทึก/ลบ</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-4 text-sm text-gray-700">
+                    <div class="font-semibold text-gray-900 mb-3">ความหมายของช่องและตัวเลือกในหน้าต่างเพิ่ม/แก้ไข</div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full border">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="border px-3 py-2 text-left">ส่วนที่เลือก/ปุ่ม</th>
+                                    <th class="border px-3 py-2 text-left">ใช้ทำอะไร</th>
+                                    <th class="border px-3 py-2 text-left">ควรรู้อะไร</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">รายงานภาระงาน (WFA)</td>
+                                    <td class="border px-3 py-2">ชื่อรายงานที่ระบบสร้างให้อัตโนมัติ</td>
+                                    <td class="border px-3 py-2">ระบบตั้งชื่อจากชื่อผู้ใช้ เดือน WFA และเดือนผลงานรายเดือน</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">WFA ประจำเดือน</td>
+                                    <td class="border px-3 py-2">เลือกเดือนรอบรายงานที่ต้องการส่ง</td>
+                                    <td class="border px-3 py-2">เมื่อเลือกเดือนนี้ ช่อง Output จะอ้างอิงเดือนก่อนหน้า 1 เดือน</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">ช่องรายละเอียด Output</td>
+                                    <td class="border px-3 py-2">กรอกผลลัพธ์ของงานรายเดือน</td>
+                                    <td class="border px-3 py-2">ข้อความ placeholder เป็นคำแนะนำเท่านั้น และจะไม่ถูกบันทึกเป็นข้อมูล</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">แถบเครื่องมือ B / I / U / รายการ / จัดแนว / ล้างรูปแบบ</td>
+                                    <td class="border px-3 py-2">จัดรูปแบบข้อความในช่องรายละเอียด</td>
+                                    <td class="border px-3 py-2">ใช้เมื่อต้องการทำตัวหนา ตัวเอียง ขีดเส้นใต้ ทำรายการ จัดแนว หรือล้างรูปแบบที่ติดมาจากการวางข้อความ</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">บันทึก</td>
+                                    <td class="border px-3 py-2">บันทึกรายการใหม่หรือบันทึกการแก้ไข</td>
+                                    <td class="border px-3 py-2">หลังบันทึก ระบบจะถามว่าต้องการ export เป็น PDF/Word หรือไม่</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">ลบรายการนี้</td>
+                                    <td class="border px-3 py-2">ลบ WFA ที่เปิดอยู่</td>
+                                    <td class="border px-3 py-2">ระบบจะถามยืนยันก่อนลบ และจะแสดงปุ่มนี้เฉพาะรายการที่มีสิทธิ์ลบ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-4 text-sm text-gray-700">
+                    <div class="font-semibold text-gray-900 mb-3">ความหมายของตัวเลือกในตารางรายการ WFA</div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full border">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="border px-3 py-2 text-left">ส่วนที่เลือก/ปุ่ม</th>
+                                    <th class="border px-3 py-2 text-left">ใช้ทำอะไร</th>
+                                    <th class="border px-3 py-2 text-left">ควรรู้อะไร</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">ค้นหา</td>
+                                    <td class="border px-3 py-2">ค้นหาจากรหัส ชื่อรายงาน เดือน หรือข้อความใน Output</td>
+                                    <td class="border px-3 py-2">ใช้เมื่อต้องการหารายการเก่าหรือรายการของเดือนที่ต้องการอย่างรวดเร็ว</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">เรียงรายการ</td>
+                                    <td class="border px-3 py-2">เปลี่ยนลำดับการแสดงผลในตาราง</td>
+                                    <td class="border px-3 py-2">เลือกได้ เช่น วันที่บันทึกล่าสุด เดือนล่าสุด เดือนเก่าสุด หรือเรียงตามชื่อรายงาน</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">ชื่อรายงาน</td>
+                                    <td class="border px-3 py-2">เปิดดูหรือแก้ไขรายละเอียดรายการนั้น</td>
+                                    <td class="border px-3 py-2">บนหน้าจอขนาดใหญ่จะเปิด modal ส่วนบางหน้าจออาจเปิดเป็นหน้าแก้ไขโดยตรง</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">PDF</td>
+                                    <td class="border px-3 py-2">ดาวน์โหลด/เปิดรายงานรูปแบบ PDF</td>
+                                    <td class="border px-3 py-2">เหมาะสำหรับส่งอ่านหรือตรวจสอบแบบคงรูปแบบ</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">Word</td>
+                                    <td class="border px-3 py-2">ดาวน์โหลดรายงานรูปแบบ Word</td>
+                                    <td class="border px-3 py-2">เหมาะเมื่อจำเป็นต้องนำไฟล์ไปแก้ไขหรือจัดหน้าเพิ่มเติม</td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-3 py-2 font-semibold">ลบ</td>
+                                    <td class="border px-3 py-2">ลบรายการจากตาราง</td>
+                                    <td class="border px-3 py-2">ระบบจะถามยืนยันก่อนลบ และปุ่มจะแสดงเฉพาะรายการที่มีสิทธิ์ลบ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">ก่อนบันทึกควรตรวจอะไร</div>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>เลือกเดือน WFA ถูกต้อง</li>
+                            <li>ชื่อรายงานที่ระบบสร้างให้ตรงกับรอบรายงาน</li>
+                            <li>ช่องรายละเอียดมีข้อมูลที่ต้องการบันทึกจริง ไม่ใช่ข้อความ placeholder</li>
+                            <li>ไม่มีข้อความทดลองหรือข้อมูลที่ไม่ต้องการส่ง</li>
+                        </ul>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="font-semibold text-gray-900 mb-2">หลังดาวน์โหลดไฟล์ควรตรวจอะไร</div>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>ชื่อรายงานและเดือนถูกต้อง</li>
+                            <li>ภาระงาน/FTE แสดงครบตามข้อมูลที่มีในระบบ</li>
+                            <li>ไฟล์ PDF/Word เป็นข้อมูลล่าสุดหลังจากกดบันทึก</li>
+                            <li>ถ้าแก้ไขข้อมูลภายหลัง ต้องดาวน์โหลดไฟล์ใหม่อีกครั้ง</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm border">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="border px-3 py-2 text-left">สิ่งที่พบ</th>
+                                <th class="border px-3 py-2 text-left">ควรทำอย่างไร</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-700">
+                            <tr>
+                                <td class="border px-3 py-2">เดือนในช่อง Output ไม่ตรงกับเดือน WFA</td>
+                                <td class="border px-3 py-2">เป็นการทำงานปกติของระบบ เพราะ Output อ้างอิงเดือนก่อนหน้าของเดือน WFA</td>
+                            </tr>
+                            <tr>
+                                <td class="border px-3 py-2">ไม่เห็นปุ่มบันทึกหรือลบ</td>
+                                <td class="border px-3 py-2">รายการนั้นอาจเป็นโหมดดูอย่างเดียว หรือผู้ใช้ไม่มีสิทธิ์แก้ไขรายการนั้น</td>
+                            </tr>
+                            <tr>
+                                <td class="border px-3 py-2">ไฟล์ที่ดาวน์โหลดไม่ใช่ข้อมูลล่าสุด</td>
+                                <td class="border px-3 py-2">กดบันทึกข้อมูลก่อน แล้วดาวน์โหลด PDF/Word ใหม่</td>
+                            </tr>
+                            <tr>
+                                <td class="border px-3 py-2">ภาระงาน/FTE ไม่แสดงในรายงาน</td>
+                                <td class="border px-3 py-2">ตรวจว่ามีข้อมูล FTE ของผู้ใช้และช่วงเดือนที่เกี่ยวข้องในระบบแล้วหรือไม่</td>
                             </tr>
                         </tbody>
                     </table>

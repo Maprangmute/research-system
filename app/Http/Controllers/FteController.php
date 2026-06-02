@@ -751,7 +751,10 @@ public function projectPdf(Project $project)
         'subject_label' => (string) ($project->project_name_th ?: $project->project_code ?: $project->id),
     ], request());
 
-    return $pdf->stream($filename);
+    return response($pdf->output(), 200, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => $this->utf8ContentDisposition('inline', $filename),
+    ]);
 }
 
 public function exportPdf(Request $request, $person)
@@ -783,7 +786,10 @@ public function exportPdf(Request $request, $person)
         'subject_label' => (string) $data['person'],
     ], $request);
 
-    return $pdf->stream($filename);
+    return response($pdf->output(), 200, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => $this->utf8ContentDisposition('inline', $filename),
+    ]);
 }
 
 public function exportWord(Request $request, $person)
@@ -949,36 +955,47 @@ private function wfaJsonReport(WfaReport $report): array
         'output_text' => $report->output_text ?: '-',
         'output_html' => $report->output_html,
         'filter_month_key' => $this->wfaReportMonth($report)->format('Y-m'),
+        'can_view' => $this->canViewWfaReport($report),
         'can_edit' => $this->canEditWfaReport($report),
         'edit_url' => route('wfa.edit', $report),
         'update_url' => route('wfa.update', $report),
-        'pdf_url' => route('wfa.pdf', $report),
+        'delete_url' => route('wfa.destroy', $report),
+        'pdf_url' => $this->wfaPdfUrl($report),
         'word_url' => route('wfa.word', $report),
+        'pdf_filename' => $this->wfaBrowserDownloadFilename($report, 'pdf'),
+        'word_filename' => $this->wfaBrowserDownloadFilename($report, 'docx'),
     ];
 }
 
-public function wfaDestroy(WfaReport $wfaReport)
+public function wfaDestroy(Request $request, WfaReport $wfaReport)
 {
     $this->ensureCanEditWfaReport($wfaReport);
     $wfaReport->delete();
 
+    if ($request->expectsJson()) {
+        return response()->json([
+            'ok' => true,
+            'message' => 'ลบรายงานภาระงาน (WFA) แล้ว',
+        ]);
+    }
+
     return redirect()
         ->route('wfa.index')
-        ->with('status', 'ลบ WFA แล้ว');
+        ->with('status', 'ลบรายงานภาระงาน (WFA) แล้ว');
 }
 
-public function wfaPdf(Request $request, WfaReport $wfaReport)
+public function wfaPdf(Request $request, WfaReport $wfaReport, ?string $filename = null)
 {
     $this->ensureCanViewWfaReport($wfaReport);
     $wfaReport->refresh();
     $data = $this->buildWfaExportData($wfaReport);
     $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
-    $code = $wfaReport->wfa_code ?: WfaReport::formatCode((int) $wfaReport->id);
-    $filename = "{$code}_{$dateStr}_{$data['person']}.pdf";
+    $filename = $this->wfaExportFilename($wfaReport, $dateStr, 'pdf');
 
     $pdf = PDF::loadView('fte.pdf', array_merge($data, [
         'user' => $request->user(),
         'profilePhotoDataUri' => $this->resolveUserProfilePhotoDataUriForExport($data['profile'] ?? null),
+        'documentTitle' => $this->wfaBrowserDownloadFilename($wfaReport, 'pdf'),
     ]));
 
     AuditLogger::logFileDownload($filename, [
@@ -986,7 +1003,10 @@ public function wfaPdf(Request $request, WfaReport $wfaReport)
         'subject_label' => (string) $wfaReport->title,
     ], $request);
 
-    return $pdf->stream($filename);
+    return response($pdf->output(), 200, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => $this->utf8ContentDisposition('inline', $filename),
+    ]);
 }
 
 public function wfaWord(Request $request, WfaReport $wfaReport)
@@ -995,9 +1015,7 @@ public function wfaWord(Request $request, WfaReport $wfaReport)
     $wfaReport->refresh();
     $data = $this->buildWfaExportData($wfaReport);
     $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
-    $safePerson = preg_replace('/[^\pL\pN\-_\s]+/u', '', (string) $data['person']);
-    $code = $wfaReport->wfa_code ?: WfaReport::formatCode((int) $wfaReport->id);
-    $filename = "{$code}_{$dateStr}_" . trim((string) $safePerson) . ".docx";
+    $filename = $this->wfaExportFilename($wfaReport, $dateStr, 'docx');
     $tempFile = tempnam(sys_get_temp_dir(), 'wfa_word_');
     $docxPath = $tempFile . '.docx';
     @unlink($tempFile);
@@ -1030,6 +1048,41 @@ private function canManageAnyWfaReport(?User $user): bool
     ], true);
 }
 
+private function wfaExportFilename(WfaReport $report, string $dateStr, string $extension): string
+{
+    $title = trim((string) $report->title) ?: ($report->wfa_code ?: WfaReport::formatCode((int) $report->id));
+    $safeTitle = preg_replace('/[\\\\\/:*?"<>|]+/u', ' ', $title);
+    $safeTitle = preg_replace('/\s+/u', ' ', (string) $safeTitle);
+    $safeTitle = trim((string) $safeTitle, " .\t\n\r\0\x0B");
+
+    return "{$safeTitle}_{$dateStr}.{$extension}";
+}
+
+private function wfaBrowserDownloadFilename(WfaReport $report, string $extension): string
+{
+    $title = trim((string) $report->title) ?: ($report->wfa_code ?: WfaReport::formatCode((int) $report->id));
+    $safeTitle = preg_replace('/[\\\\\/:*?"<>|]+/u', ' ', $title);
+    $safeTitle = preg_replace('/\s+/u', ' ', (string) $safeTitle);
+    $safeTitle = trim((string) $safeTitle, " .\t\n\r\0\x0B") ?: 'WFA';
+
+    return "{$safeTitle}.{$extension}";
+}
+
+private function wfaPdfUrl(WfaReport $report): string
+{
+    return route('wfa.pdf', [
+        'wfaReport' => $report,
+        'filename' => $this->wfaBrowserDownloadFilename($report, 'pdf'),
+    ]);
+}
+
+private function utf8ContentDisposition(string $disposition, string $filename): string
+{
+    $encoded = rawurlencode($filename);
+
+    return $disposition . '; filename*=UTF-8\'\'' . $encoded;
+}
+
 private function canViewAnyWfaReport(?User $user): bool
 {
     return $user && (
@@ -1044,6 +1097,14 @@ private function canEditWfaReport(WfaReport $report, ?User $user = null): bool
 
     return $user
         && ((int) $report->user_id === (int) $user->id || $this->canManageAnyWfaReport($user));
+}
+
+private function canViewWfaReport(WfaReport $report, ?User $user = null): bool
+{
+    $user ??= Auth::user();
+
+    return $user
+        && ((int) $report->user_id === (int) $user->id || $this->canViewAnyWfaReport($user));
 }
 
 private function ensureCanViewWfaReport(WfaReport $report): void
@@ -1138,7 +1199,7 @@ private function buildWfaExportData(WfaReport $report): array
         'wfaReport' => $report,
         'wfaOutputHtml' => $outputHtml,
         'wfaOutputPdfHtml' => $this->normalizeWfaOutputHtmlForPdf($outputHtml),
-        'wfaOutputWordHtml' => $this->normalizeWfaOutputHtmlForPdf($outputHtml),
+        'wfaOutputWordHtml' => $this->normalizeWfaOutputHtmlForWord($outputHtml),
         'wfaOutputTitle' => 'Output ที่เกิดขึ้นจากการทำงานของเดือน ' . $this->wfaMonthLabel($this->wfaReportMonth($report)->subMonthNoOverflow()),
     ]);
 }
@@ -1154,7 +1215,9 @@ private function wfaReportMonth(WfaReport $report): Carbon
 
 private function wfaDefaultTitle(User $user, Carbon $month): string
 {
-    return 'WFA ' . $user->full_name . ' ประจำเดือน ' . $this->wfaMonthLabel($month);
+    return 'WFA ' . $user->full_name
+        . ' ประจำเดือน ' . $this->wfaMonthLabel($month)
+        . ' และ ผลงานรายเดือน ' . $this->wfaMonthLabel($month->copy()->subMonthNoOverflow());
 }
 
 private function wfaMonthLabel(Carbon $month): string
@@ -1188,7 +1251,7 @@ private function wfaMonthOptions(): Collection
 
 private function sanitizeWfaOutputHtml(string $html): string
 {
-    $html = trim($html);
+    $html = trim($this->normalizeThaiLegacyCharacters($html));
     if ($html === '') {
         return '';
     }
@@ -1315,6 +1378,112 @@ private function normalizeWfaOutputHtmlForPdf(string $html): string
     return trim((string) $body);
 }
 
+private function normalizeWfaOutputHtmlForWord(string $html): string
+{
+    $html = trim($this->normalizeThaiLegacyCharacters($html));
+    if ($html === '') {
+        return '';
+    }
+
+    libxml_use_internal_errors(true);
+    $dom = new \DOMDocument('1.0', 'UTF-8');
+    $dom->loadHTML('<?xml encoding="utf-8" ?><div>' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+
+    $collapseTextNodes = function (\DOMNode $node) use (&$collapseTextNodes): void {
+        if ($node instanceof \DOMText) {
+            $node->nodeValue = preg_replace('/[ \t\r\n]+/u', ' ', (string) $node->nodeValue);
+            return;
+        }
+
+        foreach (iterator_to_array($node->childNodes) as $child) {
+            $collapseTextNodes($child);
+        }
+    };
+
+    $collapseTextNodes($dom);
+
+    foreach (iterator_to_array($dom->getElementsByTagName('ul')) as $list) {
+        $this->replaceWfaWordListWithTable($dom, $list, false);
+    }
+
+    foreach (iterator_to_array($dom->getElementsByTagName('ol')) as $list) {
+        $this->replaceWfaWordListWithTable($dom, $list, true);
+    }
+
+    $applyWordFont = function (\DOMNode $node) use (&$applyWordFont): void {
+        if ($node instanceof \DOMElement) {
+            $style = collect(explode(';', (string) $node->getAttribute('style')))
+                ->map(fn($rule) => trim($rule))
+                ->filter()
+                ->reject(fn($rule) => str_starts_with(strtolower($rule), 'font-family:') || str_starts_with(strtolower($rule), 'font-size:'))
+                ->prepend('font-size:16pt')
+                ->prepend('font-family:TH Sarabun New')
+                ->implode('; ');
+
+            $node->setAttribute('style', $style);
+        }
+
+        foreach (iterator_to_array($node->childNodes) as $child) {
+            $applyWordFont($child);
+        }
+    };
+
+    $applyWordFont($dom);
+
+    $body = '';
+    foreach ($dom->documentElement?->childNodes ?? [] as $child) {
+        $body .= $dom->saveXML($child);
+    }
+
+    return trim((string) $body);
+}
+
+private function replaceWfaWordListWithTable(\DOMDocument $dom, \DOMElement $list, bool $ordered): void
+{
+    $table = $dom->createElement('table');
+    $table->setAttribute('width', '100%');
+    $table->setAttribute('style', 'width:100%; border-collapse:collapse; margin:0 0 8pt 0;');
+
+    $itemIndex = 1;
+    foreach (iterator_to_array($list->childNodes) as $child) {
+        if (! $child instanceof \DOMElement || strtolower($child->nodeName) !== 'li') {
+            continue;
+        }
+
+        $row = $dom->createElement('tr');
+        $bulletCell = $dom->createElement('td', $ordered ? ($itemIndex . '.') : '•');
+        $bulletCell->setAttribute('width', '5%');
+        $bulletCell->setAttribute('style', 'border:0; padding:0 4pt 4pt 0; vertical-align:top; text-align:right; font-family:TH Sarabun New; font-size:16pt;');
+
+        $textCell = $dom->createElement('td');
+        $textCell->setAttribute('width', '95%');
+        $textCell->setAttribute('style', 'border:0; padding:0 0 4pt 4pt; vertical-align:top; text-align:left; font-family:TH Sarabun New; font-size:16pt;');
+
+        foreach (iterator_to_array($child->childNodes) as $itemChild) {
+            $textCell->appendChild($itemChild->cloneNode(true));
+        }
+
+        $row->appendChild($bulletCell);
+        $row->appendChild($textCell);
+        $table->appendChild($row);
+        $itemIndex++;
+    }
+
+    $list->parentNode?->replaceChild($table, $list);
+}
+
+private function normalizeThaiLegacyCharacters(string $text): string
+{
+    return strtr($text, [
+        '' => '่',
+        '' => '้',
+        '' => 'ั',
+        '' => '์',
+        '' => '็',
+    ]);
+}
+
 private function normalizeWfaManualBullets(string $html): string
 {
     if (!str_contains($html, '•') || preg_match('/<\/?(ul|ol|li)\b/i', $html)) {
@@ -1393,7 +1562,7 @@ private function buildFteWordDocument(array $data, string $targetPath): void
     $monthWorkList = collect($data['monthWorkList'] ?? []);
     $monthProjectStats = $data['monthProjectStats'] ?? [];
     $pdfFilter = $data['pdfFilter'] ?? [];
-    $wfaOutputHtml = trim((string) ($data['wfaOutputWordHtml'] ?? $data['wfaOutputHtml'] ?? ''));
+    $wfaOutputHtml = $this->normalizeWfaOutputHtmlForWord((string) ($data['wfaOutputWordHtml'] ?? $data['wfaOutputHtml'] ?? ''));
     $wfaOutputTitle = trim((string) ($data['wfaOutputTitle'] ?? '')) ?: 'Output ที่เกิดขึ้น';
     $isWfaReport = $wfaOutputHtml !== '';
     $reportTitle = $isWfaReport ? 'WFA / FTE Individual Report' : 'FTE Individual Report';
@@ -1587,7 +1756,7 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         $section->addTextBreak(1);
         $section->addText($wfaOutputTitle, ['bold' => true, 'size' => 18, 'color' => '0F172A']);
         $section->addTextBreak(1);
-        Html::addHtml($section, '<div style="font-family: TH Sarabun New; font-size: 12pt; line-height: 1.38; text-align: left;">' . $wfaOutputHtml . '</div>', false, false);
+        Html::addHtml($section, '<div style="font-family:TH Sarabun New; font-size:16pt; line-height:1.38; text-align:left;">' . $wfaOutputHtml . '</div>', false, false);
         $section->addTextBreak(2);
         $section->addText('ขอรับรองว่าปฏิบัติงานจริง', ['bold' => true, 'size' => 12, 'color' => '111827']);
         $section->addTextBreak(3);

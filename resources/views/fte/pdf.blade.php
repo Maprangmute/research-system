@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>FTE - {{ $person }}</title>
+    <title>{{ $documentTitle ?? ('FTE - ' . $person) }}</title>
     <style>
         @page {
             margin: 66px 34px 88px 34px;
