@@ -839,12 +839,28 @@ public function wfaIndex(Request $request)
 {
     $user = $request->user();
     $search = trim((string) $request->query('q', ''));
+    $canViewAll = $this->canViewAnyWfaReport($user);
+    $selectedOwner = $canViewAll ? trim((string) $request->query('owner', 'all')) : 'mine';
+    $selectedYear = $this->normalizeWfaFilterYear($request->query('year'));
+    $selectedMonth = $this->normalizeWfaFilterMonth($request->query('month'));
     $query = WfaReport::query()
         ->with('user:id,prefix,name,position,role,profile_photo_path')
         ->latest();
 
-    if (! $this->canViewAnyWfaReport($user)) {
+    if (! $canViewAll) {
         $query->where('user_id', $user->id);
+    } elseif ($selectedOwner === 'mine') {
+        $query->where('user_id', $user->id);
+    } elseif (ctype_digit($selectedOwner) && (int) $selectedOwner > 0) {
+        $query->where('user_id', (int) $selectedOwner);
+    }
+
+    if ($selectedYear !== null) {
+        $query->where('filter_year', $selectedYear);
+    }
+
+    if ($selectedMonth !== null) {
+        $query->where('filter_month', $selectedMonth);
     }
 
     if ($search !== '') {
@@ -858,11 +874,20 @@ public function wfaIndex(Request $request)
     }
 
     $reports = $query->paginate(10)->withQueryString()->fragment('wfa-list-table');
+    $yearOptions = $this->wfaFilterYearOptions($user, $canViewAll, $selectedYear);
+    $monthFilterOptions = $this->wfaFilterMonthOptions();
+    $ownerFilterOptions = $canViewAll ? $this->wfaOwnerFilterOptions() : collect();
 
     return view('wfa.index', [
         'reports' => $reports,
-        'canViewAll' => $this->canViewAnyWfaReport($user),
+        'canViewAll' => $canViewAll,
         'search' => $search,
+        'selectedOwnerFilter' => $selectedOwner,
+        'selectedYearFilter' => $selectedYear,
+        'selectedMonthFilter' => $selectedMonth,
+        'ownerFilterOptions' => $ownerFilterOptions,
+        'yearOptions' => $yearOptions,
+        'monthFilterOptions' => $monthFilterOptions,
         'monthOptions' => $this->wfaMonthOptions(),
     ]);
 }
@@ -1105,6 +1130,79 @@ private function canViewWfaReport(WfaReport $report, ?User $user = null): bool
 
     return $user
         && ((int) $report->user_id === (int) $user->id || $this->canViewAnyWfaReport($user));
+}
+
+private function normalizeWfaFilterYear(mixed $value): ?int
+{
+    $value = trim((string) $value);
+    if ($value === '' || ! ctype_digit($value)) {
+        return null;
+    }
+
+    $year = (int) $value;
+    if ($year < 1900 || $year > 2700) {
+        return null;
+    }
+
+    return $year > 2400 ? $year : $year + 543;
+}
+
+private function normalizeWfaFilterMonth(mixed $value): ?int
+{
+    $value = trim((string) $value);
+    if ($value === '' || ! ctype_digit($value)) {
+        return null;
+    }
+
+    $month = (int) $value;
+    return $month >= 1 && $month <= 12 ? $month : null;
+}
+
+private function wfaFilterYearOptions(?User $user, bool $canViewAll, ?int $selectedYear = null): Collection
+{
+    $query = WfaReport::query()
+        ->whereNotNull('filter_year');
+
+    if (! $canViewAll && $user) {
+        $query->where('user_id', $user->id);
+    }
+
+    $years = $query
+        ->distinct()
+        ->pluck('filter_year')
+        ->map(fn ($year) => (int) $year)
+        ->filter(fn ($year) => $year > 0);
+
+    $years->push(now()->year + 543);
+
+    if ($selectedYear !== null) {
+        $years->push($selectedYear);
+    }
+
+    return $years
+        ->unique()
+        ->sortDesc()
+        ->values();
+}
+
+private function wfaFilterMonthOptions(): Collection
+{
+    return collect(range(1, 12))->map(function (int $month): array {
+        $date = Carbon::createFromDate(now()->year, $month, 1)->locale('th');
+
+        return [
+            'value' => $month,
+            'label' => $date->translatedFormat('F'),
+        ];
+    });
+}
+
+private function wfaOwnerFilterOptions(): Collection
+{
+    return User::query()
+        ->where('role', '!=', User::ROLE_RESIGNED)
+        ->orderBy('name')
+        ->get(['id', 'prefix', 'name', 'position', 'role']);
 }
 
 private function ensureCanViewWfaReport(WfaReport $report): void

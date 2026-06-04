@@ -67,6 +67,13 @@
             ];
         });
         $previousOptionYear = null;
+        $selectedOwnerLabel = 'ทุกคน';
+        if (($selectedOwnerFilter ?? 'all') === 'mine') {
+            $selectedOwnerLabel = 'ของฉัน';
+        } elseif (isset($ownerFilterOptions) && ctype_digit((string) ($selectedOwnerFilter ?? ''))) {
+            $selectedOwner = $ownerFilterOptions->firstWhere('id', (int) $selectedOwnerFilter);
+            $selectedOwnerLabel = $selectedOwner?->full_name ?: 'ทุกคน';
+        }
     @endphp
 
     <style>
@@ -94,11 +101,27 @@
         .wfa-table { width: 100%; min-width: 840px; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: #fff; }
         .wfa-table thead th { background: #f8fafc; color: #475569; font-size: .74rem; font-weight: 900; border-bottom: 1px solid #e2e8f0; padding: .72rem .85rem; white-space: nowrap; }
         .wfa-table tbody td { border-bottom: 1px solid #e2e8f0; padding: .82rem .85rem; vertical-align: top; }
+        .wfa-table [data-label="รายงานภาระงาน (WFA)"] { overflow-wrap: anywhere; }
         .wfa-table tbody tr:last-child td { border-bottom: 0; }
         .wfa-table tbody tr:hover td { background: #f8fbff; }
         .wfa-live-input { min-height: 40px; border: 1px solid #cbd5e1; border-radius: 12px; padding: 0 .8rem; font-size: .88rem; outline: none; }
         .wfa-live-input:focus { border-color: #38bdf8; box-shadow: 0 0 0 4px rgba(125, 211, 252, .22); }
         .wfa-select { min-height: 40px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; padding: 0 .8rem; font-size: .88rem; outline: none; }
+        .wfa-owner-combobox { position: relative; }
+        .wfa-owner-trigger { display: flex; min-height: 40px; width: 100%; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; padding: 0 .8rem; color: #0f172a; font-size: .88rem; font-weight: 700; text-align: left; outline: none; }
+        .wfa-owner-trigger:focus { border-color: #38bdf8; box-shadow: 0 0 0 4px rgba(125, 211, 252, .22); }
+        .wfa-owner-trigger svg { width: 16px; min-width: 16px; height: 16px; color: #64748b; }
+        .wfa-owner-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .wfa-owner-menu { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 50; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; box-shadow: 0 18px 42px rgba(15, 23, 42, .16); }
+        .wfa-owner-menu.is-hidden { display: none; }
+        .wfa-owner-search { width: calc(100% - 16px); min-height: 38px; margin: 8px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0 .72rem; color: #0f172a; font-size: .86rem; outline: none; }
+        .wfa-owner-search:focus { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(125, 211, 252, .18); }
+        .wfa-owner-options { max-height: 260px; overflow-y: auto; padding: 4px; }
+        .wfa-owner-option { display: block; width: 100%; border-radius: 10px; padding: .55rem .65rem; color: #334155; font-size: .86rem; font-weight: 700; line-height: 1.35; text-align: left; }
+        .wfa-owner-option:hover,
+        .wfa-owner-option.is-active { background: #eff6ff; color: #1d4ed8; }
+        .wfa-owner-empty { display: none; padding: .8rem; color: #64748b; font-size: .84rem; font-weight: 700; text-align: center; }
+        .wfa-owner-empty.is-show { display: block; }
         .wfa-modal { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; overflow-x: hidden; padding: 24px; background: rgba(15, 23, 42, .48); }
         .wfa-modal.is-open { display: flex; }
         .wfa-modal-card { width: min(1120px, 100%); max-width: calc(100vw - 48px); max-height: min(88vh, 900px); overflow: hidden; border-radius: 18px; background: #fff; box-shadow: 0 24px 60px rgba(15, 23, 42, .25); }
@@ -137,8 +160,35 @@
         .wfa-toast.is-show { display: block; }
         .wfa-export-choice { display: none; border-top: 1px solid #e2e8f0; background: #f8fafc; padding: 14px 18px; }
         .wfa-export-choice.is-open { display: block; }
+        @media (min-width: 768px) and (max-width: 1180px) {
+            .wfa-table { min-width: 0; }
+            .wfa-table thead th,
+            .wfa-table tbody td { padding: .72rem .64rem; }
+            .wfa-table { font-size: .86rem; }
+            .wfa-action--icon { width: 36px; min-width: 36px; height: 34px; min-height: 34px; }
+            .wfa-action-logo { width: 20px; height: 20px; }
+        }
         @media (max-width: 767px) {
-            .wfa-table { min-width: 760px; }
+            .wfa-table-wrap { overflow: visible; border: 0; border-radius: 0; }
+            .wfa-table { display: block; min-width: 0; border-spacing: 0; background: transparent; }
+            .wfa-table colgroup,
+            .wfa-table thead { display: none; }
+            .wfa-table tbody { display: grid; gap: 12px; }
+            .wfa-table tbody tr[data-wfa-row] { display: block; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 8px 18px rgba(15, 23, 42, .05); }
+            .wfa-table tbody tr[data-wfa-row].hidden { display: none !important; }
+            .wfa-table tbody tr[data-wfa-row]:hover td { background: #fff; }
+            .wfa-table tbody tr[data-wfa-row] td { display: grid; grid-template-columns: minmax(84px, 30%) minmax(0, 1fr); gap: 10px; align-items: start; border-bottom: 1px solid #e2e8f0; padding: .78rem .9rem; }
+            .wfa-table tbody tr[data-wfa-row] td::before { content: attr(data-label); color: #64748b; font-size: .72rem; font-weight: 900; line-height: 1.45; }
+            .wfa-table tbody tr[data-wfa-row] td:last-child { border-bottom: 0; }
+            .wfa-table tbody tr[data-wfa-row] td[data-label="รายงานภาระงาน (WFA)"] { display: block; }
+            .wfa-table tbody tr[data-wfa-row] td[data-label="รายงานภาระงาน (WFA)"]::before { display: block; margin-bottom: .32rem; }
+            .wfa-table tbody tr[data-wfa-row] td[data-label="ตัวเลือก"] { align-items: center; }
+            .wfa-table tbody tr[data-wfa-row] td[data-label="ตัวเลือก"] > div { justify-content: flex-start; }
+            .wfa-table tbody tr[data-wfa-static-empty],
+            .wfa-table tbody tr#wfa-empty-search { display: block; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; }
+            .wfa-table tbody tr[data-wfa-static-empty] td,
+            .wfa-table tbody tr#wfa-empty-search td { display: block; border-bottom: 0; }
+            .wfa-table tbody tr#wfa-empty-search.hidden { display: none !important; }
             .wfa-modal { display: none !important; }
             .wfa-guide-modal { padding: 12px; }
             .wfa-guide-card { max-width: calc(100vw - 24px); }
@@ -171,12 +221,57 @@
         @endif
 
         <section id="wfa-list-table" class="wfa-panel scroll-mt-24 p-4 sm:p-5">
-            <div class="mb-4 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+            <form id="wfa-filter-form" method="GET" action="{{ route('wfa.index') }}" class="mb-4 grid gap-3 lg:grid-cols-[minmax(260px,1fr)_minmax(150px,180px)_minmax(110px,140px)_minmax(120px,150px)_minmax(180px,220px)_auto] lg:items-end">
                 <label class="block">
                     <span class="mb-1 block text-xs font-extrabold text-slate-500">ค้นหา</span>
-                    <input id="wfa-live-search" type="search" value="{{ $search ?? '' }}" autocomplete="off" placeholder="ค้นหารหัส รายงานภาระงาน (WFA) เดือน หรือ output" class="wfa-live-input w-full">
+                    <input id="wfa-live-search" name="q" type="search" value="{{ $search ?? '' }}" autocomplete="off" placeholder="ค้นหารหัส รายงานภาระงาน (WFA) เดือน หรือ output" class="wfa-live-input w-full">
                 </label>
-                <label class="block lg:w-64">
+                @if ($canViewAll)
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-extrabold text-slate-500">เจ้าของรายงาน</span>
+                        <div class="wfa-owner-combobox" data-wfa-owner-combobox>
+                            <input type="hidden" name="owner" value="{{ $selectedOwnerFilter ?? 'all' }}" data-wfa-owner-value>
+                            <button type="button" class="wfa-owner-trigger" data-wfa-owner-toggle aria-haspopup="listbox" aria-expanded="false">
+                                <span class="wfa-owner-label" data-wfa-owner-label>{{ $selectedOwnerLabel }}</span>
+                                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <div class="wfa-owner-menu is-hidden" data-wfa-owner-menu>
+                                <input type="search" class="wfa-owner-search" placeholder="ค้นหาเจ้าของรายงาน" autocomplete="off" data-wfa-owner-search>
+                                <div class="wfa-owner-options" role="listbox" data-wfa-owner-options>
+                                    <button type="button" class="wfa-owner-option {{ ($selectedOwnerFilter ?? 'all') === 'all' ? 'is-active' : '' }}" data-wfa-owner-option data-value="all" data-search="ทุกคน all" role="option">ทุกคน</button>
+                                    <button type="button" class="wfa-owner-option {{ ($selectedOwnerFilter ?? 'all') === 'mine' ? 'is-active' : '' }}" data-wfa-owner-option data-value="mine" data-search="ของฉัน mine" role="option">ของฉัน</button>
+                                    @foreach ($ownerFilterOptions as $ownerOption)
+                                        <button type="button" class="wfa-owner-option {{ (string) ($selectedOwnerFilter ?? '') === (string) $ownerOption->id ? 'is-active' : '' }}" data-wfa-owner-option data-value="{{ $ownerOption->id }}" data-search="{{ e(mb_strtolower($ownerOption->full_name . ' ' . $ownerOption->position . ' ' . $ownerOption->role)) }}" role="option">
+                                            {{ $ownerOption->full_name }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                                <div class="wfa-owner-empty" data-wfa-owner-empty>ไม่พบเจ้าของรายงาน</div>
+                            </div>
+                        </div>
+                    </label>
+                @endif
+                <label class="block">
+                    <span class="mb-1 block text-xs font-extrabold text-slate-500">ปี</span>
+                    <select name="year" class="wfa-select w-full" data-wfa-filter-submit>
+                        <option value="">ทุกปี</option>
+                        @foreach ($yearOptions as $yearOption)
+                            <option value="{{ $yearOption }}" @selected((int) ($selectedYearFilter ?? 0) === (int) $yearOption)>{{ $yearOption }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-extrabold text-slate-500">เดือน</span>
+                    <select name="month" class="wfa-select w-full" data-wfa-filter-submit>
+                        <option value="">ทุกเดือน</option>
+                        @foreach ($monthFilterOptions as $monthOption)
+                            <option value="{{ $monthOption['value'] }}" @selected((int) ($selectedMonthFilter ?? 0) === (int) $monthOption['value'])>{{ $monthOption['label'] }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block">
                     <span class="mb-1 block text-xs font-extrabold text-slate-500">เรียงรายการ</span>
                     <select id="wfa-sort" class="wfa-select w-full">
                         <option value="created_desc">วันที่บันทึกล่าสุด</option>
@@ -185,7 +280,12 @@
                         <option value="title_asc">รายงานภาระงาน (WFA) A-Z</option>
                     </select>
                 </label>
-            </div>
+                <div class="flex justify-end">
+                    <a href="{{ route('wfa.index') }}" class="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-extrabold text-red-700 shadow-sm hover:bg-red-100 hover:text-red-800">
+                        ล้าง
+                    </a>
+                </div>
+            </form>
 
             <div class="wfa-table-wrap">
                 <table class="wfa-table text-left text-sm">
@@ -214,8 +314,8 @@
                                 $canEditThisReport = $canEditWfaReport($report);
                             @endphp
                             <tr data-wfa-row data-report-id="{{ $report->id }}" data-month="{{ $wfaMonthKey($report) }}" data-created="{{ optional($report->created_at)->timestamp ?? 0 }}" data-title="{{ e($report->title) }}" data-search-text="{{ e($searchText) }}">
-                                <td class="whitespace-nowrap font-semibold text-slate-600">{{ $code }}</td>
-                                <td>
+                                <td data-label="รหัส" class="whitespace-nowrap font-semibold text-slate-600">{{ $code }}</td>
+                                <td data-label="รายงานภาระงาน (WFA)">
                                     @if ($canEditThisReport)
                                         <button type="button" class="hidden text-left font-extrabold leading-6 text-blue-700 hover:underline md:inline" data-open-wfa="{{ $report->id }}">{{ $report->title }}</button>
                                         <a href="{{ route('wfa.edit', $report) }}" class="font-extrabold leading-6 text-blue-700 hover:underline md:hidden">{{ $report->title }}</a>
@@ -228,8 +328,8 @@
                                     <div class="mt-1 text-xs font-semibold text-slate-500">วันที่บันทึก {{ $createdLabel }}</div>
                                     <div class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500" data-row-output="{{ $report->id }}">{{ $report->output_text ?: '-' }}</div>
                                 </td>
-                                <td><span class="wfa-month-chip wfa-month-chip--{{ substr($wfaMonthKey($report), 5, 2) }}" data-row-month="{{ $report->id }}">{{ $monthLabel }}</span></td>
-                                <td>
+                                <td data-label="ประจำเดือน"><span class="wfa-month-chip wfa-month-chip--{{ substr($wfaMonthKey($report), 5, 2) }}" data-row-month="{{ $report->id }}">{{ $monthLabel }}</span></td>
+                                <td data-label="ตัวเลือก">
                                     <div class="flex flex-wrap items-center justify-end gap-2">
                                         <a href="{{ $wfaPdfUrl($report) }}" target="_blank" rel="noopener" class="wfa-action wfa-action--icon border border-red-200 bg-white text-red-600 hover:bg-red-50" title="PDF" aria-label="PDF">
                                             <img src="https://thesvg.org/icons/pdf/default.svg" alt="" aria-hidden="true" class="wfa-action-logo">
@@ -548,6 +648,8 @@
             const emptySearch = document.getElementById('wfa-empty-search');
             const searchInput = document.getElementById('wfa-live-search');
             const sortSelect = document.getElementById('wfa-sort');
+            const filterForm = document.getElementById('wfa-filter-form');
+            const ownerCombobox = document.querySelector('[data-wfa-owner-combobox]');
             const modal = document.getElementById('wfa-modal');
             const guideModal = document.getElementById('wfa-guide-modal');
             const guideOpen = document.getElementById('wfa-guide-open');
@@ -582,6 +684,67 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
+
+            const initOwnerCombobox = () => {
+                if (!ownerCombobox) return;
+                const toggle = ownerCombobox.querySelector('[data-wfa-owner-toggle]');
+                const menu = ownerCombobox.querySelector('[data-wfa-owner-menu]');
+                const search = ownerCombobox.querySelector('[data-wfa-owner-search]');
+                const valueInput = ownerCombobox.querySelector('[data-wfa-owner-value]');
+                const label = ownerCombobox.querySelector('[data-wfa-owner-label]');
+                const options = Array.from(ownerCombobox.querySelectorAll('[data-wfa-owner-option]'));
+                const empty = ownerCombobox.querySelector('[data-wfa-owner-empty]');
+
+                const setOpen = (open) => {
+                    menu?.classList.toggle('is-hidden', !open);
+                    toggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    if (open) {
+                        search.value = '';
+                        filterOptions('');
+                        window.setTimeout(() => search.focus(), 0);
+                    }
+                };
+
+                const filterOptions = (keyword) => {
+                    const normalizedKeyword = normalize(keyword);
+                    let visible = 0;
+                    options.forEach((option) => {
+                        const haystack = normalize(option.dataset.search || option.textContent);
+                        const matched = normalizedKeyword === '' || haystack.includes(normalizedKeyword);
+                        option.classList.toggle('hidden', !matched);
+                        if (matched) visible += 1;
+                    });
+                    empty?.classList.toggle('is-show', visible === 0);
+                };
+
+                toggle?.addEventListener('click', () => {
+                    setOpen(menu?.classList.contains('is-hidden'));
+                });
+
+                search?.addEventListener('input', () => filterOptions(search.value));
+                search?.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        setOpen(false);
+                        toggle?.focus();
+                    }
+                });
+
+                options.forEach((option) => {
+                    option.addEventListener('click', () => {
+                        valueInput.value = option.dataset.value || 'all';
+                        label.textContent = option.textContent.trim();
+                        options.forEach((item) => item.classList.toggle('is-active', item === option));
+                        setOpen(false);
+                        filterForm?.requestSubmit();
+                    });
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!ownerCombobox.contains(event.target)) {
+                        setOpen(false);
+                    }
+                });
+            };
 
             const wfaPlaceholderHtml = (monthValue) => {
                 const option = monthOptions.find((item) => item.value === monthValue);
@@ -812,11 +975,12 @@
                 row.dataset.searchText = normalize([report.code, report.title, report.month_label, report.created_at_label, report.output_text].join(' '));
 
                 const codeCell = row.insertCell();
-                codeCell.className = 'whitespace-nowrap';
+                codeCell.dataset.label = 'รหัส';
                 codeCell.className = 'whitespace-nowrap font-semibold text-slate-600';
                 codeCell.textContent = report.code;
 
                 const titleCell = row.insertCell();
+                titleCell.dataset.label = 'รายงานภาระงาน (WFA)';
                 const titleButton = document.createElement('button');
                 titleButton.type = 'button';
                 titleButton.className = 'hidden text-left font-extrabold leading-6 text-blue-700 hover:underline md:inline';
@@ -839,6 +1003,7 @@
                 titleCell.appendChild(outputText);
 
                 const monthCell = row.insertCell();
+                monthCell.dataset.label = 'ประจำเดือน';
                 const monthChip = document.createElement('span');
                 const monthNumber = String(report.filter_month_key || '').slice(5, 7) || '12';
                 monthChip.className = `wfa-month-chip wfa-month-chip--${monthNumber}`;
@@ -847,6 +1012,7 @@
                 monthCell.appendChild(monthChip);
 
                 const actionCell = row.insertCell();
+                actionCell.dataset.label = 'ตัวเลือก';
                 const actionWrap = document.createElement('div');
                 actionWrap.className = 'flex flex-wrap items-center justify-end gap-2';
                 [['PDF', report.pdf_url], ['Word', report.word_url]].forEach(([label, href]) => {
@@ -1212,6 +1378,12 @@
 
             searchInput.addEventListener('input', applySearch);
             sortSelect.addEventListener('change', applySort);
+            document.querySelectorAll('[data-wfa-filter-submit]').forEach((control) => {
+                control.addEventListener('change', () => {
+                    filterForm?.requestSubmit();
+                });
+            });
+            initOwnerCombobox();
             applySort();
             applySearch();
         })();
