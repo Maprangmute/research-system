@@ -1264,19 +1264,8 @@
             deleteButton?.addEventListener('click', deleteActiveReport);
             guideOpen?.addEventListener('click', openGuideModal);
             guideClose?.addEventListener('click', closeGuideModal);
-            guideModal?.addEventListener('click', (event) => {
-                if (event.target === guideModal) closeGuideModal();
-            });
 
             document.getElementById('wfa-modal-close')?.addEventListener('click', closeModal);
-            modal.addEventListener('click', (event) => {
-                if (event.target === modal) closeModal();
-            });
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape' && guideModal?.classList.contains('is-open')) {
-                    closeGuideModal();
-                }
-            });
 
             document.querySelectorAll('[data-wfa-command]').forEach((button) => {
                 button.addEventListener('click', () => {
