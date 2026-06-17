@@ -32,8 +32,18 @@
             && ((int) $report->user_id === (int) $currentUser->id || $canViewAnyWfaReports);
         $canEditWfaReport = static fn ($report): bool => $currentUser
             && ((int) $report->user_id === (int) $currentUser->id || $canManageWfaReports);
-        $wfaDownloadName = static function ($report, string $extension): string {
+        $wfaPersonName = static fn ($report): string => trim((string) ($report->user?->full_name ?: $report->person_name));
+        $wfaDisplayTitle = static function ($report) use ($wfaPersonName): string {
             $title = trim((string) $report->title) ?: ($report->wfa_code ?: \App\Models\WfaReport::formatCode((int) $report->id));
+            $storedName = trim((string) $report->person_name);
+            $currentName = $wfaPersonName($report);
+            if ($storedName !== '' && $currentName !== '' && $storedName !== $currentName) {
+                $title = str_replace($storedName, $currentName, $title);
+            }
+            return $title;
+        };
+        $wfaDownloadName = static function ($report, string $extension) use ($wfaDisplayTitle): string {
+            $title = $wfaDisplayTitle($report);
             $title = preg_replace('/[\\\\\/:*?"<>|]+/u', ' ', $title);
             $title = trim((string) preg_replace('/\s+/u', ' ', (string) $title));
             return ($title ?: 'WFA') . '.' . $extension;
@@ -42,13 +52,13 @@
             'wfaReport' => $report,
             'filename' => $wfaDownloadName($report, 'pdf'),
         ]);
-        $reportPayloads = $reports->getCollection()->mapWithKeys(function ($report) use ($wfaMonthLabel, $wfaCreatedLabel, $wfaMonthKey, $wfaDownloadName, $canViewWfaReport, $canEditWfaReport) {
+        $reportPayloads = $reports->getCollection()->mapWithKeys(function ($report) use ($wfaMonthLabel, $wfaCreatedLabel, $wfaMonthKey, $wfaDownloadName, $wfaPersonName, $wfaDisplayTitle, $canViewWfaReport, $canEditWfaReport) {
             return [
                 $report->id => [
                     'id' => $report->id,
                     'code' => $report->wfa_code ?: \App\Models\WfaReport::formatCode((int) $report->id),
-                    'person_name' => $report->person_name,
-                    'title' => $report->title,
+                    'person_name' => $wfaPersonName($report),
+                    'title' => $wfaDisplayTitle($report),
                     'created_at_label' => $wfaCreatedLabel($report),
                     'month_label' => $wfaMonthLabel($report),
                     'filter_month_key' => $wfaMonthKey($report),
@@ -309,21 +319,22 @@
                                 $code = $report->wfa_code ?: \App\Models\WfaReport::formatCode((int) $report->id);
                                 $monthLabel = $wfaMonthLabel($report);
                                 $createdLabel = $wfaCreatedLabel($report);
-                                $searchText = mb_strtolower(trim($code . ' ' . $report->title . ' ' . $monthLabel . ' ' . $createdLabel . ' ' . $report->output_text));
+                                $displayTitle = $wfaDisplayTitle($report);
+                                $searchText = mb_strtolower(trim($code . ' ' . $displayTitle . ' ' . $wfaPersonName($report) . ' ' . $monthLabel . ' ' . $createdLabel . ' ' . $report->output_text));
                                 $canViewThisReport = $canViewWfaReport($report);
                                 $canEditThisReport = $canEditWfaReport($report);
                             @endphp
-                            <tr data-wfa-row data-report-id="{{ $report->id }}" data-month="{{ $wfaMonthKey($report) }}" data-created="{{ optional($report->created_at)->timestamp ?? 0 }}" data-title="{{ e($report->title) }}" data-search-text="{{ e($searchText) }}">
+                            <tr data-wfa-row data-report-id="{{ $report->id }}" data-month="{{ $wfaMonthKey($report) }}" data-created="{{ optional($report->created_at)->timestamp ?? 0 }}" data-title="{{ e($displayTitle) }}" data-search-text="{{ e($searchText) }}">
                                 <td data-label="รหัส" class="whitespace-nowrap font-semibold text-slate-600">{{ $code }}</td>
                                 <td data-label="รายงานภาระงาน (WFA)">
                                     @if ($canEditThisReport)
-                                        <button type="button" class="hidden text-left font-extrabold leading-6 text-blue-700 hover:underline md:inline" data-open-wfa="{{ $report->id }}">{{ $report->title }}</button>
-                                        <a href="{{ route('wfa.edit', $report) }}" class="font-extrabold leading-6 text-blue-700 hover:underline md:hidden">{{ $report->title }}</a>
+                                        <button type="button" class="hidden text-left font-extrabold leading-6 text-blue-700 hover:underline md:inline" data-open-wfa="{{ $report->id }}">{{ $displayTitle }}</button>
+                                        <a href="{{ route('wfa.edit', $report) }}" class="font-extrabold leading-6 text-blue-700 hover:underline md:hidden">{{ $displayTitle }}</a>
                                     @elseif ($canViewThisReport)
-                                        <button type="button" class="hidden text-left font-extrabold leading-6 text-blue-700 hover:underline md:inline" data-open-wfa="{{ $report->id }}">{{ $report->title }}</button>
-                                        <span class="font-extrabold leading-6 text-slate-800 md:hidden">{{ $report->title }}</span>
+                                        <button type="button" class="hidden text-left font-extrabold leading-6 text-blue-700 hover:underline md:inline" data-open-wfa="{{ $report->id }}">{{ $displayTitle }}</button>
+                                        <span class="font-extrabold leading-6 text-slate-800 md:hidden">{{ $displayTitle }}</span>
                                     @else
-                                        <span class="font-extrabold leading-6 text-slate-800">{{ $report->title }}</span>
+                                        <span class="font-extrabold leading-6 text-slate-800">{{ $displayTitle }}</span>
                                     @endif
                                     <div class="mt-1 text-xs font-semibold text-slate-500">วันที่บันทึก {{ $createdLabel }}</div>
                                     <div class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500" data-row-output="{{ $report->id }}">{{ $report->output_text ?: '-' }}</div>

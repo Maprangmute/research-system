@@ -14,6 +14,7 @@
             font-size: 13.5pt;
             line-height: 1.42;
             color: #1e293b;
+            hyphens: none;
         }
         h1, h2, h3, p {
             margin: 0;
@@ -156,6 +157,23 @@
         }
         .table-summary thead th { background: #eff6ff; }
         .table-worklist thead th { background: #ecfeff; }
+        .table-worklist .wfa-worklist-row--split-start td {
+            border-bottom: 0 !important;
+            background: #ffffff !important;
+            padding-bottom: 2px;
+        }
+        .table-worklist .wfa-worklist-row--split-middle td {
+            border-top: 0 !important;
+            border-bottom: 0 !important;
+            background: #ffffff !important;
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+        .table-worklist .wfa-worklist-row--split-end td {
+            border-top: 0 !important;
+            background: #ffffff !important;
+            padding-top: 2px;
+        }
         .table-detail thead th { background: #fff7ed; }
         .table-detail tr { page-break-inside: avoid; }
         .title-main {
@@ -223,17 +241,21 @@
             padding: 0;
             background: #ffffff;
             color: #111827;
-            font-size: 12pt;
+            font-size: 13.6pt;
             line-height: 1.38;
-            text-align: justify;
-            text-justify: distribute;
+            text-align: left;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            hyphens: none;
             width: 100%;
         }
         .output-content p,
         .output-content div {
             margin: 0 0 5px 0;
-            text-align: justify;
-            text-justify: distribute;
+            text-align: left;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            hyphens: none;
         }
         .output-content ul,
         .output-content ol {
@@ -246,6 +268,9 @@
             margin: 0 0 5px 0;
             padding-left: 2px;
             line-height: 1.38;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            hyphens: none;
         }
         .wfa-output-list {
             width: 100%;
@@ -258,6 +283,9 @@
             padding: 0 0 7px 0;
             vertical-align: top;
             line-height: 1.38;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            hyphens: none;
         }
         .wfa-output-list .wfa-output-bullet {
             width: 18px;
@@ -409,29 +437,102 @@
                 </thead>
                 <tbody>
                     @forelse(($monthWorkList ?? collect()) as $work)
-                        <tr>
-                            <td>
-                                <div class="title-main">{{ $work['name'] ?? '-' }}</div>
-                            </td>
-                            <td>
-                                @php $detailGroups = collect($work['work_detail_groups'] ?? [])->filter(); @endphp
-                                @if ($detailGroups->isEmpty())
-                                    -
-                                @else
-                                    @foreach ($detailGroups as $group)
-                                        <div class="title-main">{!! str_contains((string) ($group['job'] ?? ''), '•') ? $formatManualBullets($group['job'] ?? 'รายละเอียดงาน') : '• ' . e($group['job'] ?? 'รายละเอียดงาน') !!}</div>
-                                        @php $tasks = collect($group['tasks'] ?? [])->filter(); @endphp
-                                        @foreach ($tasks as $task)
-                                            <div class="title-sub" style="margin-left: 14px;">{!! $formatManualBullets($task['task'] ?? '-') !!}</div>
-                                            <div class="title-sub" style="margin-left: 28px;">({{ $task['range'] ?? '-' }})</div>
+                        @php
+                            $detailGroups = collect($work['work_detail_groups'] ?? [])->filter();
+                            $detailText = $detailGroups->map(function ($group) {
+                                $job = trim(html_entity_decode(strip_tags((string) ($group['job'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                                $tasks = collect($group['tasks'] ?? [])->map(function ($task) {
+                                    return trim((string) ($task['task'] ?? '')) . ' ' . trim((string) ($task['range'] ?? ''));
+                                })->implode("\n");
+
+                                return trim($job . "\n" . $tasks);
+                            })->implode("\n");
+                            $detailLines = collect(preg_split('/\R+/u', $detailText) ?: [])->map(fn ($line) => trim((string) $line))->filter()->values();
+                            $shouldSplitWfaWork = $isWfaReport && (mb_strlen($detailText, 'UTF-8') > 900 || $detailLines->count() > 8);
+                        @endphp
+
+                        @if ($shouldSplitWfaWork)
+                            @php
+                                $detailRows = collect();
+
+                                foreach ($detailGroups as $group) {
+                                    $jobText = trim(html_entity_decode(strip_tags((string) ($group['job'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                                    $jobLines = collect(preg_split('/\R+/u', $jobText) ?: [])
+                                        ->map(fn ($line) => trim((string) $line))
+                                        ->filter()
+                                        ->values();
+
+                                    if ($jobLines->isEmpty()) {
+                                        $jobLines = collect(['รายละเอียดงาน']);
+                                    }
+
+                                    foreach ($jobLines as $lineIndex => $line) {
+                                        $lineHtml = preg_match('/^\d+[.)]\s/u', $line)
+                                            ? e($line)
+                                            : (($lineIndex === 0 ? '• ' : '') . e($line));
+                                        $detailRows->push(['class' => 'title-main', 'html' => $lineHtml, 'indent' => 0]);
+                                    }
+
+                                    $tasks = collect($group['tasks'] ?? [])->filter();
+                                    foreach ($tasks as $task) {
+                                        $detailRows->push(['class' => 'title-sub', 'html' => $formatManualBullets($task['task'] ?? '-'), 'indent' => 14]);
+                                        $detailRows->push(['class' => 'title-sub', 'html' => '(' . e($task['range'] ?? '-') . ')', 'indent' => 28]);
+                                    }
+                                }
+
+                                if ($detailRows->isEmpty()) {
+                                    $detailRows->push(['class' => '', 'html' => '-', 'indent' => 0]);
+                                }
+                            @endphp
+                            @foreach ($detailRows as $detailIndex => $detail)
+                                @php
+                                    $detailLastIndex = $detailRows->count() - 1;
+                                    $splitRowClass = $detailRows->count() === 1
+                                        ? ''
+                                        : ($detailIndex === 0
+                                            ? 'wfa-worklist-row--split-start'
+                                            : ($detailIndex === $detailLastIndex ? 'wfa-worklist-row--split-end' : 'wfa-worklist-row--split-middle'));
+                                @endphp
+                                <tr class="{{ $splitRowClass }}">
+                                    <td>
+                                        @if ($detailIndex === 0)
+                                            <div class="title-main">{{ $work['name'] ?? '-' }}</div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="{{ $detail['class'] }}" style="margin-left: {{ $detail['indent'] }}px;">{!! $detail['html'] !!}</div>
+                                    </td>
+                                    <td class="center">
+                                        @if ($detailIndex === 0)
+                                            <span class="{{ $statusChipClass($work['status_label'] ?? null) }}">{{ $work['status_label'] ?? '-' }}</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td>
+                                    <div class="title-main">{{ $work['name'] ?? '-' }}</div>
+                                </td>
+                                <td>
+                                    @if ($detailGroups->isEmpty())
+                                        -
+                                    @else
+                                        @foreach ($detailGroups as $group)
+                                            <div class="title-main">{!! str_contains((string) ($group['job'] ?? ''), '•') ? $formatManualBullets($group['job'] ?? 'รายละเอียดงาน') : '• ' . e($group['job'] ?? 'รายละเอียดงาน') !!}</div>
+                                            @php $tasks = collect($group['tasks'] ?? [])->filter(); @endphp
+                                            @foreach ($tasks as $task)
+                                                <div class="title-sub" style="margin-left: 14px;">{!! $formatManualBullets($task['task'] ?? '-') !!}</div>
+                                                <div class="title-sub" style="margin-left: 28px;">({{ $task['range'] ?? '-' }})</div>
+                                            @endforeach
                                         @endforeach
-                                    @endforeach
-                                @endif
-                            </td>
-                            <td class="center">
-                                <span class="{{ $statusChipClass($work['status_label'] ?? null) }}">{{ $work['status_label'] ?? '-' }}</span>
-                            </td>
-                        </tr>
+                                    @endif
+                                </td>
+                                <td class="center">
+                                    <span class="{{ $statusChipClass($work['status_label'] ?? null) }}">{{ $work['status_label'] ?? '-' }}</span>
+                                </td>
+                            </tr>
+                        @endif
                     @empty
                         <tr>
                             <td colspan="3" class="center muted">ไม่มีรายการโครงการ/งานในเดือนนี้</td>

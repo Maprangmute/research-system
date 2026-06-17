@@ -16,6 +16,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use PDF;
+use Mpdf\Mpdf;
+use Mpdf\Output\Destination;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\SimpleType\Jc;
@@ -972,8 +974,8 @@ private function wfaJsonReport(WfaReport $report): array
     return [
         'id' => $report->id,
         'code' => $report->wfa_code ?: WfaReport::formatCode((int) $report->id),
-        'person_name' => $report->person_name,
-        'title' => $report->title,
+        'person_name' => $this->wfaPersonName($report),
+        'title' => $this->wfaDisplayTitle($report),
         'month_label' => $this->wfaMonthLabel($this->wfaReportMonth($report)),
         'created_at_label' => $createdLabel,
         'created_timestamp' => $report->created_at?->timestamp ?? 0,
@@ -1017,21 +1019,58 @@ public function wfaPdf(Request $request, WfaReport $wfaReport, ?string $filename
     $dateStr = now()->setTimezone('Asia/Bangkok')->format('Ymd_Hi');
     $filename = $this->wfaExportFilename($wfaReport, $dateStr, 'pdf');
 
-    $pdf = PDF::loadView('fte.pdf', array_merge($data, [
+    $html = view('fte.pdf', array_merge($data, [
         'user' => $request->user(),
         'profilePhotoDataUri' => $this->resolveUserProfilePhotoDataUriForExport($data['profile'] ?? null),
         'documentTitle' => $this->wfaBrowserDownloadFilename($wfaReport, 'pdf'),
-    ]));
+    ]))->render();
+
+    $pdfOutput = $this->renderWfaPdfWithMpdf($html);
 
     AuditLogger::logFileDownload($filename, [
         'subject_type' => 'wfa_pdf',
         'subject_label' => (string) $wfaReport->title,
     ], $request);
 
-    return response($pdf->output(), 200, [
+    return response($pdfOutput, 200, [
         'Content-Type' => 'application/pdf',
         'Content-Disposition' => $this->utf8ContentDisposition('inline', $filename),
+        'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma' => 'no-cache',
+        'Expires' => '0',
     ]);
+}
+
+private function renderWfaPdfWithMpdf(string $html): string
+{
+    $config = config('pdf');
+    $tempDir = $config['tempDir'] ?? storage_path('app/mpdf-temp');
+    if (! is_dir($tempDir)) {
+        mkdir($tempDir, 0775, true);
+    }
+
+    $fontPath = $config['font_path'] ?? resource_path('fonts/');
+    $mpdf = new Mpdf([
+        'mode' => $config['mode'] ?? 'utf-8',
+        'format' => $config['format'] ?? 'A4',
+        'default_font_size' => $config['default_font_size'] ?? 16,
+        'default_font' => $config['default_font'] ?? 'thsarabun',
+        'margin_left' => 8,
+        'margin_right' => 8,
+        'margin_top' => 12,
+        'margin_bottom' => 14,
+        'tempDir' => $tempDir,
+        'fontDir' => array_filter([
+            $fontPath,
+            storage_path('fonts'),
+        ]),
+        'fontdata' => $config['font_data'] ?? [],
+    ]);
+
+    $mpdf->useDictionaryLBR = false;
+    $mpdf->WriteHTML($html);
+
+    return $mpdf->Output('', Destination::STRING_RETURN);
 }
 
 public function wfaWord(Request $request, WfaReport $wfaReport)
@@ -1075,7 +1114,7 @@ private function canManageAnyWfaReport(?User $user): bool
 
 private function wfaExportFilename(WfaReport $report, string $dateStr, string $extension): string
 {
-    $title = trim((string) $report->title) ?: ($report->wfa_code ?: WfaReport::formatCode((int) $report->id));
+    $title = $this->wfaDisplayTitle($report);
     $safeTitle = preg_replace('/[\\\\\/:*?"<>|]+/u', ' ', $title);
     $safeTitle = preg_replace('/\s+/u', ' ', (string) $safeTitle);
     $safeTitle = trim((string) $safeTitle, " .\t\n\r\0\x0B");
@@ -1085,12 +1124,30 @@ private function wfaExportFilename(WfaReport $report, string $dateStr, string $e
 
 private function wfaBrowserDownloadFilename(WfaReport $report, string $extension): string
 {
-    $title = trim((string) $report->title) ?: ($report->wfa_code ?: WfaReport::formatCode((int) $report->id));
+    $title = $this->wfaDisplayTitle($report);
     $safeTitle = preg_replace('/[\\\\\/:*?"<>|]+/u', ' ', $title);
     $safeTitle = preg_replace('/\s+/u', ' ', (string) $safeTitle);
     $safeTitle = trim((string) $safeTitle, " .\t\n\r\0\x0B") ?: 'WFA';
 
     return "{$safeTitle}.{$extension}";
+}
+
+private function wfaPersonName(WfaReport $report): string
+{
+    return trim((string) ($report->user?->full_name ?: $report->person_name));
+}
+
+private function wfaDisplayTitle(WfaReport $report): string
+{
+    $title = trim((string) $report->title) ?: ($report->wfa_code ?: WfaReport::formatCode((int) $report->id));
+    $storedName = trim((string) $report->person_name);
+    $currentName = $this->wfaPersonName($report);
+
+    if ($storedName !== '' && $currentName !== '' && $storedName !== $currentName) {
+        $title = str_replace($storedName, $currentName, $title);
+    }
+
+    return $title;
 }
 
 private function wfaPdfUrl(WfaReport $report): string
@@ -1279,7 +1336,9 @@ private function buildWfaExportData(WfaReport $report): array
         ];
     }
 
-    $data = $this->buildFteDetailData($report->person_name, $filter);
+    $reportOwnerName = trim((string) ($report->user?->full_name ?? ''));
+    $personName = $reportOwnerName !== '' ? $reportOwnerName : (string) $report->person_name;
+    $data = $this->buildFteDetailData($personName, $filter);
 
     if ($mode === 'month') {
         $selectedMonth = $this->wfaReportMonth($report);
@@ -1427,7 +1486,7 @@ private function normalizeWfaOutputHtmlForPdf(string $html): string
 
     $collapseTextNodes = function (\DOMNode $node) use (&$collapseTextNodes): void {
         if ($node instanceof \DOMText) {
-            $node->nodeValue = preg_replace('/[ \t\r\n]+/u', ' ', (string) $node->nodeValue);
+            $node->nodeValue = $this->normalizeWfaExportTextSpacing((string) $node->nodeValue, true);
             return;
         }
 
@@ -1437,6 +1496,8 @@ private function normalizeWfaOutputHtmlForPdf(string $html): string
     };
 
     $collapseTextNodes($dom);
+    $this->normalizeWfaExportTextAlignment($dom);
+    $this->addWfaPdfThaiLineBreakOpportunities($dom);
 
     foreach (iterator_to_array($dom->getElementsByTagName('ul')) as $list) {
         $table = $dom->createElement('table');
@@ -1476,6 +1537,133 @@ private function normalizeWfaOutputHtmlForPdf(string $html): string
     return trim((string) $body);
 }
 
+private function addWfaPdfThaiLineBreakOpportunities(\DOMNode $node): void
+{
+    foreach (iterator_to_array($node->childNodes) as $child) {
+        if ($child instanceof \DOMText) {
+            $this->replaceWfaPdfThaiTextNodeWithBreaks($child);
+            continue;
+        }
+
+        $this->addWfaPdfThaiLineBreakOpportunities($child);
+    }
+}
+
+private function replaceWfaPdfThaiTextNodeWithBreaks(\DOMText $node): void
+{
+    $text = (string) $node->nodeValue;
+    if (! preg_match('/[\p{Thai}]{8,}/u', $text)) {
+        return;
+    }
+
+    $fragment = $node->ownerDocument?->createDocumentFragment();
+    if (! $fragment) {
+        return;
+    }
+
+    $offset = 0;
+    preg_match_all('/[\p{Thai}]{8,}/u', $text, $matches, PREG_OFFSET_CAPTURE);
+
+    foreach ($matches[0] as [$run, $byteOffset]) {
+        $before = substr($text, $offset, $byteOffset - $offset);
+        if ($before !== '') {
+            $before = preg_replace('/(\S) $/u', "$1\u{00A0}", $before) ?? $before;
+            $fragment->appendChild($node->ownerDocument->createTextNode($before));
+        }
+
+        $clusters = $this->splitThaiTextForPdfBreaks($run);
+        foreach ($clusters as $index => $cluster) {
+            $fragment->appendChild($node->ownerDocument->createTextNode($cluster));
+            if ($index < count($clusters) - 1) {
+                $break = $node->ownerDocument->createElement('span', ' ');
+                $break->setAttribute('style', 'font-size:0; line-height:0; color:transparent;');
+                $fragment->appendChild($break);
+            }
+        }
+
+        $offset = $byteOffset + strlen($run);
+    }
+
+    $after = substr($text, $offset);
+    if ($after !== '') {
+        $fragment->appendChild($node->ownerDocument->createTextNode($after));
+    }
+
+    $node->parentNode?->replaceChild($fragment, $node);
+}
+
+private function splitThaiTextForPdfBreaks(string $text): array
+{
+    if (class_exists(\IntlBreakIterator::class)) {
+        $iterator = \IntlBreakIterator::createWordInstance('th');
+        $iterator->setText($text);
+
+        $segments = [];
+        $lastOffset = 0;
+        foreach ($iterator as $offset) {
+            $segment = substr($text, $lastOffset, $offset - $lastOffset);
+            if ($segment !== '') {
+                $segments[] = $segment;
+            }
+            $lastOffset = $offset;
+        }
+
+        if (count($segments) > 1) {
+            return $this->mergeShortThaiPdfBreakSegments($segments);
+        }
+    }
+
+    $chars = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
+    if (! is_array($chars)) {
+        return [$text];
+    }
+
+    $clusters = [];
+    $count = count($chars);
+
+    for ($i = 0; $i < $count; $i++) {
+        $cluster = $chars[$i];
+
+        if (preg_match('/^[\x{0E40}-\x{0E44}]$/u', $chars[$i]) && isset($chars[$i + 1])) {
+            $cluster .= $chars[++$i];
+        }
+
+        while (isset($chars[$i + 1]) && preg_match('/^[\x{0E31}\x{0E34}-\x{0E3A}\x{0E47}-\x{0E4E}]$/u', $chars[$i + 1])) {
+            $cluster .= $chars[++$i];
+        }
+
+        $clusters[] = $cluster;
+    }
+
+    return $clusters;
+}
+
+private function mergeShortThaiPdfBreakSegments(array $segments): array
+{
+    $merged = [];
+    $count = count($segments);
+
+    for ($i = 0; $i < $count; $i++) {
+        $segment = $segments[$i];
+
+        if (mb_strlen($segment, 'UTF-8') === 1) {
+            if (isset($segments[$i + 1])) {
+                $segments[$i + 1] = $segment . $segments[$i + 1];
+                continue;
+            }
+
+            if ($merged !== []) {
+                $merged[array_key_last($merged)] .= $segment;
+                continue;
+            }
+        }
+
+        $merged[] = $segment;
+    }
+
+    return $merged !== [] ? $merged : $segments;
+}
+
 private function normalizeWfaOutputHtmlForWord(string $html): string
 {
     $html = trim($this->normalizeThaiLegacyCharacters($html));
@@ -1490,7 +1678,7 @@ private function normalizeWfaOutputHtmlForWord(string $html): string
 
     $collapseTextNodes = function (\DOMNode $node) use (&$collapseTextNodes): void {
         if ($node instanceof \DOMText) {
-            $node->nodeValue = preg_replace('/[ \t\r\n]+/u', ' ', (string) $node->nodeValue);
+            $node->nodeValue = $this->normalizeWfaExportTextSpacing((string) $node->nodeValue);
             return;
         }
 
@@ -1500,13 +1688,15 @@ private function normalizeWfaOutputHtmlForWord(string $html): string
     };
 
     $collapseTextNodes($dom);
+    $this->normalizeWfaExportTextAlignment($dom);
+    $this->normalizeWfaWordInlineBlocks($dom);
 
     foreach (iterator_to_array($dom->getElementsByTagName('ul')) as $list) {
-        $this->replaceWfaWordListWithTable($dom, $list, false);
+        $this->replaceWfaWordListWithParagraphs($dom, $list, false);
     }
 
     foreach (iterator_to_array($dom->getElementsByTagName('ol')) as $list) {
-        $this->replaceWfaWordListWithTable($dom, $list, true);
+        $this->replaceWfaWordListWithParagraphs($dom, $list, true);
     }
 
     $applyWordFont = function (\DOMNode $node) use (&$applyWordFont): void {
@@ -1515,7 +1705,7 @@ private function normalizeWfaOutputHtmlForWord(string $html): string
                 ->map(fn($rule) => trim($rule))
                 ->filter()
                 ->reject(fn($rule) => str_starts_with(strtolower($rule), 'font-family:') || str_starts_with(strtolower($rule), 'font-size:'))
-                ->prepend('font-size:16pt')
+                ->prepend('font-size:14pt')
                 ->prepend('font-family:TH Sarabun New')
                 ->implode('; ');
 
@@ -1537,11 +1727,94 @@ private function normalizeWfaOutputHtmlForWord(string $html): string
     return trim((string) $body);
 }
 
-private function replaceWfaWordListWithTable(\DOMDocument $dom, \DOMElement $list, bool $ordered): void
+private function normalizeWfaWordInlineBlocks(\DOMNode $node): void
 {
-    $table = $dom->createElement('table');
-    $table->setAttribute('width', '100%');
-    $table->setAttribute('style', 'width:100%; border-collapse:collapse; margin:0 0 8pt 0;');
+    foreach (iterator_to_array($node->childNodes) as $child) {
+        $this->normalizeWfaWordInlineBlocks($child);
+    }
+
+    if (! $node instanceof \DOMElement || ! $node->parentNode instanceof \DOMElement) {
+        return;
+    }
+
+    $nodeName = strtolower($node->nodeName);
+    $parentName = strtolower($node->parentNode->nodeName);
+    $inlineParents = ['span', 'b', 'strong', 'i', 'em', 'u'];
+    $blockNodes = ['p', 'div', 'ul', 'ol', 'table'];
+
+    if (! in_array($parentName, $inlineParents, true) || ! in_array($nodeName, $blockNodes, true)) {
+        return;
+    }
+
+    if (trim($node->textContent ?? '') === '') {
+        $node->parentNode->removeChild($node);
+        return;
+    }
+
+    $replacement = $node->ownerDocument?->createElement('span');
+    if (! $replacement) {
+        return;
+    }
+
+    while ($node->firstChild) {
+        $replacement->appendChild($node->firstChild);
+    }
+
+    $node->parentNode->replaceChild($replacement, $node);
+}
+
+private function normalizeWfaExportTextAlignment(\DOMNode $node): void
+{
+    if ($node instanceof \DOMElement) {
+        if (strtolower($node->getAttribute('align')) === 'justify') {
+            $node->removeAttribute('align');
+        }
+
+        $styleRules = collect(explode(';', (string) $node->getAttribute('style')))
+            ->map(fn($rule) => trim($rule))
+            ->filter()
+            ->map(function ($rule) {
+                [$property, $value] = array_pad(explode(':', $rule, 2), 2, '');
+                return [strtolower(trim($property)), trim($value)];
+            })
+            ->reject(function ($pair) {
+                return $pair[0] === 'text-justify'
+                    || ($pair[0] === 'text-align' && strtolower($pair[1]) === 'justify');
+            })
+            ->map(fn($pair) => $pair[0] . ':' . $pair[1])
+            ->implode('; ');
+
+        if ($styleRules === '') {
+            $node->removeAttribute('style');
+        } else {
+            $node->setAttribute('style', $styleRules);
+        }
+    }
+
+    foreach (iterator_to_array($node->childNodes) as $child) {
+        $this->normalizeWfaExportTextAlignment($child);
+    }
+}
+
+private function normalizeWfaExportTextSpacing(string $text, bool $compactThaiPhraseSpaces = false): string
+{
+    $text = preg_replace('/[ \t\r\n\x{00A0}\x{3000}]+/u', ' ', $text) ?? $text;
+    $text = preg_replace('/(:) ([A-Z]{2,}\))/u', "$1\u{00A0}$2", $text) ?? $text;
+
+    $text = preg_replace_callback('/\p{Thai}(?: \p{Thai}){2,}/u', function (array $match): string {
+        return str_replace(' ', '', $match[0]);
+    }, $text) ?? $text;
+
+    if ($compactThaiPhraseSpaces) {
+        $text = preg_replace('/(?<=\p{Thai}) (?=\p{Thai})/u', '', $text) ?? $text;
+    }
+
+    return $text;
+}
+
+private function replaceWfaWordListWithParagraphs(\DOMDocument $dom, \DOMElement $list, bool $ordered): void
+{
+    $fragment = $dom->createDocumentFragment();
 
     $itemIndex = 1;
     foreach (iterator_to_array($list->childNodes) as $child) {
@@ -1549,26 +1822,19 @@ private function replaceWfaWordListWithTable(\DOMDocument $dom, \DOMElement $lis
             continue;
         }
 
-        $row = $dom->createElement('tr');
-        $bulletCell = $dom->createElement('td', $ordered ? ($itemIndex . '.') : '•');
-        $bulletCell->setAttribute('width', '5%');
-        $bulletCell->setAttribute('style', 'border:0; padding:0 4pt 4pt 0; vertical-align:top; text-align:right; font-family:TH Sarabun New; font-size:16pt;');
-
-        $textCell = $dom->createElement('td');
-        $textCell->setAttribute('width', '95%');
-        $textCell->setAttribute('style', 'border:0; padding:0 0 4pt 4pt; vertical-align:top; text-align:left; font-family:TH Sarabun New; font-size:16pt;');
+        $paragraph = $dom->createElement('p');
+        $paragraph->setAttribute('style', 'font-family:TH Sarabun New; font-size:14pt; margin:0 0 4pt 0; text-align:left;');
+        $paragraph->appendChild($dom->createTextNode(($ordered ? ($itemIndex . '. ') : '• ')));
 
         foreach (iterator_to_array($child->childNodes) as $itemChild) {
-            $textCell->appendChild($itemChild->cloneNode(true));
+            $paragraph->appendChild($itemChild->cloneNode(true));
         }
 
-        $row->appendChild($bulletCell);
-        $row->appendChild($textCell);
-        $table->appendChild($row);
+        $fragment->appendChild($paragraph);
         $itemIndex++;
     }
 
-    $list->parentNode?->replaceChild($table, $list);
+    $list->parentNode?->replaceChild($fragment, $list);
 }
 
 private function normalizeThaiLegacyCharacters(string $text): string
@@ -1684,9 +1950,9 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         'cellMarginLeft' => 120,
         'cellMarginRight' => 120,
     ];
-    $labelStyle = ['bold' => true, 'size' => 14, 'color' => '334155'];
-    $bodyStyle = ['size' => 12, 'color' => '334155'];
-    $mutedStyle = ['size' => 12, 'color' => '64748B'];
+    $labelStyle = ['bold' => true, 'size' => 12, 'color' => '334155'];
+    $bodyStyle = ['size' => 10.5, 'color' => '334155'];
+    $mutedStyle = ['size' => 10.5, 'color' => '64748B'];
 
     $footer = $section->addFooter();
     $footerTable = $footer->addTable(array_merge($tableBase, [
@@ -1755,12 +2021,14 @@ private function buildFteWordDocument(array $data, string $targetPath): void
 
     $workListTable = $section->addTable(array_merge($tableBase, $cellBorder));
     $workListTable->addRow();
-    foreach ([
+    $workListColumns = [
         [$isWfaReport ? 'ภาระงาน' : 'ชื่อโครงการ / งาน', 2800],
         ['รายละเอียดงาน', 5400],
         ['สถานะ', 1800],
-    ] as [$text, $width]) {
-        $workListTable->addCell($width, ['bgColor' => 'DFF7FB', 'valign' => VerticalJc::CENTER])->addText($text, ['bold' => true, 'size' => 13, 'color' => '334155'], ['alignment' => Jc::CENTER]);
+    ];
+
+    foreach ($workListColumns as [$text, $width]) {
+        $workListTable->addCell($width, ['bgColor' => 'DFF7FB', 'valign' => VerticalJc::CENTER])->addText($text, ['bold' => true, 'size' => 11, 'color' => '334155'], ['alignment' => Jc::CENTER]);
     }
     if ($monthWorkList->isEmpty()) {
         $workListTable->addRow();
@@ -1769,25 +2037,25 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         foreach ($monthWorkList as $work) {
             $workListTable->addRow();
             $workTitle = (string) ($work['name'] ?? '-');
-            $workListTable->addCell(2800, ['valign' => VerticalJc::CENTER])->addText($workTitle, ['bold' => true, 'size' => 14, 'color' => '0F172A']);
-            $detailCell = $workListTable->addCell(5400, ['valign' => VerticalJc::CENTER]);
+            $workListTable->addCell($workListColumns[0][1], ['valign' => VerticalJc::CENTER])->addText($workTitle, ['bold' => true, 'size' => 11.5, 'color' => '0F172A'], ['lineHeight' => 1.05]);
+            $detailCell = $workListTable->addCell($workListColumns[1][1], ['valign' => VerticalJc::CENTER]);
             $detailGroups = collect($work['work_detail_groups'] ?? [])->filter();
             if ($detailGroups->isEmpty()) {
-                $detailCell->addText('-', ['size' => 13, 'color' => '64748B']);
+                $detailCell->addText('-', $mutedStyle);
             } else {
                 foreach ($detailGroups as $group) {
                     $groupLabel = (string) ($group['job'] ?? 'รายละเอียดงาน');
                     if (str_contains($groupLabel, '•')) {
-                        $this->addManualBulletTextToWordCell($detailCell, $groupLabel, ['bold' => true, 'size' => 13, 'color' => '0F172A']);
+                        $this->addManualBulletTextToWordCell($detailCell, $groupLabel, ['bold' => true, 'size' => 10.5, 'color' => '0F172A']);
                     } else {
-                        $detailCell->addText('• ' . $groupLabel, ['bold' => true, 'size' => 13, 'color' => '0F172A'], ['spaceAfter' => 20]);
+                        $detailCell->addText('• ' . $groupLabel, ['bold' => true, 'size' => 10.5, 'color' => '0F172A'], ['spaceAfter' => 20]);
                     }
                     foreach (collect($group['tasks'] ?? [])->filter() as $task) {
                         $this->addManualBulletTextToWordCell($detailCell, (string) ($task['task'] ?? '-'), $bodyStyle);
                     }
                 }
             }
-            $workListTable->addCell(1800, ['valign' => VerticalJc::CENTER])->addText((string) ($work['status_label'] ?? '-'), ['bold' => true, 'size' => 13, 'color' => '334155'], ['alignment' => Jc::CENTER]);
+            $workListTable->addCell($workListColumns[2][1], ['valign' => VerticalJc::CENTER])->addText((string) ($work['status_label'] ?? '-'), ['bold' => true, 'size' => 10.5, 'color' => '334155'], ['alignment' => Jc::CENTER]);
         }
     }
 
@@ -1804,19 +2072,19 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         $monthTable = $section->addTable(array_merge($tableBase, $cellBorder));
         $monthTable->addRow();
         foreach ([
-            ['#', 600],
-            [$isWfaReport ? 'ภาระงาน / รายละเอียดงาน' : 'โครงการ / รายละเอียดงาน', 4000],
-            ['ช่วงเวลา', 2200],
-            ['ชั่วโมง', 1000],
-            ['วันทำงาน', 1000],
-            ['FTE เดือนนี้', 1200],
+            ['#', 450],
+            [$isWfaReport ? 'ภาระงาน / รายละเอียดงาน' : 'โครงการ / รายละเอียดงาน', 5450],
+            ['ช่วงเวลา', 1700],
+            ['ชม.', 750],
+            ['วัน', 750],
+            ['FTE', 900],
         ] as [$text, $width]) {
-            $monthTable->addCell($width, ['bgColor' => 'FFF1DF', 'valign' => VerticalJc::CENTER])->addText($text, ['bold' => true, 'size' => 13, 'color' => '334155'], ['alignment' => Jc::CENTER]);
+            $monthTable->addCell($width, ['bgColor' => 'FFF1DF', 'valign' => VerticalJc::CENTER])->addText($text, ['bold' => true, 'size' => 10.5, 'color' => '334155'], ['alignment' => Jc::CENTER]);
         }
 
         foreach ($rows as $index => $item) {
             $monthTable->addRow();
-            $monthTable->addCell(600, ['valign' => VerticalJc::CENTER])->addText((string) ($index + 1), ['size' => 13], ['alignment' => Jc::CENTER]);
+            $monthTable->addCell(450, ['valign' => VerticalJc::CENTER])->addText((string) ($index + 1), ['size' => 10.5], ['alignment' => Jc::CENTER]);
 
             $isBackOffice = ! $item->project?->id;
             $backOfficeTitle = trim((string) ($item->job_name ?? '')) ?: trim((string) ($item->task_detail ?? '')) ?: '-';
@@ -1825,8 +2093,8 @@ private function buildFteWordDocument(array $data, string $targetPath): void
                 ? (trim((string) ($item->job_detail ?? '')) ?: $backOfficeType)
                 : (trim((string) ($item->task_detail ?? '')) ?: trim((string) ($item->job_detail ?? '')) ?: '-');
             $title = $item->project?->id ? ($item->project->project_name_th ?? '-') : $backOfficeTitle;
-            $detailCell = $monthTable->addCell(4000, ['valign' => VerticalJc::CENTER]);
-            $detailCell->addText($title, ['bold' => true, 'size' => 14, 'color' => '0F172A'], ['spaceAfter' => 20]);
+            $detailCell = $monthTable->addCell(5450, ['valign' => VerticalJc::CENTER]);
+            $detailCell->addText($title, ['bold' => true, 'size' => 11.5, 'color' => '0F172A'], ['spaceAfter' => 20, 'lineHeight' => 1.05]);
             if (! $isWfaReport) {
                 $detailCell->addText('กลุ่ม: ' . ($item->role_group ?? '-'), $bodyStyle, ['spaceAfter' => 10]);
             }
@@ -1840,10 +2108,10 @@ private function buildFteWordDocument(array $data, string $targetPath): void
             $oeCarbon = Carbon::parse($item->overlap_end);
             $range = $osCarbon->locale('th')->translatedFormat('j F') . ' ' . ($osCarbon->year + 543)
                 . "\nถึง " . $oeCarbon->locale('th')->translatedFormat('j F') . ' ' . ($oeCarbon->year + 543);
-            $monthTable->addCell(2200, ['valign' => VerticalJc::CENTER])->addText($range, $bodyStyle, ['alignment' => Jc::CENTER]);
-            $monthTable->addCell(1000, ['valign' => VerticalJc::CENTER])->addText(number_format((float) $item->hours_in_month, 2), $bodyStyle, ['alignment' => Jc::CENTER]);
-            $monthTable->addCell(1000, ['valign' => VerticalJc::CENTER])->addText((string) intval($item->days_in_month), $bodyStyle, ['alignment' => Jc::CENTER]);
-            $monthTable->addCell(1200, ['valign' => VerticalJc::CENTER])->addText(number_format((float) $item->fte_value, 6), $bodyStyle, ['alignment' => Jc::CENTER]);
+            $monthTable->addCell(1700, ['valign' => VerticalJc::CENTER])->addText($range, $bodyStyle, ['alignment' => Jc::CENTER]);
+            $monthTable->addCell(750, ['valign' => VerticalJc::CENTER])->addText(number_format((float) $item->hours_in_month, 2), $bodyStyle, ['alignment' => Jc::CENTER]);
+            $monthTable->addCell(750, ['valign' => VerticalJc::CENTER])->addText((string) intval($item->days_in_month), $bodyStyle, ['alignment' => Jc::CENTER]);
+            $monthTable->addCell(900, ['valign' => VerticalJc::CENTER])->addText(number_format((float) $item->fte_value, 4), $bodyStyle, ['alignment' => Jc::CENTER]);
         }
 
         $section->addTextBreak(1);
@@ -1854,7 +2122,7 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         $section->addTextBreak(1);
         $section->addText($wfaOutputTitle, ['bold' => true, 'size' => 18, 'color' => '0F172A']);
         $section->addTextBreak(1);
-        Html::addHtml($section, '<div style="font-family:TH Sarabun New; font-size:16pt; line-height:1.38; text-align:left;">' . $wfaOutputHtml . '</div>', false, false);
+        Html::addHtml($section, '<div style="font-family:TH Sarabun New; font-size:14pt; line-height:1.25; text-align:left;">' . $wfaOutputHtml . '</div>', false, false);
         $section->addTextBreak(2);
         $section->addText('ขอรับรองว่าปฏิบัติงานจริง', ['bold' => true, 'size' => 12, 'color' => '111827']);
         $section->addTextBreak(3);

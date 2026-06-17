@@ -52,6 +52,7 @@ class UserDisplayNameSync
             self::linkNameTableByNames('external_output_conference_presenters', 'user_id', 'name', $userId, $fullName, $candidates);
 
             self::linkNameTableByNames('back_office_entries', 'user_id', 'person_name', $userId, $fullName, $candidates);
+            self::linkNameTableByNames('wfa_reports', 'user_id', 'person_name', $userId, $fullName, $candidates);
             self::linkNameTableByNames('back_office_task_outputs', 'owner_user_id', 'owner_name', $userId, $fullName, $candidates);
             self::linkNameTableByNames('back_office_output_contributors', 'user_id', 'name', $userId, $fullName, $candidates);
             self::linkBackOfficeOutputContributorsByNames($userId, $fullName, $candidates);
@@ -103,6 +104,7 @@ class UserDisplayNameSync
             self::syncOutputBookAuthorLinkedUsers($userId, $newFull);
             self::syncOutputConferenceLinkedUsers($userId, $newFull);
             self::syncBackOfficeEntryLinkedUsers($userId, $newFull);
+            self::syncWfaReportLinkedUsers($userId, $newFull);
             self::syncBackOfficeOutputContributorLinkedUsers($userId, $newFull);
             self::syncBackOfficeOutputAuthorLinkedUsers($userId);
             self::syncBackOfficeOutputAwardRecipientLinkedUsers($userId, $newFull);
@@ -135,6 +137,8 @@ class UserDisplayNameSync
             self::syncSimpleNameColumn('external_output_conference_presenters', 'name', $replacements);
 
             self::syncSimpleNameColumn('back_office_entries', 'person_name', $replacements);
+            self::syncSimpleNameColumn('wfa_reports', 'person_name', $replacements);
+            self::syncTextColumnOccurrences('wfa_reports', 'title', $replacements);
             self::syncSimpleNameColumn('back_office_output_contributors', 'name', $replacements);
             self::syncOutputAuthorsForTable('back_office_output_authors', $replacements);
             self::syncSimpleNameColumn('back_office_output_award_recipients', 'name', $replacements);
@@ -335,6 +339,27 @@ class UserDisplayNameSync
         }
 
         DB::table('back_office_entries')
+            ->where('user_id', $userId)
+            ->update($payload);
+    }
+
+    private static function syncWfaReportLinkedUsers(int $userId, string $fullName): void
+    {
+        if (
+            !Schema::hasTable('wfa_reports') ||
+            !Schema::hasColumn('wfa_reports', 'user_id') ||
+            !Schema::hasColumn('wfa_reports', 'person_name')
+        ) {
+            return;
+        }
+
+        $payload = ['person_name' => $fullName];
+
+        if (Schema::hasColumn('wfa_reports', 'updated_at')) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('wfa_reports')
             ->where('user_id', $userId)
             ->update($payload);
     }
@@ -608,6 +633,28 @@ class UserDisplayNameSync
         foreach ($replacements as $old => $new) {
             $query = DB::table($table)->whereRaw("TRIM({$column}) = ?", [$old]);
             $payload = [$column => $new];
+            if ($hasUpdatedAt) {
+                $payload['updated_at'] = now();
+            }
+            $query->update($payload);
+        }
+    }
+
+    private static function syncTextColumnOccurrences(string $table, string $column, array $replacements): void
+    {
+        if (!Schema::hasTable($table) || !Schema::hasColumn($table, $column)) {
+            return;
+        }
+
+        $hasUpdatedAt = Schema::hasColumn($table, 'updated_at');
+
+        foreach ($replacements as $old => $new) {
+            if ($old === '' || $old === $new) {
+                continue;
+            }
+
+            $query = DB::table($table)->where($column, 'like', '%' . $old . '%');
+            $payload = [$column => DB::raw('REPLACE(' . $column . ', ' . DB::getPdo()->quote($old) . ', ' . DB::getPdo()->quote($new) . ')')];
             if ($hasUpdatedAt) {
                 $payload['updated_at'] = now();
             }
