@@ -325,6 +325,16 @@
         $reportDate = $reportNow->translatedFormat('j F') . ' ' . ($reportNow->year + 543) . ' เวลา ' . $reportNow->format('H:i');
         $filterLabel = $pdfFilter['label'] ?? 'ทั้งหมด';
         $isWfaReport = !empty($wfaOutputHtml ?? null);
+        $formatFte = static function ($value, int $decimals = 7) use ($isWfaReport): string {
+            $value = (float) $value;
+            if (! $isWfaReport) {
+                return number_format($value, $decimals);
+            }
+
+            $scale = 10 ** 6;
+            $truncated = $value >= 0 ? floor($value * $scale) / $scale : ceil($value * $scale) / $scale;
+            return number_format($truncated, 6);
+        };
         $formatManualBullets = static function ($value): string {
             $text = trim(html_entity_decode(strip_tags((string) $value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
             if ($text === '') {
@@ -415,7 +425,7 @@
             </td>
             <td class="summary-fte">
                 <div class="summary-label">FTE รวมทั้งหมด</div>
-                <div class="summary-value">{{ number_format($totalFte, 4) }}</div>
+                <div class="summary-value">{{ $formatFte($totalFte, 4) }}</div>
                 <div class="summary-note">สะสมจากทุกช่วงเวลาในขอบเขตรายงาน</div>
             </td>
             <td class="summary-hours">
@@ -516,7 +526,7 @@
                         </td>
                         <td class="center" style="border:1px solid #cbd5e1;">{{ number_format($item->hours_in_month, 2) }}</td>
                         <td class="center" style="border:1px solid #cbd5e1;">{{ intval($item->days_in_month) }}</td>
-                        <td class="center" style="border:1px solid #cbd5e1;">{{ number_format($item->fte_value, 6) }}</td>
+                        <td class="center" style="border:1px solid #cbd5e1;">{{ $formatFte($item->fte_value) }}</td>
                     </tr>
                 @endforeach
             </tbody>

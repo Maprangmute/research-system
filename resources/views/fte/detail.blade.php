@@ -121,6 +121,13 @@
         $monthCount = $monthlyFTE->count();
         $totalFte = $allRows->sum('fte_value');
         $totalHours = $allRows->sum('hours_in_month');
+        $formatFte = static function ($value): string {
+            $value = (float) $value;
+            $scale = 10 ** 6;
+            $truncated = $value >= 0 ? floor($value * $scale) / $scale : ceil($value * $scale) / $scale;
+
+            return number_format($truncated, 6);
+        };
         $projectOptions = $allRows->pluck('project.project_name_th')->filter()->unique()->sort()->values();
         $roleOptions = $allRows->pluck('role_group')->filter()->unique()->sort()->values();
         $yearOptions = $monthlyFTE->keys()->map(fn($m) => substr($m, 0, 4))->unique()->sortDesc()->values();
@@ -269,7 +276,7 @@
             </div>
             <div class="bg-white border rounded-xl p-4">
                 <div class="text-xs text-slate-500">FTE รวมทั้งหมด</div>
-                <div class="text-2xl font-semibold text-slate-900">{{ number_format($totalFte, 7) }}</div>
+                <div class="text-2xl font-semibold text-slate-900">{{ $formatFte($totalFte) }}</div>
             </div>
             <div class="bg-white border rounded-xl p-4">
                 <div class="text-xs text-slate-500">ชั่วโมงรวมทั้งหมด</div>
@@ -553,7 +560,7 @@
                         </div>
                         <div class="text-xs font-medium text-slate-600">
                             {{ $rows->count() }} รายการ •
-                            FTE {{ number_format($sumFTE, 7) }} •
+                            FTE {{ $formatFte($sumFTE) }} •
                             ชั่วโมง {{ number_format($sumHours, 2) }}
                         </div>
                     </summary>
@@ -641,10 +648,10 @@
                                                 {{ intval($item->days_in_month) }}
                                             </td>
                                             <td class="p-2 text-center" data-label="FTE/วัน">
-                                                {{ number_format($item->fte_per_day, 10) }}
+                                                {{ $formatFte($item->fte_per_day) }}
                                             </td>
                                             <td class="p-2 text-center font-semibold" data-label="FTE เดือนนี้">
-                                                {{ number_format($item->fte_value, 7) }}
+                                                {{ $formatFte($item->fte_value) }}
                                             </td>
                                         </tr>
                                     @endforeach

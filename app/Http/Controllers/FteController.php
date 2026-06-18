@@ -1934,6 +1934,16 @@ private function buildFteWordDocument(array $data, string $targetPath): void
     $projectCount = $allRows->pluck('project.id')->filter()->unique()->count();
     $totalFte = (float) $allRows->sum('fte_value');
     $totalHours = (float) $allRows->sum('hours_in_month');
+    $formatFte = function (float $value, int $decimals = 7) use ($isWfaReport): string {
+        if (! $isWfaReport) {
+            return number_format($value, $decimals);
+        }
+
+        $scale = 10 ** 6;
+        $truncated = $value >= 0 ? floor($value * $scale) / $scale : ceil($value * $scale) / $scale;
+
+        return number_format($truncated, 6);
+    };
     $position = $profile->position ?? '-';
     $reporter = $user ? trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) : 'ผู้ใช้ระบบ';
     $reportNow = now()->setTimezone('Asia/Bangkok')->locale('th');
@@ -2005,7 +2015,7 @@ private function buildFteWordDocument(array $data, string $targetPath): void
     $summaryItems = [
         ['label' => 'จำนวนภาระงานทั้งหมด', 'value' => number_format($allRows->count()), 'note' => 'รายการงานที่ถูกคำนวณในรายงานนี้', 'bg' => 'EFF6FF'],
         ['label' => 'จำนวนโครงการ / งาน', 'value' => number_format($projectCount), 'note' => 'นับโครงการที่มีภาระงานเชื่อมโยง', 'bg' => 'EFF6FF'],
-        ['label' => 'FTE รวมทั้งหมด', 'value' => number_format($totalFte, 4), 'note' => 'สะสมจากทุกช่วงเวลาในขอบเขตรายงาน', 'bg' => 'F5F3FF'],
+        ['label' => 'FTE รวมทั้งหมด', 'value' => $formatFte($totalFte, 4), 'note' => 'สะสมจากทุกช่วงเวลาในขอบเขตรายงาน', 'bg' => 'F5F3FF'],
         ['label' => 'ชั่วโมงรวมทั้งหมด', 'value' => number_format($totalHours, 2), 'note' => 'รวมชั่วโมงทำงานทั้งหมด', 'bg' => 'ECFEFF'],
     ];
     foreach ($summaryItems as $item) {
@@ -2111,7 +2121,7 @@ private function buildFteWordDocument(array $data, string $targetPath): void
             $monthTable->addCell(1700, ['valign' => VerticalJc::CENTER])->addText($range, $bodyStyle, ['alignment' => Jc::CENTER]);
             $monthTable->addCell(750, ['valign' => VerticalJc::CENTER])->addText(number_format((float) $item->hours_in_month, 2), $bodyStyle, ['alignment' => Jc::CENTER]);
             $monthTable->addCell(750, ['valign' => VerticalJc::CENTER])->addText((string) intval($item->days_in_month), $bodyStyle, ['alignment' => Jc::CENTER]);
-            $monthTable->addCell(900, ['valign' => VerticalJc::CENTER])->addText(number_format((float) $item->fte_value, 4), $bodyStyle, ['alignment' => Jc::CENTER]);
+            $monthTable->addCell(900, ['valign' => VerticalJc::CENTER])->addText($formatFte((float) $item->fte_value), $bodyStyle, ['alignment' => Jc::CENTER]);
         }
 
         $section->addTextBreak(1);
@@ -3001,7 +3011,7 @@ private function buildFteProjectData(Project $project): array
             $row->fte_value_exact = (float) ($row->fte_value ?? 0);
         });
 
-        foreach ($rows->groupBy('rounding_key') as $group) {
+        foreach ($rows->groupBy(fn ($row) => ($row->rounding_key ?? '') . '|' . ($row->month ?? '')) as $group) {
             $this->rebalanceRoundedField($group, 'hours_in_month', 2);
             $this->rebalanceRoundedField($group, 'fte_value', 7);
         }

@@ -323,6 +323,16 @@
         $reportDate = $reportNow->translatedFormat('j F') . ' ' . ($reportNow->year + 543) . ' เวลา ' . $reportNow->format('H:i');
         $filterLabel = $pdfFilter['label'] ?? 'ทั้งหมด';
         $isWfaReport = !empty($wfaOutputHtml ?? null);
+        $formatFte = static function ($value, int $decimals = 7) use ($isWfaReport): string {
+            $value = (float) $value;
+            if (! $isWfaReport) {
+                return number_format($value, $decimals);
+            }
+
+            $scale = 10 ** 6;
+            $truncated = $value >= 0 ? floor($value * $scale) / $scale : ceil($value * $scale) / $scale;
+            return number_format($truncated, 6);
+        };
         $statusChipClass = static function (?string $status): string {
             $value = mb_strtolower(trim((string) $status), 'UTF-8');
             if (str_contains($value, 'เสร็จ')) return 'work-chip complete';
@@ -411,7 +421,7 @@
                 </td>
                 <td class="metric-fte">
                     <div class="metric-label">FTE รวมทั้งหมด</div>
-                    <div class="metric-value">{{ number_format($totalFte, 4) }}</div>
+                    <div class="metric-value">{{ $formatFte($totalFte, 4) }}</div>
                     <div class="metric-note">สะสมจากทุกช่วงเวลาในขอบเขตรายงาน</div>
                 </td>
                 <td class="metric-hours">
@@ -598,7 +608,7 @@
                                     </td>
                                     <td class="center">{{ number_format($item->hours_in_month, 2) }}</td>
                                     <td class="center">{{ intval($item->days_in_month) }}</td>
-                                    <td class="center">{{ number_format($item->fte_value, 6) }}</td>
+                                    <td class="center">{{ $formatFte($item->fte_value) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
