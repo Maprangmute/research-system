@@ -14,6 +14,7 @@
         <thead class="bg-gray-100 text-left">
             <tr>
                 <th class="px-4 py-2 border">ชื่อ</th>
+                <th class="px-4 py-2 border">SAP ID</th>
                 <th class="px-4 py-2 border">อีเมล</th>
                 <th class="px-4 py-2 border">ตำแหน่ง</th>
                 <th class="px-4 py-2 border">สิทธิ์</th>
@@ -24,6 +25,7 @@
             @foreach($users as $user)
             <tr>
                 <td class="px-4 py-2 border">{{ $user->prefix }}{{ $user->name }}</td>
+                <td class="px-4 py-2 border">{{ $user->sap_id ?: '-' }}</td>
                 <td class="px-4 py-2 border">{{ $user->email }}</td>
                 <td class="px-4 py-2 border">{{ $user->position }}</td>
                 <td class="px-4 py-2 border">{{ $user->role }}</td>
@@ -38,6 +40,7 @@
                             <option value="user_all" @selected($user->role === 'user_all')>user_all</option>
                             <option value="research_executive" @selected($user->role === 'research_executive')>research_executive</option>
                             <option value="unit_executive" @selected($user->role === 'unit_executive')>unit_executive</option>
+                            <option value="hr" @selected($user->role === 'hr')>HR</option>
                             <option value="resigned" @selected($user->role === 'resigned')>resigned</option>
                         </select>
                         <button class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">อัปเดต</button>

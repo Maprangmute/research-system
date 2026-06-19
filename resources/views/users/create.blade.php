@@ -8,6 +8,7 @@
         'user_all' => ['label' => 'user_all', 'help' => 'เข้าถึงทุกข้อมูลเหมือน admin'],
         'research_executive' => ['label' => 'research_executive', 'help' => 'เหมือน user_all'],
         'unit_executive' => ['label' => 'unit_executive', 'help' => 'เหมือน admin แต่เข้า /user ไม่ได้'],
+        'hr' => ['label' => 'HR', 'help' => 'เหมือน unit_executive แต่ดู FTE ได้เฉพาะของตนเอง'],
         'resigned' => ['label' => 'resigned', 'help' => 'ไม่สามารถ login ได้'],
     ];
 @endphp
@@ -163,6 +164,11 @@
                                         <span class="user-create-label">ชื่อ - นามสกุล</span>
                                         <input type="text" name="name" value="{{ old('name') }}"
                                             class="user-create-input mt-1" required>
+                                    </label>
+                                    <label>
+                                        <span class="user-create-label">SAP ID</span>
+                                        <input type="text" name="sap_id" value="{{ old('sap_id') }}"
+                                            class="user-create-input mt-1" placeholder="รหัส SAP">
                                     </label>
                                     <label>
                                         <span class="user-create-label">คำนำหน้าอังกฤษ</span>

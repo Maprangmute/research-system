@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -31,6 +32,7 @@ class UserController extends Controller
             User::ROLE_RESEARCH_EXECUTIVE,
             User::ROLE_RESIGNED,
             User::ROLE_UNIT_EXECUTIVE,
+            User::ROLE_HR,
         ];
     }
 
@@ -142,6 +144,7 @@ class UserController extends Controller
 
         $query = User::query()->select([
             'id',
+            'sap_id',
             'prefix',
             'prefix_en',
             'name',
@@ -161,6 +164,7 @@ class UserController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('sap_id', 'like', "%{$search}%")
                     ->orWhere('name_en', 'like', "%{$search}%")
                     ->orWhere('prefix_en', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
@@ -216,7 +220,7 @@ class UserController extends Controller
             'total_users' => $totalUsers,
             'matched_users' => $matchedUsers,
             'admin_users' => (int) ($roleCounts[User::ROLE_ADMIN] ?? 0),
-            'all_user_like' => (int) (($roleCounts[User::ROLE_SU_ADMIN] ?? 0) + ($roleCounts[User::ROLE_USER_ALL] ?? 0) + ($roleCounts[User::ROLE_RESEARCH_EXECUTIVE] ?? 0) + ($roleCounts[User::ROLE_UNIT_EXECUTIVE] ?? 0)),
+            'all_user_like' => (int) (($roleCounts[User::ROLE_SU_ADMIN] ?? 0) + ($roleCounts[User::ROLE_USER_ALL] ?? 0) + ($roleCounts[User::ROLE_RESEARCH_EXECUTIVE] ?? 0) + ($roleCounts[User::ROLE_UNIT_EXECUTIVE] ?? 0) + ($roleCounts[User::ROLE_HR] ?? 0)),
             'resigned_users' => (int) ($roleCounts[User::ROLE_RESIGNED] ?? 0),
         ];
 
@@ -261,9 +265,13 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $this->authorizeUserManagement();
+        $request->merge([
+            'sap_id' => filled($request->input('sap_id')) ? trim((string) $request->input('sap_id')) : null,
+        ]);
 
         $validated = $request->validate([
             'prefix'   => 'nullable|string|max:50',
+            'sap_id'   => ['nullable', 'string', 'max:50', Rule::unique('users', 'sap_id')],
             'prefix_en' => 'nullable|string|max:50',
             'name'     => 'required|string|max:255',
             'name_en'  => 'nullable|string|max:255',
@@ -281,6 +289,7 @@ class UserController extends Controller
             $validated['profile_photo_path'] = $request->file('profile_picture')->store('profiles', 'public');
         }
 
+        $validated['sap_id'] = filled($validated['sap_id'] ?? null) ? trim((string) $validated['sap_id']) : null;
         $validated['is_borrowed'] = $request->boolean('is_borrowed');
         if (! $validated['is_borrowed']) {
             $validated['borrowed_department'] = null;
@@ -304,6 +313,9 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $this->authorizeUserManagement();
+        $request->merge([
+            'sap_id' => filled($request->input('sap_id')) ? trim((string) $request->input('sap_id')) : null,
+        ]);
 
         $user = User::findOrFail($id);
         $oldPrefix = (string) ($user->prefix ?? '');
@@ -311,6 +323,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'prefix'   => 'required|string|max:50',
+            'sap_id'   => ['nullable', 'string', 'max:50', Rule::unique('users', 'sap_id')->ignore($user->id)],
             'prefix_en' => 'nullable|string|max:50',
             'name'     => 'required|string|max:255',
             'name_en'  => 'nullable|string|max:255',
@@ -328,6 +341,7 @@ class UserController extends Controller
             $validated['profile_photo_path'] = $request->file('avatar')->store('avatars', 'public');
         }
 
+        $validated['sap_id'] = filled($validated['sap_id'] ?? null) ? trim((string) $validated['sap_id']) : null;
         $validated['is_borrowed'] = $request->boolean('is_borrowed');
         if (! $validated['is_borrowed']) {
             $validated['borrowed_department'] = null;

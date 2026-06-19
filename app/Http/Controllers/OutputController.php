@@ -2147,6 +2147,9 @@ class OutputController extends Controller
 
     public function visualization(Request $request)
     {
+        $authUser = $request->user();
+        $limitFteToSelf = (bool) ($authUser?->mustLimitFteToSelf() ?? false);
+        $authUserId = (int) ($authUser?->id ?? 0);
         $isPublicSeminar = (bool) $request->attributes->get('is_public_seminar', false);
         $canManageVisualizationSections = ! $isPublicSeminar && (bool) ($request->user()?->hasRole(User::ROLE_ADMIN) ?? false);
         $visualizationSectionVisibility = $this->visualizationSectionVisibility();
@@ -5829,6 +5832,10 @@ class OutputController extends Controller
 
     public function buildFteSkillAnalysis(?int $yearFrom, ?int $yearTo): array
     {
+        $authUser = auth()->user();
+        $limitFteToSelf = (bool) ($authUser?->mustLimitFteToSelf() ?? false);
+        $authUserId = (int) ($authUser?->id ?? 0);
+
         $normalizeText = static fn ($value): string => Str::of((string) $value)->lower()->replace(["\r", "\n", "\t"], ' ')->replaceMatches('/\s+/u', ' ')->trim()->toString();
         $displayText = static fn ($value): string => Str::of((string) $value)->replace(["\r", "\n", "\t"], ' ')->replaceMatches('/\s+/u', ' ')->trim()->toString();
         $fteYearFor = function (FteRole $role): ?int {
@@ -6291,7 +6298,8 @@ class OutputController extends Controller
                     'fte' => (float) ($role->fte_value ?? 0),
                 ];
             })
-            ->filter(fn ($row) => $row->user_id !== null && $row->person_key !== '' && trim((string) $row->task) !== '');
+            ->filter(fn ($row) => $row->user_id !== null && $row->person_key !== '' && trim((string) $row->task) !== '')
+            ->when($limitFteToSelf, fn (Collection $rows) => $rows->filter(fn ($row) => (int) $row->user_id === $authUserId));
 
         $backOfficeRows = BackOfficeEntry::query()
             ->with(['task:id,backoffice_id,title,start_date,end_date', 'user:id,prefix,name,role,position,skill_role'])
@@ -6326,7 +6334,8 @@ class OutputController extends Controller
                     'fte' => (float) ($entry->fte_value ?? 0),
                 ];
             })
-            ->filter(fn ($row) => $row->user_id !== null && $row->person_key !== '' && trim((string) $row->task) !== '');
+            ->filter(fn ($row) => $row->user_id !== null && $row->person_key !== '' && trim((string) $row->task) !== '')
+            ->when($limitFteToSelf, fn (Collection $rows) => $rows->filter(fn ($row) => (int) $row->user_id === $authUserId));
 
         $rows = $researchRows->merge($backOfficeRows)->filter(fn ($row) => $inRange($row->year))->values();
         $uniqueRows = $rows

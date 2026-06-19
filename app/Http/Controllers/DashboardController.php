@@ -64,6 +64,10 @@ class DashboardController extends Controller
             return $selected ?: ['*'];
         };
 
+        $authUser = $request->user();
+        $limitFteToSelf = (bool) ($authUser?->mustLimitFteToSelf() ?? false);
+        $authFullName = trim(($authUser->prefix ?? '').' '.($authUser->name ?? ''));
+
         $projects = Project::query()
             ->select($existingColumns('projects', $projectColumns))
             ->with([
@@ -73,10 +77,16 @@ class DashboardController extends Controller
                 'copis' => fn($query) => $query->select($existingColumns('copis', [
                     'id', 'project_id', 'name', 'affiliation',
                 ])),
-                'fteRoles' => fn($query) => $query->select($existingColumns('fte_roles', [
-                    'id', 'project_id', 'name', 'role_group', 'fte_value', 'fte', 'hours',
-                    'job_detail', 'task_detail', 'start_date', 'end_date',
-                ])),
+                'fteRoles' => function ($query) use ($existingColumns, $limitFteToSelf, $authFullName) {
+                    $query->select($existingColumns('fte_roles', [
+                        'id', 'project_id', 'name', 'role_group', 'fte_value', 'fte', 'hours',
+                        'job_detail', 'task_detail', 'start_date', 'end_date',
+                    ]));
+
+                    if ($limitFteToSelf) {
+                        $query->where('name', $authFullName);
+                    }
+                },
                 'irbs' => fn($query) => $query->select($existingColumns('irbs', [
                     'id', 'project_id', 'code', 'source', 'exp_date',
                 ])),
@@ -103,6 +113,7 @@ class DashboardController extends Controller
         $progressReports = $projects->flatMap->progressReports;
         $canDownloadDashboardData = in_array(optional($request->user())->role, [
             User::ROLE_UNIT_EXECUTIVE,
+            User::ROLE_HR,
             User::ROLE_ADMIN,
             User::ROLE_SU_ADMIN,
         ], true);
@@ -604,26 +615,36 @@ class DashboardController extends Controller
             return $selected ?: ['*'];
         };
 
+        $authUser = $request->user();
+        $limitFteToSelf = (bool) ($authUser?->mustLimitFteToSelf() ?? false);
+        $authFullName = trim(($authUser->prefix ?? '').' '.($authUser->name ?? ''));
+
         $projects = Project::query()
             ->withCount(['outputs', 'progressReports', 'irbs', 'tasks'])
             ->with([
                 'irbs:id,project_id,code,source,exp_date',
                 'progressReports:id,project_id,submit_date,progress_title,created_at',
                 'tasks:id,project_id,title,end,status,workflow_status,progress,created_at',
-                'fteRoles' => fn ($query) => $query->select($existingColumns('fte_roles', [
-                    'id',
-                    'project_id',
-                    'name',
-                    'role_group',
-                    'fte_value',
-                    'fte_value_research',
-                    'hours',
-                    'job_detail',
-                    'task_detail',
-                    'start_date',
-                    'end_date',
-                    'created_at',
-                ])),
+                'fteRoles' => function ($query) use ($existingColumns, $limitFteToSelf, $authFullName) {
+                    $query->select($existingColumns('fte_roles', [
+                        'id',
+                        'project_id',
+                        'name',
+                        'role_group',
+                        'fte_value',
+                        'fte_value_research',
+                        'hours',
+                        'job_detail',
+                        'task_detail',
+                        'start_date',
+                        'end_date',
+                        'created_at',
+                    ]));
+
+                    if ($limitFteToSelf) {
+                        $query->where('name', $authFullName);
+                    }
+                },
             ])
             ->select($existingColumns('projects', [
                 'id',

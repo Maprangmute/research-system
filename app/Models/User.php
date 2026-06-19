@@ -21,6 +21,7 @@ class User extends Authenticatable
     public const ROLE_RESEARCH_EXECUTIVE = 'research_executive';
     public const ROLE_RESIGNED = 'resigned';
     public const ROLE_UNIT_EXECUTIVE = 'unit_executive';
+    public const ROLE_HR = 'hr';
 
     public const SKILL_ROLE_SCIENTIFIC = 'Scientific Research';
     public const SKILL_ROLE_PROJECT_MANAGEMENT = 'Project Management & Coordination';
@@ -352,9 +353,23 @@ class User extends Authenticatable
         self::ROLE_USER_ALL,
         self::ROLE_RESEARCH_EXECUTIVE,
         self::ROLE_UNIT_EXECUTIVE,
+        self::ROLE_HR,
     ];
 
     public const ADMIN_EQUIVALENT_ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_SU_ADMIN,
+        self::ROLE_UNIT_EXECUTIVE,
+        self::ROLE_HR,
+    ];
+
+    public const FTE_ALL_ACCESS_ROLES = [
+        self::ROLE_ADMIN,
+        self::ROLE_SU_ADMIN,
+        self::ROLE_UNIT_EXECUTIVE,
+    ];
+
+    public const LOG_ACCESS_ROLES = [
         self::ROLE_ADMIN,
         self::ROLE_SU_ADMIN,
         self::ROLE_UNIT_EXECUTIVE,
@@ -379,6 +394,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
   protected $fillable = [
+    'sap_id',
     'name',
     'prefix_en',
     'name_en',
@@ -467,6 +483,26 @@ class User extends Authenticatable
     public function isUnitExecutive(): bool
     {
         return $this->role === self::ROLE_UNIT_EXECUTIVE;
+    }
+
+    public function isHr(): bool
+    {
+        return $this->role === self::ROLE_HR;
+    }
+
+    public function canViewAllFte(): bool
+    {
+        return in_array($this->role, self::FTE_ALL_ACCESS_ROLES, true);
+    }
+
+    public function mustLimitFteToSelf(): bool
+    {
+        return $this->role === self::ROLE_HR;
+    }
+
+    public function canViewLogs(): bool
+    {
+        return in_array($this->role, self::LOG_ACCESS_ROLES, true);
     }
 
     public function isResigned(): bool

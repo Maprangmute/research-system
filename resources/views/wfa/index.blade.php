@@ -27,7 +27,9 @@
             \App\Models\User::ROLE_ADMIN,
             \App\Models\User::ROLE_SU_ADMIN,
         ], true);
-        $canViewAnyWfaReports = $canManageWfaReports || $currentUser?->role === \App\Models\User::ROLE_UNIT_EXECUTIVE;
+        $canViewAnyWfaReports = $canManageWfaReports
+            || $currentUser?->role === \App\Models\User::ROLE_UNIT_EXECUTIVE
+            || $currentUser?->role === \App\Models\User::ROLE_HR;
         $canViewWfaReport = static fn ($report): bool => $currentUser
             && ((int) $report->user_id === (int) $currentUser->id || $canViewAnyWfaReports);
         $canEditWfaReport = static fn ($report): bool => $currentUser

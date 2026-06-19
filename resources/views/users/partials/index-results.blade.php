@@ -6,6 +6,7 @@
         'user_all' => ['label' => 'all_user', 'class' => 'bg-indigo-100 text-indigo-800 border-indigo-200'],
         'research_executive' => ['label' => 'ผู้บริหารงานวิจัย', 'class' => 'bg-cyan-100 text-cyan-800 border-cyan-200'],
         'unit_executive' => ['label' => 'ผู้บริหารหน่วย', 'class' => 'bg-violet-100 text-violet-800 border-violet-200'],
+        'hr' => ['label' => 'HR', 'class' => 'bg-amber-100 text-amber-800 border-amber-200'],
         'resigned' => ['label' => 'ลาออกแล้ว', 'class' => 'bg-rose-100 text-rose-800 border-rose-200'],
     ];
 
@@ -95,6 +96,7 @@
                                         <div class="mt-0.5 text-xs font-semibold text-slate-500">{{ $englishName }}</div>
                                     @endif
                                     <div class="mt-1 break-all text-xs text-slate-500">{{ $user->email }}</div>
+                                    <div class="mt-1 text-xs font-semibold text-slate-500">SAP ID: {{ $user->sap_id ?: '-' }}</div>
                                 </div>
                             </div>
                             <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -175,6 +177,7 @@
                                                     <div class="mt-0.5 text-xs font-semibold text-slate-500">{{ $englishName }}</div>
                                                 @endif
                                                 <div class="mt-1 break-all text-xs text-slate-500">{{ $user->email }}</div>
+                                                <div class="mt-1 text-xs font-semibold text-slate-500">SAP ID: {{ $user->sap_id ?: '-' }}</div>
                                             </div>
                                         </div>
                                     </td>

@@ -111,7 +111,7 @@
                                 </x-dropdown-link>
                             @endif
 
-                            @if (Auth::user()->isAdminEquivalent())
+                            @if (Auth::user()->canViewLogs())
                                 <div class="border-t border-gray-200"></div>
                                 <div class="block px-4 py-2 text-xs text-gray-400">
                                     {{ __('Logs') }}
@@ -198,7 +198,7 @@
                     </x-responsive-nav-link>
                 @endif
 
-                @if (Auth::user()->isAdminEquivalent())
+                @if (Auth::user()->canViewLogs())
                     <div class="border-t border-gray-200"></div>
 
                     <div class="block px-4 py-2 text-xs text-gray-400">

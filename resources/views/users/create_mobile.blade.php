@@ -45,6 +45,10 @@
                 <input type="text" name="name" value="{{ old('name') }}" class="w-full border p-2 rounded text-sm" required>
             </div>
             <div>
+                <label class="block text-xs text-gray-700 font-medium">SAP ID</label>
+                <input type="text" name="sap_id" value="{{ old('sap_id') }}" class="w-full border p-2 rounded text-sm" placeholder="รหัส SAP">
+            </div>
+            <div>
                 <label class="block text-xs text-gray-700 font-medium">ชื่อแสดงผลภาษาอังกฤษ</label>
                 <div class="space-y-2">
                     <input type="text" name="prefix_en" value="{{ old('prefix_en') }}" class="w-full border p-2 rounded text-sm" placeholder="เช่น Dr.">
@@ -93,6 +97,7 @@
                 <option value="user_all">user_all (เข้าถึงทุกข้อมูลเหมือน admin)</option>
                 <option value="research_executive">research_executive (เหมือน user_all)</option>
                 <option value="unit_executive">unit_executive (เหมือน admin แต่เข้า /user ไม่ได้)</option>
+                <option value="hr">HR (เหมือน unit_executive แต่ดู FTE ได้เฉพาะของตนเอง)</option>
                 <option value="resigned">resigned (ไม่สามารถ login ได้)</option>
             </select>
         </div>

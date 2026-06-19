@@ -12,14 +12,13 @@ class FteRolePolicy
      */
     public function updateResearch(User $user, FteRole $fteRole): bool
     {
-        if ($this->isAdminLike($user)) return true;
-
-        if (isset($fteRole->user_id)) {
-            return (int)$fteRole->user_id === (int)$user->id;
+        if ($user->mustLimitFteToSelf()) {
+            return $this->belongsToUser($user, $fteRole);
         }
 
-        $fullName = trim(($user->prefix ?? '').' '.$user->name);
-        return $fteRole->name === $fullName;
+        if ($this->isAdminLike($user)) return true;
+
+        return $this->belongsToUser($user, $fteRole);
     }
 
     /**
@@ -27,6 +26,10 @@ class FteRolePolicy
      */
     public function updateManagement(User $user, FteRole $fteRole): bool
     {
+        if ($user->mustLimitFteToSelf()) {
+            return $this->belongsToUser($user, $fteRole);
+        }
+
         return $this->isAdminLike($user);
     }
 
@@ -36,5 +39,15 @@ class FteRolePolicy
     private function isAdminLike(User $user): bool
     {
         return $user->isAdminLike();
+    }
+
+    private function belongsToUser(User $user, FteRole $fteRole): bool
+    {
+        if (isset($fteRole->user_id)) {
+            return (int)$fteRole->user_id === (int)$user->id;
+        }
+
+        $fullName = trim(($user->prefix ?? '').' '.$user->name);
+        return trim((string) $fteRole->name) === $fullName;
     }
 }

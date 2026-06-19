@@ -71,7 +71,14 @@ class FteRoleController extends Controller
     public function index(\App\Models\Project $project)
 {
     // ดึงรายการ FTE ของโปรเจ็กต์นี้
-    $fteRoles = \App\Models\FteRole::where('project_id', $project->id)
+    $query = \App\Models\FteRole::where('project_id', $project->id);
+    $user = Auth::user();
+
+    if ($user?->mustLimitFteToSelf()) {
+        $query->where('name', trim(($user->prefix ?? '').' '.($user->name ?? '')));
+    }
+
+    $fteRoles = $query
         ->orderBy('name')
         ->get();
 

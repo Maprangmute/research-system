@@ -12,6 +12,7 @@
                 <div class="text-xl font-bold text-gray-800">
                     {{ Auth::user()->prefix }} {{ Auth::user()->name }}
                 </div>
+                <div class="mt-1 text-sm text-gray-600">SAP ID: {{ Auth::user()->sap_id ?: '-' }}</div>
                 <div class="mt-1 text-sm text-gray-600">ตำแหน่ง: {{ Auth::user()->position }}</div>
                 <div class="mt-1 text-sm text-gray-500">ระดับการเข้าถึง: {{ Auth::user()->role }}</div>
             </div>

@@ -13,7 +13,7 @@ class UserActivityLogController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user || !$user->isAdminEquivalent()) {
+        if (!$user || !$user->canViewLogs()) {
             abort(403);
         }
     }

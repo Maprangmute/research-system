@@ -32,7 +32,7 @@ class FteController extends Controller
 {
 private function isFteAdmin(): bool
 {
-    return Auth::user()?->isAdminEquivalent() ?? false;
+    return Auth::user()?->canViewAllFte() ?? false;
 }
 
 private function currentUserFullName(): string
@@ -71,6 +71,7 @@ public function index(Request $request)
         User::ROLE_USER,
         User::ROLE_USER_ALL,
         User::ROLE_RESEARCH_EXECUTIVE,
+        User::ROLE_HR,
     ], true)) {
         return redirect()->route('fte.detail', ['person' => $fullName]);
     }
@@ -173,6 +174,10 @@ public function index(Request $request)
     $filterTo = null;
 
     // รายปี
+    if ($mode === 'year' && ! $year) {
+        $mode = 'all';
+    }
+
     if ($mode === 'year' && $year) {
         $yearAD = $year > 2500 ? $year - 543 : $year;
         $filterFrom = Carbon::createFromDate($yearAD, 1, 1)->startOfDay();
@@ -681,12 +686,17 @@ public function projectIndex(Request $request)
 public function detail(Request $request, $person)
 {
     $this->ensureCanViewFtePerson((string) $person);
-    $data = $this->buildFteDetailData($person);
+    $data = $this->buildFteDetailData($person, [
+        'mode' => $request->input('mode', 'all'),
+        'year' => $request->input('year'),
+        'start' => $request->input('start'),
+        'end' => $request->input('end'),
+    ]);
 
-    // แบ่งหน้าเดือนละ 10 เดือน โดยเรียงเดือนจากเก่าไปใหม่
-    $months = $data['monthlyFTE']->sortKeys();
-    $perPage = 10;
-    $page = LengthAwarePaginator::resolveCurrentPage();
+    // แสดงเดือนทั้งหมดของบุคคลนี้ เพื่อให้ตัวกรองเดือน/ปีบนหน้าเจอข้อมูลครบ
+    $months = $data['monthlyFTE']->sortKeysDesc();
+    $perPage = max($months->count(), 1);
+    $page = 1;
     $sliced = $months->slice(($page - 1) * $perPage, $perPage, true);
 
     $monthlyFTEPage = new LengthAwarePaginator(
@@ -704,6 +714,12 @@ public function detail(Request $request, $person)
     $monthlyFTEPage = $monthlyFTEPage->withQueryString()->fragment('fte-filters');
 
     $data['monthlyFTEPage'] = $monthlyFTEPage;
+    $data['detailFilter'] = [
+        'mode' => $data['pdfFilter']['mode'] ?? 'all',
+        'year' => $data['pdfFilter']['year'] ?? null,
+        'start' => $request->input('start'),
+        'end' => $request->input('end'),
+    ];
 
     return view('fte.detail', $data);
 }
@@ -1170,6 +1186,7 @@ private function canViewAnyWfaReport(?User $user): bool
     return $user && (
         $this->canManageAnyWfaReport($user)
         || $user->role === User::ROLE_UNIT_EXECUTIVE
+        || $user->role === User::ROLE_HR
     );
 }
 
@@ -2202,6 +2219,10 @@ private function buildFteDetailData(string $person, array $filter = []): array
     $filterLabel = 'ทั้งหมด';
     $outputLabel = 'ทั้งหมด';
 
+    if ($mode === 'year' && ! $year) {
+        $mode = 'all';
+    }
+
     if ($mode === 'year' && $year) {
         $yearAD = $year > 2500 ? $year - 543 : $year;
         if ($yearAD > 1900 && $yearAD < 2600) {
@@ -2259,6 +2280,36 @@ private function buildFteDetailData(string $person, array $filter = []): array
     $backOffice = BackOfficeEntry::with('task')
         ->where('person_name', $person)
         ->get();
+
+    $availableYears = collect();
+    $collectYears = function ($startValue, $endValue) use (&$availableYears): void {
+        try {
+            [$startDate, $endDate] = $this->parseStoredDateBounds($startValue, $endValue);
+            if (! $startDate || ! $endDate || $startDate->gt($endDate)) {
+                return;
+            }
+
+            for ($year = $startDate->year; $year <= $endDate->year; $year++) {
+                $availableYears->push($year + 543);
+            }
+        } catch (\Throwable $e) {
+            return;
+        }
+    };
+
+    foreach ($raw as $item) {
+        $collectYears($item->start_date, $item->end_date);
+    }
+
+    foreach ($backOffice as $entry) {
+        $collectYears($entry->start_date ?: $entry->task?->start_date, $entry->end_date ?: $entry->task?->end_date);
+    }
+
+    $availableYears = $availableYears
+        ->filter()
+        ->unique()
+        ->sortDesc()
+        ->values();
 
     $expanded = collect();
     $currentMonthStart = now()->copy()->startOfMonth()->startOfDay();
@@ -2694,7 +2745,8 @@ private function buildFteDetailData(string $person, array $filter = []): array
         'chartData',
         'pdfFilter',
         'monthProjectStats',
-        'monthWorkList'
+        'monthWorkList',
+        'availableYears'
     );
 }
 

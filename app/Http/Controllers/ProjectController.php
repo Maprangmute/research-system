@@ -42,11 +42,43 @@ class ProjectController extends Controller
         self::CO_RESEARCH_INTERNAL_UNIT,
     ];
 
+    private function restrictProjectFteRolesToCurrentUserWhenNeeded(Project $project): void
+    {
+        $user = Auth::user();
+        if (! $user?->mustLimitFteToSelf()) {
+            return;
+        }
+
+        $fullName = $this->currentUserFullNameForFte();
+        if ($fullName === '') {
+            $project->setRelation('fteRoles', collect());
+            return;
+        }
+
+        $roles = $project->relationLoaded('fteRoles')
+            ? $project->getRelation('fteRoles')
+            : $project->fteRoles()->get();
+
+        $project->setRelation(
+            'fteRoles',
+            $roles->filter(fn ($role) => trim((string) $role->name) === $fullName)->values()
+        );
+    }
+
+    private function currentUserFullNameForFte(): string
+    {
+        $user = Auth::user();
+
+        return trim(($user->prefix ?? '').' '.($user->name ?? ''));
+    }
+
     public function index(Request $request)
     {
         $view = ResponsiveView::resolve($request, 'projects.index');
 
         $user = auth()->user();
+        $limitFteToSelf = (bool) ($user?->mustLimitFteToSelf() ?? false);
+        $fullName = trim(($user->prefix ?? '').' '.($user->name ?? ''));
         $applyPermission = function ($q) use ($user) {
             if ($user->isAdminLike()) {
                 return;
@@ -63,7 +95,13 @@ class ProjectController extends Controller
         $query = Project::query()
             ->withCount('outputs')
             ->with([
-                'fteRoles:id,project_id,name',
+                'fteRoles' => function ($query) use ($limitFteToSelf, $fullName) {
+                    $query->select(['id', 'project_id', 'name']);
+
+                    if ($limitFteToSelf) {
+                        $query->where('name', $fullName);
+                    }
+                },
                 'copis:id,project_id,user_id,name,affiliation',
                 'coResearches:id,project_id,name',
             ]);
@@ -507,6 +545,8 @@ class ProjectController extends Controller
     private function buildProjectDataQualityReportPayload(Request $request): array
     {
         $user = auth()->user();
+        $limitFteToSelf = (bool) ($user?->mustLimitFteToSelf() ?? false);
+        $fullName = trim(($user->prefix ?? '').' '.($user->name ?? ''));
         $applyPermission = function ($q) use ($user) {
             if ($user->isAdminLike()) {
                 return;
@@ -526,7 +566,16 @@ class ProjectController extends Controller
         $duplicateProjectIds = $this->findDuplicateProjectIds(clone $baseQuery);
 
         $projectsQuery = Project::query()
-            ->withCount(['outputs', 'fteRoles', 'progressReports', 'irbs'])
+            ->withCount([
+                'outputs',
+                'fteRoles' => function ($query) use ($limitFteToSelf, $fullName) {
+                    if ($limitFteToSelf) {
+                        $query->where('name', $fullName);
+                    }
+                },
+                'progressReports',
+                'irbs',
+            ])
             ->with([
                 'createdBy:id,prefix,name',
                 'updatedBy:id,prefix,name',
@@ -538,7 +587,13 @@ class ProjectController extends Controller
                     'project_logs.created_at',
                 ]),
                 'latestLog.user:id,prefix,name',
-                'fteRoles:id,project_id,name,fte_value',
+                'fteRoles' => function ($query) use ($limitFteToSelf, $fullName) {
+                    $query->select(['id', 'project_id', 'name', 'fte_value']);
+
+                    if ($limitFteToSelf) {
+                        $query->where('name', $fullName);
+                    }
+                },
                 'irbs:id,project_id,code,source,exp_date',
                 'progressReports:id,project_id,submit_date,created_at',
             ]);
@@ -1845,6 +1900,7 @@ public function store(Request $request)
                 $query->orderByDesc('submit_date')->orderByDesc('id');
             },
         ]);
+        $this->restrictProjectFteRolesToCurrentUserWhenNeeded($project);
 
         $view = ResponsiveView::resolve($request, 'projects.edit');
 
@@ -1853,8 +1909,9 @@ public function store(Request $request)
 
     public function fteSnapshot(Project $project)
     {
-        $fullName = trim(Auth::user()->prefix.' '.Auth::user()->name);
-        $hasPermission = Auth::user()->isAdminEquivalent()
+        $user = Auth::user();
+        $fullName = trim($user->prefix.' '.$user->name);
+        $hasPermission = $user->canViewAllFte()
             || Auth::id() === $project->user_id
             || $project->fteRoles->contains('name', $fullName);
 
@@ -1866,8 +1923,14 @@ public function store(Request $request)
         $activityLogs = $this->fetchFteActivityLogs($project);
         $projectUpdatedByName = trim(((string) optional($project->updatedBy)->prefix).' '.((string) optional($project->updatedBy)->name));
 
-        $rows = $project->fteRoles()
-            ->orderBy('id')
+        $rowsQuery = $project->fteRoles()
+            ->orderBy('id');
+
+        if ($user->mustLimitFteToSelf()) {
+            $rowsQuery->where('name', $fullName);
+        }
+
+        $rows = $rowsQuery
             ->get()
             ->map(function ($fte) use ($activityLogs, $projectUpdatedByName) {
                 $activityMeta = $this->resolveFteActivityMeta(optional($fte->updated_at), $activityLogs);
@@ -2020,6 +2083,7 @@ public function store(Request $request)
             'updatedBy',
             'createdBy',   // ✅ เพิ่มตรงนี้
         ]);
+        $this->restrictProjectFteRolesToCurrentUserWhenNeeded($project);
 
         $fteChartData = $this->buildProjectFteChartData($project);
         $outputTypeOptions = Output::query()
@@ -2194,6 +2258,7 @@ public function store(Request $request)
             'updatedBy',
             'createdBy',
         ]); // ⬅️ authors
+        $this->restrictProjectFteRolesToCurrentUserWhenNeeded($project);
 
         $user = Auth::user();
         $author = $project->createdBy ? ($project->createdBy->prefix.$project->createdBy->name) : '';
@@ -3091,15 +3156,34 @@ public function store(Request $request)
 
     private function syncFTERoles(Request $request, Project $project): void
     {
+        $user = Auth::user();
+        $limitFteToSelf = (bool) ($user?->mustLimitFteToSelf() ?? false);
+        $fullName = $this->currentUserFullNameForFte();
         $existingById = $project->fteRoles()->get()->keyBy('id');
         $deleteIds = collect((array) $request->input('fte_deleted_ids', []))
             ->map(fn ($id) => (int) $id)
             ->filter(fn ($id) => $id > 0)
+            ->filter(function (int $id) use ($limitFteToSelf, $existingById, $fullName): bool {
+                if (! $limitFteToSelf) {
+                    return true;
+                }
+
+                $row = $existingById[$id] ?? null;
+                return $row && trim((string) $row->name) === $fullName;
+            })
             ->unique()
             ->values();
         $deleteLookup = array_fill_keys($deleteIds->all(), true);
 
         foreach (($request->fte_roles ?? []) as $fte) {
+            $rowId = (int) ($fte['id'] ?? 0);
+            if ($limitFteToSelf && $rowId > 0) {
+                $existing = $existingById[$rowId] ?? null;
+                if (! $existing || trim((string) $existing->name) !== $fullName) {
+                    continue;
+                }
+            }
+
             $start = $this->parseProjectDateInput((string) ($fte['start_date'] ?? ''));
             $end = $this->parseProjectDateInput((string) ($fte['end_date'] ?? ''));
             $hoursRaw = $fte['hours'] ?? null;
@@ -3108,7 +3192,7 @@ public function store(Request $request)
 
             $payload = [
                 'role_group' => trim((string) ($fte['role_group'] ?? '')),
-                'name' => trim((string) ($fte['name'] ?? '')) ?: null,
+                'name' => $limitFteToSelf ? $fullName : (trim((string) ($fte['name'] ?? '')) ?: null),
                 'job_detail' => trim((string) ($fte['job_detail'] ?? '')) ?: null,
                 'start_date' => $start?->format('d-m-Y'),
                 'hours' => $hours,
@@ -3131,7 +3215,6 @@ public function store(Request $request)
                 continue;
             }
 
-            $rowId = (int) ($fte['id'] ?? 0);
             if ($rowId > 0 && isset($existingById[$rowId]) && ! isset($deleteLookup[$rowId])) {
                 $existingById[$rowId]->update($payload);
                 continue;

@@ -326,6 +326,7 @@
             \App\Models\User::ROLE_USER,
             \App\Models\User::ROLE_USER_ALL,
             \App\Models\User::ROLE_RESEARCH_EXECUTIVE,
+            \App\Models\User::ROLE_HR,
         ], true);
     }
 @endphp
@@ -1143,7 +1144,7 @@
                                     </a>
                                 @endif
 
-                                @if ($authUser?->isAdminEquivalent())
+                                @if ($authUser?->canViewLogs())
                                     <a href="/project-logs"
                                         class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
                                         Project log
@@ -1269,7 +1270,7 @@
                                 @endif
                             </section>
 
-                            @if ($authUser?->isAdminEquivalent())
+                            @if ($authUser?->canViewLogs())
                                 <section class="mobile-nav-section">
                                     <div class="mobile-nav-section__title">Logs</div>
                                     <a href="/project-logs">Project log</a>

@@ -343,7 +343,7 @@
                     <label class="block md:col-span-2 xl:col-span-5">
                         <span class="text-xs font-semibold text-slate-600">ค้นหา</span>
                         <div class="relative mt-1">
-                            <input type="search" name="q" value="{{ $search ?? '' }}" placeholder="ชื่อ / อีเมล / ตำแหน่ง / คำนำหน้า"
+                            <input type="search" name="q" value="{{ $search ?? '' }}" placeholder="ชื่อ / SAP ID / อีเมล / ตำแหน่ง"
                                 class="users-search-input pl-10">
                             <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">⌕</span>
                         </div>
@@ -359,6 +359,7 @@
                             <option value="user_all" @selected(($role ?? '') === 'user_all')>user_all</option>
                             <option value="research_executive" @selected(($role ?? '') === 'research_executive')>research_executive</option>
                             <option value="unit_executive" @selected(($role ?? '') === 'unit_executive')>unit_executive</option>
+                            <option value="hr" @selected(($role ?? '') === 'hr')>HR</option>
                             <option value="resigned" @selected(($role ?? '') === 'resigned')>resigned</option>
                         </select>
                     </label>

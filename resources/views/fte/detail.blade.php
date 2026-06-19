@@ -130,8 +130,26 @@
         };
         $projectOptions = $allRows->pluck('project.project_name_th')->filter()->unique()->sort()->values();
         $roleOptions = $allRows->pluck('role_group')->filter()->unique()->sort()->values();
-        $yearOptions = $monthlyFTE->keys()->map(fn($m) => substr($m, 0, 4))->unique()->sortDesc()->values();
-        $monthOptions = $monthlyFTE->keys()->values();
+        $serverFilter = $detailFilter ?? [
+            'mode' => $pdfFilter['mode'] ?? 'all',
+            'year' => $pdfFilter['year'] ?? null,
+            'start' => request('start'),
+            'end' => request('end'),
+        ];
+        $yearOptions = collect($availableYears ?? [])
+            ->merge($monthlyFTE->keys()->map(fn($m) => ((int) substr($m, 0, 4)) + 543))
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values();
+        $monthOptions = collect(range(1, 12))->map(function ($month) {
+            $date = \Carbon\Carbon::createFromDate(now()->year, $month, 1)->locale('th');
+
+            return [
+                'value' => str_pad((string) $month, 2, '0', STR_PAD_LEFT),
+                'label' => $date->translatedFormat('F'),
+            ];
+        });
         $formatManualBullets = static function ($value): string {
             $text = trim(html_entity_decode(strip_tags((string) $value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
             if ($text === '') {
@@ -216,7 +234,7 @@
                             <select id="pdfYear" name="year" class="mt-1 w-full border border-slate-200 rounded-lg p-2 text-sm">
                                 <option value="">เลือกปี</option>
                                 @foreach ($yearOptions as $year)
-                                    <option value="{{ $year }}">{{ $year + 543 }}</option>
+                                    <option value="{{ $year }}">{{ $year }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -263,6 +281,56 @@
                     </form>
                 </div>
             </div>
+        </div>
+
+        <div class="bg-white border rounded-2xl p-4 shadow-sm">
+            <form id="detailFilterForm" method="GET" action="{{ route('fte.detail', ['person' => $person]) }}"
+                class="grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
+                <label class="block md:col-span-3">
+                    <span class="text-xs font-semibold text-slate-600">ช่วงข้อมูลที่แสดง</span>
+                    <select id="detailMode" name="mode" class="mt-1 w-full border border-slate-200 rounded-lg p-2 text-sm">
+                        <option value="all" @selected(($serverFilter['mode'] ?? 'all') === 'all')>ทั้งหมด</option>
+                        <option value="month" @selected(($serverFilter['mode'] ?? 'all') === 'month')>เดือนนี้</option>
+                        <option value="year" @selected(($serverFilter['mode'] ?? 'all') === 'year')>เฉพาะปี</option>
+                        <option value="custom" @selected(($serverFilter['mode'] ?? 'all') === 'custom')>กำหนดช่วงวัน</option>
+                    </select>
+                </label>
+
+                <label id="detailYearWrap" class="block md:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">ปี (พ.ศ.)</span>
+                    <select id="detailYear" name="year" class="mt-1 w-full border border-slate-200 rounded-lg p-2 text-sm">
+                        <option value="">เลือกปี</option>
+                        @foreach ($yearOptions as $year)
+                            <option value="{{ $year }}" @selected((string) ($serverFilter['year'] ?? '') === (string) $year)>{{ $year }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <label id="detailStartWrap" class="block md:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">วันที่เริ่มต้น</span>
+                    <input id="detailStartDate" type="text" name="start" value="{{ $serverFilter['start'] ?? '' }}"
+                        class="thai-datepicker mt-1 w-full border border-slate-200 rounded-lg p-2 text-sm"
+                        placeholder="วว-ดด-ปปปป">
+                </label>
+
+                <label id="detailEndWrap" class="block md:col-span-2">
+                    <span class="text-xs font-semibold text-slate-600">วันที่สิ้นสุด</span>
+                    <input id="detailEndDate" type="text" name="end" value="{{ $serverFilter['end'] ?? '' }}"
+                        class="thai-datepicker mt-1 w-full border border-slate-200 rounded-lg p-2 text-sm"
+                        placeholder="วว-ดด-ปปปป">
+                </label>
+
+                <div class="flex items-center gap-2 md:col-span-3">
+                    <button type="submit"
+                        class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                        ใช้ตัวกรอง
+                    </button>
+                    <a href="{{ route('fte.detail', ['person' => $person]) }}"
+                        class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                        ล้าง
+                    </a>
+                </div>
+            </form>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -509,7 +577,7 @@
                     <select id="fteYearFilter" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
                         <option value="">ทั้งหมด</option>
                         @foreach ($yearOptions as $year)
-                            <option value="{{ $year }}">{{ $year + 543 }}</option>
+                            <option value="{{ $year }}">{{ $year }}</option>
                         @endforeach
                     </select>
                 </label>
@@ -518,17 +586,14 @@
                     <select id="fteMonthFilter" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
                         <option value="">ทั้งหมด</option>
                         @foreach ($monthOptions as $month)
-                            @php
-                                $mCarbon = \Carbon\Carbon::createFromFormat('Y-m', $month);
-                                $mLabel = $mCarbon->locale('th')->translatedFormat('F Y');
-                            @endphp
-                            <option value="{{ $month }}">{{ $mLabel }}</option>
+                            <option value="{{ $month['value'] }}">{{ $month['label'] }}</option>
                         @endforeach
                     </select>
                 </label>
                 <label class="block md:col-span-2">
                     <span class="text-xs font-semibold text-slate-600">เรียงลำดับรายการ</span>
                     <select id="fteSort" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                        <option value="date_desc">ช่วงเวลาล่าสุด → เก่าสุด</option>
                         <option value="fte_desc">FTE มาก → น้อย</option>
                         <option value="fte_asc">FTE น้อย → มาก</option>
                         <option value="hours_desc">ชั่วโมง มาก → น้อย</option>
@@ -552,8 +617,10 @@
                     $sumHours = $rows->sum('hours_in_month');
                 @endphp
 
-                <details class="month-card bg-white border rounded-2xl shadow-sm" open data-month="{{ $monthKey }}"
-                    data-year="{{ $carbon->year }}">
+                <details class="month-card bg-white border rounded-2xl shadow-sm" open
+                    data-month-key="{{ $monthKey }}"
+                    data-month-number="{{ $carbon->format('m') }}"
+                    data-year="{{ $carbon->year + 543 }}">
                     <summary class="cursor-pointer px-4 py-3 flex flex-col md:flex-row md:items-center gap-2">
                         <div>
                             <span class="month-heading-badge">{{ $monthName }} {{ $year }}</span>
@@ -601,14 +668,16 @@
                                             } else {
                                                 $detailText = $taskDetailRaw !== '' ? $taskDetailRaw : ($jobDetailRaw !== '' ? $jobDetailRaw : '-');
                                             }
-                                            $combinedJob = trim($workloadName . ' ' . $jobDetailRaw);
+                                            $combinedJob = trim($workloadName . ' ' . $jobDetailRaw . ' ' . $taskDetailRaw);
                                         @endphp
                                         <tr class="border-b fte-row"
                                             data-project="{{ $projectName }}"
                                             data-role="{{ $roleGroup }}"
                                             data-job="{{ $combinedJob }}"
-                                            data-month="{{ $monthKey }}"
-                                            data-year="{{ $carbon->year }}"
+                                            data-month-key="{{ $monthKey }}"
+                                            data-month-number="{{ $carbon->format('m') }}"
+                                            data-year="{{ $carbon->year + 543 }}"
+                                            data-start-date="{{ $osCarbon->format('Y-m-d') }}"
                                             data-fte="{{ $item->fte_value }}"
                                             data-hours="{{ $item->hours_in_month }}">
                                             <td class="p-2 break-words max-w-[420px]" data-label="โครงการ">
@@ -793,6 +862,14 @@
             const monthEl = document.getElementById('fteMonthFilter');
             const sortEl = document.getElementById('fteSort');
             const resetBtn = document.getElementById('fteResetFilters');
+            const detailFilterForm = document.getElementById('detailFilterForm');
+            const detailModeEl = document.getElementById('detailMode');
+            const detailYearWrap = document.getElementById('detailYearWrap');
+            const detailYearEl = document.getElementById('detailYear');
+            const detailStartWrap = document.getElementById('detailStartWrap');
+            const detailEndWrap = document.getElementById('detailEndWrap');
+            const detailStartDateEl = document.getElementById('detailStartDate');
+            const detailEndDateEl = document.getElementById('detailEndDate');
             const openPdfModalBtn = document.getElementById('openPdfFilterModal');
             const pdfModal = document.getElementById('pdfFilterModal');
             const closePdfModalBtn = document.getElementById('closePdfFilterModal');
@@ -806,6 +883,34 @@
             const pdfFilterForm = document.getElementById('pdfFilterForm');
 
             const normalize = (v) => String(v || '').toLowerCase().trim();
+
+            const syncDetailMode = () => {
+                const mode = detailModeEl?.value || 'all';
+                const showYear = mode === 'year';
+                const showDate = mode === 'custom';
+
+                detailYearWrap?.classList.toggle('hidden', !showYear);
+                detailStartWrap?.classList.toggle('hidden', !showDate);
+                detailEndWrap?.classList.toggle('hidden', !showDate);
+
+                if (detailYearEl) {
+                    detailYearEl.disabled = !showYear;
+                    detailYearEl.required = showYear;
+                    if (!showYear) detailYearEl.value = '';
+                }
+
+                if (detailStartDateEl) {
+                    detailStartDateEl.disabled = !showDate;
+                    detailStartDateEl.required = showDate;
+                    if (!showDate) detailStartDateEl.value = '';
+                }
+
+                if (detailEndDateEl) {
+                    detailEndDateEl.disabled = !showDate;
+                    detailEndDateEl.required = showDate;
+                    if (!showDate) detailEndDateEl.value = '';
+                }
+            };
 
             const closePdfModal = () => {
                 if (!pdfModal) return;
@@ -884,7 +989,7 @@
                     });
                 };
 
-                document.querySelectorAll('#pdfFilterForm .thai-datepicker').forEach((input) => {
+                document.querySelectorAll('.thai-datepicker').forEach((input) => {
                     if (input._flatpickr) return;
                     flatpickr(input, {
                         locale: 'th',
@@ -900,9 +1005,7 @@
                         onYearChange: toBuddhist,
                     });
 
-                    const pickerBtn = document.querySelector(
-                        `[data-open-picker][data-target="${input.id}"]`
-                    );
+                    const pickerBtn = document.querySelector(`[data-open-picker][data-target="${input.id}"]`);
                     if (pickerBtn && pickerBtn.dataset.bound !== '1') {
                         pickerBtn.dataset.bound = '1';
                         pickerBtn.addEventListener('click', () => {
@@ -938,12 +1041,13 @@
             function sortRows(rows, mode) {
                 const list = Array.from(rows);
                 const by = {
+                    date_desc: (a, b) => String(b.dataset.startDate || '').localeCompare(String(a.dataset.startDate || '')),
                     fte_desc: (a, b) => Number(b.dataset.fte) - Number(a.dataset.fte),
                     fte_asc: (a, b) => Number(a.dataset.fte) - Number(b.dataset.fte),
                     hours_desc: (a, b) => Number(b.dataset.hours) - Number(a.dataset.hours),
                     project_asc: (a, b) => normalize(a.dataset.project).localeCompare(normalize(b.dataset.project))
                 };
-                list.sort(by[mode] || by.fte_desc);
+                list.sort(by[mode] || by.date_desc);
                 return list;
             }
 
@@ -953,7 +1057,7 @@
                 const role = normalize(roleEl?.value);
                 const year = normalize(yearEl?.value);
                 const month = normalize(monthEl?.value);
-                const sortMode = sortEl?.value || 'fte_desc';
+                const sortMode = sortEl?.value || 'date_desc';
 
                 document.querySelectorAll('.month-card').forEach(card => {
                     const rows = Array.from(card.querySelectorAll('.fte-row'));
@@ -969,7 +1073,7 @@
                         const matchProject = !project || normalize(row.dataset.project) === project;
                         const matchRole = !role || normalize(row.dataset.role) === role;
                         const matchYear = !year || normalize(row.dataset.year) === year;
-                        const matchMonth = !month || normalize(row.dataset.month) === month;
+                        const matchMonth = !month || normalize(row.dataset.monthNumber) === month;
 
                         const show = matchSearch && matchProject && matchRole && matchYear && matchMonth;
                         row.classList.toggle('hidden', !show);
@@ -978,7 +1082,9 @@
 
                     const tbody = card.querySelector('tbody');
                     const visibleRows = rows.filter(r => !r.classList.contains('hidden'));
-                    sortRows(visibleRows, sortMode).forEach(row => tbody.appendChild(row));
+                    if (tbody) {
+                        sortRows(visibleRows, sortMode).forEach(row => tbody.appendChild(row));
+                    }
 
                     card.classList.toggle('hidden', visible === 0);
                 });
@@ -990,10 +1096,12 @@
             });
 
             openPdfModalBtn?.addEventListener('click', openPdfModal);
+            detailModeEl?.addEventListener('change', syncDetailMode);
             closePdfModalBtn?.addEventListener('click', closePdfModal);
             cancelPdfModalBtn?.addEventListener('click', closePdfModal);
             pdfModeEl?.addEventListener('change', syncPdfMode);
             initPdfThaiDatepickers();
+            syncDetailMode();
             syncPdfMode();
 
             pdfModal?.addEventListener('click', (event) => {
@@ -1024,13 +1132,25 @@
                 closePdfModal();
             });
 
+            detailFilterForm?.addEventListener('submit', (event) => {
+                const mode = detailModeEl?.value || 'all';
+                if (mode === 'custom') {
+                    const startDate = parsePickerDate(detailStartDateEl?.value || '');
+                    const endDate = parsePickerDate(detailEndDateEl?.value || '');
+                    if (startDate && endDate && startDate > endDate) {
+                        event.preventDefault();
+                        alert('วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด');
+                    }
+                }
+            });
+
             resetBtn?.addEventListener('click', () => {
                 if (searchEl) searchEl.value = '';
                 if (projectEl) projectEl.value = '';
                 if (roleEl) roleEl.value = '';
                 if (yearEl) yearEl.value = '';
                 if (monthEl) monthEl.value = '';
-                if (sortEl) sortEl.value = 'fte_desc';
+                if (sortEl) sortEl.value = 'date_desc';
                 applyFilters();
             });
 

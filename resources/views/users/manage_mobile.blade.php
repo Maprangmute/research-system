@@ -13,6 +13,7 @@
     @foreach($users as $user)
         <div class="bg-white border rounded-xl shadow-sm p-4 space-y-2">
             <div class="text-sm font-semibold text-gray-900">{{ $user->prefix }}{{ $user->name }}</div>
+            <div class="text-xs text-gray-500">SAP ID: {{ $user->sap_id ?: '-' }}</div>
             <div class="text-xs text-gray-500">{{ $user->email }}</div>
             <div class="text-xs text-gray-500">{{ $user->position ?? '-' }}</div>
             <div class="text-xs text-gray-600">สิทธิ์ปัจจุบัน: <span class="font-semibold">{{ $user->role }}</span></div>
@@ -26,6 +27,7 @@
                     <option value="user_all" @selected($user->role === 'user_all')>user_all</option>
                     <option value="research_executive" @selected($user->role === 'research_executive')>research_executive</option>
                     <option value="unit_executive" @selected($user->role === 'unit_executive')>unit_executive</option>
+                    <option value="hr" @selected($user->role === 'hr')>HR</option>
                     <option value="resigned" @selected($user->role === 'resigned')>resigned</option>
                 </select>
                 <button class="bg-blue-600 text-white px-3 py-2 rounded text-xs hover:bg-blue-700">อัปเดต</button>
