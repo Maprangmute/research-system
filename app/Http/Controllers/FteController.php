@@ -1962,6 +1962,7 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         return number_format($truncated, 6);
     };
     $position = $profile->position ?? '-';
+    $sapId = trim((string) ($profile->sap_id ?? '')) ?: '-';
     $reporter = $user ? trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) : 'ผู้ใช้ระบบ';
     $reportNow = now()->setTimezone('Asia/Bangkok')->locale('th');
     $reportDate = $reportNow->translatedFormat('j F') . ' ' . ($reportNow->year + 543) . ' เวลา ' . $reportNow->format('H:i');
@@ -2021,7 +2022,11 @@ private function buildFteWordDocument(array $data, string $targetPath): void
         $heroCell->addText('FTE OVERVIEW', ['bold' => true, 'size' => 14, 'color' => '64748B'], ['spaceAfter' => 60]);
     }
     $heroCell->addText($person, ['bold' => true, 'size' => 24, 'color' => '0F172A'], ['spaceAfter' => 120]);
-    $heroCell->addText('ตำแหน่ง ' . $position, ['size' => 15, 'color' => '475569'], ['spaceAfter' => 70]);
+    $heroCell->addText(
+        'ตำแหน่ง ' . $position . ($isWfaReport ? ' · SAP ID : ' . $sapId : ''),
+        ['size' => 15, 'color' => '475569'],
+        ['spaceAfter' => 70]
+    );
     $heroCell->addText('ช่วงข้อมูล: ' . $filterLabel, ['size' => 14, 'color' => '64748B'], ['spaceAfter' => 40]);
     $heroCell->addText('รายงานออกเมื่อ ' . $reportDate, ['size' => 14, 'color' => '64748B']);
 

@@ -320,6 +320,7 @@
         $totalFte = $allRows->sum('fte_value');
         $totalHours = $allRows->sum('hours_in_month');
         $position = $profile->position ?? '-';
+        $sapId = trim((string) ($profile->sap_id ?? '')) ?: '-';
         $reporter = $user ? trim(($user->prefix ?? '') . ' ' . ($user->name ?? '')) : 'ผู้ใช้ระบบ';
         $reportNow = now()->setTimezone('Asia/Bangkok')->locale('th');
         $reportDate = $reportNow->translatedFormat('j F') . ' ' . ($reportNow->year + 543) . ' เวลา ' . $reportNow->format('H:i');
@@ -404,7 +405,7 @@
                     <div class="hero-kicker">FTE OVERVIEW</div>
                 @endif
                 <div class="hero-name">{{ $person }}</div>
-                <div class="hero-meta">ตำแหน่ง {{ $position }}</div>
+                <div class="hero-meta">ตำแหน่ง {{ $position }}{{ $isWfaReport ? ' · SAP ID : ' . $sapId : '' }}</div>
                 <div class="hero-note">ช่วงข้อมูล: {{ $filterLabel }}</div>
                 <div class="hero-note">รายงานออกเมื่อ {{ $reportDate }}</div>
             </td>
