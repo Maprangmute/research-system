@@ -115,3 +115,11 @@ app/Http/.DS_Store
 database/.DS_Store
 resources/.DS_Store
 .DS_Store
+tools/build_real_user_manual.php
+tools/build_user_manual.php
+tools/capture_production_screenshots.mjs
+tools/capture_progress_gantt_examples.mjs
+tools/capture_real_screenshots.mjs
+tools/recapture_project_create.mjs
+คู่มือการใช้งานเว็บไซต์_SiHP_Research_System.docx
+คู่มือการใช้งานเว็บไซต์_SiHP_Research_System_ฉบับภาพจริง.docx
