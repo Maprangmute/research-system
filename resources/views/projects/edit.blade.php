@@ -16,6 +16,7 @@
         'id' => $user->id,
         'full_name' => $user->full_name,
         'research_display_name' => $user->research_display_name,
+        'is_resigned' => $user->role === \App\Models\User::ROLE_RESIGNED,
     ])->values();
     $piInternalAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
     $internalCoresearchUnit = 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
@@ -143,6 +144,8 @@
 
 <script>
     window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
+    window.DISABLE_FTE_TABLE_MODE = true;
+    window.DISABLE_FTE_ROW_COLLAPSE = true;
     window.PROJECT_CARD_DATE_MODE = 'edit';
     window.projectUserDirectory = @json($projectUserDirectory);
     document.documentElement.classList.add('page-loading-lock');
@@ -151,6 +154,147 @@
 <style>
     [x-cloak] {
         display: none !important;
+    }
+
+    /* Professional desktop editor: a second UI over the same complete form. */
+    .modern-project-editor {
+        --editor-ink: #172033;
+        --editor-muted: #68738a;
+        --editor-line: #e5eaf2;
+        --editor-brand: #3157d5;
+        --editor-brand-soft: #eef2ff;
+        min-height: 100vh;
+        padding: 1.5rem 2rem 6rem 17.5rem;
+        background:
+            radial-gradient(circle at 92% 2%, rgba(99, 102, 241, .10), transparent 27rem),
+            #f6f8fc;
+    }
+
+    .modern-project-editor .project-form {
+        max-width: 1320px;
+        margin-top: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .modern-editor-hero {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 2rem;
+        margin-bottom: 1.25rem;
+        padding: 1.6rem 1.75rem;
+        border: 1px solid rgba(255,255,255,.75);
+        border-radius: 1.25rem;
+        color: white;
+        background: linear-gradient(120deg, #182a63 0%, #3157d5 62%, #5775e5 100%);
+        box-shadow: 0 18px 45px rgba(37, 59, 130, .18);
+    }
+
+    .modern-editor-eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .72; }
+    .modern-editor-title { margin-top: .35rem; font-size: 1.65rem; font-weight: 750; line-height: 1.25; }
+    .modern-editor-subtitle { margin-top: .45rem; max-width: 50rem; font-size: .9rem; color: rgba(255,255,255,.75); }
+    .modern-editor-code { flex: 0 0 auto; padding: .6rem .85rem; border: 1px solid rgba(255,255,255,.2); border-radius: .75rem; background: rgba(255,255,255,.1); font-size: .82rem; }
+
+    .modern-project-editor .edit-section-nav {
+        left: 1.25rem;
+        top: 6.25rem;
+        bottom: 1.5rem;
+        width: 15rem;
+        transform: none;
+        justify-content: flex-start;
+        gap: .25rem;
+        padding: 1rem;
+        border-color: var(--editor-line);
+        border-radius: 1.15rem;
+        box-shadow: 0 16px 40px rgba(29, 43, 77, .10);
+        overflow-y: auto;
+    }
+
+    .modern-project-editor .edit-section-nav::before { display: none; }
+    .modern-project-editor .edit-section-dot {
+        display: flex;
+        width: 100%;
+        min-height: 2.75rem;
+        height: auto;
+        align-items: center;
+        gap: .65rem;
+        padding: .55rem .65rem;
+        border-radius: .7rem;
+        color: #59657a;
+        background: transparent;
+        text-align: left;
+    }
+    .modern-project-editor .edit-section-dot__short {
+        display: grid;
+        width: 1.7rem;
+        height: 1.7rem;
+        flex: 0 0 1.7rem;
+        place-items: center;
+        border-radius: .5rem;
+        background: #f0f3f8;
+        color: #657187;
+        font-size: .72rem;
+    }
+    .modern-project-editor .edit-section-dot__full { display: block; max-width: none; opacity: 1; font-size: .76rem; line-height: 1.25; }
+    .modern-project-editor .edit-section-dot.is-active { color: #2446b8; background: var(--editor-brand-soft); }
+    .modern-project-editor .edit-section-dot.is-active .edit-section-dot__short { color: white; background: var(--editor-brand); }
+
+    .modern-section-card {
+        margin-bottom: 1rem;
+        padding: 1.4rem 1.5rem;
+        border: 1px solid var(--editor-line);
+        border-radius: 1.15rem;
+        background: rgba(255,255,255,.96);
+        box-shadow: 0 5px 18px rgba(31, 44, 78, .045);
+    }
+    .modern-section-card > .edit-section-target {
+        margin: 0 0 1.2rem !important;
+        padding-bottom: .9rem;
+        border-bottom: 1px solid var(--editor-line);
+        color: var(--editor-ink);
+        font-size: 1rem;
+    }
+    .modern-section-card input:not([type="checkbox"]):not([type="radio"]),
+    .modern-section-card select,
+    .modern-section-card textarea {
+        border-color: #d9e0eb;
+        border-radius: .65rem;
+        min-height: 2.65rem;
+        transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    .modern-section-card input:focus, .modern-section-card select:focus, .modern-section-card textarea:focus {
+        border-color: #6f8ae9;
+        box-shadow: 0 0 0 3px rgba(49,87,213,.11);
+        outline: none;
+    }
+    .modern-project-editor .fte-row { border-color: var(--editor-line); border-radius: .9rem; box-shadow: none; }
+    .modern-project-editor .fte-summary-shell { border: 0; background: #f7f9fc; }
+    .modern-project-editor #fte-container { max-height: 68vh; overflow-y: auto; padding: .2rem .35rem .4rem .1rem; overscroll-behavior: contain; }
+    .modern-project-editor .fte-sync-status { border-radius: 999px; background: #ecfdf5; color: #087a55; }
+    .modern-project-editor table .fte-row {
+        display: table-row;
+        position: static;
+        content-visibility: visible;
+        contain: none;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .fte-native-scroll {
+        width: 100%;
+        max-width: 100%;
+        overscroll-behavior-inline: contain;
+        scrollbar-color: #b8c3d6 #f1f5f9;
+        scrollbar-width: thin;
+    }
+
+    @media (max-width: 1280px) {
+        .modern-project-editor { padding-left: 2rem; }
+        .modern-project-editor .edit-section-nav { display: none; }
     }
 
     .required-mark {
@@ -616,6 +760,179 @@
             background: #ffffff;
         }
     }
+
+    /* Desktop editor v2: focused, step-based workflow. */
+    .modern-project-editor {
+        padding: 1.25rem 1.5rem 7rem 4.75rem;
+        background: #f4f6fa;
+    }
+
+    .modern-project-editor .project-form {
+        width: 100%;
+        max-width: none;
+        margin-inline: auto;
+    }
+
+    .modern-project-editor .modern-editor-hero {
+        margin-bottom: .8rem;
+        padding: 1.25rem 1.4rem;
+        border-radius: 1rem;
+        background: #172554;
+        box-shadow: 0 10px 28px rgba(23, 37, 84, .14);
+    }
+
+    .modern-project-editor .modern-editor-title { font-size: 1.35rem; }
+
+    .modern-project-editor .edit-section-nav {
+        position: fixed;
+        top: 50%;
+        left: 4px;
+        bottom: auto;
+        z-index: 50;
+        width: auto;
+        height: auto;
+        max-height: none;
+        transform: translateY(-50%);
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .45rem;
+        margin: 0;
+        padding: .55rem;
+        border-radius: 16px;
+        overflow: visible;
+    }
+
+    .modern-project-editor .edit-section-dot {
+        width: auto;
+        min-width: 38px;
+        max-width: 38px;
+        height: 38px;
+        min-height: 38px;
+        flex: 0 0 38px;
+        padding: 0 .46rem;
+        justify-content: flex-start;
+    }
+
+    .modern-project-editor .edit-section-dot__full {
+        display: inline-block;
+        max-width: none;
+        margin-left: .5rem;
+        white-space: nowrap;
+        opacity: 0;
+        transform: translateX(-6px);
+        overflow: visible;
+    }
+
+    .modern-project-editor .edit-section-nav.is-expanded .edit-section-dot {
+        width: 270px;
+        max-width: 270px;
+        padding-inline: .62rem;
+    }
+
+    .modern-project-editor .edit-section-nav.is-expanded .edit-section-dot__full {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .modern-project-editor .edit-section-nav::before { display: none; }
+
+    .modern-project-editor .modern-section-card {
+        display: none;
+        min-height: 34rem;
+        margin: 0;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 8px 24px rgba(35, 46, 77, .06);
+    }
+
+    .modern-project-editor .modern-section-card.is-current { display: block; }
+
+    .modern-step-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5eaf2;
+    }
+
+    .modern-step-progress { font-size: .8rem; font-weight: 650; color: #667085; }
+
+    .modern-step-button {
+        display: inline-flex;
+        min-height: 2.55rem;
+        align-items: center;
+        justify-content: center;
+        padding: .55rem .9rem;
+        border: 1px solid #d7deea;
+        border-radius: .65rem;
+        background: white;
+        color: #344054;
+        font-size: .85rem;
+        font-weight: 700;
+    }
+
+    .modern-step-button:hover { background: #f8fafc; }
+    .modern-step-button--next { border-color: #3157d5; background: #3157d5; color: white; }
+    .modern-step-button--next:hover { background: #2949b6; }
+    .modern-step-button[hidden] { display: none; }
+
+    @media (max-width: 1280px) {
+        .modern-project-editor { padding: 1rem 1rem 8.5rem; }
+        .modern-project-editor .edit-section-nav {
+            display: flex;
+            position: fixed;
+            inset: auto .75rem .75rem;
+            z-index: 60;
+            width: auto;
+            height: auto;
+            max-height: none;
+            flex-direction: row;
+            gap: .3rem;
+            padding: .5rem;
+            border-radius: 1rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, .2);
+            scrollbar-width: thin;
+        }
+
+        .modern-project-editor .edit-section-dot {
+            width: auto;
+            min-width: max-content;
+            max-width: none;
+            height: auto;
+            min-height: 2.45rem;
+            flex: 0 0 auto;
+            padding: .4rem .55rem;
+        }
+
+        .modern-project-editor .edit-section-dot__full {
+            max-width: 9.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 1;
+            transform: none;
+        }
+
+        .modern-project-editor .edit-section-nav::before { display: none; }
+
+        .modern-project-editor .modern-section-card { min-height: 30rem; }
+        .modern-project-editor > [role="region"][aria-live="polite"] { bottom: 4.75rem !important; }
+    }
+
+    @media (max-width: 640px) {
+        .modern-project-editor { padding: .65rem .65rem 8rem; }
+        .modern-project-editor .modern-editor-hero { padding: 1rem; }
+        .modern-project-editor .modern-editor-code { display: none; }
+        .modern-project-editor .modern-section-card { padding: 1rem; border-radius: .8rem; }
+        .modern-project-editor .edit-section-nav { inset-inline: .5rem; bottom: .5rem; }
+        .modern-project-editor .edit-section-dot__full { display: none; }
+        .modern-project-editor .edit-section-dot { min-width: 2.8rem; justify-content: center; }
+        .modern-project-editor > [role="region"][aria-live="polite"] { bottom: 4.4rem !important; }
+    }
 </style>
 
 
@@ -637,6 +954,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
 
+    <div class="modern-project-editor" data-editor-version="professional">
     <div id="projectEditLoadingOverlay" class="page-loading-overlay" aria-live="polite" aria-busy="true">
         <div class="page-loading-card">
             <span class="page-loading-spinner" aria-hidden="true"></span>
@@ -658,18 +976,16 @@
 
     <div class="project-form max-w-6xl mx-auto mt-6 bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
 
-        <div class="mb-4">
-            {{-- <a href="javascript:history.back()" class="text-blue-600 hover:underline text-base font-semibold">
-                <<< ย้อนกลับ </a> --}}
-            <a href="{{ route('projects.index') }}" class="text-blue-600 hover:underline">
-                ← กลับไปยังรายการโครงการ
-            </a>
-        </div>
-        <h2 class="text-xl font-bold mb-6 text-gray-800">✏️ แก้ไขข้อมูลโครงการวิจัย</h2>
-        <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600">
-            <span class="font-medium text-slate-500">รหัสโครงการ</span>
-            <span class="font-semibold text-slate-700">{{ $project->project_code ?: '-' }}</span>
-        </div>
+        <header class="modern-editor-hero">
+            <div>
+                <a href="{{ route('projects.index') }}" class="modern-editor-eyebrow hover:text-white">← กลับไปรายการโครงการ</a>
+                <h1 class="modern-editor-title">{{ $project->project_name_th ?: 'แก้ไขข้อมูลโครงการ' }}</h1>
+            </div>
+            <div class="modern-editor-code">
+                <span class="block text-white/60">PROJECT CODE</span>
+                <strong>{{ $project->project_code ?: '-' }}</strong>
+            </div>
+        </header>
 
 
 
@@ -1332,11 +1648,15 @@
                 <div class="mb-2">
                     <h3 id="section-f" class="edit-section-target font-semibold text-lg text-blue-700">F: รายชื่อผู้มีส่วนร่วมในการทำงาน</h3>
                 </div>
-                <div class="mb-3">
-                    <span id="fteSyncStatus" class="fte-sync-status">ซิงก์ FTE อัตโนมัติทุก 7 วินาที</span>
-                </div>
 
                 <!-- ========== LIST OF FTE ROWS ========== -->
+                @php
+                    $fteRows = old('fte_roles');
+                    if (!is_array($fteRows)) {
+                        $fteRows = $project->fteRoles ?? collect();
+                    }
+                @endphp
+                @if (false)
                 <div id="fte-container" class="space-y-4 mb-4">
 
                     @php
@@ -1491,14 +1811,8 @@
                                             class="fte-value w-full border p-3 rounded bg-gray-100 text-right" readonly>
                                     </label>
 
-                                    <!-- FTE (ผู้บริหาร) -->
-                                    <label class="block p-4 border rounded-xl bg-emerald-50">
-                                        <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
-                                        <input type="number" step="0.01" min="0" max="1"
-                                            name="fte_roles[{{ $i }}][fte_value_research]"
-                                            value="{{ $fteValueResearch }}"
-                                            class="w-full border p-3 rounded text-right">
-                                    </label>
+                                    <input type="hidden" name="fte_roles[{{ $i }}][fte_value_research]"
+                                        value="{{ $fteValueResearch }}">
 
                                     <button type="button" onclick="removeFteRow('fte-{{ $i }}')"
                                         class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50">
@@ -1514,6 +1828,8 @@
                     @endforeach
 
                 </div>
+                @endif
+                @include('projects.partials.fte_native_table', compact('fteRows', 'roleGroups', 'jobDetails', 'taskDetails'))
                 <div id="fte-deleted-ids"></div>
                 <input type="text" id="fteSharedDatepicker" class="hidden" aria-hidden="true" tabindex="-1">
 
@@ -1652,22 +1968,29 @@
                                     placeholder="เพิ่มเติม">
                             </label>
 
-                            <div class="flex gap-2 w-full">
+                            <div class="w-full">
                                 <label class="w-full relative">
                                     <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+                                    <div class="output-date-field">
                                     <input name="outputs[{{ $i }}][year]" type="text"
                                         class="thai-datepicker w-full border p-2 rounded pl-10"
                                         value="{{ old("outputs.$i.year", $out->year) }}" placeholder="โปรดใส่วันที่">
-                                    <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                                    <svg class="w-5 h-5 text-gray-500"
                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
+                                    </div>
                                 </label>
-                                <button type="button" onclick="removeRow('output-{{ $i }}','output')"
-                                    class="text-red-600 mb-2">✕</button>
                             </div>
+                        </div>
+
+                        <div class="output-delete-actions">
+                            <button type="button" onclick="removeRow('output-{{ $i }}','output')" class="output-delete-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6m4-6v6"/></svg>
+                                ลบผลงาน
+                            </button>
                         </div>
 
                         {{-- จุดติดตั้งส่วนพิเศษ (EA101/EA103) --}}
@@ -2675,6 +2998,13 @@
         }
         let fteNextIndex = document.querySelectorAll('#fte-container .fte-row').length;
 
+        function formatFteDisplayValue(value) {
+            const raw = value == null ? '' : String(value).trim();
+            if (raw === '') return '0';
+            const numeric = Number(raw);
+            return Number.isFinite(numeric) ? String(numeric) : raw;
+        }
+
         function addFTERow(options = {}) {
             const {
                 skipValidation = false,
@@ -2696,6 +3026,36 @@
             const taskDropdown = buildFteSelectOptions(FTE_TASK_DETAILS, rowData.task_detail, 'เลือกภารกิจ');
 
             ensureFteDatalist();
+
+            if (container?.tagName === 'TBODY') {
+                container.insertAdjacentHTML('beforeend', `
+                    <tr id="${id}" class="fte-row bg-white hover:bg-slate-50/70" data-deleted="0">
+                        <td class="fte-table-index px-2 py-2 text-center font-bold text-blue-700">
+                            <span class="fte-index">${index + 1}</span>
+                            <input type="hidden" name="fte_roles[${index}][id]" value="${escapeHtml(rowData.id || '')}">
+                            <input type="hidden" name="fte_roles[${index}][fte_value_research]" value="${escapeHtml(rowData.fte_value_research || '')}">
+                        </td>
+                        <td class="px-2 py-2"><input name="fte_roles[${index}][name]" value="${escapeHtml(rowData.name || '')}" placeholder="พิมพ์หรือเลือกชื่อ" class="fte-person-picker w-full border p-2 rounded" required></td>
+                        <td class="px-2 py-2"><select name="fte_roles[${index}][role_group]" class="w-full border p-2 rounded" required>${roleDropdown}</select></td>
+                        <td class="px-2 py-2"><select name="fte_roles[${index}][job_detail]" class="w-full border p-2 rounded" required>${jobDropdown}</select></td>
+                        <td class="px-2 py-2"><select name="fte_roles[${index}][task_detail]" class="w-full border p-2 rounded" required>${taskDropdown}</select></td>
+                        <td class="px-2 py-2"><input name="fte_roles[${index}][start_date]" type="text" value="${escapeHtml(rowData.start_date || '')}" placeholder="เลือกวันที่เริ่ม" class="fte-shared-datepicker w-full border p-2 rounded bg-white cursor-pointer" required readonly data-date-role="start"></td>
+                        <td class="px-2 py-2"><input name="fte_roles[${index}][end_date]" type="text" value="${escapeHtml(rowData.end_date || '')}" placeholder="เลือกวันที่สิ้นสุด" class="fte-shared-datepicker w-full border p-2 rounded bg-white cursor-pointer" required readonly data-date-role="end"></td>
+                        <td class="px-2 py-2"><input type="number" step="0.1" min="0" name="fte_roles[${index}][hours]" value="${escapeHtml(rowData.hours || '')}" placeholder="0" class="fte-hours w-full border p-2 rounded text-right" required></td>
+                        <td class="px-2 py-2 text-right font-semibold text-slate-700">
+                            <input type="hidden" name="fte_roles[${index}][fte_value]" value="${escapeHtml(rowData.fte_value || '')}" class="fte-value">
+                            <span class="fte-value-display fte-table-display-value">${escapeHtml(formatFteDisplayValue(rowData.fte_value))}</span>
+                        </td>
+                        <td class="px-2 py-2 text-center"><button type="button" onclick="removeFteRow('${id}')" class="fte-table-remove-btn">ลบ</button></td>
+                    </tr>
+                `);
+                reindexFTE();
+                const nativeRow = document.getElementById(id);
+                nativeRow?.querySelectorAll('.fte-shared-datepicker').forEach((input) => {
+                    if (typeof syncFteSharedDateInput === 'function') syncFteSharedDateInput(input);
+                });
+                return nativeRow;
+            }
 
             container.insertAdjacentHTML('beforeend', `
 <div id="${id}" class="fte-row p-4 border rounded-lg bg-white shadow-sm" data-deleted="0">
@@ -2828,17 +3188,9 @@
                     readonly>
             </label>
 
-            <!-- FTE ผู้บริหาร -->
-            <label class="block p-4 border rounded-xl bg-emerald-50">
-                <span class="block text-sm font-bold text-emerald-800 mb-2">FTE (ผู้บริหาร)</span>
-                <input name="fte_roles[${index}][fte_value_research]"
-                    type="number"
-                    step="0.01"
-                    min="0" max="1"
-                    value="${escapeHtml(rowData.fte_value_research || '')}"
-                    placeholder="0.00"
-                    class="w-full border p-3 rounded text-right">
-            </label>
+            <input name="fte_roles[${index}][fte_value_research]"
+                type="hidden"
+                value="${escapeHtml(rowData.fte_value_research || '')}">
 
             <button type="button"
                 onclick="removeFteRow('${id}')"
@@ -3315,6 +3667,13 @@
             if (!input) return;
 
             const normalizedValue = value == null ? '' : String(value);
+            if (field === 'name' && input.tomselect) {
+                if (normalizedValue && !input.tomselect.options[normalizedValue]) {
+                    input.tomselect.addOption({ value: normalizedValue, text: normalizedValue, is_resigned: false });
+                }
+                input.tomselect.setValue(normalizedValue, true);
+                return;
+            }
             if ((field === 'start_date' || field === 'end_date') && input._flatpickr) {
                 if (normalizedValue) {
                     input._flatpickr.setDate(normalizedValue, false, 'd-m-Y');
@@ -3331,6 +3690,13 @@
             input.value = normalizedValue;
             if (field === 'start_date' || field === 'end_date') {
                 input.dataset.isoValue = normalizedValue;
+                if (typeof syncFteSharedDateInput === 'function') {
+                    syncFteSharedDateInput(input);
+                }
+            }
+            if (field === 'fte_value') {
+                const display = row.querySelector('.fte-value-display');
+                if (display) display.textContent = formatFteDisplayValue(normalizedValue);
             }
         }
 
@@ -3436,7 +3802,9 @@
             let pollTimer = null;
             let stopped = false;
             let hasCompletedInitialSync = false;
-            const pollIntervalMs = 7000;
+            // The professional editor polls less aggressively. Local calculations
+            // stay immediate, while large FTE lists no longer compete with typing.
+            const pollIntervalMs = 20000;
 
             const markDirty = (target) => {
                 if (window.__fteRemoteApplying) return;
@@ -3814,16 +4182,24 @@
           <input name="outputs[${idx}][project_output]" type="text" class="w-full border p-2 rounded" placeholder="เช่น ตีพิมพ์แล้ว / ลิงก์">
         </label>
 
-        <div class="flex gap-2 w-full">
+        <div class="w-full">
           <label class="w-full relative">
-            <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+          <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+          <div class="output-date-field">
             <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="โปรดใส่วันที่">
-            <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
+          </div>
           </label>
-          <button type="button" onclick="removeRow('${id}','output')" class="text-red-600 mb-2">✕</button>
         </div>
+      </div>
+
+      <div class="output-delete-actions">
+        <button type="button" onclick="removeRow('${id}','output')" class="output-delete-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6m4-6v6"/></svg>
+          ลบผลงาน
+        </button>
       </div>
 
       <!-- จุด mount สำหรับ section พิเศษ -->
@@ -5863,6 +6239,26 @@
         function removeFteRow(id) {
             const row = document.getElementById(id);
             if (!row) return;
+
+            if (row.tagName === 'TR' && row.closest('#fte-container')) {
+                confirmProjectDesktopRemoval(() => {
+                    const idInput = row.querySelector('input[name^="fte_roles["][name$="[id]"]');
+                    const existingId = Number(idInput?.value || 0);
+                    if (existingId > 0) {
+                        const deletedContainer = document.getElementById('fte-deleted-ids');
+                        if (deletedContainer && !deletedContainer.querySelector(`input[value="${existingId}"]`)) {
+                            deletedContainer.insertAdjacentHTML(
+                                'beforeend',
+                                `<input type="hidden" name="fte_deleted_ids[]" value="${existingId}">`
+                            );
+                        }
+                    }
+                    row.remove();
+                    reindexFTE();
+                });
+                return;
+            }
+
             markFteRowDeleted(row);
         }
 
@@ -6131,7 +6527,8 @@
                     options.minDate = getClientTodayLocal();
                 }
 
-                flatpickr(input, options);
+                const datepicker = flatpickr(input, options);
+                window.bindOutputDatepickerRowGuard?.(input, datepicker);
                 bindDatepickerSummarySync(input);
                 bindThaiDatepickerAltOpen(input);
             });
@@ -7072,5 +7469,80 @@
             });
         })();
     </script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const form = document.getElementById('projectForm');
+                if (!form || form.dataset.modernSectionsReady === '1') return;
+                form.dataset.modernSectionsReady = '1';
+
+                // Build focused steps without cloning fields or changing their
+                // names, values, validation, or submission order.
+                const headings = Array.from(form.querySelectorAll(':scope > .edit-section-target'));
+                headings.forEach((heading) => {
+                    const card = document.createElement('section');
+                    card.className = 'modern-section-card';
+                    card.dataset.section = heading.id;
+                    heading.before(card);
+                    card.appendChild(heading);
+
+                    let sibling = card.nextSibling;
+                    while (sibling && !(sibling.nodeType === 1 && sibling.classList?.contains('edit-section-target'))) {
+                        const next = sibling.nextSibling;
+                        card.appendChild(sibling);
+                        sibling = next;
+                    }
+                });
+
+                const cards = Array.from(form.querySelectorAll(':scope > .modern-section-card'));
+                const navButtons = Array.from(document.querySelectorAll('.edit-section-dot[data-nav-target]'));
+                let currentIndex = 0;
+
+                const showStep = (index, options = {}) => {
+                    currentIndex = Math.max(0, Math.min(cards.length - 1, index));
+                    cards.forEach((card, cardIndex) => card.classList.toggle('is-current', cardIndex === currentIndex));
+                    navButtons.forEach((button) => {
+                        const active = button.dataset.navTarget === cards[currentIndex]?.dataset.section;
+                        button.classList.toggle('is-active', active);
+                        button.setAttribute('aria-current', active ? 'step' : 'false');
+                    });
+                    if (options.scroll !== false) {
+                        document.querySelector('.modern-editor-hero')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                };
+
+                cards.forEach((card, index) => {
+                    const toolbar = document.createElement('div');
+                    toolbar.className = 'modern-step-toolbar';
+                    toolbar.innerHTML = `
+                        <button type="button" class="modern-step-button" data-step-previous ${index === 0 ? 'hidden' : ''}>← ก่อนหน้า</button>
+                        <span class="modern-step-progress">หัวข้อ ${index + 1} จาก ${cards.length}</span>
+                        <button type="button" class="modern-step-button modern-step-button--next" data-step-next ${index === cards.length - 1 ? 'hidden' : ''}>ถัดไป →</button>
+                    `;
+                    card.appendChild(toolbar);
+                    toolbar.querySelector('[data-step-previous]')?.addEventListener('click', () => showStep(index - 1));
+                    toolbar.querySelector('[data-step-next]')?.addEventListener('click', () => showStep(index + 1));
+                });
+
+                navButtons.forEach((button) => {
+                    button.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        const index = cards.findIndex((card) => card.dataset.section === button.dataset.navTarget);
+                        if (index >= 0) showStep(index);
+                    });
+                });
+
+                // If validation fails, reveal the step containing the invalid field
+                // before the browser focuses it.
+                form.addEventListener('invalid', (event) => {
+                    const card = event.target.closest('.modern-section-card');
+                    const index = cards.indexOf(card);
+                    if (index >= 0) showStep(index, { scroll: false });
+                }, true);
+
+                showStep(0, { scroll: false });
+            });
+        </script>
+    </div>
 
 @endsection

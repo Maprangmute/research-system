@@ -16,6 +16,7 @@
         'id' => $user->id,
         'full_name' => $user->full_name,
         'research_display_name' => $user->research_display_name,
+        'is_resigned' => $user->role === \App\Models\User::ROLE_RESIGNED,
     ])->values();
     $piInternalAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
     $internalCoresearchUnit = 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
@@ -102,6 +103,7 @@
     window.AUTH_USER_ID = {{ auth()->id() ?? 'null' }};
     window.PROJECT_CARD_DATE_MODE = 'create';
     window.projectUserDirectory = @json($projectUserDirectory);
+    window.DISABLE_FTE_ROW_COLLAPSE = true;
 </script>
 
 @php
@@ -1024,8 +1026,8 @@
                                         <span class="block text-sm font-semibold mb-1">
                                             ชื่อ-นามสกุล <span class="text-red-500">*</span>
                                         </span>
-                                        <input list="fteUsers" name="fte_roles[0][name]"
-                                            class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อ" required>
+                                        <input name="fte_roles[0][name]"
+                                            class="fte-person-picker w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อ" required>
                                     </label>
 
                                     <label>
@@ -1136,24 +1138,15 @@
                             <div class="md:col-span-3 space-y-4">
 
                                 {{-- AUTO FTE --}}
-                                <label class="block p-4 border rounded-xl bg-blue-50">
+                                <div class="block p-4 border rounded-xl bg-blue-50">
                                     <span class="block text-sm font-bold text-blue-800 mb-2">
-                                        FTE (คำนวณอัตโนมัติ)
+                                        FTE ที่ได้รับ
                                     </span>
-                                    <input name="fte_roles[0][fte_value]" type="number" step="0.00001"
-                                        class="fte-value w-full border p-3 rounded text-right bg-gray-100"
-                                        placeholder="0.00000" readonly>
-                                </label>
+                                    <input name="fte_roles[0][fte_value]" type="hidden" class="fte-value" value="0">
+                                    <span class="fte-value-display block text-right font-semibold text-slate-700">0</span>
+                                </div>
 
-                                {{-- MANUAL FTE --}}
-                                <label class="block p-4 border rounded-xl bg-emerald-50">
-                                    <span class="block text-sm font-bold text-emerald-800 mb-2">
-                                        FTE (ให้โดยหัวหน้าโครงการ)
-                                    </span>
-                                    <input name="fte_roles[0][fte_value_research]" type="number" step="0.01"
-                                        min="0" max="1" class="w-full border p-3 rounded text-right"
-                                        placeholder="0.00">
-                                </label>
+                                <input name="fte_roles[0][fte_value_research]" type="hidden" value="">
 
                                 <button type="button" class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50"
                                     data-repeatable-remove>
@@ -1188,8 +1181,8 @@
                                         <span class="block text-sm font-semibold mb-1">
                                             ชื่อ-นามสกุล <span class="text-red-500">*</span>
                                         </span>
-                                        <input list="fteUsers" name="fte_roles[__i__][name]"
-                                            class="w-full border p-2 rounded" required>
+                                        <input name="fte_roles[__i__][name]"
+                                            class="fte-person-picker w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อ" required>
                                     </label>
 
                                     <label>
@@ -1295,21 +1288,15 @@
                             </div>
 
                             <div class="md:col-span-3 space-y-4">
-                                <label class="block p-4 border rounded-xl bg-blue-50">
+                                <div class="block p-4 border rounded-xl bg-blue-50">
                                     <span class="block text-sm font-bold text-blue-800 mb-2">
-                                        FTE (คำนวณอัตโนมัติ)
+                                        FTE ที่ได้รับ
                                     </span>
-                                    <input name="fte_roles[__i__][fte_value]" type="number" step="0.00001" placeholder="0.000000"
-                                        class="fte-value w-full border p-3 rounded text-right bg-gray-100" readonly>
-                                </label>
+                                    <input name="fte_roles[__i__][fte_value]" type="hidden" class="fte-value" value="0">
+                                    <span class="fte-value-display block text-right font-semibold text-slate-700">0</span>
+                                </div>
 
-                                <label class="block p-4 border rounded-xl bg-emerald-50">
-                                    <span class="block text-sm font-bold text-emerald-800 mb-2">
-                                        FTE (ให้โดยหัวหน้าโครงการ)
-                                    </span>
-                                    <input name="fte_roles[__i__][fte_value_research]" type="number" step="0.01" placeholder="0.00"
-                                        min="0" max="1" class="w-full border p-3 rounded text-right">
-                                </label>
+                                <input name="fte_roles[__i__][fte_value_research]" type="hidden" value="">
 
                                 <button type="button" class="w-full py-2 border rounded-lg text-red-600 hover:bg-red-50"
                                     data-repeatable-remove>
@@ -1337,11 +1324,10 @@
                     {{-- ROW แรก --}}
                     <div class="output-row p-4 border rounded-lg bg-white space-y-3" data-repeatable-row>
 
-                        <div class="flex justify-between items-center">
+                        <div class="flex items-center">
                             <span class="font-semibold text-blue-700">
                                 ผลงานที่ <span data-repeatable-index>1</span>
                             </span>
-                            <button type="button" class="text-red-600" data-repeatable-remove>✕</button>
                         </div>
 
                         <label>
@@ -1389,6 +1375,12 @@
 
                         {{-- ตรงนี้สำคัญ --}}
                         <div class="special-mount mt-3"></div>
+                        <div class="output-delete-actions">
+                            <button type="button" class="output-delete-action" data-repeatable-remove>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6m4-6v6"/></svg>
+                                ลบผลงาน
+                            </button>
+                        </div>
                     </div>
 
                 </div>
@@ -1397,11 +1389,10 @@
                 <x-slot:template>
                     <div class="output-row p-4 border rounded-lg bg-white space-y-3" data-repeatable-row>
 
-                        <div class="flex justify-between items-center">
+                        <div class="flex items-center">
                             <span class="font-semibold text-blue-700">
                                 ผลงานที่ <span data-repeatable-index>#</span>
                             </span>
-                            <button type="button" class="text-red-600" data-repeatable-remove>✕</button>
                         </div>
 
                         <label>
@@ -1448,6 +1439,12 @@
                         </div>
 
                         <div class="special-mount mt-3"></div>
+                        <div class="output-delete-actions">
+                            <button type="button" class="output-delete-action" data-repeatable-remove>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6m4-6v6"/></svg>
+                                ลบผลงาน
+                            </button>
+                        </div>
                     </div>
                 </x-slot:template>
 
@@ -1713,6 +1710,72 @@
                 display: none;
             }
         }
+
+        .create-project-editor {
+            width: 100%;
+            max-width: none;
+            min-height: calc(100vh - 6rem);
+            margin: 0;
+            padding: 1.25rem 1.5rem 7rem 4.75rem;
+            background: #f4f6fa;
+        }
+
+        .create-editor-hero {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+            padding: 1.3rem 1.5rem;
+            border-radius: 1rem;
+            color: #fff;
+            background: #172554;
+            box-shadow: 0 10px 28px rgba(23, 37, 84, .14);
+        }
+
+        .create-editor-hero h1 { margin-top: .3rem; font-size: 1.4rem; font-weight: 800; }
+        .create-editor-hero p { margin-top: .35rem; color: rgba(255,255,255,.72); font-size: .88rem; }
+        .create-editor-eyebrow { color: rgba(255,255,255,.72); font-size: .72rem; font-weight: 800; letter-spacing: .08em; }
+        .create-editor-badge { flex: 0 0 auto; border: 1px solid rgba(255,255,255,.22); border-radius: .65rem; padding: .55rem .75rem; background: rgba(255,255,255,.1); font-size: .72rem; font-weight: 800; }
+
+        #projectForm .project-zone-card {
+            display: block;
+            min-height: 0;
+            margin: 1rem 0 1.15rem;
+            padding: 1rem 1rem 1.1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(35,46,77,.06);
+        }
+        #projectForm .project-zone-card.is-current { display: block; }
+
+        .create-step-toolbar { display:none; }
+        .create-step-progress { font-size:.8rem; font-weight:700; color:#667085; }
+        .create-step-button { min-height:2.55rem; padding:.55rem .9rem; border:1px solid #d7deea; border-radius:.65rem; background:#fff; color:#344054; font-size:.85rem; font-weight:700; }
+        .create-step-button--next { border-color:#3157d5; background:#3157d5; color:#fff; }
+        .create-step-button[hidden] { display:none; }
+
+        @media (max-width: 1280px) {
+            .create-project-editor { padding: 1rem 1rem 8.5rem; }
+            .create-project-editor .edit-section-nav {
+                display:flex; position:fixed; inset:auto .75rem .75rem; z-index:60; width:auto; height:auto;
+                transform:none; flex-direction:row; gap:.3rem; padding:.5rem; overflow-x:auto; overflow-y:hidden;
+                border-radius:1rem; box-shadow:0 12px 32px rgba(15,23,42,.2);
+            }
+            .create-project-editor .edit-section-nav::before { display:none; }
+            .create-project-editor .edit-section-dot { width:auto; min-width:max-content; max-width:none; height:auto; min-height:2.45rem; padding:.4rem .55rem; }
+            .create-project-editor .edit-section-dot__full { max-width:9.5rem; opacity:1; transform:none; overflow:hidden; text-overflow:ellipsis; }
+        }
+
+        @media (max-width: 640px) {
+            .create-project-editor { padding:.65rem .65rem 8rem; }
+            .create-editor-badge { display:none; }
+            .create-editor-hero { padding:1rem; }
+            #projectForm .project-zone-card { padding:1rem; min-height:0; }
+            .create-project-editor .edit-section-dot__full { display:none; }
+            .create-project-editor .edit-section-dot { min-width:2.8rem; justify-content:center; }
+        }
     </style>
 
     <script>
@@ -1720,26 +1783,29 @@
             const form = document.getElementById('projectForm');
             if (!form || form.dataset.zoneReady === '1') return;
 
-            const topLevelHeadings = Array.from(form.children).filter((el) =>
-                el instanceof HTMLElement && el.matches('h3.edit-section-target')
+            const navButtons = Array.from(document.querySelectorAll('.edit-section-dot[data-nav-target]'));
+            const sectionDefs = navButtons.map((button) => {
+                const heading = document.getElementById(button.dataset.navTarget || '');
+                if (!heading || !form.contains(heading)) return null;
+                let root = heading;
+                while (root.parentElement && root.parentElement !== form) root = root.parentElement;
+                return { id: heading.id, heading, root };
+            }).filter(Boolean).filter((item, index, list) =>
+                list.findIndex((candidate) => candidate.root === item.root) === index
             );
 
-            if (!topLevelHeadings.length) return;
+            if (!sectionDefs.length) return;
 
-            topLevelHeadings.forEach((heading, index) => {
+            sectionDefs.forEach((section, index) => {
                 const zone = document.createElement('section');
                 zone.className = `project-zone-card${index % 2 === 1 ? ' project-zone-card--alt' : ''}`;
-                zone.dataset.zoneId = heading.id || `zone-${index + 1}`;
-                form.insertBefore(zone, heading);
-                zone.appendChild(heading);
-                heading.classList.add('project-zone-title');
+                zone.dataset.zoneId = section.id;
+                form.insertBefore(zone, section.root);
 
                 let cursor = zone.nextSibling;
-                while (cursor) {
+                const nextRoot = sectionDefs[index + 1]?.root || null;
+                while (cursor && cursor !== nextRoot) {
                     const next = cursor.nextSibling;
-                    if (cursor instanceof HTMLElement && cursor.matches('h3.edit-section-target')) {
-                        break;
-                    }
                     zone.appendChild(cursor);
                     cursor = next;
                 }
@@ -1749,7 +1815,47 @@
                 heading.classList.add('project-zone-title');
             });
 
+            const zones = Array.from(form.querySelectorAll(':scope > .project-zone-card'));
+            let currentIndex = 0;
+
+            const showZone = (index, options = {}) => {
+                currentIndex = Math.max(0, Math.min(zones.length - 1, index));
+                zones.forEach((zone, zoneIndex) => zone.classList.toggle('is-current', zoneIndex === currentIndex));
+                navButtons.forEach((button) => {
+                    const active = button.dataset.navTarget === zones[currentIndex]?.dataset.zoneId;
+                    button.classList.toggle('is-active', active);
+                    button.setAttribute('aria-current', active ? 'step' : 'false');
+                });
+                if (options.scroll !== false) document.querySelector('.create-editor-hero')?.scrollIntoView({ behavior:'smooth', block:'start' });
+            };
+
+            zones.forEach((zone, index) => {
+                const toolbar = document.createElement('div');
+                toolbar.className = 'create-step-toolbar';
+                toolbar.innerHTML = `
+                    <button type="button" class="create-step-button" data-create-previous ${index === 0 ? 'hidden' : ''}>← ก่อนหน้า</button>
+                    <span class="create-step-progress">หัวข้อ ${index + 1} จาก ${zones.length}</span>
+                    <button type="button" class="create-step-button create-step-button--next" data-create-next ${index === zones.length - 1 ? 'hidden' : ''}>ถัดไป →</button>`;
+                zone.appendChild(toolbar);
+                toolbar.querySelector('[data-create-previous]')?.addEventListener('click', () => showZone(index - 1));
+                toolbar.querySelector('[data-create-next]')?.addEventListener('click', () => showZone(index + 1));
+            });
+
+            navButtons.forEach((button) => button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                const target = document.getElementById(button.dataset.navTarget || '');
+                target?.scrollIntoView({ behavior:'smooth', block:'start' });
+            }, true));
+
+            form.addEventListener('invalid', (event) => {
+                const zone = event.target.closest('.project-zone-card');
+                const index = zones.indexOf(zone);
+                if (index >= 0) showZone(index, { scroll:false });
+            }, true);
+
             form.dataset.zoneReady = '1';
+            zones.forEach((zone) => zone.classList.add('is-current'));
         })();
     </script>
 
@@ -1787,6 +1893,7 @@
             });
 
             const updateActiveDot = () => {
+                if (document.getElementById('projectForm')?.dataset.zoneReady === '1') return;
                 let activeId = '';
                 let bestTop = Number.POSITIVE_INFINITY;
 

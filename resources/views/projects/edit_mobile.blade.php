@@ -20,6 +20,7 @@
         'id' => $user->id,
         'full_name' => $user->full_name,
         'research_display_name' => $user->research_display_name,
+        'is_resigned' => $user->role === \App\Models\User::ROLE_RESIGNED,
     ])->values();
     $piInternalAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
     $internalCoresearchUnit = 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
@@ -1306,8 +1307,8 @@
                                                 ชื่อ-นามสกุล
                                                 <span class="text-red-500">*</span>
                                             </span>
-                                            <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
-                                                value="{{ $fteName }}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
+                                            <input name="fte_roles[{{ $i }}][name]"
+                                                value="{{ $fteName }}" class="fte-person-picker w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
                                                 oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
                                                 oninput="this.setCustomValidity('')">
                                         </label>
@@ -1482,10 +1483,8 @@
                         data-index="{{ $i }}">
                         {{-- hidden id ของ output เดิม --}}
                         <input type="hidden" name="outputs[{{ $i }}][id]" value="{{ $out->id }}">
-                        <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
                             <span class="font-semibold text-blue-700">ผลงานที่ <span class="output-index">{{ $i + 1 }}</span></span>
-                            <button type="button" onclick="removeRow('output-{{ $i }}','output')"
-                                class="text-red-600">✕</button>
                         </div>
 
                         {{-- ชื่อผลงาน --}}
@@ -1603,16 +1602,25 @@
 
                             <label class="w-full relative">
                                 <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+                                <div class="output-date-field">
                                 <input name="outputs[{{ $i }}][year]" type="text"
                                     class="thai-datepicker w-full border p-2 rounded pl-10"
                                     value="{{ old("outputs.$i.year", $out->year) }}" placeholder="เลือกวันที่ publish">
-                                <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none"
+                                <svg class="w-5 h-5 text-gray-500"
                                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
+                                </div>
                             </label>
+                        </div>
+
+                        <div class="output-delete-actions">
+                            <button type="button" onclick="removeRow('output-{{ $i }}','output')" class="output-delete-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6m4-6v6"/></svg>
+                                ลบผลงาน
+                            </button>
                         </div>
 
                         {{-- จุดติดตั้งส่วนพิเศษ (EA101/EA103) --}}
@@ -2757,10 +2765,9 @@
                         <span class="text-red-500">*</span>
                     </span>
 
-                    <input list="${FTE_DATALIST_ID}"
-                        name="fte_roles[${index}][name]"
+                    <input name="fte_roles[${index}][name]"
                         value="${escapeHtml(rowData.name || '')}"
-                        class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
+                        class="fte-person-picker w-full border p-2 rounded focus:ring-2 focus:ring-blue-500"
                         placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม"
                         required
                                     oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
@@ -3264,6 +3271,14 @@
 
             const normalizedValue = value == null ? '' : String(value);
 
+            if (field === 'name' && input.tomselect) {
+                if (normalizedValue && !input.tomselect.options[normalizedValue]) {
+                    input.tomselect.addOption({ value: normalizedValue, text: normalizedValue, is_resigned: false });
+                }
+                input.tomselect.setValue(normalizedValue, true);
+                return;
+            }
+
             if (field === 'start_date' || field === 'end_date') {
                 if (MOBILE_WHEEL_MODE) {
                     const parsed = parseLocalDateInput(normalizedValue);
@@ -3661,9 +3676,8 @@
             document.getElementById('output-container').insertAdjacentHTML('beforeend', `
     <div id="${id}" class="output-row space-y-2 border p-4 rounded-lg bg-gray-50" data-index="${idx}">
       <input type="hidden" name="outputs[${idx}][id]" value="">
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
         <span class="font-semibold text-blue-700">ผลงานที่ <span class="output-index">${idx + 1}</span></span>
-        <button type="button" onclick="removeRow('${id}','output')" class="text-red-600">✕</button>
       </div>
       <label class="block w-full">
         <span class="block text-sm text-gray-700 mb-1">
@@ -3713,11 +3727,20 @@
 
         <label class="w-full relative">
           <span class="block text-sm text-gray-700 mb-1">วันที่ publish</span>
+          <div class="output-date-field">
           <input name="outputs[${idx}][year]" type="text" class="thai-datepicker w-full border p-2 rounded pl-10" placeholder="เลือกวันที่ publish">
-          <svg class="w-5 h-5 absolute bottom-2.5 left-3 text-gray-500 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
           </svg>
+          </div>
         </label>
+      </div>
+
+      <div class="output-delete-actions">
+        <button type="button" onclick="removeRow('${id}','output')" class="output-delete-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6m4-6v6"/></svg>
+          ลบผลงาน
+        </button>
       </div>
 
       <!-- จุด mount สำหรับ section พิเศษ -->
@@ -6108,7 +6131,8 @@
                     options.minDate = getClientTodayLocal();
                 }
 
-                flatpickr(input, options);
+                const datepicker = flatpickr(input, options);
+                window.bindOutputDatepickerRowGuard?.(input, datepicker);
                 bindDatepickerSummarySync(input);
                 bindThaiDatepickerAltOpen(input);
             });

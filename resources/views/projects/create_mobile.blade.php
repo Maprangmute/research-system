@@ -20,6 +20,7 @@
         'id' => $user->id,
         'full_name' => $user->full_name,
         'research_display_name' => $user->research_display_name,
+        'is_resigned' => $user->role === \App\Models\User::ROLE_RESIGNED,
     ])->values();
     $piInternalAffiliation = 'หน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล';
     $internalCoresearchUnit = 'ภายในหน่วยวิจัยเพื่อขับเคลื่อนนโยบายสุขภาพ';
@@ -1011,8 +1012,8 @@
                                             ชื่อ-นามสกุล
                                             <span class="text-red-500">*</span>
                                         </span>
-                                        <input list="fteUsers" name="fte_roles[{{ $i }}][name]"
-                                            value="{{ $fteName }}" class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
+                                        <input name="fte_roles[{{ $i }}][name]"
+                                            value="{{ $fteName }}" class="fte-person-picker w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
                                             oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
                                             oninput="this.setCustomValidity('')">
                                     </label>
@@ -1148,11 +1149,10 @@
                 <x-slot:template>
                     <div class="output-row p-4 border rounded-lg bg-white space-y-3" data-repeatable-row>
 
-                        <div class="flex justify-between items-center">
+                        <div class="flex items-center">
                             <span class="font-semibold text-blue-700">
                                 ผลงานที่ <span data-repeatable-index>#</span>
                             </span>
-                            <button type="button" class="text-red-600" data-repeatable-remove>✕</button>
                         </div>
 
                         <label>
@@ -1199,6 +1199,12 @@
                         </div>
 
                         <div class="special-mount mt-3"></div>
+                        <div class="output-delete-actions">
+                            <button type="button" class="output-delete-action" data-repeatable-remove>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6m4-6v6"/></svg>
+                                ลบผลงาน
+                            </button>
+                        </div>
                     </div>
                 </x-slot:template>
 
@@ -1428,8 +1434,8 @@
                         ชื่อ-นามสกุล
                         <span class="text-red-500">*</span>
                     </span>
-                    <input list="fteUsers" name="fte_roles[${index}][name]"
-                        class="w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
+                    <input name="fte_roles[${index}][name]"
+                        class="fte-person-picker w-full border p-2 rounded" placeholder="พิมพ์หรือเลือกชื่อผู้มีส่วนร่วม" required
                         oninvalid="this.setCustomValidity('กรุณาเลือกหรือพิมพ์ชื่อผู้ใช้จากรายการ')"
                         oninput="this.setCustomValidity('')">
                 </label>

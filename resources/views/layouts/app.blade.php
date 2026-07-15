@@ -1299,7 +1299,10 @@
 
     <!-- ✅ main ก็ใช้ container เช่นกัน -->
     @php
-        $isFullWidthPage = request()->routeIs('users.index') || request()->routeIs('outputs.visualization') || request()->routeIs('dashboard');
+        $isFullWidthPage = request()->routeIs('users.index')
+            || request()->routeIs('outputs.visualization')
+            || request()->routeIs('dashboard')
+            || request()->routeIs('projects.edit');
     @endphp
     <main class="{{ $isModalView ? 'pt-4 pb-4' : 'pt-24 pb-6' }} {{ $isFullWidthPage ? 'w-full px-0' : 'container mx-auto px-4' }}">
         @if (isset($header))
@@ -1608,6 +1611,7 @@
         const okBtn = overlay.querySelector('#thaiWheelOk');
         const cancelBtn = overlay.querySelector('#thaiWheelCancel');
         let onConfirm = null;
+        let onDismiss = null;
 
         for (let m = 0; m < 12; m++) {
             const opt = document.createElement('option');
@@ -1646,12 +1650,18 @@
             daySel.value = String(d.getDate());
         };
 
-        const open = (date, callback) => {
+        const open = (date, callback, dismissCallback = null) => {
             onConfirm = callback;
+            onDismiss = dismissCallback;
             setDate(date);
             overlay.classList.add('is-open');
         };
-        const close = () => overlay.classList.remove('is-open');
+        const close = () => {
+            overlay.classList.remove('is-open');
+            const callback = onDismiss;
+            onDismiss = null;
+            if (typeof callback === 'function') callback();
+        };
 
         monthSel.addEventListener('change', refillDays);
         yearSel.addEventListener('change', refillDays);
@@ -1713,6 +1723,24 @@
         const openWheel = () => {
             const picker = ensureThaiWheelPickerModal();
             const current = parseDateInputValue(input.value) || getClientTodayLocal();
+            const outputRow = input.closest('.output-row');
+            const keepOutputRowOpen = () => {
+                if (!outputRow) return;
+                outputRow.dataset.forceOpen = '1';
+                outputRow.dataset.collapsed = '0';
+                outputRow.classList.remove('row-collapsed');
+                outputRow.classList.add('output-row-open');
+            };
+            const releaseOutputRow = () => {
+                keepOutputRowOpen();
+                window.setTimeout(() => {
+                    if (!outputRow) return;
+                    delete outputRow.dataset.forceOpen;
+                    outputRow.dataset.collapsed = '0';
+                    outputRow.classList.remove('row-collapsed');
+                }, 200);
+            };
+            keepOutputRowOpen();
             picker.open(current, (picked) => {
                 if (input.dataset.noPast === '1' && normalizeDateOnly(picked) < getClientTodayLocal()) {
                     return;
@@ -1725,7 +1753,8 @@
                 input.dispatchEvent(new Event('change', {
                     bubbles: true
                 }));
-            });
+                keepOutputRowOpen();
+            }, releaseOutputRow);
         };
 
         displayInput.addEventListener('click', openWheel);
@@ -1755,6 +1784,36 @@
         }
         instance.config[hook] = [callback];
     }
+
+    window.bindOutputDatepickerRowGuard = (input, instance = input?._flatpickr) => {
+        if (!(input instanceof HTMLInputElement) || !instance || input.dataset.outputDateGuardBound === '1') return;
+        const row = input.closest('.output-row');
+        if (!row) return;
+
+        input.dataset.outputDateGuardBound = '1';
+        const keepRowOpen = () => {
+            row.dataset.forceOpen = '1';
+            row.dataset.collapsed = '0';
+            row.classList.remove('row-collapsed');
+            row.classList.add('output-row-open');
+            row.querySelector('.row-collapse-toggle')?.setAttribute('aria-expanded', 'true');
+            row.querySelector('.output-summary-toggle')?.setAttribute('aria-expanded', 'true');
+        };
+        const releaseRow = () => {
+            keepRowOpen();
+            window.setTimeout(() => {
+                delete row.dataset.forceOpen;
+                row.dataset.collapsed = '0';
+                row.classList.remove('row-collapsed');
+            }, 200);
+        };
+
+        appendFlatpickrHook(instance, 'onOpen', keepRowOpen);
+        appendFlatpickrHook(instance, 'onChange', keepRowOpen);
+        appendFlatpickrHook(instance, 'onClose', releaseRow);
+        instance.altInput?.addEventListener('pointerdown', keepRowOpen, true);
+        instance.altInput?.addEventListener('focus', keepRowOpen, true);
+    };
 
     function bindEndDateMinFromStart(startInput, endInput, key) {
         if (!(startInput instanceof HTMLElement) || !(endInput instanceof HTMLElement)) {
@@ -1978,6 +2037,7 @@
                     inst.altInput.value = `${day} ${month} ${year}`;
                 }
             });
+            window.bindOutputDatepickerRowGuard?.(input, fp);
 
             /* ✅ ปุ่ม 📅 เปิด input ของตัวเอง */
             const btn = scope.querySelector(
@@ -3092,12 +3152,135 @@
         .fte-table-grid select {
             width: 100%;
             min-width: 0;
+            height: 34px !important;
+            min-height: 34px !important;
+            max-height: 34px !important;
             border: 1px solid #cbd5e1;
             border-radius: 0.4rem;
-            padding: 0.38rem 0.5rem;
+            padding: 0.3rem 0.5rem;
             font-size: 0.9rem;
             background: #fff;
             box-sizing: border-box;
+        }
+
+        .fte-table-grid .ts-wrapper {
+            width: 100%;
+            min-width: 0;
+            height: 34px !important;
+            min-height: 34px !important;
+            max-height: 34px !important;
+        }
+        .fte-table-grid .ts-control {
+            height: 34px !important;
+            min-height: 34px !important;
+            max-height: 34px !important;
+            border: 1px solid #cbd5e1;
+            border-radius: .4rem;
+            padding: 5px 8px !important;
+            box-shadow: none;
+            font-size: .9rem;
+            line-height: normal;
+            box-sizing: border-box;
+        }
+        .fte-table-grid .ts-control > input {
+            width: auto;
+            min-width: 3rem;
+            height: 20px !important;
+            min-height: 20px !important;
+            max-height: 20px !important;
+            margin: 0;
+            border: 0;
+            border-radius: 0;
+            padding: 0 !important;
+            background: transparent;
+            box-shadow: none;
+            font: inherit;
+            line-height: normal;
+        }
+        .fte-table-grid .ts-control > .item {
+            margin: 0;
+            padding: 0;
+            line-height: 20px;
+        }
+        #fte-table-wrap .fte-table-grid tbody td:nth-child(2) .ts-wrapper,
+        #fte-table-wrap .fte-table-grid tbody td:nth-child(2) .ts-wrapper.single,
+        #fte-table-wrap .fte-table-grid tbody td:nth-child(2) .ts-wrapper.input-active {
+            height: 34px !important;
+            min-height: 34px !important;
+            max-height: 34px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        }
+        #fte-table-wrap .fte-table-grid tbody td:nth-child(2) .ts-wrapper .ts-control,
+        #fte-table-wrap .fte-table-grid tbody td:nth-child(2) .ts-wrapper.single .ts-control,
+        #fte-table-wrap .fte-table-grid tbody td:nth-child(2) .ts-wrapper.input-active .ts-control {
+            height: 34px !important;
+            min-height: 34px !important;
+            max-height: 34px !important;
+            margin: 0 !important;
+            padding: 5px 8px !important;
+            box-sizing: border-box !important;
+            align-items: center !important;
+            overflow: hidden !important;
+        }
+        #fte-table-wrap .fte-table-grid tbody td:nth-child(2) .ts-control > input,
+        #fte-table-wrap .fte-table-grid tbody td:nth-child(2) .ts-control > .item {
+            height: 20px !important;
+            min-height: 20px !important;
+            max-height: 20px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 20px !important;
+            box-sizing: border-box !important;
+        }
+        .fte-person-option { display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
+        .fte-person-option__name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .fte-person-option__resigned {
+            flex:0 0 auto;
+            border:1px solid #fecdd3;
+            border-radius:999px;
+            padding:.12rem .42rem;
+            background:#ffe4e6;
+            color:#be123c;
+            font-size:.68rem;
+            font-weight:700;
+        }
+        .fte-person-dropdown {
+            width: min(380px, calc(100vw - 2rem)) !important;
+            min-width: min(380px, calc(100vw - 2rem)) !important;
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: .65rem;
+            background: #fff;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, .16);
+            z-index: 9999;
+        }
+        .fte-person-dropdown .option { padding:.55rem .65rem; }
+        .fte-person-dropdown .active { background:#eff6ff; color:#1e3a8a; }
+        .fte-person-dropdown .dropdown-input-wrap {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            padding: .55rem;
+            border-bottom: 1px solid #e2e8f0;
+            background: #fff;
+        }
+        .fte-person-dropdown .dropdown-input {
+            width: 100%;
+            min-height: 2.35rem;
+            border: 1px solid #cbd5e1;
+            border-radius: .5rem;
+            padding: .45rem .65rem;
+            background: #f8fafc;
+            color: #1e293b;
+            outline: none;
+        }
+        .fte-person-dropdown .dropdown-input:focus {
+            border-color: #5b7ce2;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(49,87,213,.1);
         }
 
         .fte-table-grid tbody tr.fte-table-row-remote-new input,
@@ -3179,6 +3362,25 @@
             color: #475569;
         }
 
+        .fte-table-grid .fte-table-display-value {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100%;
+            height: 34px !important;
+            min-height: 34px !important;
+            max-height: 34px !important;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.4rem;
+            padding: 0.3rem 0.5rem;
+            background: #f8fafc;
+            box-shadow: none;
+            pointer-events: none;
+            text-align: right;
+            font-weight: 600;
+        }
+
         .project-form {
             max-width: 96rem !important;
         }
@@ -3201,6 +3403,120 @@
     }
 </style>
 
+<style>
+    .fte-person-dropdown .fte-person-option {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        width: 100%;
+    }
+    .fte-person-dropdown .fte-person-option__name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .fte-person-dropdown .fte-person-option__resigned {
+        display: inline-flex;
+        align-items: center;
+        flex: 0 0 auto;
+        margin-left: auto;
+        border: 1px solid #fecdd3;
+        border-radius: 999px;
+        padding: .12rem .42rem;
+        background: #ffe4e6;
+        color: #be123c;
+        font-size: .68rem !important;
+        font-weight: 700;
+        line-height: 1.2 !important;
+        white-space: nowrap;
+    }
+    .output-delete-actions {
+        position: absolute;
+        top: .75rem;
+        right: .75rem;
+        z-index: 4;
+        display: flex;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+    .output-delete-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        min-height: 2.25rem;
+        border: 1px solid #fecaca;
+        border-radius: .55rem;
+        padding: .45rem .8rem;
+        background: #fff1f2;
+        color: #be123c;
+        font-size: .82rem;
+        font-weight: 700;
+        line-height: 1;
+        transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .output-delete-action:hover {
+        border-color: #fda4af;
+        background: #ffe4e6;
+        box-shadow: 0 2px 8px rgba(190, 18, 60, .1);
+    }
+    .output-delete-action svg { width: 1rem; height: 1rem; }
+    .output-row { position: relative; }
+    .output-row > .flex:first-of-type { padding-right: 9rem; }
+    .output-row .output-body-host {
+        position: relative;
+        padding-top: 3rem;
+    }
+    .output-row .output-body-host .output-delete-actions {
+        top: 0;
+        right: 0;
+    }
+    .output-row .special-mount:not(:empty) {
+        margin-top: .75rem !important;
+    }
+    .output-date-field { position: relative; }
+    .output-date-field > svg {
+        position: absolute;
+        left: .75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+    @media (max-width: 640px) {
+        .output-delete-actions {
+            top: .68rem;
+            right: 3.95rem;
+        }
+        .output-delete-action {
+            width: auto;
+            min-height: 1.65rem;
+            border-radius: .4rem;
+            padding: .2rem .38rem;
+            gap: .22rem;
+            font-size: 0;
+        }
+        .output-delete-action::after {
+            content: 'ลบ';
+            font-size: .66rem;
+            line-height: 1;
+        }
+        .output-delete-action svg { width: .7rem; height: .7rem; }
+        .output-row > .flex:first-of-type {
+            min-height: 2rem;
+            padding-right: 7.75rem;
+            align-items: center;
+        }
+        .output-row .output-body-host { padding-top: 2.85rem; }
+        .output-row .output-body-host .output-delete-actions {
+            top: 0;
+            right: 0;
+        }
+    }
+</style>
+
 <script>
     (function() {
         const COLLAPSIBLE_SELECTOR =
@@ -3216,7 +3532,8 @@
             disableRowCollapse() ||
             disableByRoute() ||
             document.body.classList.contains('no-row-collapse-toggle');
-        const isRowCollapseLocked = () => false;
+        const isRowCollapseLocked = (row) =>
+            window.DISABLE_FTE_ROW_COLLAPSE === true && row?.classList?.contains('fte-row');
 
         function clearRowCollapseUi(row) {
             if (!row) return;
@@ -5016,6 +5333,13 @@
             });
         };
 
+        const formatFteDisplayValue = (value) => {
+            const raw = String(value ?? '').trim();
+            if (raw === '') return '0';
+            const numeric = Number(raw);
+            return Number.isFinite(numeric) ? String(numeric) : raw;
+        };
+
         const createProxyInput = (source, opts = {}) => {
             if (!source) {
                 const fallback = document.createElement('input');
@@ -5027,7 +5351,16 @@
             let proxy;
             const isDateField = opts.isDate === true;
 
-            if (source.tagName === 'SELECT') {
+            if (opts.personPicker) {
+                // The desktop create table is a proxy view. Build a clean text input here
+                // instead of cloning the card input (and its datalist/inline state), so it
+                // has the same DOM shape Tom Select receives on the native edit table.
+                proxy = document.createElement('input');
+                proxy.type = 'text';
+                proxy.value = getFieldValue(source);
+                proxy.placeholder = source.placeholder || 'พิมพ์หรือเลือกชื่อ';
+                proxy.autocomplete = 'off';
+            } else if (source.tagName === 'SELECT') {
                 proxy = source.cloneNode(true);
                 proxy.value = source.value;
             } else {
@@ -5039,12 +5372,17 @@
                     proxy.placeholder = 'วว-ดด-ปปปป (พ.ศ.)';
                 } else {
                     proxy = source.cloneNode(false);
-                    proxy.value = getFieldValue(source);
-                    if (!proxy.type) proxy.type = opts.type || 'text';
+                    proxy.value = opts.displayOnly
+                        ? formatFteDisplayValue(getFieldValue(source))
+                        : getFieldValue(source);
+                    if (opts.type) proxy.type = opts.type;
+                    else if (!proxy.type) proxy.type = 'text';
                 }
             }
 
             proxy.className = '';
+            if (opts.displayOnly) proxy.classList.add('fte-table-display-value');
+            if (opts.personPicker || source.classList.contains('fte-person-picker')) proxy.classList.add('fte-person-picker');
             proxy.removeAttribute('name');
             proxy.removeAttribute('id');
             proxy.required = false;
@@ -5067,7 +5405,9 @@
                     const fromPicker = source._flatpickr?.altInput?.value || source.value || '';
                     proxy.value = toBuddhistDateText(fromPicker);
                 } else {
-                    proxy.value = getFieldValue(source);
+                    proxy.value = opts.displayOnly
+                        ? formatFteDisplayValue(getFieldValue(source))
+                        : getFieldValue(source);
                 }
             };
             source.addEventListener('input', syncFromSource);
@@ -5166,13 +5506,12 @@
             table.innerHTML = `
                 <colgroup>
                     <col style="width:3%">
-                    <col style="width:15%">
-                    <col style="width:12%">
-                    <col style="width:12%">
-                    <col style="width:12%">
+                    <col style="width:13%">
+                    <col style="width:13%">
+                    <col style="width:13%">
+                    <col style="width:18%">
                     <col style="width:10%">
                     <col style="width:10%">
-                    <col style="width:6%">
                     <col style="width:7%">
                     <col style="width:8%">
                     <col style="width:5%">
@@ -5180,7 +5519,7 @@
                 <thead>
                     <tr>
                         <th>ลำดับ</th><th>ชื่อ</th><th>กลุ่ม</th><th>ภาระงาน</th><th>รายละเอียดงาน</th><th>เริ่ม</th><th>สิ้นสุด</th>
-                        <th>ชั่วโมง</th><th>FTE Auto</th><th>FTE หัวหน้า</th><th>ลบ</th>
+                        <th>ชั่วโมง</th><th>FTE ที่ได้รับ</th><th>ลบ</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -5200,7 +5539,7 @@
             tr.appendChild(tdIndex);
 
             const cellDefs = [
-                ['input[name^="fte_roles["][name$="[name]"]'],
+                ['input[name^="fte_roles["][name$="[name]"]', { personPicker: true }],
                 ['select[name^="fte_roles["][name$="[role_group]"]'],
                 ['select[name^="fte_roles["][name$="[job_detail]"]'],
                 ['select[name^="fte_roles["][name$="[task_detail]"]'],
@@ -5214,10 +5553,9 @@
                     type: 'number'
                 }],
                 ['input[name^="fte_roles["][name$="[fte_value]"]', {
-                    readOnly: true
-                }],
-                ['input[name^="fte_roles["][name$="[fte_value_research]"]', {
-                    type: 'number'
+                    readOnly: true,
+                    type: 'text',
+                    displayOnly: true
                 }],
             ];
 
@@ -5404,6 +5742,7 @@
             tbody.appendChild(buildFteTableRow(row, nextIndex));
             syncFteTableIndexes(tbody);
             syncAllFteProxyInvalidStates();
+            window.initFtePersonPickers?.(tbody);
             return true;
         };
 
@@ -5431,6 +5770,7 @@
             wrap.appendChild(table);
             wrap.scrollLeft = 0;
             syncAllFteProxyInvalidStates();
+            window.initFtePersonPickers?.(table);
         };
 
         const forceMarkFteProxyInvalidFromSourceValue = () => {
@@ -5451,10 +5791,8 @@
             const container = getContainer();
             const wrap = ensureTableWrap();
             if (!container || !wrap) return;
-            if (isTableModeDisabledOnPage) {
-                container.classList.remove('fte-table-mode');
-            }
-            const active = !isTableModeDisabledOnPage && isTableModeEnabled() && isDesktopLike();
+            const active = !isTableModeDisabledOnPage && isDesktopLike();
+            container.classList.toggle('fte-table-mode', active);
             container.classList.toggle('fte-cards-hidden', active);
             wrap.classList.toggle('is-active', active);
             if (active) {
@@ -5486,14 +5824,6 @@
                     >
                         ล้างคำค้นหา
                     </button>
-                    ${isTableModeDisabledOnPage ? '' : `
-                    <button
-                        id="${FTE_TABLE_MODE_BTN_ID}"
-                        type="button"
-                        class="fte-tools__table-btn hidden md:inline-flex"
-                    >
-                        ดูแบบตาราง
-                    </button>`}
                 </div>
             `;
 
@@ -5516,29 +5846,7 @@
 
             ensureTableLog();
 
-            const tableBtn = document.getElementById(FTE_TABLE_MODE_BTN_ID);
-            const setTableBtnState = () => {
-                const active = container.classList.contains('fte-table-mode');
-                tableBtn?.classList.toggle('is-active', active);
-                if (tableBtn) tableBtn.textContent = active ? 'ดูแบบ Card' : 'ดูแบบตาราง';
-                applyTableModeState();
-            };
-
-            const storedTableMode = localStorage.getItem(FTE_TABLE_MODE_STORAGE_KEY);
-            const shouldEnableTableMode = !isTableModeDisabledOnPage && storedTableMode !== '0';
-            if (shouldEnableTableMode) {
-                container.classList.add('fte-table-mode');
-            } else if (isTableModeDisabledOnPage) {
-                container.classList.remove('fte-table-mode');
-            }
-            setTableBtnState();
-
-            tableBtn?.addEventListener('click', () => {
-                container.classList.toggle('fte-table-mode');
-                const active = container.classList.contains('fte-table-mode');
-                localStorage.setItem(FTE_TABLE_MODE_STORAGE_KEY, active ? '1' : '0');
-                setTableBtnState();
-            });
+            applyTableModeState();
 
             window.addEventListener('resize', () => {
                 applyTableModeState();
@@ -5546,11 +5854,13 @@
         };
 
         window.initFteUx = () => {
+            if (isTableModeDisabledOnPage) return;
             ensureTools();
             window.applyFteRowSearchFilter();
         };
 
         window.refreshFteUx = () => {
+            if (isTableModeDisabledOnPage) return;
             ensureTools();
             applyTableModeState();
             window.applyFteRowSearchFilter();
@@ -5691,6 +6001,101 @@
 
 
 <script>
+    (() => {
+        const escapeFtePersonHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+
+        window.initFtePersonPickers = (scope = document) => {
+            const TomSelectConstructor = window.TomSelect;
+            if (typeof TomSelectConstructor !== 'function') return;
+            const directory = Array.isArray(window.projectUserDirectory) ? window.projectUserDirectory : [];
+
+            scope.querySelectorAll?.('input.fte-person-picker').forEach((input) => {
+                if (input.tomselect || input.dataset.ftePersonPickerReady === '1') return;
+                const tableModeActive = window.isFteTableMode?.() === true;
+                const isHiddenCreateSource = tableModeActive
+                    && input.closest('#fte-container')
+                    && !input.closest('#fte-table-wrap');
+                if (isHiddenCreateSource) return;
+
+                const options = directory.map((user) => ({
+                    value: String(user.full_name || '').trim(),
+                    text: String(user.full_name || '').trim(),
+                    search_alias: String(user.research_display_name || '').trim(),
+                    is_resigned: Boolean(user.is_resigned),
+                })).filter((option) => option.value);
+                const currentValue = String(input.value || '').trim();
+                if (currentValue && !options.some((option) => option.value === currentValue)) {
+                    options.push({ value: currentValue, text: currentValue, is_resigned: false });
+                }
+
+                try {
+                    new TomSelectConstructor(input, {
+                        plugins: ['dropdown_input'],
+                        options,
+                        items: currentValue ? [currentValue] : [],
+                        valueField: 'value',
+                        labelField: 'text',
+                        searchField: ['text', 'value', 'search_alias'],
+                        maxItems: 1,
+                        maxOptions: null,
+                        dropdownParent: 'body',
+                        dropdownClass: 'ts-dropdown fte-person-dropdown',
+                        create: (value) => ({ value, text: value, is_resigned: false }),
+                        persist: false,
+                        allowEmptyOption: true,
+                        placeholder: input.placeholder || 'พิมพ์เพื่อค้นหาชื่อ',
+                        onInitialize() {
+                            if (this.control_input) this.control_input.placeholder = 'ค้นหาชื่อ...';
+                        },
+                        render: {
+                            option(data, escape) {
+                                const badge = data.is_resigned === true || data.is_resigned === 1 || data.is_resigned === '1'
+                                    ? '<span class="fte-person-option__resigned">ลาออกแล้ว</span>'
+                                    : '';
+                                return `<div class="fte-person-option"><span class="fte-person-option__name">${escape(data.text || data.value)}</span>${badge}</div>`;
+                            },
+                            item(data, escape) {
+                                return `<div>${escape(data.text || data.value)}</div>`;
+                            },
+                            no_results() {
+                                return '<div class="no-results">ไม่พบรายชื่อ</div>';
+                            },
+                        },
+                    });
+                    input.dataset.ftePersonPickerReady = '1';
+                } catch (error) {
+                    delete input.dataset.ftePersonPickerReady;
+                    console.error('Unable to initialize FTE person dropdown', error);
+                }
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => window.initFtePersonPickers(document));
+        window.addEventListener('load', () => {
+            window.initFtePersonPickers(document);
+            window.setTimeout(() => window.initFtePersonPickers(document), 150);
+        });
+        const ensureFocusedFtePersonPicker = (event) => {
+            const input = event.target?.closest?.('input.fte-person-picker');
+            if (!input) return;
+            if (!input.tomselect) window.initFtePersonPickers(input.parentElement || document);
+            if (input.tomselect && event.type === 'click') input.tomselect.open();
+        };
+        document.addEventListener('focusin', ensureFocusedFtePersonPicker, true);
+        document.addEventListener('click', ensureFocusedFtePersonPicker, true);
+        new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+                if (!(node instanceof HTMLElement)) return;
+                if (node.matches?.('input.fte-person-picker')) window.initFtePersonPickers(node.parentElement || document);
+                else if (node.querySelector?.('input.fte-person-picker')) window.initFtePersonPickers(node);
+            }));
+        }).observe(document.documentElement, { childList: true, subtree: true });
+    })();
+</script>
+
+<script>
     /* ===============================
    AUTO FTE (REPEATABLE SAFE)
    สูตร: hours × 0.00745 0.000621
@@ -5707,6 +6112,10 @@
         const fte = hr * 0.000621;
 
         fteInput.value = fte.toFixed(8);
+        const fteDisplay = row?.querySelector('.fte-value-display');
+        if (fteDisplay) {
+            fteDisplay.textContent = String(parseFloat(fteInput.value) || 0);
+        }
         fteInput.dispatchEvent(new Event('input', {
             bubbles: true
         }));
