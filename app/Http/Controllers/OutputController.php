@@ -1906,6 +1906,9 @@ class OutputController extends Controller
                 'type' => $typeLabel,
                 'year_be' => $yearBe,
                 'work_status' => $workStatus,
+                'source_reference_id' => trim((string) ($output->project?->project_code ?? '')) ?: null,
+                'source_reference_name' => trim((string) ($output->project?->project_name_th ?? '')) ?: null,
+                'project_code' => $output->project?->project_code,
                 'project_label' => $output->project?->project_name_th,
                 'source_badge' => null,
                 'detail' => $detailText !== '' ? $detailText : null,
@@ -1964,6 +1967,10 @@ class OutputController extends Controller
                 'type' => $typeLabel,
                 'year_be' => $yearBe,
                 'work_status' => $workStatus,
+                'source_reference_id' => trim((string) ($output->task?->backoffice_id ?? ''))
+                    ?: ($output->task ? BackOfficeTask::formatBackOfficeId((int) $output->task->id) : null),
+                'source_reference_name' => trim((string) ($output->task?->title ?? '')) ?: 'Mission',
+                'backoffice_id' => $output->task?->backoffice_id,
                 'project_label' => $output->task?->title,
                 'source_badge' => 'Mission',
                 'detail' => null,
@@ -2030,6 +2037,10 @@ class OutputController extends Controller
                 'type' => $typeLabel,
                 'year_be' => $yearBe,
                 'work_status' => $workStatus,
+                'source_reference_id' => trim((string) ($output->output_code ?? ''))
+                    ?: ExternalOutput::formatOutputCode((int) $output->id),
+                'source_reference_name' => $referenceLabel,
+                'output_code' => $output->output_code,
                 'project_label' => $referenceLabel,
                 'source_badge' => 'Extra',
                 'detail' => $detailText !== '' ? $detailText : null,
@@ -8007,6 +8018,7 @@ class OutputController extends Controller
     {
         return [
             'ID',
+            'ชื่อโครงการ/รายการอ้างอิง',
             'ชื่อผลงาน',
             'ประเภท',
             'ปี พ.ศ.',
@@ -8038,6 +8050,7 @@ class OutputController extends Controller
 
         return [
             $this->sourceReferenceValue($row),
+            $this->sourceReferenceNameValue($row),
             $row->title ?: '-',
             $row->type ?: '-',
             $row->year_be ?: '-',
@@ -8059,6 +8072,17 @@ class OutputController extends Controller
             $this->specialFieldValue($row, 'ISBN') ?: '-',
             $createdLabel,
         ];
+    }
+
+    private function sourceReferenceNameValue($row): string
+    {
+        $name = trim((string) data_get($row, 'source_reference_name', ''));
+
+        if ($name === '') {
+            $name = trim((string) data_get($row, 'project_label', ''));
+        }
+
+        return $name !== '' ? $name : '-';
     }
 
     private function specialFieldValue($row, string $label): string
