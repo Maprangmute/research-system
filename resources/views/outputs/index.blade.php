@@ -1630,6 +1630,20 @@
                 box.classList.toggle('hidden', lines.length === 0);
             };
 
+            const showEditAlert = (icon, title, message = '') => {
+                if (window.Swal) {
+                    return Swal.fire({
+                        icon,
+                        title,
+                        text: message || undefined,
+                        confirmButtonText: 'ตกลง',
+                    });
+                }
+
+                window.alert([title, message].filter(Boolean).join('\n'));
+                return Promise.resolve();
+            };
+
             const visibleEditTarget = (field) => {
                 if (!field) return null;
                 const row = field.closest('[data-output-edit-row]');
@@ -1754,6 +1768,7 @@
 
                 if (errors.length > 0) {
                     setEditErrors('กรุณาตรวจสอบข้อมูลที่จำเป็น', [...new Set(errors)]);
+                    showEditAlert('error', 'ข้อมูลไม่ครบถ้วน', [...new Set(errors)].join('\n'));
                     firstInvalid?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
                     window.setTimeout(() => firstInvalid?.focus?.({ preventScroll: true }), 250);
                     return false;
@@ -2326,25 +2341,33 @@
                     if (typeof window.syncDateInputsBeforeSubmit === 'function') {
                         window.syncDateInputsBeforeSubmit(form);
                     }
+                    // Capture the payload before disabling the form. Disabled controls are
+                    // omitted from FormData, including Laravel's _token and _method fields.
+                    const formData = new FormData(form);
                     setEditLoading(true);
 
                     try {
                         const response = await fetch(form.action, {
                             method: 'POST',
                             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-                            body: new FormData(form),
+                            body: formData,
                         });
                         const payload = await response.json().catch(() => ({}));
                         if (!response.ok || payload.ok === false) {
-                            setEditErrors(payload.message || 'บันทึกไม่สำเร็จ', payload.errors || null);
+                            const errorMessage = payload.message || 'บันทึกไม่สำเร็จ';
+                            setEditErrors(errorMessage, payload.errors || null);
+                            await showEditAlert('error', 'บันทึกไม่สำเร็จ', errorMessage);
                             return;
                         }
 
                         closeEditModal();
+                        await showEditAlert('success', 'บันทึกสำเร็จ', payload.message || 'อัปเดตผลงานเรียบร้อย');
                         const currentUrl = new URL(window.location.href);
                         fetchAndRender(currentUrl, { updateUrl: false });
                     } catch (error) {
-                        setEditErrors(error.message || 'บันทึกไม่สำเร็จ');
+                        const errorMessage = error.message || 'บันทึกไม่สำเร็จ';
+                        setEditErrors(errorMessage);
+                        await showEditAlert('error', 'เกิดข้อผิดพลาด', errorMessage);
                     } finally {
                         setEditLoading(false);
                     }
