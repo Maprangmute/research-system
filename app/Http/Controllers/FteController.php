@@ -1355,7 +1355,7 @@ private function buildWfaExportData(WfaReport $report): array
 
     $reportOwnerName = trim((string) ($report->user?->full_name ?? ''));
     $personName = $reportOwnerName !== '' ? $reportOwnerName : (string) $report->person_name;
-    $data = $this->buildFteDetailData($personName, $filter);
+    $data = $this->buildFteDetailData($personName, $filter, $this->wfaReportMonth($report));
 
     if ($mode === 'month') {
         $selectedMonth = $this->wfaReportMonth($report);
@@ -2208,7 +2208,7 @@ private function addManualBulletTextToWordCell($cell, string $text, array $style
     }
 }
 
-private function buildFteDetailData(string $person, array $filter = []): array
+private function buildFteDetailData(string $person, array $filter = [], ?Carbon $statusMonth = null): array
 {
     $mode = strtolower((string) ($filter['mode'] ?? 'all'));
     if (!in_array($mode, ['all', 'year', 'month', 'custom'], true)) {
@@ -2317,9 +2317,10 @@ private function buildFteDetailData(string $person, array $filter = []): array
         ->values();
 
     $expanded = collect();
-    $currentMonthStart = now()->copy()->startOfMonth()->startOfDay();
-    $currentMonthEnd = now()->copy()->endOfMonth()->endOfDay();
-    $currentMonthLabel = $currentMonthStart->copy()->locale('th')->translatedFormat('F') . ' ' . ($currentMonthStart->year + 543);
+    // WFA uses its selected report month; regular FTE views default to this month.
+    $statusMonthStart = ($statusMonth ?? now())->copy()->startOfMonth()->startOfDay();
+    $statusMonthEnd = $statusMonthStart->copy()->endOfMonth()->endOfDay();
+    $statusMonthLabel = $statusMonthStart->copy()->locale('th')->translatedFormat('F') . ' ' . ($statusMonthStart->year + 543);
     $monthWorkMap = collect();
     $upsertMonthWork = function (string $key, array $payload) use ($monthWorkMap): void {
         $existing = $monthWorkMap->get($key);
@@ -2399,13 +2400,13 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
             if ($effectiveStart->gt($effectiveEnd)) continue;
 
-            if ($item->project?->id && $entryStart->lte($currentMonthEnd) && $entryEnd->gte($currentMonthStart)) {
+            if ($item->project?->id && $entryStart->lte($statusMonthEnd) && $entryEnd->gte($statusMonthStart)) {
                 $project = $item->project;
                 $projectId = (int) $project->id;
                 $entryEndDate = $this->parseInputDate((string) ($item->end_date ?? ''))?->endOfDay();
                 $isCompletedThisMonth = $entryEndDate
-                    && $entryEndDate->gte($currentMonthStart)
-                    && $entryEndDate->lte($currentMonthEnd);
+                    && $entryEndDate->gte($statusMonthStart)
+                    && $entryEndDate->lte($statusMonthEnd);
 
                 $workKey = 'fte-role:' . (int) $item->id;
                 $upsertMonthWork($workKey, [
@@ -2502,7 +2503,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
             if ($effectiveStart->gt($effectiveEnd)) continue;
 
-            if ($entryStart->lte($currentMonthEnd) && $entryEnd->gte($currentMonthStart)) {
+            if ($entryStart->lte($statusMonthEnd) && $entryEnd->gte($statusMonthStart)) {
                 $taskId = $entry->task?->id;
                 $key = 'back-office:' . (int) $entry->id;
                 $categoryName = $this->backOfficeCategoryLabel($entry->category);
@@ -2514,8 +2515,8 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
                 $entryEndDate = $this->parseInputDate((string) $endRaw)?->endOfDay();
                 $isCompletedThisMonth = $entryEndDate
-                    && $entryEndDate->gte($currentMonthStart)
-                    && $entryEndDate->lte($currentMonthEnd);
+                    && $entryEndDate->gte($statusMonthStart)
+                    && $entryEndDate->lte($statusMonthEnd);
 
                 $upsertMonthWork($key, [
                     'key' => $key,
@@ -2591,8 +2592,8 @@ private function buildFteDetailData(string $person, array $filter = []): array
 
     $chartLabels = $monthlyFTE->keys()->values();
     $chartData   = $monthlyFTE->map(fn($rows) => $rows->sum('fte_value'))->values();
-    $currentMonthKey = $currentMonthStart->format('Y-m');
-    $currentMonthRows = $monthlyFTE->get($currentMonthKey, collect());
+    $statusMonthKey = $statusMonthStart->format('Y-m');
+    $statusMonthRows = $monthlyFTE->get($statusMonthKey, collect());
     $formatShortBeDate = static function (?Carbon $date): string {
         if (!$date) {
             return '-';
@@ -2607,7 +2608,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
     };
 
     $monthDetailMap = collect();
-    foreach ($currentMonthRows as $row) {
+    foreach ($statusMonthRows as $row) {
         $detailKey = (string) ($row->rounding_key ?? '');
 
         if ($detailKey === '') {
@@ -2736,7 +2737,7 @@ private function buildFteDetailData(string $person, array $filter = []): array
     $completedCount = $monthWorkList->where('is_completed', true)->count();
 
     $monthProjectStats = [
-        'label' => $currentMonthLabel,
+        'label' => $statusMonthLabel,
         'total' => $monthWorkList->count(),
         'active' => $activeCount,
         'completed' => $completedCount,
