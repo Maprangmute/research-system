@@ -384,10 +384,12 @@
                     <span class="text-xs font-semibold text-slate-600">สถานะโครงการ (Project Status)</span>
                     <select name="project_status" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
-                        <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
                         @foreach ($statusOptions as $status)
                             <option value="{{ $status }}" @selected(request('project_status') === $status)>{{ $status }}</option>
                         @endforeach
+                        <option disabled>────────────────</option>
+                        <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
+                        <option value="__ongoing__" @selected(request('project_status') === '__ongoing__')>กำลังดำเนินการ (ongoing)</option>
                     </select>
                 </label>
                 <label class="block">
@@ -448,6 +450,8 @@
                     </select>
                 </label>
                 <div class="flex gap-2">
+                    <button type="submit" name="download" value="excel" formnovalidate
+                        class="px-4 py-2 rounded-lg bg-emerald-600 text-white">ดาวน์โหลด Excel</button>
                     <button type="submit"
                         class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm">ใช้ตัวกรอง</button>
                     <a id="project-mobile-reset" data-project-mobile-reset href="{{ route('projects.index') }}"
@@ -849,10 +853,12 @@
                         <span class="text-xs font-semibold text-slate-600">สถานะโครงการ (Project Status)</span>
                         <select name="project_status" class="w-full border border-slate-200 rounded-lg p-2">
                             <option value="">ทั้งหมด</option>
-                            <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
                             @foreach ($statusOptions as $status)
                                 <option value="{{ $status }}" @selected(request('project_status') === $status)>{{ $status }}</option>
                             @endforeach
+                        <option disabled>────────────────</option>
+                        <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
+                        <option value="__ongoing__" @selected(request('project_status') === '__ongoing__')>กำลังดำเนินการ (ongoing)</option>
                         </select>
                     </label>
                     <label class="block">
@@ -916,6 +922,8 @@
 
                 <div class="border-t border-slate-200 bg-slate-50 px-4 py-4">
                     <div class="flex gap-2">
+                    <button type="submit" name="download" value="excel" formnovalidate
+                            class="px-4 py-2 rounded-lg bg-emerald-600 text-white">ดาวน์โหลด Excel</button>
                         <button type="submit" class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm">
                             ใช้ตัวกรอง
                         </button>
@@ -1221,7 +1229,7 @@
                 [filterForm, drawerForm].forEach((targetForm) => {
                     if (!targetForm || targetForm === sourceForm) return;
 
-                    queryAll('[name]', sourceForm).forEach((sourceField) => {
+                    queryAll('input[name], select[name], textarea[name]', sourceForm).forEach((sourceField) => {
                         if (!sourceField.name) return;
                         const targetFields = queryAll(`[name="${sourceField.name}"]`, targetForm);
                         if (!targetFields.length) return;
@@ -1429,6 +1437,7 @@
             };
 
             searchForm.addEventListener('submit', (event) => {
+                if (event.submitter?.name === 'download' && event.submitter.value === 'excel') return;
                 event.preventDefault();
                 syncSearchFormState();
                 syncFilterFormsFromSource(filterForm);
@@ -1438,6 +1447,7 @@
             });
 
             filterForm.addEventListener('submit', (event) => {
+                if (event.submitter?.name === 'download' && event.submitter.value === 'excel') return;
                 event.preventDefault();
                 syncFilterFormsFromSource(filterForm);
                 fetchAndRender(buildUrlFromForms(true), {
@@ -1446,6 +1456,7 @@
             });
 
             drawerForm.addEventListener('submit', (event) => {
+                if (event.submitter?.name === 'download' && event.submitter.value === 'excel') return;
                 event.preventDefault();
                 syncFilterFormsFromSource(drawerForm);
                 fetchAndRender(buildUrlFromForms(true), {

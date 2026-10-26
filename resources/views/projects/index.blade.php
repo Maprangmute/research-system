@@ -248,7 +248,7 @@
             background: #f8fafc;
         }
 
-        #project-filter-form button[type='submit'] {
+        #project-filter-form button[type='submit']:not([name='download']) {
             min-height: 38px;
             border-radius: 10px;
             background: #4f46e5;
@@ -256,7 +256,7 @@
             box-shadow: 0 10px 20px rgba(79, 70, 229, 0.18);
         }
 
-        #project-filter-form button[type='submit']:hover {
+        #project-filter-form button[type='submit']:not([name='download']):hover {
             background: #4338ca;
         }
 
@@ -905,10 +905,12 @@
                     <span class="text-xs font-semibold text-slate-600">สถานะโครงการ (Project Status)</span>
                     <select name="project_status" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                         <option value="">ทั้งหมด</option>
-                        <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
                         @foreach ($statusOptions as $status)
                             <option value="{{ $status }}" @selected(request('project_status') === $status)>{{ $status }}</option>
                         @endforeach
+                        <option disabled>────────────────</option>
+                        <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
+                        <option value="__ongoing__" @selected(request('project_status') === '__ongoing__')>กำลังดำเนินการ (ongoing)</option>
                     </select>
                 </label>
                 <label class="block">
@@ -976,6 +978,8 @@
                         ใช้ฟิลเตอร์
                         <span id="project-filter-count" class="rounded-full bg-white px-2 py-0.5 text-slate-900 shadow-sm">{{ $activeFilterCount }}</span>
                     </span>
+                    <button type="submit" name="download" value="excel" formnovalidate
+                        class="px-4 py-2 rounded-lg bg-emerald-600 text-white">ดาวน์โหลด Excel</button>
                     <button type="submit"
                         class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm">ใช้ตัวกรอง</button>
                     <a id="project-filter-reset" href="{{ route('projects.index') }}"
@@ -1458,10 +1462,12 @@
                         <span class="text-xs font-semibold text-slate-600">สถานะโครงการ (Project Status)</span>
                         <select name="project_status" data-project-live="true" class="w-full border border-slate-200 rounded-lg p-2">
                             <option value="">ทั้งหมด</option>
-                            <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
                             @foreach ($statusOptions as $status)
                                 <option value="{{ $status }}" @selected(request('project_status') === $status)>{{ $status }}</option>
                             @endforeach
+                        <option disabled>────────────────</option>
+                        <option value="__unspecified__" @selected(request('project_status') === '__unspecified__')>ยังไม่ได้ระบุ</option>
+                        <option value="__ongoing__" @selected(request('project_status') === '__ongoing__')>กำลังดำเนินการ (ongoing)</option>
                         </select>
                     </label>
                     <label class="block">
@@ -1524,7 +1530,9 @@
                 </div>
                 <div class="border-t border-slate-200 bg-slate-50 px-4 py-4">
                     <div class="flex flex-wrap items-center gap-2">
-                        <button type="submit"
+                        <button type="submit" name="download" value="excel" formnovalidate
+                        class="px-4 py-2 rounded-lg bg-emerald-600 text-white">ดาวน์โหลด Excel</button>
+                    <button type="submit"
                             class="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">
                             ใช้ตัวกรอง
                         </button>
@@ -2056,7 +2064,7 @@
 
             const countActiveFilters = (sourceForm) => {
                 if (!sourceForm) return 0;
-                return queryAll('[name]', sourceForm).reduce((count, field) => {
+                return queryAll('input[name], select[name], textarea[name]', sourceForm).reduce((count, field) => {
                     if (!field.name || ['page', 'sort', 'dir'].includes(field.name)) return count;
                     if (field.type === 'checkbox') return count + (field.checked ? 1 : 0);
                     return String(field.value ?? '').trim() !== '' ? count + 1 : count;
@@ -2117,7 +2125,7 @@
                 if (!sourceForm) return;
                 getForms().forEach((targetForm) => {
                     if (!targetForm || targetForm === sourceForm) return;
-                    queryAll('[name]', sourceForm).forEach((sourceField) => {
+                    queryAll('input[name], select[name], textarea[name]', sourceForm).forEach((sourceField) => {
                         if (!sourceField.name) return;
                         const targetFields = queryAll(`[name="${sourceField.name}"]`, targetForm);
                         if (!targetFields.length) return;
@@ -2176,7 +2184,7 @@
 
             const syncFormWithUrl = (url) => {
                 getForms().forEach((targetForm) => {
-                    queryAll('[name]', targetForm).forEach((field) => {
+                    queryAll('input[name], select[name], textarea[name]', targetForm).forEach((field) => {
                         const values = url.searchParams.getAll(field.name);
                         if (field.type === 'checkbox') {
                             setFieldValue(field, values);
@@ -2313,6 +2321,7 @@
                     targetForm.dataset.ajaxBound = 'true';
 
                     targetForm.addEventListener('submit', (event) => {
+                if (event.submitter?.name === 'download' && event.submitter.value === 'excel') return;
                         event.preventDefault();
                         syncFormsFromSource(targetForm);
                         const sourceForm = getPrimaryForm() || targetForm;

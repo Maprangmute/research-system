@@ -129,14 +129,7 @@ class ProjectController extends Controller
         }
         if ($request->filled('project_status')) {
             $status = trim((string) $request->project_status);
-            if ($status === '__unspecified__') {
-                $query->where(function ($q) {
-                    $q->whereNull('planning_status')
-                        ->orWhereRaw("TRIM(planning_status) = ''");
-                });
-            } else {
-                $query->whereRaw('TRIM(planning_status) = ?', [$status]);
-            }
+            $this->applyProjectStatusFilter($query, $status);
         }
         if ($request->filled('budget_range') && !$request->filled('budget_min') && !$request->filled('budget_max')) {
             [$minRange, $maxRange] = array_pad(explode('-', $request->budget_range), 2, null);
@@ -246,6 +239,10 @@ class ProjectController extends Controller
                 ->orderBy('project_name_th', 'asc');
         }
 
+        if ($request->query('download') === 'excel') {
+            return $this->downloadFilteredProjects($request, $query->orderBy($sort, $dir));
+        }
+
         $projects = $query->orderBy($sort, $dir)
             ->paginate(10)
             ->appends($request->query());
@@ -290,8 +287,16 @@ class ProjectController extends Controller
             ->whereNotNull('planning_status')
             ->whereRaw("TRIM(planning_status) <> ''")
             ->groupBy('status_key')
-            ->orderBy('planning_status')
-            ->pluck('planning_status');
+            ->pluck('planning_status')
+            ->reject(fn ($status) => trim($status) === 'ยังไม่ได้ระบุ')
+            ->sortBy(function ($status) {
+                foreach (['Project Planing', 'เก็บข้อมูล', 'วิเคราะห์ข้อมูล', 'เขียนรายงาน', 'ปิดโปรเจค'] as $rank => $prefix) {
+                    if (str_starts_with($status, $prefix)) {
+                        return $rank;
+                    }
+                }
+                return 4.5;
+            })->values();
         $yearOptions = (clone $baseQuery)
             ->whereNotNull('start_year')
             ->distinct()
@@ -2277,6 +2282,177 @@ public function store(Request $request)
         return $pdf->stream($filename);
     }
 
+    private function applyProjectStatusFilter(Builder $query, string $status): void
+    {
+        if ($status === '__ongoing__') {
+            $query->whereNotNull('planning_status')
+                ->whereRaw("TRIM(planning_status) NOT IN ('', 'ยังไม่ได้ระบุ', 'ปิดโปรเจค')");
+        } elseif ($status === '__unspecified__') {
+            $query->where(function ($q) {
+                $q->whereNull('planning_status')
+                    ->orWhereRaw("TRIM(planning_status) IN ('', 'ยังไม่ได้ระบุ')");
+            });
+        } else {
+            $query->whereRaw('TRIM(planning_status) = ?', [$status]);
+        }
+    }
+
+    private function downloadFilteredProjects(Request $request, Builder $query)
+    {
+        $labels = [
+            'year' => 'ปี', 'type' => 'ประเภทโครงการ', 'pi_name' => 'PI',
+            'person_name' => 'บุคลากร', 'funding_source' => 'แหล่งทุน',
+            'project_status' => 'สถานะโครงการ', 'budget_range' => 'ช่วงงบประมาณ',
+            'budget_min' => 'งบประมาณต่ำสุด', 'budget_max' => 'งบประมาณสูงสุด',
+            'last_update' => 'อัปเดตล่าสุด', 'fte_status' => 'สถานะ FTE',
+            'search' => 'คำค้น', 'issue_overdue' => 'โครงการเกินกำหนด',
+            'issue_missing_dates' => 'ขาดวันที่', 'issue_duplicates' => 'โครงการซ้ำ',
+            'issue_no_output' => 'ไม่มี Output',
+        ];
+        $values = [
+            '__ongoing__' => 'กำลังดำเนินการ (ongoing)', '__unspecified__' => 'ยังไม่ได้ระบุ',
+            'missing' => 'ยังไม่ครบ', 'complete' => 'ครบ',
+            '1m' => '1–2 เดือน', '2m' => '2–3 เดือน', '3m' => '3–4 เดือน', 'gt3' => 'มากกว่า 4 เดือน',
+        ];
+        $filters = [];
+        foreach ($labels as $key => $label) {
+            if (! $request->filled($key) || (str_starts_with($key, 'issue_') && ! $request->boolean($key))) {
+                continue;
+            }
+            $value = (string) $request->query($key);
+            $filters[$label] = str_starts_with($key, 'issue_') ? 'ใช่' : ($values[$value] ?? $value);
+        }
+        $generatedAt = now()->setTimezone('Asia/Bangkok');
+        $filename = 'projects_'.$generatedAt->format('Ymd_His').'.xlsx';
+        $content = $this->buildFilteredProjectsXlsx($query->get(), $filters, $generatedAt,
+            trim(($request->user()->prefix ?? '').' '.$request->user()->name));
+        AuditLogger::logFileDownload($filename, [
+            'subject_type' => 'project_list_export', 'subject_label' => 'Project List',
+        ], $request);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    private function buildFilteredProjectsXlsx(Collection $projects, array $filters, Carbon $generatedAt, string $generatedBy): string
+    {
+        $headers = ['ปี', 'รหัสโครงการ', 'ชื่อโครงการ', 'แหล่งทุน', 'สถานะโครงการ', 'จำนวน outputs ที่เกิดขึ้น', 'Link ไปยังหน้า detail'];
+        $months = [1 => 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        $thaiDate = $generatedAt->day.' '.$months[$generatedAt->month].' '.($generatedAt->year + 543).' เวลา '.$generatedAt->format('H:i:s').' น. (เวลาไทย)';
+        $filterText = collect($filters)->map(fn ($value, $label) => $label.': '.$value)->implode(' | ') ?: 'ทั้งหมด';
+        $cell = function (string $ref, $value, int $style, bool $numeric = false): string {
+            $attr = ' r="'.$ref.'" s="'.$style.'"';
+            return $numeric
+                ? '<c'.$attr.'><v>'.(int) $value.'</v></c>'
+                : '<c'.$attr.' t="inlineStr"><is><t xml:space="preserve">'.$this->projectDataQualityXlsxEscapeText($value).'</t></is></c>';
+        };
+        $rowXml = fn (int $row, string $cells, float $height) => '<row r="'.$row.'" ht="'.$height.'" customHeight="1">'.$cells.'</row>';
+        $xmlRows = [
+            $rowXml(1, $cell('A1', 'ทะเบียนโครงการวิจัย', 1), 38),
+            $rowXml(2, $cell('A2', 'RESEARCH PROJECTS  /  รายงานตามตัวกรองที่เลือก', 2), 25),
+            $rowXml(3, $cell('A3', 'ผู้ส่งออก', 3).$cell('C3', $generatedBy, 4).$cell('F3', 'จำนวนโครงการ', 3), 25),
+            $rowXml(4, $cell('A4', 'วันที่ส่งออก', 3).$cell('C4', $thaiDate, 4).$cell('F4', $projects->count(), 5, true), 30),
+            $rowXml(5, $cell('A5', 'ตัวกรองที่ใช้', 3).$cell('C5', $filterText, 4), max(34, 18 * (int) ceil(mb_strwidth($filterText) / 115))),
+            $rowXml(6, $cell('A6', 'กดลูกศรบนหัวตารางเพื่อกรองข้อมูล • คลิก “เปิดโครงการ” เพื่อดูรายละเอียด', 2), 24),
+            '<row r="7" ht="10" customHeight="1"/>',
+        ];
+        $headerCells = '';
+        foreach ($headers as $index => $header) {
+            $headerCells .= $cell(chr(65 + $index).'8', $header, 6);
+        }
+        $xmlRows[] = $rowXml(8, $headerCells, 44);
+        $links = [];
+        foreach ($projects->values() as $index => $project) {
+            $row = $index + 9;
+            $base = $index % 2 === 0 ? 7 : 10;
+            $values = [$project->start_year ?: '-', $project->project_code ?: '-',
+                $project->project_name_th ?: '-', $project->funding_source ?: '-',
+                trim($project->planning_status ?? '') ?: 'ยังไม่ได้ระบุ',
+                (int) $project->outputs_count, 'เปิดโครงการ'];
+            $cells = '';
+            foreach ($values as $column => $value) {
+                $style = in_array($column, [0, 5], true) ? $base + 1 : ($column === 6 ? $base + 2 : $base);
+                $cells .= $cell(chr(65 + $column).$row, $value, $style, $column === 5);
+            }
+            $lines = max(2, (int) ceil(mb_strwidth($values[2]) / 62), (int) ceil(mb_strwidth($values[3]) / 32), (int) ceil(mb_strwidth($values[4]) / 29));
+            $xmlRows[] = $rowXml($row, $cells, min(409, max(44, $lines * 17 + 12)));
+            $links[] = '<hyperlink ref="G'.$row.'" r:id="link'.$row.'"/>';
+        }
+        $lastRow = max(9, $projects->count() + 8);
+        $range = 'A8:G'.$lastRow;
+        $content = $this->buildProjectDataQualityXlsxWorkbook('โครงการ', $headers, collect());
+        $path = tempnam(sys_get_temp_dir(), 'project_list_');
+        try {
+            file_put_contents($path, $content);
+            $zip = new \ZipArchive();
+            if ($zip->open($path) !== true) {
+                throw new \RuntimeException('Unable to create project workbook');
+            }
+            // Reuse the existing workbook package and styles, retaining a single worksheet.
+            foreach (['[Content_Types].xml' => 'Override', 'xl/workbook.xml' => 'sheet', 'xl/_rels/workbook.xml.rels' => 'Relationship'] as $part => $tag) {
+                $doc = new \DOMDocument();
+                $doc->loadXML($zip->getFromName($part));
+                foreach (iterator_to_array($doc->getElementsByTagName($tag)) as $node) {
+                    if ($node->getAttribute('PartName') === '/xl/worksheets/sheet2.xml' || $node->getAttribute('sheetId') === '2' || $node->getAttribute('Target') === 'worksheets/sheet2.xml') {
+                        $node->parentNode->removeChild($node);
+                    }
+                    if ($tag === 'sheet' && $node->getAttribute('sheetId') === '1') $node->setAttribute('name', 'โครงการ');
+                }
+                if ($part === '[Content_Types].xml') {
+                    $node = $doc->createElementNS($doc->documentElement->namespaceURI, 'Override');
+                    $node->setAttribute('PartName', '/xl/tables/table1.xml');
+                    $node->setAttribute('ContentType', 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml');
+                    $doc->documentElement->appendChild($node);
+                }
+                $zip->addFromString($part, $doc->saveXML());
+            }
+            $zip->deleteName('xl/worksheets/sheet2.xml');
+            $fonts = '<font><sz val="11"/><color rgb="FF243449"/><name val="Tahoma"/></font>'
+                .'<font><b/><sz val="22"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font>'
+                .'<font><sz val="10"/><color rgb="FF64748B"/><name val="Tahoma"/></font>'
+                .'<font><b/><sz val="10"/><color rgb="FF475569"/><name val="Tahoma"/></font>'
+                .'<font><b/><sz val="24"/><color rgb="FF0F766E"/><name val="Tahoma"/></font>'
+                .'<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Tahoma"/></font>'
+                .'<font><u/><sz val="11"/><color rgb="FF007F86"/><name val="Tahoma"/></font>';
+            $fills = '<fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>';
+            foreach (['142D4E', 'F1F5F9', 'FFFFFF', 'EAF6F3', '1D4965', 'F4F7FB'] as $color) {
+                $fills .= '<fill><patternFill patternType="solid"><fgColor rgb="FF'.$color.'"/><bgColor indexed="64"/></patternFill></fill>';
+            }
+            // font, fill, alignment, border: styles 7–9 / 10–12 are alternating data rows.
+            $specs = [[0,4,'left',0], [1,2,'left',0], [2,4,'left',0], [3,3,'left',0],
+                [0,4,'left',0], [4,5,'center',0], [5,6,'left',0],
+                [0,4,'left',1], [0,4,'center',1], [6,4,'center',1],
+                [0,7,'left',1], [0,7,'center',1], [6,7,'center',1]];
+            $xfs = '';
+            foreach ($specs as [$font, $fill, $align, $border]) {
+                $xfs .= '<xf numFmtId="0" fontId="'.$font.'" fillId="'.$fill.'" borderId="'.$border.'" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="'.$align.'" vertical="center" wrapText="1" indent="1"/></xf>';
+            }
+            $zip->addFromString('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="7">'.$fonts.'</fonts><fills count="8">'.$fills.'</fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top/><bottom style="hair"><color rgb="FFDCE5EF"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="13">'.$xfs.'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleLight16"/></styleSheet>');
+
+            $columns = '';
+            foreach ([10, 18, 66, 34, 31, 18, 20] as $index => $width) {
+                $columns .= '<col min="'.($index + 1).'" max="'.($index + 1).'" width="'.$width.'" customWidth="1"/>';
+            }
+            $zip->addFromString('xl/worksheets/sheet1.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" showGridLines="0" zoomScale="90"><pane ySplit="8" topLeftCell="A9" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A9" sqref="A9"/></sheetView></sheetViews><cols>'.$columns.'</cols><sheetData>'.implode('', $xmlRows).'</sheetData><mergeCells count="11"><mergeCell ref="A6:G6"/><mergeCell ref="A1:G1"/><mergeCell ref="A2:G2"/><mergeCell ref="A3:B3"/><mergeCell ref="C3:E3"/><mergeCell ref="F3:G3"/><mergeCell ref="A4:B4"/><mergeCell ref="C4:E4"/><mergeCell ref="F4:G4"/><mergeCell ref="A5:B5"/><mergeCell ref="C5:G5"/></mergeCells>'.($links ? '<hyperlinks>'.implode('', $links).'</hyperlinks>' : '').'<pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/><tableParts count="1"><tablePart r:id="table1"/></tableParts></worksheet>');
+            $relationships = '<Relationship Id="table1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/table" Target="../tables/table1.xml"/>';
+            foreach ($projects->values() as $index => $project) {
+                $relationships .= '<Relationship Id="link'.($index + 9).'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="'.$this->projectDataQualityXlsxEscapeAttribute(route('projects.show', $project)).'" TargetMode="External"/>';
+            }
+            $zip->addFromString('xl/worksheets/_rels/sheet1.xml.rels', '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'.$relationships.'</Relationships>');
+            $tableColumns = '';
+            foreach ($headers as $index => $header) {
+                $tableColumns .= '<tableColumn id="'.($index + 1).'" name="'.$this->projectDataQualityXlsxEscapeAttribute($header).'"/>';
+            }
+            $zip->addFromString('xl/tables/table1.xml', '<?xml version="1.0" encoding="UTF-8"?><table xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" id="1" name="Projects" displayName="Projects" ref="'.$range.'" totalsRowShown="0"><autoFilter ref="'.$range.'"/><tableColumns count="7">'.$tableColumns.'</tableColumns><tableStyleInfo name="TableStyleMedium2" showFirstColumn="0" showLastColumn="0" showRowStripes="1" showColumnStripes="0"/></table>');
+            $zip->close();
+            return (string) file_get_contents($path);
+        } finally {
+            @unlink($path);
+        }
+    }
+
     public function exportList(Request $request)
     {
         $format = strtolower(trim((string) $request->query('format', 'xls')));
@@ -2311,14 +2487,7 @@ public function store(Request $request)
         }
         if ($request->filled('project_status')) {
             $status = trim((string) $request->query('project_status'));
-            if ($status === '__unspecified__') {
-                $query->where(function ($q) {
-                    $q->whereNull('planning_status')
-                        ->orWhereRaw("TRIM(planning_status) = ''");
-                });
-            } else {
-                $query->whereRaw('TRIM(planning_status) = ?', [$status]);
-            }
+            $this->applyProjectStatusFilter($query, $status);
         }
         if ($request->filled('search')) {
             $search = trim((string) $request->query('search'));
