@@ -44,6 +44,7 @@ class DashboardController extends Controller
             'budget',
             'pi_name',
             'pi_affiliation',
+            'pi_person_type',
             'project_list',
             'collab_type',
             'unit_name',
@@ -72,10 +73,10 @@ class DashboardController extends Controller
             ->select($existingColumns('projects', $projectColumns))
             ->with([
                 'coResearches' => fn($query) => $query->select($existingColumns('co_research', [
-                    'id', 'project_id', 'name', 'unit_status', 'affiliation',
+                    'id', 'project_id', 'user_id', 'name', 'unit_status', 'affiliation',
                 ])),
                 'copis' => fn($query) => $query->select($existingColumns('copis', [
-                    'id', 'project_id', 'name', 'affiliation',
+                    'id', 'project_id', 'user_id', 'name', 'affiliation', 'person_type',
                 ])),
                 'fteRoles' => function ($query) use ($existingColumns, $limitFteToSelf, $authFullName) {
                     $query->select($existingColumns('fte_roles', [
@@ -385,6 +386,7 @@ class DashboardController extends Controller
                 'budget' => $project->budget,
                 'pi_name' => $project->pi_name,
                 'pi_affiliation' => $project->pi_affiliation,
+                'pi_person_type' => $project->pi_person_type,
                 'project_list' => $project->project_list,
                 'collab_type' => $project->collab_type,
                 'unit_name' => $project->unit_name,
@@ -395,12 +397,15 @@ class DashboardController extends Controller
                     'id' => $copi->id,
                     'project_id' => $copi->project_id,
                     'name' => $copi->name,
+                    'user_id' => $copi->user_id,
+                    'person_type' => $copi->person_type,
                     'affiliation' => $copi->affiliation,
                 ])->values(),
                 'co_researches' => $project->coResearches->map(fn($coResearch) => [
                     'id' => $coResearch->id,
                     'project_id' => $coResearch->project_id,
                     'name' => $coResearch->name,
+                    'user_id' => $coResearch->user_id,
                     'unit_status' => $coResearch->unit_status,
                     'affiliation' => $coResearch->affiliation,
                 ])->values(),

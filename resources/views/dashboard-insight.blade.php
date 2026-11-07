@@ -227,6 +227,8 @@
         }
 
         .di-download-popup {
+            max-height: calc(100dvh - 40px);
+            overflow-y: auto;
             position: fixed;
             left: max(112px, calc(env(safe-area-inset-left) + 92px));
             top: 50%;
@@ -2329,6 +2331,21 @@
             <p id="downloadSummary" class="mt-2 text-sm leading-relaxed text-slate-600">ดาวน์โหลดข้อมูลตามตัวกรองปัจจุบันเป็น Excel หรือ CSV</p>
             <button id="downloadExcel" type="button" class="di-download-action">ดาวน์โหลด Excel</button>
             <button id="downloadCsv" type="button" class="di-download-action mt-3">ดาวน์โหลด CSV</button>
+            <form id="yearlyProjectExport" class="mt-4 border-t border-slate-200 pt-4">
+                <h3 class="font-extrabold text-slate-800">โหลดเพิ่มเติม · โครงการรายปี</h3>
+                <p class="mt-2 text-xs leading-relaxed text-slate-600">รายชื่อในแท่งใหม่และ ongoing พร้อมทีมเฉพาะ SiHP ตามตัวกรองปัจจุบัน เลือกช่วงปี พ.ศ. ได้เอง</p>
+                <div class="mt-3 grid grid-cols-2 gap-3">
+                    <label class="text-xs font-bold">ปีเริ่มต้น (พ.ศ.)
+                        <input id="yearlyExportFrom" type="number" value="2567" min="2400" step="1" required class="mt-1 w-full rounded-xl border-slate-300 text-sm">
+                    </label>
+                    <label class="text-xs font-bold">ปีสิ้นสุด (พ.ศ.)
+                        <input id="yearlyExportTo" type="number" value="2569" min="2400" step="1" required class="mt-1 w-full rounded-xl border-slate-300 text-sm">
+                    </label>
+                </div>
+                <p class="mt-2 text-xs leading-relaxed text-slate-500">หนึ่งแถวต่อโครงการ รวมทีมในช่องเดียว • โครงการที่เริ่มในปีนั้นแสดงเป็น “ใหม่” • รายชื่อทีมเป็นข้อมูลปัจจุบัน</p>
+                <button id="downloadYearlyExcel" type="submit" class="di-download-action mt-3">Excel โครงการรายปี + ทีม SiHP</button>
+                <p id="yearlyExportMessage" role="status" aria-live="polite" class="mt-2 text-xs leading-relaxed text-slate-600"></p>
+            </form>
             <a href="{{ url('/dashboard?view=legacy') }}" class="mt-3 inline-flex w-full min-h-[44px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-extrabold text-slate-700">เปิดหน้าเดิม</a>
         </aside>
         @endif
@@ -3897,6 +3914,45 @@
                 XLSX.writeFile(workbook, `dashboard-insight-${exportStamp()}.xlsx`);
             }
 
+            // Shared selection keeps the two exported groups identical to the chart bars.
+            function yearlyProjectGroups(rows, year) {
+                const analysisRows = currentPastRows(rows);
+                return {
+                    year: Number(year),
+                    newProjects: analysisRows.filter((p) => yearNumber(yearLabel(p)) === Number(year)),
+                    ongoingProjects: analysisRows.filter((p) => {
+                        const start = yearNumber(yearLabel(p));
+                        return start && start <= Number(year) && isActive(p);
+                    }),
+                };
+            }
+
+            document.getElementById('yearlyProjectExport')?.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                if (!canDownloadDashboardData) return;
+                const button = document.getElementById('downloadYearlyExcel');
+                button.disabled = true;
+                button.setAttribute('aria-busy', 'true');
+                updateText('yearlyExportMessage', 'กำลังเตรียม Excel…');
+                try {
+                    const exporter = await import(@json(asset('js/dashboard-yearly-export.js') . '?v=' . filemtime(public_path('js/dashboard-yearly-export.js'))));
+                    const years = exporter.validateYears(document.getElementById('yearlyExportFrom').value,
+                        document.getElementById('yearlyExportTo').value, CURRENT_BE_YEAR);
+                    const rows = filteredRows();
+                    await exporter.downloadYearlyWorkbook(years.map((year) => yearlyProjectGroups(rows, year)), {
+                        scope: activeFilterLabels().map(([label, value]) => `${label}: ${value}`).join(' • '),
+                    });
+                    updateText('yearlyExportMessage', 'สร้างไฟล์เรียบร้อยแล้ว');
+                } catch (error) {
+                    console.error('Yearly project export failed', error);
+                    updateText('yearlyExportMessage', error instanceof Error && error.message.startsWith('กรุณา')
+                        ? error.message : 'สร้างไฟล์ไม่สำเร็จ กรุณารีเฟรชหน้าและลองอีกครั้ง');
+                } finally {
+                    button.disabled = false;
+                    button.removeAttribute('aria-busy');
+                }
+            });
+
             function modalKindForChart(id) {
                 if (/Irb|Overdue|RedZone/.test(id)) return 'risk';
                 if (/Budget|Funding|External|Internal/.test(id)) return 'funding';
@@ -4666,7 +4722,7 @@
                 const projectPlanText = futureYearPlanSummary(rows);
                 const projectYearNote = formatHiddenYearsSummary(hiddenYears, analysisRows);
                 updateText('chartProjectsPerYearNote', projectPlanText ? `${projectYearNote}. ${projectPlanText}` : projectYearNote);
-                const byYear = chartYears.map((year) => analysisRows.filter((p) => yearLabel(p) === year));
+                const yearlyGroups = chartYears.map((year) => yearlyProjectGroups(rows, yearNumber(year)));
                 const lifecycleCumulativeRows = analysisRows.filter((p) => {
                     const start = yearNumber(yearLabel(p));
                     return start && start <= CURRENT_BE_YEAR;
@@ -4692,11 +4748,8 @@
                                 pointHoverRadius: 6,
                                 order: 0,
                             },
-                            barDataset('ใหม่', byYear.map((list) => list.length), '#34d399'),
-                            barDataset('กำลังดำเนินการ', chartYears.map((year) => analysisRows.filter((p) => {
-                                const start = yearNumber(yearLabel(p));
-                                return start && start <= yearNumber(year) && isActive(p);
-                            }).length), '#fbbf24'),
+                            barDataset('ใหม่', yearlyGroups.map((group) => group.newProjects.length), '#34d399'),
+                            barDataset('กำลังดำเนินการ', yearlyGroups.map((group) => group.ongoingProjects.length), '#fbbf24'),
                             barDataset('ปิดโปรเจค', chartYears.map((year) => analysisRows.filter((p) => {
                                 const start = yearNumber(yearLabel(p));
                                 return start && start <= yearNumber(year) && isClosed(p);
